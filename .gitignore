@@ -78,8 +78,13 @@ temp/
 # Debug files
 debug.js
 test-*.ts
-test-*.js# Build output
+test-*.js
+
+# Build output
 dist/
+
+# Allow shared testing utilities
+!tests/helpers/test-data-loader.ts
 
 # Environment files with credentials
 .env.prod

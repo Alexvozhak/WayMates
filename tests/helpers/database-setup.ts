@@ -2,6 +2,16 @@ import { createDriver } from "../../src/neo4j.js";
 import type { Driver, Session } from "neo4j-driver";
 import { expect } from "vitest";
 
+const projectName = process.env.VITEST_PROJECT ?? "";
+
+if (projectName === "integration" || projectName === "functional") {
+  const defaultPort = projectName === "functional" ? "7688" : "7689";
+
+  process.env.NEO4J_URI ??= `bolt://localhost:${defaultPort}`;
+  process.env.NEO4J_USER ??= "neo4j";
+  process.env.NEO4J_PASSWORD ??= "test";
+}
+
 export async function setupIntegrationTest(): Promise<{
   driver: Driver;
   session: Session;
