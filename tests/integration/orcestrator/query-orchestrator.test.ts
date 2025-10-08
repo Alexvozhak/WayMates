@@ -12,8 +12,8 @@ import { QueryOrchestrator } from "../../../src/orcestrator/query-orchestrator.j
 import {
   getOptimalFieldOrder,
   FALLBACK_SELECTIVITY,
+  buildExplainQuery,
 } from "../../../src/orcestrator/selectivity-profiler.js";
-import { buildExplainQuery } from "../../../src/orcestrator/snippets-extractor.js";
 
 const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
 
@@ -75,7 +75,8 @@ LIMIT 5`;
     const balanced = manager.get("BALANCED");
     const strictFields = balanced.strictPresets.map((preset) => preset.field);
 
-    const estimates: { field: (typeof strictFields)[number]; rows: number }[] = [];
+    const estimates: { field: (typeof strictFields)[number]; rows: number }[] =
+      [];
     for (const field of strictFields) {
       const value = (story.contexts[0] as any)[field];
       const explainQuery = buildExplainQuery(field, value);

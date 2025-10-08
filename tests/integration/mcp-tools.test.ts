@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Driver, Session } from "neo4j-driver";
+import { join } from "path";
 import { loadTestData } from "../helpers/test-data-loader.js";
 import {
   AvatarResearchResultSchema,
@@ -60,6 +61,8 @@ const { PresetsManager } = await import(
   "../../src/orcestrator/preset-manager.js"
 );
 
+const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
+
 const BASE_CONSTRAINTS = {
   max_timing_diff_months: 12,
   timing_diff_threshold_percent: 25,
@@ -74,7 +77,7 @@ describe("MCP tools integration", () => {
   beforeEach(async () => {
     fastMCPInstances.length = 0;
     ({ driver, session } = await setupIntegrationTest());
-    const presets = new PresetsManager("/fake/path");
+    const presets = new PresetsManager(PRESETS_PATH);
     createWayMatesServer(driver, presets);
   });
 
