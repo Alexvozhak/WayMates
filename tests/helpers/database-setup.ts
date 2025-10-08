@@ -35,10 +35,6 @@ export async function teardownIntegrationTest(
   session?: Session,
   driver?: Driver
 ) {
-  if (session) {
-    // Очищаем БД перед закрытием сессии
-    await session.executeWrite((tx) => tx.run("MATCH (n) DETACH DELETE n"));
-    await session.close();
-  }
+  if (session) await session.close();
   if (driver) await driver.close();
 }

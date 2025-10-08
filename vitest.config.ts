@@ -31,6 +31,7 @@ export default defineConfig(() => {
             poolOptions: {
               threads: {
                 isolate: true, // Изоляция глобального состояния для БД тестов
+                singleThread: true, // Отключаем параллельное выполнение тестов
               },
             },
             setupFiles: ["./tests/helpers/database-setup.ts"],

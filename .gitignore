@@ -83,9 +83,6 @@ test-*.js
 # Build output
 dist/
 
-# Allow shared testing utilities
-!tests/helpers/test-data-loader.ts
-
 # Environment files with credentials
 .env.prod
 .env.integration
