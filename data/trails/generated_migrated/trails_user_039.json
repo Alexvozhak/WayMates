@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHRG1BE050Z5MRPBNPT",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHRVXN0KDBTX5K0JMCQ",
+      "created_at": "2017-03-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Mobile"
+      ],
+      "skills": [
+        {
+          "name": "swift",
+          "category": "language"
+        },
+        {
+          "name": "objectivec",
+          "category": "language"
+        },
+        {
+          "name": "xcode",
+          "category": "tool"
+        },
+        {
+          "name": "alamofire",
+          "category": "library"
+        },
+        {
+          "name": "unit_testing",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 5,
+      "country_code": "jp",
+      "city_name": "tokyo",
+      "birth_year": 1994,
+      "citizenships": [
+        "jp"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHRP2HPYCR04S240CTD",
+      "created_at": "2019-09-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Middle",
+      "industry": "social",
+      "company_size": "scaleup",
+      "domains": [
+        "Mobile",
+        "Product"
+      ],
+      "skills": [
+        {
+          "name": "swift",
+          "category": "language"
+        },
+        {
+          "name": "swiftui",
+          "category": "framework"
+        },
+        {
+          "name": "combine",
+          "category": "library"
+        },
+        {
+          "name": "xcode",
+          "category": "tool"
+        },
+        {
+          "name": "alamofire",
+          "category": "library"
+        },
+        {
+          "name": "unit_testing",
+          "category": "testing"
+        },
+        {
+          "name": "snapshot_testing",
+          "category": "testing"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 11,
+      "country_code": "jp",
+      "city_name": "tokyo",
+      "birth_year": 1994,
+      "citizenships": [
+        "jp"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHRDD4EWDT45E5CDF81",
+      "created_at": "2022-03-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "fintech",
+      "company_size": "enterprise",
+      "domains": [
+        "Mobile",
+        "Leadership"
+      ],
+      "skills": [
+        {
+          "name": "swift",
+          "category": "language"
+        },
+        {
+          "name": "swiftui",
+          "category": "framework"
+        },
+        {
+          "name": "combine",
+          "category": "library"
+        },
+        {
+          "name": "xcode",
+          "category": "tool"
+        },
+        {
+          "name": "unit_testing",
+          "category": "testing"
+        },
+        {
+          "name": "snapshot_testing",
+          "category": "testing"
+        },
+        {
+          "name": "people_management",
+          "category": "competency"
+        },
+        {
+          "name": "delivery_management",
+          "category": "competency"
+        },
+        {
+          "name": "alamofire",
+          "category": "library"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 19,
+      "country_code": "jp",
+      "city_name": "tokyo",
+      "birth_year": 1994,
+      "citizenships": [
+        "jp"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHREY40EBTEZPSGSSB0",
+      "skill": "swiftui",
+      "platform": "bootcamp",
+      "from_context_id": "ctx_01K6GSWTHRVXN0KDBTX5K0JMCQ",
+      "to_context_id": "ctx_01K6GSWTHRP2HPYCR04S240CTD",
+      "total_duration_weeks": 12,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 7
+      },
+      "cost_usd": 7200,
+      "rating_course": 4.4,
+      "rating_platform": 4.4,
+      "rating_schedule": 3.8,
+      "course_name": "SwiftUI Production Bootcamp",
+      "course_link": "https://swiftuniversity.io/bootcamp",
+      "user_feedback": "SwiftUI дал возможность ускорить UI-пайплайн, внедрили на соцприложении."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHRAH7YJ098H4DN3VVJ",
+      "skill": "people_management",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTHRP2HPYCR04S240CTD",
+      "to_context_id": "ctx_01K6GSWTHRDD4EWDT45E5CDF81",
+      "total_duration_weeks": 9,
+      "schedule": {
+        "sessions_per_week": 1,
+        "hours_per_session": 3
+      },
+      "cost_usd": 2350,
+      "rating_course": 4.8,
+      "rating_platform": 4.7,
+      "rating_schedule": 4.4,
+      "course_name": "Mobile Leadership Mentorship",
+      "course_link": "https://mobilelead.dev/mentorship",
+      "user_feedback": "Научился проводить карьерные беседы, снизили текучку команды."
+    }
+  ]
+}

@@ -1,0 +1,209 @@
+{
+  "user_id": "usr_01K6GSWTHDSZ9MA0Z9X7DH650Q",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHD58G47ZGGETP3YMPJ",
+      "created_at": "2017-05-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "marketing",
+      "company_size": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "angular",
+          "category": "framework"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "karma",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 5,
+      "country_code": "us",
+      "city_name": "austin",
+      "birth_year": 1993,
+      "citizenships": [
+        "us"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHD5MQ0JQEVADV51S2D",
+      "created_at": "2019-03-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Middle",
+      "industry": "healthtech",
+      "company_size": "scaleup",
+      "domains": [
+        "Frontend",
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "angular",
+          "category": "framework"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "nestjs",
+          "category": "framework"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 9,
+      "country_code": "us",
+      "city_name": "austin",
+      "birth_year": 1993,
+      "citizenships": [
+        "us"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHDQ5CT16SJZ2AD3CTY",
+      "created_at": "2021-10-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "streaming",
+      "company_size": "large",
+      "domains": [
+        "Backend",
+        "Architecture"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "nestjs",
+          "category": "framework"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "clean_architecture",
+          "category": "competency"
+        },
+        {
+          "name": "redis",
+          "category": "database"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        },
+        {
+          "name": "aws",
+          "category": "cloud"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 18,
+      "country_code": "us",
+      "city_name": "seattle",
+      "birth_year": 1993,
+      "citizenships": [
+        "us"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHDH9S0DMPN3739GJF7",
+      "skill": "nodejs",
+      "platform": "udemy",
+      "from_context_id": "ctx_01K6GSWTHD58G47ZGGETP3YMPJ",
+      "to_context_id": "ctx_01K6GSWTHD5MQ0JQEVADV51S2D",
+      "total_duration_weeks": 7,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 2
+      },
+      "cost_usd": 119,
+      "rating_course": 4.3,
+      "rating_platform": 4.4,
+      "rating_schedule": 3.9,
+      "course_name": "Node.js with NestJS Crash Course",
+      "course_link": "https://www.udemy.com/course/nestjs-zero-to-hero/",
+      "user_feedback": "Понял dependency injection, легко подключил JWT на проекте."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHDT5MGF70EJ9P4NSBA",
+      "skill": "clean_architecture",
+      "platform": "books",
+      "from_context_id": "ctx_01K6GSWTHD5MQ0JQEVADV51S2D",
+      "to_context_id": "ctx_01K6GSWTHDQ5CT16SJZ2AD3CTY",
+      "total_duration_weeks": 9,
+      "schedule": {
+        "sessions_per_week": 3,
+        "hours_per_session": 1
+      },
+      "cost_usd": 40,
+      "rating_course": 4.1,
+      "rating_platform": 4.2,
+      "rating_schedule": 3.5,
+      "course_name": "Clean Architecture",
+      "course_link": "https://www.pearson.com/store/p/clean-architecture/P100002683332",
+      "user_feedback": "Перестроил сервисы на слой UseCases, код стал легче тестировать."
+    }
+  ]
+}

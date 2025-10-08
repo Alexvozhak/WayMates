@@ -1,0 +1,13 @@
+# Ignore Cypher files
+*.cypher
+
+# Other common ignores
+node_modules
+dist
+build
+.env
+.env.*
+
+
+
+

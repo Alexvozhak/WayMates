@@ -1,0 +1,200 @@
+{
+  "user_id": "usr_01K6GSWTHKF8FZWHHQ5MPB5X34",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHK41BEEC63JHC6SE7A",
+      "created_at": "2015-08-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Middle",
+      "industry": "telecom",
+      "company_size": "scaleup",
+      "domains": [
+        "Data Engineering"
+      ],
+      "skills": [
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "spark",
+          "category": "library"
+        },
+        {
+          "name": "hadoop",
+          "category": "tool"
+        },
+        {
+          "name": "airflow",
+          "category": "tool"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 9,
+      "country_code": "ca",
+      "city_name": "montreal",
+      "birth_year": 1991,
+      "citizenships": [
+        "ca"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHKFPSWNT5W9YE290HY",
+      "created_at": "2019-06-15T00:00:00Z",
+      "creation_reason": [
+        "goals_change"
+      ],
+      "position": "Middle",
+      "industry": "research",
+      "company_size": "startup",
+      "domains": [
+        "Machine Learning"
+      ],
+      "skills": [
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "spark",
+          "category": "library"
+        },
+        {
+          "name": "pandas",
+          "category": "library"
+        },
+        {
+          "name": "tensorflow",
+          "category": "library"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "ml_math",
+          "category": "competency"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 2,
+      "country_code": "ca",
+      "city_name": "toronto",
+      "birth_year": 1991,
+      "citizenships": [
+        "ca"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHK6TT3PP6Z1KZH8WNP",
+      "created_at": "2020-08-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "healthtech",
+      "company_size": "large",
+      "domains": [
+        "Machine Learning",
+        "Platform"
+      ],
+      "skills": [
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "spark",
+          "category": "library"
+        },
+        {
+          "name": "pandas",
+          "category": "library"
+        },
+        {
+          "name": "tensorflow",
+          "category": "library"
+        },
+        {
+          "name": "ml_math",
+          "category": "competency"
+        },
+        {
+          "name": "mlops",
+          "category": "competency"
+        },
+        {
+          "name": "kubeflow",
+          "category": "tool"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        },
+        {
+          "name": "airflow",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 16,
+      "country_code": "ca",
+      "city_name": "toronto",
+      "birth_year": 1991,
+      "citizenships": [
+        "ca"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHK5065W4XXH7K83C1K",
+      "skill": "ml_math",
+      "platform": "books",
+      "from_context_id": "ctx_01K6GSWTHK41BEEC63JHC6SE7A",
+      "to_context_id": "ctx_01K6GSWTHKFPSWNT5W9YE290HY",
+      "total_duration_weeks": 12,
+      "schedule": {
+        "sessions_per_week": 2,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 58,
+      "rating_course": 4.3,
+      "rating_platform": 4.3,
+      "rating_schedule": 3.5,
+      "course_name": "Mathematics for Machine Learning",
+      "course_link": "https://www.cambridge.org/core/books/mathematics-for-machine-learning/",
+      "user_feedback": "Глубже понял линал и оптимизацию, смог доработать модели."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHKNGS7NTMJ7HG3A9Z4",
+      "skill": "mlops",
+      "platform": "coursera",
+      "from_context_id": "ctx_01K6GSWTHKFPSWNT5W9YE290HY",
+      "to_context_id": "ctx_01K6GSWTHK6TT3PP6Z1KZH8WNP",
+      "total_duration_weeks": 11,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 3
+      },
+      "cost_usd": 340,
+      "rating_course": 4.7,
+      "rating_platform": 4.8,
+      "rating_schedule": 4.4,
+      "course_name": "MLOps (Machine Learning Operations) Specialization",
+      "course_link": "https://www.coursera.org/specializations/mlops-machine-learning-duke",
+      "user_feedback": "Настроили CI/CD для моделей, теперь релизы проходят без ручных шагов."
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  // Visit https://aka.ms/tsconfig to read more about this file
+  "compilerOptions": {
+    // Раскладка файлов
+    "rootDir": ".", // исходники проекта (включая scripts)
+    "outDir": "dist", // каталог сборки (пока не используем)
+
+    // Цель окружения Node (ESM)
+    "module": "Node16", // модульная система Node ESM
+    "target": "es2022", // современный JS под Node 20/22
+    "moduleResolution": "node16", // резолв модулей как у Node ESM
+
+    // Удобства
+    "resolveJsonModule": true, // импорт .json
+    "esModuleInterop": true, // удобный импорт CommonJS модулей
+    "allowSyntheticDefaultImports": true, // разрешить синтетические default-импорты
+
+    // Строгая типизация
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Для корректной работы раннера (tsx)
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["src_old", "dist", "node_modules"]
+}

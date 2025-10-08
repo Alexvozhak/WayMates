@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHRX4M2PYDNWGRS9D4G",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHRHWXA8PQGFANT3C2P",
+      "created_at": "2018-05-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "gaming",
+      "company_size": "startup",
+      "domains": [
+        "QA"
+      ],
+      "skills": [
+        {
+          "name": "manual_testing",
+          "category": "competency"
+        },
+        {
+          "name": "postman",
+          "category": "tool"
+        },
+        {
+          "name": "jira",
+          "category": "tool"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 6,
+      "country_code": "ca",
+      "city_name": "montreal",
+      "birth_year": 1994,
+      "citizenships": [
+        "ca"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHRPV5BBJSTTKKBMJD1",
+      "created_at": "2021-01-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Middle",
+      "industry": "fintech",
+      "company_size": "scaleup",
+      "domains": [
+        "QA",
+        "Automation"
+      ],
+      "skills": [
+        {
+          "name": "manual_testing",
+          "category": "competency"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "selenium",
+          "category": "testing"
+        },
+        {
+          "name": "pytest",
+          "category": "testing"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "allure",
+          "category": "tool"
+        },
+        {
+          "name": "jira",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 10,
+      "country_code": "ca",
+      "city_name": "toronto",
+      "birth_year": 1994,
+      "citizenships": [
+        "ca"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHRH2YAKMFQY9YRR5X6",
+      "created_at": "2023-04-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "banking",
+      "company_size": "enterprise",
+      "domains": [
+        "QA",
+        "Leadership"
+      ],
+      "skills": [
+        {
+          "name": "manual_testing",
+          "category": "competency"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "selenium",
+          "category": "testing"
+        },
+        {
+          "name": "pytest",
+          "category": "testing"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "quality_strategy",
+          "category": "competency"
+        },
+        {
+          "name": "allure",
+          "category": "tool"
+        },
+        {
+          "name": "jira",
+          "category": "tool"
+        },
+        {
+          "name": "leadership",
+          "category": "competency"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 20,
+      "country_code": "ca",
+      "city_name": "toronto",
+      "birth_year": 1994,
+      "citizenships": [
+        "ca"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHRS9ZTFSS70QFZEZW6",
+      "skill": "selenium",
+      "platform": "bootcamp",
+      "from_context_id": "ctx_01K6GSWTHRHWXA8PQGFANT3C2P",
+      "to_context_id": "ctx_01K6GSWTHRPV5BBJSTTKKBMJD1",
+      "total_duration_weeks": 13,
+      "schedule": {
+        "sessions_per_week": 5,
+        "hours_per_session": 6
+      },
+      "cost_usd": 6500,
+      "rating_course": 4.4,
+      "rating_platform": 4.3,
+      "rating_schedule": 3.8,
+      "course_name": "Test Automation Bootcamp",
+      "course_link": "https://testautomationu.applitools.com/bootcamp",
+      "user_feedback": "Встроили пайплайн автоматизации, smoke-тесты теперь ночные."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHRM3RE3VXS03Y3FDKM",
+      "skill": "quality_strategy",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTHRPV5BBJSTTKKBMJD1",
+      "to_context_id": "ctx_01K6GSWTHRH2YAKMFQY9YRR5X6",
+      "total_duration_weeks": 9,
+      "schedule": {
+        "sessions_per_week": 2,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 2100,
+      "rating_course": 4.7,
+      "rating_platform": 4.6,
+      "rating_schedule": 4.3,
+      "course_name": "QA Strategy Mentoring",
+      "course_link": "https://qualityguild.io/mentoring",
+      "user_feedback": "С ментором внедрили chapter-модель и KPI по качеству."
+    }
+  ]
+}

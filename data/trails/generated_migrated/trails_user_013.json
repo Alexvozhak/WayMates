@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHAFFCQPS3RJKQTP498",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHAT3HYH8J1SB18HT8E",
+      "created_at": "2016-10-15T00:00:00Z",
+      "creation_reason": [
+        "skill_learning",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "webgl",
+          "category": "library"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 4,
+      "country_code": "pl",
+      "city_name": "krakow",
+      "birth_year": 1996,
+      "citizenships": [
+        "pl"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHA3WD3EBQPZM59FNG8",
+      "created_at": "2018-08-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Junior",
+      "industry": "media",
+      "company_size": "startup",
+      "domains": [
+        "Frontend",
+        "Media"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "threejs",
+          "category": "library"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 7,
+      "country_code": "pl",
+      "city_name": "warsaw",
+      "birth_year": 1996,
+      "citizenships": [
+        "pl"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHAJ990KQ0Y9EQ18BWE",
+      "created_at": "2021-02-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Middle",
+      "industry": "entertainment",
+      "company_size": "medium",
+      "domains": [
+        "Frontend",
+        "Testing"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "threejs",
+          "category": "library"
+        },
+        {
+          "name": "testing_strategy",
+          "category": "competency"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "playwright",
+          "category": "testing"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 12,
+      "country_code": "pl",
+      "city_name": "gdansk",
+      "birth_year": 1996,
+      "citizenships": [
+        "pl"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHAVV4ZV7RR2K6JZ1GY",
+      "skill": "react",
+      "platform": "udemy",
+      "from_context_id": "ctx_01K6GSWTHAT3HYH8J1SB18HT8E",
+      "to_context_id": "ctx_01K6GSWTHA3WD3EBQPZM59FNG8",
+      "total_duration_weeks": 7,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 2
+      },
+      "cost_usd": 129,
+      "rating_course": 4.4,
+      "rating_platform": 4.4,
+      "rating_schedule": 4,
+      "course_name": "React for Creative Developers",
+      "course_link": "https://www.udemy.com/course/react-for-creative-developers/",
+      "user_feedback": "Понравились практики взаимодействия с WebGL, применил в медиаплеере."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHAF5V6Z2GQP2P6CV6D",
+      "skill": "testing_strategy",
+      "platform": "books",
+      "from_context_id": "ctx_01K6GSWTHA3WD3EBQPZM59FNG8",
+      "to_context_id": "ctx_01K6GSWTHAJ990KQ0Y9EQ18BWE",
+      "total_duration_weeks": 10,
+      "schedule": {
+        "sessions_per_week": 3,
+        "hours_per_session": 1
+      },
+      "cost_usd": 32,
+      "rating_course": 4,
+      "rating_platform": 4.1,
+      "rating_schedule": 3.5,
+      "course_name": "Testing JavaScript Applications",
+      "course_link": "https://www.oreilly.com/library/view/testing-javascript-applications/9781617297917/",
+      "user_feedback": "Ввёл тестовую пирамиду и снизил количество багов в релизе."
+    }
+  ]
+}

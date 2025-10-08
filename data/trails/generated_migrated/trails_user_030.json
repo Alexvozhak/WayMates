@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHMJQ8V4G10TME9HMHW",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHM3XFSBZ50X98S1PJA",
+      "created_at": "2016-06-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Middle",
+      "industry": "retail",
+      "company_size": "scaleup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "spring",
+          "category": "framework"
+        },
+        {
+          "name": "mysql",
+          "category": "database"
+        },
+        {
+          "name": "redis",
+          "category": "database"
+        },
+        {
+          "name": "junit",
+          "category": "testing"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 9,
+      "country_code": "in",
+      "city_name": "pune",
+      "birth_year": 1994,
+      "citizenships": [
+        "in"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHM0RHARBPH1FFGRHW9",
+      "created_at": "2019-04-15T00:00:00Z",
+      "creation_reason": [
+        "goals_change"
+      ],
+      "position": "Middle",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Analytics",
+        "Data Science"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "pandas",
+          "category": "library"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "powerbi",
+          "category": "tool"
+        },
+        {
+          "name": "statistics",
+          "category": "competency"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 1,
+      "country_code": "in",
+      "city_name": "mumbai",
+      "birth_year": 1994,
+      "citizenships": [
+        "in"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHMKF6VE0ADBR1M917T",
+      "created_at": "2020-06-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "fintech",
+      "company_size": "large",
+      "domains": [
+        "Analytics",
+        "Data Engineering"
+      ],
+      "skills": [
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "pandas",
+          "category": "library"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "powerbi",
+          "category": "tool"
+        },
+        {
+          "name": "statistics",
+          "category": "competency"
+        },
+        {
+          "name": "data_modeling",
+          "category": "competency"
+        },
+        {
+          "name": "dbt",
+          "category": "tool"
+        },
+        {
+          "name": "airflow",
+          "category": "tool"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 13,
+      "country_code": "sg",
+      "city_name": "singapore",
+      "birth_year": 1994,
+      "citizenships": [
+        "in"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHM9Y8BCK5856Z7MTV1",
+      "skill": "statistics",
+      "platform": "books",
+      "from_context_id": "ctx_01K6GSWTHM3XFSBZ50X98S1PJA",
+      "to_context_id": "ctx_01K6GSWTHM0RHARBPH1FFGRHW9",
+      "total_duration_weeks": 10,
+      "schedule": {
+        "sessions_per_week": 3,
+        "hours_per_session": 1
+      },
+      "cost_usd": 37,
+      "rating_course": 4,
+      "rating_platform": 4.1,
+      "rating_schedule": 3.5,
+      "course_name": "Practical Statistics for Data Scientists",
+      "course_link": "https://www.oreilly.com/library/view/practical-statistics-for/9781492072932/",
+      "user_feedback": "Понял распределения и хвосты, теперь уверенно строю метрики."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHMX32GP4YBGCT9165Z",
+      "skill": "data_modeling",
+      "platform": "coursera",
+      "from_context_id": "ctx_01K6GSWTHM0RHARBPH1FFGRHW9",
+      "to_context_id": "ctx_01K6GSWTHMKF6VE0ADBR1M917T",
+      "total_duration_weeks": 8,
+      "schedule": {
+        "sessions_per_week": 3,
+        "hours_per_session": 3
+      },
+      "cost_usd": 260,
+      "rating_course": 4.5,
+      "rating_platform": 4.6,
+      "rating_schedule": 4,
+      "course_name": "Analytics Engineering with dbt",
+      "course_link": "https://www.coursera.org/specializations/analytics-engineering",
+      "user_feedback": "Узнал про dimensional modeling, обкатали star-schema для финансовых отчётов."
+    }
+  ]
+}

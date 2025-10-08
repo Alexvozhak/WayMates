@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHT8QJV76KYPGTGETNN",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHTQDRDQPNWMTQ6DBV0",
+      "created_at": "2018-03-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "fitness",
+      "company_size": "startup",
+      "domains": [
+        "Mobile"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "android_sdk",
+          "category": "tool"
+        },
+        {
+          "name": "xml",
+          "category": "language"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "espresso",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 5,
+      "country_code": "au",
+      "city_name": "sydney",
+      "birth_year": 1995,
+      "citizenships": [
+        "au"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHT1WNJJ4WYRW6MYMQH",
+      "created_at": "2020-09-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Middle",
+      "industry": "mobility",
+      "company_size": "scaleup",
+      "domains": [
+        "Mobile",
+        "Architecture"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "kotlin",
+          "category": "language"
+        },
+        {
+          "name": "android_sdk",
+          "category": "tool"
+        },
+        {
+          "name": "compose",
+          "category": "framework"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "espresso",
+          "category": "testing"
+        },
+        {
+          "name": "dagger",
+          "category": "library"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 9,
+      "country_code": "au",
+      "city_name": "melbourne",
+      "birth_year": 1995,
+      "citizenships": [
+        "au"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHTEMVH7JXM6WZ0B38Y",
+      "created_at": "2023-01-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "retail",
+      "company_size": "enterprise",
+      "domains": [
+        "Mobile",
+        "Design"
+      ],
+      "skills": [
+        {
+          "name": "kotlin",
+          "category": "language"
+        },
+        {
+          "name": "android_sdk",
+          "category": "tool"
+        },
+        {
+          "name": "compose",
+          "category": "framework"
+        },
+        {
+          "name": "compose_animations",
+          "category": "competency"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "espresso",
+          "category": "testing"
+        },
+        {
+          "name": "ux_research",
+          "category": "competency"
+        },
+        {
+          "name": "dagger",
+          "category": "library"
+        },
+        {
+          "name": "kotlin_coroutines",
+          "category": "library"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 18,
+      "country_code": "au",
+      "city_name": "sydney",
+      "birth_year": 1995,
+      "citizenships": [
+        "au"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHTPYSQN3BT1P8NBEBF",
+      "skill": "kotlin",
+      "platform": "bootcamp",
+      "from_context_id": "ctx_01K6GSWTHTQDRDQPNWMTQ6DBV0",
+      "to_context_id": "ctx_01K6GSWTHT1WNJJ4WYRW6MYMQH",
+      "total_duration_weeks": 13,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 7
+      },
+      "cost_usd": 6800,
+      "rating_course": 4.4,
+      "rating_platform": 4.3,
+      "rating_schedule": 3.9,
+      "course_name": "Kotlin Android Bootcamp",
+      "course_link": "https://androidbootcamp.dev/kotlin",
+      "user_feedback": "Переписали приложение на Kotlin, код стал чище и безопаснее."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHTBCCRSVN0HXXDFXA3",
+      "skill": "compose_animations",
+      "platform": "pluralsight",
+      "from_context_id": "ctx_01K6GSWTHT1WNJJ4WYRW6MYMQH",
+      "to_context_id": "ctx_01K6GSWTHTEMVH7JXM6WZ0B38Y",
+      "total_duration_weeks": 5,
+      "schedule": {
+        "sessions_per_week": 5,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 199,
+      "rating_course": 4.1,
+      "rating_platform": 4.2,
+      "rating_schedule": 3.6,
+      "course_name": "Jetpack Compose Animations",
+      "course_link": "https://www.pluralsight.com/courses/jetpack-compose-animations",
+      "user_feedback": "Добавили плавные анимации onboarding, удержание выросло."
+    }
+  ]
+}

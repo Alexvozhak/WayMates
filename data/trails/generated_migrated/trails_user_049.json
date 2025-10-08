@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHW0N9RSYWGSJMNM14R",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHWW5S2N3YEK8AKK30P",
+      "created_at": "2015-07-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Middle",
+      "industry": "retail",
+      "company_size": "enterprise",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "spring_boot",
+          "category": "framework"
+        },
+        {
+          "name": "kafka",
+          "category": "tool"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        },
+        {
+          "name": "junit",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 16,
+      "country_code": "gb",
+      "city_name": "manchester",
+      "birth_year": 1988,
+      "citizenships": [
+        "uk"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHWR4QSQWZEPN6M9AGP",
+      "created_at": "2019-06-15T00:00:00Z",
+      "creation_reason": [
+        "skill_learning"
+      ],
+      "position": "Middle",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Frontend",
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "nextjs",
+          "category": "framework"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "redis",
+          "category": "database"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 1,
+      "country_code": "gb",
+      "city_name": "liverpool",
+      "birth_year": 1988,
+      "citizenships": [
+        "uk"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHW4ZJE32EYXH158CC0",
+      "created_at": "2020-09-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "travel",
+      "company_size": "scaleup",
+      "domains": [
+        "Fullstack",
+        "Platform"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "typescript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "nextjs",
+          "category": "framework"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "redis",
+          "category": "database"
+        },
+        {
+          "name": "nx",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 17,
+      "country_code": "gb",
+      "city_name": "london",
+      "birth_year": 1988,
+      "citizenships": [
+        "uk"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHWSNXRRYDGEBVPNMVR",
+      "skill": "nextjs",
+      "platform": "pluralsight",
+      "from_context_id": "ctx_01K6GSWTHWW5S2N3YEK8AKK30P",
+      "to_context_id": "ctx_01K6GSWTHWR4QSQWZEPN6M9AGP",
+      "total_duration_weeks": 4,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 189,
+      "rating_course": 4.1,
+      "rating_platform": 4.2,
+      "rating_schedule": 3.4,
+      "course_name": "Next.js Fundamentals",
+      "course_link": "https://www.pluralsight.com/courses/nextjs-fundamentals",
+      "user_feedback": "Разобрал SSR и ISR, успел собрать MVP витрины."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHWM3Q20BHHRBEG8MA1",
+      "skill": "nx",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTHWR4QSQWZEPN6M9AGP",
+      "to_context_id": "ctx_01K6GSWTHW4ZJE32EYXH158CC0",
+      "total_duration_weeks": 8,
+      "schedule": {
+        "sessions_per_week": 2,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 2100,
+      "rating_course": 4.7,
+      "rating_platform": 4.6,
+      "rating_schedule": 4.3,
+      "course_name": "Monorepo Strategy Mentoring with Nx",
+      "course_link": "https://frontendmentors.dev/nx-program",
+      "user_feedback": "Настроили монорепозиторий, команды переиспользуют пакеты."
+    }
+  ]
+}

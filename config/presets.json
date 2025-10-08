@@ -1,0 +1,60 @@
+{
+  "BALANCED": {
+    "strictPresets": [
+      { "field": "position" },
+      { "field": "domains" },
+      { "field": "skills" }
+    ],
+    "flexiblePresets": [
+      { "field": "industry", "weight": 25 },
+      { "field": "country_code", "weight": 20 },
+      { "field": "city_name", "weight": 15 },
+      { "field": "work_type", "weight": 10 },
+      { "field": "company_size", "weight": 10 },
+      { "field": "team_size", "weight": 10 },
+      { "field": "birth_year", "weight": 10 }
+    ]
+  },
+  "SKILL_FOCUSED": {
+    "strictPresets": [
+      { "field": "position" },
+      { "field": "domains" },
+      { "field": "skills" }
+    ],
+    "flexiblePresets": [
+      { "field": "skills", "weight": 40 },
+      { "field": "industry", "weight": 20 },
+      { "field": "country_code", "weight": 15 },
+      { "field": "city_name", "weight": 10 },
+      { "field": "work_type", "weight": 8 },
+      { "field": "company_size", "weight": 4 },
+      { "field": "team_size", "weight": 3 }
+    ]
+  },
+  "GEO_FOCUSED": {
+    "strictPresets": [
+      { "field": "position" },
+      { "field": "domains" }
+    ],
+    "flexiblePresets": [
+      { "field": "country_code", "weight": 35 },
+      { "field": "city_name", "weight": 25 },
+      { "field": "industry", "weight": 15 },
+      { "field": "skills", "weight": 15 },
+      { "field": "work_type", "weight": 5 },
+      { "field": "company_size", "weight": 3 },
+      { "field": "team_size", "weight": 2 }
+    ]
+  },
+  "FLEXIBLE": {
+    "strictPresets": [],
+    "flexiblePresets": [
+      { "field": "skills", "weight": 30 },
+      { "field": "domains", "weight": 25 },
+      { "field": "position", "weight": 20 },
+      { "field": "country_code", "weight": 15 },
+      { "field": "city_name", "weight": 10 },
+      { "field": "industry", "weight": 0 }
+    ]
+  }
+}

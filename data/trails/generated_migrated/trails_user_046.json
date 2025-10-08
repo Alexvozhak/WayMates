@@ -1,0 +1,202 @@
+{
+  "user_id": "usr_01K6GSWTHVT0EESRPNXJH3H8PE",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHV56CSC3TCHJPVJ8N4",
+      "created_at": "2015-09-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Middle",
+      "industry": "banking",
+      "company_size": "enterprise",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "spring",
+          "category": "framework"
+        },
+        {
+          "name": "hibernate",
+          "category": "library"
+        },
+        {
+          "name": "oracle",
+          "category": "database"
+        },
+        {
+          "name": "jenkins",
+          "category": "tool"
+        },
+        {
+          "name": "junit",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 14,
+      "country_code": "pl",
+      "city_name": "warsaw",
+      "birth_year": 1990,
+      "citizenships": [
+        "pl"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHVV2MRBJDQTF5NXGH7",
+      "created_at": "2020-01-15T00:00:00Z",
+      "creation_reason": [
+        "skill_learning"
+      ],
+      "position": "Middle",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Frontend",
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "spring",
+          "category": "framework"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "express",
+          "category": "framework"
+        },
+        {
+          "name": "mongodb",
+          "category": "database"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 1,
+      "country_code": "pl",
+      "city_name": "krakow",
+      "birth_year": 1990,
+      "citizenships": [
+        "pl"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHVCTFVYC77KJBS0SYB",
+      "created_at": "2021-03-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "fintech",
+      "company_size": "scaleup",
+      "domains": [
+        "Frontend",
+        "Backend",
+        "Architecture"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "typescript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "express",
+          "category": "framework"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "mongodb",
+          "category": "database"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        },
+        {
+          "name": "graphql",
+          "category": "library"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 16,
+      "country_code": "pl",
+      "city_name": "warsaw",
+      "birth_year": 1990,
+      "citizenships": [
+        "pl"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHVVJA3FTGR3ZMNZCPN",
+      "skill": "nodejs",
+      "platform": "pluralsight",
+      "from_context_id": "ctx_01K6GSWTHV56CSC3TCHJPVJ8N4",
+      "to_context_id": "ctx_01K6GSWTHVV2MRBJDQTF5NXGH7",
+      "total_duration_weeks": 5,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 189,
+      "rating_course": 4.1,
+      "rating_platform": 4.2,
+      "rating_schedule": 3.5,
+      "course_name": "Node.js Fundamentals",
+      "course_link": "https://www.pluralsight.com/courses/nodejs-fundamentals",
+      "user_feedback": "Понял event loop и async, начал писать первые REST сервисы."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHV5X9AJW3WTGZNWYNS",
+      "skill": "react",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTHVV2MRBJDQTF5NXGH7",
+      "to_context_id": "ctx_01K6GSWTHVCTFVYC77KJBS0SYB",
+      "total_duration_weeks": 10,
+      "schedule": {
+        "sessions_per_week": 2,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 2300,
+      "rating_course": 4.8,
+      "rating_platform": 4.7,
+      "rating_schedule": 4.3,
+      "course_name": "React Architecture Mentoring",
+      "course_link": "https://jsmentor.dev/react-architecture",
+      "user_feedback": "Ментор помог выстроить фронтовую архитектуру, внедрил SSR."
+    }
+  ]
+}

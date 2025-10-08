@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTH5QTJ71EXJG6MWH31P",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTH5505JZTRSP5A9F18Q",
+      "created_at": "2016-10-15T00:00:00Z",
+      "creation_reason": [
+        "skill_learning",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "photoshop",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 5,
+      "country_code": "it",
+      "city_name": "milan",
+      "birth_year": 1996,
+      "citizenships": [
+        "it"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTH5FV1Z5WRQVCX6DKPB",
+      "created_at": "2019-02-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Junior",
+      "industry": "fashion",
+      "company_size": "startup",
+      "domains": [
+        "Frontend",
+        "E-commerce"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "redux",
+          "category": "library"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 8,
+      "country_code": "it",
+      "city_name": "milan",
+      "birth_year": 1996,
+      "citizenships": [
+        "it"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTH5RYQNZC7S2D0MTR4N",
+      "created_at": "2021-07-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Middle",
+      "industry": "travel",
+      "company_size": "medium",
+      "domains": [
+        "Frontend",
+        "Architecture"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "redux",
+          "category": "library"
+        },
+        {
+          "name": "graphql",
+          "category": "library"
+        },
+        {
+          "name": "apollo",
+          "category": "library"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 13,
+      "country_code": "it",
+      "city_name": "florence",
+      "birth_year": 1996,
+      "citizenships": [
+        "it"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTH51139SS64NQWJ2434",
+      "skill": "react",
+      "platform": "udemy",
+      "from_context_id": "ctx_01K6GSWTH5505JZTRSP5A9F18Q",
+      "to_context_id": "ctx_01K6GSWTH5FV1Z5WRQVCX6DKPB",
+      "total_duration_weeks": 7,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 2
+      },
+      "cost_usd": 139,
+      "rating_course": 4.5,
+      "rating_platform": 4.4,
+      "rating_schedule": 3.9,
+      "course_name": "React with Hooks and Redux",
+      "course_link": "https://www.udemy.com/course/react-hooks-redux/",
+      "user_feedback": "\u041f\u0440\u0430\u043a\u0442\u0438\u043a\u0430 \u0441 hooks \u043f\u043e\u043c\u043e\u0433\u043b\u0430 \u0443\u0441\u043a\u043e\u0440\u0438\u0442\u044c \u0440\u0435\u0432\u044c\u044e \u043d\u0430 \u043f\u0435\u0440\u0432\u043e\u0439 \u0440\u0430\u0431\u043e\u0442\u0435."
+    },
+    {
+      "trail_id": "trl_01K6GSWTH58S7G58WTPGSGCZVT",
+      "skill": "graphql",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTH5FV1Z5WRQVCX6DKPB",
+      "to_context_id": "ctx_01K6GSWTH5RYQNZC7S2D0MTR4N",
+      "total_duration_weeks": 9,
+      "schedule": {
+        "sessions_per_week": 2,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 2300,
+      "rating_course": 4.8,
+      "rating_platform": 4.7,
+      "rating_schedule": 4.3,
+      "course_name": "GraphQL Production Mentoring",
+      "course_link": "https://mentors.dev/graphql-production",
+      "user_feedback": "\u041c\u0435\u043d\u0442\u043e\u0440 \u043f\u043e\u043c\u043e\u0433 \u0432\u043d\u0435\u0434\u0440\u0438\u0442\u044c schema stitching \u0438 \u0440\u0430\u0437\u043e\u0431\u0440\u0430\u043b N+1 \u043d\u0430 \u0440\u0435\u0430\u043b\u044c\u043d\u044b\u0445 \u0434\u0430\u043d\u043d\u044b\u0445."
+    }
+  ]
+}

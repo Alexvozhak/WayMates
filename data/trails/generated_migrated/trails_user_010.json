@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTH8BXXJ4SARZE2ENEAP",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTH84GEHXBB300C2NXAF",
+      "created_at": "2016-06-15T00:00:00Z",
+      "creation_reason": [
+        "skill_learning",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "bootstrap",
+          "category": "library"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 2,
+      "country_code": "ca",
+      "city_name": "toronto",
+      "birth_year": 1995,
+      "citizenships": [
+        "ca"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTH899YZQT0Y3D78HY48",
+      "created_at": "2018-03-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Junior",
+      "industry": "education",
+      "company_size": "medium",
+      "domains": [
+        "Frontend",
+        "Real Estate"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "angular",
+          "category": "framework"
+        },
+        {
+          "name": "rxjs",
+          "category": "library"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 8,
+      "country_code": "ca",
+      "city_name": "toronto",
+      "birth_year": 1995,
+      "citizenships": [
+        "ca"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTH8JTVFN2ES0GBZ6MAZ",
+      "created_at": "2021-01-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Middle",
+      "industry": "fintech",
+      "company_size": "large",
+      "domains": [
+        "Frontend",
+        "Architecture"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "angular",
+          "category": "framework"
+        },
+        {
+          "name": "rxjs",
+          "category": "library"
+        },
+        {
+          "name": "nx",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "cypress",
+          "category": "testing"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 16,
+      "country_code": "ca",
+      "city_name": "montreal",
+      "birth_year": 1995,
+      "citizenships": [
+        "ca"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTH8JDH9MRTJXPTQG704",
+      "skill": "angular",
+      "platform": "udemy",
+      "from_context_id": "ctx_01K6GSWTH84GEHXBB300C2NXAF",
+      "to_context_id": "ctx_01K6GSWTH899YZQT0Y3D78HY48",
+      "total_duration_weeks": 7,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 145,
+      "rating_course": 4.4,
+      "rating_platform": 4.4,
+      "rating_schedule": 4,
+      "course_name": "Angular Enterprise Edition",
+      "course_link": "https://www.udemy.com/course/angular-enterprise-edition/",
+      "user_feedback": "Понял архитектуру модулей и смог разрулить huge компонент."
+    },
+    {
+      "trail_id": "trl_01K6GSWTH8MP6EKGSAE6YWERYK",
+      "skill": "rxjs",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTH899YZQT0Y3D78HY48",
+      "to_context_id": "ctx_01K6GSWTH8JTVFN2ES0GBZ6MAZ",
+      "total_duration_weeks": 10,
+      "schedule": {
+        "sessions_per_week": 2,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 2250,
+      "rating_course": 4.8,
+      "rating_platform": 4.7,
+      "rating_schedule": 4.3,
+      "course_name": "Reactive Patterns Mentoring with RxJS",
+      "course_link": "https://mentoring.angular.dev/rxjs-pro",
+      "user_feedback": "Ментор помог полировать многопоточную модель и устранить race conditions."
+    }
+  ]
+}

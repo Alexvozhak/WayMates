@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHWNKFZ1X18GB4PCQNQ",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHWE5RXJQ06538AN482",
+      "created_at": "2014-05-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Middle",
+      "industry": "healthcare",
+      "company_size": "enterprise",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "spring_integration",
+          "category": "framework"
+        },
+        {
+          "name": "oracle",
+          "category": "database"
+        },
+        {
+          "name": "camel",
+          "category": "framework"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "junit",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 15,
+      "country_code": "ca",
+      "city_name": "calgary",
+      "birth_year": 1987,
+      "citizenships": [
+        "ca"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHWK4KG8Z5YKV0B34HZ",
+      "created_at": "2018-12-15T00:00:00Z",
+      "creation_reason": [
+        "skill_learning"
+      ],
+      "position": "Middle",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Frontend",
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "nestjs",
+          "category": "framework"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "mysql",
+          "category": "database"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 1,
+      "country_code": "ca",
+      "city_name": "toronto",
+      "birth_year": 1987,
+      "citizenships": [
+        "ca"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHWT6YG7P7HSPC8HVKD",
+      "created_at": "2020-04-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "healthtech",
+      "company_size": "scaleup",
+      "domains": [
+        "Fullstack",
+        "Leadership"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "typescript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "nestjs",
+          "category": "framework"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "mysql",
+          "category": "database"
+        },
+        {
+          "name": "serverless",
+          "category": "competency"
+        },
+        {
+          "name": "aws",
+          "category": "cloud"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 20,
+      "country_code": "ca",
+      "city_name": "vancouver",
+      "birth_year": 1987,
+      "citizenships": [
+        "ca"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHX0W71RAD5NJPD9DM1",
+      "skill": "nestjs",
+      "platform": "pluralsight",
+      "from_context_id": "ctx_01K6GSWTHWE5RXJQ06538AN482",
+      "to_context_id": "ctx_01K6GSWTHWK4KG8Z5YKV0B34HZ",
+      "total_duration_weeks": 6,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 229,
+      "rating_course": 4.3,
+      "rating_platform": 4.4,
+      "rating_schedule": 3.8,
+      "course_name": "NestJS: Building Enterprise APIs",
+      "course_link": "https://www.pluralsight.com/courses/nestjs-building-enterprise-apis",
+      "user_feedback": "Сразу построил REST API на Nest, понравились паттерны DI."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHXHVFABJXQFXXR3MMX",
+      "skill": "serverless",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTHWK4KG8Z5YKV0B34HZ",
+      "to_context_id": "ctx_01K6GSWTHWT6YG7P7HSPC8HVKD",
+      "total_duration_weeks": 11,
+      "schedule": {
+        "sessions_per_week": 2,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 2600,
+      "rating_course": 4.8,
+      "rating_platform": 4.7,
+      "rating_schedule": 4.4,
+      "course_name": "Serverless Architecture Mentoring",
+      "course_link": "https://serverlessmentors.com/architect",
+      "user_feedback": "Вместе строили lambda + api gateway, теперь шина событий без серверов."
+    }
+  ]
+}

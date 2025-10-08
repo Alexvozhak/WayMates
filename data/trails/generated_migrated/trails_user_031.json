@@ -1,0 +1,200 @@
+{
+  "user_id": "usr_01K6GSWTHNEZ6B4275SANW73MH",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHNNKJXKB1NE1WG45GE",
+      "created_at": "2015-07-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Middle",
+      "industry": "e-commerce",
+      "company_size": "scaleup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "express",
+          "category": "framework"
+        },
+        {
+          "name": "typescript",
+          "category": "language"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 12,
+      "country_code": "us",
+      "city_name": "atlanta",
+      "birth_year": 1989,
+      "citizenships": [
+        "us"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHNJS37Y804KTGJQHNQ",
+      "created_at": "2019-10-15T00:00:00Z",
+      "creation_reason": [
+        "goals_change"
+      ],
+      "position": "Middle",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Machine Learning"
+      ],
+      "skills": [
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "pandas",
+          "category": "library"
+        },
+        {
+          "name": "scikit_learn",
+          "category": "library"
+        },
+        {
+          "name": "statistics",
+          "category": "competency"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 1,
+      "country_code": "us",
+      "city_name": "asheville",
+      "birth_year": 1989,
+      "citizenships": [
+        "us"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHNK1F4N423DTRNFEKY",
+      "created_at": "2021-02-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "finance",
+      "company_size": "large",
+      "domains": [
+        "Machine Learning",
+        "Platform"
+      ],
+      "skills": [
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "pandas",
+          "category": "library"
+        },
+        {
+          "name": "scikit_learn",
+          "category": "library"
+        },
+        {
+          "name": "mlops",
+          "category": "competency"
+        },
+        {
+          "name": "tensorflow",
+          "category": "library"
+        },
+        {
+          "name": "statistics",
+          "category": "competency"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        },
+        {
+          "name": "kubeflow",
+          "category": "tool"
+        },
+        {
+          "name": "airflow",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 17,
+      "country_code": "us",
+      "city_name": "new york",
+      "birth_year": 1989,
+      "citizenships": [
+        "us"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHN69SCRJH8FADD2FN7",
+      "skill": "scikit_learn",
+      "platform": "coursera",
+      "from_context_id": "ctx_01K6GSWTHNNKJXKB1NE1WG45GE",
+      "to_context_id": "ctx_01K6GSWTHNJS37Y804KTGJQHNQ",
+      "total_duration_weeks": 9,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 3
+      },
+      "cost_usd": 280,
+      "rating_course": 4.6,
+      "rating_platform": 4.7,
+      "rating_schedule": 4.1,
+      "course_name": "Applied Machine Learning in Python",
+      "course_link": "https://www.coursera.org/learn/applied-machine-learning-in-python",
+      "user_feedback": "Практика с sklearn помогла строить модели без Data Scientist."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHN0JAPWBRX8V0GR0SX",
+      "skill": "mlops",
+      "platform": "bootcamp",
+      "from_context_id": "ctx_01K6GSWTHNJS37Y804KTGJQHNQ",
+      "to_context_id": "ctx_01K6GSWTHNK1F4N423DTRNFEKY",
+      "total_duration_weeks": 14,
+      "schedule": {
+        "sessions_per_week": 5,
+        "hours_per_session": 7
+      },
+      "cost_usd": 9600,
+      "rating_course": 4.7,
+      "rating_platform": 4.6,
+      "rating_schedule": 4.3,
+      "course_name": "MLOps Production Bootcamp",
+      "course_link": "https://mlops.community/bootcamp",
+      "user_feedback": "Внедрили feature store и пайплайны, теперь выпуск моделей регулярный."
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHW02F3G3XN57K6T69X",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHVYD86ZVSS0FG3Y3D6",
+      "created_at": "2014-12-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Middle",
+      "industry": "telecom",
+      "company_size": "enterprise",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "spring_boot",
+          "category": "framework"
+        },
+        {
+          "name": "oracle",
+          "category": "database"
+        },
+        {
+          "name": "rabbitmq",
+          "category": "tool"
+        },
+        {
+          "name": "jenkins",
+          "category": "tool"
+        },
+        {
+          "name": "junit",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 15,
+      "country_code": "us",
+      "city_name": "dallas",
+      "birth_year": 1991,
+      "citizenships": [
+        "us"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHVT6J1R7TMPJ0GFQC4",
+      "created_at": "2018-08-15T00:00:00Z",
+      "creation_reason": [
+        "goals_change"
+      ],
+      "position": "Middle",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Frontend",
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "java",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "graphql",
+          "category": "library"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 1,
+      "country_code": "us",
+      "city_name": "denver",
+      "birth_year": 1991,
+      "citizenships": [
+        "us"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHWM9PVN3TWAKA43NRH",
+      "created_at": "2020-01-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "commerce",
+      "company_size": "scaleup",
+      "domains": [
+        "Architecture",
+        "Fullstack"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "typescript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "graphql",
+          "category": "library"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "system_design",
+          "category": "competency"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        },
+        {
+          "name": "aws",
+          "category": "cloud"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 18,
+      "country_code": "us",
+      "city_name": "austin",
+      "birth_year": 1991,
+      "citizenships": [
+        "us"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHWHC0PKSJ5C37D1WH9",
+      "skill": "react",
+      "platform": "pluralsight",
+      "from_context_id": "ctx_01K6GSWTHVYD86ZVSS0FG3Y3D6",
+      "to_context_id": "ctx_01K6GSWTHVT6J1R7TMPJ0GFQC4",
+      "total_duration_weeks": 6,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 219,
+      "rating_course": 4.2,
+      "rating_platform": 4.3,
+      "rating_schedule": 3.8,
+      "course_name": "React 18 Fundamentals",
+      "course_link": "https://www.pluralsight.com/courses/reactjs-getting-started",
+      "user_feedback": "React курс помог перестроить мышление на компонентное."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHW2X7S3NST2A0VPDTC",
+      "skill": "system_design",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTHVT6J1R7TMPJ0GFQC4",
+      "to_context_id": "ctx_01K6GSWTHWM9PVN3TWAKA43NRH",
+      "total_duration_weeks": 12,
+      "schedule": {
+        "sessions_per_week": 1,
+        "hours_per_session": 3
+      },
+      "cost_usd": 2800,
+      "rating_course": 4.9,
+      "rating_platform": 4.8,
+      "rating_schedule": 4.5,
+      "course_name": "Fullstack System Design Mentoring",
+      "course_link": "https://systemsmentor.com/fullstack",
+      "user_feedback": "Разобрали high-level дизайны, подготовил архитектуру checkout."
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTH9STT00KNV318NHJSR",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTH9RX9MKCQ5PGZP85F7",
+      "created_at": "2017-02-15T00:00:00Z",
+      "creation_reason": [
+        "skill_learning",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "education",
+      "company_size": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "figma",
+          "category": "tool"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 5,
+      "country_code": "es",
+      "city_name": "madrid",
+      "birth_year": 1997,
+      "citizenships": [
+        "es"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTH9F6386KF6Z2W20G5P",
+      "created_at": "2019-01-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Junior",
+      "industry": "hospitality",
+      "company_size": "startup",
+      "domains": [
+        "Frontend",
+        "Hospitality"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "vue",
+          "category": "framework"
+        },
+        {
+          "name": "vuex",
+          "category": "library"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        }
+      ],
+      "work_type": "remote",
+      "team_size": 6,
+      "country_code": "es",
+      "city_name": "valencia",
+      "birth_year": 1997,
+      "citizenships": [
+        "es"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTH9AYNRPN3Z48X5YK0B",
+      "created_at": "2021-05-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Middle",
+      "industry": "travel",
+      "company_size": "medium",
+      "domains": [
+        "Frontend",
+        "Accessibility"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "vue",
+          "category": "framework"
+        },
+        {
+          "name": "vuex",
+          "category": "library"
+        },
+        {
+          "name": "accessibility",
+          "category": "competency"
+        },
+        {
+          "name": "axe",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "cypress",
+          "category": "testing"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 10,
+      "country_code": "es",
+      "city_name": "barcelona",
+      "birth_year": 1997,
+      "citizenships": [
+        "es"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTH9J9FT35790FVXCY4A",
+      "skill": "vue",
+      "platform": "udemy",
+      "from_context_id": "ctx_01K6GSWTH9RX9MKCQ5PGZP85F7",
+      "to_context_id": "ctx_01K6GSWTH9F6386KF6Z2W20G5P",
+      "total_duration_weeks": 6,
+      "schedule": {
+        "sessions_per_week": 3,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 109,
+      "rating_course": 4.3,
+      "rating_platform": 4.4,
+      "rating_schedule": 3.9,
+      "course_name": "Vue 3 Complete Guide",
+      "course_link": "https://www.udemy.com/course/vuejs-from-beginner-to-professional/",
+      "user_feedback": "Отличные примеры компонентов, быстро внедрил в бронирования."
+    },
+    {
+      "trail_id": "trl_01K6GSWTH9G7Y8W6D7SYBVBDHQ",
+      "skill": "accessibility",
+      "platform": "books",
+      "from_context_id": "ctx_01K6GSWTH9F6386KF6Z2W20G5P",
+      "to_context_id": "ctx_01K6GSWTH9AYNRPN3Z48X5YK0B",
+      "total_duration_weeks": 9,
+      "schedule": {
+        "sessions_per_week": 3,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 38,
+      "rating_course": 4.2,
+      "rating_platform": 4.2,
+      "rating_schedule": 3.7,
+      "course_name": "Inclusive Design Patterns",
+      "course_link": "https://www.smashingmagazine.com/books/inclusive-design-patterns/",
+      "user_feedback": "После главы про ARIA rating ребилдили виджеты, доступность выросла."
+    }
+  ]
+}

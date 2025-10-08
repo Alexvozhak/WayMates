@@ -1,0 +1,201 @@
+{
+  "user_id": "usr_01K6GSWTHS18E25KTQ037EDHSA",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHSSJVTN7D2B71F8QA2",
+      "created_at": "2017-06-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "retail",
+      "company_size": "startup",
+      "domains": [
+        "Analytics"
+      ],
+      "skills": [
+        {
+          "name": "excel",
+          "category": "tool"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "powerbi",
+          "category": "tool"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "statistics",
+          "category": "competency"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 5,
+      "country_code": "gb",
+      "city_name": "leeds",
+      "birth_year": 1993,
+      "citizenships": [
+        "gb"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHSWYAZ7MD2M1A07HRG",
+      "created_at": "2019-11-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Middle",
+      "industry": "travel",
+      "company_size": "scaleup",
+      "domains": [
+        "Analytics",
+        "Data Engineering"
+      ],
+      "skills": [
+        {
+          "name": "excel",
+          "category": "tool"
+        },
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "dbt",
+          "category": "tool"
+        },
+        {
+          "name": "powerplatform",
+          "category": "tool"
+        },
+        {
+          "name": "statistics",
+          "category": "competency"
+        },
+        {
+          "name": "airflow",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 10,
+      "country_code": "gb",
+      "city_name": "manchester",
+      "birth_year": 1993,
+      "citizenships": [
+        "gb"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHS8NF47HZP7G4RP7JF",
+      "created_at": "2022-04-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "aviation",
+      "company_size": "enterprise",
+      "domains": [
+        "Analytics",
+        "Strategy"
+      ],
+      "skills": [
+        {
+          "name": "sql",
+          "category": "language"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "dbt",
+          "category": "tool"
+        },
+        {
+          "name": "powerplatform",
+          "category": "tool"
+        },
+        {
+          "name": "data_visualization",
+          "category": "competency"
+        },
+        {
+          "name": "statistics",
+          "category": "competency"
+        },
+        {
+          "name": "airflow",
+          "category": "tool"
+        },
+        {
+          "name": "leadership",
+          "category": "competency"
+        },
+        {
+          "name": "tableau",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 23,
+      "country_code": "gb",
+      "city_name": "london",
+      "birth_year": 1993,
+      "citizenships": [
+        "gb"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHSC5W13N2KASBZX74X",
+      "skill": "powerplatform",
+      "platform": "bootcamp",
+      "from_context_id": "ctx_01K6GSWTHSSJVTN7D2B71F8QA2",
+      "to_context_id": "ctx_01K6GSWTHSWYAZ7MD2M1A07HRG",
+      "total_duration_weeks": 12,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 6
+      },
+      "cost_usd": 5600,
+      "rating_course": 4.3,
+      "rating_platform": 4.3,
+      "rating_schedule": 3.7,
+      "course_name": "Power Platform Solution Architect Bootcamp",
+      "course_link": "https://powerplatform.microsoft.com/bootcamp",
+      "user_feedback": "Собрали корпоративные дашборды, сопоставили процессы без кода."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHSJEQQ62Y98M8CRX6K",
+      "skill": "data_visualization",
+      "platform": "pluralsight",
+      "from_context_id": "ctx_01K6GSWTHSWYAZ7MD2M1A07HRG",
+      "to_context_id": "ctx_01K6GSWTHS8NF47HZP7G4RP7JF",
+      "total_duration_weeks": 5,
+      "schedule": {
+        "sessions_per_week": 4,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 189,
+      "rating_course": 4.2,
+      "rating_platform": 4.3,
+      "rating_schedule": 3.7,
+      "course_name": "Data Visualization: Storytelling with Power BI",
+      "course_link": "https://www.pluralsight.com/courses/power-bi-data-storytelling",
+      "user_feedback": "Научился выстраивать метрики для руководителей, повысил принятие решений."
+    }
+  ]
+}
