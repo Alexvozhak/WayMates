@@ -27,8 +27,9 @@ SET c.created_at = datetime($context.created_at),
     c.previous_context_id = $context.previous_context_id,
     c.next_context_id = $context.next_context_id
 
-MERGE (u)-[:HAS_CONTEXT]->(c)
-SET u.current_context_id = c.context_id
+MERGE (u)-[r:HAS_CONTEXT]->(c)
+SET r.is_current = true,
+    u.current_context_id = c.context_id
 
 // Position
 MERGE (p:Position {name: $context.position})

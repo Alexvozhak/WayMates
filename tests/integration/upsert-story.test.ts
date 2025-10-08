@@ -226,9 +226,9 @@ describe("Cypher Queries Integration Tests", () => {
         context: contextWithSkills,
       });
 
-      // Проверяем связи CITIZEN_OF
+      // Проверяем связи CITIZEN_OF (от Context, не от User)
       const citizenshipCheck = await session.run(
-        `MATCH (u:User)-[:CITIZEN_OF]->(ct:Country)
+        `MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)-[:CITIZEN_OF]->(ct:Country)
          WHERE u.user_id = $user_id
          RETURN ct.name ORDER BY ct.name`,
         { user_id: testData.user_id }
