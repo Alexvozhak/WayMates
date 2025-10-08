@@ -19,6 +19,7 @@ export async function setupIntegrationTest(): Promise<{
   const driver = await createDriver();
   const session = driver.session();
 
+  // Очищаем БД перед каждым тестом для изоляции
   await session.executeWrite((tx) => tx.run("MATCH (n) DETACH DELETE n"));
 
   const verifyResult = await session.executeRead((tx) =>
