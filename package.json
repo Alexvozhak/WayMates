@@ -24,12 +24,12 @@
     "docker:test:up": "docker compose --env-file .env.test up neo4j-test -d",
     "docker:test:down": "docker compose stop neo4j-test && docker compose rm -f neo4j-test",
     "docker:test:logs": "docker compose logs -f neo4j-test",
-    "db:prod:init": "bash -c 'source .env.prod && docker compose --env-file .env.prod exec neo4j-prod cypher-shell -u \"$NEO4J_USER\" -p \"$NEO4J_PASSWORD\" -f /tmp/init.cypher'",
-    "db:prod:clean": "bash -c 'source .env.prod && docker compose --env-file .env.prod exec neo4j-prod cypher-shell -u \"$NEO4J_USER\" -p \"$NEO4J_PASSWORD\" -d neo4j \"MATCH (n) DETACH DELETE n\"'",
-    "db:prod:status": "bash -c 'source .env.prod && docker compose --env-file .env.prod exec neo4j-prod cypher-shell -u \"$NEO4J_USER\" -p \"$NEO4J_PASSWORD\" \"MATCH (n) RETURN count(n) as total_nodes\"'",
-    "db:test:init": "bash -c 'source .env.test && docker run --rm --network host -v $(pwd)/database/init.cypher:/tmp/init.cypher neo4j:latest cypher-shell -u \"$NEO4J_USER\" -p \"$NEO4J_PASSWORD\" -a localhost:7689 -f /tmp/init.cypher'",
-    "db:test:clean": "bash -c 'source .env.test && docker run --rm --network host neo4j:latest cypher-shell -u \"$NEO4J_USER\" -p \"$NEO4J_PASSWORD\" -a localhost:7689 -d neo4j \"MATCH (n) DETACH DELETE n\"'",
-    "db:test:status": "bash -c 'source .env.test && docker run --rm --network host neo4j:latest cypher-shell -u \"$NEO4J_USER\" -p \"$NEO4J_PASSWORD\" -a localhost:7689 \"MATCH (n) RETURN count(n) as total_nodes\"'"
+    "db:prod:init": "tsx scripts/db-ops.ts prod init",
+    "db:prod:clean": "tsx scripts/db-ops.ts prod clean \"MATCH (n) DETACH DELETE n\"",
+    "db:prod:status": "tsx scripts/db-ops.ts prod status \"MATCH (n) RETURN count(n) as total_nodes\"",
+    "db:test:init": "tsx scripts/db-ops.ts test init",
+    "db:test:clean": "tsx scripts/db-ops.ts test clean \"MATCH (n) DETACH DELETE n\"",
+    "db:test:status": "tsx scripts/db-ops.ts test status \"MATCH (n) RETURN count(n) as total_nodes\""
   },
   "keywords": [],
   "author": "",
