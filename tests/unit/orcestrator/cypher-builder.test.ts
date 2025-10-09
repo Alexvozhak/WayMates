@@ -60,7 +60,7 @@ describe("cypher-builder", () => {
 
     expect(query).toContain("$targetContext AS requestedTargetContext");
     expect(query).toContain(
-      "MATCH\n  (dbCurrentUser)-[:HAS_CONTEXT]->(dbTargetContext:Context)"
+      "MATCH\n  (dbTargetUser:User)-[:HAS_CONTEXT]->(dbTargetContext:Context)"
     );
     expect(query).toContain(
       "compatibilityScore AS targetContextCompatibilityScore"

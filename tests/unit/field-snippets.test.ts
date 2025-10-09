@@ -54,10 +54,9 @@ describe("Field Snippets", () => {
         "dbCurrentContext",
         weight
       );
-      const expected =
-        `CASE WHEN size([s IN requestedCurrentContext.skills WHERE s IN dbCurrentContext.skills]) > 0 \n      THEN ${weight} * ` +
-        `(toFloat(size([s IN requestedCurrentContext.skills WHERE s IN dbCurrentContext.skills])) / ` +
-        `size(requestedCurrentContext.skills)) \n      ELSE 0 END`;
+      const expected = `CASE WHEN size([s IN requestedCurrentContext.skills WHERE s.name IN dbCurrentContext.skills]) > 0 
+      THEN ${weight} * (toFloat(size([s IN requestedCurrentContext.skills WHERE s.name IN dbCurrentContext.skills])) / size(requestedCurrentContext.skills)) 
+      ELSE 0 END`;
       expect(result).toBe(expected);
     });
 
@@ -130,10 +129,7 @@ describe("Field Snippets", () => {
 
     it("должен собирать смешанный запрос", () => {
       const config: QueryConfig = {
-        strictPresets: [
-          { field: "position" },
-          { field: "domains" }
-        ],
+        strictPresets: [{ field: "position" }, { field: "domains" }],
         flexiblePresets: [
           { field: "skills", weight: 40 },
           { field: "industry", weight: 20 },
