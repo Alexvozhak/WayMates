@@ -52,14 +52,14 @@ const executeCypher = (
     // Production: используем docker compose exec
     if (operation === "init") {
       command = `${prodPrefix} cypher-shell ${authFlags} -f /tmp/init.cypher'`;
-    } else {
+    } else if (operation === "clean" || operation === "status") {
       command = `${prodPrefix} cypher-shell ${authFlags} -d neo4j "${query}"'`;
     }
-  } else {
+  } else if (env === "test") {
     // Test: используем docker run
     if (operation === "init") {
       command = `${testPrefix} -v $(pwd)/database/init.cypher:/tmp/init.cypher neo4j:latest cypher-shell ${authFlags} -a localhost:${config.port} -f /tmp/init.cypher'`;
-    } else {
+    } else if (operation === "clean" || operation === "status") {
       command = `${testPrefix} neo4j:latest cypher-shell ${authFlags} -a localhost:${config.port} -d neo4j "${query}"'`;
     }
   }
