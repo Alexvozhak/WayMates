@@ -41,21 +41,29 @@ const executeCypher = (
     process.exit(1);
   }
 
+  // Общие префиксы команд
+  const prodPrefix = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container}`;
+  const testPrefix = `bash -c 'source ${config.envFile} && docker run --rm --network host`;
+  const image = `neo4j:latest`;
+  const authFlags = `cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD"`;
+  const bashSuffix = `'`;
+
   let command: string;
 
   if (env === "prod") {
     // Production: используем docker compose exec
     if (operation === "init") {
-      command = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container} cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -f /tmp/init.cypher'`;
+      command = `${prodPrefix} ${authFlags} -f /tmp/init.cypher${bashSuffix}`;
     } else {
-      command = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container} cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -d neo4j "${query}"'`;
+      command = `${prodPrefix} ${authFlags} -d neo4j "${query}"${bashSuffix}`;
     }
   } else {
     // Test: используем docker run
     if (operation === "init") {
-      command = `bash -c 'source ${config.envFile} && docker run --rm --network host -v $(pwd)/database/init.cypher:/tmp/init.cypher neo4j:latest cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -a localhost:${config.port} -f /tmp/init.cypher'`;
+      const volumeMount = `-v $(pwd)/database/init.cypher:/tmp/init.cypher`;
+      command = `${testPrefix} ${volumeMount} ${image} ${authFlags} -a localhost:${config.port} -f /tmp/init.cypher${bashSuffix}`;
     } else {
-      command = `bash -c 'source ${config.envFile} && docker run --rm --network host neo4j:latest cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -a localhost:${config.port} -d neo4j "${query}"'`;
+      command = `${testPrefix} ${image} ${authFlags} -a localhost:${config.port} -d neo4j "${query}"${bashSuffix}`;
     }
   }
 
