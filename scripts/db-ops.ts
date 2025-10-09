@@ -42,7 +42,7 @@ const executeCypher = (
   }
 
   // Префиксы команд
-  const prodPrefix = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container}`;
+  const prodPrefix = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container} cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD"`;
   const testPrefix = `bash -c 'source ${config.envFile} && docker run --rm --network host`;
 
   let command: string;
@@ -50,9 +50,9 @@ const executeCypher = (
   if (env === "prod") {
     // Production: используем docker compose exec
     if (operation === "init") {
-      command = `${prodPrefix} cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -f /tmp/init.cypher'`;
+      command = `${prodPrefix} -f /tmp/init.cypher'`;
     } else {
-      command = `${prodPrefix} cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -d neo4j "${query}"'`;
+      command = `${prodPrefix} -d neo4j "${query}"'`;
     }
   } else {
     // Test: используем docker run
