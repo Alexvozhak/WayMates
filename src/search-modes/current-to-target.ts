@@ -73,10 +73,19 @@ export async function executeCurrentToTarget(
     searchConstraints: params.searchConstraints || DEFAULT_SEARCH_CONSTRAINTS,
   } as const;
 
+  console.log("🔍 Current-to-target Cypher query:", cypherQuery);
+  console.log(
+    "🔍 Current-to-target params:",
+    JSON.stringify(cypherParams, null, 2)
+  );
+
   const queryResult = await executeRead(driver, cypherQuery, cypherParams);
+  console.log("🔍 Query result records count:", queryResult.records.length);
+
   const validatedResults: CurrentToTargetResult[] = getValidatedTypes(
     queryResult.records,
     CurrentToTargetResultSchema
   );
+  console.log("🔍 Validated results count:", validatedResults.length);
   return validatedResults;
 }

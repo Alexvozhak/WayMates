@@ -45,15 +45,9 @@ describe("Поисковые алгоритмы", () => {
         await executeUpsertStory(driver, data);
       }
 
-      // Берем Angular разработчика как поисковый контекст из БД
-      const searchContextId = testData[0].contexts[0]!.context_id;
-      const searchContextResult = await session.executeRead((tx) =>
-        tx.run("MATCH (c:Context {context_id: $id}) RETURN c", { id: searchContextId })
-      );
-      const searchContext = searchContextResult.records[0]!.get("c");
-      
-      // Добавляем context_id к объекту из БД
-      searchContext.context_id = searchContextId;
+      // Используем данные из testData напрямую, а не из БД
+      // Это гарантирует правильную структуру данных (навыки как объекты)
+      const searchContext = testData[0].contexts[0]!;
 
       // Конфигурация поиска: Frontend + навыки + индустрия
       const config: QueryConfig = {
@@ -79,11 +73,11 @@ describe("Поисковые алгоритмы", () => {
 
       // Выполняем поиск
       const fullQuery = `
-        MATCH (searchCtx:Context {context_id: $searchContextId})
+        WITH $searchContext AS requestedCurrentContext
         MATCH (candidateCtx:Context)
-        WHERE candidateCtx.context_id <> $searchContextId
-        WITH *, searchCtx AS requestedCurrentContext, candidateCtx AS dbCurrentContext
-        ${whereClause ? `WHERE ${whereClause}` : ''}
+        WHERE candidateCtx.context_id <> requestedCurrentContext.context_id
+        WITH *, requestedCurrentContext, candidateCtx AS dbCurrentContext
+        ${whereClause ? `WHERE ${whereClause}` : ""}
         ${scoreClause}
         RETURN candidateCtx.context_id, candidateCtx.position,
                candidateCtx.industry, candidateCtx.country_code,
@@ -95,7 +89,7 @@ describe("Поисковые алгоритмы", () => {
 
       const result = await session.executeRead((tx) =>
         tx.run(fullQuery, {
-          searchContextId: searchContext.context_id,
+          searchContext: searchContext,
         })
       );
 
@@ -176,7 +170,7 @@ describe("Поисковые алгоритмы", () => {
         MATCH (candidateCtx:Context)
         WHERE candidateCtx.context_id <> $searchContextId
         WITH *, searchCtx AS requestedCurrentContext, candidateCtx AS dbCurrentContext
-        ${whereClause ? `WHERE ${whereClause}` : ''}
+        ${whereClause ? `WHERE ${whereClause}` : ""}
         ${scoreClause}
         RETURN candidateCtx.context_id, candidateCtx.skills, compatibilityScore
         ORDER BY compatibilityScore DESC

@@ -1,5 +1,5 @@
 // Auto-generated from .cypher files - DO NOT EDIT MANUALLY
-// Generated at: 2025-10-09T20:26:00.570Z
+// Generated at: 2025-10-09T20:40:23.790Z
 // Run: npm run build:cypher to regenerate
 
 // Upserts domain

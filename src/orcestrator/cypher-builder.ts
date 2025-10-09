@@ -13,7 +13,7 @@ MATCH
 WITH *, dbCurrentUser, dbCurrentContext, requestedCurrentContext
 WHERE
   requestedCurrentContext IS NOT NULL
-  ${whereClause ? `AND ${whereClause}` : ''}
+  ${whereClause ? `AND ${whereClause}` : ""}
 
 ${scoreClause}
 
@@ -33,15 +33,16 @@ export function buildTargetTransitionQuery(
 WITH *, $targetContext AS requestedTargetContext
 
 MATCH
-  (dbCurrentUser)-[:HAS_CONTEXT]->(dbTargetContext:Context)
-WITH *, dbCurrentUser, requestedTargetContext, dbTargetContext
+  (dbTargetUser:User)-[:HAS_CONTEXT]->(dbTargetContext:Context)
+WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetUser, requestedTargetContext, dbTargetContext
 WHERE
   requestedTargetContext IS NOT NULL
-  ${whereClause ? `AND ${whereClause}` : ''}
+  AND dbTargetUser <> dbCurrentUser
+  ${whereClause ? `AND ${whereClause}` : ""}
 
 ${scoreClause}
 
-WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetContext, compatibilityScore AS targetContextCompatibilityScore
-WHERE dbCurrentUser IS NOT NULL
-WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetContext, targetContextCompatibilityScore`;
+WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetUser, dbTargetContext, compatibilityScore AS targetContextCompatibilityScore
+WHERE dbCurrentUser IS NOT NULL AND dbTargetUser IS NOT NULL
+WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetUser, dbTargetContext, targetContextCompatibilityScore`;
 }

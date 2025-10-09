@@ -29,10 +29,10 @@ export const FIELD_SNIPPETS = {
   skills: {
     startPattern: `MATCH (c:Context) WHERE ANY(s IN $skills WHERE s IN c.skills)`,
     strict: (searchCtx: string, candidateCtx: string) =>
-      `all(s IN ${searchCtx}.skills WHERE s IN ${candidateCtx}.skills)`,
+      `all(s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills)`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN size([s IN ${searchCtx}.skills WHERE s IN ${candidateCtx}.skills]) > 0 
-      THEN ${weight} * (toFloat(size([s IN ${searchCtx}.skills WHERE s IN ${candidateCtx}.skills])) / size(${searchCtx}.skills)) 
+      `CASE WHEN size([s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills]) > 0 
+      THEN ${weight} * (toFloat(size([s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills])) / size(${searchCtx}.skills)) 
       ELSE 0 END`,
   },
 

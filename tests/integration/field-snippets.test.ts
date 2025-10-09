@@ -38,7 +38,7 @@ describe("Field Snippets Integration", () => {
       expect(result.whereClause).toBe(
         `dbCurrentContext.position = requestedCurrentContext.position AND
   all(d IN requestedCurrentContext.domains WHERE d IN dbCurrentContext.domains) AND
-  all(s IN requestedCurrentContext.skills WHERE s IN dbCurrentContext.skills)`
+  all(s IN requestedCurrentContext.skills WHERE s.name IN dbCurrentContext.skills)`
       );
 
       expect(result.scoreClause).toBe(
