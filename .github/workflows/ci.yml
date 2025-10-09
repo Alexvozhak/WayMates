@@ -70,9 +70,7 @@ jobs:
         run: docker compose -f docker-compose.ci.yml --env-file .env.test up neo4j-test -d
 
       - name: "🗄️ Initialize Neo4j database"
-        run: |
-          source .env.test
-          docker run --rm --network host -v $(pwd)/database/init.cypher:/tmp/init.cypher neo4j:latest cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -a localhost:7689 -f /tmp/init.cypher
+        run: npm run db:test:init
 
       - name: "🧪 Run integration tests"
         run: npm run test:integration:run
@@ -129,9 +127,7 @@ jobs:
         run: docker compose -f docker-compose.ci.yml --env-file .env.test up neo4j-test -d
 
       - name: "🗄️ Initialize Neo4j database"
-        run: |
-          source .env.test
-          docker run --rm --network host -v $(pwd)/database/init.cypher:/tmp/init.cypher neo4j:latest cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -a localhost:7689 -f /tmp/init.cypher
+        run: npm run db:test:init
 
       - name: "🧪 Run functional tests"
         run: npm run test:functional:run
