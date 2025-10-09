@@ -74,6 +74,9 @@ async function buildCypherConstants() {
 
   // Write generated file
   const outputPath = "generated/queries.generated.ts";
+  
+  // Ensure generated directory exists
+  await fs.mkdir("generated", { recursive: true });
   await fs.writeFile(outputPath, output);
 
   console.log(
