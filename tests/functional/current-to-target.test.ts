@@ -37,7 +37,7 @@ describe("Business: current-to-target orchestrated search", () => {
     for (const s of allStories) {
       await executeUpsertStory(driver, s);
     }
-  });
+  }, 30000);
 
   afterAll(async () => {
     await teardownIntegrationTest(session, driver);

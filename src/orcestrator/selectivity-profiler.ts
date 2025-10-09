@@ -14,30 +14,32 @@ export async function getOptimalFieldOrder(
   strictPresets: StrictPreset[],
   userContext: UserContext
 ): Promise<ContextField[]> {
-  const strictedFields = strictPresets.map(
-    (strictPreset) => strictPreset.field
-  );
+  const notOptimalFields: ContextField[] = [];
+  for (const { field } of strictPresets) {
+    if (userContext[field] != null) {
+      notOptimalFields.push(field);
+    }
+  }
 
-  const userStrictedFields = strictedFields.filter(
-    (strictedField) =>
-      userContext[strictedField] !== undefined &&
-      userContext[strictedField] !== null
-  );
+  if (notOptimalFields.length <= 1) return notOptimalFields;
 
-  if (userStrictedFields.length <= 1) return userStrictedFields;
+  const profilePromises = [];
+  for (const field of notOptimalFields) {
+    const value = userContext[field];
+    profilePromises.push(runProfile(driver, field, value));
+  }
 
-  const profileResults = await Promise.allSettled(
-    userStrictedFields.map((strictedField) => {
-      const strictedValue = userContext[strictedField];
-      return runProfile(driver, strictedField, strictedValue);
-    })
-  );
+  const profileResults = await Promise.allSettled(profilePromises);
+  const selectivities = processResults(profileResults, notOptimalFields);
 
-  const selectivities = processResults(profileResults, userStrictedFields);
+  selectivities.sort((a, b) => a.estimatedRows - b.estimatedRows);
 
-  return selectivities
-    .sort((a, b) => a.estimatedRows - b.estimatedRows)
-    .map((s) => s.field);
+  const optimalFields: ContextField[] = [];
+  for (const selectivity of selectivities) {
+    optimalFields.push(selectivity.field);
+  }
+
+  return optimalFields;
 }
 
 async function runProfile(

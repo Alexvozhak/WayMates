@@ -5,11 +5,10 @@ import { expect } from "vitest";
 const projectName = process.env.VITEST_PROJECT ?? "";
 
 if (projectName === "integration" || projectName === "functional") {
-  const defaultPort = projectName === "functional" ? "7688" : "7689";
-
-  process.env.NEO4J_URI ??= `bolt://localhost:${defaultPort}`;
+  // Единый порт для devel окружения
+  process.env.NEO4J_URI ??= `bolt://localhost:7689`;
   process.env.NEO4J_USER ??= "neo4j";
-  process.env.NEO4J_PASSWORD ??= "test";
+  process.env.NEO4J_PASSWORD ??= "testpassword123";
 }
 
 export async function setupIntegrationTest(): Promise<{

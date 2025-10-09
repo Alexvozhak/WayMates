@@ -5,7 +5,10 @@ import {
   buildCurrentToTargetQuery,
   buildTargetTransitionQuery,
 } from "./cypher-builder.js";
-import { buildQueryFromConfig } from "./snippets-extractor.js";
+import {
+  buildStrictConditions,
+  buildFlexibleScoring,
+} from "./snippets-extractor.js";
 import type {
   UserContext,
   QueryConfig,
@@ -26,56 +29,38 @@ export class QueryOrchestrator {
       const { strictPresets, flexiblePresets }: QueryConfig =
         this.presetsManager.get(preset);
 
-      let optimalOrder: ContextField[];
+      let strictFieldsInOptimalOrder: ContextField[];
       try {
-        optimalOrder = await getOptimalFieldOrder(
+        strictFieldsInOptimalOrder = await getOptimalFieldOrder(
           this.driver,
           strictPresets,
           userContext
         );
       } catch {
-        optimalOrder = strictPresets.map((s) => s.field);
+        strictFieldsInOptimalOrder = strictPresets.map((s) => s.field);
       }
 
-      const { whereClause, scoreClause } = buildQueryFromConfig(
-        flexiblePresets,
-        optimalOrder,
-        "requestedCurrentContext",
-        "dbCurrentContext"
-      );
+      const whereClause = buildStrictConditions(strictFieldsInOptimalOrder);
+      const scoreClause = buildFlexibleScoring(flexiblePresets);
 
-      const query = buildCurrentToTargetQuery(
-        whereClause,
-        scoreClause,
-        "requestedCurrentContext",
-        "dbCurrentContext"
-      );
+      const query = buildCurrentToTargetQuery(whereClause, scoreClause);
       return query;
     } catch (error) {
       throw new Error(`Failed to generate optimized query: ${error}`);
     }
   }
 
-  async generateTargetContextQuery(preset: string): Promise<string> {
+  generateTargetContextQuery(preset: string): string {
     try {
       const { strictPresets, flexiblePresets }: QueryConfig =
         this.presetsManager.get(preset);
 
-      const optimalOrder: ContextField[] = strictPresets.map((s) => s.field);
+      const strictFields: ContextField[] = strictPresets.map((s) => s.field);
 
-      const { whereClause, scoreClause } = buildQueryFromConfig(
-        flexiblePresets,
-        optimalOrder,
-        "requestedTargetContext",
-        "dbTargetContext"
-      );
+      const whereClause = buildStrictConditions(strictFields);
+      const scoreClause = buildFlexibleScoring(flexiblePresets);
 
-      const query = await buildTargetTransitionQuery(
-        whereClause,
-        scoreClause,
-        "requestedTargetContext",
-        "dbTargetContext"
-      );
+      const query = buildTargetTransitionQuery(whereClause, scoreClause);
       return query;
     } catch (error) {
       throw new Error(`Failed to generate target transition query: ${error}`);

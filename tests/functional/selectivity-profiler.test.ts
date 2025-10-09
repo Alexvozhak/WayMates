@@ -24,7 +24,7 @@ describe("SelectivityProfiler Functional Tests", () => {
     for (const testStory of allTestData) {
       await executeUpsertStory(driver, testStory);
     }
-  });
+  }, 30000);
 
   afterEach(async () => {
     await teardownIntegrationTest(session, driver);

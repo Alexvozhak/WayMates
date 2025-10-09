@@ -67,12 +67,17 @@ describe("Story processing functional flow", () => {
 
     expect(trailsResult.records).toHaveLength(story.trails.length);
 
-    const expectedTrails = story.trails.map((trail) => ({
-      skill: trail.skill,
-      platform: trail.platform,
-      duration_weeks: trail.total_duration_weeks,
-      cost_usd: trail.cost_usd,
-    }));
+    const expectedTrails = story.trails
+      .map((trail) => ({
+        skill: trail.skill,
+        platform: trail.platform,
+        duration_weeks: trail.total_duration_weeks,
+        cost_usd: trail.cost_usd,
+      }))
+      .sort(
+        (a, b) =>
+          a.skill.localeCompare(b.skill) || a.platform.localeCompare(b.platform)
+      );
 
     const actualTrails = trailsResult.records.map((record) => ({
       skill: record.get("skill") as string,
@@ -97,7 +102,7 @@ describe("Story processing functional flow", () => {
           OPTIONAL MATCH (u)-[:HAS_CONTEXT]->(c:Context)
           OPTIONAL MATCH (u)-[:HAS_TRAIL]->(t:Trail)
           WITH u, count(DISTINCT c) AS contexts, count(DISTINCT t) AS trails
-          RETURN collect({ user_id: u.user_id, contexts, trails }) AS summaries
+          RETURN collect({ user_id: u.user_id, contexts: contexts, trails: trails }) AS summaries
         `
       )
     );

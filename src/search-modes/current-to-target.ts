@@ -60,7 +60,7 @@ export async function executeCurrentToTarget(
   );
 
   const dynamicTargetTransitions =
-    await orchestrator.generateTargetContextQuery(targetPreset);
+    orchestrator.generateTargetContextQuery(targetPreset);
 
   // ПОЛНАЯ ИНТЕГРАЦИЯ: current + target (оркестратор) + compatibility-score
   const cypherQuery = [

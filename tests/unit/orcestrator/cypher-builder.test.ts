@@ -2,7 +2,8 @@ import { describe, expect, test } from "vitest";
 import { join } from "path";
 import { PresetsManager } from "../../../src/orcestrator/preset-manager.js";
 import {
-  buildQueryFromConfig,
+  buildStrictConditions,
+  buildFlexibleScoring,
 } from "../../../src/orcestrator/snippets-extractor.js";
 import {
   buildCurrentToTargetQuery,
@@ -17,19 +18,10 @@ describe("cypher-builder", () => {
     manager.load();
     const balanced = manager.get("BALANCED");
 
-    const { whereClause, scoreClause } = buildQueryFromConfig(
-      balanced.flexiblePresets,
-      balanced.strictPresets.map((preset) => preset.field),
-      "requestedCurrentContext",
-      "dbCurrentContext"
-    );
+    const whereClause = buildStrictConditions(balanced.strictPresets.map((preset) => preset.field));
+    const scoreClause = buildFlexibleScoring(balanced.flexiblePresets);
 
-    const query = buildCurrentToTargetQuery(
-      whereClause,
-      scoreClause,
-      "requestedCurrentContext",
-      "dbCurrentContext"
-    );
+    const query = buildCurrentToTargetQuery(whereClause, scoreClause);
 
     expect(query).toContain("WITH $currentContext AS requestedCurrentContext");
     expect(query).toContain(
@@ -38,7 +30,9 @@ describe("cypher-builder", () => {
     expect(query).toContain(
       "all(d IN requestedCurrentContext.domains WHERE d IN dbCurrentContext.domains)"
     );
-    expect(query).toContain("compatibilityScore AS currentContextCompatibilityScore");
+    expect(query).toContain(
+      "compatibilityScore AS currentContextCompatibilityScore"
+    );
   });
 
   test("buildCurrentToTargetQuery keeps guard clause when filters absent", () => {
@@ -52,24 +46,17 @@ describe("cypher-builder", () => {
     manager.load();
     const balanced = manager.get("BALANCED");
 
-    const { whereClause, scoreClause } = buildQueryFromConfig(
-      balanced.flexiblePresets,
-      balanced.strictPresets.map((preset) => preset.field),
-      "requestedTargetContext",
-      "dbTargetContext"
-    );
+    const whereClause = buildStrictConditions(balanced.strictPresets.map((preset) => preset.field));
+    const scoreClause = buildFlexibleScoring(balanced.flexiblePresets);
 
-    const query = buildTargetTransitionQuery(
-      whereClause,
-      scoreClause,
-      "requestedTargetContext",
-      "dbTargetContext"
-    );
+    const query = buildTargetTransitionQuery(whereClause, scoreClause);
 
     expect(query).toContain("$targetContext AS requestedTargetContext");
     expect(query).toContain(
       "dbTargetContext.context_id <> dbCurrentContext.context_id"
     );
-    expect(query).toContain("compatibilityScore AS targetContextCompatibilityScore");
+    expect(query).toContain(
+      "compatibilityScore AS targetContextCompatibilityScore"
+    );
   });
 });

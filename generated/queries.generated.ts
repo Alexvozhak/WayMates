@@ -1,5 +1,5 @@
 // Auto-generated from .cypher files - DO NOT EDIT MANUALLY
-// Generated at: 2025-10-08T22:03:29.961Z
+// Generated at: 2025-10-09T17:25:41.948Z
 // Run: npm run build:cypher to regenerate
 
 // Upserts domain
@@ -27,9 +27,8 @@ SET c.created_at = datetime($context.created_at),
     c.previous_context_id = $context.previous_context_id,
     c.next_context_id = $context.next_context_id
 
-MERGE (u)-[r:HAS_CONTEXT]->(c)
-SET r.is_current = true,
-    u.current_context_id = c.context_id
+MERGE (u)-[:HAS_CONTEXT]->(c)
+SET u.current_context_id = c.context_id
 
 // Position
 MERGE (p:Position {name: $context.position})
@@ -919,7 +918,7 @@ LIMIT coalesce($searchConstraints.max_users, 100)`,
 /* === РЕАЛИЗАЦИЯ: УПРОЩЕННАЯ ВЕРСИЯ ДЛЯ ОТЛАДКИ === */
 
 // Получаем данные от предыдущих блоков
-WITH dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetContext, targetContextCompatibilityScore
+WITH *
 WHERE dbTargetContext IS NOT NULL // Только для current→target режимов
 
 // === РАСЧЕТ РЕАЛЬНЫХ МЕТРИК СОВМЕСТИМОСТИ ===
@@ -953,17 +952,11 @@ coalesce(dbCurrentContext.team_size = $currentContext.team_size, false) AS teamS
 
 // Строим путь обучения (Trail[]) между current и target для данного пользователя
 OPTIONAL MATCH p = shortestPath((dbCurrentContext)-[:STEPS_ON|STEPS_TO*1..6]->(dbTargetContext))
-WITH dbCurrentUser, dbCurrentContext, dbTargetContext, currentContextCompatibilityScore, targetContextCompatibilityScore,
-     skillsMatched, skillsTotal,
-     countryMatch, cityMatch, companySizeMatch,
+WITH *,
      CASE WHEN p IS NULL THEN [] ELSE [n IN nodes(p) WHERE n:Trail] END AS pathTrails
-WITH dbCurrentUser, dbCurrentContext, dbTargetContext, currentContextCompatibilityScore, targetContextCompatibilityScore,
-     skillsMatched, skillsTotal,
-     countryMatch, cityMatch, companySizeMatch,
+WITH *,
      [t IN pathTrails WHERE EXISTS( (dbCurrentUser)-[:HAS_TRAIL]->(t) )] AS userTrails
-WITH dbCurrentUser, dbCurrentContext, dbTargetContext, currentContextCompatibilityScore, targetContextCompatibilityScore,
-     skillsMatched, skillsTotal,
-     countryMatch, cityMatch, companySizeMatch,
+WITH *,
      [t IN userTrails | {
         skill: t.skill,
         platform: t.platform,
