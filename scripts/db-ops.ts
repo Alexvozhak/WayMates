@@ -95,9 +95,9 @@ Operations:
   status - Show database status
 
 Examples:
-  tsx scripts/db-ops.ts prod init
-  tsx scripts/db-ops.ts test clean "MATCH (n) DETACH DELETE n"
-  tsx scripts/db-ops.ts prod status "MATCH (n) RETURN count(n) as total_nodes"
+  npm run db:prod:init
+  npm run db:test:clean
+  npm run db:prod:status
 `);
   process.exit(1);
 }
