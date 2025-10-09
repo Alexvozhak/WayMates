@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   FALLBACK_SELECTIVITY,
   buildExplainQuery,
@@ -27,9 +27,7 @@ describe("SelectivityProfiler Unit Tests", () => {
         { name: "JS", category: "language" },
       ]);
       expect(query).toContain("EXPLAIN");
-      expect(query).toContain(
-        "WHERE ANY(s IN $skills WHERE s IN c.skills)"
-      );
+      expect(query).toContain("WHERE ANY(s IN $skills WHERE s IN c.skills)");
       expect(query).toContain("RETURN count(c)");
     });
 

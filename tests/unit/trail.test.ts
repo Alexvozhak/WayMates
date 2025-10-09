@@ -5,7 +5,6 @@ import {
   isValidSchema,
   type Trail,
   type UserConstraints,
-  TRAIL_ID_PATTERN,
   CONTEXT_ID_PATTERN,
 } from "../../src/schemas-zod.js";
 import { loadTestData } from "../helpers/test-data-loader.js";
@@ -180,7 +179,7 @@ describe("Trail schema validation", () => {
 
     // Validate all trails from user 001 (should have 2 trails)
     expect(userData.trails).toHaveLength(2);
-    userData.trails.forEach((trail: any, index: number) => {
+    userData.trails.forEach((trail: any) => {
       expect(isValidSchema(trail, TrailSchema)).toBe(true);
       // trail_id больше не входит в TrailSchema - генерируется динамически
       expect(trail.from_context_id).toMatch(new RegExp(CONTEXT_ID_PATTERN));

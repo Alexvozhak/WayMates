@@ -145,7 +145,7 @@ describe("MCP workflow scenarios", () => {
     const story = loadTestData("USER_006");
     await getTool("execute_upsert_story").execute(story);
 
-    const templateContext = clone(story.contexts[0]);
+    const templateContext = clone(story.contexts[0]!);
     templateContext.created_at = "2035-05-05T00:00:00Z";
     templateContext.context_id = "ctx_temp";
 

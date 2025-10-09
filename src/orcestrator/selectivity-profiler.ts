@@ -1,6 +1,6 @@
 import type { Driver } from "neo4j-driver";
 import { FIELD_SNIPPETS } from "./snippets-extractor.js";
-import { ContextField, StrictPreset, UserContext } from "../schemas-zod.js";
+import { ContextField, UserContext } from "../schemas-zod.js";
 
 type SelectivityResult = {
   field: ContextField;
@@ -51,7 +51,7 @@ async function runProfile(
 ): Promise<number> {
   const session = driver.session();
   try {
-    const query = buildExplainQuery(field, value);
+    const query = buildExplainQuery(field);
     const result = await session.executeRead((tx) => tx.run(query, { value }));
     return (
       (result.summary?.plan as any)?.arguments?.EstimatedRows ||
@@ -62,16 +62,13 @@ async function runProfile(
   }
 }
 
-export function buildExplainQuery(field: ContextField, value?: any): string {
+export function buildExplainQuery(field: ContextField): string {
   if (!(field in FIELD_SNIPPETS)) {
     throw new Error(
       `Unknown field '${field}'. Available: ${Object.keys(FIELD_SNIPPETS).join(", ")}`
     );
   }
   const startPattern = FIELD_SNIPPETS[field].startPattern;
-  if (typeof startPattern === "function") {
-    return `EXPLAIN ${(startPattern as any)(value)} RETURN count(c)`;
-  }
   return `EXPLAIN ${startPattern} RETURN count(c)`;
 }
 

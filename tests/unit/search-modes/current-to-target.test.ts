@@ -5,7 +5,6 @@ import {
   type CurrentToTargetParams,
 } from "../../../src/schemas-zod.js";
 import { DEFAULT_SEARCH_CONSTRAINTS } from "../../../src/unified-search-types.js";
-import { Finders, Processors } from "../../../src/cypher/api.js";
 import { loadTestData } from "../../helpers/test-data-loader.js";
 
 const { runQueryMock, getStrictSkillsMock, getValidatedTypesMock } = vi.hoisted(

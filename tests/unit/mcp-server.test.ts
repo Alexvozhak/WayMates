@@ -131,7 +131,7 @@ describe("createWayMatesServer", () => {
 
   test("wraps handlers with Zod validation and JSON serialization", async () => {
     const story = loadTestData("USER_001");
-    const server = createWayMatesServer(driverStub, presetsStub);
+    createWayMatesServer(driverStub, presetsStub);
     const instance = fastMCPInstances.at(-1)!;
     const tool = instance.tools.find((t) => t.name === "execute_upsert_story")!;
 

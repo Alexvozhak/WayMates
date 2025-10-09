@@ -24,7 +24,7 @@ export async function setupIntegrationTest(): Promise<{
   const verifyResult = await session.executeRead((tx) =>
     tx.run("MATCH (n) RETURN count(n) as total_nodes")
   );
-  const nodeCount = Number(verifyResult.records[0]?.get("total_nodes")) ?? 0;
+  const nodeCount = Number(verifyResult.records[0]?.get("total_nodes") ?? 0);
   expect(nodeCount).toBe(0);
 
   return { driver, session };
