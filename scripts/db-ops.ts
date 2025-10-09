@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import { execSync } from "child_process";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 
 type Environment = "prod" | "test";
 type Operation = "init" | "clean" | "status";
@@ -12,20 +12,29 @@ interface DbConfig {
   port: string;
 }
 
-const getDbConfig = (env: Environment): DbConfig => {
-  if (env === "prod") {
-    return {
-      envFile: ".env.prod",
-      container: "neo4j-prod",
-      port: process.env.NEO4J_PROD_PORT || "7687",
-    };
-  } else {
-    return {
-      envFile: ".env.test",
-      container: "neo4j-test",
-      port: process.env.NEO4J_TEST_PORT || "7689",
-    };
+const readPortFromEnv = (envFile: string): string => {
+  if (!existsSync(envFile)) {
+    return "";
   }
+
+  const content = readFileSync(envFile, "utf8");
+  const match = content.match(/^NEO4J_PORT=(.+)$/m);
+  return match ? match[1].trim() : "";
+};
+
+const getDbConfig = (env: Environment): DbConfig => {
+  const envFile = env === "prod" ? ".env.prod" : ".env.test";
+  const container = env === "prod" ? "neo4j-prod" : "neo4j-test";
+  const defaultPort = env === "prod" ? "7687" : "7689";
+
+  const portFromEnv = readPortFromEnv(envFile);
+  const port = portFromEnv || defaultPort;
+
+  return {
+    envFile,
+    container,
+    port,
+  };
 };
 
 const executeCypher = (
