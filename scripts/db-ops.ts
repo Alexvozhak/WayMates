@@ -17,13 +17,13 @@ const getDbConfig = (env: Environment): DbConfig => {
     return {
       envFile: ".env.prod",
       container: "neo4j-prod",
-      port: "7687",
+      port: process.env.NEO4J_PROD_PORT || "7687",
     };
   } else {
     return {
       envFile: ".env.test",
       container: "neo4j-test",
-      port: "7689",
+      port: process.env.NEO4J_TEST_PORT || "7689",
     };
   }
 };
