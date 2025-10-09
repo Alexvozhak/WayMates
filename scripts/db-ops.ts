@@ -42,25 +42,25 @@ const executeCypher = (
   }
 
   // Префиксы команд
-  const prodPrefix = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container} cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD"`;
+  const prodPrefix = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container}`;
   const testPrefix = `bash -c 'source ${config.envFile} && docker run --rm --network host`;
-  const testAuth = `cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -a localhost:${config.port}`;
+  const authFlags = `cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD"`;
 
   let command: string;
 
   if (env === "prod") {
     // Production: используем docker compose exec
     if (operation === "init") {
-      command = `${prodPrefix} -f /tmp/init.cypher'`;
+      command = `${prodPrefix} ${authFlags} -f /tmp/init.cypher'`;
     } else {
-      command = `${prodPrefix} -d neo4j "${query}"'`;
+      command = `${prodPrefix} ${authFlags} -d neo4j "${query}"'`;
     }
   } else {
     // Test: используем docker run
     if (operation === "init") {
-      command = `${testPrefix} -v $(pwd)/database/init.cypher:/tmp/init.cypher neo4j:latest ${testAuth} -f /tmp/init.cypher'`;
+      command = `${testPrefix} -v $(pwd)/database/init.cypher:/tmp/init.cypher neo4j:latest ${authFlags} -a localhost:${config.port} -f /tmp/init.cypher'`;
     } else {
-      command = `${testPrefix} neo4j:latest ${testAuth} -d neo4j "${query}"'`;
+      command = `${testPrefix} neo4j:latest ${authFlags} -a localhost:${config.port} -d neo4j "${query}"'`;
     }
   }
 
