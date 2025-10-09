@@ -83,7 +83,7 @@ const [, , env, operation, query] = process.argv;
 
 if (!env || !operation) {
   console.error(`
-Usage: tsx scripts/db-ops.ts <env> <operation> [query]
+Usage: npm run db:<env>:<operation>
 
 Environments:
   prod  - Production environment (uses docker compose exec)
