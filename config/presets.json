@@ -34,7 +34,8 @@
   "GEO_FOCUSED": {
     "strictPresets": [
       { "field": "position" },
-      { "field": "domains" }
+      { "field": "domains" },
+      { "field": "skills" }
     ],
     "flexiblePresets": [
       { "field": "country_code", "weight": 35 },
@@ -47,14 +48,25 @@
     ]
   },
   "FLEXIBLE": {
+    "strictPresets": [
+      { "field": "position" },
+      { "field": "domains" },
+      { "field": "skills" }
+    ],
+    "flexiblePresets": [
+      { "field": "country_code", "weight": 40 },
+      { "field": "city_name", "weight": 30 },
+      { "field": "industry", "weight": 30 }
+    ]
+  },
+  "TARGET_FLEXIBLE": {
     "strictPresets": [],
     "flexiblePresets": [
-      { "field": "skills", "weight": 30 },
-      { "field": "domains", "weight": 25 },
-      { "field": "position", "weight": 20 },
+      { "field": "position", "weight": 30 },
+      { "field": "skills", "weight": 25 },
+      { "field": "domains", "weight": 20 },
       { "field": "country_code", "weight": 15 },
-      { "field": "city_name", "weight": 10 },
-      { "field": "industry", "weight": 0 }
+      { "field": "city_name", "weight": 10 }
     ]
   }
 }

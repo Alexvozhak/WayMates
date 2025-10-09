@@ -11,7 +11,6 @@ import { PresetsManager } from "../../src/orcestrator/preset-manager.js";
 import { join } from "path";
 
 describe("Field Snippets Integration", () => {
-
   let presetsManager: PresetsManager;
 
   beforeAll(() => {
@@ -23,13 +22,21 @@ describe("Field Snippets Integration", () => {
   describe("🎯 Интеграционные тесты", () => {
     it("должен генерировать полный запрос для BALANCED профиля", () => {
       const config = presetsManager.get("BALANCED");
-      const whereClause = buildStrictConditions(config.strictPresets.map((s) => s.field));
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
+      const whereClause = buildStrictConditions(
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       const result = { whereClause, scoreClause };
 
       // Проверяем целостность запроса - все компоненты на месте
       expect(result.whereClause).toBe(
-        `WHERE dbCurrentContext.position = requestedCurrentContext.position AND
+        `dbCurrentContext.position = requestedCurrentContext.position AND
   all(d IN requestedCurrentContext.domains WHERE d IN dbCurrentContext.domains) AND
   all(s IN requestedCurrentContext.skills WHERE s IN dbCurrentContext.skills)`
       );
@@ -50,8 +57,16 @@ WHERE compatibilityScore > 0`
 
     it("должен генерировать полный запрос для SKILL_FOCUSED профиля", () => {
       const config = presetsManager.get("SKILL_FOCUSED");
-      const whereClause = buildStrictConditions(config.strictPresets.map((s) => s.field));
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
+      const whereClause = buildStrictConditions(
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       const result = { whereClause, scoreClause };
 
       expect(result.whereClause).toContain("position");
@@ -63,8 +78,16 @@ WHERE compatibilityScore > 0`
 
     it("должен генерировать полный запрос для GEO_FOCUSED профиля", () => {
       const config = presetsManager.get("GEO_FOCUSED");
-      const whereClause = buildStrictConditions(config.strictPresets.map((s) => s.field));
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
+      const whereClause = buildStrictConditions(
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       const result = { whereClause, scoreClause };
 
       expect(result.whereClause).toContain("position");
@@ -77,13 +100,21 @@ WHERE compatibilityScore > 0`
 
     it("должен генерировать полный запрос для FLEXIBLE профиля", () => {
       const config = presetsManager.get("FLEXIBLE");
-      const whereClause = buildStrictConditions(config.strictPresets.map((s) => s.field));
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
+      const whereClause = buildStrictConditions(
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       const result = { whereClause, scoreClause };
 
-      expect(result.whereClause).toBe("");
-      expect(result.scoreClause).toContain("position");
-      expect(result.scoreClause).toContain("THEN 20");
+      expect(result.whereClause).toContain("AND");
+      expect(result.scoreClause).toContain("country_code");
+      expect(result.scoreClause).toContain("THEN 40");
       expect(result.scoreClause).toContain("compatibilityScore");
     });
   });

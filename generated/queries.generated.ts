@@ -1,5 +1,5 @@
 // Auto-generated from .cypher files - DO NOT EDIT MANUALLY
-// Generated at: 2025-10-09T17:25:41.948Z
+// Generated at: 2025-10-09T20:26:00.570Z
 // Run: npm run build:cypher to regenerate
 
 // Upserts domain
@@ -951,7 +951,9 @@ coalesce(dbCurrentContext.team_size = $currentContext.team_size, false) AS teamS
 // Индустрия - жесткий фильтр, поэтому всегда true (не считаем отдельно)
 
 // Строим путь обучения (Trail[]) между current и target для данного пользователя
+// Избегаем shortestPath когда узлы одинаковые
 OPTIONAL MATCH p = shortestPath((dbCurrentContext)-[:STEPS_ON|STEPS_TO*1..6]->(dbTargetContext))
+WHERE dbCurrentContext.context_id <> dbTargetContext.context_id
 WITH *,
      CASE WHEN p IS NULL THEN [] ELSE [n IN nodes(p) WHERE n:Trail] END AS pathTrails
 WITH *,

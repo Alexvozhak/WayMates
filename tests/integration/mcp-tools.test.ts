@@ -7,6 +7,7 @@ import {
   CurrentToTargetResultSchema,
   TargetAnalysisResultSchema,
   AvatarSearchResultSchema,
+  SearchConstraints,
 } from "../../src/schemas-zod.js";
 import {
   setupIntegrationTest,
@@ -63,12 +64,12 @@ const { PresetsManager } = await import(
 
 const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
 
-const BASE_CONSTRAINTS = {
+const BASE_CONSTRAINTS: SearchConstraints = {
   max_timing_diff_months: 12,
   timing_diff_threshold_percent: 25,
   max_experience_diff_months: 48,
   results_limit: 10,
-} as const;
+};
 
 describe("MCP tools integration", () => {
   let driver: Driver;
@@ -141,7 +142,7 @@ describe("MCP tools integration", () => {
     const matchContextId = (position: string) =>
       contexts.find((item) => item.position === position)?.context_id;
 
-    const firstTrail = clone(story.trails[0]);
+    const firstTrail = clone(story.trails[0]!);
     firstTrail.from_context_id = matchContextId(story.contexts[0]!.position)!;
     firstTrail.to_context_id = matchContextId(story.contexts[1]!.position)!;
 
@@ -223,15 +224,19 @@ describe("MCP tools integration", () => {
   });
 
   test("current_to_target finds transition plan for imported story", async () => {
-    const story = loadTestData("USER_002");
-    await getTool("execute_upsert_story").execute(story);
+    const story1 = loadTestData("USER_002");
+    const story2 = loadTestData("USER_003");
+    const story3 = loadTestData("USER_004");
 
-    const [currentContext, targetContext] = story.contexts.slice(0, 2);
+    await getTool("execute_upsert_story").execute(story1);
+    await getTool("execute_upsert_story").execute(story2);
+    await getTool("execute_upsert_story").execute(story3);
+
+    const [currentContext, targetContext] = story1.contexts.slice(0, 2);
     if (!currentContext || !targetContext) {
       throw new Error("USER_002 must include at least two contexts");
     }
 
-    // 📝 БИЗНЕС-СЦЕНАРИЙ: Оцениваем траекторию перехода из текущего в желаемый контекст
     const response = await getTool("current_to_target").execute({
       currentContext,
       targetContext,
@@ -243,7 +248,7 @@ describe("MCP tools integration", () => {
     expect(parsed.length).toBeGreaterThan(0);
     parsed.forEach((entry: unknown) => {
       const validated = CurrentToTargetResultSchema.parse(entry);
-      expect(validated.userId).toBe(story.user_id);
+      expect(validated.userId).toBe(story1.user_id);
       expect(validated.trailPath.length).toBeGreaterThan(0);
     });
   });

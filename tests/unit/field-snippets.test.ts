@@ -17,7 +17,10 @@ import {
 describe("Field Snippets", () => {
   describe("🧩 Отдельные сниппеты", () => {
     it("должен генерировать строгое условие для position", () => {
-      const result = FIELD_SNIPPETS.position.strict;
+      const result = FIELD_SNIPPETS.position.strict(
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       expect(result).toContain(
         "dbCurrentContext.position = requestedCurrentContext.position"
       );
@@ -25,13 +28,20 @@ describe("Field Snippets", () => {
 
     it("должен генерировать гибкое условие для position с весом", () => {
       const weight = 50;
-      const result = FIELD_SNIPPETS.position.flexible(weight);
+      const result = FIELD_SNIPPETS.position.flexible(
+        "requestedCurrentContext",
+        "dbCurrentContext",
+        weight
+      );
       const expected = `CASE WHEN dbCurrentContext.position = requestedCurrentContext.position THEN ${weight} ELSE 0 END`;
       expect(result).toBe(expected);
     });
 
     it("должен генерировать строгое условие для domains", () => {
-      const result = FIELD_SNIPPETS.domains.strict;
+      const result = FIELD_SNIPPETS.domains.strict(
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       expect(result).toContain(
         "all(d IN requestedCurrentContext.domains WHERE d IN dbCurrentContext.domains)"
       );
@@ -39,7 +49,11 @@ describe("Field Snippets", () => {
 
     it("должен генерировать гибкое условие для skills", () => {
       const weight = 30;
-      const result = FIELD_SNIPPETS.skills.flexible(weight);
+      const result = FIELD_SNIPPETS.skills.flexible(
+        "requestedCurrentContext",
+        "dbCurrentContext",
+        weight
+      );
       const expected =
         `CASE WHEN size([s IN requestedCurrentContext.skills WHERE s IN dbCurrentContext.skills]) > 0 \n      THEN ${weight} * ` +
         `(toFloat(size([s IN requestedCurrentContext.skills WHERE s IN dbCurrentContext.skills])) / ` +
@@ -48,7 +62,10 @@ describe("Field Snippets", () => {
     });
 
     it("должен генерировать строгое условие для industry", () => {
-      const result = FIELD_SNIPPETS.industry.strict;
+      const result = FIELD_SNIPPETS.industry.strict(
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       expect(result).toContain(
         "dbCurrentContext.industry = requestedCurrentContext.industry"
       );
@@ -63,18 +80,24 @@ describe("Field Snippets", () => {
       };
 
       const whereClause = buildStrictConditions(
-        config.strictPresets.map((s) => s.field)
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
       );
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
 
-      expect(whereClause).toContain("WHERE");
+      expect(whereClause).toContain("AND");
       expect(whereClause).toContain(
         "dbCurrentContext.position = requestedCurrentContext.position"
       );
       expect(whereClause).toContain(
         "all(d IN requestedCurrentContext.domains WHERE d IN dbCurrentContext.domains)"
       );
-      expect(scoreClause).toBe("");
+      expect(scoreClause).toBe("WITH *, 0 AS compatibilityScore");
     });
 
     it("должен собирать запрос из гибких полей", () => {
@@ -90,9 +113,15 @@ describe("Field Snippets", () => {
       };
 
       const whereClause = buildStrictConditions(
-        config.strictPresets.map((s) => s.field)
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
       );
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       expect(whereClause).toBe("");
       expect(scoreClause).toContain("WITH *, (");
       expect(scoreClause).toContain(`THEN ${positionWeight}`);
@@ -101,7 +130,10 @@ describe("Field Snippets", () => {
 
     it("должен собирать смешанный запрос", () => {
       const config: QueryConfig = {
-        strictPresets: [{ field: "position" }],
+        strictPresets: [
+          { field: "position" },
+          { field: "domains" }
+        ],
         flexiblePresets: [
           { field: "skills", weight: 40 },
           { field: "industry", weight: 20 },
@@ -109,13 +141,19 @@ describe("Field Snippets", () => {
       };
 
       const whereClause = buildStrictConditions(
-        config.strictPresets.map((s) => s.field)
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
       );
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
-      expect(whereClause).toContain("WHERE");
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
       expect(whereClause).toContain(
         "dbCurrentContext.position = requestedCurrentContext.position"
       );
+      expect(whereClause).toContain("AND");
       expect(scoreClause).toContain("WITH *, (");
       expect(scoreClause).toContain("compatibilityScore");
     });

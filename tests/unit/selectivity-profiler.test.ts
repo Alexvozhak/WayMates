@@ -28,7 +28,7 @@ describe("SelectivityProfiler Unit Tests", () => {
       ]);
       expect(query).toContain("EXPLAIN");
       expect(query).toContain(
-        "WHERE ANY(s IN [skill IN $skills | skill.name] WHERE s IN c.skills)"
+        "WHERE ANY(s IN $skills WHERE s IN c.skills)"
       );
       expect(query).toContain("RETURN count(c)");
     });

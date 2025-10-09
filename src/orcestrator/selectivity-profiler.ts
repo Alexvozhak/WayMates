@@ -11,17 +11,19 @@ export const FALLBACK_SELECTIVITY = 1000;
 
 export async function getOptimalFieldOrder(
   driver: Driver,
-  strictPresets: StrictPreset[],
+  strictPresets: ContextField[],
   userContext: UserContext
 ): Promise<ContextField[]> {
   const notOptimalFields: ContextField[] = [];
-  for (const { field } of strictPresets) {
+  for (const field of strictPresets) {
     if (userContext[field] != null) {
       notOptimalFields.push(field);
     }
   }
 
-  if (notOptimalFields.length <= 1) return notOptimalFields;
+  if (notOptimalFields.length <= 1) {
+    return notOptimalFields;
+  }
 
   const profilePromises = [];
   for (const field of notOptimalFields) {

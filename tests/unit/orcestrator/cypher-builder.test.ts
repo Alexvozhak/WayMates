@@ -6,39 +6,38 @@ import {
   buildFlexibleScoring,
 } from "../../../src/orcestrator/snippets-extractor.js";
 import {
-  buildCurrentToTargetQuery,
+  buildCurrentContextQuery,
   buildTargetTransitionQuery,
 } from "../../../src/orcestrator/cypher-builder.js";
 
 const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
 
 describe("cypher-builder", () => {
-  test("buildCurrentToTargetQuery stitches strict and flexible clauses", () => {
+  test("buildCurrentContextQuery stitches strict and flexible clauses", () => {
     const manager = new PresetsManager(PRESETS_PATH);
     manager.load();
     const balanced = manager.get("BALANCED");
 
-    const whereClause = buildStrictConditions(balanced.strictPresets.map((preset) => preset.field));
-    const scoreClause = buildFlexibleScoring(balanced.flexiblePresets);
-
-    const query = buildCurrentToTargetQuery(whereClause, scoreClause);
-
-    expect(query).toContain("WITH $currentContext AS requestedCurrentContext");
-    expect(query).toContain(
-      "dbCurrentContext.position = requestedCurrentContext.position"
+    const whereClause = buildStrictConditions(
+      balanced.strictPresets.map((preset) => preset.field),
+      "requestedCurrentContext",
+      "dbCurrentContext"
     );
+    const scoreClause = buildFlexibleScoring(
+      balanced.flexiblePresets,
+      "requestedCurrentContext",
+      "dbCurrentContext"
+    );
+
+    const query = buildCurrentContextQuery(whereClause, scoreClause);
+
+    expect(query).toContain("$currentContext AS requestedCurrentContext");
     expect(query).toContain(
-      "all(d IN requestedCurrentContext.domains WHERE d IN dbCurrentContext.domains)"
+      "MATCH\n  (dbCurrentUser:User)-[:HAS_CONTEXT]->(dbCurrentContext:Context)"
     );
     expect(query).toContain(
       "compatibilityScore AS currentContextCompatibilityScore"
     );
-  });
-
-  test("buildCurrentToTargetQuery keeps guard clause when filters absent", () => {
-    const query = buildCurrentToTargetQuery("", "");
-    expect(query).toContain("requestedCurrentContext IS NOT NULL");
-    expect(query).not.toMatch(/WHERE\s+AND/);
   });
 
   test("buildTargetTransitionQuery excludes identical contexts", () => {
@@ -46,14 +45,22 @@ describe("cypher-builder", () => {
     manager.load();
     const balanced = manager.get("BALANCED");
 
-    const whereClause = buildStrictConditions(balanced.strictPresets.map((preset) => preset.field));
-    const scoreClause = buildFlexibleScoring(balanced.flexiblePresets);
+    const whereClause = buildStrictConditions(
+      balanced.strictPresets.map((preset) => preset.field),
+      "requestedTargetContext",
+      "dbTargetContext"
+    );
+    const scoreClause = buildFlexibleScoring(
+      balanced.flexiblePresets,
+      "requestedTargetContext",
+      "dbTargetContext"
+    );
 
     const query = buildTargetTransitionQuery(whereClause, scoreClause);
 
     expect(query).toContain("$targetContext AS requestedTargetContext");
     expect(query).toContain(
-      "dbTargetContext.context_id <> dbCurrentContext.context_id"
+      "MATCH\n  (dbCurrentUser)-[:HAS_CONTEXT]->(dbTargetContext:Context)"
     );
     expect(query).toContain(
       "compatibilityScore AS targetContextCompatibilityScore"

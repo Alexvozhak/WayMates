@@ -49,7 +49,7 @@ describe("SelectivityProfiler Functional Tests", () => {
 
     const result = await getOptimalFieldOrder(
       driver,
-      strictPresets,
+      strictPresets.map(p => p.field),
       userContext
     );
 

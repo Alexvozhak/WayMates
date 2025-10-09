@@ -72,8 +72,9 @@ describe("current-to-target", () => {
       "MATCH\n  (dbCurrentUser:User)-[:HAS_CONTEXT]->(dbCurrentContext:Context)"
     );
     // Убеждаемся, что в конвейер добавлены следующие шаги
-    expect(cypher).toContain("ОРКЕСТРИРОВАННЫЙ ПОИСК TARGET КОНТЕКСТОВ");
-    expect(cypher).toContain("БЛОК 3: РАСЧЕТ МЕТРИК СОВМЕСТИМОСТИ");
+    expect(cypher).toContain("ПОИСК CURRENT КОНТЕКСТОВ");
+    expect(cypher).toContain("ПОИСК TARGET КОНТЕКСТОВ");
+    expect(cypher).toContain("РАСЧЕТ РЕАЛЬНЫХ МЕТРИК СОВМЕСТИМОСТИ");
     expect(cypherParams).toEqual({
       currentContext,
       targetContext,

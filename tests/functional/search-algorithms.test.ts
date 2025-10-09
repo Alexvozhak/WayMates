@@ -45,8 +45,15 @@ describe("Поисковые алгоритмы", () => {
         await executeUpsertStory(driver, data);
       }
 
-      // Берем Angular разработчика как поисковый контекст
-      const searchContext = testData[0].contexts[0]!;
+      // Берем Angular разработчика как поисковый контекст из БД
+      const searchContextId = testData[0].contexts[0]!.context_id;
+      const searchContextResult = await session.executeRead((tx) =>
+        tx.run("MATCH (c:Context {context_id: $id}) RETURN c", { id: searchContextId })
+      );
+      const searchContext = searchContextResult.records[0]!.get("c");
+      
+      // Добавляем context_id к объекту из БД
+      searchContext.context_id = searchContextId;
 
       // Конфигурация поиска: Frontend + навыки + индустрия
       const config: QueryConfig = {
@@ -59,8 +66,16 @@ describe("Поисковые алгоритмы", () => {
         ],
       };
 
-      const whereClause = buildStrictConditions(config.strictPresets.map((s) => s.field));
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
+      const whereClause = buildStrictConditions(
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
 
       // Выполняем поиск
       const fullQuery = `
@@ -68,7 +83,7 @@ describe("Поисковые алгоритмы", () => {
         MATCH (candidateCtx:Context)
         WHERE candidateCtx.context_id <> $searchContextId
         WITH *, searchCtx AS requestedCurrentContext, candidateCtx AS dbCurrentContext
-        ${whereClause}
+        ${whereClause ? `WHERE ${whereClause}` : ''}
         ${scoreClause}
         RETURN candidateCtx.context_id, candidateCtx.position,
                candidateCtx.industry, candidateCtx.country_code,
@@ -83,16 +98,6 @@ describe("Поисковые алгоритмы", () => {
           searchContextId: searchContext.context_id,
         })
       );
-
-      console.log("🔍 Поисковый контекст:", {
-        position: searchContext.position,
-        industry: searchContext.industry,
-        country: searchContext.country_code,
-        domains: searchContext.domains,
-        skills: searchContext.skills.map((s) => s.name),
-      });
-
-      console.log("📊 Найдено кандидатов:", result.records.length);
 
       // Проверяем качество поиска
       expect(result.records.length).toBeGreaterThan(0);
@@ -155,15 +160,23 @@ describe("Поисковые алгоритмы", () => {
         ],
       };
 
-      const whereClause = buildStrictConditions(config.strictPresets.map((s) => s.field));
-      const scoreClause = buildFlexibleScoring(config.flexiblePresets);
+      const whereClause = buildStrictConditions(
+        config.strictPresets.map((s) => s.field),
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
 
       const fullQuery = `
         MATCH (searchCtx:Context {context_id: $searchContextId})
         MATCH (candidateCtx:Context)
         WHERE candidateCtx.context_id <> $searchContextId
         WITH *, searchCtx AS requestedCurrentContext, candidateCtx AS dbCurrentContext
-        ${whereClause}
+        ${whereClause ? `WHERE ${whereClause}` : ''}
         ${scoreClause}
         RETURN candidateCtx.context_id, candidateCtx.skills, compatibilityScore
         ORDER BY compatibilityScore DESC

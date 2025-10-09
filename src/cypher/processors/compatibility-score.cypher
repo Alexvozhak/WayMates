@@ -79,7 +79,9 @@ coalesce(dbCurrentContext.team_size = $currentContext.team_size, false) AS teamS
 // Индустрия - жесткий фильтр, поэтому всегда true (не считаем отдельно)
 
 // Строим путь обучения (Trail[]) между current и target для данного пользователя
+// Избегаем shortestPath когда узлы одинаковые
 OPTIONAL MATCH p = shortestPath((dbCurrentContext)-[:STEPS_ON|STEPS_TO*1..6]->(dbTargetContext))
+WHERE dbCurrentContext.context_id <> dbTargetContext.context_id
 WITH *,
      CASE WHEN p IS NULL THEN [] ELSE [n IN nodes(p) WHERE n:Trail] END AS pathTrails
 WITH *,

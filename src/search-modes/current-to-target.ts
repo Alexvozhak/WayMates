@@ -53,19 +53,16 @@ export async function executeCurrentToTarget(
 
   const orchestrator = new QueryOrchestrator(presetsManager, driver);
 
-  // Генерируем обе стадии через оркестратор
-  const dynamicCurrentContexts = await orchestrator.generateCurrentContextQuery(
+  // Генерируем двухэтапный запрос через оркестратор
+  const currentStage = await orchestrator.generateCurrentContextQuery(
     currentPreset,
     params.currentContext
   );
+  const targetStage = orchestrator.generateTargetContextQuery(targetPreset);
 
-  const dynamicTargetTransitions =
-    orchestrator.generateTargetContextQuery(targetPreset);
-
-  // ПОЛНАЯ ИНТЕГРАЦИЯ: current + target (оркестратор) + compatibility-score
   const cypherQuery = [
-    dynamicCurrentContexts,
-    dynamicTargetTransitions,
+    currentStage,
+    targetStage,
     Processors.COMPATIBILITY_SCORE,
   ].join("\n\n");
 

@@ -20,8 +20,16 @@ describe("snippets-extractor", () => {
     manager.load();
     const balanced = manager.get("BALANCED");
 
-    const whereClause = buildStrictConditions(balanced.strictPresets.map((preset) => preset.field));
-    const scoreClause = buildFlexibleScoring(balanced.flexiblePresets);
+    const whereClause = buildStrictConditions(
+      balanced.strictPresets.map((preset) => preset.field),
+      "requestedCurrentContext",
+      "dbCurrentContext"
+    );
+    const scoreClause = buildFlexibleScoring(
+      balanced.flexiblePresets,
+      "requestedCurrentContext",
+      "dbCurrentContext"
+    );
 
     expect(whereClause).toContain("WHERE");
     expect(whereClause).toContain(
@@ -62,8 +70,8 @@ describe("snippets-extractor", () => {
 
   test("field snippets expose strict and flexible builders", () => {
     const snippet = FIELD_SNIPPETS.position;
-    const strict = snippet.strict;
-    const flexible = snippet.flexible(10);
+    const strict = snippet.strict("requestedCurrentContext", "dbCurrentContext");
+    const flexible = snippet.flexible("requestedCurrentContext", "dbCurrentContext", 10);
 
     expect(strict).toContain("dbCurrentContext.position = requestedCurrentContext.position");
     expect(flexible).toContain("THEN 10");

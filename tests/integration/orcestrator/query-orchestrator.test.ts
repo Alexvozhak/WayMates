@@ -14,6 +14,7 @@ import {
   FALLBACK_SELECTIVITY,
   buildExplainQuery,
 } from "../../../src/orcestrator/selectivity-profiler.js";
+import { Processors } from "../../../src/cypher/api.js";
 
 const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
 
@@ -44,26 +45,30 @@ describe("QueryOrchestrator integration", () => {
     manager.load();
     const orchestrator = new QueryOrchestrator(manager, driver);
 
-    const currentQuery = await orchestrator.generateCurrentContextQuery(
+    const currentStage = await orchestrator.generateCurrentContextQuery(
       "FLEXIBLE",
       baseUser.contexts[0]
     );
+    const targetStage = orchestrator.generateTargetContextQuery("FLEXIBLE");
 
-    const cypher = `${currentQuery}
-
-RETURN dbCurrentUser.user_id AS userId,
-       dbCurrentContext.context_id AS contextId,
-       currentContextCompatibilityScore AS score
-ORDER BY score DESC
-LIMIT 5`;
+    const cypher = [
+      currentStage,
+      targetStage,
+      Processors.COMPATIBILITY_SCORE,
+    ].join("\n\n");
 
     const result = await session.executeRead((tx) =>
-      tx.run(cypher, { currentContext: baseUser.contexts[0] })
+      tx.run(cypher, {
+        currentContext: baseUser.contexts[0],
+        targetContext: baseUser.contexts[1] || baseUser.contexts[0], // Используем второй контекст или первый если нет второго
+      })
     );
 
     expect(result.records.length).toBeGreaterThan(0);
-    const scores = result.records.map((record) => Number(record.get("score")));
-    expect(scores.every((value) => value > 0)).toBe(true);
+    const results = result.records.map((record) => record.get("result"));
+    expect(
+      results.every((result: any) => result.currentCompatibilityScore > 0)
+    ).toBe(true);
   });
 
   test("getOptimalFieldOrder sorts fields by estimated rows", async () => {
@@ -96,10 +101,84 @@ LIMIT 5`;
 
     const optimalOrder = await getOptimalFieldOrder(
       driver,
-      balanced.strictPresets,
+      strictFields,
       story.contexts[0]
     );
 
     expect(optimalOrder).toEqual(expectedOrder);
+  });
+
+  describe("Required Fields Validation", () => {
+    test("should throw error when current preset lacks required fields", async () => {
+      const manager = new PresetsManager(PRESETS_PATH);
+      manager.load();
+      const orchestrator = new QueryOrchestrator(manager, driver);
+
+      // Создаем тестовый пресет без обязательных полей
+      const invalidPreset = {
+        strictPresets: [
+          { field: "industry" }, // Только industry, без position, domains, skills
+        ],
+        flexiblePresets: [{ field: "country_code", weight: 50 }],
+      };
+
+      // Добавляем временно невалидный пресет
+      manager.add("INVALID_PRESET", invalidPreset);
+
+      const testData = loadTestData("USER_001");
+      const testContext = testData.contexts[0]!;
+
+      await expect(
+        orchestrator.generateCurrentContextQuery("INVALID_PRESET", testContext)
+      ).rejects.toThrow(
+        'Current preset "INVALID_PRESET" must include all required fields: position, domains, skills'
+      );
+
+      // Удаляем тестовый пресет
+      manager.remove("INVALID_PRESET");
+    });
+
+    test("should pass validation when current preset has all required fields", async () => {
+      const manager = new PresetsManager(PRESETS_PATH);
+      manager.load();
+      const orchestrator = new QueryOrchestrator(manager, driver);
+
+      const testData = loadTestData("USER_001");
+      const testContext = testData.contexts[0]!;
+
+      // FLEXIBLE пресет должен содержать все обязательные поля
+      await expect(
+        orchestrator.generateCurrentContextQuery("FLEXIBLE", testContext)
+      ).resolves.toBeDefined();
+    });
+
+    test("should pass validation when current preset has required fields plus additional ones", async () => {
+      const manager = new PresetsManager(PRESETS_PATH);
+      manager.load();
+      const orchestrator = new QueryOrchestrator(manager, driver);
+
+      // Создаем тестовый пресет с обязательными полями + дополнительными
+      const validPreset = {
+        strictPresets: [
+          { field: "position" }, // Обязательное
+          { field: "domains" }, // Обязательное
+          { field: "skills" }, // Обязательное
+          { field: "industry" }, // Дополнительное
+        ],
+        flexiblePresets: [{ field: "country_code", weight: 50 }],
+      };
+
+      manager.add("VALID_PRESET", validPreset);
+
+      const testData = loadTestData("USER_001");
+      const testContext = testData.contexts[0]!;
+
+      await expect(
+        orchestrator.generateCurrentContextQuery("VALID_PRESET", testContext)
+      ).resolves.toBeDefined();
+
+      // Удаляем тестовый пресет
+      manager.remove("VALID_PRESET");
+    });
   });
 });
