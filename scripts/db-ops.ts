@@ -41,33 +41,21 @@ const executeCypher = (
     process.exit(1);
   }
 
-  // Общие части команд
-  const bashPrefix = `bash -c 'source ${config.envFile} &&`;
-  const authFlags = `cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD"`;
-  const bashSuffix = `'`;
-
   let command: string;
 
   if (env === "prod") {
     // Production: используем docker compose exec
-    const composeExec = `docker compose --env-file ${config.envFile} exec ${config.container}`;
-    
     if (operation === "init") {
-      command = `${bashPrefix} ${composeExec} ${authFlags} -f /tmp/init.cypher${bashSuffix}`;
+      command = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container} cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -f /tmp/init.cypher'`;
     } else {
-      command = `${bashPrefix} ${composeExec} ${authFlags} -d neo4j "${query}"${bashSuffix}`;
+      command = `bash -c 'source ${config.envFile} && docker compose --env-file ${config.envFile} exec ${config.container} cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -d neo4j "${query}"'`;
     }
   } else {
     // Test: используем docker run
-    const dockerRunBase = `docker run --rm --network host`;
-    const image = `neo4j:latest`;
-    const addressFlag = `-a localhost:${config.port}`;
-    
     if (operation === "init") {
-      const volumeMount = `-v $(pwd)/database/init.cypher:/tmp/init.cypher`;
-      command = `${bashPrefix} ${dockerRunBase} ${volumeMount} ${image} ${authFlags} ${addressFlag} -f /tmp/init.cypher${bashSuffix}`;
+      command = `bash -c 'source ${config.envFile} && docker run --rm --network host -v $(pwd)/database/init.cypher:/tmp/init.cypher neo4j:latest cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -a localhost:${config.port} -f /tmp/init.cypher'`;
     } else {
-      command = `${bashPrefix} ${dockerRunBase} ${image} ${authFlags} ${addressFlag} -d neo4j "${query}"${bashSuffix}`;
+      command = `bash -c 'source ${config.envFile} && docker run --rm --network host neo4j:latest cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -a localhost:${config.port} -d neo4j "${query}"'`;
     }
   }
 
