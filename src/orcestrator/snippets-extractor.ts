@@ -1,7 +1,7 @@
 import { type ContextField, FlexiblePreset } from "../schemas-zod.js";
 
 type FieldSnippet = {
-  startPattern: string | ((value: any) => string);
+  startPattern: string;
   strict: (searchCtx: string, candidateCtx: string) => string;
   flexible: (searchCtx: string, candidateCtx: string, weight: number) => string;
 };
@@ -9,7 +9,7 @@ type FieldSnippets = Record<ContextField, FieldSnippet>;
 
 export const FIELD_SNIPPETS = {
   position: {
-    startPattern: (_value: string) => `MATCH (c:Context {position: $value})`,
+    startPattern: `MATCH (c:Context {position: $value})`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `${candidateCtx}.position = ${searchCtx}.position`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -17,8 +17,7 @@ export const FIELD_SNIPPETS = {
   },
 
   domains: {
-    startPattern: (value: string[]) =>
-      `MATCH (c:Context) WHERE ANY(d IN $value WHERE d IN c.domains)`,
+    startPattern: `MATCH (c:Context) WHERE ANY(d IN $domains WHERE d IN c.domains)`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `all(d IN ${searchCtx}.domains WHERE d IN ${candidateCtx}.domains)`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -28,18 +27,17 @@ export const FIELD_SNIPPETS = {
   },
 
   skills: {
-    startPattern: (value: any[]) =>
-      `MATCH (c:Context) WHERE ANY(s IN [skill IN $value | skill.name] WHERE s IN c.skills)`,
+    startPattern: `MATCH (c:Context) WHERE ANY(s IN $skills WHERE s IN c.skills)`,
     strict: (searchCtx: string, candidateCtx: string) =>
-      `all(s IN [skill IN ${searchCtx}.skills | skill.name] WHERE s IN ${candidateCtx}.skills)`,
+      `all(s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills)`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN size([s IN [skill IN ${searchCtx}.skills | skill.name] WHERE s IN ${candidateCtx}.skills]) > 0 
-      THEN ${weight} * (toFloat(size([s IN [skill IN ${searchCtx}.skills | skill.name] WHERE s IN ${candidateCtx}.skills])) / size(${searchCtx}.skills)) 
+      `CASE WHEN size([s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills]) > 0 
+      THEN ${weight} * (toFloat(size([s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills])) / size(${searchCtx}.skills)) 
       ELSE 0 END`,
   },
 
   industry: {
-    startPattern: (value: string) => `MATCH (c:Context {industry: $value})`,
+    startPattern: `MATCH (c:Context {industry: $value})`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `${candidateCtx}.industry = ${searchCtx}.industry`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -47,7 +45,7 @@ export const FIELD_SNIPPETS = {
   },
 
   country_code: {
-    startPattern: (value: string) => `MATCH (c:Context {country_code: $value})`,
+    startPattern: `MATCH (c:Context {country_code: $value})`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `${candidateCtx}.country_code = ${searchCtx}.country_code`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -55,7 +53,7 @@ export const FIELD_SNIPPETS = {
   },
 
   city_name: {
-    startPattern: (value: string) => `MATCH (c:Context {city_name: $value})`,
+    startPattern: `MATCH (c:Context {city_name: $value})`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `${candidateCtx}.city_name = ${searchCtx}.city_name`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -63,7 +61,7 @@ export const FIELD_SNIPPETS = {
   },
 
   work_type: {
-    startPattern: (value: string) => `MATCH (c:Context {work_type: $value})`,
+    startPattern: `MATCH (c:Context {work_type: $value})`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `${candidateCtx}.work_type = ${searchCtx}.work_type`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -71,7 +69,7 @@ export const FIELD_SNIPPETS = {
   },
 
   company_size: {
-    startPattern: (value: string) => `MATCH (c:Context {company_size: $value})`,
+    startPattern: `MATCH (c:Context {company_size: $value})`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `${candidateCtx}.company_size = ${searchCtx}.company_size`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -79,7 +77,7 @@ export const FIELD_SNIPPETS = {
   },
 
   team_size: {
-    startPattern: (value: number) => `MATCH (c:Context {team_size: $value})`,
+    startPattern: `MATCH (c:Context {team_size: $value})`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `${candidateCtx}.team_size = ${searchCtx}.team_size`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -87,7 +85,7 @@ export const FIELD_SNIPPETS = {
   },
 
   birth_year: {
-    startPattern: (value: number) => `MATCH (c:Context {birth_year: $value})`,
+    startPattern: `MATCH (c:Context {birth_year: $value})`,
     strict: (searchCtx: string, candidateCtx: string) =>
       `${candidateCtx}.birth_year = ${searchCtx}.birth_year`,
     flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
@@ -107,7 +105,7 @@ export function buildStrictConditions(
     })
     .filter(Boolean);
 
-  return conditions.length > 0 ? `WHERE ${conditions.join(" AND\n  ")}` : "";
+  return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
 }
 
 export function buildFlexibleScoring(
@@ -124,28 +122,5 @@ export function buildFlexibleScoring(
 
   return scores.length > 0
     ? `WITH *, (\n  ${scores.join(" +\n  ")}\n) AS compatibilityScore\nWHERE compatibilityScore > 0`
-    : "";
-}
-
-export function buildQueryFromConfig(
-  flexiblePresets: FlexiblePreset[],
-  optimalOrder: ContextField[],
-  searchCtx: string = "requestedContext",
-  candidateCtx: string = "candidateContext"
-): {
-  whereClause: string;
-  scoreClause: string;
-} {
-  const whereClause = buildStrictConditions(
-    optimalOrder,
-    searchCtx,
-    candidateCtx
-  );
-  const scoreClause = buildFlexibleScoring(
-    flexiblePresets,
-    searchCtx,
-    candidateCtx
-  );
-
-  return { whereClause, scoreClause };
+    : `WITH *, 0 AS compatibilityScore`;
 }

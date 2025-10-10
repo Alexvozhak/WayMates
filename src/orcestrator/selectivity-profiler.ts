@@ -1,6 +1,6 @@
 import type { Driver } from "neo4j-driver";
 import { FIELD_SNIPPETS } from "./snippets-extractor.js";
-import { ContextField, StrictPreset, UserContext } from "../schemas-zod.js";
+import { ContextField, UserContext } from "../schemas-zod.js";
 
 type SelectivityResult = {
   field: ContextField;
@@ -11,33 +11,37 @@ export const FALLBACK_SELECTIVITY = 1000;
 
 export async function getOptimalFieldOrder(
   driver: Driver,
-  strictPresets: StrictPreset[],
+  strictPresets: ContextField[],
   userContext: UserContext
 ): Promise<ContextField[]> {
-  const strictedFields = strictPresets.map(
-    (strictPreset) => strictPreset.field
-  );
+  const notOptimalFields: ContextField[] = [];
+  for (const field of strictPresets) {
+    if (userContext[field] != null) {
+      notOptimalFields.push(field);
+    }
+  }
 
-  const userStrictedFields = strictedFields.filter(
-    (strictedField) =>
-      userContext[strictedField] !== undefined &&
-      userContext[strictedField] !== null
-  );
+  if (notOptimalFields.length <= 1) {
+    return notOptimalFields;
+  }
 
-  if (userStrictedFields.length <= 1) return userStrictedFields;
+  const profilePromises = [];
+  for (const field of notOptimalFields) {
+    const value = userContext[field];
+    profilePromises.push(runProfile(driver, field, value));
+  }
 
-  const profileResults = await Promise.allSettled(
-    userStrictedFields.map((strictedField) => {
-      const strictedValue = userContext[strictedField];
-      return runProfile(driver, strictedField, strictedValue);
-    })
-  );
+  const profileResults = await Promise.allSettled(profilePromises);
+  const selectivities = processResults(profileResults, notOptimalFields);
 
-  const selectivities = processResults(profileResults, userStrictedFields);
+  selectivities.sort((a, b) => a.estimatedRows - b.estimatedRows);
 
-  return selectivities
-    .sort((a, b) => a.estimatedRows - b.estimatedRows)
-    .map((s) => s.field);
+  const optimalFields: ContextField[] = [];
+  for (const selectivity of selectivities) {
+    optimalFields.push(selectivity.field);
+  }
+
+  return optimalFields;
 }
 
 async function runProfile(
@@ -47,7 +51,7 @@ async function runProfile(
 ): Promise<number> {
   const session = driver.session();
   try {
-    const query = buildExplainQuery(field, value);
+    const query = buildExplainQuery(field);
     const result = await session.executeRead((tx) => tx.run(query, { value }));
     return (
       (result.summary?.plan as any)?.arguments?.EstimatedRows ||
@@ -58,16 +62,13 @@ async function runProfile(
   }
 }
 
-export function buildExplainQuery(field: ContextField, value?: any): string {
+export function buildExplainQuery(field: ContextField): string {
   if (!(field in FIELD_SNIPPETS)) {
     throw new Error(
       `Unknown field '${field}'. Available: ${Object.keys(FIELD_SNIPPETS).join(", ")}`
     );
   }
   const startPattern = FIELD_SNIPPETS[field].startPattern;
-  if (typeof startPattern === "function") {
-    return `EXPLAIN ${(startPattern as any)(value)} RETURN count(c)`;
-  }
   return `EXPLAIN ${startPattern} RETURN count(c)`;
 }
 

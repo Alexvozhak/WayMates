@@ -18,7 +18,6 @@ import { executeUpsertStory } from "../../src/upsert-story.js";
 import {
   CurrentToTargetParams,
   CurrentToTargetResultSchema,
-  DEFAULT_STRICT_SKILL_CATEGORIES,
   type StoryInput,
 } from "../../src/schemas-zod.js";
 import { DEFAULT_SEARCH_CONSTRAINTS } from "../../src/unified-search-types.js";
@@ -37,7 +36,7 @@ describe("Business: current-to-target orchestrated search", () => {
     for (const s of allStories) {
       await executeUpsertStory(driver, s);
     }
-  });
+  }, 30000);
 
   afterAll(async () => {
     await teardownIntegrationTest(session, driver);

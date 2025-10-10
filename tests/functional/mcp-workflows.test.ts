@@ -1,5 +1,6 @@
 import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import type { Driver, Session } from "neo4j-driver";
+import { join } from "path";
 import { loadTestData } from "../helpers/test-data-loader.js";
 import { AvatarSearchResultSchema } from "../../src/schemas-zod.js";
 import {
@@ -42,6 +43,8 @@ const { PresetsManager } = await import(
   "../../src/orcestrator/preset-manager.js"
 );
 
+const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
+
 const BASE_CONSTRAINTS = {
   max_timing_diff_months: 12,
   timing_diff_threshold_percent: 20,
@@ -68,7 +71,7 @@ describe("MCP workflow scenarios", () => {
   beforeEach(async () => {
     fastMCPInstances.length = 0;
     ({ driver, session } = await setupIntegrationTest());
-    const presets = new PresetsManager("/fake/path");
+    const presets = new PresetsManager(PRESETS_PATH);
     createWayMatesServer(driver, presets);
   });
 
@@ -142,8 +145,8 @@ describe("MCP workflow scenarios", () => {
     const story = loadTestData("USER_006");
     await getTool("execute_upsert_story").execute(story);
 
-    const templateContext = clone(story.contexts[0]);
-    templateContext.created_at = "2035-05-05T00:00:00.000Z";
+    const templateContext = clone(story.contexts[0]!);
+    templateContext.created_at = "2035-05-05T00:00:00Z";
     templateContext.context_id = "ctx_temp";
 
     // 📝 БИЗНЕС-СЦЕНАРИЙ: Пользователь добавляет временный контекст для эксперимента

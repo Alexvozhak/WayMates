@@ -11,7 +11,10 @@ import {
   setupIntegrationTest,
   teardownIntegrationTest,
 } from "../helpers/database-setup.js";
-import { buildQueryFromConfig } from "../../src/orcestrator/snippets-extractor.js";
+import {
+  buildStrictConditions,
+  buildFlexibleScoring,
+} from "../../src/orcestrator/snippets-extractor.js";
 import { loadTestData } from "../helpers/test-data-loader.js";
 import type { QueryConfig } from "../../src/schemas-zod.js";
 import { executeUpsertStory } from "../../src/upsert-story.js";
@@ -42,7 +45,8 @@ describe("Поисковые алгоритмы", () => {
         await executeUpsertStory(driver, data);
       }
 
-      // Берем Angular разработчика как поисковый контекст
+      // Используем данные из testData напрямую, а не из БД
+      // Это гарантирует правильную структуру данных (навыки как объекты)
       const searchContext = testData[0].contexts[0]!;
 
       // Конфигурация поиска: Frontend + навыки + индустрия
@@ -56,19 +60,24 @@ describe("Поисковые алгоритмы", () => {
         ],
       };
 
-      const { whereClause, scoreClause } = buildQueryFromConfig(
-        config.flexiblePresets,
+      const whereClause = buildStrictConditions(
         config.strictPresets.map((s) => s.field),
-        "searchCtx",
-        "candidateCtx"
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
       );
 
       // Выполняем поиск
       const fullQuery = `
-        MATCH (searchCtx:Context {context_id: $searchContextId})
+        WITH $searchContext AS requestedCurrentContext
         MATCH (candidateCtx:Context)
-        WHERE candidateCtx.context_id <> $searchContextId
-        ${whereClause.replace("WHERE ", "AND ")}
+        WHERE candidateCtx.context_id <> requestedCurrentContext.context_id
+        WITH *, requestedCurrentContext, candidateCtx AS dbCurrentContext
+        ${whereClause ? `WHERE ${whereClause}` : ""}
         ${scoreClause}
         RETURN candidateCtx.context_id, candidateCtx.position,
                candidateCtx.industry, candidateCtx.country_code,
@@ -80,33 +89,26 @@ describe("Поисковые алгоритмы", () => {
 
       const result = await session.executeRead((tx) =>
         tx.run(fullQuery, {
-          searchContextId: searchContext.context_id,
+          searchContext: searchContext,
         })
       );
-
-      console.log("🔍 Поисковый контекст:", {
-        position: searchContext.position,
-        industry: searchContext.industry,
-        country: searchContext.country_code,
-        domains: searchContext.domains,
-        skills: searchContext.skills.map((s) => s.name),
-      });
-
-      console.log("📊 Найдено кандидатов:", result.records.length);
 
       // Проверяем качество поиска
       expect(result.records.length).toBeGreaterThan(0);
 
       // Анализируем результаты
-      const candidates = result.records.map((record) => ({
-        id: record.get("candidateCtx.context_id"),
-        position: record.get("candidateCtx.position"),
-        industry: record.get("candidateCtx.industry"),
-        country: record.get("candidateCtx.country_code"),
-        domains: record.get("candidateCtx.domains"),
-        skills: record.get("candidateCtx.skills").map((s: any) => s.name),
-        score: record.get("compatibilityScore") || 0,
-      }));
+      const candidates = result.records.map((record) => {
+        const skills = record.get("candidateCtx.skills");
+        return {
+          id: record.get("candidateCtx.context_id"),
+          position: record.get("candidateCtx.position"),
+          industry: record.get("candidateCtx.industry"),
+          country: record.get("candidateCtx.country_code"),
+          domains: record.get("candidateCtx.domains"),
+          skills: Array.isArray(skills) ? skills : [],
+          score: record.get("compatibilityScore") || 0,
+        };
+      });
 
       // Все кандидаты должны иметь Frontend домен
       candidates.forEach((candidate) => {
@@ -152,18 +154,23 @@ describe("Поисковые алгоритмы", () => {
         ],
       };
 
-      const { whereClause, scoreClause } = buildQueryFromConfig(
-        config.flexiblePresets,
+      const whereClause = buildStrictConditions(
         config.strictPresets.map((s) => s.field),
-        "searchCtx",
-        "candidateCtx"
+        "requestedCurrentContext",
+        "dbCurrentContext"
+      );
+      const scoreClause = buildFlexibleScoring(
+        config.flexiblePresets,
+        "requestedCurrentContext",
+        "dbCurrentContext"
       );
 
       const fullQuery = `
         MATCH (searchCtx:Context {context_id: $searchContextId})
         MATCH (candidateCtx:Context)
         WHERE candidateCtx.context_id <> $searchContextId
-        ${whereClause.replace("WHERE ", "AND ")}
+        WITH *, searchCtx AS requestedCurrentContext, candidateCtx AS dbCurrentContext
+        ${whereClause ? `WHERE ${whereClause}` : ""}
         ${scoreClause}
         RETURN candidateCtx.context_id, candidateCtx.skills, compatibilityScore
         ORDER BY compatibilityScore DESC
@@ -176,10 +183,13 @@ describe("Поисковые алгоритмы", () => {
         })
       );
 
-      const candidates = result.records.map((record) => ({
-        skills: record.get("candidateCtx.skills").map((s: any) => s.name),
-        score: record.get("compatibilityScore") || 0,
-      }));
+      const candidates = result.records.map((record) => {
+        const skills = record.get("candidateCtx.skills");
+        return {
+          skills: Array.isArray(skills) ? skills : [],
+          score: record.get("compatibilityScore") || 0,
+        };
+      });
 
       // Проверяем что кандидаты с React получают более высокие скоры
       const reactCandidates = candidates.filter((c) =>

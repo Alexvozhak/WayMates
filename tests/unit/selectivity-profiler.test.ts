@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   FALLBACK_SELECTIVITY,
   buildExplainQuery,
@@ -18,7 +18,7 @@ describe("SelectivityProfiler Unit Tests", () => {
     it("должен генерировать правильный EXPLAIN запрос для domains", () => {
       const query = buildExplainQuery("domains", ["backend"]);
       expect(query).toContain("EXPLAIN");
-      expect(query).toContain("WHERE ANY(d IN $value WHERE d IN c.domains)");
+      expect(query).toContain("WHERE ANY(d IN $domains WHERE d IN c.domains)");
       expect(query).toContain("RETURN count(c)");
     });
 
@@ -27,9 +27,7 @@ describe("SelectivityProfiler Unit Tests", () => {
         { name: "JS", category: "language" },
       ]);
       expect(query).toContain("EXPLAIN");
-      expect(query).toContain(
-        "WHERE ANY(s IN [skill IN $value | skill.name] WHERE s IN c.skills)"
-      );
+      expect(query).toContain("WHERE ANY(s IN $skills WHERE s IN c.skills)");
       expect(query).toContain("RETURN count(c)");
     });
 

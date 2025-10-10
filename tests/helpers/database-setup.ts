@@ -2,6 +2,15 @@ import { createDriver } from "../../src/neo4j.js";
 import type { Driver, Session } from "neo4j-driver";
 import { expect } from "vitest";
 
+const projectName = process.env.VITEST_PROJECT ?? "";
+
+if (projectName === "integration" || projectName === "functional") {
+  // Единый порт для devel окружения
+  process.env.NEO4J_URI ??= `bolt://localhost:7689`;
+  process.env.NEO4J_USER ??= "neo4j";
+  process.env.NEO4J_PASSWORD ??= "testpassword123";
+}
+
 export async function setupIntegrationTest(): Promise<{
   driver: Driver;
   session: Session;
@@ -9,12 +18,13 @@ export async function setupIntegrationTest(): Promise<{
   const driver = await createDriver();
   const session = driver.session();
 
+  // Очищаем БД перед каждым тестом для изоляции
   await session.executeWrite((tx) => tx.run("MATCH (n) DETACH DELETE n"));
 
   const verifyResult = await session.executeRead((tx) =>
     tx.run("MATCH (n) RETURN count(n) as total_nodes")
   );
-  const nodeCount = Number(verifyResult.records[0]?.get("total_nodes")) ?? 0;
+  const nodeCount = Number(verifyResult.records[0]?.get("total_nodes") ?? 0);
   expect(nodeCount).toBe(0);
 
   return { driver, session };

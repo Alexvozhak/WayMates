@@ -1,81 +1,48 @@
-export function buildCurrentToTargetQuery(
+export function buildCurrentContextQuery(
   whereClause: string,
-  scoreClause: string,
-  searchCtx: string = "requestedCurrentContext",
-  candidateCtx: string = "dbCurrentContext"
+  scoreClause: string
 ): string {
-  const normalizedWhere = (whereClause || "")
-    .replace(/^\s*WHERE\s+/i, "")
-    .trim();
-  const whereBlock = [
-    `${searchCtx} IS NOT NULL`,
-    normalizedWhere ? normalizedWhere : undefined,
-  ]
-    .filter(Boolean)
-    .join(" AND\n  ");
-
   return `/* ============================================
- * ОРКЕСТРИРОВАННЫЙ ПОИСК CURRENT КОНТЕКСТОВ
+ * ПОИСК CURRENT КОНТЕКСТОВ
  * ============================================ */
 
-// ШАГ 1: Получаем контекст для поиска 
-WITH $currentContext AS ${searchCtx} 
+WITH $currentContext AS requestedCurrentContext
 
-// ШАГ 2: Поиск похожих контекстов с динамической фильтрацией
 MATCH
-  (dbCurrentUser:User)-[:HAS_CONTEXT]->(${candidateCtx}:Context)
-WITH dbCurrentUser, ${candidateCtx}, ${searchCtx}
+  (dbCurrentUser:User)-[:HAS_CONTEXT]->(dbCurrentContext:Context)
+WITH *, dbCurrentUser, dbCurrentContext, requestedCurrentContext
 WHERE
-  ${whereBlock}
+  requestedCurrentContext IS NOT NULL
+  ${whereClause ? `AND ${whereClause}` : ""}
 
 ${scoreClause}
 
-// ШАГ 3: Передаём результаты дальше (закрепляем переменные для следующего блока)
-WITH dbCurrentUser, ${candidateCtx} AS dbCurrentContext, compatibilityScore AS currentContextCompatibilityScore
+WITH *, dbCurrentUser, dbCurrentContext, compatibilityScore AS currentContextCompatibilityScore
 WHERE dbCurrentUser IS NOT NULL
-WITH dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore`;
+WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore`;
 }
 
 export function buildTargetTransitionQuery(
   whereClause: string,
-  scoreClause: string,
-  searchCtx: string = "requestedTargetContext",
-  targetCtx: string = "dbTargetContext"
+  scoreClause: string
 ): string {
-  const normalizedWhere = (whereClause || "")
-    .replace(/^\s*WHERE\s+/i, "")
-    .trim();
-
-  // Добавляем фильтр исключения того же контекста (карьерный переход, а не статус-кво)
-  const whereBlock = [
-    `${searchCtx} IS NOT NULL`,
-    `${targetCtx}.context_id <> dbCurrentContext.context_id`, // исключаем дубли
-    normalizedWhere ? normalizedWhere : undefined,
-  ]
-    .filter(Boolean)
-    .join(" AND\n  ");
-
   return `/* ============================================
- * ОРКЕСТРИРОВАННЫЙ ПОИСК TARGET КОНТЕКСТОВ  
+ * ПОИСК TARGET КОНТЕКСТОВ
  * ============================================ */
 
-// Сохраняем все существующие переменные и добавляем $targetContext
-WITH *, $targetContext AS ${searchCtx}
+WITH *, $targetContext AS requestedTargetContext
 
-// Поиск target контекстов у найденных пользователей  
 MATCH
-  (dbCurrentUser)-[:HAS_CONTEXT]->(${targetCtx}:Context)
-
-// Сохраняем ВСЕ переменные из предыдущего WITH + новые из MATCH
-WITH *, ${targetCtx}, ${searchCtx}
+  (dbTargetUser:User)-[:HAS_CONTEXT]->(dbTargetContext:Context)
+WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetUser, requestedTargetContext, dbTargetContext
 WHERE
-  ${whereBlock}
+  requestedTargetContext IS NOT NULL
+  AND dbTargetUser <> dbCurrentUser
+  ${whereClause ? `AND ${whereClause}` : ""}
 
 ${scoreClause}
 
-// Передаём результаты следующему блоку (совместимость с существующей цепочкой)
-// Используем WITH * чтобы сохранить ВСЕ переменные включая currentContextCompatibilityScore
-// Добавляем targetContextCompatibilityScore для второй стадии
-WITH *, compatibilityScore AS targetContextCompatibilityScore
-WHERE ${targetCtx} IS NOT NULL`;
+WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetUser, dbTargetContext, compatibilityScore AS targetContextCompatibilityScore
+WHERE dbCurrentUser IS NOT NULL AND dbTargetUser IS NOT NULL
+WITH *, dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetUser, dbTargetContext, targetContextCompatibilityScore`;
 }

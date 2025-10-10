@@ -31,21 +31,28 @@ export default defineConfig(() => {
             poolOptions: {
               threads: {
                 isolate: true, // Изоляция глобального состояния для БД тестов
+                singleThread: true, // Отключаем параллельное выполнение тестов
               },
             },
             setupFiles: ["./tests/helpers/database-setup.ts"],
             testTimeout: 45000, // Больше времени для БД операций
-            env: loadEnv("integration", process.cwd(), ""),
+            env: loadEnv("test", process.cwd(), ""),
           },
         },
         {
           test: {
             name: "functional",
             include: ["tests/functional/**/*.test.ts"],
-            pool: "forks", // Полная изоляция процессов для e2e тестов
+            pool: "threads", // Используем threads для единой БД, но с изоляцией
+            poolOptions: {
+              threads: {
+                isolate: true, // Изоляция глобального состояния
+                singleThread: true, // Отключаем параллельное выполнение тестов
+              },
+            },
             setupFiles: ["./tests/helpers/database-setup.ts"],
             testTimeout: 60000, // Максимальное время для e2e сценариев
-            env: loadEnv("functional", process.cwd(), ""),
+            env: loadEnv("test", process.cwd(), ""),
           },
         },
       ],

@@ -50,6 +50,15 @@ export class PresetsManager {
     return { ...this.presets };
   }
 
+  // Методы для тестирования
+  add(name: string, config: QueryConfig): void {
+    this.presets[name] = config;
+  }
+
+  remove(name: string): void {
+    delete this.presets[name];
+  }
+
   private validatePresets(rawPresets: Record<string, unknown>): Presets {
     const validatedPresets: Presets = {};
 

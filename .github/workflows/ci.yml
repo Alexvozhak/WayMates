@@ -1,0 +1,167 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches: [main, devel]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  lint_unit:
+    name: "🔍 Lint & Unit Tests"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v5
+
+      - name: "⚙️ Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: "📦 Install dependencies"
+        run: npm ci
+
+      - name: "🔨 Generate Cypher queries"
+        run: npm run build:cypher
+
+      - name: "🔍 Lint code"
+        run: npm run lint
+
+      - name: "🧪 Unit tests"
+        run: npm run test:unit
+
+  integration:
+    name: "🔗 Integration Tests"
+    needs: [lint_unit]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v5
+
+      - name: "⚙️ Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: "📦 Install dependencies"
+        run: npm ci
+
+      - name: "🔨 Generate Cypher queries"
+        run: npm run build:cypher
+
+      - name: "🔐 Create .env.test"
+        run: echo "${{ secrets.ENV_TEST }}" > .env.test
+
+      - name: "🐳 Start Neo4j Test"
+        run: docker compose -f docker-compose.ci.yml --env-file .env.test up neo4j-test -d --wait
+
+      - name: "🗄️ Initialize Neo4j database"
+        run: docker compose -f docker-compose.ci.yml --env-file .env.test exec neo4j-test cypher-shell -u neo4j -p testpassword123 -f /tmp/init.cypher
+
+      - name: "🧪 Run integration tests"
+        run: npm run test:integration:run
+        env:
+          NEO4J_URI: ${{ vars.NEO4J_URI || 'bolt://localhost:7689' }}
+          NEO4J_USER: ${{ vars.NEO4J_USER || 'neo4j' }}
+          NEO4J_PASSWORD: ${{ vars.NEO4J_PASSWORD || 'testpassword123' }}
+
+      - name: "🧹 Cleanup Docker containers"
+        if: always()
+        run: docker compose -f docker-compose.ci.yml stop neo4j-test && docker compose -f docker-compose.ci.yml rm -f neo4j-test
+
+      - name: "📋 Dump Docker logs on failure"
+        if: failure()
+        run: |
+          echo "=== Neo4j Test Logs ==="
+          docker compose -f docker-compose.ci.yml logs neo4j-test || true
+          echo "=== All Docker Containers ==="
+          docker ps -a || true
+
+      - name: "📤 Upload logs as artifact"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-logs-${{ github.run_number }}
+          path: |
+            docker-compose*.yml
+            **/vitest*.log
+            .env.test
+          compression-level: 9
+
+  functional:
+    name: "🎭 Functional Tests"
+    needs: [lint_unit, integration]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v5
+
+      - name: "⚙️ Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: "📦 Install dependencies"
+        run: npm ci
+
+      - name: "🔨 Generate Cypher queries"
+        run: npm run build:cypher
+
+      - name: "🔐 Create .env.test"
+        run: echo "${{ secrets.ENV_TEST }}" > .env.test
+
+      - name: "🐳 Start Neo4j Test"
+        run: docker compose -f docker-compose.ci.yml --env-file .env.test up neo4j-test -d --wait
+
+      - name: "🗄️ Initialize Neo4j database"
+        run: docker compose -f docker-compose.ci.yml --env-file .env.test exec neo4j-test cypher-shell -u neo4j -p testpassword123 -f /tmp/init.cypher
+
+      - name: "🧪 Run functional tests"
+        run: npm run test:functional:run
+        env:
+          NEO4J_URI: ${{ vars.NEO4J_URI || 'bolt://localhost:7689' }}
+          NEO4J_USER: ${{ vars.NEO4J_USER || 'neo4j' }}
+          NEO4J_PASSWORD: ${{ vars.NEO4J_PASSWORD || 'testpassword123' }}
+
+      - name: "🧹 Cleanup Docker containers"
+        if: always()
+        run: docker compose -f docker-compose.ci.yml stop neo4j-test && docker compose -f docker-compose.ci.yml rm -f neo4j-test
+
+      - name: "📋 Dump Docker logs on failure"
+        if: failure()
+        run: |
+          echo "=== Neo4j Test Logs ==="
+          docker compose -f docker-compose.ci.yml logs neo4j-test || true
+          echo "=== All Docker Containers ==="
+          docker ps -a || true
+
+      - name: "📤 Upload logs as artifact"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: functional-logs-${{ github.run_number }}
+          path: |
+            docker-compose*.yml
+            **/vitest*.log
+            .env.test
+          compression-level: 9

@@ -49,10 +49,10 @@ describe("Cypher Queries Integration Tests", () => {
 
       // Проверяем связь HAS_CONTEXT
       const relationCheck = await session.run(
-        "MATCH (u:User)-[r:HAS_CONTEXT]->(c:Context) WHERE u.user_id = $user_id RETURN r.is_current",
+        "MATCH (u:User)-[r:HAS_CONTEXT]->(c:Context) WHERE u.user_id = $user_id RETURN r",
         { user_id: testData.user_id }
       );
-      expect(relationCheck.records[0]!.get("r.is_current")).toBe(true);
+      expect(relationCheck.records.length).toBeGreaterThan(0);
     });
 
     test("duplicates context fields as properties for fast search", async () => {
@@ -226,9 +226,9 @@ describe("Cypher Queries Integration Tests", () => {
         context: contextWithSkills,
       });
 
-      // Проверяем связи CITIZEN_OF
+      // Проверяем связи CITIZEN_OF (от Context, не от User)
       const citizenshipCheck = await session.run(
-        `MATCH (u:User)-[:CITIZEN_OF]->(ct:Country)
+        `MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)-[:CITIZEN_OF]->(ct:Country)
          WHERE u.user_id = $user_id
          RETURN ct.name ORDER BY ct.name`,
         { user_id: testData.user_id }

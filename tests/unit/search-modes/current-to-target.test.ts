@@ -5,7 +5,6 @@ import {
   type CurrentToTargetParams,
 } from "../../../src/schemas-zod.js";
 import { DEFAULT_SEARCH_CONSTRAINTS } from "../../../src/unified-search-types.js";
-import { Finders, Processors } from "../../../src/cypher/api.js";
 import { loadTestData } from "../../helpers/test-data-loader.js";
 
 const { runQueryMock, getStrictSkillsMock, getValidatedTypesMock } = vi.hoisted(
@@ -72,8 +71,9 @@ describe("current-to-target", () => {
       "MATCH\n  (dbCurrentUser:User)-[:HAS_CONTEXT]->(dbCurrentContext:Context)"
     );
     // Убеждаемся, что в конвейер добавлены следующие шаги
-    expect(cypher).toContain("ОРКЕСТРИРОВАННЫЙ ПОИСК TARGET КОНТЕКСТОВ");
-    expect(cypher).toContain("БЛОК 3: РАСЧЕТ МЕТРИК СОВМЕСТИМОСТИ");
+    expect(cypher).toContain("ПОИСК CURRENT КОНТЕКСТОВ");
+    expect(cypher).toContain("ПОИСК TARGET КОНТЕКСТОВ");
+    expect(cypher).toContain("РАСЧЕТ РЕАЛЬНЫХ МЕТРИК СОВМЕСТИМОСТИ");
     expect(cypherParams).toEqual({
       currentContext,
       targetContext,

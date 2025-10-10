@@ -46,13 +46,13 @@
 /* === РЕАЛИЗАЦИЯ: УПРОЩЕННАЯ ВЕРСИЯ ДЛЯ ОТЛАДКИ === */
 
 // Получаем данные от предыдущих блоков
-WITH dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore, dbTargetContext, targetContextCompatibilityScore
+WITH *
 WHERE dbTargetContext IS NOT NULL // Только для current→target режимов
 
 // === РАСЧЕТ РЕАЛЬНЫХ МЕТРИК СОВМЕСТИМОСТИ ===
 
 // Навыки: сколько навыков из currentContext есть у dbCurrentContext
-WITH *, 
+WITH *,
   CASE 
     WHEN $currentContext.skills IS NULL OR size($currentContext.skills) = 0 THEN 0
     ELSE size([
@@ -79,18 +79,14 @@ coalesce(dbCurrentContext.team_size = $currentContext.team_size, false) AS teamS
 // Индустрия - жесткий фильтр, поэтому всегда true (не считаем отдельно)
 
 // Строим путь обучения (Trail[]) между current и target для данного пользователя
+// Избегаем shortestPath когда узлы одинаковые
 OPTIONAL MATCH p = shortestPath((dbCurrentContext)-[:STEPS_ON|STEPS_TO*1..6]->(dbTargetContext))
-WITH dbCurrentUser, dbCurrentContext, dbTargetContext, currentContextCompatibilityScore, targetContextCompatibilityScore,
-     skillsMatched, skillsTotal,
-     countryMatch, cityMatch, companySizeMatch,
+WHERE dbCurrentContext.context_id <> dbTargetContext.context_id
+WITH *,
      CASE WHEN p IS NULL THEN [] ELSE [n IN nodes(p) WHERE n:Trail] END AS pathTrails
-WITH dbCurrentUser, dbCurrentContext, dbTargetContext, currentContextCompatibilityScore, targetContextCompatibilityScore,
-     skillsMatched, skillsTotal,
-     countryMatch, cityMatch, companySizeMatch,
+WITH *,
      [t IN pathTrails WHERE EXISTS( (dbCurrentUser)-[:HAS_TRAIL]->(t) )] AS userTrails
-WITH dbCurrentUser, dbCurrentContext, dbTargetContext, currentContextCompatibilityScore, targetContextCompatibilityScore,
-     skillsMatched, skillsTotal,
-     countryMatch, cityMatch, companySizeMatch,
+WITH *,
      [t IN userTrails | {
         skill: t.skill,
         platform: t.platform,
