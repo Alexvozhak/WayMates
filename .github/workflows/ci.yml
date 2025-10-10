@@ -76,7 +76,9 @@ jobs:
         run: docker compose -f docker-compose.ci.yml --env-file .env.test exec neo4j-test cypher-shell -u neo4j -p testpassword123 -f /tmp/init.cypher
 
       - name: "🧪 Run integration tests"
-        run: npm run test:integration:run
+        run: |
+          source .env.test
+          npm run test:integration:run
 
       - name: "🧹 Cleanup Docker containers"
         if: always()
@@ -133,7 +135,9 @@ jobs:
         run: docker compose -f docker-compose.ci.yml --env-file .env.test exec neo4j-test cypher-shell -u neo4j -p testpassword123 -f /tmp/init.cypher
 
       - name: "🧪 Run functional tests"
-        run: npm run test:functional:run
+        run: |
+          source .env.test
+          npm run test:functional:run
 
       - name: "🧹 Cleanup Docker containers"
         if: always()
