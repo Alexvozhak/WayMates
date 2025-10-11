@@ -19,8 +19,8 @@ describe("PresetsManager", () => {
     expect(available).toContain("BALANCED");
 
     const balanced = manager.get("BALANCED");
-    expect(balanced.strictPresets.length).toBeGreaterThan(0);
-    expect(balanced.flexiblePresets.length).toBeGreaterThan(0);
+    expect(balanced.strictFields.length).toBeGreaterThan(0);
+    expect(balanced.flexibleFields.length).toBeGreaterThan(0);
   });
 
   test("getAll returns a new object snapshot", () => {

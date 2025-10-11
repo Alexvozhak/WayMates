@@ -1,9 +1,5 @@
 import { FastMCP } from "fastmcp";
-import type { Driver } from "neo4j-driver";
-import { executeCurrentToTarget } from "./search-modes/current-to-target.js";
-import { executeCurrentOnly } from "./search-modes/current-only.js";
-import { executeTargetOnly } from "./search-modes/target-only.js";
-import { executeTargetSearch } from "./search-modes/target-search.js";
+import type { SearchManager } from "./search-manager.js";
 import {
   executeUpsertStory,
   executeUpsertContexts,
@@ -28,14 +24,12 @@ import {
   DeleteTrailParamsSchema,
   PingParamsSchema,
 } from "./schemas-zod.js";
-import type { PresetsManager } from "./orcestrator/preset-manager.js";
 import { z } from "zod";
 
-export function createWayMatesServer(
-  driver: Driver,
-  presetsManager: PresetsManager
-) {
-  presetsManager.load();
+/**
+ * Create MCP server using SearchManager.
+ */
+export function createWayMatesServer(searchManager: SearchManager) {
   const server = new FastMCP({
     name: "waymates-search",
     version: "1.0.0",
@@ -43,146 +37,130 @@ export function createWayMatesServer(
       "WayMates career search and analysis server. Provides tools for career transition analysis, progression tracking, and target position exploration.",
   });
 
-  // Current to Target - Find career transitions from current context to target position
+  // Current to Target
   server.addTool(
     tool(
       "current_to_target",
       "Find career transitions from current context to target position",
       CurrentToTargetParamsSchema,
-      executeCurrentToTarget
+      async (params) =>
+        searchManager.searchPipeline(
+          params.currentPreset,
+          params.currentContext,
+          params.targetPreset,
+          params.targetContext,
+          params.currentUserId,
+          params.searchConstraints
+        )
     )
   );
 
-  // Current Only - Analyze career progression for current context
+  // Current Only
   server.addTool(
     tool(
       "current_only",
       "Analyze career progression for current context over time",
       CurrentOnlyParamsSchema,
-      executeCurrentOnly
+      async (params) =>
+        searchManager.searchCurrent(
+          params.currentPreset,
+          params.currentContext,
+          params.currentUserId,
+          params.searchConstraints
+        )
     )
   );
 
-  // Target Only - Analyze career paths to target position
+  // Target Only
   server.addTool(
     tool(
       "target_only",
       "Analyze career paths and requirements to reach target position",
       TargetOnlyParamsSchema,
-      executeTargetOnly
+      async (params) =>
+        searchManager.searchTarget(
+          params.targetPreset,
+          params.targetContext,
+          params.currentUserId,
+          params.searchConstraints
+        )
     )
   );
 
-  // Target Search - Search users by target context
+  // Target Search
   server.addTool(
     tool(
       "target_search",
       "Search users who have achieved the target position",
       TargetSearchParamsSchema,
-      executeTargetSearch
+      async (params) =>
+        searchManager.searchTargetMode(
+          params.targetPreset,
+          params.targetContext,
+          params.currentUserId,
+          params.searchConstraints
+        )
     )
   );
 
-  // Execute Upsert Story - Process complete user story with contexts and trails
+  // Upsert Story
   server.addTool(
     tool(
       "execute_upsert_story",
       "Process complete user story with contexts and trails",
       StoryInputSchema,
-      executeUpsertStory
+      (params) => executeUpsertStory(searchManager.driver, params)
     )
   );
-
-  // Upsert Context - Create or update single user context
+  // Upsert Context
   server.addTool(
     tool(
       "upsert_context",
       "Create or update single user context",
       UserIdContextSchema,
-      executeUpsertContexts
+      (params) => executeUpsertContexts(searchManager.driver, params)
     )
   );
-
-  // Upsert Trail - Create or update single trail
+  // Upsert Trail
   server.addTool(
     tool(
       "upsert_trail",
       "Create or update single trail between contexts",
       UserIdTrailSchema,
-      executeUpsertTrails
+      (params) => executeUpsertTrails(searchManager.driver, params)
     )
   );
-
-  // Get User Story - Read full user contexts and trails from database
+  // Get User Story
   server.addTool(
     tool(
       "get_user_story",
       "Fetch stored contexts and trails for a user",
       GetUserStoryParamsSchema,
-      getUserStory
+      (params) => getUserStory(searchManager.driver, params)
     )
   );
-
-  // Delete Context - Remove user's context without associated trails
+  // Delete Context
   server.addTool(
     tool(
       "delete_context",
       "Delete a context owned by the user (requires no trails)",
       DeleteContextParamsSchema,
-      deleteContext
+      (params) => deleteContext(searchManager.driver, params)
     )
   );
-
-  // Delete Trail - Remove a trail belonging to the user
+  // Delete Trail
   server.addTool(
     tool(
       "delete_trail",
       "Delete a specific trail owned by the user",
       DeleteTrailParamsSchema,
-      deleteTrail
+      (params) => deleteTrail(searchManager.driver, params)
     )
   );
-
-  // Ping - Health check
+  // Ping
   server.addTool(
-    tool(
-      "ping",
-      "Check database connectivity",
-      PingParamsSchema,
-      async (driver) => pingDatabase(driver)
-    )
-  );
-
-  // Load Presets - Load presets from configuration file
-  server.addTool(
-    tool(
-      "load_presets",
-      "Load presets from configuration file",
-      z.object({}),
-      () => {
-        presetsManager.load();
-        return { success: true, message: "Presets loaded successfully" };
-      }
-    )
-  );
-
-  // Get Preset - Get specific preset configuration by name
-  server.addTool(
-    tool(
-      "get_preset",
-      "Get specific preset configuration by name",
-      z.object({ preset: z.string() }),
-      (_, { preset }) => presetsManager.get(preset)
-    )
-  );
-
-  // Get Presets - Get all available search presets
-  server.addTool(
-    tool(
-      "get_presets",
-      "Get all available search configuration presets",
-      z.object({}),
-      () => presetsManager.getAll()
+    tool("ping", "Check database connectivity", PingParamsSchema, () =>
+      pingDatabase(searchManager.driver)
     )
   );
 
@@ -190,7 +168,7 @@ export function createWayMatesServer(
     name: string,
     description: string,
     schema: z.ZodSchema<TParams>,
-    handler: (driver: Driver, params: TParams) => Promise<TResult>
+    handler: (params: TParams) => Promise<TResult>
   ) {
     return {
       name,
@@ -198,7 +176,7 @@ export function createWayMatesServer(
       parameters: schema,
       execute: async (args: unknown) => {
         const parsed = schema.parse(args);
-        const result = await handler(driver, parsed);
+        const result = await handler(parsed);
         return JSON.stringify(result, null, 2);
       },
     };

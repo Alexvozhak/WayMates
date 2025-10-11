@@ -20,8 +20,7 @@ export type TrailId = z.infer<typeof TrailIdSchema>;
 export type UserIdContext = z.infer<typeof UserIdContextSchema>;
 export type UserIdTrail = z.infer<typeof UserIdTrailSchema>;
 export type ContextField = z.infer<typeof ContextFieldSchema>;
-export type StrictPreset = z.infer<typeof StrictPresetSchema>;
-export type FlexiblePreset = z.infer<typeof FlexiblePresetSchema>;
+export type FlexibleField = z.infer<typeof FlexibleFieldSchema>;
 export type QueryConfig = z.infer<typeof QueryConfigSchema>;
 
 // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
@@ -251,19 +250,15 @@ export const ContextFieldSchema = z.enum(CONTEXT_FIELD_NAMES, {
   description: "Available field names for search configuration",
 });
 
-export const StrictPresetSchema = z.object({
-  field: ContextFieldSchema,
-});
-
-export const FlexiblePresetSchema = z.object({
+export const FlexibleFieldSchema = z.object({
   field: ContextFieldSchema,
   weight: z.number().min(0).max(100),
 });
 
 export const QueryConfigSchema = z.object({
-  strictPresets: z.array(StrictPresetSchema),
-  flexiblePresets: z
-    .array(FlexiblePresetSchema)
+  strictFields: z.array(ContextFieldSchema),
+  flexibleFields: z
+    .array(FlexibleFieldSchema)
     .refine(
       (fields) => fields.reduce((sum, field) => sum + field.weight, 0) === 100,
       {
@@ -411,7 +406,11 @@ export const SearchConstraintsSchema = z.object({
   max_experience_diff_months: z
     .number()
     .describe("Maximum experience difference in months"),
-  results_limit: z.number().describe("Results limit for Cypher LIMIT"),
+  results_limit: z
+    .number()
+    .min(1)
+    .max(20)
+    .describe("Results limit for Cypher LIMIT (must be between 1 and 20)"),
 
   // Дополнительные фильтры для TARGET_SEARCH режима
   min_experience_months: z
@@ -431,12 +430,17 @@ export type SearchConstraints = z.infer<typeof SearchConstraintsSchema>;
 
 // MCP параметры для различных режимов поиска
 export const CurrentToTargetParamsSchema = z.object({
+  currentUserId: UserIdSchema,
+  currentPreset: z.string().describe("Preset name for current context search"),
+  targetPreset: z.string().describe("Preset name for target context search"),
   currentContext: UserContextSchema,
   targetContext: TargetContextSchema,
   searchConstraints: SearchConstraintsSchema,
 });
 
 export const CurrentOnlyParamsSchema = z.object({
+  currentUserId: UserIdSchema,
+  currentPreset: z.string().describe("Preset name for current context search"),
   currentContext: UserContextSchema,
   lookAheadMonths: z.number().min(1).max(120),
   reasonsToTrack: z.array(NewContextReasonSchema),
@@ -445,11 +449,15 @@ export const CurrentOnlyParamsSchema = z.object({
 });
 
 export const TargetOnlyParamsSchema = z.object({
+  currentUserId: UserIdSchema,
+  targetPreset: z.string().describe("Preset name for target context search"),
   targetContext: TargetContextSchema,
   searchConstraints: SearchConstraintsSchema,
 });
 
 export const TargetSearchParamsSchema = z.object({
+  currentUserId: UserIdSchema,
+  targetPreset: z.string().describe("Preset name for target search"),
   targetContext: TargetContextSchema,
   searchConstraints: SearchConstraintsSchema,
 });
@@ -473,7 +481,7 @@ export const PingParamsSchema = z.object({});
 // Опции пресетов для двухстадийного поиска
 export const SearchPresetOptionsSchema = z.object({
   currentPreset: z.string(),
-  targetPreset: z.string().optional(), // если не указан, используем currentPreset
+  targetPreset: z.string(),
 });
 
 // MCP типы для использования в search-modes
@@ -486,3 +494,13 @@ export type DeleteContextParams = z.infer<typeof DeleteContextParamsSchema>;
 export type SearchPresetOptions = z.infer<typeof SearchPresetOptionsSchema>;
 export type DeleteTrailParams = z.infer<typeof DeleteTrailParamsSchema>;
 export type PingParams = z.infer<typeof PingParamsSchema>;
+
+// === Search Result Schema ===
+export const SearchResultSchema = z.object({
+  userId: z.string(),
+  currentContext: z.nullable(UserContextSchema),
+  currentScore: z.nullable(z.number()),
+  targetContext: z.nullable(UserContextSchema),
+  targetScore: z.nullable(z.number()),
+});
+export type SearchResult = z.infer<typeof SearchResultSchema>;

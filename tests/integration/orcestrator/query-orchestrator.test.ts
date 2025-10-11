@@ -10,10 +10,10 @@ import { loadTestData } from "../../helpers/test-data-loader.js";
 import { PresetsManager } from "../../../src/orcestrator/preset-manager.js";
 import { QueryOrchestrator } from "../../../src/orcestrator/query-orchestrator.js";
 import {
-  getOptimalFieldOrder,
+  getSelectiveStrictFields,
   FALLBACK_SELECTIVITY,
   buildExplainQuery,
-} from "../../../src/orcestrator/selectivity-profiler.js";
+} from "../../../src/orcestrator/selector.js";
 import { Processors } from "../../../src/cypher/api.js";
 
 const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
@@ -99,7 +99,7 @@ describe("QueryOrchestrator integration", () => {
       .sort((a, b) => a.rows - b.rows)
       .map((entry) => entry.field);
 
-    const optimalOrder = await getOptimalFieldOrder(
+    const optimalOrder = await getSelectiveStrictFields(
       driver,
       strictFields,
       story.contexts[0]

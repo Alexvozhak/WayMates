@@ -13,7 +13,7 @@ import {
 } from "../helpers/database-setup.js";
 import {
   buildStrictConditions,
-  buildFlexibleScoring,
+  buildFlexibleConditions,
 } from "../../src/orcestrator/snippets-extractor.js";
 import { loadTestData } from "../helpers/test-data-loader.js";
 import type { QueryConfig } from "../../src/schemas-zod.js";
@@ -65,7 +65,7 @@ describe("Поисковые алгоритмы", () => {
         "requestedCurrentContext",
         "dbCurrentContext"
       );
-      const scoreClause = buildFlexibleScoring(
+      const scoreClause = buildFlexibleConditions(
         config.flexiblePresets,
         "requestedCurrentContext",
         "dbCurrentContext"
@@ -159,7 +159,7 @@ describe("Поисковые алгоритмы", () => {
         "requestedCurrentContext",
         "dbCurrentContext"
       );
-      const scoreClause = buildFlexibleScoring(
+      const scoreClause = buildFlexibleConditions(
         config.flexiblePresets,
         "requestedCurrentContext",
         "dbCurrentContext"

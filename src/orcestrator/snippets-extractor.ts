@@ -1,126 +1,103 @@
-import { type ContextField, FlexiblePreset } from "../schemas-zod.js";
+import { type ContextField, type FlexibleField } from "../schemas-zod.js";
 
 type FieldSnippet = {
   startPattern: string;
-  strict: (searchCtx: string, candidateCtx: string) => string;
-  flexible: (searchCtx: string, candidateCtx: string, weight: number) => string;
+  strict: () => string;
+  flexible: (weight: number) => string;
 };
-type FieldSnippets = Record<ContextField, FieldSnippet>;
 
-export const FIELD_SNIPPETS = {
+export const FIELD_SNIPPETS: Record<ContextField, FieldSnippet> = {
   position: {
     startPattern: `MATCH (c:Context {position: $value})`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `${candidateCtx}.position = ${searchCtx}.position`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN ${candidateCtx}.position = ${searchCtx}.position THEN ${weight} ELSE 0 END`,
+    strict: () => `dbContext.position = requestedContext.position`,
+    flexible: (weight: number) =>
+      `CASE WHEN dbContext.position = requestedContext.position THEN ${weight} ELSE 0 END`,
   },
 
   domains: {
     startPattern: `MATCH (c:Context) WHERE ANY(d IN $domains WHERE d IN c.domains)`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `all(d IN ${searchCtx}.domains WHERE d IN ${candidateCtx}.domains)`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN size([d IN ${searchCtx}.domains WHERE d IN ${candidateCtx}.domains]) > 0 
-      THEN ${weight} * (toFloat(size([d IN ${searchCtx}.domains WHERE d IN ${candidateCtx}.domains])) / size(${searchCtx}.domains)) 
+    strict: () =>
+      `all(d IN requestedContext.domains WHERE d IN dbContext.domains)`,
+    flexible: (weight: number) =>
+      `CASE WHEN size([d IN requestedContext.domains WHERE d IN dbContext.domains]) > 0 
+      THEN ${weight} * (toFloat(size([d IN requestedContext.domains WHERE d IN dbContext.domains])) / size(requestedContext.domains)) 
       ELSE 0 END`,
   },
 
   skills: {
     startPattern: `MATCH (c:Context) WHERE ANY(s IN $skills WHERE s IN c.skills)`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `all(s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills)`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN size([s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills]) > 0 
-      THEN ${weight} * (toFloat(size([s IN ${searchCtx}.skills WHERE s.name IN ${candidateCtx}.skills])) / size(${searchCtx}.skills)) 
+    strict: () =>
+      `all(s IN requestedContext.skills WHERE s.name IN dbContext.skills)`,
+    flexible: (weight: number) =>
+      `CASE WHEN size([s IN requestedContext.skills WHERE s.name IN dbContext.skills]) > 0 
+      THEN ${weight} * (toFloat(size([s IN requestedContext.skills WHERE s.name IN dbContext.skills])) / size(requestedContext.skills)) 
       ELSE 0 END`,
   },
 
   industry: {
     startPattern: `MATCH (c:Context {industry: $value})`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `${candidateCtx}.industry = ${searchCtx}.industry`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN ${candidateCtx}.industry = ${searchCtx}.industry THEN ${weight} ELSE 0 END`,
+    strict: () => `dbContext.industry = requestedContext.industry`,
+    flexible: (weight: number) =>
+      `CASE WHEN dbContext.industry = requestedContext.industry THEN ${weight} ELSE 0 END`,
   },
 
   country_code: {
     startPattern: `MATCH (c:Context {country_code: $value})`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `${candidateCtx}.country_code = ${searchCtx}.country_code`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN ${candidateCtx}.country_code = ${searchCtx}.country_code THEN ${weight} ELSE 0 END`,
+    strict: () => `dbContext.country_code = requestedContext.country_code`,
+    flexible: (weight: number) =>
+      `CASE WHEN dbContext.country_code = requestedContext.country_code THEN ${weight} ELSE 0 END`,
   },
 
   city_name: {
     startPattern: `MATCH (c:Context {city_name: $value})`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `${candidateCtx}.city_name = ${searchCtx}.city_name`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN ${candidateCtx}.city_name = ${searchCtx}.city_name THEN ${weight} ELSE 0 END`,
+    strict: () => `dbContext.city_name = requestedContext.city_name`,
+    flexible: (weight: number) =>
+      `CASE WHEN dbContext.city_name = requestedContext.city_name THEN ${weight} ELSE 0 END`,
   },
 
   work_type: {
     startPattern: `MATCH (c:Context {work_type: $value})`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `${candidateCtx}.work_type = ${searchCtx}.work_type`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN ${candidateCtx}.work_type = ${searchCtx}.work_type THEN ${weight} ELSE 0 END`,
+    strict: () => `dbContext.work_type = requestedContext.work_type`,
+    flexible: (weight: number) =>
+      `CASE WHEN dbContext.work_type = requestedContext.work_type THEN ${weight} ELSE 0 END`,
   },
 
   company_size: {
     startPattern: `MATCH (c:Context {company_size: $value})`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `${candidateCtx}.company_size = ${searchCtx}.company_size`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN ${candidateCtx}.company_size = ${searchCtx}.company_size THEN ${weight} ELSE 0 END`,
+    strict: () => `dbContext.company_size = requestedContext.company_size`,
+    flexible: (weight: number) =>
+      `CASE WHEN dbContext.company_size = requestedContext.company_size THEN ${weight} ELSE 0 END`,
   },
 
   team_size: {
     startPattern: `MATCH (c:Context {team_size: $value})`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `${candidateCtx}.team_size = ${searchCtx}.team_size`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN ${candidateCtx}.team_size = ${searchCtx}.team_size THEN ${weight} ELSE 0 END`,
+    strict: () => `dbContext.team_size = requestedContext.team_size`,
+    flexible: (weight: number) =>
+      `CASE WHEN dbContext.team_size = requestedContext.team_size THEN ${weight} ELSE 0 END`,
   },
 
   birth_year: {
     startPattern: `MATCH (c:Context {birth_year: $value})`,
-    strict: (searchCtx: string, candidateCtx: string) =>
-      `${candidateCtx}.birth_year = ${searchCtx}.birth_year`,
-    flexible: (searchCtx: string, candidateCtx: string, weight: number) =>
-      `CASE WHEN ${candidateCtx}.birth_year = ${searchCtx}.birth_year THEN ${weight} ELSE 0 END`,
+    strict: () => `dbContext.birth_year = requestedContext.birth_year`,
+    flexible: (weight: number) =>
+      `CASE WHEN dbContext.birth_year = requestedContext.birth_year THEN ${weight} ELSE 0 END`,
   },
-} satisfies FieldSnippets;
+} as const satisfies Record<ContextField, FieldSnippet>;
 
-export function buildStrictConditions(
-  optimalOrder: ContextField[],
-  searchCtx: string,
-  candidateCtx: string
-): string {
-  const conditions = optimalOrder
-    .map((field) => {
-      const snippet = FIELD_SNIPPETS[field];
-      return snippet.strict(searchCtx, candidateCtx);
-    })
+export function buildStrictConditions(strictFields: ContextField[]): string {
+  const conditions = strictFields
+    .map((field) => FIELD_SNIPPETS[field].strict())
     .filter(Boolean);
-
   return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
 }
 
-export function buildFlexibleScoring(
-  flexiblePresets: FlexiblePreset[],
-  searchCtx: string,
-  candidateCtx: string
+export function buildFlexibleConditions(
+  flexibleFields: FlexibleField[]
 ): string {
-  const scores = flexiblePresets
-    .map(({ field, weight }) => {
-      const snippet = FIELD_SNIPPETS[field];
-      return snippet.flexible(searchCtx, candidateCtx, weight);
-    })
+  const conditions = flexibleFields
+    .map(({ field, weight }) => FIELD_SNIPPETS[field].flexible(weight))
     .filter(Boolean);
-
-  return scores.length > 0
-    ? `WITH *, (\n  ${scores.join(" +\n  ")}\n) AS compatibilityScore\nWHERE compatibilityScore > 0`
-    : `WITH *, 0 AS compatibilityScore`;
+  return conditions.length > 0
+    ? `WITH *, (\n  ${conditions.join(" +\n  ")}\n) AS contextCompatibilityScore\nWHERE contextCompatibilityScore > 0`
+    : `WITH *, 0 AS contextCompatibilityScore`;
 }

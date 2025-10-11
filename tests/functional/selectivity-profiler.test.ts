@@ -4,7 +4,7 @@
 
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { Driver, Session } from "neo4j-driver";
-import { getOptimalFieldOrder } from "../../src/orcestrator/selectivity-profiler.js";
+import { getSelectiveStrictFields } from "../../src/orcestrator/selector.js";
 import { loadAllTestData, loadTestData } from "../helpers/test-data-loader.js";
 import { executeUpsertStory } from "../../src/upsert-story.js";
 import {
@@ -47,9 +47,9 @@ describe("SelectivityProfiler Functional Tests", () => {
       { field: "birth_year" },
     ];
 
-    const result = await getOptimalFieldOrder(
+    const result = await getSelectiveStrictFields(
       driver,
-      strictPresets.map(p => p.field),
+      strictPresets.map((p) => p.field),
       userContext
     );
 

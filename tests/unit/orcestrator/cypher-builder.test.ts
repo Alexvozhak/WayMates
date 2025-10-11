@@ -3,67 +3,44 @@ import { join } from "path";
 import { PresetsManager } from "../../../src/orcestrator/preset-manager.js";
 import {
   buildStrictConditions,
-  buildFlexibleScoring,
+  buildFlexibleConditions,
 } from "../../../src/orcestrator/snippets-extractor.js";
-import {
-  buildCurrentContextQuery,
-  buildTargetTransitionQuery,
-} from "../../../src/orcestrator/cypher-builder.js";
+import { buildContextQuery } from "../../../src/orcestrator/cypher-builder.js";
 
 const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
 
 describe("cypher-builder", () => {
-  test("buildCurrentContextQuery stitches strict and flexible clauses", () => {
+  test("buildContextQuery stitches strict and flexible clauses for current context", () => {
     const manager = new PresetsManager(PRESETS_PATH);
     manager.load();
     const balanced = manager.get("BALANCED");
 
-    const whereClause = buildStrictConditions(
-      balanced.strictPresets.map((preset) => preset.field),
-      "requestedCurrentContext",
-      "dbCurrentContext"
-    );
-    const scoreClause = buildFlexibleScoring(
-      balanced.flexiblePresets,
-      "requestedCurrentContext",
-      "dbCurrentContext"
-    );
+    const whereClause = buildStrictConditions(balanced.strictFields);
+    const scoreClause = buildFlexibleConditions(balanced.flexibleFields);
 
-    const query = buildCurrentContextQuery(whereClause, scoreClause);
+    const query = buildContextQuery("all", whereClause, scoreClause, 10);
 
-    expect(query).toContain("$currentContext AS requestedCurrentContext");
     expect(query).toContain(
-      "MATCH\n  (dbCurrentUser:User)-[:HAS_CONTEXT]->(dbCurrentContext:Context)"
+      "MATCH\n  (dbUser:User)-[:HAS_CONTEXT]->(dbContext:Context)"
     );
-    expect(query).toContain(
-      "compatibilityScore AS currentContextCompatibilityScore"
-    );
+    expect(query).toContain(") AS contextCompatibilityScore");
+    expect(query).toContain("AND dbUser <> dbCurrentUser");
   });
 
-  test("buildTargetTransitionQuery excludes identical contexts", () => {
+  test("buildContextQuery stitches strict and flexible clauses for target context", () => {
     const manager = new PresetsManager(PRESETS_PATH);
     manager.load();
     const balanced = manager.get("BALANCED");
 
-    const whereClause = buildStrictConditions(
-      balanced.strictPresets.map((preset) => preset.field),
-      "requestedTargetContext",
-      "dbTargetContext"
-    );
-    const scoreClause = buildFlexibleScoring(
-      balanced.flexiblePresets,
-      "requestedTargetContext",
-      "dbTargetContext"
-    );
+    const whereClause = buildStrictConditions(balanced.strictFields);
+    const scoreClause = buildFlexibleConditions(balanced.flexibleFields);
 
-    const query = buildTargetTransitionQuery(whereClause, scoreClause);
+    const query = buildContextQuery("filtered", whereClause, scoreClause, 10);
 
-    expect(query).toContain("$targetContext AS requestedTargetContext");
     expect(query).toContain(
-      "MATCH\n  (dbTargetUser:User)-[:HAS_CONTEXT]->(dbTargetContext:Context)"
+      "MATCH\n  (dbUser:User)-[:HAS_CONTEXT]->(dbContext:Context)"
     );
-    expect(query).toContain(
-      "compatibilityScore AS targetContextCompatibilityScore"
-    );
+    expect(query).toContain(") AS contextCompatibilityScore");
+    expect(query).toContain("AND dbUser <> dbCurrentUser");
   });
 });

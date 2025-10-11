@@ -1,11 +1,11 @@
 {
   "BALANCED": {
-    "strictPresets": [
-      { "field": "position" },
-      { "field": "domains" },
-      { "field": "skills" }
+    "strictFields": [
+      "position",
+      "domains", 
+      "skills"
     ],
-    "flexiblePresets": [
+    "flexibleFields": [
       { "field": "industry", "weight": 25 },
       { "field": "country_code", "weight": 20 },
       { "field": "city_name", "weight": 15 },
@@ -16,28 +16,28 @@
     ]
   },
   "SKILL_FOCUSED": {
-    "strictPresets": [
-      { "field": "position" },
-      { "field": "domains" },
-      { "field": "skills" }
+    "strictFields": [
+      "position",
+      "skills"
     ],
-    "flexiblePresets": [
-      { "field": "skills", "weight": 40 },
+    "flexibleFields": [
+      { "field": "domains", "weight": 30 },
       { "field": "industry", "weight": 20 },
       { "field": "country_code", "weight": 15 },
       { "field": "city_name", "weight": 10 },
-      { "field": "work_type", "weight": 8 },
-      { "field": "company_size", "weight": 4 },
-      { "field": "team_size", "weight": 3 }
+      { "field": "work_type", "weight": 10 },
+      { "field": "company_size", "weight": 5 },
+      { "field": "team_size", "weight": 5 },
+      { "field": "birth_year", "weight": 5 }
     ]
   },
   "GEO_FOCUSED": {
-    "strictPresets": [
-      { "field": "position" },
-      { "field": "domains" },
-      { "field": "skills" }
+    "strictFields": [
+      "position",
+      "domains",
+      "skills"
     ],
-    "flexiblePresets": [
+    "flexibleFields": [
       { "field": "country_code", "weight": 35 },
       { "field": "city_name", "weight": 25 },
       { "field": "industry", "weight": 15 },
@@ -48,20 +48,20 @@
     ]
   },
   "FLEXIBLE": {
-    "strictPresets": [
-      { "field": "position" },
-      { "field": "domains" },
-      { "field": "skills" }
+    "strictFields": [
+      "position",
+      "domains",
+      "skills"
     ],
-    "flexiblePresets": [
+    "flexibleFields": [
       { "field": "country_code", "weight": 40 },
       { "field": "city_name", "weight": 30 },
       { "field": "industry", "weight": 30 }
     ]
   },
   "TARGET_FLEXIBLE": {
-    "strictPresets": [],
-    "flexiblePresets": [
+    "strictFields": [],
+    "flexibleFields": [
       { "field": "position", "weight": 30 },
       { "field": "skills", "weight": 25 },
       { "field": "domains", "weight": 20 },
