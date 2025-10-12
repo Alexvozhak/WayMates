@@ -6,7 +6,8 @@ import type {
   SearchResult,
   SearchConstraints,
 } from "./schemas-zod.js";
-import { SearchResultSchema, validateSchema } from "./schemas-zod.js";
+import { SearchResultSchema } from "./schemas-zod.js";
+import { withReadSession } from "./neo4j.js";
 
 export class SearchManager {
   constructor(
@@ -24,17 +25,12 @@ export class SearchManager {
       presetName,
       searchConstraints
     );
-    const session = this.driver.session();
-    try {
-      const result = await session.executeRead((tx) =>
-        tx.run(cypher, { currentContext, me: currentUserId })
-      );
-      return result.records.map((rec) =>
-        validateSchema(rec.get("result"), SearchResultSchema, "SearchResult")
-      );
-    } finally {
-      await session.close();
-    }
+    const result = await withReadSession(this.driver, (session) =>
+      session.run(cypher, { currentContext, me: currentUserId })
+    );
+    return result.records.map((rec) =>
+      SearchResultSchema.parse(rec.get("result"))
+    );
   }
 
   async searchTarget(
@@ -47,17 +43,12 @@ export class SearchManager {
       presetName,
       searchConstraints
     );
-    const session = this.driver.session();
-    try {
-      const result = await session.executeRead((tx) =>
-        tx.run(cypher, { targetContext, me: currentUserId })
-      );
-      return result.records.map((rec) =>
-        validateSchema(rec.get("result"), SearchResultSchema, "SearchResult")
-      );
-    } finally {
-      await session.close();
-    }
+    const result = await withReadSession(this.driver, (session) =>
+      session.run(cypher, { targetContext, me: currentUserId })
+    );
+    return result.records.map((rec) =>
+      SearchResultSchema.parse(rec.get("result"))
+    );
   }
 
   async searchPipeline(
@@ -73,17 +64,12 @@ export class SearchManager {
       targetPreset,
       searchConstraints
     );
-    const session = this.driver.session();
-    try {
-      const result = await session.executeRead((tx) =>
-        tx.run(cypher, { currentContext, targetContext, me: currentUserId })
-      );
-      return result.records.map((rec) =>
-        validateSchema(rec.get("result"), SearchResultSchema, "SearchResult")
-      );
-    } finally {
-      await session.close();
-    }
+    const result = await withReadSession(this.driver, (session) =>
+      session.run(cypher, { currentContext, targetContext, me: currentUserId })
+    );
+    return result.records.map((rec) =>
+      SearchResultSchema.parse(rec.get("result"))
+    );
   }
 
   async searchTargetMode(

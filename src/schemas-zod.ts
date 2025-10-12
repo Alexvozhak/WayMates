@@ -23,42 +23,6 @@ export type ContextField = z.infer<typeof ContextFieldSchema>;
 export type FlexibleField = z.infer<typeof FlexibleFieldSchema>;
 export type QueryConfig = z.infer<typeof QueryConfigSchema>;
 
-// === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
-
-export function isValidSchema<T extends z.ZodTypeAny>(
-  value: unknown,
-  schema: T
-): value is z.infer<T> {
-  return schema.safeParse(value).success;
-}
-
-export function validateSchema<T extends z.ZodTypeAny>(
-  data: unknown,
-  schema: T,
-  source?: string
-): z.infer<T> {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    const errorMessages = result.error.errors
-      .map((error) => `${error.path.join(".")}: ${error.message}`)
-      .join(", ");
-    throw new Error(
-      `Invalid schema format in ${source ?? schema.constructor.name}: ${errorMessages}`
-    );
-  }
-  return result.data;
-}
-
-export function getValidatedTypes<T extends z.ZodTypeAny>(
-  records: Record<PropertyKey, any>[],
-  schema: T
-): z.infer<T>[] {
-  return records.map((record) => {
-    const data = record.get("result");
-    return validateSchema(data, schema);
-  });
-}
-
 // === БАЗОВЫЕ СХЕМЫ ===
 // ISO 8601 дата-время в UTC формате: YYYY-MM-DDTHH:mm:ssZ
 // Пример: "2017-09-15T00:00:00Z"
@@ -504,3 +468,5 @@ export const SearchResultSchema = z.object({
   targetScore: z.nullable(z.number()),
 });
 export type SearchResult = z.infer<typeof SearchResultSchema>;
+export const SuccessResultSchema = z.object({ success: z.boolean() });
+export type SuccessResult = z.infer<typeof SuccessResultSchema>;

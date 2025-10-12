@@ -1,4 +1,4 @@
-import neo4j, { Driver } from "neo4j-driver";
+import neo4j, { Driver, Session } from "neo4j-driver";
 
 type Credentials = {
   uri: string;
@@ -23,6 +23,36 @@ export function createDriver(): Driver {
  */
 export async function verifyConnection(driver: Driver): Promise<void> {
   await driver.verifyAuthentication();
+}
+
+/**
+ * Helper to execute read work in a session and close it.
+ */
+export async function withReadSession<T>(
+  driver: Driver,
+  work: (session: Session) => Promise<T>
+): Promise<T> {
+  const session = driver.session();
+  try {
+    return await session.executeRead(() => work(session));
+  } finally {
+    await session.close();
+  }
+}
+
+/**
+ * Helper to execute write work in a session and close it.
+ */
+export async function withWriteSession<T>(
+  driver: Driver,
+  work: (session: Session) => Promise<T>
+): Promise<T> {
+  const session = driver.session();
+  try {
+    return await session.executeWrite(() => work(session));
+  } finally {
+    await session.close();
+  }
 }
 
 function getCredentials(): Credentials {

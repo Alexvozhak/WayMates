@@ -1,9 +1,6 @@
 import type { Driver, QueryResult } from "neo4j-driver";
 import type { Skill, SkillCategory } from "../schemas-zod.js";
-import {
-  DEFAULT_STRICT_SKILL_CATEGORIES,
-  validateSchema,
-} from "../schemas-zod.js";
+import { DEFAULT_STRICT_SKILL_CATEGORIES } from "../schemas-zod.js";
 import type { z } from "zod";
 
 export async function executeRead<TParams = Record<string, any>>(
@@ -23,10 +20,7 @@ export function getValidatedTypes<T extends z.ZodTypeAny>(
   records: Record<PropertyKey, any>[],
   schema: T
 ): z.infer<T>[] {
-  return records.map((record) => {
-    const data = record.get("result");
-    return validateSchema(data, schema);
-  });
+  return records.map((record) => schema.parse(record.get("result")));
 }
 
 export function getStrictSkills(

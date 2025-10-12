@@ -1,4 +1,4 @@
-import type { FlexibleField, SearchConstraints } from "../schemas-zod.js";
+import type { SearchConstraints } from "../schemas-zod.js";
 
 export function buildContextQuery(
   searchScope: "all" | "filtered",

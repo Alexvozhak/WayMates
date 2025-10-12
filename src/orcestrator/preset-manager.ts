@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { QueryConfigSchema, validateSchema } from "../schemas-zod.js";
+import { QueryConfigSchema } from "../schemas-zod.js";
 import type { QueryConfig } from "../schemas-zod.js";
 
 export type Presets = Record<string, QueryConfig>;
@@ -64,11 +64,7 @@ export class PresetsManager {
 
     for (const [presetName, presetConfig] of Object.entries(rawPresets)) {
       try {
-        validatedPresets[presetName] = validateSchema(
-          presetConfig,
-          QueryConfigSchema,
-          "QueryConfig"
-        );
+        validatedPresets[presetName] = QueryConfigSchema.parse(presetConfig);
       } catch (error) {
         throw new Error(
           `Invalid preset configuration for '${presetName}': ${error}`
