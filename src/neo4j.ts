@@ -6,7 +6,7 @@ type Credentials = {
   password: string;
 };
 
-export async function createDriver(): Promise<Driver> {
+export function createDriver(): Driver {
   const { uri, user, password } = getCredentials();
 
   const config: neo4j.Config = {
@@ -15,8 +15,14 @@ export async function createDriver(): Promise<Driver> {
   };
 
   const driver = neo4j.driver(uri, neo4j.auth.basic(user, password), config);
-  await driver.verifyAuthentication();
   return driver;
+}
+
+/**
+ * Verify that the Neo4j driver can authenticate with the database.
+ */
+export async function verifyConnection(driver: Driver): Promise<void> {
+  await driver.verifyAuthentication();
 }
 
 function getCredentials(): Credentials {
