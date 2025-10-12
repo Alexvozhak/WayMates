@@ -1,28 +1,10 @@
-import type { FlexibleField } from "../schemas-zod.js";
-
-export function buildScoreClause(
-  requestedVar: string,
-  candidateVar: string,
-  flexibleFields: FlexibleField[],
-  scoreVar: string
-): string {
-  const conditions = flexibleFields.map(
-    ({ field, weight }) =>
-      `CASE WHEN ${candidateVar}.${field} = ${requestedVar}.${field} THEN ${weight} ELSE 0 END`
-  );
-  return `
-WITH *, (
-  ${conditions.join(" +\n  ")}
-) AS ${scoreVar}
-WHERE ${scoreVar} > 0
-`;
-}
+import type { FlexibleField, SearchConstraints } from "../schemas-zod.js";
 
 export function buildContextQuery(
   searchScope: "all" | "filtered",
   whereClause: string,
   scoreClause: string,
-  limit: number
+  searchConstraints: SearchConstraints
 ): string {
   // Унифицированные имена переменных
   const userVar = "dbUser";
@@ -45,6 +27,9 @@ export function buildContextQuery(
       ? ", dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore"
       : "";
 
+  // Determine limit from constraints
+  const limit = searchConstraints.results_limit;
+
   return `/* ============================================
  * ПОИСК КОНТЕКСТОВ ${searchScope === "all" ? "(СРЕДИ ВСЕХ)" : "(СРЕДИ ОТФИЛЬТРОВАННЫХ)"}
  * ============================================ */
@@ -64,6 +49,7 @@ ${scoreClause}
 WITH *, ${userVar}, ${contextVar}, compatibilityScore AS ${compatibilityScoreVar}${additionalFinalVars}
 WHERE ${userVar} IS NOT NULL${searchScope === "filtered" ? " AND dbCurrentUser IS NOT NULL" : ""}
 WITH *, ${userVar}, ${contextVar}, ${compatibilityScoreVar}${additionalFinalVars}
+// Note: searchConstraints available for future use
 RETURN {
   userId: ${userVar},
   currentContext: ${searchScope === "all" ? contextVar : "null"},
@@ -77,12 +63,13 @@ LIMIT ${limit}
 
 // === Pipeline Query Builder ===
 export function buildPipelineQuery(
-  whereClauseCurrent: string,
-  scoreClauseCurrent: string,
-  whereClauseTarget: string,
-  scoreClauseTarget: string,
-  limit: number
+  whereCurrent: string,
+  scoreCurrent: string,
+  whereTarget: string,
+  scoreTarget: string,
+  searchConstraints: SearchConstraints
 ): string {
+  const limit = searchConstraints.results_limit;
   return `
 CALL {
   WITH $currentContext AS requestedCurrentContext, $me AS me
@@ -90,8 +77,8 @@ CALL {
   WITH dbCurrentUser, dbCurrentContext, requestedCurrentContext, me
   WHERE requestedCurrentContext IS NOT NULL
     AND dbCurrentUser <> me
-    ${whereClauseCurrent ? `AND ${whereClauseCurrent}` : ""}
-  ${scoreClauseCurrent}
+    ${whereCurrent ? `AND ${whereCurrent}` : ""}
+  ${scoreCurrent}
   WITH collect({ user: dbCurrentUser, currentContext: dbCurrentContext, currentScore: currentContextCompatibilityScore }) AS candidates
   RETURN candidates
 }
@@ -106,8 +93,8 @@ CALL {
   WITH dbCurrentUser, dbCurrentContext, dbTargetContext, requestedTargetContext, currentScore, me
   WHERE requestedTargetContext IS NOT NULL
     AND dbCurrentUser <> me
-    ${whereClauseTarget ? `AND ${whereClauseTarget}` : ""}
-  ${scoreClauseTarget}
+    ${whereTarget ? `AND ${whereTarget}` : ""}
+  ${scoreTarget}
   WITH collect({ user: dbCurrentUser, currentContext: dbCurrentContext, currentScore: currentScore, targetContext: dbTargetContext, targetScore: targetContextCompatibilityScore }) AS results
   RETURN results
 }

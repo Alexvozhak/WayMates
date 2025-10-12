@@ -1,5 +1,5 @@
 import type { Driver } from "neo4j-driver";
-import { QueryOrchestrator } from "./orcestrator/query-orchestrator.js";
+import { SearchQueryBuilder } from "./orcestrator/search-query-builder.js";
 import type {
   UserContext,
   TargetContext,
@@ -8,11 +8,10 @@ import type {
 } from "./schemas-zod.js";
 import { SearchResultSchema, validateSchema } from "./schemas-zod.js";
 
-// SearchManager is a facade over QueryOrchestrator and Neo4j Driver
 export class SearchManager {
   constructor(
     public driver: Driver,
-    private orchestrator: QueryOrchestrator
+    private searchQueryBuilder: SearchQueryBuilder
   ) {}
 
   async searchCurrent(
@@ -21,7 +20,7 @@ export class SearchManager {
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
-    const cypher = this.orchestrator.buildCurrentContextQuery(
+    const cypher = this.searchQueryBuilder.buildCurrentContextQuery(
       presetName,
       searchConstraints
     );
@@ -44,7 +43,7 @@ export class SearchManager {
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
-    const cypher = this.orchestrator.buildTargetContextQuery(
+    const cypher = this.searchQueryBuilder.buildTargetContextQuery(
       presetName,
       searchConstraints
     );
@@ -69,7 +68,7 @@ export class SearchManager {
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
-    const cypher = this.orchestrator.buildPipelineQuery(
+    const cypher = this.searchQueryBuilder.buildPipelineQuery(
       currentPreset,
       targetPreset,
       searchConstraints
@@ -87,7 +86,6 @@ export class SearchManager {
     }
   }
 
-  // Alias for target-only
   async searchTargetMode(
     presetName: string,
     targetContext: TargetContext,

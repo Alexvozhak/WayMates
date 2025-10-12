@@ -1,16 +1,6 @@
 import { FastMCP } from "fastmcp";
 import type { SearchManager } from "./search-manager.js";
-import {
-  executeUpsertStory,
-  executeUpsertContexts,
-  executeUpsertTrails,
-} from "./upsert-story.js";
-import {
-  getUserStory,
-  deleteContext,
-  deleteTrail,
-  pingDatabase,
-} from "./mcp-tools.js";
+import type { PersistenceManager } from "./persistence-manager.js";
 import {
   CurrentToTargetParamsSchema,
   CurrentOnlyParamsSchema,
@@ -29,7 +19,10 @@ import { z } from "zod";
 /**
  * Create MCP server using SearchManager.
  */
-export function createWayMatesServer(searchManager: SearchManager) {
+export function createWayMatesServer(
+  searchManager: SearchManager,
+  persistenceManager: PersistenceManager
+) {
   const server = new FastMCP({
     name: "waymates-search",
     version: "1.0.0",
@@ -109,7 +102,7 @@ export function createWayMatesServer(searchManager: SearchManager) {
       "execute_upsert_story",
       "Process complete user story with contexts and trails",
       StoryInputSchema,
-      (params) => executeUpsertStory(searchManager.driver, params)
+      (params) => persistenceManager.upsertStory(params)
     )
   );
   // Upsert Context
@@ -118,7 +111,7 @@ export function createWayMatesServer(searchManager: SearchManager) {
       "upsert_context",
       "Create or update single user context",
       UserIdContextSchema,
-      (params) => executeUpsertContexts(searchManager.driver, params)
+      (params) => persistenceManager.upsertContexts(params)
     )
   );
   // Upsert Trail
@@ -127,7 +120,7 @@ export function createWayMatesServer(searchManager: SearchManager) {
       "upsert_trail",
       "Create or update single trail between contexts",
       UserIdTrailSchema,
-      (params) => executeUpsertTrails(searchManager.driver, params)
+      (params) => persistenceManager.upsertTrails(params)
     )
   );
   // Get User Story
@@ -136,7 +129,7 @@ export function createWayMatesServer(searchManager: SearchManager) {
       "get_user_story",
       "Fetch stored contexts and trails for a user",
       GetUserStoryParamsSchema,
-      (params) => getUserStory(searchManager.driver, params)
+      (params) => persistenceManager.getUserStory(params)
     )
   );
   // Delete Context
@@ -145,7 +138,7 @@ export function createWayMatesServer(searchManager: SearchManager) {
       "delete_context",
       "Delete a context owned by the user (requires no trails)",
       DeleteContextParamsSchema,
-      (params) => deleteContext(searchManager.driver, params)
+      (params) => persistenceManager.deleteContext(params)
     )
   );
   // Delete Trail
@@ -154,13 +147,13 @@ export function createWayMatesServer(searchManager: SearchManager) {
       "delete_trail",
       "Delete a specific trail owned by the user",
       DeleteTrailParamsSchema,
-      (params) => deleteTrail(searchManager.driver, params)
+      (params) => persistenceManager.deleteTrail(params)
     )
   );
   // Ping
   server.addTool(
     tool("ping", "Check database connectivity", PingParamsSchema, () =>
-      pingDatabase(searchManager.driver)
+      persistenceManager.ping()
     )
   );
 

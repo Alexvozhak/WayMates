@@ -5,7 +5,7 @@ import {
 import { createWayMatesServer } from "./mcp-server.js";
 import { PresetsManager } from "./orcestrator/preset-manager.js";
 import { join } from "path";
-import { QueryOrchestrator } from "./orcestrator/query-orchestrator.js";
+import { SearchQueryBuilder } from "./orcestrator/search-query-builder.js";
 import { SearchManager } from "./search-manager.js";
 import { createPersistenceManager } from "./persistence-manager.js";
 
@@ -15,14 +15,14 @@ async function main() {
   const presetsManager = new PresetsManager(PRESETS_PATH);
   presetsManager.load();
 
-  const orchestrator = new QueryOrchestrator(presetsManager);
-  orchestrator.validateCurrentPresets();
+  const searchQueryBuilder = new SearchQueryBuilder(presetsManager);
+  searchQueryBuilder.validateCurrentPresets();
 
   const driver = createNeo4jDriver(); //todo нужен ли trycatch?
   // и нужно разобраться как работаем с енв, централизовано
   await verifyConnection(driver);
 
-  const searchManager = new SearchManager(driver, orchestrator);
+  const searchManager = new SearchManager(driver, searchQueryBuilder);
   const persistenceManager = createPersistenceManager(driver);
   const server = createWayMatesServer(searchManager, persistenceManager);
 

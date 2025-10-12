@@ -4,8 +4,11 @@ import {
   buildStrictConditions,
   buildFlexibleConditions,
 } from "./snippets-extractor.js";
-import type { QueryConfig, ContextField } from "../schemas-zod.js";
-import type { SearchConstraints } from "../schemas-zod.js";
+import type {
+  QueryConfig,
+  ContextField,
+  SearchConstraints,
+} from "../schemas-zod.js";
 
 const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
   "position",
@@ -13,9 +16,8 @@ const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
   "skills",
 ];
 
-export class QueryOrchestrator {
+export class SearchQueryBuilder {
   constructor(private presetsManager: PresetsManager) {}
-  /** Validate current-only presets on startup */
   public validateCurrentPresets(): void {
     for (const name of this.presetsManager.list()) {
       const { strictFields } = this.presetsManager.get(name);
@@ -28,16 +30,17 @@ export class QueryOrchestrator {
     presetName: string,
     searchConstraints: SearchConstraints
   ): string {
-    const limit = searchConstraints.results_limit;
-    this.validateRequiredFields(
-      presetName,
-      this.presetsManager.get(presetName).strictFields
-    );
     const { strictFields, flexibleFields }: QueryConfig =
       this.presetsManager.get(presetName);
     const whereClause = buildStrictConditions(strictFields);
     const scoreClause = buildFlexibleConditions(flexibleFields);
-    return buildContextQuery("all", whereClause, scoreClause, limit);
+    // Forward searchConstraints for future filtering
+    return buildContextQuery(
+      "all",
+      whereClause,
+      scoreClause,
+      searchConstraints
+    );
   }
 
   /** Build Cypher for target-only (filtered) search */
@@ -45,12 +48,16 @@ export class QueryOrchestrator {
     presetName: string,
     searchConstraints: SearchConstraints
   ): string {
-    const limit = searchConstraints.results_limit;
     const { strictFields, flexibleFields }: QueryConfig =
       this.presetsManager.get(presetName);
     const whereClause = buildStrictConditions(strictFields);
     const scoreClause = buildFlexibleConditions(flexibleFields);
-    return buildContextQuery("filtered", whereClause, scoreClause, limit);
+    return buildContextQuery(
+      "filtered",
+      whereClause,
+      scoreClause,
+      searchConstraints
+    );
   }
 
   /** Build Cypher for current-to-target pipeline */
@@ -59,11 +66,6 @@ export class QueryOrchestrator {
     targetPreset: string,
     searchConstraints: SearchConstraints
   ): string {
-    const limit = searchConstraints.results_limit;
-    this.validateRequiredFields(
-      currentPreset,
-      this.presetsManager.get(currentPreset).strictFields
-    );
     const { strictFields: sf1, flexibleFields: ff1 }: QueryConfig =
       this.presetsManager.get(currentPreset);
     const { strictFields: sf2, flexibleFields: ff2 }: QueryConfig =
@@ -72,7 +74,13 @@ export class QueryOrchestrator {
     const score1 = buildFlexibleConditions(ff1);
     const where2 = buildStrictConditions(sf2);
     const score2 = buildFlexibleConditions(ff2);
-    return buildPipelineQuery(where1, score1, where2, score2, limit);
+    return buildPipelineQuery(
+      where1,
+      score1,
+      where2,
+      score2,
+      searchConstraints
+    );
   }
 
   private validateRequiredFields(
