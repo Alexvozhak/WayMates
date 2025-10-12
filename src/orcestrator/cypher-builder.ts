@@ -1,11 +1,20 @@
 import type { SearchConstraints } from "../schemas-zod.js";
 
-export function buildContextQuery(
+/**
+ * Общая логика поиска похожих контекстов - core часть для переиспользования
+ * Возвращает Cypher код до точки с переменными: dbUser, dbContext, contextCompatibilityScore
+ */
+export function buildSimilarContextsCore(
   searchScope: "all" | "filtered",
   whereClause: string,
-  scoreClause: string,
-  searchConstraints: SearchConstraints
-): string {
+  scoreClause: string
+): {
+  cypherCode: string;
+  userVar: string;
+  contextVar: string;
+  compatibilityScoreVar: string;
+  additionalFinalVars: string;
+} {
   // Унифицированные имена переменных
   const userVar = "dbUser";
   const contextVar = "dbContext";
@@ -27,10 +36,7 @@ export function buildContextQuery(
       ? ", dbCurrentUser, dbCurrentContext, currentContextCompatibilityScore"
       : "";
 
-  // Determine limit from constraints
-  const limit = searchConstraints.results_limit;
-
-  return `/* ============================================
+  const cypherCode = `/* ============================================
  * ПОИСК КОНТЕКСТОВ ${searchScope === "all" ? "(СРЕДИ ВСЕХ)" : "(СРЕДИ ОТФИЛЬТРОВАННЫХ)"}
  * ============================================ */
 
@@ -41,15 +47,38 @@ MATCH
 WITH *, ${userVar}, ${contextVar}, ${requestedVar}${additionalVars}
 WHERE
   ${requestedVar} IS NOT NULL
-  AND ${userVar} <> dbCurrentUser
+  AND ${userVar} <> ${searchScope === "all" ? "$me" : "dbCurrentUser"}
   ${whereClause ? `AND ${whereClause}` : ""}
 
 ${scoreClause}
 
 WITH *, ${userVar}, ${contextVar}, compatibilityScore AS ${compatibilityScoreVar}${additionalFinalVars}
 WHERE ${userVar} IS NOT NULL${searchScope === "filtered" ? " AND dbCurrentUser IS NOT NULL" : ""}
-WITH *, ${userVar}, ${contextVar}, ${compatibilityScoreVar}${additionalFinalVars}
-// Note: searchConstraints available for future use
+WITH *, ${userVar}, ${contextVar}, ${compatibilityScoreVar}${additionalFinalVars}`;
+
+  return {
+    cypherCode,
+    userVar,
+    contextVar,
+    compatibilityScoreVar,
+    additionalFinalVars,
+  };
+}
+
+/**
+ * Стандартное формирование результата для SearchResultSchema
+ */
+export function buildSearchResultReturn(
+  searchScope: "all" | "filtered",
+  userVar: string,
+  contextVar: string,
+  compatibilityScoreVar: string,
+  additionalFinalVars: string,
+  searchConstraints: SearchConstraints
+): string {
+  const limit = searchConstraints.results_limit;
+
+  return `// Note: searchConstraints available for future use
 RETURN {
   userId: ${userVar},
   currentContext: ${searchScope === "all" ? contextVar : "null"},
@@ -57,8 +86,31 @@ RETURN {
   targetContext: ${searchScope === "filtered" ? contextVar : "null"},
   targetScore: ${searchScope === "filtered" ? compatibilityScoreVar : "null"}
 } AS result
-LIMIT ${limit}
-`;
+LIMIT ${limit}`;
+}
+
+export function buildContextQuery(
+  searchScope: "all" | "filtered",
+  whereClause: string,
+  scoreClause: string,
+  searchConstraints: SearchConstraints
+): string {
+  const coreResult = buildSimilarContextsCore(
+    searchScope,
+    whereClause,
+    scoreClause
+  );
+  const returnClause = buildSearchResultReturn(
+    searchScope,
+    coreResult.userVar,
+    coreResult.contextVar,
+    coreResult.compatibilityScoreVar,
+    coreResult.additionalFinalVars,
+    searchConstraints
+  );
+
+  return `${coreResult.cypherCode}
+${returnClause}`;
 }
 
 // === Pipeline Query Builder ===

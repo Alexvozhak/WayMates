@@ -5,7 +5,10 @@ import type {
   TargetContext,
   SearchResult,
   SearchConstraints,
+  BatchedResearchResult,
+  CurrentOnlyParams,
 } from "./schemas-zod.js";
+import { BatchedResearchResultSchema } from "./schemas-zod.js";
 import { SearchResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 
@@ -83,6 +86,22 @@ export class SearchManager {
       targetContext,
       currentUserId,
       searchConstraints
+    );
+  }
+
+  async searchCurrentWithBatches(
+    params: CurrentOnlyParams
+  ): Promise<BatchedResearchResult[]> {
+    const cypher = this.searchQueryBuilder.buildCurrentBatchesQuery(params);
+    const result = await withReadSession(this.driver, (session) =>
+      session.run(cypher, {
+        currentContext: params.currentContext,
+        me: params.currentUserId,
+        reasonsToTrack: params.reasonsToTrack,
+      })
+    );
+    return result.records.map((rec) =>
+      BatchedResearchResultSchema.parse(rec.get("result"))
     );
   }
 }

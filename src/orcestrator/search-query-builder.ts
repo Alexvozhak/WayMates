@@ -1,5 +1,9 @@
 import { PresetsManager } from "./preset-manager.js";
-import { buildContextQuery, buildPipelineQuery } from "./cypher-builder.js";
+import {
+  buildContextQuery,
+  buildPipelineQuery,
+  buildSimilarContextsCore,
+} from "./cypher-builder.js";
 import {
   buildStrictConditions,
   buildFlexibleConditions,
@@ -8,8 +12,10 @@ import type {
   QueryConfig,
   ContextField,
   SearchConstraints,
+  CurrentOnlyParams,
 } from "../schemas-zod.js";
-
+import { FINAL_BATCH_PERIOD } from "../schemas-zod.js";
+//todo перенести в app.ts
 const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
   "position",
   "domains",
@@ -96,5 +102,80 @@ export class SearchQueryBuilder {
         `Current preset "${preset}" must include all required fields: ${REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.join(", ")}`
       );
     }
+  }
+
+  /** Build Cypher for current-only search with time batches */
+  public buildCurrentBatchesQuery(params: CurrentOnlyParams): string {
+    // Generate periods array
+    const periods = this.generatePeriods(params);
+
+    // Generate UNION blocks for each period
+    const unionBlocks = periods
+      .map((months) => this.generatePeriodBlock(months, params.currentPreset))
+      .join("\nUNION\n");
+
+    return unionBlocks;
+  }
+
+  /** Generate periods array for batched search */
+  private generatePeriods(params: CurrentOnlyParams): number[] {
+    const periods: number[] = [];
+
+    // Generate detailed periods: stepSize*1, stepSize*2, stepSize*3, etc.
+    for (let step = 1; step <= params.numberOfSteps; step++) {
+      periods.push(step * params.stepSizeMonths);
+    }
+
+    // Add final batch if requested
+    if (params.includeFinalBatch) {
+      periods.push(FINAL_BATCH_PERIOD);
+    }
+
+    return periods;
+  }
+
+  /** Generate single period block for batched query */
+  private generatePeriodBlock(months: number, presetName: string): string {
+    const { strictFields, flexibleFields }: QueryConfig =
+      this.presetsManager.get(presetName);
+    const whereClause = buildStrictConditions(strictFields);
+    const scoreClause = buildFlexibleConditions(flexibleFields);
+
+    // Use core logic for finding similar contexts
+    const { cypherCode, userVar, contextVar, compatibilityScoreVar } =
+      buildSimilarContextsCore("all", whereClause, scoreClause);
+
+    const isFinalBatch = months === FINAL_BATCH_PERIOD;
+    const futureContextCondition = isFinalBatch
+      ? `datetime(futureContext.created_at) >= datetime(${contextVar}.created_at)`
+      : `duration.between(datetime(${contextVar}.created_at), datetime(futureContext.created_at)).months >= ${months}`;
+
+    // Элегантное пересечение массивов вместо TRIGGER_SNIPPETS
+    return `
+CALL {
+  ${cypherCode}
+  
+  MATCH (${userVar})-[:HAS_CONTEXT]->(futureContext:Context)
+  WHERE ${futureContextCondition}
+  
+  WITH ${userVar}, ${contextVar}, futureContext, ${compatibilityScoreVar},
+       [reason IN $reasonsToTrack WHERE reason IN futureContext.creation_reason] AS contextTriggers
+  
+  RETURN ${months} AS period, collect({
+            userId: ${userVar}.user_id,
+            currentLikeContextId: ${contextVar}.context_id,
+            compatibilityPercent: ${compatibilityScoreVar},
+            transitionContextId: futureContext.context_id,
+            contextTriggers: contextTriggers,
+            monthsInPositionBeforeChange: duration.between(datetime(${contextVar}.created_at), datetime(futureContext.created_at)).months,
+            ageAtPositionChange: datetime(futureContext.created_at).year - ${userVar}.birth_year,
+            destinationCountry: futureContext.country_code,
+            destinationCity: futureContext.city_name,
+            companyTypeTransition: futureContext.company_size,
+            industryTransition: futureContext.industry,
+            techStackTransition: futureContext.domains,
+            workFormatTransition: futureContext.work_type
+  }) AS results
+}`;
   }
 }
