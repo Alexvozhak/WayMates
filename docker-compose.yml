@@ -16,6 +16,21 @@ services:
       - neo4j_prod_data:/data
       - ./database/init.cypher:/tmp/init.cypher:ro
     restart: unless-stopped
+    healthcheck:
+      test:
+        - "CMD"
+        - "cypher-shell"
+        - "-u"
+        - "neo4j"
+        - "-p"
+        - "${NEO4J_PASSWORD}"
+        - "-a"
+        - "localhost:${NEO4J_PORT}"
+        - "RETURN 1"
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   neo4j-test:
     image: neo4j:latest
