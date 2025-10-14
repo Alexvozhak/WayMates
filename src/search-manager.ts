@@ -75,20 +75,6 @@ export class SearchManager {
     );
   }
 
-  async searchTargetMode(
-    presetName: string,
-    targetContext: TargetContext,
-    currentUserId: string,
-    searchConstraints: SearchConstraints
-  ): Promise<SearchResult[]> {
-    return this.searchTarget(
-      presetName,
-      targetContext,
-      currentUserId,
-      searchConstraints
-    );
-  }
-
   async searchCurrentWithBatches(
     params: CurrentOnlyParams
   ): Promise<BatchedResearchResult[]> {

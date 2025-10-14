@@ -1,0 +1,209 @@
+{
+  "user_id": "usr_01K6GSWTHHJ720PJKSRNFH4X4Q",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTHG28MGZK2N9NK59423",
+      "created_at": "2016-08-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "media",
+      "company_size": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 5,
+      "country_code": "us",
+      "city_name": "denver",
+      "birth_year": 1993,
+      "citizenships": [
+        "us"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHHGFM5CVTVVTMY6J51",
+      "created_at": "2019-01-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Middle",
+      "industry": "marketing",
+      "company_size": "scaleup",
+      "domains": [
+        "Frontend",
+        "Backend"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "react",
+          "category": "framework"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "express",
+          "category": "framework"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "graphql",
+          "category": "library"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 9,
+      "country_code": "us",
+      "city_name": "denver",
+      "birth_year": 1993,
+      "citizenships": [
+        "us"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTHH2PJK9DWRNJQ8W557",
+      "created_at": "2021-06-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Senior",
+      "industry": "adtech",
+      "company_size": "large",
+      "domains": [
+        "Backend",
+        "Architecture"
+      ],
+      "skills": [
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "nodejs",
+          "category": "runtime"
+        },
+        {
+          "name": "express",
+          "category": "framework"
+        },
+        {
+          "name": "postgresql",
+          "category": "database"
+        },
+        {
+          "name": "aws",
+          "category": "cloud"
+        },
+        {
+          "name": "lambda",
+          "category": "tool"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        },
+        {
+          "name": "terraform",
+          "category": "devops"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 16,
+      "country_code": "us",
+      "city_name": "seattle",
+      "birth_year": 1993,
+      "citizenships": [
+        "us"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTHHQS8WBTYPPT885ZN3",
+      "skill": "nodejs",
+      "platform": "books",
+      "from_context_id": "ctx_01K6GSWTHG28MGZK2N9NK59423",
+      "to_context_id": "ctx_01K6GSWTHHGFM5CVTVVTMY6J51",
+      "total_duration_weeks": 10,
+      "schedule": {
+        "sessions_per_week": 3,
+        "hours_per_session": 1.5
+      },
+      "cost_usd": 48,
+      "rating_course": 4.1,
+      "rating_platform": 4.2,
+      "rating_schedule": 3.6,
+      "course_name": "Node.js Design Patterns",
+      "course_link": "https://www.packtpub.com/product/node-js-design-patterns-third-edition/9781839214110",
+      "user_feedback": "Понял event loop и построил устойчивые сервисы."
+    },
+    {
+      "trail_id": "trl_01K6GSWTHHNV298T7WZCJ1C6TC",
+      "skill": "aws",
+      "platform": "bootcamp",
+      "from_context_id": "ctx_01K6GSWTHHGFM5CVTVVTMY6J51",
+      "to_context_id": "ctx_01K6GSWTHH2PJK9DWRNJQ8W557",
+      "total_duration_weeks": 14,
+      "schedule": {
+        "sessions_per_week": 5,
+        "hours_per_session": 7
+      },
+      "cost_usd": 7800,
+      "rating_course": 4.6,
+      "rating_platform": 4.5,
+      "rating_schedule": 4.2,
+      "course_name": "AWS Cloud Architect Bootcamp",
+      "course_link": "https://www.cloudacademy.com/bootcamp/aws-cloud-architect/",
+      "user_feedback": "Интенсив дал практику по Lambda и Terraform, теперь веду облачную архитектуру."
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "user_id": "usr_01K6GR8JF15XP12S67QFNNNHCE",
+  "contexts": [
+    {
+      "context_id": "ctx_01K6GSWTH2CQGVFFSG1A9VPG63",
+      "created_at": "2016-09-15T00:00:00Z",
+      "creation_reason": [
+        "skill_learning",
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "education",
+      "company_size": "medium",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 8,
+      "country_code": "fr",
+      "city_name": "paris",
+      "birth_year": 1995,
+      "citizenships": [
+        "fr"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTH22SNY0QA61GEGW2GA",
+      "created_at": "2018-05-01T00:00:00Z",
+      "creation_reason": [
+        "position_changed"
+      ],
+      "position": "Junior",
+      "industry": "education",
+      "company_size": "medium",
+      "domains": [
+        "Frontend",
+        "Healthcare"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "angular",
+          "category": "framework"
+        },
+        {
+          "name": "rxjs",
+          "category": "library"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "git",
+          "category": "tool"
+        },
+        {
+          "name": "python",
+          "category": "language"
+        }
+      ],
+      "work_type": "office",
+      "team_size": 8,
+      "country_code": "fr",
+      "city_name": "paris",
+      "birth_year": 1995,
+      "citizenships": [
+        "fr"
+      ]
+    },
+    {
+      "context_id": "ctx_01K6GSWTH21G0SWTGBT5PV4F5H",
+      "created_at": "2021-01-01T00:00:00Z",
+      "creation_reason": [
+        "milestone_achieved"
+      ],
+      "position": "Middle",
+      "industry": "fintech",
+      "company_size": "large",
+      "domains": [
+        "Frontend",
+        "Architecture"
+      ],
+      "skills": [
+        {
+          "name": "html",
+          "category": "language"
+        },
+        {
+          "name": "css",
+          "category": "language"
+        },
+        {
+          "name": "javascript",
+          "category": "language"
+        },
+        {
+          "name": "angular",
+          "category": "framework"
+        },
+        {
+          "name": "ngrx",
+          "category": "library"
+        },
+        {
+          "name": "rxjs",
+          "category": "library"
+        },
+        {
+          "name": "jest",
+          "category": "testing"
+        },
+        {
+          "name": "cypress",
+          "category": "testing"
+        },
+        {
+          "name": "docker",
+          "category": "devops"
+        }
+      ],
+      "work_type": "hybrid",
+      "team_size": 14,
+      "country_code": "fr",
+      "city_name": "paris",
+      "birth_year": 1995,
+      "citizenships": [
+        "fr"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trail_id": "trl_01K6GSWTH3QH86VBHTK45MF14N",
+      "skill": "angular",
+      "platform": "udemy",
+      "from_context_id": "ctx_01K6GSWTH2CQGVFFSG1A9VPG63",
+      "to_context_id": "ctx_01K6GSWTH22SNY0QA61GEGW2GA",
+      "total_duration_weeks": 6,
+      "schedule": {
+        "sessions_per_week": 5,
+        "hours_per_session": 2
+      },
+      "cost_usd": 119,
+      "rating_course": 4.2,
+      "rating_platform": 4.3,
+      "rating_schedule": 3.9,
+      "course_name": "Angular Complete Guide 2021",
+      "course_link": "https://www.udemy.com/course/the-complete-guide-to-angular/",
+      "user_feedback": "\u041f\u043e\u043c\u043e\u0433 \u043f\u043e\u043d\u044f\u0442\u044c DI \u0438 \u043c\u043e\u0434\u0443\u043b\u0438, \u0431\u0435\u0437 \u044d\u0442\u043e\u0433\u043e \u043f\u0440\u043e\u0435\u043a\u0442 \u0432 \u043a\u043b\u0438\u043d\u0438\u043a\u0435 \u0431\u044b \u043d\u0435 \u0432\u0437\u043b\u0435\u0442\u0435\u043b."
+    },
+    {
+      "trail_id": "trl_01K6GSWTH33P6WJQNRTDN64ZED",
+      "skill": "ngrx",
+      "platform": "mentorship",
+      "from_context_id": "ctx_01K6GSWTH22SNY0QA61GEGW2GA",
+      "to_context_id": "ctx_01K6GSWTH21G0SWTGBT5PV4F5H",
+      "total_duration_weeks": 11,
+      "schedule": {
+        "sessions_per_week": 2,
+        "hours_per_session": 2.5
+      },
+      "cost_usd": 2400,
+      "rating_course": 4.9,
+      "rating_platform": 4.8,
+      "rating_schedule": 4.4,
+      "course_name": "State Management Mentoring for Angular",
+      "course_link": "https://mentors.angular.io/ngrx-coaching",
+      "user_feedback": "\u0420\u0430\u0437\u043e\u0431\u0440\u0430\u043b\u0438 \u0440\u0435\u0430\u043b\u044c\u043d\u044b\u0435 \u043a\u0435\u0439\u0441\u044b, \u0432\u043d\u0435\u0434\u0440\u0438\u043b\u0438 store \u043d\u0430 \u043f\u0440\u043e\u0435\u043a\u0442\u0435 \u0438 \u0441\u043d\u0438\u0437\u0438\u043b\u0438 \u0431\u0430\u0433\u0438."
+    }
+  ]
+}
