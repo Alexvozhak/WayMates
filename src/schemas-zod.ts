@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-// === КОНСТАНТЫ ===
-export const FINAL_BATCH_PERIOD = -1;
-
 // === ТИПЫ ===
 export type Skill = z.infer<typeof SkillSchema>;
 export type UserContext = z.infer<typeof UserContextSchema>;
@@ -15,7 +12,6 @@ export type NewContextReason = z.infer<typeof NewContextReasonSchema>;
 export type Position = z.infer<typeof PositionSchema>;
 export type AvatarSearchResult = z.infer<typeof AvatarSearchResultSchema>;
 export type AvatarResearchResult = z.infer<typeof AvatarResearchResultSchema>;
-export type BatchedResearchResult = z.infer<typeof BatchedResearchResultSchema>;
 export type CurrentToTargetResult = z.infer<typeof CurrentToTargetResultSchema>;
 export type TargetAnalysisResult = z.infer<typeof TargetAnalysisResultSchema>;
 export type UserId = z.infer<typeof UserIdSchema>;
@@ -280,16 +276,6 @@ export const AvatarResearchResultSchema = z.object({
   workFormatTransition: z.string().optional(),
 });
 
-// Результат current-only поиска с батчами по времени
-export const BatchedResearchResultSchema = z.object({
-  period: z
-    .number()
-    .describe("Period in months or FINAL_BATCH_PERIOD for final batch"),
-  results: z
-    .array(AvatarResearchResultSchema)
-    .describe("Avatar research results for this period"),
-});
-
 // Результат поиска current → target для CURRENT_TO_TARGET режимов
 export const CurrentToTargetResultSchema = z.object({
   userId: UserIdSchema,
@@ -420,25 +406,10 @@ export const CurrentOnlyParamsSchema = z.object({
   currentUserId: UserIdSchema,
   currentPreset: z.string().describe("Preset name for current context search"),
   currentContext: UserContextSchema,
+  lookAheadMonths: z.number().min(1).max(120),
+  reasonsToTrack: z.array(NewContextReasonSchema),
   searchConstraints: SearchConstraintsSchema,
-
-  // Параметры для временных батчей
-  stepSizeMonths: z
-    .number()
-    .min(1)
-    .max(36)
-    .describe("Step size in months (e.g., 6 months)"),
-  numberOfSteps: z
-    .number()
-    .min(1)
-    .max(20)
-    .describe("Number of time steps to generate"),
-  includeFinalBatch: z
-    .boolean()
-    .describe("Include final batch with latest contexts"),
-  reasonsToTrack: z
-    .array(NewContextReasonSchema)
-    .describe("Context change reasons to track"),
+  maxUsers: z.number().optional(),
 });
 
 export const TargetOnlyParamsSchema = z.object({

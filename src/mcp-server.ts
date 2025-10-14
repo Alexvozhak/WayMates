@@ -15,7 +15,8 @@ import {
   PingParamsSchema,
 } from "./schemas-zod.js";
 import { z } from "zod";
-
+//tODO заменить все params на CurrentToTargetParamsSchema
+// в методах searchPipeline и searchCurrent и тд (не мельчить)"
 /**
  * Create MCP server using SearchManager.
  */
