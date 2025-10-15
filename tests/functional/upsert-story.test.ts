@@ -7,10 +7,11 @@ import {
   setupIntegrationTest,
   teardownIntegrationTest,
 } from "../helpers/database-setup.js";
+import { createDriver } from "../../src/neo4j.js";
 
 describe("upsertStory Functional Tests", () => {
-  let driver: Driver;
-  let session: Session;
+  const driver: Driver = createDriver();
+
 
   beforeEach(async () => {
     ({ driver, session } = await setupIntegrationTest());

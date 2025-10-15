@@ -4,12 +4,10 @@ import {
 } from "./neo4j.js";
 import { createWayMatesServer } from "./mcp-server.js";
 import { PresetsManager } from "./orcestrator/preset-manager.js";
-import { join } from "path";
 import { SearchQueryBuilder } from "./orcestrator/search-query-builder.js";
 import { SearchManager } from "./search-manager.js";
-import { createPersistenceManager } from "./persistence-manager.js";
-
-const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
+import { PersistenceManager } from "./persistence-manager.js";
+import { PRESETS_PATH } from "./config.js";
 
 async function main() {
   const presetsManager = new PresetsManager(PRESETS_PATH);
@@ -23,7 +21,7 @@ async function main() {
   await verifyConnection(driver);
 
   const searchManager = new SearchManager(driver, searchQueryBuilder);
-  const persistenceManager = createPersistenceManager(driver);
+  const persistenceManager = new PersistenceManager(driver);
   const server = createWayMatesServer(searchManager, persistenceManager);
 
   await server.start({

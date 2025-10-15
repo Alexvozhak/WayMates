@@ -11,7 +11,7 @@ export type TargetContext = z.infer<typeof TargetContextSchema>;
 export type NewContextReason = z.infer<typeof NewContextReasonSchema>;
 export type Position = z.infer<typeof PositionSchema>;
 export type AvatarSearchResult = z.infer<typeof AvatarSearchResultSchema>;
-export type AvatarResearchResult = z.infer<typeof AvatarResearchResultSchema>;
+export type BatchedResearchResult = z.infer<typeof BatchedResearchResultSchema>;
 export type CurrentToTargetResult = z.infer<typeof CurrentToTargetResultSchema>;
 export type TargetAnalysisResult = z.infer<typeof TargetAnalysisResultSchema>;
 export type UserId = z.infer<typeof UserIdSchema>;
@@ -22,6 +22,9 @@ export type UserIdTrail = z.infer<typeof UserIdTrailSchema>;
 export type ContextField = z.infer<typeof ContextFieldSchema>;
 export type FlexibleField = z.infer<typeof FlexibleFieldSchema>;
 export type QueryConfig = z.infer<typeof QueryConfigSchema>;
+export type UpsertContextResult = z.infer<typeof UpsertContextResultSchema>;
+export type UpsertTrailResult = z.infer<typeof UpsertTrailResultSchema>;
+export type UpsertStoryResult = z.infer<typeof UpsertStoryResultSchema>;
 
 // === БАЗОВЫЕ СХЕМЫ ===
 // ISO 8601 дата-время в UTC формате: YYYY-MM-DDTHH:mm:ssZ
@@ -242,7 +245,7 @@ export const AvatarSearchResultSchema = z
   .merge(UserContextSchema);
 
 // Результат анализа прогрессии для CURRENT_ONLY режима
-export const AvatarResearchResultSchema = z.object({
+export const BatchedResearchResultSchema = z.object({
   userId: UserIdSchema,
   currentLikeContextId: ContextIdSchema,
   compatibilityPercent: z.number(),
@@ -408,8 +411,6 @@ export const CurrentOnlyParamsSchema = z.object({
   currentContext: UserContextSchema,
   lookAheadMonths: z.number().min(1).max(120),
   reasonsToTrack: z.array(NewContextReasonSchema),
-  searchConstraints: SearchConstraintsSchema,
-  maxUsers: z.number().optional(),
 });
 
 export const TargetOnlyParamsSchema = z.object({
@@ -468,5 +469,18 @@ export const SearchResultSchema = z.object({
   targetScore: z.nullable(z.number()),
 });
 export type SearchResult = z.infer<typeof SearchResultSchema>;
-export const SuccessResultSchema = z.object({ success: z.boolean() });
-export type SuccessResult = z.infer<typeof SuccessResultSchema>;
+
+export const UpsertContextResultSchema = z.object({
+  success: z.boolean(),
+  contextIds: z.array(ContextIdSchema),
+});
+
+export const UpsertTrailResultSchema = z.object({
+  success: z.boolean(),
+  trailIds: z.array(TrailIdSchema),
+});
+
+export const UpsertStoryResultSchema = z.object({
+  contexts: UpsertContextResultSchema,
+  trails: UpsertTrailResultSchema,
+});

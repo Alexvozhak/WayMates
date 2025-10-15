@@ -43,7 +43,7 @@ const { PresetsManager } = await import(
   "../../src/orcestrator/preset-manager.js"
 );
 
-const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
+import { PRESETS_PATH } from "../../src/config.js";
 
 const BASE_CONSTRAINTS = {
   max_timing_diff_months: 12,

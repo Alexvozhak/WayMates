@@ -5,7 +5,6 @@ import {
   CurrentToTargetParamsSchema,
   CurrentOnlyParamsSchema,
   TargetOnlyParamsSchema,
-  TargetSearchParamsSchema,
   StoryInputSchema,
   UserIdContextSchema,
   UserIdTrailSchema,
@@ -73,22 +72,6 @@ export function createWayMatesServer(
       TargetOnlyParamsSchema,
       async (params) =>
         searchManager.searchTarget(
-          params.targetPreset,
-          params.targetContext,
-          params.currentUserId,
-          params.searchConstraints
-        )
-    )
-  );
-
-  // Target Search
-  server.addTool(
-    tool(
-      "target_search",
-      "Search users who have achieved the target position",
-      TargetSearchParamsSchema,
-      async (params) =>
-        searchManager.searchTargetMode(
           params.targetPreset,
           params.targetContext,
           params.currentUserId,

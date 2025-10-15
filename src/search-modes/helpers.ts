@@ -1,8 +1,8 @@
 import type { Driver, QueryResult } from "neo4j-driver";
 import type { Skill, SkillCategory } from "../schemas-zod.js";
 import { DEFAULT_STRICT_SKILL_CATEGORIES } from "../schemas-zod.js";
-import type { z } from "zod";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function executeRead<TParams = Record<string, any>>(
   driver: Driver,
   cypherQuery: string,
@@ -14,13 +14,6 @@ export async function executeRead<TParams = Record<string, any>>(
   } finally {
     await session.close();
   }
-}
-
-export function getValidatedTypes<T extends z.ZodTypeAny>(
-  records: Record<PropertyKey, any>[],
-  schema: T
-): z.infer<T>[] {
-  return records.map((record) => schema.parse(record.get("result")));
 }
 
 export function getStrictSkills(

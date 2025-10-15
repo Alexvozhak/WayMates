@@ -16,7 +16,7 @@ import {
 } from "../../../src/orcestrator/selector.js";
 import { Processors } from "../../../src/cypher/api.js";
 
-const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
+import { PRESETS_PATH } from "../../../src/config.js";
 
 describe("QueryOrchestrator integration", () => {
   let driver: Driver;

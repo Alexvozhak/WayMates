@@ -1,4 +1,4 @@
-import neo4j, { Driver, Session } from "neo4j-driver";
+import neo4j, { Driver, ManagedTransaction } from "neo4j-driver";
 
 type Credentials = {
   uri: string;
@@ -30,11 +30,11 @@ export async function verifyConnection(driver: Driver): Promise<void> {
  */
 export async function withReadSession<T>(
   driver: Driver,
-  work: (session: Session) => Promise<T>
+  work: (tx: ManagedTransaction) => Promise<T>
 ): Promise<T> {
   const session = driver.session();
   try {
-    return await session.executeRead(() => work(session));
+    return await session.executeRead((tx) => work(tx));
   } finally {
     await session.close();
   }
@@ -45,11 +45,11 @@ export async function withReadSession<T>(
  */
 export async function withWriteSession<T>(
   driver: Driver,
-  work: (session: Session) => Promise<T>
+  work: (tx: ManagedTransaction) => Promise<T>
 ): Promise<T> {
   const session = driver.session();
   try {
-    return await session.executeWrite(() => work(session));
+    return await session.executeWrite((tx) => work(tx));
   } finally {
     await session.close();
   }

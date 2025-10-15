@@ -18,7 +18,7 @@ import {
 } from "../../../src/schemas-zod.js";
 import { getStrictSkills } from "../../../src/search-modes/helpers.js";
 
-const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
+import { PRESETS_PATH } from "../../../src/config.js";
 
 describe("Orchestrator functional workflow", () => {
   let driver: Driver;

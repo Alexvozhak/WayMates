@@ -1,8 +1,4 @@
-// PersistenceQueryBuilder with inline Cypher for write operations and fetching stories
-export class PersistenceQueryBuilder {
-  /** Query for creating contexts (including linking previous context and updating current) */
-  public buildUpsertContexts(): string {
-    return `MERGE (u:User {user_id: $user_id})
+export const UPSERT_CONTEXTS_QUERY: string = `MERGE (u:User {user_id: $user_id})
 ON CREATE SET u.current_context_id = null
 
 // User demographics from context
@@ -74,11 +70,7 @@ FOREACH (code IN $context.citizenships |
 )
 
 RETURN c.context_id AS context_id;`;
-  }
-
-  /** Query for creating trails (including linking to context) */
-  public buildUpsertTrails(): string {
-    return `MERGE (t:Trail {trail_id: $trail_id})
+export const UPSERT_TRAILS_QUERY: string = `MERGE (t:Trail {trail_id: $trail_id})
 SET t.skill = $trail.skill,
     t.platform = $trail.platform,
     t.from_context_id = $trail.from_context_id,
@@ -113,11 +105,8 @@ MERGE (u:User {user_id: $user_id})
 MERGE (u)-[:HAS_TRAIL]->(t)
 
 RETURN t.trail_id AS trail_id;`;
-  }
 
-  /** Query for retrieving full user story */
-  public buildGetUserStory(): string {
-    return `CALL {
+export const GET_USER_STORY_QUERY: string = `CALL {
   MATCH (u:User {user_id: $user_id})
   OPTIONAL MATCH (u)-[:HAS_CONTEXT]->(currentCtx:Context {context_id: u.current_context_id})-[:CITIZEN_OF]->(cit:Country)
   RETURN { user: u, citizenships: collect(DISTINCT cit.name) } AS userData
@@ -135,21 +124,13 @@ CALL {
   RETURN collect(t) AS trails
 }
 RETURN { user: userData, contexts: contexts, trails: trails } AS result;`;
-  }
 
-  /** Query for deleting a context */
-  public buildDeleteContext(): string {
-    return `MATCH (u:User {user_id: $user_id})-[rel:HAS_CONTEXT]->(c:Context {context_id: $context_id})
+export const DELETE_CONTEXT_QUERY: string = `MATCH (u:User {user_id: $user_id})-[rel:HAS_CONTEXT]->(c:Context {context_id: $context_id})
 WITH count(rel) AS deletedCount
 DETACH DELETE c
 RETURN { success: deletedCount > 0 } AS result;`;
-  }
 
-  /** Query for deleting a trail */
-  public buildDeleteTrail(): string {
-    return `MATCH (u:User {user_id: $user_id})-[rel:HAS_TRAIL]->(t:Trail {trail_id: $trail_id})
+export const DELETE_TRAIL_QUERY: string = `MATCH (u:User {user_id: $user_id})-[rel:HAS_TRAIL]->(t:Trail {trail_id: $trail_id})
 WITH count(rel) AS deletedCount
 DETACH DELETE t
 RETURN { success: deletedCount > 0 } AS result;`;
-  }
-}

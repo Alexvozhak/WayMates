@@ -5,16 +5,16 @@ import type {
   TargetContext,
   SearchResult,
   SearchConstraints,
-  BatchedResearchResult,
+  BatchResult,
   CurrentOnlyParams,
 } from "./schemas-zod.js";
-import { BatchedResearchResultSchema } from "./schemas-zod.js";
+import { BatchResultSchema } from "./schemas-zod.js";
 import { SearchResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 
 export class SearchManager {
   constructor(
-    public driver: Driver,
+    private driver: Driver,
     private searchQueryBuilder: SearchQueryBuilder
   ) {}
 
@@ -28,8 +28,8 @@ export class SearchManager {
       presetName,
       searchConstraints
     );
-    const result = await withReadSession(this.driver, (session) =>
-      session.run(cypher, { currentContext, me: currentUserId })
+    const result = await withReadSession(this.driver, (tx) =>
+      tx.run(cypher, { currentContext, me: currentUserId })
     );
     return result.records.map((rec) =>
       SearchResultSchema.parse(rec.get("result"))
@@ -46,8 +46,8 @@ export class SearchManager {
       presetName,
       searchConstraints
     );
-    const result = await withReadSession(this.driver, (session) =>
-      session.run(cypher, { targetContext, me: currentUserId })
+    const result = await withReadSession(this.driver, (tx) =>
+      tx.run(cypher, { targetContext, me: currentUserId })
     );
     return result.records.map((rec) =>
       SearchResultSchema.parse(rec.get("result"))
@@ -67,8 +67,8 @@ export class SearchManager {
       targetPreset,
       searchConstraints
     );
-    const result = await withReadSession(this.driver, (session) =>
-      session.run(cypher, { currentContext, targetContext, me: currentUserId })
+    const result = await withReadSession(this.driver, (tx) =>
+      tx.run(cypher, { currentContext, targetContext, me: currentUserId })
     );
     return result.records.map((rec) =>
       SearchResultSchema.parse(rec.get("result"))
@@ -77,17 +77,21 @@ export class SearchManager {
 
   async searchCurrentWithBatches(
     params: CurrentOnlyParams
-  ): Promise<BatchedResearchResult[]> {
+  ): Promise<BatchResult[]> {
     const cypher = this.searchQueryBuilder.buildCurrentBatchesQuery(params);
-    const result = await withReadSession(this.driver, (session) =>
-      session.run(cypher, {
+    const result = await withReadSession(this.driver, (tx) =>
+      tx.run(cypher, {
         currentContext: params.currentContext,
         me: params.currentUserId,
         reasonsToTrack: params.reasonsToTrack,
       })
     );
-    return result.records.map((rec) =>
-      BatchedResearchResultSchema.parse(rec.get("result"))
-    );
+    return result.records.map((rec) => {
+      const period = rec.get("period");
+      return BatchResultSchema.parse({
+        period: period, // Final batch has period = -1
+        results: rec.get("results"),
+      });
+    });
   }
 }
