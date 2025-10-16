@@ -68,5 +68,29 @@
       { "field": "country_code", "weight": 15 },
       { "field": "city_name", "weight": 10 }
     ]
+  },
+  "full": {
+    "strictFields": ["position", "domains", "skills", "country_code"],
+    "flexibleFields": [
+      { "field": "skills", "weight": 30 }
+    ]
+  },
+  "positionOnly": {
+    "strictFields": ["position", "domains", "skills"],
+    "flexibleFields": [
+      { "field": "country_code", "weight": 30 }
+    ]
+  },
+  "countryOnly": {
+    "strictFields": ["country_code", "domains", "skills"],
+    "flexibleFields": [
+      { "field": "skills", "weight": 30 }
+    ]
+  },
+  "mismatch": {
+    "strictFields": ["skills", "position", "domains"],
+    "flexibleFields": [
+      { "field": "position", "weight": 30 }
+    ]
   }
 }

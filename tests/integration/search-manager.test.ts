@@ -11,6 +11,23 @@ import type { Driver } from "neo4j-driver";
 import { createDriver, withWriteSession } from "../../src/neo4j.js";
 import { FixtureSearchManager } from "../helpers/fixture-search-manager.js";
 import { DEFAULT_CONSTRAINTS } from "../../src/config.js";
+import type { UserKey } from "../helpers/test-data-manager.js";
+
+const casesCurrent: [UserKey, string, number][] = [
+  ["U1", "full", 1],
+  ["U1", "mismatch", 0],
+];
+
+const casesTarget: [UserKey, string, number][] = [
+  ["U1", "countryOnly", 0],
+  ["U2", "countryOnly", 2],
+];
+
+const casesPipeline: [UserKey, string, string, number][] = [
+  ["U2", "full", "countryOnly", 1],
+  ["U3", "positionOnly", "mismatch", 0],
+  ["U4", "full", "countryOnly", 0],
+];
 
 describe("Search Manager Integration Tests", () => {
   let driver: Driver;
@@ -70,7 +87,18 @@ describe("Search Manager Integration Tests", () => {
   });
 
   describe("Search Pipeline", () => {
-    test.todo("runs full search pipeline");
+    test.each(casesPipeline)(
+      "%s pipeline %s->%s returns %d",
+      async (userKey, curPreset, tgtPreset, expected) => {
+        const res = await fixtureSearchManager.runPipeline(
+          userKey,
+          curPreset,
+          tgtPreset,
+          DEFAULT_CONSTRAINTS
+        );
+        expect(res.length).toBe(expected);
+      }
+    );
     // TODO: Проверить:
     // - Корректность работы runPipeline
     // - Структуру возвращаемых результатов SearchResult[]
@@ -96,7 +124,17 @@ describe("Search Manager Integration Tests", () => {
   });
 
   describe("Current Context Search", () => {
-    test.todo("searches current context only");
+    test.each(casesCurrent)(
+      "current preset %s on %s returns %d matches",
+      async (userKey, preset, expected) => {
+        const res = await fixtureSearchManager.runCurrent(
+          userKey,
+          preset,
+          DEFAULT_CONSTRAINTS
+        );
+        expect(res.length).toBe(expected);
+      }
+    );
     // TODO: Проверить:
     // - Корректность работы runCurrent
     // - Структуру результатов
@@ -115,7 +153,17 @@ describe("Search Manager Integration Tests", () => {
   });
 
   describe("Target Context Search", () => {
-    test.todo("searches target context only");
+    test.each(casesTarget)(
+      "%s target preset %s returns %d",
+      async (userKey, preset, expected) => {
+        const res = await fixtureSearchManager.runTargetContext(
+          userKey,
+          preset,
+          DEFAULT_CONSTRAINTS
+        );
+        expect(res.length).toBe(expected);
+      }
+    );
     // TODO: Проверить:
     // - Корректность работы runTargetContext
     // - Структуру результатов
@@ -134,16 +182,34 @@ describe("Search Manager Integration Tests", () => {
   });
 
   describe("Error Handling", () => {
+    test("throws on unknown preset", async () => {
+      await expect(
+        fixtureSearchManager.runCurrent(
+          "U1",
+          "__invalid__",
+          DEFAULT_CONSTRAINTS
+        )
+      ).rejects.toThrow(/Invalid preset name/i);
+    });
+
+    test("throws on incomplete preset", async () => {
+      const { PRESETS } = await import("../../src/orcestrator/presets.js");
+      PRESETS["badPreset"] = {
+        strictFields: ["position"],
+        flexibleFields: [],
+      } as any;
+
+      await expect(
+        fixtureSearchManager.runCurrent("U1", "badPreset", DEFAULT_CONSTRAINTS)
+      ).rejects.toThrow(/required fields/i);
+
+      delete PRESETS["badPreset"];
+    });
+
     test.todo("handles invalid user key gracefully");
     // TODO: Проверить:
     // - Обработку несуществующих UserKey
     // - Валидацию входных параметров
-    // - Возврат понятных ошибок
-
-    test.todo("handles invalid preset gracefully");
-    // TODO: Проверить:
-    // - Обработку несуществующих пресетов
-    // - Валидацию названий пресетов
     // - Возврат понятных ошибок
 
     test.todo("handles empty constraints gracefully");
@@ -235,5 +301,32 @@ describe("Search Manager Integration Tests", () => {
     // - Обработку параллельных upsert операций
     // - Блокировки БД
     // - Целостность данных
+  });
+
+  describe("Selectivity invariance", () => {
+    test("order of strict fields doesn't affect result", async () => {
+      const base = await fixtureSearchManager.runCurrent(
+        "U1",
+        "full",
+        DEFAULT_CONSTRAINTS
+      );
+
+      // mock selectivity
+      const svc: any = (fixtureSearchManager as any).searchManager[
+        "selectivity"
+      ];
+      vi.spyOn(svc, "rankStrictFields").mockResolvedValueOnce([
+        "country_code",
+        "position",
+      ]);
+
+      const reordered = await fixtureSearchManager.runCurrent(
+        "U1",
+        "full",
+        DEFAULT_CONSTRAINTS
+      );
+
+      expect(reordered).toEqual(base);
+    });
   });
 });
