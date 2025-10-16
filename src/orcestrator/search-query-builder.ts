@@ -11,6 +11,7 @@ import type {
   ContextField,
   SearchConstraints,
   CurrentOnlyParams,
+  FlexibleField,
 } from "../schemas-zod.js";
 import { PRESETS, isPresetName } from "./presets.js";
 
@@ -31,14 +32,11 @@ export class SearchQueryBuilder {
   }
 
   public constructCurrentContextQuery(
-    presetName: string,
+    orderedStrictFields: ContextField[],
+    flexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    if (!isPresetName(presetName)) {
-      throw new Error(`Invalid preset name: ${presetName}`);
-    }
-    const { strictFields, flexibleFields } = PRESETS[presetName]!;
-    const whereClause = buildStrictConditions(strictFields);
+    const whereClause = buildStrictConditions(orderedStrictFields);
     const scoreClause = buildFlexibleConditions(flexibleFields);
     return buildContextQuery(
       "all",
@@ -49,14 +47,11 @@ export class SearchQueryBuilder {
   }
 
   public constructTargetContextQuery(
-    presetName: string,
+    orderedStrictFields: ContextField[],
+    flexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    if (!isPresetName(presetName)) {
-      throw new Error(`Invalid preset name: ${presetName}`);
-    }
-    const { strictFields, flexibleFields } = PRESETS[presetName]!;
-    const whereClause = buildStrictConditions(strictFields);
+    const whereClause = buildStrictConditions(orderedStrictFields);
     const scoreClause = buildFlexibleConditions(flexibleFields);
     return buildContextQuery(
       "filtered",
@@ -67,22 +62,16 @@ export class SearchQueryBuilder {
   }
 
   public constructPipelineQuery(
-    currentPreset: string,
-    targetPreset: string,
+    orderedCurrentStrictFields: ContextField[],
+    currentFlexibleFields: FlexibleField[],
+    targetStrictFields: ContextField[],
+    targetFlexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    if (!isPresetName(currentPreset)) {
-      throw new Error(`Invalid preset name: ${currentPreset}`);
-    }
-    if (!isPresetName(targetPreset)) {
-      throw new Error(`Invalid preset name: ${targetPreset}`);
-    }
-    const { strictFields: sf1, flexibleFields: ff1 } = PRESETS[currentPreset]!;
-    const { strictFields: sf2, flexibleFields: ff2 } = PRESETS[targetPreset]!;
-    const where1 = buildStrictConditions(sf1);
-    const score1 = buildFlexibleConditions(ff1);
-    const where2 = buildStrictConditions(sf2);
-    const score2 = buildFlexibleConditions(ff2);
+    const where1 = buildStrictConditions(orderedCurrentStrictFields);
+    const score1 = buildFlexibleConditions(currentFlexibleFields);
+    const where2 = buildStrictConditions(targetStrictFields);
+    const score2 = buildFlexibleConditions(targetFlexibleFields);
     return buildPipelineQuery(
       where1,
       score1,

@@ -11,11 +11,14 @@ import type {
 import { CurrentOnlyResultSchema } from "./schemas-zod.js";
 import { SearchResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
+import { SelectivityService } from "./services/selectivity.service.js";
+import { isPresetName, PRESETS } from "./orcestrator/presets.js";
 
 export class SearchManager {
   constructor(
     private driver: Driver,
-    private builder: SearchQueryBuilder
+    private builder: SearchQueryBuilder,
+    private selectivity: SelectivityService
   ) {}
 
   async searchCurrentContext(
@@ -24,8 +27,14 @@ export class SearchManager {
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
+    const orderedStrictFields = await this.selectivity.rankStrictFields(
+      PRESETS[currentPreset]!.strictFields,
+      currentContext
+    );
+    const flexibleFields = PRESETS[currentPreset]!.flexibleFields;
     const cypher = this.builder.constructCurrentContextQuery(
-      currentPreset,
+      orderedStrictFields,
+      flexibleFields,
       searchConstraints
     );
     const result = await withReadSession(this.driver, (tx) =>
@@ -42,8 +51,17 @@ export class SearchManager {
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
+    if (!isPresetName(targetPreset)) {
+      throw new Error(`Invalid preset name: ${targetPreset}`);
+    }
+    const { strictFields, flexibleFields } = PRESETS[targetPreset]!;
+    const orderedStrictFields = await this.selectivity.rankStrictFields(
+      strictFields,
+      targetContext
+    );
     const cypher = this.builder.constructTargetContextQuery(
-      targetPreset,
+      orderedStrictFields,
+      flexibleFields,
       searchConstraints
     );
     const result = await withReadSession(this.driver, (tx) =>
@@ -62,9 +80,25 @@ export class SearchManager {
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
+    if (!isPresetName(currentPreset)) {
+      throw new Error(`Invalid preset name: ${currentPreset}`);
+    }
+    if (!isPresetName(targetPreset)) {
+      throw new Error(`Invalid preset name: ${targetPreset}`);
+    }
+    const { flexibleFields: currentFF } = PRESETS[currentPreset]!;
+    const { flexibleFields: targetFF, strictFields: targetSF } =
+      PRESETS[targetPreset]!;
+    const orderedCurrentFF = await this.selectivity.rankStrictFields(
+      PRESETS[currentPreset]!.strictFields,
+      currentContext
+    );
+
     const cypher = this.builder.constructPipelineQuery(
-      currentPreset,
-      targetPreset,
+      orderedCurrentFF,
+      currentFF,
+      targetSF,
+      targetFF,
       searchConstraints
     );
     const result = await withReadSession(this.driver, (tx) =>

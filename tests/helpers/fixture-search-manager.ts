@@ -15,6 +15,7 @@ import {
 import { TestDataManager, type UserKey } from "./test-data-manager.js";
 import { DEFAULT_CONSTRAINTS } from "../../src/config.js";
 import { PersistenceManager } from "../../src/persistence-manager.js";
+import { SelectivityService } from "../../src/services/selectivity.service.js";
 
 export class FixtureSearchManager {
   private searchManager: SearchManager;
@@ -23,7 +24,8 @@ export class FixtureSearchManager {
 
   constructor(driver: Driver) {
     const builder = new SearchQueryBuilder();
-    this.searchManager = new SearchManager(driver, builder);
+    const selectivity = new SelectivityService(driver);
+    this.searchManager = new SearchManager(driver, builder, selectivity);
     this.persistenceManager = new PersistenceManager(driver);
     this.testDataManager = new TestDataManager();
   }
