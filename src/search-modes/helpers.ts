@@ -15,7 +15,7 @@ export async function executeRead<TParams = Record<string, any>>(
     await session.close();
   }
 }
-
+//TODO почему перестали использовать
 export function getStrictSkills(
   skills: Skill[] | undefined,
   strictCategories: SkillCategory[] = DEFAULT_STRICT_SKILL_CATEGORIES

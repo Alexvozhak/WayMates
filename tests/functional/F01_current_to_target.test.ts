@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { Driver } from "neo4j-driver";
 import { createDriver, withWriteSession } from "../../src/neo4j.js";
-import { runPipeline, DEFAULT_CONSTRAINTS } from "../helpers/fixture-runner.js";
+import {
+  runPipeline,
+  DEFAULT_CONSTRAINTS,
+} from "../helpers/fixture-search-manager.js";
 import { SearchResultSchema } from "../../src/schemas-zod.js";
 import { PersistenceManager } from "../../src/persistence-manager.js";
 import { loadTestData } from "../helpers/test-data-loader.js";

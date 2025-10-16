@@ -58,11 +58,7 @@ const getTool = (name: string) => {
 };
 
 const { createWayMatesServer } = await import("../../src/mcp-server.js");
-const { PresetsManager } = await import(
-  "../../src/orcestrator/preset-manager.js"
-);
-
-import { PRESETS_PATH } from "../../src/config.js";
+import { PRESETS } from "../../src/generated/presets.generated.js";
 
 const BASE_SEARCH_CONSTRAINTS: SearchConstraints = {
   max_timing_diff_months: 12,
@@ -78,8 +74,7 @@ describe("MCP tools integration", () => {
   beforeEach(async () => {
     fastMCPInstances.length = 0;
     ({ driver, session } = await setupIntegrationTest());
-    const presets = new PresetsManager(PRESETS_PATH);
-    createWayMatesServer(driver, presets);
+    createWayMatesServer(driver, PRESETS);
   });
 
   afterEach(async () => {

@@ -55,7 +55,7 @@ export function createWayMatesServer(
       "Analyze career progression for current context over time",
       CurrentOnlyParamsSchema,
       async (params) =>
-        searchManager.searchCurrent(
+        searchManager.searchCurrentContext(
           params.currentPreset,
           params.currentContext,
           params.currentUserId,
@@ -71,7 +71,7 @@ export function createWayMatesServer(
       "Analyze career paths and requirements to reach target position",
       TargetOnlyParamsSchema,
       async (params) =>
-        searchManager.searchTarget(
+        searchManager.searchTargetContext(
           params.targetPreset,
           params.targetContext,
           params.currentUserId,

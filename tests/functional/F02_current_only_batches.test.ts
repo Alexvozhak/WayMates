@@ -4,9 +4,9 @@ import {
   setupIntegrationTest,
   teardownIntegrationTest,
 } from "../helpers/database-setup.js";
-import { runCurrentBatches } from "../helpers/fixture-runner.js";
-import { BatchedResearchResultSchema } from "../../src/schemas-zod.js";
-import { DEFAULT_CONSTRAINTS } from "../helpers/fixture-runner.js";
+import { runCurrentBatches } from "../helpers/fixture-search-manager.js";
+import { CurrentOnlyResultSchema } from "../../src/schemas-zod.js";
+import { DEFAULT_CONSTRAINTS } from "../helpers/fixture-search-manager.js";
 
 describe("F02: Current-Only Batches Search (Balanced)", () => {
   let driver: Driver;
@@ -38,7 +38,7 @@ describe("F02: Current-Only Batches Search (Balanced)", () => {
     expect(result.length).toBe(3);
 
     for (const batch of result) {
-      expect(() => BatchedResearchResultSchema.parse(batch)).not.toThrow();
+      expect(() => CurrentOnlyResultSchema.parse(batch)).not.toThrow();
       expect(batch.period).toBeGreaterThan(0);
       expect(batch.results).toBeInstanceOf(Array);
 
@@ -102,7 +102,7 @@ describe("F02: Current-Only Batches Search (Balanced)", () => {
 
     // Even if some batches are empty, schema should still be valid
     for (const batch of result) {
-      expect(() => BatchedResearchResultSchema.parse(batch)).not.toThrow();
+      expect(() => CurrentOnlyResultSchema.parse(batch)).not.toThrow();
       expect(batch.period).toBeGreaterThan(0);
       expect(batch.results).toBeInstanceOf(Array);
     }

@@ -1,4 +1,3 @@
-import { PresetsManager } from "./preset-manager.js";
 import {
   buildContextQuery,
   buildPipelineQuery,
@@ -9,12 +8,12 @@ import {
   buildFlexibleConditions,
 } from "./snippets-extractor.js";
 import type {
-  QueryConfig,
   ContextField,
   SearchConstraints,
   CurrentOnlyParams,
 } from "../schemas-zod.js";
-import { FINAL_BATCH_PERIOD } from "../schemas-zod.js";
+import { PRESETS, isPresetName } from "./presets.js";
+
 //todo перенести в app.ts
 const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
   "position",
@@ -22,25 +21,25 @@ const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
   "skills",
 ];
 
+const FINAL_BATCH_PERIOD = -1;
+
 export class SearchQueryBuilder {
-  constructor(private presetsManager: PresetsManager) {}
   public validateCurrentPresets(): void {
-    for (const name of this.presetsManager.list()) {
-      const { strictFields } = this.presetsManager.get(name);
-      this.validateRequiredFields(name, strictFields);
+    for (const [name, config] of Object.entries(PRESETS)) {
+      this.validateRequiredFields(name, config.strictFields);
     }
   }
 
-  /** Build Cypher for current-only search */
-  public buildCurrentContextQuery(
+  public constructCurrentContextQuery(
     presetName: string,
     searchConstraints: SearchConstraints
   ): string {
-    const { strictFields, flexibleFields }: QueryConfig =
-      this.presetsManager.get(presetName);
+    if (!isPresetName(presetName)) {
+      throw new Error(`Invalid preset name: ${presetName}`);
+    }
+    const { strictFields, flexibleFields } = PRESETS[presetName]!;
     const whereClause = buildStrictConditions(strictFields);
     const scoreClause = buildFlexibleConditions(flexibleFields);
-    // Forward searchConstraints for future filtering
     return buildContextQuery(
       "all",
       whereClause,
@@ -49,13 +48,14 @@ export class SearchQueryBuilder {
     );
   }
 
-  /** Build Cypher for target-only (filtered) search */
-  public buildTargetContextQuery(
+  public constructTargetContextQuery(
     presetName: string,
     searchConstraints: SearchConstraints
   ): string {
-    const { strictFields, flexibleFields }: QueryConfig =
-      this.presetsManager.get(presetName);
+    if (!isPresetName(presetName)) {
+      throw new Error(`Invalid preset name: ${presetName}`);
+    }
+    const { strictFields, flexibleFields } = PRESETS[presetName]!;
     const whereClause = buildStrictConditions(strictFields);
     const scoreClause = buildFlexibleConditions(flexibleFields);
     return buildContextQuery(
@@ -66,16 +66,19 @@ export class SearchQueryBuilder {
     );
   }
 
-  /** Build Cypher for current-to-target pipeline */
-  public buildPipelineQuery(
+  public constructPipelineQuery(
     currentPreset: string,
     targetPreset: string,
     searchConstraints: SearchConstraints
   ): string {
-    const { strictFields: sf1, flexibleFields: ff1 }: QueryConfig =
-      this.presetsManager.get(currentPreset);
-    const { strictFields: sf2, flexibleFields: ff2 }: QueryConfig =
-      this.presetsManager.get(targetPreset);
+    if (!isPresetName(currentPreset)) {
+      throw new Error(`Invalid preset name: ${currentPreset}`);
+    }
+    if (!isPresetName(targetPreset)) {
+      throw new Error(`Invalid preset name: ${targetPreset}`);
+    }
+    const { strictFields: sf1, flexibleFields: ff1 } = PRESETS[currentPreset]!;
+    const { strictFields: sf2, flexibleFields: ff2 } = PRESETS[targetPreset]!;
     const where1 = buildStrictConditions(sf1);
     const score1 = buildFlexibleConditions(ff1);
     const where2 = buildStrictConditions(sf2);
@@ -89,8 +92,9 @@ export class SearchQueryBuilder {
     );
   }
 
+  //todo мб к нему и strictFields проверку добавить
   private validateRequiredFields(
-    preset: string,
+    presetName: string,
     strictPresetFields: ContextField[]
   ): void {
     const hasRequiredFields = REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.every(
@@ -99,34 +103,28 @@ export class SearchQueryBuilder {
 
     if (!hasRequiredFields) {
       throw new Error(
-        `Current preset "${preset}" must include all required fields: ${REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.join(", ")}`
+        `Current preset "${presetName}" must include all required fields: ${REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.join(", ")}`
       );
     }
   }
 
-  /** Build Cypher for current-only search with time batches */
   public buildCurrentBatchesQuery(params: CurrentOnlyParams): string {
-    // Generate periods array
     const periods = this.generatePeriods(params);
 
-    // Generate UNION blocks for each period
     const unionBlocks = periods
       .map((months) => this.generatePeriodBlock(months, params.currentPreset))
       .join("\nUNION\n");
 
-    return unionBlocks;
+    return `${unionBlocks}\nRETURN period, results`;
   }
 
-  /** Generate periods array for batched search */
   private generatePeriods(params: CurrentOnlyParams): number[] {
     const periods: number[] = [];
 
-    // Generate detailed periods: stepSize*1, stepSize*2, stepSize*3, etc.
     for (let step = 1; step <= params.numberOfSteps; step++) {
       periods.push(step * params.stepSizeMonths);
     }
 
-    // Add final batch if requested
     if (params.includeFinalBatch) {
       periods.push(FINAL_BATCH_PERIOD);
     }
@@ -136,8 +134,10 @@ export class SearchQueryBuilder {
 
   /** Generate single period block for batched query */
   private generatePeriodBlock(months: number, presetName: string): string {
-    const { strictFields, flexibleFields }: QueryConfig =
-      this.presetsManager.get(presetName);
+    if (!isPresetName(presetName)) {
+      throw new Error(`Invalid preset name: ${presetName}`);
+    }
+    const { strictFields, flexibleFields } = PRESETS[presetName]!;
     const whereClause = buildStrictConditions(strictFields);
     const scoreClause = buildFlexibleConditions(flexibleFields);
 

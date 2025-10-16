@@ -5,27 +5,27 @@ import type {
   TargetContext,
   SearchResult,
   SearchConstraints,
-  BatchResult,
+  CurrentOnlyResult,
   CurrentOnlyParams,
 } from "./schemas-zod.js";
-import { BatchResultSchema } from "./schemas-zod.js";
+import { CurrentOnlyResultSchema } from "./schemas-zod.js";
 import { SearchResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 
 export class SearchManager {
   constructor(
     private driver: Driver,
-    private searchQueryBuilder: SearchQueryBuilder
+    private builder: SearchQueryBuilder
   ) {}
 
-  async searchCurrent(
-    presetName: string,
+  async searchCurrentContext(
+    currentPreset: string,
     currentContext: UserContext,
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
-    const cypher = this.searchQueryBuilder.buildCurrentContextQuery(
-      presetName,
+    const cypher = this.builder.constructCurrentContextQuery(
+      currentPreset,
       searchConstraints
     );
     const result = await withReadSession(this.driver, (tx) =>
@@ -36,14 +36,14 @@ export class SearchManager {
     );
   }
 
-  async searchTarget(
-    presetName: string,
+  async searchTargetContext(
+    targetPreset: string,
     targetContext: TargetContext,
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
-    const cypher = this.searchQueryBuilder.buildTargetContextQuery(
-      presetName,
+    const cypher = this.builder.constructTargetContextQuery(
+      targetPreset,
       searchConstraints
     );
     const result = await withReadSession(this.driver, (tx) =>
@@ -62,7 +62,7 @@ export class SearchManager {
     currentUserId: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
-    const cypher = this.searchQueryBuilder.buildPipelineQuery(
+    const cypher = this.builder.constructPipelineQuery(
       currentPreset,
       targetPreset,
       searchConstraints
@@ -75,10 +75,10 @@ export class SearchManager {
     );
   }
 
-  async searchCurrentWithBatches(
+  async searchInCurrentOnlyMode(
     params: CurrentOnlyParams
-  ): Promise<BatchResult[]> {
-    const cypher = this.searchQueryBuilder.buildCurrentBatchesQuery(params);
+  ): Promise<CurrentOnlyResult[]> {
+    const cypher = this.builder.buildCurrentBatchesQuery(params);
     const result = await withReadSession(this.driver, (tx) =>
       tx.run(cypher, {
         currentContext: params.currentContext,
@@ -88,8 +88,8 @@ export class SearchManager {
     );
     return result.records.map((rec) => {
       const period = rec.get("period");
-      return BatchResultSchema.parse({
-        period: period, // Final batch has period = -1
+      return CurrentOnlyResultSchema.parse({
+        period: period,
         results: rec.get("results"),
       });
     });

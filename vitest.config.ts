@@ -13,23 +13,23 @@ export default defineConfig(() => {
 
       // Projects для разных типов тестов с разной изоляцией
       projects: [
-        // {
-        //   test: {
-        //     name: "unit",
-        //     include: ["tests/unit/**/*.test.ts"],
-        //     pool: "threads",
-        //     poolOptions: {
-        //       threads: {
-        //         isolate: false, // Максимальная скорость для unit тестов
-        //       },
-        //     },
-        //     testTimeout: 10000, // Быстрые unit тесты
-        //   },
-        // },
+        {
+          test: {
+            name: "unit",
+            include: ["tests/unit/**/*.spec.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: false,
+              },
+            },
+            testTimeout: 10000,
+          },
+        },
         {
           test: {
             name: "integration",
-            include: ["tests/integration/persistence-manager.test.ts"],
+            include: ["tests/integration/**/*.test.ts"],
             pool: "threads",
             poolOptions: {
               threads: {

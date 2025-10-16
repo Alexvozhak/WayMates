@@ -10,8 +10,16 @@ export type UserConstraints = z.infer<typeof UserConstraintsSchema>;
 export type TargetContext = z.infer<typeof TargetContextSchema>;
 export type NewContextReason = z.infer<typeof NewContextReasonSchema>;
 export type Position = z.infer<typeof PositionSchema>;
-export type AvatarSearchResult = z.infer<typeof AvatarSearchResultSchema>;
-export type BatchedResearchResult = z.infer<typeof BatchedResearchResultSchema>;
+
+//TODO разобраться с типами
+export type CurrentToTargetParams = z.infer<typeof CurrentToTargetParamsSchema>;
+
+export type TargetOnlyParams = z.infer<typeof TargetOnlyParamsSchema>;
+export type TargetSearchParams = z.infer<typeof TargetSearchParamsSchema>;
+
+export type CurrentOnlyResult = z.infer<typeof CurrentOnlyResultSchema>;
+export type CurrentOnlyParams = z.infer<typeof CurrentOnlyParamsSchema>;
+
 export type CurrentToTargetResult = z.infer<typeof CurrentToTargetResultSchema>;
 export type TargetAnalysisResult = z.infer<typeof TargetAnalysisResultSchema>;
 export type UserId = z.infer<typeof UserIdSchema>;
@@ -25,6 +33,15 @@ export type QueryConfig = z.infer<typeof QueryConfigSchema>;
 export type UpsertContextResult = z.infer<typeof UpsertContextResultSchema>;
 export type UpsertTrailResult = z.infer<typeof UpsertTrailResultSchema>;
 export type UpsertStoryResult = z.infer<typeof UpsertStoryResultSchema>;
+
+// MCP типы для использования в search-modes
+
+export type GetUserStoryParams = z.infer<typeof GetUserStoryParamsSchema>;
+export type DeleteContextParams = z.infer<typeof DeleteContextParamsSchema>;
+export type SearchPresetOptions = z.infer<typeof SearchPresetOptionsSchema>;
+export type DeleteTrailParams = z.infer<typeof DeleteTrailParamsSchema>;
+export type PingParams = z.infer<typeof PingParamsSchema>;
+export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 // === БАЗОВЫЕ СХЕМЫ ===
 // ISO 8601 дата-время в UTC формате: YYYY-MM-DDTHH:mm:ssZ
@@ -233,6 +250,10 @@ export const QueryConfigSchema = z.object({
       }
     ),
 });
+// Новая схема для всего файла presets.json:
+export const PresetsSchema = z.record(QueryConfigSchema);
+// Тип для всего объекта:
+export type Presets = z.infer<typeof PresetsSchema>;
 
 // TODO перейти на общую AvatarSearchResultSchema реализацию
 export const UserIdContextSchema = z.object({
@@ -240,12 +261,12 @@ export const UserIdContextSchema = z.object({
   contexts: z.array(UserContextSchema).min(1),
 });
 
-export const AvatarSearchResultSchema = z
-  .object({ user_id: UserIdSchema })
-  .merge(UserContextSchema);
+// export const AvatarSearchResultSchema = z
+//   .object({ user_id: UserIdSchema })
+//   .merge(UserContextSchema);
 
 // Результат анализа прогрессии для CURRENT_ONLY режима
-export const BatchedResearchResultSchema = z.object({
+export const CurrentOnlyResultSchema = z.object({
   userId: UserIdSchema,
   currentLikeContextId: ContextIdSchema,
   compatibilityPercent: z.number(),
@@ -404,12 +425,15 @@ export const CurrentToTargetParamsSchema = z.object({
   targetContext: TargetContextSchema,
   searchConstraints: SearchConstraintsSchema,
 });
-//todo непонятно зачем если есть AvatarResearchResultSchema
+
 export const CurrentOnlyParamsSchema = z.object({
   currentUserId: UserIdSchema,
   currentPreset: z.string().describe("Preset name for current context search"),
   currentContext: UserContextSchema,
-  lookAheadMonths: z.number().min(1).max(120),
+  stepSizeMonths: z.number().min(1).max(60),
+  numberOfSteps: z.number().min(1).max(20),
+  includeFinalBatch: z.boolean(),
+  searchConstraints: SearchConstraintsSchema,
   reasonsToTrack: z.array(NewContextReasonSchema),
 });
 
@@ -449,17 +473,6 @@ export const SearchPresetOptionsSchema = z.object({
   targetPreset: z.string(),
 });
 
-// MCP типы для использования в search-modes
-export type CurrentToTargetParams = z.infer<typeof CurrentToTargetParamsSchema>;
-export type CurrentOnlyParams = z.infer<typeof CurrentOnlyParamsSchema>;
-export type TargetOnlyParams = z.infer<typeof TargetOnlyParamsSchema>;
-export type TargetSearchParams = z.infer<typeof TargetSearchParamsSchema>;
-export type GetUserStoryParams = z.infer<typeof GetUserStoryParamsSchema>;
-export type DeleteContextParams = z.infer<typeof DeleteContextParamsSchema>;
-export type SearchPresetOptions = z.infer<typeof SearchPresetOptionsSchema>;
-export type DeleteTrailParams = z.infer<typeof DeleteTrailParamsSchema>;
-export type PingParams = z.infer<typeof PingParamsSchema>;
-
 // === Search Result Schema ===
 export const SearchResultSchema = z.object({
   userId: z.string(),
@@ -468,7 +481,6 @@ export const SearchResultSchema = z.object({
   targetContext: z.nullable(UserContextSchema),
   targetScore: z.nullable(z.number()),
 });
-export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 export const UpsertContextResultSchema = z.object({
   success: z.boolean(),

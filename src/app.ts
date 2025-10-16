@@ -3,17 +3,12 @@ import {
   verifyConnection,
 } from "./neo4j.js";
 import { createWayMatesServer } from "./mcp-server.js";
-import { PresetsManager } from "./orcestrator/preset-manager.js";
 import { SearchQueryBuilder } from "./orcestrator/search-query-builder.js";
 import { SearchManager } from "./search-manager.js";
 import { PersistenceManager } from "./persistence-manager.js";
-import { PRESETS_PATH } from "./config.js";
 
 async function main() {
-  const presetsManager = new PresetsManager(PRESETS_PATH);
-  presetsManager.load();
-
-  const searchQueryBuilder = new SearchQueryBuilder(presetsManager);
+  const searchQueryBuilder = new SearchQueryBuilder();
   searchQueryBuilder.validateCurrentPresets();
 
   const driver = createNeo4jDriver(); //todo нужен ли trycatch?

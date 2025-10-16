@@ -4,9 +4,9 @@ import {
   setupIntegrationTest,
   teardownIntegrationTest,
 } from "../helpers/database-setup.js";
-import { runCurrent } from "../helpers/fixture-runner.js";
+import { runCurrent } from "../helpers/fixture-search-manager.js";
 import { SearchResultSchema } from "../../src/schemas-zod.js";
-import { DEFAULT_CONSTRAINTS } from "../helpers/fixture-runner.js";
+import { DEFAULT_CONSTRAINTS } from "../helpers/fixture-search-manager.js";
 
 describe("F03: Geo-Focused Current Search", () => {
   let driver: Driver;

@@ -7,7 +7,7 @@ import {
 } from "../../helpers/database-setup.js";
 import { executeUpsertStory } from "../../../src/upsert-story.js";
 import { loadTestData } from "../../helpers/test-data-loader.js";
-import { PresetsManager } from "../../../src/orcestrator/preset-manager.js";
+import { PRESETS } from "../../../src/generated/presets.generated.js";
 import { QueryOrchestrator } from "../../../src/orcestrator/query-orchestrator.js";
 import { Processors } from "../../../src/cypher/api.js";
 import { DEFAULT_SEARCH_CONSTRAINTS } from "../../../src/unified-search-types.js";
@@ -51,9 +51,7 @@ describe("Orchestrator functional workflow", () => {
     const targetContext: UserContext =
       referenceStory.contexts[referenceStory.contexts.length - 1]!;
 
-    const presetsManager = new PresetsManager(PRESETS_PATH);
-    presetsManager.load();
-    const orchestrator = new QueryOrchestrator(presetsManager, driver);
+    const orchestrator = new QueryOrchestrator(PRESETS, driver);
 
     const currentStage = await orchestrator.generateCurrentContextQuery(
       "FLEXIBLE",

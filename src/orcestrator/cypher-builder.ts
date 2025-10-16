@@ -113,7 +113,6 @@ export function buildContextQuery(
 ${returnClause}`;
 }
 
-// === Pipeline Query Builder ===
 export function buildPipelineQuery(
   whereCurrent: string,
   scoreCurrent: string,
