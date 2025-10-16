@@ -72,25 +72,25 @@
   "full": {
     "strictFields": ["position", "domains", "skills", "country_code"],
     "flexibleFields": [
-      { "field": "skills", "weight": 30 }
+      { "field": "skills", "weight": 100 }
     ]
   },
   "positionOnly": {
     "strictFields": ["position", "domains", "skills"],
     "flexibleFields": [
-      { "field": "country_code", "weight": 30 }
+      { "field": "country_code", "weight": 100 }
     ]
   },
   "countryOnly": {
     "strictFields": ["country_code", "domains", "skills"],
     "flexibleFields": [
-      { "field": "skills", "weight": 30 }
+      { "field": "skills", "weight": 100 }
     ]
   },
   "mismatch": {
     "strictFields": ["skills", "position", "domains"],
     "flexibleFields": [
-      { "field": "position", "weight": 30 }
+      { "field": "position", "weight": 100 }
     ]
   }
 }

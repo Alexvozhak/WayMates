@@ -376,7 +376,7 @@ export const TargetContextSchema = UserContextSchema.partial().and(
 export const StoryInputSchema = z.object({
   user_id: UserIdSchema,
   contexts: z.array(UserContextSchema).min(1),
-  trails: z.array(TrailSchema).min(1),
+  trails: z.array(TrailSchema).min(0),
 });
 // .............................
 // ...........................

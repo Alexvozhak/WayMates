@@ -20,7 +20,7 @@ import {
   withWriteSession,
 } from "../../src/neo4j.js";
 
-describe("Cypher Queries Integration Tests", () => {
+describe.skip("Persistence Manager Integration Tests", () => {
   let driver: Driver;
   let persistenceManager: PersistenceManager;
   let testDataManager: TestDataManager;

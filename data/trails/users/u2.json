@@ -1,11 +1,11 @@
 {
-  "user_id": "usr_01TESTU2BBBBBBBBBBBBBBB2",
+  "user_id": "usr_01HX92EZ7WTKZ70YTN4ZD4X32U",
   "contexts": [
     {
-      "context_id": "ctx_01TU2CURBBBBBBBBBBBBBB1",
+      "context_id": "ctx_01HX92F0C0R00000000000021",
       "created_at": "2025-02-01T00:00:00Z",
       "creation_reason": ["started_working"],
-      "position": "Frontend",
+      "position": "Junior",
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Frontend"],
@@ -18,10 +18,10 @@
       "citizenships": ["nl"]
     },
     {
-      "context_id": "ctx_01TU2FUTBBBBBBBBBBBBBB2",
+      "context_id": "ctx_01HX92F0C0R00000000000022",
       "created_at": "2026-02-01T00:00:00Z",
       "creation_reason": ["position_changed"],
-      "position": "Frontend",
+      "position": "Middle",
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Frontend"],

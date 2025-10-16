@@ -1,11 +1,11 @@
 {
-  "user_id": "usr_01TESTU4DDDDDDDDDDDDDDD4",
+  "user_id": "usr_01HX94EZ7WTKZ70YTN4ZD4X34W",
   "contexts": [
     {
-      "context_id": "ctx_01TU4CURDDDDDDDDDDDDD1",
+      "context_id": "ctx_01HX94F0C0R00000000000041",
       "created_at": "2025-04-01T00:00:00Z",
       "creation_reason": ["started_working"],
-      "position": "Frontend",
+      "position": "Junior",
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Frontend"],

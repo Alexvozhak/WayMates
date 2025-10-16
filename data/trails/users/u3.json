@@ -1,11 +1,11 @@
 {
-  "user_id": "usr_01TESTU3CCCCCCCCCCCCCCC3",
+  "user_id": "usr_01HX93EZ7WTKZ70YTN4ZD4X33V",
   "contexts": [
     {
-      "context_id": "ctx_01TU3CURCCCCCCCCCCCCCC1",
+      "context_id": "ctx_01HX93F0C0R00000000000031",
       "created_at": "2025-03-01T00:00:00Z",
       "creation_reason": ["started_working"],
-      "position": "Backend",
+      "position": "Junior",
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Backend"],
@@ -18,10 +18,10 @@
       "citizenships": ["fr"]
     },
     {
-      "context_id": "ctx_01TU3FUTCCCCCCCCCCCCCC2",
+      "context_id": "ctx_01HX93F0C0R00000000000032",
       "created_at": "2026-03-01T00:00:00Z",
       "creation_reason": ["position_changed"],
-      "position": "Backend",
+      "position": "Middle",
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Backend"],
