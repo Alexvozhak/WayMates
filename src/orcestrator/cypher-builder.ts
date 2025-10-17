@@ -156,11 +156,14 @@ CALL (targetContext, me, cand) {
   RETURN results
 }
 UNWIND results AS r
-RETURN r.user.user_id AS userId,
-       r.currentContext AS currentContext,
-       r.currentScore AS currentScore,
-       r.targetContext AS targetContext,
-       r.targetScore AS targetScore
+// Select best matching trajectory by total score (current + target)
+ORDER BY r.user.user_id, (r.currentScore + r.targetScore) DESC
+WITH r.user.user_id AS userId,
+     head(collect(r.currentContext)) AS currentContext,
+     head(collect(r.currentScore)) AS currentScore,
+     head(collect(r.targetContext)) AS targetContext,
+     head(collect(r.targetScore)) AS targetScore
+RETURN userId, currentContext, currentScore, targetContext, targetScore
 LIMIT ${limit}
 `;
 }
