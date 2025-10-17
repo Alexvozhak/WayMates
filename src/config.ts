@@ -1,9 +1,12 @@
 import { join } from "path";
-import { SearchConstraints } from "./schemas-zod.js";
+import { ContextField, SearchConstraints } from "./schemas-zod.js";
 
-/**
- * Application configuration constants
- */
+export const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
+  "position",
+  "domains",
+  "skills",
+];
+
 export const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
 
 export const DEFAULT_CONSTRAINTS: SearchConstraints = {
