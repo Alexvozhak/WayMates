@@ -5,6 +5,7 @@ import {
   beforeEach,
   beforeAll,
   afterAll,
+  vi,
 } from "vitest";
 
 import type { Driver } from "neo4j-driver";

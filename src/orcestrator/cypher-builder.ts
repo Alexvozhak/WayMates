@@ -1,13 +1,14 @@
 import type { SearchConstraints } from "../schemas-zod.js";
 
 /**
- * Общая логика поиска похожих контекстов - core часть для переиспользования
+ * Neo4j 5+ логика поиска похожих контекстов - без алиасов, прямые параметры
  * Возвращает Cypher код до точки с переменными: dbUser, dbContext, contextCompatibilityScore
  */
 export function buildSimilarContextsCore(
   searchScope: "all" | "filtered",
   whereClause: string,
-  scoreClause: string
+  scoreClause: string,
+  paramName: string = "$currentContext" // Явно передаем имя параметра
 ): {
   cypherCode: string;
   userVar: string;
@@ -17,13 +18,10 @@ export function buildSimilarContextsCore(
 } {
   // Унифицированные имена переменных
   const userVar = "dbUser";
-  const contextVar = "dbContext";
+  const contextVar = "candidateContext"; // Семантическое имя для ясности
   const compatibilityScoreVar = "contextCompatibilityScore";
 
-  // Определяем параметр и переменные в зависимости от области поиска
-  const paramName =
-    searchScope === "all" ? "$currentContext" : "$targetContext";
-  const requestedVar = "requestedContext";
+  // paramName передается как аргумент функции
 
   // Для filtered поиска нужны переменные из предыдущего шага
   const additionalVars =
@@ -40,19 +38,17 @@ export function buildSimilarContextsCore(
  * ПОИСК КОНТЕКСТОВ ${searchScope === "all" ? "(СРЕДИ ВСЕХ)" : "(СРЕДИ ОТФИЛЬТРОВАННЫХ)"}
  * ============================================ */
 
-WITH ${searchScope === "filtered" ? "*," : ""} ${paramName} AS ${requestedVar}
-
 MATCH
   (${userVar}:User)-[:HAS_CONTEXT]->(${contextVar}:Context)
-WITH *, ${userVar}, ${contextVar}, ${requestedVar}${additionalVars}
+WITH *, ${userVar}, ${contextVar}${additionalVars}
 WHERE
-  ${requestedVar} IS NOT NULL
+  ${paramName} IS NOT NULL
   AND ${userVar} <> ${searchScope === "all" ? "$me" : "dbCurrentUser"}
   ${whereClause ? `AND ${whereClause}` : ""}
 
-${scoreClause}
+WITH *, ${scoreClause}
 
-WITH *, ${userVar}, ${contextVar}, compatibilityScore AS ${compatibilityScoreVar}${additionalFinalVars}
+WITH *, ${userVar}, ${contextVar}, contextCompatibilityScore AS ${compatibilityScoreVar}${additionalFinalVars}
 WHERE ${userVar} IS NOT NULL${searchScope === "filtered" ? " AND dbCurrentUser IS NOT NULL" : ""}
 WITH *, ${userVar}, ${contextVar}, ${compatibilityScoreVar}${additionalFinalVars}`;
 
@@ -93,12 +89,14 @@ export function buildContextQuery(
   searchScope: "all" | "filtered",
   whereClause: string,
   scoreClause: string,
-  searchConstraints: SearchConstraints
+  searchConstraints: SearchConstraints,
+  paramName: string = "$currentContext" // Добавляем параметр для Target Context
 ): string {
   const coreResult = buildSimilarContextsCore(
     searchScope,
     whereClause,
-    scoreClause
+    scoreClause,
+    paramName
   );
   const returnClause = buildSearchResultReturn(
     searchScope,
@@ -121,32 +119,28 @@ export function buildPipelineQuery(
   searchConstraints: SearchConstraints
 ): string {
   const limit = searchConstraints.results_limit;
+
   return `
-CALL {
-  WITH $currentContext AS requestedCurrentContext, $me AS me
-  MATCH (dbCurrentUser:User)-[:HAS_CONTEXT]->(dbCurrentContext:Context)
-  WITH dbCurrentUser, dbCurrentContext, requestedCurrentContext, me
-  WHERE requestedCurrentContext IS NOT NULL
-    AND dbCurrentUser <> me
+WITH $currentContext AS currentContext, $me AS me
+CALL (currentContext, me) {
+  MATCH (candidateCurrentUser:User)-[:HAS_CONTEXT]->(candidateCurrentContext:Context)
+  WHERE currentContext IS NOT NULL
+    AND candidateCurrentUser <> me
     ${whereCurrent ? `AND ${whereCurrent}` : ""}
-  ${scoreCurrent}
-  WITH collect({ user: dbCurrentUser, currentContext: dbCurrentContext, currentScore: currentContextCompatibilityScore }) AS candidates
+  WITH *, ${scoreCurrent}
+  WITH collect({ user: candidateCurrentUser, currentContext: candidateCurrentContext, currentScore: currentContextCompatibilityScore }) AS candidates
   RETURN candidates
 }
 UNWIND candidates AS cand
-CALL {
-  WITH cand.user AS dbCurrentUser,
-       cand.currentContext AS dbCurrentContext,
-       cand.currentScore AS currentScore,
-       $targetContext AS requestedTargetContext,
-       $me AS me
-  MATCH (dbCurrentUser)-[:HAS_CONTEXT]->(dbTargetContext:Context)
-  WITH dbCurrentUser, dbCurrentContext, dbTargetContext, requestedTargetContext, currentScore, me
-  WHERE requestedTargetContext IS NOT NULL
-    AND dbCurrentUser <> me
+WITH $targetContext AS targetContext, $me AS me, cand
+CALL (targetContext, me, cand) {
+  WITH cand.user AS candidateUser, cand.currentContext AS candidateCurrentContext, cand.currentScore AS candidateCurrentScore
+  MATCH (candidateUser)-[:HAS_CONTEXT]->(candidateTargetContext:Context)
+  WHERE targetContext IS NOT NULL
+    AND candidateUser <> me
     ${whereTarget ? `AND ${whereTarget}` : ""}
-  ${scoreTarget}
-  WITH collect({ user: dbCurrentUser, currentContext: dbCurrentContext, currentScore: currentScore, targetContext: dbTargetContext, targetScore: targetContextCompatibilityScore }) AS results
+  WITH *, ${scoreTarget}
+  WITH collect({ user: candidateUser, currentContext: candidateCurrentContext, currentScore: candidateCurrentScore, targetContext: candidateTargetContext, targetScore: targetContextCompatibilityScore }) AS results
   RETURN results
 }
 UNWIND results AS r

@@ -4,8 +4,14 @@ import {
   buildSimilarContextsCore,
 } from "./cypher-builder.js";
 import {
-  buildStrictConditions,
-  buildFlexibleConditions,
+  buildCurrentContextStrictConditions,
+  buildCurrentContextFlexibleConditions,
+  buildTargetContextStrictConditions,
+  buildTargetContextFlexibleConditions,
+  buildPipelineCurrentStrictConditions,
+  buildPipelineCurrentFlexibleConditions,
+  buildPipelineTargetStrictConditions,
+  buildPipelineTargetFlexibleConditions,
 } from "./snippets-extractor.js";
 import type {
   ContextField,
@@ -14,13 +20,7 @@ import type {
   FlexibleField,
 } from "../schemas-zod.js";
 import { PRESETS, isPresetName } from "./presets.js";
-
-//todo перенести в app.ts
-const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
-  "position",
-  "domains",
-  "skills",
-];
+import { REQUIRED_FIELDS_FOR_CURRENT_CONTEXT } from "../config.js";
 
 const FINAL_BATCH_PERIOD = -1;
 
@@ -36,8 +36,8 @@ export class SearchQueryBuilder {
     flexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    const whereClause = buildStrictConditions(orderedStrictFields);
-    const scoreClause = buildFlexibleConditions(flexibleFields);
+    const whereClause = buildCurrentContextStrictConditions(orderedStrictFields);
+    const scoreClause = buildCurrentContextFlexibleConditions(flexibleFields);
     return buildContextQuery(
       "all",
       whereClause,
@@ -51,13 +51,14 @@ export class SearchQueryBuilder {
     flexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    const whereClause = buildStrictConditions(orderedStrictFields);
-    const scoreClause = buildFlexibleConditions(flexibleFields);
+    const whereClause = buildTargetContextStrictConditions(orderedStrictFields);
+    const scoreClause = buildTargetContextFlexibleConditions(flexibleFields);
     return buildContextQuery(
-      "filtered",
+      "all",
       whereClause,
       scoreClause,
-      searchConstraints
+      searchConstraints,
+      "$targetContext"  // Для Target Context Search используем $targetContext
     );
   }
 
@@ -68,10 +69,12 @@ export class SearchQueryBuilder {
     targetFlexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    const where1 = buildStrictConditions(orderedCurrentStrictFields);
-    const score1 = buildFlexibleConditions(currentFlexibleFields);
-    const where2 = buildStrictConditions(targetStrictFields);
-    const score2 = buildFlexibleConditions(targetFlexibleFields);
+    // Используем специализированные функции для pipeline
+    const where1 = buildPipelineCurrentStrictConditions(orderedCurrentStrictFields);
+    const score1 = buildPipelineCurrentFlexibleConditions(currentFlexibleFields);
+    const where2 = buildPipelineTargetStrictConditions(targetStrictFields);
+    const score2 = buildPipelineTargetFlexibleConditions(targetFlexibleFields);
+    
     return buildPipelineQuery(
       where1,
       score1,
@@ -127,8 +130,8 @@ export class SearchQueryBuilder {
       throw new Error(`Invalid preset name: ${presetName}`);
     }
     const { strictFields, flexibleFields } = PRESETS[presetName]!;
-    const whereClause = buildStrictConditions(strictFields);
-    const scoreClause = buildFlexibleConditions(flexibleFields);
+    const whereClause = buildCurrentContextStrictConditions(strictFields);
+    const scoreClause = buildCurrentContextFlexibleConditions(flexibleFields);
 
     // Use core logic for finding similar contexts
     const { cypherCode, userVar, contextVar, compatibilityScoreVar } =
