@@ -9,12 +9,12 @@
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Backend"],
-      "skills": [{"name": "go", "category": "language"}],
+      "skills": ["go"],
       "work_type": "remote",
       "team_size": 3,
       "country_code": "fr",
       "city_name": "paris",
-      "birth_year": 1996,
+      "birth_year": 1988,
       "citizenships": ["fr"]
     },
     {
@@ -25,12 +25,12 @@
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Backend"],
-      "skills": [{"name": "go", "category": "language"}],
+      "skills": ["go"],
       "work_type": "remote",
       "team_size": 4,
       "country_code": "fr",
       "city_name": "paris",
-      "birth_year": 1996,
+      "birth_year": 1988,
       "citizenships": ["fr"]
     }
   ],

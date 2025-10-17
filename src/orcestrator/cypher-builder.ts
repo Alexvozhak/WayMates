@@ -74,29 +74,14 @@ export function buildSearchResultReturn(
 ): string {
   const limit = searchConstraints.results_limit;
 
-  const buildContextWithSkills = (contextVar: string) => `{
-    context_id: ${contextVar}.context_id,
-    created_at: ${contextVar}.created_at,
-    creation_reason: ${contextVar}.creation_reason,
-    position: ${contextVar}.position,
-    domains: ${contextVar}.domains,
-    skills: [(${contextVar})-[:USES_SKILL]->(s:Skill)-[:IN_CATEGORY]->(sc:SkillCategory) | {name: s.name, category: sc.name}],
-    industry: ${contextVar}.industry,
-    company_size: ${contextVar}.company_size,
-    country_code: ${contextVar}.country_code,
-    city_name: ${contextVar}.city_name,
-    work_type: ${contextVar}.work_type,
-    citizenships: ${contextVar}.citizenships,
-    team_size: ${contextVar}.team_size,
-    birth_year: ${contextVar}.birth_year
-  }`;
+  // Простые свойства Context - skills как строки для быстрого поиска
 
   return `// Note: searchConstraints available for future use
 RETURN {
   userId: ${userVar}.user_id,
-  currentContext: ${searchScope === "all" ? buildContextWithSkills(contextVar) : "null"},
+  currentContext: ${searchScope === "all" ? `properties(${contextVar})` : "null"},
   currentScore: ${searchScope === "all" ? compatibilityScoreVar : "null"},
-  targetContext: ${searchScope === "filtered" ? buildContextWithSkills(contextVar) : "null"},
+  targetContext: ${searchScope === "filtered" ? `properties(${contextVar})` : "null"},
   targetScore: ${searchScope === "filtered" ? compatibilityScoreVar : "null"}
 } AS result
 LIMIT ${limit}`;
@@ -147,22 +132,7 @@ CALL (currentContext, me) {
   WITH *, ${scoreCurrent}
   WITH collect({ 
     user: candidateCurrentUser, 
-    currentContext: {
-      context_id: candidateCurrentContext.context_id,
-      created_at: candidateCurrentContext.created_at,
-      creation_reason: candidateCurrentContext.creation_reason,
-      position: candidateCurrentContext.position,
-      domains: candidateCurrentContext.domains,
-      skills: [(candidateCurrentContext)-[:USES_SKILL]->(s:Skill)-[:IN_CATEGORY]->(sc:SkillCategory) | {name: s.name, category: sc.name}],
-      industry: candidateCurrentContext.industry,
-      company_size: candidateCurrentContext.company_size,
-      country_code: candidateCurrentContext.country_code,
-      city_name: candidateCurrentContext.city_name,
-      work_type: candidateCurrentContext.work_type,
-      citizenships: candidateCurrentContext.citizenships,
-      team_size: candidateCurrentContext.team_size,
-      birth_year: candidateCurrentContext.birth_year
-    }, 
+    currentContext: properties(candidateCurrentContext), 
     currentScore: currentContextCompatibilityScore 
   }) AS candidates
   RETURN candidates
@@ -180,22 +150,7 @@ CALL (targetContext, me, cand) {
     user: candidateUser, 
     currentContext: candidateCurrentContext, 
     currentScore: candidateCurrentScore, 
-    targetContext: {
-      context_id: candidateTargetContext.context_id,
-      created_at: candidateTargetContext.created_at,
-      creation_reason: candidateTargetContext.creation_reason,
-      position: candidateTargetContext.position,
-      domains: candidateTargetContext.domains,
-      skills: [(candidateTargetContext)-[:USES_SKILL]->(s:Skill)-[:IN_CATEGORY]->(sc:SkillCategory) | {name: s.name, category: sc.name}],
-      industry: candidateTargetContext.industry,
-      company_size: candidateTargetContext.company_size,
-      country_code: candidateTargetContext.country_code,
-      city_name: candidateTargetContext.city_name,
-      work_type: candidateTargetContext.work_type,
-      citizenships: candidateTargetContext.citizenships,
-      team_size: candidateTargetContext.team_size,
-      birth_year: candidateTargetContext.birth_year
-    }, 
+    targetContext: properties(candidateTargetContext), 
     targetScore: targetContextCompatibilityScore 
   }) AS results
   RETURN results

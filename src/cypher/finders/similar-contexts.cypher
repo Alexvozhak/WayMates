@@ -105,7 +105,7 @@ WITH dbCurrentUser, dbCurrentContext, requestedContext,
        ELSE toFloat(size([
          skill IN requestedContext.skills
          WHERE EXISTS {
-           MATCH (dbCurrentContext)-[:USES_SKILL]->(s:Skill {name: skill.name})
+           MATCH (dbCurrentContext)-[:USES_SKILL]->(s:Skill {name: skill})
          }
        ])) / size(requestedContext.skills) * 100.0
      END AS compatibilityPercent

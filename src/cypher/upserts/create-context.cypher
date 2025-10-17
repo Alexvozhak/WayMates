@@ -9,7 +9,7 @@ MERGE (c:Context {context_id: $context.context_id})
 SET c.created_at = $context.created_at,
     c.position = $context.position,
     c.domains = $context.domains,
-    c.skills = [s IN $context.skills | s.name],
+    c.skills = $context.skills,
     c.industry = $context.industry,
     c.company_size = $context.company_size,
     c.country_code = $context.country_code,
@@ -38,12 +38,10 @@ UNWIND work_domains AS wdName
   MERGE (wd:WorkDomain {name: wdName})
   MERGE (c)-[:IN_WORK_DOMAIN]->(wd)
 
-// Skills and categories
+// Skills - create basic Skill nodes without categories for search compatibility
 WITH c, $context.skills AS skills
-UNWIND skills AS sk
-  MERGE (sc:SkillCategory {name: sk.category})
-  MERGE (s:Skill {name: sk.name})
-  MERGE (s)-[:IN_CATEGORY]->(sc)
+UNWIND skills AS skillName
+  MERGE (s:Skill {name: skillName})
   MERGE (c)-[:USES_SKILL]->(s)
 
 // Location nodes - УНИФИЦИРОВАННАЯ СХЕМА (name для всех)

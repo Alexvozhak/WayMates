@@ -9,12 +9,12 @@
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Frontend"],
-      "skills": [{"name": "vue", "category": "framework"}],
+      "skills": ["vue"],
       "work_type": "remote",
       "team_size": 4,
       "country_code": "nl",
       "city_name": "amsterdam",
-      "birth_year": 1997,
+      "birth_year": 1990,
       "citizenships": ["nl"]
     },
     {
@@ -25,12 +25,12 @@
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Frontend"],
-      "skills": [{"name": "vue", "category": "framework"}],
+      "skills": ["vue"],
       "work_type": "remote",
       "team_size": 5,
       "country_code": "de",
       "city_name": "berlin",
-      "birth_year": 1997,
+      "birth_year": 1990,
       "citizenships": ["nl", "de"]
     }
   ],

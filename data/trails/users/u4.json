@@ -9,12 +9,12 @@
       "industry": "tech",
       "company_size": "startup",
       "domains": ["Frontend"],
-      "skills": [{"name": "svelte", "category": "framework"}],
+      "skills": ["svelte"],
       "work_type": "remote",
       "team_size": 2,
       "country_code": "us",
       "city_name": "seattle",
-      "birth_year": 1998,
+      "birth_year": 1992,
       "citizenships": ["us"]
     }
   ],

@@ -58,7 +58,7 @@ WITH *,
     ELSE size([
       skill IN $currentContext.skills
       WHERE EXISTS {
-        MATCH (dbCurrentContext)-[:USES_SKILL]->(s:Skill {name: skill.name})
+        MATCH (dbCurrentContext)-[:USES_SKILL]->(s:Skill {name: skill})
       }
     ])
   END AS skillsMatched,

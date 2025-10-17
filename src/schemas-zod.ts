@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 // === ТИПЫ ===
-export type Skill = z.infer<typeof SkillSchema>;
 export type UserContext = z.infer<typeof UserContextSchema>;
 export type StoryInput = z.infer<typeof StoryInputSchema>;
 export type Schedule = z.infer<typeof ScheduleSchema>;
@@ -48,38 +47,6 @@ export type SearchResult = z.infer<typeof SearchResultSchema>;
 // Пример: "2017-09-15T00:00:00Z"
 export const ISO_8601_DATETIME_PATTERN =
   "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$";
-
-// Категории навыков (используются в SkillSchema и для строгой фильтрации)
-export const SKILL_CATEGORIES = [
-  "language",
-  "runtime",
-  "framework",
-  "library",
-  "database",
-  "cloud",
-  "devops",
-  "testing",
-  "competency",
-  "tool",
-] as const;
-
-export const SkillCategorySchema = z.enum(SKILL_CATEGORIES, {
-  description: "Skill category",
-});
-export type SkillCategory = z.infer<typeof SkillCategorySchema>;
-
-export const SkillSchema = z.object({
-  name: z.string().describe("Skill name"),
-  category: z.string().describe("Skill category"),
-});
-
-// TODO DEFAULT_STRICT_SKILL_CATEGORIES нет смысла держать здесь
-export const DEFAULT_STRICT_SKILL_CATEGORIES = [
-  "language",
-  "framework",
-  "runtime",
-  "database",
-] as const satisfies SkillCategory[];
 
 // ULID regex patterns для валидации и тестирования
 export const ULID_PATTERN = "[0-9A-HJKMNP-TV-Z]{26}";
@@ -202,7 +169,7 @@ export const UserContextSchema = z.object({
     .describe("Reasons for context creation (can be multiple)"),
   position: PositionSchema,
   domains: z.array(z.string()).min(1).describe("Work domains"),
-  skills: z.array(SkillSchema).min(1).describe("Skills and competencies"),
+  skills: z.array(z.string()).min(1).describe("Skill names"),
   industry: z.string().describe("Company industry"),
   company_size: z.string().describe("Company size"),
   country_code: z.string().describe("Location country code"),
