@@ -43,7 +43,7 @@ MATCH
 WITH *, ${userVar}, ${contextVar}${additionalVars}
 WHERE
   ${paramName} IS NOT NULL
-  AND ${userVar} <> ${searchScope === "all" ? "$me" : "dbCurrentUser"}
+  AND ${userVar}.user_id <> ${searchScope === "all" ? "$me" : "dbCurrentUser.user_id"}
   ${whereClause ? `AND ${whereClause}` : ""}
 
 WITH *, ${scoreClause}
@@ -127,7 +127,7 @@ WITH $currentContext AS currentContext, $me AS me
 CALL (currentContext, me) {
   MATCH (candidateCurrentUser:User)-[:HAS_CONTEXT]->(candidateCurrentContext:Context)
   WHERE currentContext IS NOT NULL
-    AND candidateCurrentUser <> me
+    AND candidateCurrentUser.user_id <> me
     ${whereCurrent ? `AND ${whereCurrent}` : ""}
   WITH *, ${scoreCurrent}
   WITH collect({ 
@@ -143,7 +143,7 @@ CALL (targetContext, me, cand) {
   WITH cand.user AS candidateUser, cand.currentContext AS candidateCurrentContext, cand.currentScore AS candidateCurrentScore
   MATCH (candidateUser)-[:HAS_CONTEXT]->(candidateTargetContext:Context)
   WHERE targetContext IS NOT NULL
-    AND candidateUser <> me
+    AND candidateUser.user_id <> me
     ${whereTarget ? `AND ${whereTarget}` : ""}
   WITH *, ${scoreTarget}
   WITH collect({ 
