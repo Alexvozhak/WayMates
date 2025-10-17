@@ -1,9 +1,6 @@
 export const UPSERT_CONTEXTS_QUERY: string = `MERGE (u:User {user_id: $user_id})
 ON CREATE SET u.current_context_id = null
 
-// User demographics from context
-SET u.birth_year = coalesce($context.birth_year, u.birth_year)
-
 MERGE (c:Context {context_id: $context.context_id})
   ON CREATE SET c.created_at = $context.created_at
 SET c.created_at = $context.created_at,
@@ -17,6 +14,7 @@ SET c.created_at = $context.created_at,
     c.work_type = $context.work_type,
     c.citizenships = $context.citizenships,
     c.team_size = $context.team_size,
+    c.birth_year = $context.birth_year,
     c.creation_reason = $context.creation_reason,
     c.previous_context_id = $context.previous_context_id,
     c.next_context_id = $context.next_context_id
