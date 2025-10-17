@@ -70,7 +70,7 @@ export type SkillCategory = z.infer<typeof SkillCategorySchema>;
 
 export const SkillSchema = z.object({
   name: z.string().describe("Skill name"),
-  category: SkillCategorySchema,
+  category: z.string().describe("Skill category"),
 });
 
 // TODO DEFAULT_STRICT_SKILL_CATEGORIES нет смысла держать здесь

@@ -5,8 +5,8 @@ ON CREATE SET u.current_context_id = null
 SET u.birth_year = coalesce($context.birth_year, u.birth_year)
 
 MERGE (c:Context {context_id: $context.context_id})
-  ON CREATE SET c.created_at = datetime($context.created_at)
-SET c.created_at = datetime($context.created_at),
+  ON CREATE SET c.created_at = $context.created_at
+SET c.created_at = $context.created_at,
     c.position = $context.position,
     c.domains = $context.domains,
     c.skills = [s IN $context.skills | s.name],

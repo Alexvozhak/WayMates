@@ -4,7 +4,11 @@ type FieldSnippet = {
   startPattern: string;
   // Семантические имена: candidateContext (кандидат из БД) vs ourContext (наш параметр)
   generateStrict: (candidateVar: string, ourVar: string) => string;
-  generateFlexible: (weight: number, candidateVar: string, ourVar: string) => string;
+  generateFlexible: (
+    weight: number,
+    candidateVar: string,
+    ourVar: string
+  ) => string;
 };
 
 export const FIELD_SNIPPETS: Record<ContextField, FieldSnippet> = {
@@ -29,10 +33,10 @@ export const FIELD_SNIPPETS: Record<ContextField, FieldSnippet> = {
   skills: {
     startPattern: `MATCH (c:Context) WHERE ANY(s IN $skills WHERE s IN c.skills)`,
     generateStrict: (candidateVar, ourVar) =>
-      `all(s IN ${ourVar}.skills WHERE s.name IN ${candidateVar}.skills)`,
+      `all(s IN ${ourVar}.skills WHERE s IN ${candidateVar}.skills)`,
     generateFlexible: (weight, candidateVar, ourVar) =>
-      `CASE WHEN size([s IN ${ourVar}.skills WHERE s.name IN ${candidateVar}.skills]) > 0 
-      THEN ${weight} * (toFloat(size([s IN ${ourVar}.skills WHERE s.name IN ${candidateVar}.skills])) / size(${ourVar}.skills)) 
+      `CASE WHEN size([s IN ${ourVar}.skills WHERE s IN ${candidateVar}.skills]) > 0 
+      THEN ${weight} * (toFloat(size([s IN ${ourVar}.skills WHERE s IN ${candidateVar}.skills])) / size(${ourVar}.skills)) 
       ELSE 0 END`,
   },
 
@@ -101,7 +105,10 @@ export function buildCurrentContextStrictConditions(
 ): string {
   const conditions = strictFields
     .map((field) =>
-      FIELD_SNIPPETS[field].generateStrict("candidateContext", "$currentContext")
+      FIELD_SNIPPETS[field].generateStrict(
+        "candidateContext",
+        "$currentContext"
+      )
     )
     .filter(Boolean);
   return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
@@ -141,7 +148,11 @@ export function buildTargetContextFlexibleConditions(
 ): string {
   const conditions = flexibleFields
     .map(({ field, weight }) =>
-      FIELD_SNIPPETS[field].generateFlexible(weight, "candidateContext", "$targetContext")
+      FIELD_SNIPPETS[field].generateFlexible(
+        weight,
+        "candidateContext",
+        "$targetContext"
+      )
     )
     .filter(Boolean);
   return conditions.length > 0
@@ -155,7 +166,10 @@ export function buildPipelineCurrentStrictConditions(
 ): string {
   const conditions = strictFields
     .map((field) =>
-      FIELD_SNIPPETS[field].generateStrict("candidateCurrentContext", "$currentContext")
+      FIELD_SNIPPETS[field].generateStrict(
+        "candidateCurrentContext",
+        "$currentContext"
+      )
     )
     .filter(Boolean);
   return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
@@ -184,7 +198,10 @@ export function buildPipelineTargetStrictConditions(
 ): string {
   const conditions = strictFields
     .map((field) =>
-      FIELD_SNIPPETS[field].generateStrict("candidateTargetContext", "$targetContext")
+      FIELD_SNIPPETS[field].generateStrict(
+        "candidateTargetContext",
+        "$targetContext"
+      )
     )
     .filter(Boolean);
   return conditions.length > 0 ? conditions.join(" AND\n  ") : "";

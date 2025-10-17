@@ -74,12 +74,29 @@ export function buildSearchResultReturn(
 ): string {
   const limit = searchConstraints.results_limit;
 
+  const buildContextWithSkills = (contextVar: string) => `{
+    context_id: ${contextVar}.context_id,
+    created_at: ${contextVar}.created_at,
+    creation_reason: ${contextVar}.creation_reason,
+    position: ${contextVar}.position,
+    domains: ${contextVar}.domains,
+    skills: [(${contextVar})-[:USES_SKILL]->(s:Skill)-[:IN_CATEGORY]->(sc:SkillCategory) | {name: s.name, category: sc.name}],
+    industry: ${contextVar}.industry,
+    company_size: ${contextVar}.company_size,
+    country_code: ${contextVar}.country_code,
+    city_name: ${contextVar}.city_name,
+    work_type: ${contextVar}.work_type,
+    citizenships: ${contextVar}.citizenships,
+    team_size: ${contextVar}.team_size,
+    birth_year: ${contextVar}.birth_year
+  }`;
+
   return `// Note: searchConstraints available for future use
 RETURN {
-  userId: ${userVar},
-  currentContext: ${searchScope === "all" ? contextVar : "null"},
+  userId: ${userVar}.user_id,
+  currentContext: ${searchScope === "all" ? buildContextWithSkills(contextVar) : "null"},
   currentScore: ${searchScope === "all" ? compatibilityScoreVar : "null"},
-  targetContext: ${searchScope === "filtered" ? contextVar : "null"},
+  targetContext: ${searchScope === "filtered" ? buildContextWithSkills(contextVar) : "null"},
   targetScore: ${searchScope === "filtered" ? compatibilityScoreVar : "null"}
 } AS result
 LIMIT ${limit}`;
@@ -128,7 +145,26 @@ CALL (currentContext, me) {
     AND candidateCurrentUser <> me
     ${whereCurrent ? `AND ${whereCurrent}` : ""}
   WITH *, ${scoreCurrent}
-  WITH collect({ user: candidateCurrentUser, currentContext: candidateCurrentContext, currentScore: currentContextCompatibilityScore }) AS candidates
+  WITH collect({ 
+    user: candidateCurrentUser, 
+    currentContext: {
+      context_id: candidateCurrentContext.context_id,
+      created_at: candidateCurrentContext.created_at,
+      creation_reason: candidateCurrentContext.creation_reason,
+      position: candidateCurrentContext.position,
+      domains: candidateCurrentContext.domains,
+      skills: [(candidateCurrentContext)-[:USES_SKILL]->(s:Skill)-[:IN_CATEGORY]->(sc:SkillCategory) | {name: s.name, category: sc.name}],
+      industry: candidateCurrentContext.industry,
+      company_size: candidateCurrentContext.company_size,
+      country_code: candidateCurrentContext.country_code,
+      city_name: candidateCurrentContext.city_name,
+      work_type: candidateCurrentContext.work_type,
+      citizenships: candidateCurrentContext.citizenships,
+      team_size: candidateCurrentContext.team_size,
+      birth_year: candidateCurrentContext.birth_year
+    }, 
+    currentScore: currentContextCompatibilityScore 
+  }) AS candidates
   RETURN candidates
 }
 UNWIND candidates AS cand
@@ -140,11 +176,32 @@ CALL (targetContext, me, cand) {
     AND candidateUser <> me
     ${whereTarget ? `AND ${whereTarget}` : ""}
   WITH *, ${scoreTarget}
-  WITH collect({ user: candidateUser, currentContext: candidateCurrentContext, currentScore: candidateCurrentScore, targetContext: candidateTargetContext, targetScore: targetContextCompatibilityScore }) AS results
+  WITH collect({ 
+    user: candidateUser, 
+    currentContext: candidateCurrentContext, 
+    currentScore: candidateCurrentScore, 
+    targetContext: {
+      context_id: candidateTargetContext.context_id,
+      created_at: candidateTargetContext.created_at,
+      creation_reason: candidateTargetContext.creation_reason,
+      position: candidateTargetContext.position,
+      domains: candidateTargetContext.domains,
+      skills: [(candidateTargetContext)-[:USES_SKILL]->(s:Skill)-[:IN_CATEGORY]->(sc:SkillCategory) | {name: s.name, category: sc.name}],
+      industry: candidateTargetContext.industry,
+      company_size: candidateTargetContext.company_size,
+      country_code: candidateTargetContext.country_code,
+      city_name: candidateTargetContext.city_name,
+      work_type: candidateTargetContext.work_type,
+      citizenships: candidateTargetContext.citizenships,
+      team_size: candidateTargetContext.team_size,
+      birth_year: candidateTargetContext.birth_year
+    }, 
+    targetScore: targetContextCompatibilityScore 
+  }) AS results
   RETURN results
 }
 UNWIND results AS r
-RETURN r.user AS userId,
+RETURN r.user.user_id AS userId,
        r.currentContext AS currentContext,
        r.currentScore AS currentScore,
        r.targetContext AS targetContext,

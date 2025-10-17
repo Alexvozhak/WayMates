@@ -41,11 +41,11 @@ export class FixtureSearchManager {
     reasonsToTrack = ["position_changed"]
   ): Promise<CurrentOnlyResult[]> {
     const userData = this.testDataManager.getStoryBy(userKey);
-    this.persistenceManager.upsertStory(userData);
+    await this.persistenceManager.upsertStory(userData);
 
     for (const otherUserKey of otherUserKeys) {
       const otherUserData = this.testDataManager.getStoryBy(otherUserKey);
-      this.persistenceManager.upsertStory(otherUserData);
+      await this.persistenceManager.upsertStory(otherUserData);
     }
 
     const currentContext = UserContextSchema.parse(userData.contexts[0]);
@@ -66,11 +66,19 @@ export class FixtureSearchManager {
 
   async runPipeline(
     userKey: UserKey,
+    otherUserKeys: UserKey[],
     currentPreset: string,
     targetPreset: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
     const userData = this.testDataManager.getStoryBy(userKey);
+    await this.persistenceManager.upsertStory(userData);
+
+    for (const otherUserKey of otherUserKeys) {
+      const otherUserData = this.testDataManager.getStoryBy(otherUserKey);
+      await this.persistenceManager.upsertStory(otherUserData);
+    }
+
     const currentContext = UserContextSchema.parse(userData.contexts[0]);
     const targetContext = TargetContextSchema.parse(
       userData.contexts[userData.contexts.length - 1]
@@ -88,10 +96,18 @@ export class FixtureSearchManager {
 
   async runCurrent(
     userKey: UserKey,
+    otherUserKeys: UserKey[],
     presetName: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
     const userData = this.testDataManager.getStoryBy(userKey);
+    await this.persistenceManager.upsertStory(userData);
+
+    for (const otherUserKey of otherUserKeys) {
+      const otherUserData = this.testDataManager.getStoryBy(otherUserKey);
+      await this.persistenceManager.upsertStory(otherUserData);
+    }
+
     const currentContext = UserContextSchema.parse(userData.contexts[0]);
 
     return this.searchManager.searchCurrentContext(
@@ -104,10 +120,18 @@ export class FixtureSearchManager {
 
   async runTargetContext(
     userKey: UserKey,
+    otherUserKeys: UserKey[],
     presetName: string,
     searchConstraints: SearchConstraints
   ): Promise<SearchResult[]> {
     const userData = this.testDataManager.getStoryBy(userKey);
+    await this.persistenceManager.upsertStory(userData);
+
+    for (const otherUserKey of otherUserKeys) {
+      const otherUserData = this.testDataManager.getStoryBy(otherUserKey);
+      await this.persistenceManager.upsertStory(otherUserData);
+    }
+
     const targetContext = TargetContextSchema.parse(
       userData.contexts[userData.contexts.length - 1]
     );

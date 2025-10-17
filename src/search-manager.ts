@@ -49,6 +49,12 @@ export class SearchManager {
     }
 
     const presetConfig = PRESETS[currentPreset]!;
+    if (
+      !presetConfig.strictFields?.length ||
+      !presetConfig.flexibleFields?.length
+    ) {
+      throw new Error("Preset must contain required fields");
+    }
     console.log("⚙️ Preset config:", presetConfig);
 
     const orderedStrictFields = await this.selectivity.rankStrictFields(
@@ -133,6 +139,12 @@ export class SearchManager {
     }
 
     const presetConfig = PRESETS[targetPreset]!;
+    if (
+      !presetConfig.strictFields?.length ||
+      !presetConfig.flexibleFields?.length
+    ) {
+      throw new Error("Preset must contain required fields");
+    }
     console.log("⚙️ Preset config:", presetConfig);
 
     const { strictFields, flexibleFields } = presetConfig;
@@ -227,6 +239,18 @@ export class SearchManager {
 
     const currentPresetConfig = PRESETS[currentPreset]!;
     const targetPresetConfig = PRESETS[targetPreset]!;
+    if (
+      !currentPresetConfig.strictFields?.length ||
+      !currentPresetConfig.flexibleFields?.length
+    ) {
+      throw new Error("Preset must contain required fields");
+    }
+    if (
+      !targetPresetConfig.strictFields?.length ||
+      !targetPresetConfig.flexibleFields?.length
+    ) {
+      throw new Error("Preset must contain required fields");
+    }
     console.log("⚙️ Current preset config:", currentPresetConfig);
     console.log("⚙️ Target preset config:", targetPresetConfig);
 
@@ -283,7 +307,13 @@ export class SearchManager {
     );
 
     const parsedResults = result.records.map((rec) =>
-      SearchResultSchema.parse(rec.get("result"))
+      SearchResultSchema.parse({
+        userId: rec.get("userId"),
+        currentContext: rec.get("currentContext"),
+        currentScore: rec.get("currentScore"),
+        targetContext: rec.get("targetContext"),
+        targetScore: rec.get("targetScore"),
+      })
     );
 
     console.log(

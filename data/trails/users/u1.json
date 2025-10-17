@@ -2,7 +2,7 @@
   "user_id": "usr_01HX91EZ7WTKZ70YTN4ZD4X31T",
   "contexts": [
     {
-      "context_id": "ctx_01HX91F0C0R00000000000001",
+      "context_id": "ctx_01HX91F0C0R000000000000001",
       "created_at": "2025-01-01T00:00:00Z",
       "creation_reason": ["started_working"],
       "position": "Junior",
@@ -18,7 +18,7 @@
       "citizenships": ["de"]
     },
     {
-      "context_id": "ctx_01HX91F0C0R00000000000002",
+      "context_id": "ctx_01HX91F0C0R000000000000002",
       "created_at": "2026-01-01T00:00:00Z",
       "creation_reason": ["milestone_achieved"],
       "position": "Middle",

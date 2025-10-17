@@ -11,23 +11,59 @@ import {
 import type { Driver } from "neo4j-driver";
 import { createDriver, withWriteSession } from "../../src/neo4j.js";
 import { FixtureSearchManager } from "../helpers/fixture-search-manager.js";
+
 import { DEFAULT_CONSTRAINTS } from "../../src/config.js";
 import type { UserKey } from "../helpers/test-data-manager.js";
+import type { PresetName } from "../../src/orcestrator/presets.js";
 
-const casesCurrent: [UserKey, string, number][] = [
-  ["U1", "full", 1],
-  ["U1", "mismatch", 0],
+const casesCurrent: {
+  user: UserKey;
+  preset: PresetName;
+  others: UserKey[];
+  expectedMatchCount: number;
+}[] = [
+  { user: "U1", preset: "full", others: ["U2"], expectedMatchCount: 1 },
+  { user: "U1", preset: "mismatch", others: [], expectedMatchCount: 0 },
 ];
 
-const casesTarget: [UserKey, string, number][] = [
-  ["U1", "countryOnly", 0],
-  ["U2", "countryOnly", 2],
+const casesTarget: {
+  user: UserKey;
+  preset: PresetName;
+  others: UserKey[];
+  expectedMatchCount: number;
+}[] = [
+  { user: "U1", preset: "countryOnly", others: [], expectedMatchCount: 0 },
+  { user: "U2", preset: "countryOnly", others: ["U1"], expectedMatchCount: 2 },
 ];
 
-const casesPipeline: [UserKey, string, string, number][] = [
-  ["U2", "full", "countryOnly", 1],
-  ["U3", "positionOnly", "mismatch", 0],
-  ["U4", "full", "countryOnly", 0],
+const casesPipeline: {
+  user: UserKey;
+  currentPreset: PresetName;
+  targetPreset: PresetName;
+  others: UserKey[];
+  expectedMatchCount: number;
+}[] = [
+  {
+    user: "U2",
+    currentPreset: "full",
+    targetPreset: "countryOnly",
+    others: ["U1"],
+    expectedMatchCount: 1,
+  },
+  {
+    user: "U3",
+    currentPreset: "positionOnly",
+    targetPreset: "mismatch",
+    others: [],
+    expectedMatchCount: 0,
+  },
+  {
+    user: "U4",
+    currentPreset: "full",
+    targetPreset: "countryOnly",
+    others: [],
+    expectedMatchCount: 0,
+  },
 ];
 
 describe("Search Manager Integration Tests", () => {
@@ -89,15 +125,22 @@ describe("Search Manager Integration Tests", () => {
 
   describe("Search Pipeline", () => {
     test.each(casesPipeline)(
-      "%s pipeline %s->%s returns %d",
-      async (userKey, curPreset, tgtPreset, expected) => {
+      "$user pipeline $currentPreset->$targetPreset returns $expectedMatchCount",
+      async ({
+        user,
+        currentPreset,
+        targetPreset,
+        others,
+        expectedMatchCount,
+      }) => {
         const res = await fixtureSearchManager.runPipeline(
-          userKey,
-          curPreset,
-          tgtPreset,
+          user,
+          others,
+          currentPreset,
+          targetPreset,
           DEFAULT_CONSTRAINTS
         );
-        expect(res.length).toBe(expected);
+        expect(res.length).toBe(expectedMatchCount);
       }
     );
     // TODO: Проверить:
@@ -126,14 +169,15 @@ describe("Search Manager Integration Tests", () => {
 
   describe("Current Context Search", () => {
     test.each(casesCurrent)(
-      "current preset %s on %s returns %d matches",
-      async (userKey, preset, expected) => {
+      "$user preset $preset returns $expectedMatchCount matches",
+      async ({ user, preset, others, expectedMatchCount }) => {
         const res = await fixtureSearchManager.runCurrent(
-          userKey,
+          user,
+          others,
           preset,
           DEFAULT_CONSTRAINTS
         );
-        expect(res.length).toBe(expected);
+        expect(res.length).toBe(expectedMatchCount);
       }
     );
     // TODO: Проверить:
@@ -155,14 +199,15 @@ describe("Search Manager Integration Tests", () => {
 
   describe("Target Context Search", () => {
     test.each(casesTarget)(
-      "%s target preset %s returns %d",
-      async (userKey, preset, expected) => {
+      "$user target preset $preset returns $expectedMatchCount",
+      async ({ user, preset, others, expectedMatchCount }) => {
         const res = await fixtureSearchManager.runTargetContext(
-          userKey,
+          user,
+          others,
           preset,
           DEFAULT_CONSTRAINTS
         );
-        expect(res.length).toBe(expected);
+        expect(res.length).toBe(expectedMatchCount);
       }
     );
     // TODO: Проверить:
@@ -187,6 +232,7 @@ describe("Search Manager Integration Tests", () => {
       await expect(
         fixtureSearchManager.runCurrent(
           "U1",
+          ["U2"],
           "__invalid__",
           DEFAULT_CONSTRAINTS
         )
@@ -201,7 +247,12 @@ describe("Search Manager Integration Tests", () => {
       } as any;
 
       await expect(
-        fixtureSearchManager.runCurrent("U1", "badPreset", DEFAULT_CONSTRAINTS)
+        fixtureSearchManager.runCurrent(
+          "U1",
+          ["U2"],
+          "badPreset",
+          DEFAULT_CONSTRAINTS
+        )
       ).rejects.toThrow(/required fields/i);
 
       delete PRESETS["badPreset"];
@@ -308,6 +359,7 @@ describe("Search Manager Integration Tests", () => {
     test("order of strict fields doesn't affect result", async () => {
       const base = await fixtureSearchManager.runCurrent(
         "U1",
+        ["U2"],
         "full",
         DEFAULT_CONSTRAINTS
       );
@@ -323,6 +375,7 @@ describe("Search Manager Integration Tests", () => {
 
       const reordered = await fixtureSearchManager.runCurrent(
         "U1",
+        ["U2"],
         "full",
         DEFAULT_CONSTRAINTS
       );
