@@ -12,7 +12,12 @@ import { CurrentOnlyResultSchema } from "./schemas-zod.js";
 import { SearchResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 import { SelectivityService } from "./services/selectivity.service.js";
-import { isPresetName, PRESETS } from "./orcestrator/presets.js";
+import {
+  CURRENT_PRESETS,
+  TARGET_PRESETS,
+  isCurrentPresetName,
+  isTargetPresetName
+} from "./orcestrator/presets.js";
 
 export class SearchManager {
   constructor(
@@ -44,17 +49,11 @@ export class SearchManager {
       searchConstraints,
     });
 
-    if (!isPresetName(currentPreset)) {
-      throw new Error(`Invalid preset name: ${currentPreset}`);
+    if (!isCurrentPresetName(currentPreset)) {
+      throw new Error(`Invalid current preset name: ${currentPreset}`);
     }
 
-    const presetConfig = PRESETS[currentPreset]!;
-    if (
-      !presetConfig.strictFields?.length ||
-      !presetConfig.flexibleFields?.length
-    ) {
-      throw new Error("Preset must contain required fields");
-    }
+    const presetConfig = CURRENT_PRESETS[currentPreset]!;
     console.log("⚙️ Preset config:", presetConfig);
 
     const orderedStrictFields = await this.selectivity.rankStrictFields(
@@ -134,17 +133,11 @@ export class SearchManager {
       searchConstraints,
     });
 
-    if (!isPresetName(targetPreset)) {
-      throw new Error(`Invalid preset name: ${targetPreset}`);
+    if (!isTargetPresetName(targetPreset)) {
+      throw new Error(`Invalid target preset name: ${targetPreset}`);
     }
 
-    const presetConfig = PRESETS[targetPreset]!;
-    if (
-      !presetConfig.strictFields?.length ||
-      !presetConfig.flexibleFields?.length
-    ) {
-      throw new Error("Preset must contain required fields");
-    }
+    const presetConfig = TARGET_PRESETS[targetPreset]!;
     console.log("⚙️ Preset config:", presetConfig);
 
     const { strictFields, flexibleFields } = presetConfig;
@@ -230,27 +223,15 @@ export class SearchManager {
       searchConstraints,
     });
 
-    if (!isPresetName(currentPreset)) {
-      throw new Error(`Invalid preset name: ${currentPreset}`);
+    if (!isCurrentPresetName(currentPreset)) {
+      throw new Error(`Invalid current preset name: ${currentPreset}`);
     }
-    if (!isPresetName(targetPreset)) {
-      throw new Error(`Invalid preset name: ${targetPreset}`);
+    if (!isTargetPresetName(targetPreset)) {
+      throw new Error(`Invalid target preset name: ${targetPreset}`);
     }
 
-    const currentPresetConfig = PRESETS[currentPreset]!;
-    const targetPresetConfig = PRESETS[targetPreset]!;
-    if (
-      !currentPresetConfig.strictFields?.length ||
-      !currentPresetConfig.flexibleFields?.length
-    ) {
-      throw new Error("Preset must contain required fields");
-    }
-    if (
-      !targetPresetConfig.strictFields?.length ||
-      !targetPresetConfig.flexibleFields?.length
-    ) {
-      throw new Error("Preset must contain required fields");
-    }
+    const currentPresetConfig = CURRENT_PRESETS[currentPreset]!;
+    const targetPresetConfig = TARGET_PRESETS[targetPreset]!;
     console.log("⚙️ Current preset config:", currentPresetConfig);
     console.log("⚙️ Target preset config:", targetPresetConfig);
 

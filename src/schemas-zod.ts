@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { REQUIRED_FIELDS_FOR_CURRENT_CONTEXT } from "./config.js";
 
 // === ТИПЫ ===
 export type UserContext = z.infer<typeof UserContextSchema>;
@@ -28,7 +29,7 @@ export type UserIdContext = z.infer<typeof UserIdContextSchema>;
 export type UserIdTrail = z.infer<typeof UserIdTrailSchema>;
 export type ContextField = z.infer<typeof ContextFieldSchema>;
 export type FlexibleField = z.infer<typeof FlexibleFieldSchema>;
-export type QueryConfig = z.infer<typeof QueryConfigSchema>;
+export type QueryConfig = z.infer<typeof CurrentPresetConfigSchema> | z.infer<typeof TargetPresetConfigSchema>;
 export type UpsertContextResult = z.infer<typeof UpsertContextResultSchema>;
 export type UpsertTrailResult = z.infer<typeof UpsertTrailResultSchema>;
 export type UpsertStoryResult = z.infer<typeof UpsertStoryResultSchema>;
@@ -206,21 +207,41 @@ export const FlexibleFieldSchema = z.object({
   weight: z.number().min(0).max(100),
 });
 
-export const QueryConfigSchema = z.object({
-  strictFields: z.array(ContextFieldSchema),
-  flexibleFields: z
-    .array(FlexibleFieldSchema)
+// Переиспользуемая схема для flexibleFields с валидацией суммы весов
+const FlexibleFieldsSchema = z
+  .array(FlexibleFieldSchema)
+  .refine(
+    (fields) => fields.reduce((sum, field) => sum + field.weight, 0) === 100,
+    {
+      message: "Total weight of flexible fields must equal 100",
+    }
+  );
+
+// Current-пресет: обязательные поля в strict
+export const CurrentPresetConfigSchema = z.object({
+  strictFields: z
+    .array(ContextFieldSchema)
     .refine(
-      (fields) => fields.reduce((sum, field) => sum + field.weight, 0) === 100,
+      (fields) =>
+        REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.every((required) =>
+          fields.includes(required)
+        ),
       {
-        message: "Total weight of flexible fields must equal 100",
+        message: "Current presets must include position, domains, skills in strictFields",
       }
     ),
+  flexibleFields: FlexibleFieldsSchema,
 });
-// Новая схема для всего файла presets.json:
-export const PresetsSchema = z.record(QueryConfigSchema);
-// Тип для всего объекта:
-export type Presets = z.infer<typeof PresetsSchema>;
+
+// Target-пресет: strictFields может быть пустым
+export const TargetPresetConfigSchema = z.object({
+  strictFields: z.array(ContextFieldSchema),
+  flexibleFields: FlexibleFieldsSchema,
+});
+
+// Схемы для коллекций пресетов
+export const CurrentPresetsSchema = z.record(CurrentPresetConfigSchema);
+export const TargetPresetsSchema = z.record(TargetPresetConfigSchema);
 
 // TODO перейти на общую AvatarSearchResultSchema реализацию
 export const UserIdContextSchema = z.object({

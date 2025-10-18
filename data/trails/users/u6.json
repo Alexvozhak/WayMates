@@ -1,0 +1,38 @@
+{
+  "user_id": "usr_01HX96EZ7WTKZ70YTN4ZD4X36Z",
+  "contexts": [
+    {
+      "context_id": "ctx_01HX96F0C0R000000000000061",
+      "created_at": "2024-06-01T00:00:00Z",
+      "creation_reason": ["started_working"],
+      "position": "Junior",
+      "industry": "tech",
+      "company_size": "startup",
+      "domains": ["Frontend"],
+      "skills": ["react"],
+      "work_type": "remote",
+      "team_size": 3,
+      "country_code": "de",
+      "city_name": "berlin",
+      "birth_year": 1996,
+      "citizenships": ["de"]
+    },
+    {
+      "context_id": "ctx_01HX96F0C0R000000000000062",
+      "created_at": "2026-06-01T00:00:00Z",
+      "creation_reason": ["position_changed", "domain_changed"],
+      "position": "Middle",
+      "industry": "tech",
+      "company_size": "startup",
+      "domains": ["Frontend", "Backend"],
+      "skills": ["react", "node.js", "mongodb"],
+      "work_type": "remote",
+      "team_size": 6,
+      "country_code": "de",
+      "city_name": "berlin",
+      "birth_year": 1996,
+      "citizenships": ["de"]
+    }
+  ],
+  "trails": []
+}

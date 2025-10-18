@@ -1,0 +1,38 @@
+{
+  "user_id": "usr_01HX95EZ7WTKZ70YTN4ZD4X35Y",
+  "contexts": [
+    {
+      "context_id": "ctx_01HX95F0C0R000000000000051",
+      "created_at": "2024-01-01T00:00:00Z",
+      "creation_reason": ["started_working"],
+      "position": "Middle",
+      "industry": "tech",
+      "company_size": "startup",
+      "domains": ["Frontend"],
+      "skills": ["react", "typescript"],
+      "work_type": "remote",
+      "team_size": 5,
+      "country_code": "de",
+      "city_name": "berlin",
+      "birth_year": 1993,
+      "citizenships": ["de"]
+    },
+    {
+      "context_id": "ctx_01HX95F0C0R000000000000052",
+      "created_at": "2026-06-01T00:00:00Z",
+      "creation_reason": ["position_changed"],
+      "position": "Senior",
+      "industry": "tech",
+      "company_size": "startup",
+      "domains": ["Frontend"],
+      "skills": ["react", "typescript", "node.js"],
+      "work_type": "remote",
+      "team_size": 8,
+      "country_code": "de",
+      "city_name": "berlin",
+      "birth_year": 1993,
+      "citizenships": ["de"]
+    }
+  ],
+  "trails": []
+}

@@ -19,14 +19,16 @@ import type {
   CurrentOnlyParams,
   FlexibleField,
 } from "../schemas-zod.js";
-import { PRESETS, isPresetName } from "./presets.js";
+import { CURRENT_PRESETS, isCurrentPresetName } from "./presets.js";
 import { REQUIRED_FIELDS_FOR_CURRENT_CONTEXT } from "../config.js";
 
 const FINAL_BATCH_PERIOD = -1;
 
 export class SearchQueryBuilder {
   public validateCurrentPresets(): void {
-    for (const [name, config] of Object.entries(PRESETS)) {
+    // Валидация происходит автоматически при парсинге JSON через CurrentPresetsSchema
+    // Эта функция оставлена для обратной совместимости
+    for (const [name, config] of Object.entries(CURRENT_PRESETS)) {
       this.validateRequiredFields(name, config.strictFields);
     }
   }
@@ -36,7 +38,8 @@ export class SearchQueryBuilder {
     flexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    const whereClause = buildCurrentContextStrictConditions(orderedStrictFields);
+    const whereClause =
+      buildCurrentContextStrictConditions(orderedStrictFields);
     const scoreClause = buildCurrentContextFlexibleConditions(flexibleFields);
     return buildContextQuery(
       "all",
@@ -58,7 +61,7 @@ export class SearchQueryBuilder {
       whereClause,
       scoreClause,
       searchConstraints,
-      "$targetContext"  // Для Target Context Search используем $targetContext
+      "$targetContext" // Для Target Context Search используем $targetContext
     );
   }
 
@@ -70,11 +73,15 @@ export class SearchQueryBuilder {
     searchConstraints: SearchConstraints
   ): string {
     // Используем специализированные функции для pipeline
-    const where1 = buildPipelineCurrentStrictConditions(orderedCurrentStrictFields);
-    const score1 = buildPipelineCurrentFlexibleConditions(currentFlexibleFields);
+    const where1 = buildPipelineCurrentStrictConditions(
+      orderedCurrentStrictFields
+    );
+    const score1 = buildPipelineCurrentFlexibleConditions(
+      currentFlexibleFields
+    );
     const where2 = buildPipelineTargetStrictConditions(targetStrictFields);
     const score2 = buildPipelineTargetFlexibleConditions(targetFlexibleFields);
-    
+
     return buildPipelineQuery(
       where1,
       score1,
@@ -126,10 +133,10 @@ export class SearchQueryBuilder {
 
   /** Generate single period block for batched query */
   private generatePeriodBlock(months: number, presetName: string): string {
-    if (!isPresetName(presetName)) {
-      throw new Error(`Invalid preset name: ${presetName}`);
+    if (!isCurrentPresetName(presetName)) {
+      throw new Error(`Invalid current preset name: ${presetName}`);
     }
-    const { strictFields, flexibleFields } = PRESETS[presetName]!;
+    const { strictFields, flexibleFields } = CURRENT_PRESETS[presetName]!;
     const whereClause = buildCurrentContextStrictConditions(strictFields);
     const scoreClause = buildCurrentContextFlexibleConditions(flexibleFields);
 

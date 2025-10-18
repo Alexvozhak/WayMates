@@ -1,0 +1,70 @@
+{
+  "TARGET_FLEXIBLE": {
+    "strictFields": [],
+    "flexibleFields": [
+      { "field": "position", "weight": 30 },
+      { "field": "skills", "weight": 25 },
+      { "field": "domains", "weight": 20 },
+      { "field": "country_code", "weight": 15 },
+      { "field": "city_name", "weight": 10 }
+    ]
+  },
+  "BALANCED": {
+    "strictFields": [],
+    "flexibleFields": [
+      { "field": "position", "weight": 20 },
+      { "field": "domains", "weight": 20 },
+      { "field": "skills", "weight": 20 },
+      { "field": "industry", "weight": 10 },
+      { "field": "country_code", "weight": 10 },
+      { "field": "city_name", "weight": 10 },
+      { "field": "work_type", "weight": 5 },
+      { "field": "company_size", "weight": 5 }
+    ]
+  },
+  "SKILL_FOCUSED": {
+    "strictFields": [],
+    "flexibleFields": [
+      { "field": "skills", "weight": 40 },
+      { "field": "position", "weight": 25 },
+      { "field": "domains", "weight": 20 },
+      { "field": "industry", "weight": 10 },
+      { "field": "country_code", "weight": 5 }
+    ]
+  },
+  "GEO_FOCUSED": {
+    "strictFields": [],
+    "flexibleFields": [
+      { "field": "country_code", "weight": 35 },
+      { "field": "city_name", "weight": 25 },
+      { "field": "position", "weight": 15 },
+      { "field": "domains", "weight": 10 },
+      { "field": "skills", "weight": 10 },
+      { "field": "industry", "weight": 5 }
+    ]
+  },
+  "full": {
+    "strictFields": [],
+    "flexibleFields": [
+      { "field": "skills", "weight": 100 }
+    ]
+  },
+  "positionOnly": {
+    "strictFields": [],
+    "flexibleFields": [
+      { "field": "country_code", "weight": 100 }
+    ]
+  },
+  "countryOnly": {
+    "strictFields": [],
+    "flexibleFields": [
+      { "field": "skills", "weight": 100 }
+    ]
+  },
+  "mismatch": {
+    "strictFields": [],
+    "flexibleFields": [
+      { "field": "position", "weight": 100 }
+    ]
+  }
+}
