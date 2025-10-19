@@ -43,6 +43,16 @@ export type DeleteTrailParams = z.infer<typeof DeleteTrailParamsSchema>;
 export type PingParams = z.infer<typeof PingParamsSchema>;
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 
+// Graph-based result types
+export type UserGraphNode = z.infer<typeof UserGraphNodeSchema>;
+export type UserGraph = z.infer<typeof UserGraphSchema>;
+export type CandidateGraphResult = z.infer<typeof CandidateGraphResultSchema>;
+export type CurrentProgressionBatch = z.infer<typeof CurrentProgressionBatchSchema>;
+export type CurrentProgressionResult = z.infer<typeof CurrentProgressionResultSchema>;
+export type TargetReverseBatch = z.infer<typeof TargetReverseBatchSchema>;
+export type TargetReverseResult = z.infer<typeof TargetReverseResultSchema>;
+export type PipelineGraphResult = z.infer<typeof PipelineGraphResultSchema>;
+
 // === БАЗОВЫЕ СХЕМЫ ===
 // ISO 8601 дата-время в UTC формате: YYYY-MM-DDTHH:mm:ssZ
 // Пример: "2017-09-15T00:00:00Z"
@@ -536,6 +546,59 @@ export const SearchResultSchema = z.object({
   currentScore: z.nullable(z.number()),
   targetContext: z.nullable(UserContextSchema),
   targetScore: z.nullable(z.number()),
+});
+
+// === NEW: Graph-based Result Schemas ===
+
+// Minimal user info for graph
+export const UserGraphNodeSchema = z.object({
+  user_id: UserIdSchema,
+  birth_year: z.number().min(1950).describe("Birth year"),
+});
+
+// User graph with minimal info (user + matched context + related context)
+export const UserGraphSchema = z.object({
+  user: UserGraphNodeSchema,
+  matched_context: UserContextSchema.describe("Context that matched the search query"),
+  related_context: UserContextSchema.describe("Future context (progression) or previous context (reverse)"),
+});
+
+// Candidate result with graph (base for all search modes)
+export const CandidateGraphResultSchema = z.object({
+  user_id: UserIdSchema,
+  match_score: z.number().describe("Compatibility score from Cypher"),
+  user_graph: UserGraphSchema,
+});
+
+// Current Progression batch (progression forward)
+export const CurrentProgressionBatchSchema = z.object({
+  period_months: z.number().describe("Time period for this batch (6, 12, 18, or 999 for final)"),
+  results: z.array(CandidateGraphResultSchema),
+});
+
+export const CurrentProgressionResultSchema = z.object({
+  batches: z.array(CurrentProgressionBatchSchema),
+});
+
+// Target Reverse batch (progression backward)
+export const TargetReverseBatchSchema = z.object({
+  period_months: z.number().describe("Negative time period for this batch (-12, -24, -36, or -999 for earliest)"),
+  results: z.array(CandidateGraphResultSchema),
+});
+
+export const TargetReverseResultSchema = z.object({
+  batches: z.array(TargetReverseBatchSchema),
+});
+
+// Pipeline result (current → target)
+export const PipelineGraphResultSchema = z.object({
+  user_id: UserIdSchema,
+  match_score: z.number().describe("Combined compatibility score"),
+  user_graph: z.object({
+    user: UserGraphNodeSchema,
+    matched_current_context: UserContextSchema.describe("Context matching current query"),
+    matched_target_context: UserContextSchema.describe("Context matching target query"),
+  }),
 });
 
 export const UpsertContextResultSchema = z.object({
