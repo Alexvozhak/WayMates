@@ -39,10 +39,9 @@
       "skills"
     ],
     "flexibleFields": [
-      { "field": "country_code", "weight": 35 },
-      { "field": "city_name", "weight": 25 },
-      { "field": "industry", "weight": 15 },
-      { "field": "skills", "weight": 15 },
+      { "field": "country_code", "weight": 40 },
+      { "field": "city_name", "weight": 30 },
+      { "field": "industry", "weight": 20 },
       { "field": "work_type", "weight": 5 },
       { "field": "company_size", "weight": 3 },
       { "field": "team_size", "weight": 2 }
@@ -63,7 +62,8 @@
   "full": {
     "strictFields": ["position", "domains", "skills"],
     "flexibleFields": [
-      { "field": "skills", "weight": 100 }
+      { "field": "domains", "weight": 60 },
+      { "field": "industry", "weight": 40 }
     ]
   },
   "positionOnly": {
@@ -75,7 +75,8 @@
   "countryOnly": {
     "strictFields": ["position", "country_code", "domains", "skills"],
     "flexibleFields": [
-      { "field": "skills", "weight": 100 }
+      { "field": "domains", "weight": 60 },
+      { "field": "industry", "weight": 40 }
     ]
   },
   "mismatch": {

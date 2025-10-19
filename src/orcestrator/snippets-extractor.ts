@@ -34,10 +34,51 @@ export const FIELD_SNIPPETS: Record<ContextField, FieldSnippet> = {
     startPattern: `MATCH (c:Context) WHERE ANY(s IN $skills WHERE s IN c.skills)`,
     generateStrict: (candidateVar, ourVar) =>
       `all(s IN ${ourVar}.skills WHERE s IN ${candidateVar}.skills)`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
-      `CASE WHEN size([s IN ${ourVar}.skills WHERE s IN ${candidateVar}.skills]) > 0 
-      THEN ${weight} * (toFloat(size([s IN ${ourVar}.skills WHERE s IN ${candidateVar}.skills])) / size(${ourVar}.skills)) 
-      ELSE 0 END`,
+    generateFlexible: (_weight, candidateVar, ourVar) => {
+      // NOTE: Игнорируем переданный weight - используем веса из категорий в БД
+      // Scoring происходит через категории навыков с penalty за лишние skills
+      return `
+        // === SKILLS SCORING WITH CATEGORIES ===
+        // 1. Matched skills (intersection)
+        WITH *, [skill IN ${ourVar}.skills WHERE skill IN ${candidateVar}.skills] AS matchedSkills
+
+        // 2. Extra skills (candidate has but we don't need)
+        WITH *, [skill IN ${candidateVar}.skills WHERE NOT skill IN ${ourVar}.skills] AS extraSkills
+
+        // 3. Get weights from categories for matched skills
+        CALL {
+          WITH matchedSkills
+          UNWIND matchedSkills AS matchedSkill
+          OPTIONAL MATCH (s:Skill {name: matchedSkill})-[:BELONGS_TO]->(sc:SkillCategory)
+          RETURN collect({
+            skill: matchedSkill,
+            weight: coalesce(sc.weight, 5.0)
+          }) AS matchedSkillsWithWeights
+        }
+
+        // 4. Get penalties from categories for extra skills
+        CALL {
+          WITH extraSkills
+          UNWIND extraSkills AS extraSkill
+          OPTIONAL MATCH (s:Skill {name: extraSkill})-[:BELONGS_TO]->(sc:SkillCategory)
+          RETURN collect({
+            skill: extraSkill,
+            penalty: coalesce(sc.penalty_multiplier, 1.0)
+          }) AS extraSkillsWithPenalty
+        }
+
+        // 5. Calculate final score (positive - penalty)
+        WITH *,
+          reduce(positiveScore = 0.0, matched IN matchedSkillsWithWeights |
+            positiveScore + matched.weight
+          ) AS skillsPositiveScore,
+          reduce(penaltyScore = 0.0, extra IN extraSkillsWithPenalty |
+            penaltyScore + extra.penalty
+          ) AS skillsPenaltyScore
+
+        WITH *, (skillsPositiveScore - skillsPenaltyScore) AS skillsScore
+      `.trim();
+    },
   },
 
   industry: {
