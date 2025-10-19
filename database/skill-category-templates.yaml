@@ -1,0 +1,242 @@
+templates:
+  # === IT SOFTWARE DEVELOPMENT ===
+  it_software:
+    description: "Software development and web engineering"
+    categories:
+      - category_name: "Programming Languages"
+        weight: 20.0
+        penalty_multiplier: 5.0
+        skills:
+          - "C++"
+          - "Python"
+          - "JavaScript"
+          - "TypeScript"
+          - "Java"
+          - "Go"
+          - "Rust"
+          - "C#"
+          - "PHP"
+          - "Ruby"
+          - "Swift"
+          - "Kotlin"
+
+      - category_name: "Frameworks"
+        weight: 15.0
+        penalty_multiplier: 2.0
+        skills:
+          - "React"
+          - "Vue"
+          - "Angular"
+          - "Django"
+          - "Flask"
+          - "FastAPI"
+          - "Express"
+          - "NestJS"
+          - "Spring"
+          - "Rails"
+
+      - category_name: "Data Systems"
+        weight: 10.0
+        penalty_multiplier: 2.0
+        skills:
+          - "PostgreSQL"
+          - "MySQL"
+          - "MongoDB"
+          - "Redis"
+          - "Elasticsearch"
+          - "Kafka"
+          - "RabbitMQ"
+          - "Cassandra"
+
+      - category_name: "Infrastructure"
+        weight: 10.0
+        penalty_multiplier: 1.5
+        skills:
+          - "Docker"
+          - "Kubernetes"
+          - "AWS"
+          - "GCP"
+          - "Azure"
+          - "Terraform"
+          - "Ansible"
+          - "Jenkins"
+          - "GitLab CI"
+
+      - category_name: "Dev Tools"
+        weight: 5.0
+        penalty_multiplier: 0.5
+        skills:
+          - "Git"
+          - "VS Code"
+          - "IntelliJ"
+          - "Vim"
+          - "Postman"
+          - "Jira"
+          - "Confluence"
+
+  # === IT DATA SCIENCE ===
+  it_data_science:
+    description: "Data science, ML, AI"
+    categories:
+      - category_name: "Programming Languages"
+        weight: 25.0
+        penalty_multiplier: 7.0
+        skills:
+          - "Python"
+          - "R"
+          - "Julia"
+          - "Scala"
+
+      - category_name: "ML Frameworks"
+        weight: 20.0
+        penalty_multiplier: 5.0
+        skills:
+          - "TensorFlow"
+          - "PyTorch"
+          - "scikit-learn"
+          - "Keras"
+          - "XGBoost"
+          - "Hugging Face"
+
+      - category_name: "Data Tools"
+        weight: 15.0
+        penalty_multiplier: 3.0
+        skills:
+          - "Pandas"
+          - "NumPy"
+          - "Spark"
+          - "Hadoop"
+          - "Airflow"
+          - "dbt"
+
+      - category_name: "Visualization"
+        weight: 10.0
+        penalty_multiplier: 1.0
+        skills:
+          - "Matplotlib"
+          - "Seaborn"
+          - "Plotly"
+          - "Tableau"
+          - "PowerBI"
+
+      - category_name: "Math & Stats"
+        weight: 20.0
+        penalty_multiplier: 10.0
+        skills:
+          - "Statistics"
+          - "Linear Algebra"
+          - "Calculus"
+          - "Probability Theory"
+          - "Optimization"
+
+  # === IT DEVOPS ===
+  it_devops:
+    description: "DevOps, SRE, Infrastructure"
+    categories:
+      - category_name: "Infrastructure & Cloud"
+        weight: 30.0
+        penalty_multiplier: 10.0
+        skills:
+          - "Docker"
+          - "Kubernetes"
+          - "AWS"
+          - "GCP"
+          - "Azure"
+          - "Terraform"
+          - "CloudFormation"
+
+      - category_name: "CI/CD"
+        weight: 20.0
+        penalty_multiplier: 5.0
+        skills:
+          - "Jenkins"
+          - "GitLab CI"
+          - "GitHub Actions"
+          - "CircleCI"
+          - "ArgoCD"
+
+      - category_name: "Monitoring & Observability"
+        weight: 15.0
+        penalty_multiplier: 3.0
+        skills:
+          - "Prometheus"
+          - "Grafana"
+          - "ELK Stack"
+          - "Datadog"
+          - "New Relic"
+
+      - category_name: "Scripting"
+        weight: 15.0
+        penalty_multiplier: 3.0
+        skills:
+          - "Bash"
+          - "Python"
+          - "Go"
+          - "PowerShell"
+
+      - category_name: "Configuration Management"
+        weight: 10.0
+        penalty_multiplier: 2.0
+        skills:
+          - "Ansible"
+          - "Puppet"
+          - "Chef"
+          - "Salt"
+
+  # === TEMPLATES FOR FUTURE ===
+  # healthcare_general:
+  #   description: "General healthcare and medical"
+  #   categories:
+  #     - category_name: "Clinical Skills"
+  #       weight: 30.0
+  #       penalty_multiplier: 10.0
+  #       skills:
+  #         - "Patient Care"
+  #         - "Physical Examination"
+  #         - "Diagnosis"
+  #
+  #     - category_name: "Diagnostic Tools"
+  #       weight: 20.0
+  #       penalty_multiplier: 5.0
+  #       skills:
+  #         - "ECG"
+  #         - "Ultrasound"
+  #         - "MRI"
+  #         - "CT Scan"
+  #
+  #     - category_name: "Medical Software"
+  #       weight: 15.0
+  #       penalty_multiplier: 2.0
+  #       skills:
+  #         - "Epic"
+  #         - "Cerner"
+  #         - "Meditech"
+
+  # finance_trading:
+  #   description: "Financial trading and analysis"
+  #   categories:
+  #     - category_name: "Trading Platforms"
+  #       weight: 25.0
+  #       penalty_multiplier: 7.0
+  #       skills:
+  #         - "Bloomberg Terminal"
+  #         - "Thomson Reuters Eikon"
+  #         - "MetaTrader"
+  #
+  #     - category_name: "Financial Instruments"
+  #       weight: 30.0
+  #       penalty_multiplier: 10.0
+  #       skills:
+  #         - "Derivatives"
+  #         - "Options"
+  #         - "Futures"
+  #         - "Forex"
+  #
+  #     - category_name: "Analysis Tools"
+  #       weight: 20.0
+  #       penalty_multiplier: 5.0
+  #       skills:
+  #         - "Excel VBA"
+  #         - "MATLAB"
+  #         - "R"
+  #         - "Python"

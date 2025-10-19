@@ -1,6 +1,7 @@
 import { FastMCP } from "fastmcp";
 import type { SearchManager } from "./search-manager.js";
 import type { PersistenceManager } from "./persistence-manager.js";
+import type { SkillCategoriesManager } from "./skill-categories-manager.js";
 import {
   CurrentToTargetParamsSchema,
   CurrentOnlyParamsSchema,
@@ -12,6 +13,11 @@ import {
   DeleteContextParamsSchema,
   DeleteTrailParamsSchema,
   PingParamsSchema,
+  ListSkillCategoryTemplatesParamsSchema,
+  ApplySkillCategoryTemplateParamsSchema,
+  ListSkillCategoriesParamsSchema,
+  CreateCustomSkillCategoryParamsSchema,
+  AssignSkillToCategoryParamsSchema,
 } from "./schemas-zod.js";
 import { z } from "zod";
 //tODO заменить все params на CurrentToTargetParamsSchema
@@ -21,7 +27,8 @@ import { z } from "zod";
  */
 export function createWayMatesServer(
   searchManager: SearchManager,
-  persistenceManager: PersistenceManager
+  persistenceManager: PersistenceManager,
+  skillCategoriesManager: SkillCategoriesManager
 ) {
   const server = new FastMCP({
     name: "waymates-search",
@@ -138,6 +145,63 @@ export function createWayMatesServer(
   server.addTool(
     tool("ping", "Check database connectivity", PingParamsSchema, () =>
       persistenceManager.ping()
+    )
+  );
+
+  // === SKILL CATEGORY MANAGEMENT TOOLS ===
+
+  // List Skill Category Templates
+  server.addTool(
+    tool(
+      "list_skill_category_templates",
+      "Get available skill category templates for different domains (IT, healthcare, finance, etc.)",
+      ListSkillCategoryTemplatesParamsSchema,
+      () => skillCategoriesManager.listSkillCategoryTemplates()
+    )
+  );
+
+  // Apply Skill Category Template
+  server.addTool(
+    tool(
+      "apply_skill_category_template",
+      "Apply predefined skill category template to create categories and assign skills to them",
+      ApplySkillCategoryTemplateParamsSchema,
+      (params) =>
+        skillCategoriesManager.applySkillCategoryTemplate(
+          params.template_name,
+          params.domain_prefix
+        )
+    )
+  );
+
+  // List Skill Categories
+  server.addTool(
+    tool(
+      "list_skill_categories",
+      "Get all skill categories with weights and assigned skills from database",
+      ListSkillCategoriesParamsSchema,
+      (params) =>
+        skillCategoriesManager.listSkillCategories(params.template_name)
+    )
+  );
+
+  // Create Custom Skill Category
+  server.addTool(
+    tool(
+      "create_custom_skill_category",
+      "Create custom skill category (admin only, not from template)",
+      CreateCustomSkillCategoryParamsSchema,
+      (params) => skillCategoriesManager.createCustomSkillCategory(params)
+    )
+  );
+
+  // Assign Skill to Category
+  server.addTool(
+    tool(
+      "assign_skill_to_category",
+      "Assign skill to existing category",
+      AssignSkillToCategoryParamsSchema,
+      (params) => skillCategoriesManager.assignSkillToCategory(params)
     )
   );
 

@@ -73,6 +73,48 @@ export const TrailIdSchema = z
   .regex(new RegExp(TRAIL_ID_PATTERN), "Trail ID must be in format trl_ULID")
   .describe("Trail ID in format trl_ULID");
 
+// === SKILL CATEGORY SCHEMAS ===
+export const SkillCategoryIdSchema = z
+  .string()
+  .min(1)
+  .describe("Skill category ID");
+
+export const SkillCategorySchema = z.object({
+  category_id: SkillCategoryIdSchema,
+  template_name: z.string().describe("Template this category belongs to"),
+  category_name: z.string().describe("Human-readable category name"),
+  weight: z.number().min(0).max(100).describe("Weight for positive scoring"),
+  penalty_multiplier: z.number().min(0).describe("Multiplier for penalty scoring"),
+  is_predefined: z.boolean().describe("Whether category is from predefined template"),
+  created_at: z.string().describe("ISO 8601 datetime"),
+});
+
+export const SkillCategoryWithSkillsSchema = SkillCategorySchema.extend({
+  skills: z.array(z.string()).describe("Skills assigned to this category"),
+});
+
+export const SkillCategoryTemplateSchema = z.object({
+  category_name: z.string(),
+  weight: z.number().min(0).max(100),
+  penalty_multiplier: z.number().min(0),
+  skills: z.array(z.string()),
+});
+
+export const DomainTemplateSchema = z.object({
+  description: z.string(),
+  categories: z.array(SkillCategoryTemplateSchema),
+});
+
+export const SkillCategoryTemplatesConfigSchema = z.object({
+  templates: z.record(DomainTemplateSchema),
+});
+
+export type SkillCategory = z.infer<typeof SkillCategorySchema>;
+export type SkillCategoryWithSkills = z.infer<typeof SkillCategoryWithSkillsSchema>;
+export type SkillCategoryTemplate = z.infer<typeof SkillCategoryTemplateSchema>;
+export type DomainTemplate = z.infer<typeof DomainTemplateSchema>;
+export type SkillCategoryTemplatesConfig = z.infer<typeof SkillCategoryTemplatesConfigSchema>;
+
 // Причины создания нового контекста
 export const NewContextReasonSchema = z.enum([
   // Основные триггеры развития
@@ -454,6 +496,32 @@ export const DeleteTrailParamsSchema = z.object({
 });
 
 export const PingParamsSchema = z.object({});
+
+// === SKILL CATEGORY MCP TOOL PARAMS ===
+export const ListSkillCategoryTemplatesParamsSchema = z.object({});
+
+export const ApplySkillCategoryTemplateParamsSchema = z.object({
+  template_name: z.string().describe("Template name (e.g., 'it_software', 'it_data_science')"),
+  domain_prefix: z.string().optional().describe("Optional prefix for category IDs (e.g., 'company_name')"),
+});
+
+export const ListSkillCategoriesParamsSchema = z.object({
+  template_name: z.string().optional().describe("Filter by template name"),
+});
+
+export const CreateCustomSkillCategoryParamsSchema = z.object({
+  category_name: z.string().describe("Human-readable category name"),
+  description: z.string().describe("Category description"),
+  weight: z.number().min(0).max(100).describe("Weight for positive scoring"),
+  penalty_multiplier: z.number().min(0).describe("Multiplier for penalty scoring"),
+  skills: z.array(z.string()).describe("List of skill names to assign"),
+  template_name: z.string().optional().describe("Associate with template (optional)"),
+});
+
+export const AssignSkillToCategoryParamsSchema = z.object({
+  skill_name: z.string().describe("Skill name to assign"),
+  category_id: z.string().describe("Target category ID"),
+});
 
 // Опции пресетов для двухстадийного поиска
 export const SearchPresetOptionsSchema = z.object({

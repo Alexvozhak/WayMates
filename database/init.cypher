@@ -7,7 +7,7 @@ CREATE CONSTRAINT position_name_unique IF NOT EXISTS FOR (p:Position) REQUIRE p.
 CREATE CONSTRAINT industry_name_unique IF NOT EXISTS FOR (i:Industry) REQUIRE i.name IS UNIQUE;
 CREATE CONSTRAINT work_domain_name_unique IF NOT EXISTS FOR (wd:WorkDomain) REQUIRE wd.name IS UNIQUE;
 CREATE CONSTRAINT skill_name_unique IF NOT EXISTS FOR (s:Skill) REQUIRE s.name IS UNIQUE;
-CREATE CONSTRAINT skill_category_name_unique IF NOT EXISTS FOR (sc:SkillCategory) REQUIRE sc.name IS UNIQUE;
+CREATE CONSTRAINT skill_category_id_unique IF NOT EXISTS FOR (sc:SkillCategory) REQUIRE sc.category_id IS UNIQUE;
 CREATE CONSTRAINT country_code_unique IF NOT EXISTS FOR (ct:Country) REQUIRE ct.code IS UNIQUE;
 CREATE CONSTRAINT city_identity_unique IF NOT EXISTS FOR (ci:City) REQUIRE (ci.name, ci.code) IS UNIQUE;
 CREATE CONSTRAINT trail_id_unique IF NOT EXISTS FOR (t:Trail) REQUIRE t.trail_id IS UNIQUE;

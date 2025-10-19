@@ -6,6 +6,8 @@ import { createWayMatesServer } from "./mcp-server.js";
 import { SearchQueryBuilder } from "./orcestrator/search-query-builder.js";
 import { SearchManager } from "./search-manager.js";
 import { PersistenceManager } from "./persistence-manager.js";
+import { SkillCategoriesManager } from "./skill-categories-manager.js";
+import { SelectivityService } from "./services/selectivity.service.js";
 
 async function main() {
   const searchQueryBuilder = new SearchQueryBuilder();
@@ -15,9 +17,11 @@ async function main() {
   // и нужно разобраться как работаем с енв, централизовано
   await verifyConnection(driver);
 
-  const searchManager = new SearchManager(driver, searchQueryBuilder);
+  const selectivityService = new SelectivityService(driver);
+  const searchManager = new SearchManager(driver, searchQueryBuilder, selectivityService);
   const persistenceManager = new PersistenceManager(driver);
-  const server = createWayMatesServer(searchManager, persistenceManager);
+  const skillCategoriesManager = new SkillCategoriesManager(driver);
+  const server = createWayMatesServer(searchManager, persistenceManager, skillCategoriesManager);
 
   await server.start({
     transportType: "stdio",
