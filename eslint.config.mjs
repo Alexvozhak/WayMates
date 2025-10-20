@@ -41,6 +41,7 @@ export default defineConfig(
       'node_modules/**',
       '*.js',
       '*.mjs',
+      'scripts/**/*.js',
     ],
   },
 );

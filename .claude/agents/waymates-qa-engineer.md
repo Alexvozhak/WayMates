@@ -206,6 +206,67 @@ Use for:
 - Accumulating WayMates-specific test patterns
 - Storing important edge cases
 
+## 🚨 MANDATORY: Direct Cypher Query Validation
+
+**CRITICAL**: Before writing integration tests for Cypher-related code, ALWAYS validate queries directly using `mcp__neo4j-cypher__read_neo4j_cypher`.
+
+**Why:**
+- WayMates has history of WITH clause scope bugs
+- Mocks hide null handling issues
+- Direct testing catches query logic errors that integration tests miss
+
+**Validation workflow:**
+
+1. **Inspect schema**: `mcp__neo4j-cypher__get_neo4j_schema()`
+2. **Test query with edge cases**:
+```typescript
+mcp__neo4j-cypher__read_neo4j_cypher({
+  query: "MATCH (u:User)-[:HAS_CONTEXT]->(c:Context) WHERE ANY(r IN c.creation_reason WHERE r IN $reasons) WITH u, c RETURN u, c LIMIT 5",
+  params: { reasons: ['position_changed'] }
+})
+```
+3. **Test edge cases**:
+   - null values: `params: { reasons: null }`
+   - Empty arrays: `params: { reasons: [] }`
+   - Missing properties: contexts without `creation_reason`
+   - WITH clause scope: verify variable propagation
+   - COALESCE logic: test `coalesce(field, []) IS NOT NULL` vs `size(coalesce(field, [])) > 0`
+
+4. **Compare raw Cypher results vs TypeScript output**
+
+**Example - bug caught through direct testing:**
+```cypher
+-- ❌ BAD: coalesce(c.creation_reason, []) IS NOT NULL
+--    Returns users with creation_reason: null ([] IS NOT NULL = true)
+-- ✅ GOOD: size(coalesce(c.creation_reason, [])) > 0
+```
+
+## Test Data Organization
+
+**MANDATORY**: Test fixtures go in `/home/alex/projects/WayMatesRemote/data/trails/users/`
+
+Rules:
+- ❌ **DON'T** dump JSON structures inside test files
+- ✅ **DO** create separate JSON files (`user_edge_cases_01.json`, `user_large_dataset_01.json`)
+- ✅ **DO** follow existing naming patterns
+- ✅ **DO** reference fixtures by `user_id` in tests
+
+**Example:**
+```typescript
+// ❌ BAD - data dump in test file
+it('handles null creation_reason', async () => {
+  const fixture = { user_id: 'test_01', contexts: [{ /* 50 lines */ }] };
+  // ...
+});
+
+// ✅ GOOD - data in separate file
+// File: data/trails/users/user_edge_cases_01.json
+it('handles null creation_reason', async () => {
+  const results = await searchManager.searchCurrentReasonBased({...});
+  expect(results.find(r => r.user.user_id === 'user_edge_01')).toBeDefined();
+});
+```
+
 ## Priority
 
 **Test Quality > Test Quantity**

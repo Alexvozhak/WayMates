@@ -37,7 +37,7 @@ export function buildReasonBasedQuery(
   const scoreClause = buildCurrentContextFlexibleConditions(flexibleFields);
 
   // Reason filtering with null safety
-  const reasonFilters = `AND coalesce(futureContext.creation_reason, []) IS NOT NULL
+  const reasonFilters = `AND size(coalesce(futureContext.creation_reason, [])) > 0
   AND all(req IN $requiredReasons WHERE req IN coalesce(futureContext.creation_reason, []))
   AND none(excl IN $excludedReasons WHERE excl IN coalesce(futureContext.creation_reason, []))`;
 
@@ -164,7 +164,12 @@ LIMIT 20
 
 // === STEP 8: Build sample users with graph structure ===
 // For each combination, take top 3 users by match_score
-UNWIND users_data[0..3] AS sample_user_data
+WITH reasonCombination, users_count, stats, users_data
+UNWIND users_data AS u
+WITH reasonCombination, users_count, stats, u
+ORDER BY u.match_score DESC
+WITH reasonCombination, users_count, stats, collect(u)[0..3] AS top_users
+UNWIND top_users AS sample_user_data
 
 WITH reasonCombination,
   users_count,

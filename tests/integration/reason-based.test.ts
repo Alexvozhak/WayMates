@@ -711,5 +711,172 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results[0].stats.median_duration_months).toBe(11);
       expect(results[0].stats.avg_duration_months).toBeCloseTo(11, 1); // (10+11+12)/3 ≈ 11
     });
+
+    test("searchCurrentReasonBased excludes users with null creation_reason", async () => {
+      // Load edge case fixture with null creation_reason
+      const userNullReason = JSON.parse(
+        readFileSync(
+          join(process.cwd(), "data/trails/users/user_edge_null_reason.json"),
+          "utf-8"
+        )
+      );
+
+      await persistenceManager.upsertStory(userNullReason);
+
+      // Extract IDs from fixture (NO hardcoding!)
+      const ctxCurrent = userNullReason.contexts[0].context_id;
+      const ctxFuture = userNullReason.contexts[1].context_id;
+
+      // Create :NEXT relationship
+      await withWriteSession(driver, async (tx) => {
+        await tx.run(
+          `
+          MATCH (c:Context {context_id: $ctxCurrent})
+          MATCH (f:Context {context_id: $ctxFuture})
+          MERGE (c)-[:NEXT {duration_months: $duration}]->(f)
+        `,
+          {
+            ctxCurrent,
+            ctxFuture,
+            duration: 12,
+          }
+        );
+      });
+
+      // Search - should NOT find user with null creation_reason
+      const results = await searchManager.searchCurrentReasonBased({
+        currentPreset: "full",
+        currentContext: {
+          position: "Junior",
+          domains: ["backend"],
+          skills: ["javascript"],
+          industry: "IT",
+          country_code: "RU",
+        },
+        currentUserId: "usr_01ZZZ000000000000000000000",
+        lookahead_months: 12,
+      });
+
+      // CRITICAL: User with null creation_reason must be EXCLUDED
+      expect(results).toEqual([]);
+    });
+
+    test("searchCurrentReasonBased excludes users with empty creation_reason array", async () => {
+      // Load edge case fixture with empty creation_reason
+      const userEmptyReason = JSON.parse(
+        readFileSync(
+          join(process.cwd(), "data/trails/users/user_edge_empty_reason.json"),
+          "utf-8"
+        )
+      );
+
+      await persistenceManager.upsertStory(userEmptyReason);
+
+      // Extract IDs from fixture (NO hardcoding!)
+      const ctxCurrent = userEmptyReason.contexts[0].context_id;
+      const ctxFuture = userEmptyReason.contexts[1].context_id;
+
+      // Create :NEXT relationship
+      await withWriteSession(driver, async (tx) => {
+        await tx.run(
+          `
+          MATCH (c:Context {context_id: $ctxCurrent})
+          MATCH (f:Context {context_id: $ctxFuture})
+          MERGE (c)-[:NEXT {duration_months: $duration}]->(f)
+        `,
+          {
+            ctxCurrent,
+            ctxFuture,
+            duration: 12,
+          }
+        );
+      });
+
+      // Search - should NOT find user with empty creation_reason
+      const results = await searchManager.searchCurrentReasonBased({
+        currentPreset: "full",
+        currentContext: {
+          position: "Junior",
+          domains: ["backend"],
+          skills: ["javascript"],
+          industry: "IT",
+          country_code: "RU",
+        },
+        currentUserId: "usr_01ZZZ000000000000000000000",
+        lookahead_months: 12,
+      });
+
+      // CRITICAL: User with empty creation_reason must be EXCLUDED
+      expect(results).toEqual([]);
+    });
+
+    test("searchCurrentReasonBased handles required_reasons + excluded_reasons conflict", async () => {
+      // Setup: Load test users
+      const user1 = JSON.parse(
+        readFileSync(
+          join(process.cwd(), "data/trails/users/reason_test_user1.json"),
+          "utf-8"
+        )
+      );
+
+      await persistenceManager.upsertStory(user1);
+
+      // Extract IDs from fixture
+      const ctxCurrent = user1.contexts[0].context_id;
+      const ctxFuture = user1.contexts[1].context_id;
+
+      // Create :NEXT relationship
+      await withWriteSession(driver, async (tx) => {
+        await tx.run(
+          `
+          MATCH (c:Context {context_id: $ctxCurrent})
+          MATCH (f:Context {context_id: $ctxFuture})
+          MERGE (c)-[:NEXT {duration_months: $duration}]->(f)
+        `,
+          {
+            ctxCurrent,
+            ctxFuture,
+            duration: 12,
+          }
+        );
+      });
+
+      // Search with conflicting filters: require AND exclude 'position_changed'
+      const results = await searchManager.searchCurrentReasonBased({
+        currentPreset: "full",
+        currentContext: {
+          position: "Junior",
+          domains: ["backend"],
+          skills: ["javascript"],
+          industry: "IT",
+          country_code: "RU",
+        },
+        currentUserId: "usr_01ZZZ000000000000000000000",
+        lookahead_months: 12,
+        required_reasons: ["position_changed"],
+        excluded_reasons: ["position_changed"], // CONFLICT!
+      });
+
+      // CRITICAL: Conflicting filters should return empty results
+      expect(results).toEqual([]);
+    });
+
+    test("searchCurrentReasonBased throws error for invalid preset", async () => {
+      // Test with non-existent preset
+      await expect(
+        searchManager.searchCurrentReasonBased({
+          currentPreset: "NON_EXISTENT_PRESET" as any, // Invalid preset - bypass TypeScript check
+          currentContext: {
+            position: "Junior",
+            domains: ["backend"],
+            skills: ["javascript"],
+            industry: "IT",
+            country_code: "RU",
+          },
+          currentUserId: "usr_01ZZZ000000000000000000000",
+          lookahead_months: 12,
+        })
+      ).rejects.toThrow(); // Should throw validation error
+    });
   });
 });
