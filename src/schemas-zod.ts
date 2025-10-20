@@ -29,7 +29,9 @@ export type UserIdContext = z.infer<typeof UserIdContextSchema>;
 export type UserIdTrail = z.infer<typeof UserIdTrailSchema>;
 export type ContextField = z.infer<typeof ContextFieldSchema>;
 export type FlexibleField = z.infer<typeof FlexibleFieldSchema>;
-export type QueryConfig = z.infer<typeof CurrentPresetConfigSchema> | z.infer<typeof TargetPresetConfigSchema>;
+export type QueryConfig =
+  | z.infer<typeof CurrentPresetConfigSchema>
+  | z.infer<typeof TargetPresetConfigSchema>;
 export type UpsertContextResult = z.infer<typeof UpsertContextResultSchema>;
 export type UpsertTrailResult = z.infer<typeof UpsertTrailResultSchema>;
 export type UpsertStoryResult = z.infer<typeof UpsertStoryResultSchema>;
@@ -47,11 +49,23 @@ export type SearchResult = z.infer<typeof SearchResultSchema>;
 export type UserGraphNode = z.infer<typeof UserGraphNodeSchema>;
 export type UserGraph = z.infer<typeof UserGraphSchema>;
 export type CandidateGraphResult = z.infer<typeof CandidateGraphResultSchema>;
-export type CurrentProgressionBatch = z.infer<typeof CurrentProgressionBatchSchema>;
-export type CurrentProgressionResult = z.infer<typeof CurrentProgressionResultSchema>;
+export type CurrentProgressionBatch = z.infer<
+  typeof CurrentProgressionBatchSchema
+>;
+export type CurrentProgressionResult = z.infer<
+  typeof CurrentProgressionResultSchema
+>;
 export type TargetReverseBatch = z.infer<typeof TargetReverseBatchSchema>;
 export type TargetReverseResult = z.infer<typeof TargetReverseResultSchema>;
 export type PipelineGraphResult = z.infer<typeof PipelineGraphResultSchema>;
+export type Reason = z.infer<typeof ReasonSchema>;
+export type ReasonCombination = z.infer<typeof ReasonCombinationSchema>;
+export type CurrentOnlyReasonBasedResult = z.infer<
+  typeof CurrentOnlyReasonBasedResultSchema
+>;
+export type CurrentOnlyReasonParams = z.infer<
+  typeof CurrentOnlyReasonParamsSchema
+>;
 
 // === БАЗОВЫЕ СХЕМЫ ===
 // ISO 8601 дата-время в UTC формате: YYYY-MM-DDTHH:mm:ssZ
@@ -94,8 +108,13 @@ export const SkillCategorySchema = z.object({
   template_name: z.string().describe("Template this category belongs to"),
   category_name: z.string().describe("Human-readable category name"),
   weight: z.number().min(0).max(100).describe("Weight for positive scoring"),
-  penalty_multiplier: z.number().min(0).describe("Multiplier for penalty scoring"),
-  is_predefined: z.boolean().describe("Whether category is from predefined template"),
+  penalty_multiplier: z
+    .number()
+    .min(0)
+    .describe("Multiplier for penalty scoring"),
+  is_predefined: z
+    .boolean()
+    .describe("Whether category is from predefined template"),
   created_at: z.string().describe("ISO 8601 datetime"),
 });
 
@@ -120,10 +139,14 @@ export const SkillCategoryTemplatesConfigSchema = z.object({
 });
 
 export type SkillCategory = z.infer<typeof SkillCategorySchema>;
-export type SkillCategoryWithSkills = z.infer<typeof SkillCategoryWithSkillsSchema>;
+export type SkillCategoryWithSkills = z.infer<
+  typeof SkillCategoryWithSkillsSchema
+>;
 export type SkillCategoryTemplate = z.infer<typeof SkillCategoryTemplateSchema>;
 export type DomainTemplate = z.infer<typeof DomainTemplateSchema>;
-export type SkillCategoryTemplatesConfig = z.infer<typeof SkillCategoryTemplatesConfigSchema>;
+export type SkillCategoryTemplatesConfig = z.infer<
+  typeof SkillCategoryTemplatesConfigSchema
+>;
 
 // Причины создания нового контекста
 export const NewContextReasonSchema = z.enum([
@@ -279,7 +302,8 @@ export const CurrentPresetConfigSchema = z.object({
           fields.includes(required)
         ),
       {
-        message: "Current presets must include position, domains, skills in strictFields",
+        message:
+          "Current presets must include position, domains, skills in strictFields",
       }
     ),
   flexibleFields: FlexibleFieldsSchema,
@@ -511,8 +535,13 @@ export const PingParamsSchema = z.object({});
 export const ListSkillCategoryTemplatesParamsSchema = z.object({});
 
 export const ApplySkillCategoryTemplateParamsSchema = z.object({
-  template_name: z.string().describe("Template name (e.g., 'it_software', 'it_data_science')"),
-  domain_prefix: z.string().optional().describe("Optional prefix for category IDs (e.g., 'company_name')"),
+  template_name: z
+    .string()
+    .describe("Template name (e.g., 'it_software', 'it_data_science')"),
+  domain_prefix: z
+    .string()
+    .optional()
+    .describe("Optional prefix for category IDs (e.g., 'company_name')"),
 });
 
 export const ListSkillCategoriesParamsSchema = z.object({
@@ -523,9 +552,15 @@ export const CreateCustomSkillCategoryParamsSchema = z.object({
   category_name: z.string().describe("Human-readable category name"),
   description: z.string().describe("Category description"),
   weight: z.number().min(0).max(100).describe("Weight for positive scoring"),
-  penalty_multiplier: z.number().min(0).describe("Multiplier for penalty scoring"),
+  penalty_multiplier: z
+    .number()
+    .min(0)
+    .describe("Multiplier for penalty scoring"),
   skills: z.array(z.string()).describe("List of skill names to assign"),
-  template_name: z.string().optional().describe("Associate with template (optional)"),
+  template_name: z
+    .string()
+    .optional()
+    .describe("Associate with template (optional)"),
 });
 
 export const AssignSkillToCategoryParamsSchema = z.object({
@@ -559,8 +594,12 @@ export const UserGraphNodeSchema = z.object({
 // User graph with minimal info (user + matched context + related context)
 export const UserGraphSchema = z.object({
   user: UserGraphNodeSchema,
-  matched_context: UserContextSchema.describe("Context that matched the search query"),
-  related_context: UserContextSchema.describe("Future context (progression) or previous context (reverse)"),
+  matched_context: UserContextSchema.describe(
+    "Context that matched the search query"
+  ),
+  related_context: UserContextSchema.describe(
+    "Future context (progression) or previous context (reverse)"
+  ),
 });
 
 // Candidate result with graph (base for all search modes)
@@ -572,7 +611,9 @@ export const CandidateGraphResultSchema = z.object({
 
 // Current Progression batch (progression forward)
 export const CurrentProgressionBatchSchema = z.object({
-  period_months: z.number().describe("Time period for this batch (6, 12, 18, or 999 for final)"),
+  period_months: z
+    .number()
+    .describe("Time period for this batch (6, 12, 18, or 999 for final)"),
   results: z.array(CandidateGraphResultSchema),
 });
 
@@ -582,7 +623,11 @@ export const CurrentProgressionResultSchema = z.object({
 
 // Target Reverse batch (progression backward)
 export const TargetReverseBatchSchema = z.object({
-  period_months: z.number().describe("Negative time period for this batch (-12, -24, -36, or -999 for earliest)"),
+  period_months: z
+    .number()
+    .describe(
+      "Negative time period for this batch (-12, -24, -36, or -999 for earliest)"
+    ),
   results: z.array(CandidateGraphResultSchema),
 });
 
@@ -596,10 +641,98 @@ export const PipelineGraphResultSchema = z.object({
   match_score: z.number().describe("Combined compatibility score"),
   user_graph: z.object({
     user: UserGraphNodeSchema,
-    matched_current_context: UserContextSchema.describe("Context matching current query"),
-    matched_target_context: UserContextSchema.describe("Context matching target query"),
+    matched_current_context: UserContextSchema.describe(
+      "Context matching current query"
+    ),
+    matched_target_context: UserContextSchema.describe(
+      "Context matching target query"
+    ),
   }),
 });
+
+// === REASON-BASED SCHEMAS ===
+
+// Reason schema (for MCP tool list_available_reasons)
+export const ReasonSchema = z.object({
+  reason_id: z.string().describe("Unique reason identifier"),
+  description: z.string().describe("Human-readable description"),
+  patterns: z.array(z.string()).describe("Patterns for AI recognition"),
+  common_combinations: z
+    .array(z.string())
+    .describe("Common combinations as comma-separated strings"),
+  examples: z.array(z.string()).describe("Example usage"),
+});
+
+// Reason combination with user avatars and statistics
+export const ReasonCombinationSchema = z.object({
+  combination: z
+    .array(z.string())
+    .describe("Array of reason_ids in this combination"),
+  users_count: z
+    .number()
+    .describe("Total number of users with this combination"),
+  stats: z.object({
+    avg_duration_months: z
+      .number()
+      .describe("Average duration to reach future context"),
+    median_duration: z.number().describe("Median duration"),
+    target_positions: z
+      .array(
+        z.object({
+          position: z.string(),
+          count: z.number(),
+        })
+      )
+      .describe("Array of position frequency objects"),
+    common_skills_gained: z
+      .array(z.string())
+      .describe("Most common skills gained"),
+    avg_courses_taken: z
+      .number()
+      .optional()
+      .describe("Average number of courses/trails"),
+    avg_investment_usd: z
+      .number()
+      .optional()
+      .describe("Average investment in learning"),
+  }),
+  sample_users: z
+    .array(CandidateGraphResultSchema)
+    .describe("Sample users with this combination (graph-based from БЛОК 2)"),
+});
+
+// Result of current-only with reason-based grouping
+export const CurrentOnlyReasonBasedResultSchema = z.object({
+  lookahead_months: z.number().describe("Time period for lookahead"),
+  total_candidates: z.number().describe("Total number of candidates found"),
+  reason_combinations: z
+    .array(ReasonCombinationSchema)
+    .describe("Combinations grouped by creation_reason"),
+});
+
+// MCP tool parameters for reason-based current-only search
+export const CurrentOnlyReasonParamsSchema = z.object({
+  currentPreset: z.string().describe("Preset name for compatibility scoring"),
+  currentContext: UserContextSchema.describe("User's current context"),
+  currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
+  lookahead_months: z
+    .number()
+    .min(1)
+    .max(60)
+    .describe("How many months to look ahead (typically 6/12/18/24)"),
+  required_reasons: z
+    .array(z.string())
+    .max(10)
+    .optional()
+    .describe("Required reasons (must have ALL, max 10)"),
+  excluded_reasons: z
+    .array(z.string())
+    .max(10)
+    .optional()
+    .describe("Excluded reasons (must have NONE, max 10)"),
+});
+
+// Reason-based result types
 
 export const UpsertContextResultSchema = z.object({
   success: z.boolean(),

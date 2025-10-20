@@ -1,0 +1,288 @@
+# Context Creation Reasons Reference
+# This file defines all available reasons for creating a new context in WayMates.
+# AI uses these patterns to identify which reasons apply when importing NLP text.
+
+reasons:
+  # === MAJOR CAREER TRANSITIONS ===
+
+  - reason_id: "position_changed"
+    description: "Position or role changed within career"
+
+    # Patterns for AI recognition
+    patterns:
+      - "promoted to"
+      - "changed role to"
+      - "became"
+      - "transitioned to"
+      - "moved to position"
+      - "upgraded to"
+      - "advanced to"
+      - "stepped up to"
+
+    # Common combinations with other reasons
+    common_combinations:
+      - ["position_changed", "company_changed"]
+      - ["position_changed", "domain_changed"]
+      - ["position_changed", "skill_learning"]
+      - ["position_changed", "location_changed"]
+
+    # Examples for AI
+    examples:
+      - "Promoted from Junior to Mid Developer"
+      - "Changed role from Backend to Full Stack"
+      - "Became Team Lead"
+      - "Transitioned to Senior ML Engineer"
+
+  - reason_id: "location_changed"
+    description: "Relocated to different city or country"
+
+    patterns:
+      - "moved to"
+      - "relocated to"
+      - "migrated to"
+      - "changed location"
+      - "transferred to"
+      - "shifted to"
+
+    common_combinations:
+      - ["location_changed", "company_changed"]
+      - ["location_changed", "work_format_changed"]
+      - ["location_changed", "position_changed"]
+
+    examples:
+      - "Relocated from Moscow to Berlin"
+      - "Moved to USA for work"
+      - "Migrated to Canada"
+      - "Transferred to Amsterdam office"
+
+  - reason_id: "company_changed"
+    description: "Changed employer/company"
+
+    patterns:
+      - "joined"
+      - "started at"
+      - "moved to company"
+      - "changed job"
+      - "switched to"
+      - "hired by"
+      - "accepted offer from"
+
+    common_combinations:
+      - ["company_changed", "position_changed"]
+      - ["company_changed", "location_changed"]
+      - ["company_changed", "domain_changed"]
+      - ["company_changed", "skill_learning"]
+
+    examples:
+      - "Joined Google as Engineer"
+      - "Started at startup"
+      - "Switched to Yandex"
+      - "Accepted offer from Meta"
+
+  - reason_id: "industry_changed"
+    description: "Switched to different industry sector"
+
+    patterns:
+      - "moved to industry"
+      - "switched sector to"
+      - "transitioned to"
+      - "pivoted to"
+      - "entered industry"
+
+    common_combinations:
+      - ["industry_changed", "company_changed"]
+      - ["industry_changed", "domain_changed"]
+      - ["industry_changed", "skill_learning"]
+
+    examples:
+      - "Moved from fintech to healthcare"
+      - "Switched from e-commerce to gaming"
+      - "Transitioned to crypto/blockchain"
+      - "Pivoted to edtech sector"
+
+  - reason_id: "domain_changed"
+    description: "Changed technical domain or specialization"
+
+    patterns:
+      - "switched to domain"
+      - "moved to tech stack"
+      - "transitioned to"
+      - "specialized in"
+      - "focused on"
+
+    common_combinations:
+      - ["domain_changed", "company_changed"]
+      - ["domain_changed", "position_changed"]
+      - ["domain_changed", "skill_learning"]
+
+    examples:
+      - "Switched from backend to frontend"
+      - "Moved from web to mobile development"
+      - "Transitioned to data science"
+      - "Specialized in DevOps"
+
+  - reason_id: "work_format_changed"
+    description: "Changed work format (remote/hybrid/office)"
+
+    patterns:
+      - "went remote"
+      - "switched to hybrid"
+      - "moved to office"
+      - "started working remotely"
+      - "transitioned to on-site"
+
+    common_combinations:
+      - ["work_format_changed", "company_changed"]
+      - ["work_format_changed", "location_changed"]
+
+    examples:
+      - "Went fully remote"
+      - "Switched to hybrid schedule"
+      - "Moved to office-based work"
+      - "Started working remotely after relocation"
+
+  # === CAREER STATUS CHANGES ===
+
+  - reason_id: "started_working"
+    description: "Began professional career or returned to workforce"
+
+    patterns:
+      - "started working"
+      - "first job"
+      - "began career"
+      - "entered workforce"
+      - "graduated and joined"
+
+    common_combinations:
+      - ["started_working", "skill_learning"]
+
+    examples:
+      - "Started first job as Junior Developer"
+      - "Graduated and joined Google"
+      - "Entered workforce after bootcamp"
+
+  - reason_id: "stopped_working"
+    description: "Temporarily or permanently stopped working"
+
+    patterns:
+      - "took break"
+      - "stopped working"
+      - "career break"
+      - "sabbatical"
+      - "parental leave"
+
+    common_combinations:
+      - ["stopped_working", "skill_learning"]
+
+    examples:
+      - "Took career break for travel"
+      - "Sabbatical for personal projects"
+      - "Parental leave for 1 year"
+
+  # === SKILL & LEARNING ===
+
+  - reason_id: "skill_learning"
+    description: "Acquired new skills through courses, certifications, or self-study"
+
+    patterns:
+      - "learned"
+      - "completed course"
+      - "got certified"
+      - "studied"
+      - "mastered"
+      - "upskilled"
+
+    common_combinations:
+      - ["skill_learning", "position_changed"]
+      - ["skill_learning", "domain_changed"]
+      - ["skill_learning", "company_changed"]
+
+    examples:
+      - "Completed ML course on Coursera"
+      - "Got AWS certification"
+      - "Learned Kubernetes and Docker"
+      - "Upskilled in React and TypeScript"
+
+  # === PERSONAL DEVELOPMENT ===
+
+  - reason_id: "goals_change"
+    description: "Changed career goals or priorities"
+
+    patterns:
+      - "changed goals"
+      - "new priorities"
+      - "shifted focus"
+      - "redefined objectives"
+
+    common_combinations:
+      - ["goals_change", "position_changed"]
+      - ["goals_change", "domain_changed"]
+
+    examples:
+      - "Shifted focus from IC to management"
+      - "Redefined career path toward product"
+      - "Changed priorities to work-life balance"
+
+  - reason_id: "constraints_update"
+    description: "Updated personal constraints (location, salary, schedule)"
+
+    patterns:
+      - "updated constraints"
+      - "new requirements"
+      - "changed availability"
+
+    common_combinations:
+      - ["constraints_update", "company_changed"]
+      - ["constraints_update", "work_format_changed"]
+
+    examples:
+      - "Updated salary expectations"
+      - "Changed location preferences"
+      - "New family responsibilities"
+
+  - reason_id: "milestone_achieved"
+    description: "Achieved significant career milestone"
+
+    patterns:
+      - "achieved"
+      - "reached milestone"
+      - "accomplished"
+      - "completed goal"
+
+    common_combinations:
+      - ["milestone_achieved", "position_changed"]
+      - ["milestone_achieved", "skill_learning"]
+
+    examples:
+      - "Reached 5 years of experience"
+      - "Achieved Senior level"
+      - "Completed major project"
+
+  # === SYSTEM & OTHER ===
+
+  - reason_id: "system_recommendation"
+    description: "System-generated context update recommendation"
+
+    patterns:
+      - "system suggested"
+      - "automated recommendation"
+      - "periodic update"
+
+    common_combinations: []
+
+    examples:
+      - "System suggested context refresh"
+      - "Periodic skill assessment update"
+
+  - reason_id: "other"
+    description: "Other reason not covered by standard categories"
+
+    patterns:
+      - "other reason"
+      - "miscellaneous"
+
+    common_combinations: []
+
+    examples:
+      - "Custom career transition"
+      - "Unique circumstance"

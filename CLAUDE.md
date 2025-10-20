@@ -6,6 +6,127 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WayMates is a career transition analysis platform built on Neo4j graph database. It helps users find career paths by matching their current context to target positions through analysis of skills, experience, and transitions of similar professionals. The system operates as an MCP (Model Context Protocol) server using FastMCP.
 
+## Sub-Agents Architecture
+
+This project uses **specialized sub-agents** for different development tasks. Claude Code **MUST proactively delegate** to appropriate agents based on context - don't wait for explicit user requests.
+
+### Agent Roles & Responsibilities
+
+| Agent | Role | When to Call (Proactively) | Model |
+|-------|------|---------------------------|-------|
+| **waymates-code-reviewer** | Tactical code review: bugs, edge cases, correctness | **Immediately** after code implementation | Sonnet |
+| **waymates-tech-lead** | Architectural review: SOLID, elegance, refactoring, tech debt | After feature completion, before commits | Sonnet |
+| **waymates-qa-engineer** | Test coverage, test quality, failure analysis | After schema/Cypher changes, test failures | Sonnet |
+| **waymates-architect** | System design, tech selection, component interactions | Planning features, architecture decisions | Opus |
+| **waymates-business-analyst** | Requirements, UX, user flows, product decisions | Defining features, UX questions | Opus |
+
+### Proactive Delegation Rules
+
+**CRITICAL**: Call agents automatically in these scenarios:
+
+```
+✅ Code written → waymates-code-reviewer (bugs/edge cases)
+✅ Feature done → waymates-tech-lead (architecture review)
+✅ Schema/Cypher changed → waymates-qa-engineer (integration tests!)
+✅ Tests fail → waymates-qa-engineer (root cause analysis)
+✅ New feature planned → waymates-architect (design first)
+✅ UX question → waymates-business-analyst (user convenience)
+✅ Refactoring → waymates-tech-lead + waymates-architect (if large)
+✅ Performance issue → waymates-architect (bottleneck analysis)
+```
+
+**Workflow example:**
+```
+User: "Add skill scoring to search-manager.ts"
+  ↓
+Claude: Implements code
+  ↓
+Claude: ✅ Calls waymates-code-reviewer (tactical review)
+  ↓
+Claude: Fixes critical issues
+  ↓
+Claude: ✅ Calls waymates-tech-lead (architectural review)
+  ↓
+Claude: ✅ Calls waymates-qa-engineer (test coverage check)
+  ↓
+Claude: Completes with tests
+```
+
+## MCP Servers
+
+The following MCP servers provide specialized capabilities:
+
+### 1. **memory** (`@modelcontextprotocol/server-memory`)
+**Purpose**: Persistent knowledge graph across sessions
+- Store architectural decisions, tech debt, refactoring patterns
+- Track discovered bugs and edge cases
+- Accumulate WayMates-specific conventions
+
+**Usage by agents:**
+- `waymates-tech-lead` → track tech debt
+- `waymates-qa-engineer` → save test patterns
+- `waymates-architect` → store architectural decisions
+
+### 2. **filesystem** (`@modelcontextprotocol/server-filesystem`)
+**Purpose**: Fast file operations, search, tree navigation
+- Scoped to `/home/alex/projects/WayMatesRemote`
+- Use for bulk reads, pattern search, directory analysis
+- Prefer over individual Read tool for multiple files
+
+**Usage:**
+- Reading multiple test files simultaneously
+- Finding code duplication patterns
+- Analyzing directory structure
+
+### 3. **neo4j-cypher** (`mcp-neo4j-cypher`)
+**Purpose**: Direct Cypher query execution on test database
+- **Connected to**: `neo4j-test` (bolt://localhost:7689)
+- **Credentials**: neo4j / testpassword123
+- **Database**: neo4j
+
+**Critical capabilities:**
+- `get_neo4j_schema` - inspect schema, constraints, indexes
+- `read_neo4j_cypher` - execute read queries with parameters
+- `write_neo4j_cypher` - execute write queries (use carefully!)
+
+**Usage:**
+- Validate generated Cypher queries before integration tests
+- Test edge cases (null values, empty arrays, boundary conditions)
+- Inspect schema after migrations
+- Debug query performance with EXPLAIN/PROFILE
+
+**Example:**
+```cypher
+// Test WITH clause variable propagation
+read_neo4j_cypher({
+  query: "MATCH (u:User) WITH u, u.user_id AS uid RETURN u, uid LIMIT 1",
+  params: {}
+})
+```
+
+### 4. **context7** (system-provided)
+**Purpose**: Fetch up-to-date library documentation
+- Resolve library names → Context7-compatible IDs
+- Get focused documentation by topic
+
+**Usage by agents:**
+- `waymates-architect` → research best practices (Neo4j patterns, Docker, TypeScript)
+- `waymates-tech-lead` → validate coding patterns (Vitest, Zod, FastMCP)
+
+**Example:**
+```typescript
+// Step 1: Resolve library
+resolve-library-id({ libraryName: "neo4j" })
+// → Returns: /neo4j/docs
+
+// Step 2: Get docs
+get-library-docs({
+  context7CompatibleLibraryID: "/neo4j/docs",
+  topic: "Cypher WITH clause scope",
+  tokens: 3000
+})
+```
+
 ## Tech Stack
 
 - **Database**: Neo4j (graph database)
@@ -65,6 +186,28 @@ npm run db:prod:status               # Count nodes
 npm run test:setup                   # Start test DB and initialize
 npm run docker:test:down             # Stop test DB
 ```
+
+### Mandatory Code Quality Checks
+
+**CRITICAL**: After ANY code changes, ALWAYS run these checks before marking work as complete:
+
+```bash
+# 1. Linter (MANDATORY - use project script, NOT npx eslint directly)
+npm run lint
+
+# 2. TypeScript compilation check (MANDATORY)
+npx tsc --noEmit
+
+# 3. Tests (when applicable)
+npm run test:unit                    # After logic changes
+npm run test:integration             # After Cypher/schema changes
+```
+
+**Important workflow rules:**
+- **Always use `npm run lint`** - project has custom ESLint config, do NOT use `npx eslint` directly
+- **Fix ALL errors before proceeding** - warnings are acceptable in skip-ped tests, but errors must be resolved
+- **Use MCP filesystem tools when available** - prefer `mcp__filesystem__read_multiple_files` and `mcp__filesystem__search_files` over grep/find for bulk operations
+- **Run integration tests after schema/Cypher changes** - unit test mocks won't catch breaking changes in database queries
 
 ## Architecture
 
@@ -194,31 +337,49 @@ Test setup automatically starts containers and initializes schema.
 
 1. Edit `.cypher` files in `src/cypher/processors/`, `finders/`, or `upserts/`
 2. **MANDATORY**: Run `npm run build:cypher` to regenerate TypeScript constants
-3. Run tests to verify changes
-4. For integration tests, ensure test DB is running: `npm run test:setup`
+3. **✅ PROACTIVE**: Call `waymates-code-reviewer` to check for:
+   - WITH clause variable scope issues
+   - Missing null/empty array handling
+   - Canonical variable naming violations
+4. **✅ PROACTIVE**: Call `waymates-qa-engineer` to ensure integration test coverage (mocks won't catch Cypher breakage!)
+5. Test queries with `neo4j-cypher` MCP for edge cases
+6. Run integration tests: `npm run test:integration`
 
 ### Schema Changes
 
 1. Edit `database/init.cypher` for constraints and indexes
 2. Reinitialize database: `npm run db:prod:init` or `npm run db:test:init`
 3. Update Zod schemas in `src/schemas-zod.ts` if needed
+4. **✅ PROACTIVE**: Call `waymates-qa-engineer` to review schema impact on tests
 
-### Debugging Cypher
+### Debugging Cypher Queries
 
-Use Neo4j Browser (http://localhost:7474 for prod, 7476 for test):
-```cypher
-// Set parameters
-:param userId => "user_01";
-:param limit => 10;
+**Use `neo4j-cypher` MCP server** for direct query testing:
 
-// View indexes and constraints
-SHOW INDEXES;
-SHOW CONSTRAINTS;
+```typescript
+// 1. Inspect current schema
+mcp__neo4j-cypher__get_neo4j_schema()
 
-// Analyze query performance
-EXPLAIN <query>;  // Plan without execution
-PROFILE <query>;  // Execute with metrics
+// 2. Test query with edge cases
+mcp__neo4j-cypher__read_neo4j_cypher({
+  query: `
+    MATCH (u:User {user_id: $userId})
+    WITH u, u.user_id AS uid
+    RETURN u, uid
+  `,
+  params: { userId: "user_01" }
+})
+
+// 3. Test WITH clause variable propagation
+mcp__neo4j-cypher__read_neo4j_cypher({
+  query: "MATCH (c:Context) WITH c, c.skills AS skills WHERE size(skills) > 0 RETURN c, skills LIMIT 5",
+  params: {}
+})
 ```
+
+**For production queries**, use Neo4j Browser:
+- Prod: http://localhost:7474 (7687)
+- Test: http://localhost:7476 (7689)
 
 ## Project Conventions
 
@@ -247,12 +408,36 @@ PROFILE <query>;  // Execute with metrics
 3. **Check test coverage**: Especially for schema/query changes that mocks won't catch
 4. **Verify preset validity**: SearchQueryBuilder validates presets on startup
 
+### Proactive Agent Usage (MANDATORY)
+
+**Claude Code MUST call agents automatically** - don't wait for user requests:
+
+| Trigger | Agent | Purpose |
+|---------|-------|---------|
+| 🔧 **Code written/modified** | `waymates-code-reviewer` | Catch bugs, edge cases, null handling |
+| ✅ **Feature completed** | `waymates-tech-lead` → `waymates-qa-engineer` | Architecture review → test coverage |
+| 🗄️ **Schema/Cypher changed** | `waymates-qa-engineer` | Integration tests (mocks hide breakage!) |
+| ❌ **Tests failing** | `waymates-qa-engineer` | Root cause: test outdated or code bug? |
+| 🎨 **Planning new feature** | `waymates-architect` | Design before implementation |
+| 🔄 **Refactoring proposed** | `waymates-tech-lead` (small) or `waymates-architect` (large) | Break into steps, avoid tech debt |
+| 🤔 **UX/Product question** | `waymates-business-analyst` | User convenience first |
+| ⚡ **Performance issue** | `waymates-architect` | Bottleneck analysis, indexing strategy |
+
+**Key principle**: Proactive delegation maintains quality without user micromanagement.
+
 ### Testing Philosophy
 
-- Mocks hide breaking changes in schema, queries, and integration
-- After architectural changes, if tests pass suspiciously easily → investigate
-- Integration tests with real DB are mandatory for Cypher refactoring
-- Don't force test to match output - if test fails, determine whether test or code is wrong
+**CRITICAL PRINCIPLE**: Tests validate business logic, not implementation details.
+
+- **Mocks hide breaking changes** in schema, queries, and integration
+- After architectural changes, if tests pass suspiciously easily → **investigate thoroughly**
+- **Integration tests with real DB are MANDATORY** for Cypher refactoring
+- **Never blindly adjust tests to match code** - determine if test or code is wrong
+- **✅ PROACTIVE**: Call `waymates-qa-engineer` when:
+  - Schema/Cypher queries changed (mocks won't catch breakage)
+  - Tests fail (root cause analysis: test outdated vs. code bug)
+  - Feature completed (ensure adequate coverage)
+  - Refactoring done (verify tests still validate business logic)
 
 ### Communication Language
 

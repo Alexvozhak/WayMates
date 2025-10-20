@@ -1,22 +1,15 @@
 import {
   describe,
-  test,
-  expect,
   beforeEach,
   beforeAll,
   afterAll,
 } from "vitest";
 
 import type { Driver } from "neo4j-driver";
-import {
-  expectNodeCount,
-  expectTrailId,
-} from "../helpers/persistence-fixtures.js";
 import { TestDataManager, UserKey } from "../helpers/test-data-manager.js";
 import { PersistenceManager } from "../../src/persistence-manager.js";
 import {
   createDriver,
-  withReadSession,
   withWriteSession,
 } from "../../src/neo4j.js";
 

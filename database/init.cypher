@@ -12,6 +12,7 @@ CREATE CONSTRAINT country_code_unique IF NOT EXISTS FOR (ct:Country) REQUIRE ct.
 CREATE CONSTRAINT city_identity_unique IF NOT EXISTS FOR (ci:City) REQUIRE (ci.name, ci.code) IS UNIQUE;
 CREATE CONSTRAINT trail_id_unique IF NOT EXISTS FOR (t:Trail) REQUIRE t.trail_id IS UNIQUE;
 CREATE CONSTRAINT platform_name_unique IF NOT EXISTS FOR (p:Platform) REQUIRE p.name IS UNIQUE;
+CREATE CONSTRAINT reason_id_unique IF NOT EXISTS FOR (r:Reason) REQUIRE r.reason_id IS UNIQUE;
 
 // Indexes for filters
 CREATE INDEX skill_name IF NOT EXISTS FOR (s:Skill) ON (s.name);
@@ -28,6 +29,7 @@ CREATE INDEX context_team_size IF NOT EXISTS FOR (c:Context) ON (c.team_size);
 CREATE INDEX context_domains IF NOT EXISTS FOR (c:Context) ON (c.domains);
 CREATE INDEX context_skills IF NOT EXISTS FOR (c:Context) ON (c.skills);
 CREATE INDEX context_citizenships IF NOT EXISTS FOR (c:Context) ON (c.citizenships);
+CREATE INDEX context_creation_reason IF NOT EXISTS FOR (c:Context) ON (c.creation_reason);
 
 // Temporal navigation indexes
 CREATE INDEX context_previous IF NOT EXISTS FOR (c:Context) ON (c.previous_context_id);

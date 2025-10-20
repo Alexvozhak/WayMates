@@ -7,8 +7,10 @@ import type {
   SearchConstraints,
   CurrentOnlyResult,
   CurrentOnlyParams,
+  CurrentOnlyReasonParams,
+  ReasonCombination,
 } from "./schemas-zod.js";
-import { CurrentOnlyResultSchema } from "./schemas-zod.js";
+import { CurrentOnlyResultSchema, ReasonCombinationSchema } from "./schemas-zod.js";
 import { SearchResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 import { SelectivityService } from "./services/selectivity.service.js";
@@ -18,6 +20,7 @@ import {
   isCurrentPresetName,
   isTargetPresetName
 } from "./orcestrator/presets.js";
+import { buildReasonBasedQuery } from "./orcestrator/reason-query-builder.js";
 
 export class SearchManager {
   constructor(
@@ -380,6 +383,151 @@ export class SearchManager {
         compatibilityPercent: r.compatibilityPercent,
         transitionContextId: r.transitionContextId,
         contextTriggers: r.contextTriggers,
+      }))
+    );
+
+    return parsedResults;
+  }
+
+  async searchCurrentReasonBased(
+    params: CurrentOnlyReasonParams
+  ): Promise<ReasonCombination[]> {
+    console.log(
+      "🎯 [SearchManager.searchCurrentReasonBased] Starting reason-based current-only search"
+    );
+    console.log("📊 Input params:", {
+      currentUserId: params.currentUserId,
+      currentPreset: params.currentPreset,
+      lookahead_months: params.lookahead_months,
+      required_reasons: params.required_reasons,
+      excluded_reasons: params.excluded_reasons,
+      currentContext: {
+        context_id: params.currentContext.context_id,
+        position: params.currentContext.position,
+        domains: params.currentContext.domains,
+        skills: params.currentContext.skills?.slice(0, 3),
+        country_code: params.currentContext.country_code,
+      },
+    });
+
+    // Validate preset
+    if (!isCurrentPresetName(params.currentPreset)) {
+      throw new Error(`Invalid current preset name: ${params.currentPreset}`);
+    }
+
+    const presetConfig = CURRENT_PRESETS[params.currentPreset]!;
+    console.log("⚙️ Preset config:", presetConfig);
+
+    // Rank strict fields by selectivity
+    const orderedStrictFields = await this.selectivity.rankStrictFields(
+      presetConfig.strictFields,
+      params.currentContext
+    );
+    console.log("📋 Ordered strict fields:", orderedStrictFields);
+
+    const flexibleFields = presetConfig.flexibleFields;
+    console.log("🎯 Flexible fields:", flexibleFields);
+
+    // Build reason-based query
+    const cypher = buildReasonBasedQuery(
+      orderedStrictFields,
+      flexibleFields
+    );
+
+    console.log("🔗 Generated Reason-Based Cypher Query:");
+    console.log("─".repeat(80));
+    console.log(cypher);
+    console.log("─".repeat(80));
+
+    const queryParams = {
+      currentContext: params.currentContext,
+      currentUserId: params.currentUserId,
+      lookaheadMonths: params.lookahead_months,
+      requiredReasons: params.required_reasons ?? [],
+      excludedReasons: params.excluded_reasons ?? [],
+    };
+    console.log("📦 Query parameters:", {
+      currentUserId: queryParams.currentUserId,
+      lookaheadMonths: queryParams.lookaheadMonths,
+      requiredReasons: queryParams.requiredReasons,
+      excludedReasons: queryParams.excludedReasons,
+      currentContext: {
+        context_id: queryParams.currentContext.context_id,
+        position: queryParams.currentContext.position,
+        domains: queryParams.currentContext.domains,
+        skills: queryParams.currentContext.skills?.slice(0, 3),
+      },
+    });
+
+    let result;
+    try {
+      result = await withReadSession(this.driver, (tx) =>
+        tx.run(cypher, queryParams)
+      );
+    } catch (error) {
+      console.error(
+        "❌ [SearchManager.searchCurrentReasonBased] Query execution failed:",
+        error
+      );
+      console.error("Query:", cypher);
+      console.error("Params:", queryParams);
+      throw new Error(
+        `Failed to execute reason-based search: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
+    console.log(
+      "✅ Reason-based query executed, records count:",
+      result.records.length
+    );
+
+    // Parse results using ReasonCombinationSchema
+    const parsedResults = result.records.map((rec, index) => {
+      const reasonCombinationResult = rec.get("reason_combination_result");
+
+      if (!reasonCombinationResult) {
+        console.error(
+          `❌ [SearchManager.searchCurrentReasonBased] Record ${index} has null reason_combination_result`
+        );
+        throw new Error(
+          `Invalid query result: reason_combination_result is null at index ${index}`
+        );
+      }
+
+      try {
+        return ReasonCombinationSchema.parse(reasonCombinationResult);
+      } catch (error) {
+        console.error(
+          `❌ [SearchManager.searchCurrentReasonBased] Failed to parse record ${index}:`,
+          error
+        );
+        console.error("Raw data:", reasonCombinationResult);
+        throw error;
+      }
+    });
+
+    if (parsedResults.length === 0) {
+      console.warn(
+        "⚠️ [SearchManager.searchCurrentReasonBased] No reason combinations found for the given criteria"
+      );
+      console.warn("Debug info:", {
+        lookahead_months: params.lookahead_months,
+        required_reasons: params.required_reasons,
+        excluded_reasons: params.excluded_reasons,
+        currentContext: {
+          position: params.currentContext.position,
+          domains: params.currentContext.domains,
+        },
+      });
+    }
+
+    console.log(
+      "🎯 Reason-based results:",
+      parsedResults.map((r) => ({
+        combination: r.combination,
+        users_count: r.users_count,
+        avg_duration: r.stats.avg_duration_months,
+        median_duration: r.stats.median_duration,
       }))
     );
 

@@ -82,7 +82,8 @@ export async function importSkillCategoriesFromYAML(driver: Driver): Promise<voi
  */
 async function main() {
   const env = process.env.ENV || 'prod';
-  const uri = process.env.NEO4J_URI || 'bolt://localhost:7687';
+  const port = process.env.NEO4J_PORT || '7687';
+  const uri = `bolt://localhost:${port}`;
   const user = process.env.NEO4J_USER || 'neo4j';
   const password = process.env.NEO4J_PASSWORD || 'password';
 

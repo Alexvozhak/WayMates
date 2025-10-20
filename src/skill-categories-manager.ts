@@ -21,14 +21,14 @@ export class SkillCategoriesManager {
   /**
    * List available skill category templates from YAML
    */
-  async listSkillCategoryTemplates(): Promise<{
+  listSkillCategoryTemplates(): {
     available_templates: Array<{
       template_name: string;
       description: string;
       categories_count: number;
       total_skills: number;
     }>;
-  }> {
+  } {
     const templates = this.loadTemplatesFromYAML();
 
     return {

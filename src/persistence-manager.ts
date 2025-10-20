@@ -10,6 +10,7 @@ import type {
   TrailId,
   UpsertTrailResult,
   UpsertStoryResult,
+  Reason,
 } from "./schemas-zod.js";
 import type { Driver } from "neo4j-driver";
 import {
@@ -26,9 +27,14 @@ import {
   UpsertContextResultSchema,
   UpsertStoryResultSchema,
   UpsertTrailResultSchema,
+  ReasonSchema,
 } from "./schemas-zod.js";
 import { withReadSession, withWriteSession } from "./neo4j.js";
 import { ulid } from "ulid";
+import {
+  buildListReasonsQuery,
+  buildCreateReasonQuery,
+} from "./orcestrator/reason-query-builder.js";
 
 export class PersistenceManager {
   constructor(private driver: Driver) {}
@@ -133,6 +139,55 @@ export class PersistenceManager {
           `deleteTrail: no result returned for params ${JSON.stringify(params)}`
         );
       return Boolean(record.get("result"));
+    });
+  }
+
+  /**
+   * List all available context creation reasons from the database
+   */
+  async listAvailableReasons(): Promise<Reason[]> {
+    const query = buildListReasonsQuery();
+
+    return withReadSession(this.driver, async (tx) => {
+      const result = await tx.run(query);
+
+      return result.records.map((rec) => {
+        const reasonData = rec.get("reason");
+        return ReasonSchema.parse(reasonData);
+      });
+    });
+  }
+
+  /**
+   * Create a new context creation reason when AI encounters an unknown life event
+   */
+  async createNewReason(
+    reasonId: string,
+    description: string,
+    patterns: string[],
+    examples: string[],
+    contextId: string
+  ): Promise<Reason> {
+    const query = buildCreateReasonQuery();
+
+    return withWriteSession(this.driver, async (tx) => {
+      const result = await tx.run(query, {
+        reasonId,
+        description,
+        patterns,
+        examples,
+        contextId,
+      });
+
+      const record = result.records[0];
+      if (!record) {
+        throw new Error(
+          `createNewReason: no result returned for reason_id ${reasonId}`
+        );
+      }
+
+      const reasonData = record.get("r");
+      return ReasonSchema.parse(reasonData.properties);
     });
   }
 

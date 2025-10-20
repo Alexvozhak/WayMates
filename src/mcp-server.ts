@@ -5,6 +5,7 @@ import type { SkillCategoriesManager } from "./skill-categories-manager.js";
 import {
   CurrentToTargetParamsSchema,
   CurrentOnlyParamsSchema,
+  CurrentOnlyReasonParamsSchema,
   TargetOnlyParamsSchema,
   StoryInputSchema,
   UserIdContextSchema,
@@ -36,6 +37,25 @@ export function createWayMatesServer(
     instructions:
       "WayMates career search and analysis server. Provides tools for career transition analysis, progression tracking, and target position exploration.",
   });
+
+  // Helper function to create typed MCP tools
+  function tool<TParams, TResult>(
+    name: string,
+    description: string,
+    schema: z.ZodSchema<TParams>,
+    handler: (params: TParams) => Promise<TResult> | TResult
+  ) {
+    return {
+      name,
+      description,
+      parameters: schema,
+      execute: async (args: unknown) => {
+        const parsed = schema.parse(args);
+        const result = await handler(parsed);
+        return JSON.stringify(result, null, 2);
+      },
+    };
+  }
 
   // Current to Target
   server.addTool(
@@ -83,6 +103,51 @@ export function createWayMatesServer(
           params.targetContext,
           params.currentUserId,
           params.searchConstraints
+        )
+    )
+  );
+
+  // Current Only - Reason Based (NEW)
+  server.addTool(
+    tool(
+      "current_only_reason_based",
+      "Analyze career progression grouped by life event combinations (reason-based grouping)",
+      CurrentOnlyReasonParamsSchema,
+      async (params) =>
+        searchManager.searchCurrentReasonBased(params)
+    )
+  );
+
+  // List Available Reasons (NEW)
+  server.addTool(
+    tool(
+      "list_available_reasons",
+      "Get all available context creation reasons (life events) from the database",
+      z.object({}).strict(),
+      async () =>
+        persistenceManager.listAvailableReasons()
+    )
+  );
+
+  // Create New Reason (NEW)
+  server.addTool(
+    tool(
+      "create_new_reason",
+      "Create a new context creation reason when AI encounters an unknown life event",
+      z.object({
+        reason_id: z.string().describe("Unique reason identifier (snake_case)"),
+        description: z.string().describe("Human-readable description of the reason"),
+        patterns: z.array(z.string()).describe("Common patterns/phrases indicating this reason"),
+        examples: z.array(z.string()).describe("Example sentences using this reason"),
+        context_id: z.string().describe("Context ID where this reason was first encountered"),
+      }).strict(),
+      async (params) =>
+        persistenceManager.createNewReason(
+          params.reason_id,
+          params.description,
+          params.patterns,
+          params.examples,
+          params.context_id
         )
     )
   );
@@ -204,24 +269,6 @@ export function createWayMatesServer(
       (params) => skillCategoriesManager.assignSkillToCategory(params)
     )
   );
-
-  function tool<TParams, TResult>(
-    name: string,
-    description: string,
-    schema: z.ZodSchema<TParams>,
-    handler: (params: TParams) => Promise<TResult>
-  ) {
-    return {
-      name,
-      description,
-      parameters: schema,
-      execute: async (args: unknown) => {
-        const parsed = schema.parse(args);
-        const result = await handler(parsed);
-        return JSON.stringify(result, null, 2);
-      },
-    };
-  }
 
   return server;
 }
