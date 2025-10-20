@@ -66,6 +66,7 @@ export type CurrentOnlyReasonBasedResult = z.infer<
 export type CurrentOnlyReasonParams = z.infer<
   typeof CurrentOnlyReasonParamsSchema
 >;
+export type SearchContext = z.infer<typeof SearchContextSchema>;
 
 // === БАЗОВЫЕ СХЕМЫ ===
 // ISO 8601 дата-время в UTC формате: YYYY-MM-DDTHH:mm:ssZ
@@ -242,7 +243,7 @@ export const UserContextSchema = z.object({
   creation_reason: z
     .array(NewContextReasonSchema)
     .min(1)
-    .describe("Reasons for context creation (can be multiple)"),
+    .describe("Reasons for context creation (always required, use 'started_working' for first job)"),
   position: PositionSchema,
   domains: z.array(z.string()).min(1).describe("Work domains"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
@@ -257,6 +258,17 @@ export const UserContextSchema = z.object({
   team_size: z.number().min(1).describe("Team size"),
   birth_year: z.number().min(1950).describe("Birth year"),
 });
+
+// Search context schema - only relevant fields for matching, all optional
+export const SearchContextSchema = UserContextSchema.omit({
+  context_id: true,
+  created_at: true,
+  creation_reason: true,
+  previous_context_id: true,
+  next_context_id: true,
+  birth_year: true,
+  citizenships: true,
+}).partial();
 
 // === FIELD SNIPPETS SCHEMAS ===
 // Поля для конфигурации поиска - извлекаем из UserContextSchema
@@ -675,7 +687,7 @@ export const ReasonCombinationSchema = z.object({
     avg_duration_months: z
       .number()
       .describe("Average duration to reach future context"),
-    median_duration: z.number().describe("Median duration"),
+    median_duration_months: z.number().describe("Median duration in months"),
     target_positions: z
       .array(
         z.object({
@@ -710,10 +722,22 @@ export const CurrentOnlyReasonBasedResultSchema = z.object({
     .describe("Combinations grouped by creation_reason"),
 });
 
+// Current preset names enum
+export const CurrentPresetNameSchema = z.enum([
+  "BALANCED",
+  "SKILL_FOCUSED",
+  "GEO_FOCUSED",
+  "FLEXIBLE",
+  "full",
+  "positionOnly",
+  "countryOnly",
+  "mismatch"
+]);
+
 // MCP tool parameters for reason-based current-only search
 export const CurrentOnlyReasonParamsSchema = z.object({
-  currentPreset: z.string().describe("Preset name for compatibility scoring"),
-  currentContext: UserContextSchema.describe("User's current context"),
+  currentPreset: CurrentPresetNameSchema.describe("Preset name for compatibility scoring"),
+  currentContext: SearchContextSchema.describe("User's current context (search params, all fields optional)"),
   currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
   lookahead_months: z
     .number()

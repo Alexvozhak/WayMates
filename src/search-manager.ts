@@ -10,7 +10,7 @@ import type {
   CurrentOnlyReasonParams,
   ReasonCombination,
 } from "./schemas-zod.js";
-import { CurrentOnlyResultSchema, ReasonCombinationSchema } from "./schemas-zod.js";
+import { CurrentOnlyResultSchema, ReasonCombinationSchema, CurrentOnlyReasonParamsSchema } from "./schemas-zod.js";
 import { SearchResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 import { SelectivityService } from "./services/selectivity.service.js";
@@ -392,36 +392,38 @@ export class SearchManager {
   async searchCurrentReasonBased(
     params: CurrentOnlyReasonParams
   ): Promise<ReasonCombination[]> {
+    // Validate all parameters including lookahead_months range
+    const validatedParams = CurrentOnlyReasonParamsSchema.parse(params);
+
     console.log(
       "🎯 [SearchManager.searchCurrentReasonBased] Starting reason-based current-only search"
     );
     console.log("📊 Input params:", {
-      currentUserId: params.currentUserId,
-      currentPreset: params.currentPreset,
-      lookahead_months: params.lookahead_months,
-      required_reasons: params.required_reasons,
-      excluded_reasons: params.excluded_reasons,
+      currentUserId: validatedParams.currentUserId,
+      currentPreset: validatedParams.currentPreset,
+      lookahead_months: validatedParams.lookahead_months,
+      required_reasons: validatedParams.required_reasons,
+      excluded_reasons: validatedParams.excluded_reasons,
       currentContext: {
-        context_id: params.currentContext.context_id,
-        position: params.currentContext.position,
-        domains: params.currentContext.domains,
-        skills: params.currentContext.skills?.slice(0, 3),
-        country_code: params.currentContext.country_code,
+        position: validatedParams.currentContext.position,
+        domains: validatedParams.currentContext.domains,
+        skills: validatedParams.currentContext.skills?.slice(0, 3),
+        country_code: validatedParams.currentContext.country_code,
       },
     });
 
     // Validate preset
-    if (!isCurrentPresetName(params.currentPreset)) {
-      throw new Error(`Invalid current preset name: ${params.currentPreset}`);
+    if (!isCurrentPresetName(validatedParams.currentPreset)) {
+      throw new Error(`Invalid current preset name: ${validatedParams.currentPreset}`);
     }
 
-    const presetConfig = CURRENT_PRESETS[params.currentPreset]!;
+    const presetConfig = CURRENT_PRESETS[validatedParams.currentPreset]!;
     console.log("⚙️ Preset config:", presetConfig);
 
     // Rank strict fields by selectivity
     const orderedStrictFields = await this.selectivity.rankStrictFields(
       presetConfig.strictFields,
-      params.currentContext
+      validatedParams.currentContext
     );
     console.log("📋 Ordered strict fields:", orderedStrictFields);
 
@@ -440,11 +442,11 @@ export class SearchManager {
     console.log("─".repeat(80));
 
     const queryParams = {
-      currentContext: params.currentContext,
-      currentUserId: params.currentUserId,
-      lookaheadMonths: params.lookahead_months,
-      requiredReasons: params.required_reasons ?? [],
-      excludedReasons: params.excluded_reasons ?? [],
+      currentContext: validatedParams.currentContext,
+      currentUserId: validatedParams.currentUserId,
+      lookaheadMonths: validatedParams.lookahead_months,
+      requiredReasons: validatedParams.required_reasons ?? [],
+      excludedReasons: validatedParams.excluded_reasons ?? [],
     };
     console.log("📦 Query parameters:", {
       currentUserId: queryParams.currentUserId,
@@ -452,7 +454,6 @@ export class SearchManager {
       requiredReasons: queryParams.requiredReasons,
       excludedReasons: queryParams.excludedReasons,
       currentContext: {
-        context_id: queryParams.currentContext.context_id,
         position: queryParams.currentContext.position,
         domains: queryParams.currentContext.domains,
         skills: queryParams.currentContext.skills?.slice(0, 3),
@@ -511,12 +512,12 @@ export class SearchManager {
         "⚠️ [SearchManager.searchCurrentReasonBased] No reason combinations found for the given criteria"
       );
       console.warn("Debug info:", {
-        lookahead_months: params.lookahead_months,
-        required_reasons: params.required_reasons,
-        excluded_reasons: params.excluded_reasons,
+        lookahead_months: validatedParams.lookahead_months,
+        required_reasons: validatedParams.required_reasons,
+        excluded_reasons: validatedParams.excluded_reasons,
         currentContext: {
-          position: params.currentContext.position,
-          domains: params.currentContext.domains,
+          position: validatedParams.currentContext.position,
+          domains: validatedParams.currentContext.domains,
         },
       });
     }
@@ -527,7 +528,7 @@ export class SearchManager {
         combination: r.combination,
         users_count: r.users_count,
         avg_duration: r.stats.avg_duration_months,
-        median_duration: r.stats.median_duration,
+        median_duration_months: r.stats.median_duration_months,
       }))
     );
 

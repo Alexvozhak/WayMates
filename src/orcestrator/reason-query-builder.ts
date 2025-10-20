@@ -37,7 +37,7 @@ export function buildReasonBasedQuery(
   const scoreClause = buildCurrentContextFlexibleConditions(flexibleFields);
 
   // Reason filtering with null safety
-  const reasonFilters = `WHERE coalesce(futureContext.creation_reason, []) IS NOT NULL
+  const reasonFilters = `AND coalesce(futureContext.creation_reason, []) IS NOT NULL
   AND all(req IN $requiredReasons WHERE req IN coalesce(futureContext.creation_reason, []))
   AND none(excl IN $excludedReasons WHERE excl IN coalesce(futureContext.creation_reason, []))`;
 
@@ -106,9 +106,8 @@ WITH reasonCombination,
   // Duration stats (safe division)
   CASE users_count
     WHEN 0 THEN 0.0
-    ELSE reduce(sum = 0.0, u IN users_data | sum + u.duration_months) / users_count
+    ELSE reduce(sum = 0.0, u IN users_data | sum + toFloat(u.duration_months)) / users_count
   END AS avg_duration,
-  percentileCont([u IN users_data | u.duration_months], 0.5) AS median_duration,
 
   // Position distribution
   [u IN users_data | u.future_context.position] AS all_positions,
@@ -116,19 +115,37 @@ WITH reasonCombination,
   // Skills gained (flatten first, deduplicate with UNWIND + DISTINCT)
   reduce(allSkillsFlat = [], u IN users_data |
     allSkillsFlat + coalesce(u.future_context.skills, [])
-  ) AS all_skills_with_dups
+  ) AS all_skills_with_dups,
+
+  // Extract durations for median calculation
+  [u IN users_data | u.duration_months] AS all_durations
+
+// Calculate median manually by sorting durations
+UNWIND all_durations AS duration_val
+WITH reasonCombination, users_count, users_data, avg_duration, all_positions, all_skills_with_dups,
+  duration_val
+ORDER BY duration_val
+WITH reasonCombination, users_count, users_data, avg_duration, all_positions, all_skills_with_dups,
+  collect(toFloat(duration_val)) AS sorted_durations
+WITH reasonCombination, users_count, users_data, avg_duration, all_positions, all_skills_with_dups,
+  CASE
+    WHEN size(sorted_durations) = 0 THEN 0.0
+    WHEN size(sorted_durations) % 2 = 1
+      THEN sorted_durations[size(sorted_durations) / 2]
+    ELSE (sorted_durations[size(sorted_durations) / 2 - 1] + sorted_durations[size(sorted_durations) / 2]) / 2.0
+  END AS median_duration_months
 
 // Deduplicate skills efficiently
 UNWIND all_skills_with_dups AS skill
-WITH reasonCombination, users_count, users_data, avg_duration, median_duration, all_positions,
+WITH reasonCombination, users_count, users_data, avg_duration, median_duration_months, all_positions,
   collect(DISTINCT skill) AS all_skills
 
 // Calculate position frequencies manually (no APOC)
 UNWIND all_positions AS position
-WITH reasonCombination, users_count, users_data, avg_duration, median_duration, all_skills,
+WITH reasonCombination, users_count, users_data, avg_duration, median_duration_months, all_skills,
   position, count(*) AS position_count
 ORDER BY position_count DESC
-WITH reasonCombination, users_count, users_data, avg_duration, median_duration, all_skills,
+WITH reasonCombination, users_count, users_data, avg_duration, median_duration_months, all_skills,
   collect({position: position, count: position_count}) AS target_positions_list
 
 // === STEP 7: Build result structure ===
@@ -137,7 +154,7 @@ WITH reasonCombination,
   users_count,
   {
     avg_duration_months: avg_duration,
-    median_duration: median_duration,
+    median_duration_months: median_duration_months,
     target_positions: target_positions_list,
     common_skills_gained: all_skills[0..10]
   } AS stats,
@@ -158,36 +175,10 @@ WITH reasonCombination,
     user_graph: {
       user: {
         user_id: sample_user_data.user.user_id,
-        birth_year: sample_user_data.user.birth_year
+        birth_year: sample_user_data.start_context.birth_year
       },
-      matched_context: sample_user_data.start_context {
-        .context_id,
-        .position,
-        .domains,
-        .skills,
-        .industry,
-        .company_size,
-        .country_code,
-        .city_name,
-        .work_type,
-        .citizenships,
-        .team_size,
-        .creation_reason
-      },
-      related_context: sample_user_data.future_context {
-        .context_id,
-        .position,
-        .domains,
-        .skills,
-        .industry,
-        .company_size,
-        .country_code,
-        .city_name,
-        .work_type,
-        .citizenships,
-        .team_size,
-        .creation_reason
-      }
+      matched_context: properties(sample_user_data.start_context),
+      related_context: properties(sample_user_data.future_context)
     }
   }) AS sample_users
 
