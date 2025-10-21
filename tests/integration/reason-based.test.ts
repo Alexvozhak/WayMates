@@ -15,6 +15,7 @@ import { SearchQueryBuilder } from "../../src/orcestrator/search-query-builder.j
 import { SelectivityService } from "../../src/services/selectivity.service.js";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { ulid } from "ulid";
 
 describe("Reason-Based Search Integration Tests", () => {
   let driver: Driver;
@@ -69,6 +70,71 @@ describe("Reason-Based Search Integration Tests", () => {
   afterAll(async () => {
     await driver.close();
   });
+
+  // Shared helper for creating test users with specific duration
+  // Used by lookahead boundary and median calculation tests
+  const createTestUser = async (
+    userId: string,
+    ctxCurrent: string,
+    ctxFuture: string,
+    duration: number
+  ) => {
+    const userStory = {
+      user_id: userId,
+      contexts: [
+        {
+          context_id: ctxCurrent,
+          created_at: "2023-01-01T00:00:00Z",
+          creation_reason: ["started_working"],
+          position: "Junior",
+          industry: "IT",
+          company_size: "100-500",
+          domains: ["backend"],
+          skills: ["javascript"],
+          work_type: "office",
+          team_size: 5,
+          country_code: "RU",
+          city_name: "Moscow",
+          birth_year: 1995,
+          citizenships: ["RU"],
+          previous_context_id: null,
+          next_context_id: ctxFuture,
+        },
+        {
+          context_id: ctxFuture,
+          created_at: "2024-01-01T00:00:00Z",
+          creation_reason: ["position_changed"],
+          position: "Middle",
+          industry: "IT",
+          company_size: "100-500",
+          domains: ["backend"],
+          skills: ["javascript", "typescript"],
+          work_type: "office",
+          team_size: 5,
+          country_code: "RU",
+          city_name: "Moscow",
+          birth_year: 1995,
+          citizenships: ["RU"],
+          previous_context_id: ctxCurrent,
+          next_context_id: null,
+        },
+      ],
+      trails: [],
+    };
+
+    await persistenceManager.upsertStory(userStory as any);
+
+    await withWriteSession(driver, async (tx) => {
+      await tx.run(
+        `
+        MATCH (c:Context {context_id: $ctxCurrent})
+        MATCH (f:Context {context_id: $ctxFuture})
+        MERGE (c)-[:NEXT {duration_months: $duration}]->(f)
+      `,
+        { ctxCurrent, ctxFuture, duration }
+      );
+    });
+  };
 
   describe("PersistenceManager - Reason Management", () => {
     test("listAvailableReasons returns all reasons from database", async () => {
@@ -140,6 +206,14 @@ describe("Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(user2);
       await persistenceManager.upsertStory(user3);
 
+      // Extract IDs from fixtures (NO hardcoding!)
+      const ctx1_current = user1.contexts[0].context_id;
+      const ctx1_future = user1.contexts[1].context_id;
+      const ctx2_current = user2.contexts[0].context_id;
+      const ctx2_future = user2.contexts[1].context_id;
+      const ctx3_current = user3.contexts[0].context_id;
+      const ctx3_future = user3.contexts[1].context_id;
+
       // Create :NEXT relationships with duration_months
       await withWriteSession(driver, async (tx) => {
         await tx.run(
@@ -162,14 +236,14 @@ describe("Reason-Based Search Integration Tests", () => {
           MERGE (c3)-[:NEXT {duration_months: $duration3}]->(f3)
         `,
           {
-            ctx1_current: "ctx_01JAA000000000000000000001",
-            ctx1_future: "ctx_01JAA000000000000000000002",
+            ctx1_current,
+            ctx1_future,
             duration1: 12,
-            ctx2_current: "ctx_01JAA000000000000000000003",
-            ctx2_future: "ctx_01JAA000000000000000000004",
+            ctx2_current,
+            ctx2_future,
             duration2: 11,
-            ctx3_current: "ctx_01JAA000000000000000000005",
-            ctx3_future: "ctx_01JAA000000000000000000006",
+            ctx3_current,
+            ctx3_future,
             duration3: 12,
           }
         );
@@ -186,7 +260,7 @@ describe("Reason-Based Search Integration Tests", () => {
           industry: "IT",
           country_code: "RU",
         },
-        currentUserId: "usr_01JAB000000000000000000001", // user1 - should be excluded
+        currentUserId: user1.user_id, // user1 - should be excluded
         lookahead_months: 12,
       });
 
@@ -209,7 +283,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(positionSkillCombo.sample_users).toHaveLength(1);
       const sampleUser = positionSkillCombo.sample_users[0];
       if (!sampleUser) throw new Error("Sample user not found");
-      expect(sampleUser.user_id).toBe("usr_01JAB000000000000000000002");
+      expect(sampleUser.user_id).toBe(user2.user_id);
 
       // Verify target_positions stats
       expect(positionSkillCombo.stats.target_positions).toHaveLength(1);
@@ -244,6 +318,10 @@ describe("Reason-Based Search Integration Tests", () => {
 
       await persistenceManager.upsertStory(userNoMatch);
 
+      // Extract IDs from fixture (NO hardcoding!)
+      const ctx_current = userNoMatch.contexts[0].context_id;
+      const ctx_future = userNoMatch.contexts[1].context_id;
+
       // Create :NEXT relationship with 24 months duration
       await withWriteSession(driver, async (tx) => {
         await tx.run(
@@ -253,8 +331,8 @@ describe("Reason-Based Search Integration Tests", () => {
           MERGE (c)-[:NEXT {duration_months: $duration}]->(f)
         `,
           {
-            ctx_current: "ctx_01JAA000000000000000000007",
-            ctx_future: "ctx_01JAA000000000000000000008",
+            ctx_current,
+            ctx_future,
             duration: 24,
           }
         );
@@ -344,6 +422,14 @@ describe("Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(user2);
       await persistenceManager.upsertStory(user3);
 
+      // Extract IDs from fixtures (NO hardcoding!)
+      const ctx1_current = user1.contexts[0].context_id;
+      const ctx1_future = user1.contexts[1].context_id;
+      const ctx2_current = user2.contexts[0].context_id;
+      const ctx2_future = user2.contexts[1].context_id;
+      const ctx3_current = user3.contexts[0].context_id;
+      const ctx3_future = user3.contexts[1].context_id;
+
       // Create :NEXT relationships
       await withWriteSession(driver, async (tx) => {
         await tx.run(
@@ -363,14 +449,14 @@ describe("Reason-Based Search Integration Tests", () => {
           MERGE (c3)-[:NEXT {duration_months: $duration3}]->(f3)
         `,
           {
-            ctx1_current: "ctx_01JAA000000000000000000001",
-            ctx1_future: "ctx_01JAA000000000000000000002",
+            ctx1_current,
+            ctx1_future,
             duration1: 12,
-            ctx2_current: "ctx_01JAA000000000000000000003",
-            ctx2_future: "ctx_01JAA000000000000000000004",
+            ctx2_current,
+            ctx2_future,
             duration2: 11,
-            ctx3_current: "ctx_01JAA000000000000000000005",
-            ctx3_future: "ctx_01JAA000000000000000000006",
+            ctx3_current,
+            ctx3_future,
             duration3: 12,
           }
         );
@@ -426,6 +512,14 @@ describe("Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(user2);
       await persistenceManager.upsertStory(user3);
 
+      // Extract IDs from fixtures (NO hardcoding!)
+      const ctx1_current = user1.contexts[0].context_id;
+      const ctx1_future = user1.contexts[1].context_id;
+      const ctx2_current = user2.contexts[0].context_id;
+      const ctx2_future = user2.contexts[1].context_id;
+      const ctx3_current = user3.contexts[0].context_id;
+      const ctx3_future = user3.contexts[1].context_id;
+
       // Create :NEXT relationships
       await withWriteSession(driver, async (tx) => {
         await tx.run(
@@ -445,14 +539,14 @@ describe("Reason-Based Search Integration Tests", () => {
           MERGE (c3)-[:NEXT {duration_months: $duration3}]->(f3)
         `,
           {
-            ctx1_current: "ctx_01JAA000000000000000000001",
-            ctx1_future: "ctx_01JAA000000000000000000002",
+            ctx1_current,
+            ctx1_future,
             duration1: 12,
-            ctx2_current: "ctx_01JAA000000000000000000003",
-            ctx2_future: "ctx_01JAA000000000000000000004",
+            ctx2_current,
+            ctx2_future,
             duration2: 11,
-            ctx3_current: "ctx_01JAA000000000000000000005",
-            ctx3_future: "ctx_01JAA000000000000000000006",
+            ctx3_current,
+            ctx3_future,
             duration3: 12,
           }
         );
@@ -488,92 +582,29 @@ describe("Reason-Based Search Integration Tests", () => {
       // Create 4 users with different durations: 10, 11, 13, 14 months
       // For lookahead_months=12, should include only 11 and 13 (within ±1 range)
 
-      const createUser = async (
-        userId: string,
-        ctxCurrent: string,
-        ctxFuture: string,
-        duration: number
-      ) => {
-        const userStory = {
-          user_id: userId,
-          contexts: [
-            {
-              context_id: ctxCurrent,
-              created_at: "2023-01-01T00:00:00Z",
-              creation_reason: ["started_working"],
-              position: "Junior",
-              industry: "IT",
-              company_size: "100-500",
-              domains: ["backend"],
-              skills: ["javascript"],
-              work_type: "office",
-              team_size: 5,
-              country_code: "RU",
-              city_name: "Moscow",
-              birth_year: 1995,
-              citizenships: ["RU"],
-              previous_context_id: null,
-              next_context_id: ctxFuture,
-            },
-            {
-              context_id: ctxFuture,
-              created_at: "2024-01-01T00:00:00Z",
-              creation_reason: ["position_changed"],
-              position: "Middle",
-              industry: "IT",
-              company_size: "100-500",
-              domains: ["backend"],
-              skills: ["javascript", "typescript"],
-              work_type: "office",
-              team_size: 5,
-              country_code: "RU",
-              city_name: "Moscow",
-              birth_year: 1995,
-              citizenships: ["RU"],
-              previous_context_id: ctxCurrent,
-              next_context_id: null,
-            },
-          ],
-          trails: [],
-        };
-
-        await persistenceManager.upsertStory(userStory as any);
-
-        await withWriteSession(driver, async (tx) => {
-          await tx.run(
-            `
-            MATCH (c:Context {context_id: $ctxCurrent})
-            MATCH (f:Context {context_id: $ctxFuture})
-            MERGE (c)-[:NEXT {duration_months: $duration}]->(f)
-          `,
-            { ctxCurrent, ctxFuture, duration }
-          );
-        });
-      };
-
       // Create users with different durations
-      await createUser(
-        "usr_01JAC000000000000000000001",
-        "ctx_01JAC000000000000000000001",
-        "ctx_01JAC000000000000000000002",
+      await createTestUser(
+        `usr_${ulid()}`,
+        `ctx_${ulid()}`,
+        `ctx_${ulid()}`,
         10 // Out of range (12-1=11)
       );
-      await createUser(
-        "usr_01JAC000000000000000000002",
-        "ctx_01JAC000000000000000000003",
-        "ctx_01JAC000000000000000000004",
+      await createTestUser(
+        `usr_${ulid()}`,
+        `ctx_${ulid()}`,
+        `ctx_${ulid()}`,
         11 // In range
       );
-      await createUser(
-        "usr_01JAC000000000000000000003",
-        "ctx_01JAC000000000000000000005",
-        "ctx_01JAC000000000000000000006",
+      await createTestUser(
+        `usr_${ulid()}`,
+        `ctx_${ulid()}`,
+        `ctx_${ulid()}`,
         13 // In range
       );
-      await createUser(
-        "usr_01JAC000000000000000000004",
-        "ctx_01JAC000000000000000000007",
-        "ctx_01JAC000000000000000000008",
+      await createTestUser(
+        `usr_${ulid()}`,
+        `ctx_${ulid()}`,
+        `ctx_${ulid()}`,
         14 // Out of range (12+1=13)
       );
 
@@ -606,86 +637,23 @@ describe("Reason-Based Search Integration Tests", () => {
       // Create 3 users with durations: 10, 11, 12 months
       // Median should be 11.0 (middle element)
 
-      const createUser = async (
-        userId: string,
-        ctxCurrent: string,
-        ctxFuture: string,
-        duration: number
-      ) => {
-        const userStory = {
-          user_id: userId,
-          contexts: [
-            {
-              context_id: ctxCurrent,
-              created_at: "2023-01-01T00:00:00Z",
-              creation_reason: ["started_working"],
-              position: "Junior",
-              industry: "IT",
-              company_size: "100-500",
-              domains: ["backend"],
-              skills: ["javascript"],
-              work_type: "office",
-              team_size: 5,
-              country_code: "RU",
-              city_name: "Moscow",
-              birth_year: 1995,
-              citizenships: ["RU"],
-              previous_context_id: null,
-              next_context_id: ctxFuture,
-            },
-            {
-              context_id: ctxFuture,
-              created_at: "2024-01-01T00:00:00Z",
-              creation_reason: ["position_changed"],
-              position: "Middle",
-              industry: "IT",
-              company_size: "100-500",
-              domains: ["backend"],
-              skills: ["javascript", "typescript"],
-              work_type: "office",
-              team_size: 5,
-              country_code: "RU",
-              city_name: "Moscow",
-              birth_year: 1995,
-              citizenships: ["RU"],
-              previous_context_id: ctxCurrent,
-              next_context_id: null,
-            },
-          ],
-          trails: [],
-        };
-
-        await persistenceManager.upsertStory(userStory as any);
-
-        await withWriteSession(driver, async (tx) => {
-          await tx.run(
-            `
-            MATCH (c:Context {context_id: $ctxCurrent})
-            MATCH (f:Context {context_id: $ctxFuture})
-            MERGE (c)-[:NEXT {duration_months: $duration}]->(f)
-          `,
-            { ctxCurrent, ctxFuture, duration }
-          );
-        });
-      };
-
       // Create 3 users with durations 10, 11, 12
-      await createUser(
-        "usr_01JAD000000000000000000001",
-        "ctx_01JAD000000000000000000001",
-        "ctx_01JAD000000000000000000002",
+      await createTestUser(
+        `usr_${ulid()}`,
+        `ctx_${ulid()}`,
+        `ctx_${ulid()}`,
         10
       );
-      await createUser(
-        "usr_01JAD000000000000000000002",
-        "ctx_01JAD000000000000000000003",
-        "ctx_01JAD000000000000000000004",
+      await createTestUser(
+        `usr_${ulid()}`,
+        `ctx_${ulid()}`,
+        `ctx_${ulid()}`,
         11
       );
-      await createUser(
-        "usr_01JAD000000000000000000003",
-        "ctx_01JAD000000000000000000005",
-        "ctx_01JAD000000000000000000006",
+      await createTestUser(
+        `usr_${ulid()}`,
+        `ctx_${ulid()}`,
+        `ctx_${ulid()}`,
         12
       );
 
