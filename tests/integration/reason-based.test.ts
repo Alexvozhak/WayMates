@@ -13,6 +13,7 @@ import { PersistenceManager } from "../../src/persistence-manager.js";
 import { SearchManager } from "../../src/search-manager.js";
 import { SearchQueryBuilder } from "../../src/orcestrator/search-query-builder.js";
 import { SelectivityService } from "../../src/services/selectivity.service.js";
+import { DEFAULT_CONSTRAINTS } from "../../src/config.js";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { ulid } from "ulid";
@@ -267,6 +268,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: user1.user_id, // user1 - should be excluded
         lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       // Verify we got 2 different reason combinations
@@ -355,6 +357,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: "usr_01HX91F0C0R000000000000000",
         lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       // Should return empty array when no matches
@@ -377,6 +380,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
           lookahead_months: 0, // Invalid: below min(1)
+          searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow();
 
@@ -387,6 +391,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
           lookahead_months: 61, // Invalid: above max(60)
+          searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow();
 
@@ -398,6 +403,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
           lookahead_months: 12, // Valid: within range
+          searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).resolves.toBeDefined();
     });
@@ -479,6 +485,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format) to not exclude anyone
         lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
         required_reasons: ["position_changed", "skill_learning"],
       });
 
@@ -569,6 +576,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
         lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
         excluded_reasons: ["location_changed"],
       });
 
@@ -625,6 +633,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
         lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       // Should find 1 combo with ['position_changed']
@@ -674,6 +683,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
         lookahead_months: 11, // Will match 10-12 range
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       expect(results).toHaveLength(1);
@@ -728,6 +738,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
         lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       // CRITICAL: User with null creation_reason must be EXCLUDED
@@ -777,6 +788,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
         lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       // CRITICAL: User with empty creation_reason must be EXCLUDED
@@ -826,6 +838,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
         lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
         required_reasons: ["position_changed"],
         excluded_reasons: ["position_changed"], // CONFLICT!
       });
@@ -848,6 +861,7 @@ describe("Reason-Based Search Integration Tests", () => {
           },
           currentUserId: "usr_01ZZZ000000000000000000000",
           lookahead_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow(); // Should throw validation error
     });

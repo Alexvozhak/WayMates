@@ -461,7 +461,6 @@ export const SearchResultSchema = z.object({
 // Minimal user info for graph
 export const UserGraphNodeSchema = z.object({
   user_id: UserIdSchema,
-  birth_year: z.number().min(1950).describe("Birth year"),
 });
 
 // User graph with minimal info (user + matched context + related context)
@@ -557,21 +556,9 @@ export const CurrentOnlyReasonBasedResultSchema = z.object({
     .describe("Combinations grouped by creation_reason"),
 });
 
-// Current preset names enum
-export const CurrentPresetNameSchema = z.enum([
-  "BALANCED",
-  "SKILL_FOCUSED",
-  "GEO_FOCUSED",
-  "FLEXIBLE",
-  "full",
-  "positionOnly",
-  "countryOnly",
-  "mismatch"
-]);
-
 // MCP tool parameters for reason-based current-only search
 export const CurrentOnlyReasonParamsSchema = z.object({
-  currentPreset: CurrentPresetNameSchema.describe("Preset name for compatibility scoring"),
+  currentPreset: z.string().describe("Preset name for compatibility scoring"),
   currentContext: SearchContextSchema.describe("User's current context (search params, all fields optional)"),
   currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
   lookahead_months: z
@@ -589,6 +576,7 @@ export const CurrentOnlyReasonParamsSchema = z.object({
     .max(10)
     .optional()
     .describe("Excluded reasons (must have NONE, max 10)"),
+  searchConstraints: SearchConstraintsSchema.describe("Search constraints (results_limit, timing thresholds)"),
 });
 
 // MCP tool parameters for reason-based target-only search
@@ -611,6 +599,7 @@ export const TargetOnlyReasonParamsSchema = z.object({
     .max(10)
     .optional()
     .describe("Excluded reasons (must have NONE, max 10)"),
+  searchConstraints: SearchConstraintsSchema.describe("Search constraints (results_limit, timing thresholds)"),
 });
 
 // Reason-based result types

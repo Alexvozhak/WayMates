@@ -13,6 +13,7 @@ import { PersistenceManager } from "../../src/persistence-manager.js";
 import { SearchManager } from "../../src/search-manager.js";
 import { SearchQueryBuilder } from "../../src/orcestrator/search-query-builder.js";
 import { SelectivityService } from "../../src/services/selectivity.service.js";
+import { DEFAULT_CONSTRAINTS } from "../../src/config.js";
 import type { StoryInput } from "../../src/schemas-zod.js";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -107,6 +108,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       // Expect 2 combinations:
@@ -152,6 +154,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: user1Story.user_id,
         lookback_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       // No results since user1 is excluded
@@ -183,6 +186,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
         required_reasons: ["company_changed"],
       });
 
@@ -216,6 +220,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
         excluded_reasons: ["company_changed"],
       });
 
@@ -283,6 +288,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 11,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results11.length).toBe(1);
 
@@ -295,6 +301,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 13,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results13.length).toBe(1);
 
@@ -307,6 +314,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 10,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results10.length).toBe(0);
     });
@@ -382,6 +390,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       expect(results.length).toBe(1);
@@ -405,6 +414,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       expect(results.length).toBeGreaterThan(0);
@@ -412,7 +422,6 @@ describe("Target Reason-Based Search Integration Tests", () => {
 
       // Verify graph structure
       expect(sampleUser?.user_graph.user.user_id).toBeDefined();
-      expect(sampleUser?.user_graph.user.birth_year).toBe(1990);
 
       // For backward search: matched_context is CTO, related_context is previous position
       expect(sampleUser?.user_graph.matched_context.position).toBe("CTO");
@@ -443,6 +452,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       // Find combo with both users
@@ -469,6 +479,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
         },
         currentUserId: createUserId(),
         lookback_months: 12,
+        searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
       expect(results.length).toBe(0);

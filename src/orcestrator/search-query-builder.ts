@@ -1,7 +1,6 @@
 import {
   buildContextQuery,
   buildPipelineQuery,
-  buildSimilarContextsCore,
 } from "./cypher-builder.js";
 import {
   buildContextStrictConditions,
@@ -12,7 +11,7 @@ import type {
   SearchConstraints,
   FlexibleField,
 } from "../schemas-zod.js";
-import { CURRENT_PRESETS, isCurrentPresetName } from "./presets.js";
+import { CURRENT_PRESETS } from "./presets.js";
 import { REQUIRED_FIELDS_FOR_CURRENT_CONTEXT } from "../config.js";
 
 export class SearchQueryBuilder {
