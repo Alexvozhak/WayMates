@@ -66,13 +66,16 @@ export type CurrentOnlyReasonBasedResult = z.infer<
 export type CurrentOnlyReasonParams = z.infer<
   typeof CurrentOnlyReasonParamsSchema
 >;
+export type TargetOnlyReasonParams = z.infer<
+  typeof TargetOnlyReasonParamsSchema
+>;
 export type SearchContext = z.infer<typeof SearchContextSchema>;
 
 // === БАЗОВЫЕ СХЕМЫ ===
-// ISO 8601 дата-время в UTC формате: YYYY-MM-DDTHH:mm:ssZ
-// Пример: "2017-09-15T00:00:00Z"
+// ISO 8601 дата-время в UTC формате: YYYY-MM-DDTHH:mm:ss[.SSS]Z
+// Примеры: "2017-09-15T00:00:00Z", "2023-01-01T00:00:00.000Z"
 export const ISO_8601_DATETIME_PATTERN =
-  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$";
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$";
 
 // ULID regex patterns для валидации и тестирования
 export const ULID_PATTERN = "[0-9A-HJKMNP-TV-Z]{26}";
@@ -234,8 +237,8 @@ export const PositionSchema = z.enum([
 
 export const UserContextSchema = z.object({
   context_id: z.string(),
-  previous_context_id: ContextIdSchema.optional(),
-  next_context_id: ContextIdSchema.optional(),
+  previous_context_id: ContextIdSchema.nullable().optional(),
+  next_context_id: ContextIdSchema.nullable().optional(),
   created_at: z
     .string()
     .regex(new RegExp(ISO_8601_DATETIME_PATTERN), "Must be ISO 8601 format")
@@ -744,6 +747,28 @@ export const CurrentOnlyReasonParamsSchema = z.object({
     .min(1)
     .max(60)
     .describe("How many months to look ahead (typically 6/12/18/24)"),
+  required_reasons: z
+    .array(z.string())
+    .max(10)
+    .optional()
+    .describe("Required reasons (must have ALL, max 10)"),
+  excluded_reasons: z
+    .array(z.string())
+    .max(10)
+    .optional()
+    .describe("Excluded reasons (must have NONE, max 10)"),
+});
+
+// MCP tool parameters for reason-based target-only search
+export const TargetOnlyReasonParamsSchema = z.object({
+  targetPreset: z.string().describe("Preset name for target compatibility scoring"),
+  targetContext: SearchContextSchema.describe("User's target context (search params, all fields optional)"),
+  currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
+  lookback_months: z
+    .number()
+    .min(1)
+    .max(60)
+    .describe("How many months to look back (typically 6/12/18/24)"),
   required_reasons: z
     .array(z.string())
     .max(10)
