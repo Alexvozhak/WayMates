@@ -4,10 +4,8 @@ import type { PersistenceManager } from "./persistence-manager.js";
 import type { SkillCategoriesManager } from "./skill-categories-manager.js";
 import {
   CurrentToTargetParamsSchema,
-  CurrentOnlyParamsSchema,
   CurrentOnlyReasonParamsSchema,
   TargetOnlyReasonParamsSchema,
-  TargetOnlyParamsSchema,
   StoryInputSchema,
   UserIdContextSchema,
   UserIdTrailSchema,
@@ -76,39 +74,7 @@ export function createWayMatesServer(
     )
   );
 
-  // Current Only
-  server.addTool(
-    tool(
-      "current_only",
-      "Analyze career progression for current context over time",
-      CurrentOnlyParamsSchema,
-      async (params) =>
-        searchManager.searchCurrentContext(
-          params.currentPreset,
-          params.currentContext,
-          params.currentUserId,
-          params.searchConstraints
-        )
-    )
-  );
-
-  // Target Only
-  server.addTool(
-    tool(
-      "target_only",
-      "Analyze career paths and requirements to reach target position",
-      TargetOnlyParamsSchema,
-      async (params) =>
-        searchManager.searchTargetContext(
-          params.targetPreset,
-          params.targetContext,
-          params.currentUserId,
-          params.searchConstraints
-        )
-    )
-  );
-
-  // Current Only - Reason Based (NEW)
+  // Current Only - Reason Based
   server.addTool(
     tool(
       "current_only_reason_based",

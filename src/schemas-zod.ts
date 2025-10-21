@@ -14,14 +14,6 @@ export type Position = z.infer<typeof PositionSchema>;
 //TODO разобраться с типами
 export type CurrentToTargetParams = z.infer<typeof CurrentToTargetParamsSchema>;
 
-export type TargetOnlyParams = z.infer<typeof TargetOnlyParamsSchema>;
-export type TargetSearchParams = z.infer<typeof TargetSearchParamsSchema>;
-
-export type CurrentOnlyResult = z.infer<typeof CurrentOnlyResultSchema>;
-export type CurrentOnlyParams = z.infer<typeof CurrentOnlyParamsSchema>;
-
-export type CurrentToTargetResult = z.infer<typeof CurrentToTargetResultSchema>;
-export type TargetAnalysisResult = z.infer<typeof TargetAnalysisResultSchema>;
 export type UserId = z.infer<typeof UserIdSchema>;
 export type ContextId = z.infer<typeof ContextIdSchema>;
 export type TrailId = z.infer<typeof TrailIdSchema>;
@@ -49,14 +41,6 @@ export type SearchResult = z.infer<typeof SearchResultSchema>;
 export type UserGraphNode = z.infer<typeof UserGraphNodeSchema>;
 export type UserGraph = z.infer<typeof UserGraphSchema>;
 export type CandidateGraphResult = z.infer<typeof CandidateGraphResultSchema>;
-export type CurrentProgressionBatch = z.infer<
-  typeof CurrentProgressionBatchSchema
->;
-export type CurrentProgressionResult = z.infer<
-  typeof CurrentProgressionResultSchema
->;
-export type TargetReverseBatch = z.infer<typeof TargetReverseBatchSchema>;
-export type TargetReverseResult = z.infer<typeof TargetReverseResultSchema>;
 export type PipelineGraphResult = z.infer<typeof PipelineGraphResultSchema>;
 export type Reason = z.infer<typeof ReasonSchema>;
 export type ReasonCombination = z.infer<typeof ReasonCombinationSchema>;
@@ -344,107 +328,6 @@ export const UserIdContextSchema = z.object({
 //   .object({ user_id: UserIdSchema })
 //   .merge(UserContextSchema);
 
-// Результат анализа прогрессии для CURRENT_ONLY режима
-export const CurrentOnlyResultSchema = z.object({
-  userId: UserIdSchema,
-  currentLikeContextId: ContextIdSchema,
-  compatibilityPercent: z.number(),
-
-  // Контекст через выбранный временной срез
-  transitionContextId: ContextIdSchema,
-
-  // Триггеры изменений
-  contextTriggers: z.array(NewContextReasonSchema),
-
-  // Метрики по триггерам (опциональные - заполняются если триггер присутствует)
-
-  // POSITION_CHANGED
-  monthsInPositionBeforeChange: z.number().optional(),
-  ageAtPositionChange: z.number().optional(),
-
-  // LOCATION_CHANGED
-  destinationCountry: z.string().optional(),
-  destinationCity: z.string().optional(),
-
-  // COMPANY_CHANGED
-  companyTypeTransition: z.string().optional(),
-
-  // INDUSTRY_CHANGED
-  industryTransition: z.string().optional(),
-
-  // DOMAIN_CHANGED
-  techStackTransition: z.string().optional(),
-
-  // WORK_FORMAT_CHANGED
-  workFormatTransition: z.string().optional(),
-});
-
-// Результат поиска current → target для CURRENT_TO_TARGET режимов
-export const CurrentToTargetResultSchema = z.object({
-  userId: UserIdSchema,
-  currentLikeContextId: ContextIdSchema,
-  targetLikeContextId: ContextIdSchema,
-  trailPath: z.array(TrailSchema),
-
-  // Timing отклонения
-  positionTimingDiffPercent: z.number(),
-  positionTimingDiffMonths: z.number(),
-
-  // Skills метрики
-  currentSkillsMatched: z.number(),
-  currentSkillsTotal: z.number(),
-  currentSkillsPercent: z.number(),
-
-  // Experience
-  currentExperienceDiffMonths: z.number(),
-
-  // Transition timing
-  transitionDurationMonths: z.number(),
-
-  // Geography
-  countryMatch: z.boolean(),
-  cityMatch: z.boolean(),
-
-  // Company
-  companySizeMatch: z.boolean(),
-  industryMatch: z.boolean(),
-});
-
-// Результат анализа путей достижения цели для TARGET_ONLY режима
-export const TargetAnalysisResultSchema = z.object({
-  targetPosition: z.string(),
-  totalAvatarsFound: z.number(),
-
-  // Пути достижения цели
-  achievementPaths: z.array(
-    z.object({
-      fromPosition: z.string(),
-      startingIndustry: z.string(),
-      startingCompanySize: z.string(),
-
-      percentageOfAchievers: z.number(),
-      averageTransitionMonths: z.number(),
-      totalMonthsFromStart: z.number(),
-      successRate: z.number(),
-      avatarCount: z.number(),
-
-      // Карьерная динамика
-      avgPositionChanges: z.number(),
-      avgCompanyChanges: z.number(),
-      firstPromotionMonths: z.number(),
-    })
-  ),
-
-  // Временные инвестиции (статистика)
-  timingInsights: z.object({
-    medianMonths: z.number(),
-    percentile25Months: z.number(),
-    percentile75Months: z.number(),
-    averageAgeAtAchievement: z.number().optional(),
-    averageStartingAge: z.number().optional(),
-  }),
-});
-
 // TODO все вспомогательные схемы перенести в отдельную секцию файла
 export const TargetContextSchema = UserContextSchema.partial().and(
   z.object({
@@ -501,31 +384,6 @@ export const CurrentToTargetParamsSchema = z.object({
   currentPreset: z.string().describe("Preset name for current context search"),
   targetPreset: z.string().describe("Preset name for target context search"),
   currentContext: UserContextSchema,
-  targetContext: TargetContextSchema,
-  searchConstraints: SearchConstraintsSchema,
-});
-
-export const CurrentOnlyParamsSchema = z.object({
-  currentUserId: UserIdSchema,
-  currentPreset: z.string().describe("Preset name for current context search"),
-  currentContext: UserContextSchema,
-  stepSizeMonths: z.number().min(1).max(60),
-  numberOfSteps: z.number().min(1).max(20),
-  includeFinalBatch: z.boolean(),
-  searchConstraints: SearchConstraintsSchema,
-  reasonsToTrack: z.array(NewContextReasonSchema),
-});
-
-export const TargetOnlyParamsSchema = z.object({
-  currentUserId: UserIdSchema,
-  targetPreset: z.string().describe("Preset name for target context search"),
-  targetContext: TargetContextSchema,
-  searchConstraints: SearchConstraintsSchema,
-});
-
-export const TargetSearchParamsSchema = z.object({
-  currentUserId: UserIdSchema,
-  targetPreset: z.string().describe("Preset name for target search"),
   targetContext: TargetContextSchema,
   searchConstraints: SearchConstraintsSchema,
 });
@@ -622,32 +480,6 @@ export const CandidateGraphResultSchema = z.object({
   user_id: UserIdSchema,
   match_score: z.number().describe("Compatibility score from Cypher"),
   user_graph: UserGraphSchema,
-});
-
-// Current Progression batch (progression forward)
-export const CurrentProgressionBatchSchema = z.object({
-  period_months: z
-    .number()
-    .describe("Time period for this batch (6, 12, 18, or 999 for final)"),
-  results: z.array(CandidateGraphResultSchema),
-});
-
-export const CurrentProgressionResultSchema = z.object({
-  batches: z.array(CurrentProgressionBatchSchema),
-});
-
-// Target Reverse batch (progression backward)
-export const TargetReverseBatchSchema = z.object({
-  period_months: z
-    .number()
-    .describe(
-      "Negative time period for this batch (-12, -24, -36, or -999 for earliest)"
-    ),
-  results: z.array(CandidateGraphResultSchema),
-});
-
-export const TargetReverseResultSchema = z.object({
-  batches: z.array(TargetReverseBatchSchema),
 });
 
 // Pipeline result (current → target)

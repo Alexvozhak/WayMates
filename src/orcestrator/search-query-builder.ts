@@ -10,13 +10,10 @@ import {
 import type {
   ContextField,
   SearchConstraints,
-  CurrentOnlyParams,
   FlexibleField,
 } from "../schemas-zod.js";
 import { CURRENT_PRESETS, isCurrentPresetName } from "./presets.js";
 import { REQUIRED_FIELDS_FOR_CURRENT_CONTEXT } from "../config.js";
-
-const FINAL_BATCH_PERIOD = -1;
 
 export class SearchQueryBuilder {
   public validateCurrentPresets(): void {
@@ -129,85 +126,5 @@ export class SearchQueryBuilder {
         `Current preset "${presetName}" must include all required fields: ${REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.join(", ")}`
       );
     }
-  }
-
-  public buildCurrentBatchesQuery(params: CurrentOnlyParams): string {
-    const periods = this.generatePeriods(params);
-
-    const unionBlocks = periods
-      .map((months) => this.generatePeriodBlock(months, params.currentPreset))
-      .join("\nUNION\n");
-
-    return `${unionBlocks}\nRETURN period, results`;
-  }
-
-  private generatePeriods(params: CurrentOnlyParams): number[] {
-    const periods: number[] = [];
-
-    for (let step = 1; step <= params.numberOfSteps; step++) {
-      periods.push(step * params.stepSizeMonths);
-    }
-
-    if (params.includeFinalBatch) {
-      periods.push(FINAL_BATCH_PERIOD);
-    }
-
-    return periods;
-  }
-
-  /** Generate single period block for batched query */
-  private generatePeriodBlock(months: number, presetName: string): string {
-    if (!isCurrentPresetName(presetName)) {
-      throw new Error(`Invalid current preset name: ${presetName}`);
-    }
-    const { strictFields, flexibleFields } = CURRENT_PRESETS[presetName]!;
-    const whereClause = buildContextStrictConditions(
-      strictFields,
-      "candidateContext",
-      "$currentContext"
-    );
-    const scoreClause = buildContextFlexibleConditions(
-      flexibleFields,
-      "candidateContext",
-      "$currentContext",
-      "contextCompatibilityScore"
-    );
-
-    // Use core logic for finding similar contexts
-    const { cypherCode, userVar, contextVar, compatibilityScoreVar } =
-      buildSimilarContextsCore("all", whereClause, scoreClause);
-
-    const isFinalBatch = months === FINAL_BATCH_PERIOD;
-    const futureContextCondition = isFinalBatch
-      ? `datetime(futureContext.created_at) >= datetime(${contextVar}.created_at)`
-      : `duration.between(datetime(${contextVar}.created_at), datetime(futureContext.created_at)).months >= ${months}`;
-
-    // Элегантное пересечение массивов вместо TRIGGER_SNIPPETS
-    return `
-CALL {
-  ${cypherCode}
-  
-  MATCH (${userVar})-[:HAS_CONTEXT]->(futureContext:Context)
-  WHERE ${futureContextCondition}
-  
-  WITH ${userVar}, ${contextVar}, futureContext, ${compatibilityScoreVar},
-       [reason IN $reasonsToTrack WHERE reason IN futureContext.creation_reason] AS contextTriggers
-  
-  RETURN ${months} AS period, collect({
-            userId: ${userVar}.user_id,
-            currentLikeContextId: ${contextVar}.context_id,
-            compatibilityPercent: ${compatibilityScoreVar},
-            transitionContextId: futureContext.context_id,
-            contextTriggers: contextTriggers,
-            monthsInPositionBeforeChange: duration.between(datetime(${contextVar}.created_at), datetime(futureContext.created_at)).months,
-            ageAtPositionChange: datetime(futureContext.created_at).year - ${userVar}.birth_year,
-            destinationCountry: futureContext.country_code,
-            destinationCity: futureContext.city_name,
-            companyTypeTransition: futureContext.company_size,
-            industryTransition: futureContext.industry,
-            techStackTransition: futureContext.domains,
-            workFormatTransition: futureContext.work_type
-  }) AS results
-}`;
   }
 }
