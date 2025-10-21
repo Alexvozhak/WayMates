@@ -138,129 +138,45 @@ export const FIELD_SNIPPETS: Record<ContextField, FieldSnippet> = {
   },
 } as const satisfies Record<ContextField, FieldSnippet>;
 
-// === NEO4J 5+ СПЕЦИАЛИЗИРОВАННЫЕ ФУНКЦИИ ===
+// === UNIVERSAL BUILDER FUNCTIONS ===
 
-/** Current Context Search - candidateContext (из БД) vs ourCurrentContext */
-export function buildCurrentContextStrictConditions(
-  strictFields: ContextField[]
+/**
+ * Build strict WHERE conditions for context matching
+ * @param strictFields - Fields to match strictly
+ * @param dbVarName - Database variable name (e.g., "candidateContext", "matchedContext")
+ * @param paramName - Query parameter name (e.g., "$searchContext", "$currentContext")
+ */
+export function buildContextStrictConditions(
+  strictFields: ContextField[],
+  dbVarName: string = "candidateContext",
+  paramName: string = "$searchContext"
 ): string {
   const conditions = strictFields
-    .map((field) =>
-      FIELD_SNIPPETS[field].generateStrict(
-        "candidateContext",
-        "$currentContext"
-      )
-    )
+    .map((field) => FIELD_SNIPPETS[field].generateStrict(dbVarName, paramName))
     .filter(Boolean);
   return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
 }
 
-export function buildCurrentContextFlexibleConditions(
-  flexibleFields: FlexibleField[]
+/**
+ * Build flexible scoring conditions for context compatibility
+ * @param flexibleFields - Fields with weights for scoring
+ * @param dbVarName - Database variable name
+ * @param paramName - Query parameter name
+ * @param scoreAlias - Alias for the calculated score
+ */
+export function buildContextFlexibleConditions(
+  flexibleFields: FlexibleField[],
+  dbVarName: string = "candidateContext",
+  paramName: string = "$searchContext",
+  scoreAlias: string = "contextCompatibilityScore"
 ): string {
   const conditions = flexibleFields
     .map(({ field, weight }) =>
-      FIELD_SNIPPETS[field].generateFlexible(
-        weight,
-        "candidateContext",
-        "$currentContext"
-      )
+      FIELD_SNIPPETS[field].generateFlexible(weight, dbVarName, paramName)
     )
     .filter(Boolean);
   return conditions.length > 0
-    ? `(\n  ${conditions.join(" +\n  ")}\n) AS contextCompatibilityScore\nWHERE contextCompatibilityScore > 0`
-    : `0 AS contextCompatibilityScore`;
+    ? `(\n  ${conditions.join(" +\n  ")}\n) AS ${scoreAlias}\nWHERE ${scoreAlias} > 0`
+    : `0 AS ${scoreAlias}`;
 }
 
-/** Target Context Search - candidateContext (из БД) vs ourTargetContext */
-export function buildTargetContextStrictConditions(
-  strictFields: ContextField[]
-): string {
-  const conditions = strictFields
-    .map((field) =>
-      FIELD_SNIPPETS[field].generateStrict("candidateContext", "$targetContext")
-    )
-    .filter(Boolean);
-  return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
-}
-
-export function buildTargetContextFlexibleConditions(
-  flexibleFields: FlexibleField[]
-): string {
-  const conditions = flexibleFields
-    .map(({ field, weight }) =>
-      FIELD_SNIPPETS[field].generateFlexible(
-        weight,
-        "candidateContext",
-        "$targetContext"
-      )
-    )
-    .filter(Boolean);
-  return conditions.length > 0
-    ? `(\n  ${conditions.join(" +\n  ")}\n) AS contextCompatibilityScore\nWHERE contextCompatibilityScore > 0`
-    : `0 AS contextCompatibilityScore`;
-}
-
-/** Pipeline Current Context - candidateCurrentContext (из БД) vs ourCurrentContext */
-export function buildPipelineCurrentStrictConditions(
-  strictFields: ContextField[]
-): string {
-  const conditions = strictFields
-    .map((field) =>
-      FIELD_SNIPPETS[field].generateStrict(
-        "candidateCurrentContext",
-        "$currentContext"
-      )
-    )
-    .filter(Boolean);
-  return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
-}
-
-export function buildPipelineCurrentFlexibleConditions(
-  flexibleFields: FlexibleField[]
-): string {
-  const conditions = flexibleFields
-    .map(({ field, weight }) =>
-      FIELD_SNIPPETS[field].generateFlexible(
-        weight,
-        "candidateCurrentContext",
-        "$currentContext"
-      )
-    )
-    .filter(Boolean);
-  return conditions.length > 0
-    ? `(\n  ${conditions.join(" +\n  ")}\n) AS currentContextCompatibilityScore\nWHERE currentContextCompatibilityScore > 0`
-    : `0 AS currentContextCompatibilityScore`;
-}
-
-/** Pipeline Target Context - candidateTargetContext (из БД) vs ourTargetContext */
-export function buildPipelineTargetStrictConditions(
-  strictFields: ContextField[]
-): string {
-  const conditions = strictFields
-    .map((field) =>
-      FIELD_SNIPPETS[field].generateStrict(
-        "candidateTargetContext",
-        "$targetContext"
-      )
-    )
-    .filter(Boolean);
-  return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
-}
-
-export function buildPipelineTargetFlexibleConditions(
-  flexibleFields: FlexibleField[]
-): string {
-  const conditions = flexibleFields
-    .map(({ field, weight }) =>
-      FIELD_SNIPPETS[field].generateFlexible(
-        weight,
-        "candidateTargetContext",
-        "$targetContext"
-      )
-    )
-    .filter(Boolean);
-  return conditions.length > 0
-    ? `(\n  ${conditions.join(" +\n  ")}\n) AS targetContextCompatibilityScore\nWHERE targetContextCompatibilityScore > 0`
-    : `0 AS targetContextCompatibilityScore`;
-}

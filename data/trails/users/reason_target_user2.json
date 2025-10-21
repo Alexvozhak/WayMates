@@ -1,0 +1,42 @@
+{
+  "user_id": "usr_01JAB200000000000000000002",
+  "contexts": [
+    {
+      "context_id": "ctx_01JAB200000000000000000001",
+      "created_at": "2023-02-01T00:00:00Z",
+      "creation_reason": ["position_changed"],
+      "position": "TechLead",
+      "industry": "IT",
+      "company_size": "1000+",
+      "domains": ["backend", "architecture"],
+      "skills": ["python", "django", "postgresql"],
+      "work_type": "hybrid",
+      "team_size": 10,
+      "country_code": "US",
+      "city_name": "New York",
+      "birth_year": 1988,
+      "citizenships": ["US"],
+      "previous_context_id": null,
+      "next_context_id": "ctx_01JAB200000000000000000002"
+    },
+    {
+      "context_id": "ctx_01JAB200000000000000000002",
+      "created_at": "2024-01-01T00:00:00Z",
+      "creation_reason": ["position_changed", "company_changed"],
+      "position": "CTO",
+      "industry": "IT",
+      "company_size": "1000+",
+      "domains": ["backend", "architecture", "management"],
+      "skills": ["python", "django", "postgresql", "leadership", "strategy"],
+      "work_type": "hybrid",
+      "team_size": 60,
+      "country_code": "US",
+      "city_name": "New York",
+      "birth_year": 1988,
+      "citizenships": ["US"],
+      "previous_context_id": "ctx_01JAB200000000000000000001",
+      "next_context_id": null
+    }
+  ],
+  "trails": []
+}

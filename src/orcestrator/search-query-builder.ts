@@ -4,14 +4,8 @@ import {
   buildSimilarContextsCore,
 } from "./cypher-builder.js";
 import {
-  buildCurrentContextStrictConditions,
-  buildCurrentContextFlexibleConditions,
-  buildTargetContextStrictConditions,
-  buildTargetContextFlexibleConditions,
-  buildPipelineCurrentStrictConditions,
-  buildPipelineCurrentFlexibleConditions,
-  buildPipelineTargetStrictConditions,
-  buildPipelineTargetFlexibleConditions,
+  buildContextStrictConditions,
+  buildContextFlexibleConditions,
 } from "./snippets-extractor.js";
 import type {
   ContextField,
@@ -38,9 +32,17 @@ export class SearchQueryBuilder {
     flexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    const whereClause =
-      buildCurrentContextStrictConditions(orderedStrictFields);
-    const scoreClause = buildCurrentContextFlexibleConditions(flexibleFields);
+    const whereClause = buildContextStrictConditions(
+      orderedStrictFields,
+      "candidateContext",
+      "$currentContext"
+    );
+    const scoreClause = buildContextFlexibleConditions(
+      flexibleFields,
+      "candidateContext",
+      "$currentContext",
+      "contextCompatibilityScore"
+    );
     return buildContextQuery(
       "all",
       whereClause,
@@ -54,14 +56,23 @@ export class SearchQueryBuilder {
     flexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    const whereClause = buildTargetContextStrictConditions(orderedStrictFields);
-    const scoreClause = buildTargetContextFlexibleConditions(flexibleFields);
+    const whereClause = buildContextStrictConditions(
+      orderedStrictFields,
+      "candidateContext",
+      "$targetContext"
+    );
+    const scoreClause = buildContextFlexibleConditions(
+      flexibleFields,
+      "candidateContext",
+      "$targetContext",
+      "contextCompatibilityScore"
+    );
     return buildContextQuery(
       "all",
       whereClause,
       scoreClause,
       searchConstraints,
-      "$targetContext" // Для Target Context Search используем $targetContext
+      "$targetContext"
     );
   }
 
@@ -72,15 +83,28 @@ export class SearchQueryBuilder {
     targetFlexibleFields: FlexibleField[],
     searchConstraints: SearchConstraints
   ): string {
-    // Используем специализированные функции для pipeline
-    const where1 = buildPipelineCurrentStrictConditions(
-      orderedCurrentStrictFields
+    const where1 = buildContextStrictConditions(
+      orderedCurrentStrictFields,
+      "candidateCurrentContext",
+      "$currentContext"
     );
-    const score1 = buildPipelineCurrentFlexibleConditions(
-      currentFlexibleFields
+    const score1 = buildContextFlexibleConditions(
+      currentFlexibleFields,
+      "candidateCurrentContext",
+      "$currentContext",
+      "currentContextCompatibilityScore"
     );
-    const where2 = buildPipelineTargetStrictConditions(targetStrictFields);
-    const score2 = buildPipelineTargetFlexibleConditions(targetFlexibleFields);
+    const where2 = buildContextStrictConditions(
+      targetStrictFields,
+      "candidateTargetContext",
+      "$targetContext"
+    );
+    const score2 = buildContextFlexibleConditions(
+      targetFlexibleFields,
+      "candidateTargetContext",
+      "$targetContext",
+      "targetContextCompatibilityScore"
+    );
 
     return buildPipelineQuery(
       where1,
@@ -137,8 +161,17 @@ export class SearchQueryBuilder {
       throw new Error(`Invalid current preset name: ${presetName}`);
     }
     const { strictFields, flexibleFields } = CURRENT_PRESETS[presetName]!;
-    const whereClause = buildCurrentContextStrictConditions(strictFields);
-    const scoreClause = buildCurrentContextFlexibleConditions(flexibleFields);
+    const whereClause = buildContextStrictConditions(
+      strictFields,
+      "candidateContext",
+      "$currentContext"
+    );
+    const scoreClause = buildContextFlexibleConditions(
+      flexibleFields,
+      "candidateContext",
+      "$currentContext",
+      "contextCompatibilityScore"
+    );
 
     // Use core logic for finding similar contexts
     const { cypherCode, userVar, contextVar, compatibilityScoreVar } =

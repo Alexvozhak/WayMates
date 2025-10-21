@@ -1,0 +1,42 @@
+{
+  "user_id": "usr_01JAB300000000000000000003",
+  "contexts": [
+    {
+      "context_id": "ctx_01JAB300000000000000000001",
+      "created_at": "2022-12-01T00:00:00Z",
+      "creation_reason": ["company_changed"],
+      "position": "VP of Engineering",
+      "industry": "IT",
+      "company_size": "1000+",
+      "domains": ["backend", "management"],
+      "skills": ["go", "microservices", "leadership"],
+      "work_type": "remote",
+      "team_size": 30,
+      "country_code": "US",
+      "city_name": "Austin",
+      "birth_year": 1985,
+      "citizenships": ["US"],
+      "previous_context_id": null,
+      "next_context_id": "ctx_01JAB300000000000000000002"
+    },
+    {
+      "context_id": "ctx_01JAB300000000000000000002",
+      "created_at": "2024-01-01T00:00:00Z",
+      "creation_reason": ["position_changed"],
+      "position": "CTO",
+      "industry": "IT",
+      "company_size": "1000+",
+      "domains": ["backend", "management", "architecture"],
+      "skills": ["go", "microservices", "leadership", "strategy", "executive"],
+      "work_type": "remote",
+      "team_size": 80,
+      "country_code": "US",
+      "city_name": "Austin",
+      "birth_year": 1985,
+      "citizenships": ["US"],
+      "previous_context_id": "ctx_01JAB300000000000000000001",
+      "next_context_id": null
+    }
+  ],
+  "trails": []
+}

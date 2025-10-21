@@ -54,7 +54,7 @@ MERGE (c)-[:IN_COUNTRY]->(cty)
 WITH c
 OPTIONAL MATCH (prev:Context {context_id: c.previous_context_id})
 FOREACH (_ IN CASE WHEN prev IS NOT NULL THEN [1] ELSE [] END |
-  MERGE (prev)-[:NEXT_CONTEXT]->(c)
+  MERGE (prev)-[:NEXT]->(c)
   SET prev.next_context_id = c.context_id
 )
 

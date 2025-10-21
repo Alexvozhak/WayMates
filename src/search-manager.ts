@@ -8,9 +8,10 @@ import type {
   CurrentOnlyResult,
   CurrentOnlyParams,
   CurrentOnlyReasonParams,
+  TargetOnlyReasonParams,
   ReasonCombination,
 } from "./schemas-zod.js";
-import { CurrentOnlyResultSchema, ReasonCombinationSchema, CurrentOnlyReasonParamsSchema } from "./schemas-zod.js";
+import { CurrentOnlyResultSchema, ReasonCombinationSchema, CurrentOnlyReasonParamsSchema, TargetOnlyReasonParamsSchema } from "./schemas-zod.js";
 import { SearchResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 import { SelectivityService } from "./services/selectivity.service.js";
@@ -430,10 +431,11 @@ export class SearchManager {
     const flexibleFields = presetConfig.flexibleFields;
     console.log("🎯 Flexible fields:", flexibleFields);
 
-    // Build reason-based query
+    // Build reason-based query with 'forward' direction
     const cypher = buildReasonBasedQuery(
       orderedStrictFields,
-      flexibleFields
+      flexibleFields,
+      'forward'
     );
 
     console.log("🔗 Generated Reason-Based Cypher Query:");
@@ -441,22 +443,23 @@ export class SearchManager {
     console.log(cypher);
     console.log("─".repeat(80));
 
+    // New parameter naming: searchContext, periodMonths
     const queryParams = {
-      currentContext: validatedParams.currentContext,
+      searchContext: validatedParams.currentContext,
       currentUserId: validatedParams.currentUserId,
-      lookaheadMonths: validatedParams.lookahead_months,
+      periodMonths: validatedParams.lookahead_months,
       requiredReasons: validatedParams.required_reasons ?? [],
       excludedReasons: validatedParams.excluded_reasons ?? [],
     };
     console.log("📦 Query parameters:", {
       currentUserId: queryParams.currentUserId,
-      lookaheadMonths: queryParams.lookaheadMonths,
+      periodMonths: queryParams.periodMonths,
       requiredReasons: queryParams.requiredReasons,
       excludedReasons: queryParams.excludedReasons,
-      currentContext: {
-        position: queryParams.currentContext.position,
-        domains: queryParams.currentContext.domains,
-        skills: queryParams.currentContext.skills?.slice(0, 3),
+      searchContext: {
+        position: queryParams.searchContext.position,
+        domains: queryParams.searchContext.domains,
+        skills: queryParams.searchContext.skills?.slice(0, 3),
       },
     });
 
@@ -518,6 +521,154 @@ export class SearchManager {
         currentContext: {
           position: validatedParams.currentContext.position,
           domains: validatedParams.currentContext.domains,
+        },
+      });
+    }
+
+    console.log(
+      "🎯 Reason-based results:",
+      parsedResults.map((r) => ({
+        combination: r.combination,
+        users_count: r.users_count,
+        avg_duration: r.stats.avg_duration_months,
+        median_duration_months: r.stats.median_duration_months,
+      }))
+    );
+
+    return parsedResults;
+  }
+
+  async searchTargetReasonBased(
+    params: TargetOnlyReasonParams
+  ): Promise<ReasonCombination[]> {
+    // Validate all parameters including lookback_months range
+    const validatedParams = TargetOnlyReasonParamsSchema.parse(params);
+
+    console.log(
+      "🎯 [SearchManager.searchTargetReasonBased] Starting reason-based target-only search"
+    );
+    console.log("📊 Input params:", {
+      currentUserId: validatedParams.currentUserId,
+      targetPreset: validatedParams.targetPreset,
+      lookback_months: validatedParams.lookback_months,
+      required_reasons: validatedParams.required_reasons,
+      excluded_reasons: validatedParams.excluded_reasons,
+      targetContext: {
+        position: validatedParams.targetContext.position,
+        domains: validatedParams.targetContext.domains,
+        skills: validatedParams.targetContext.skills?.slice(0, 3),
+        country_code: validatedParams.targetContext.country_code,
+      },
+    });
+
+    // Validate preset (target presets)
+    if (!isTargetPresetName(validatedParams.targetPreset)) {
+      throw new Error(`Invalid target preset name: ${validatedParams.targetPreset}`);
+    }
+
+    const presetConfig = TARGET_PRESETS[validatedParams.targetPreset]!;
+    console.log("⚙️ Preset config:", presetConfig);
+
+    // Rank strict fields by selectivity
+    const orderedStrictFields = await this.selectivity.rankStrictFields(
+      presetConfig.strictFields,
+      validatedParams.targetContext
+    );
+    console.log("📋 Ordered strict fields:", orderedStrictFields);
+
+    const flexibleFields = presetConfig.flexibleFields;
+    console.log("🎯 Flexible fields:", flexibleFields);
+
+    // Build reason-based query with 'backward' direction
+    const cypher = buildReasonBasedQuery(
+      orderedStrictFields,
+      flexibleFields,
+      'backward'
+    );
+
+    console.log("🔗 Generated Reason-Based Cypher Query (BACKWARD):");
+    console.log("─".repeat(80));
+    console.log(cypher);
+    console.log("─".repeat(80));
+
+    // New parameter naming: searchContext, periodMonths
+    const queryParams = {
+      searchContext: validatedParams.targetContext,
+      currentUserId: validatedParams.currentUserId,
+      periodMonths: validatedParams.lookback_months,
+      requiredReasons: validatedParams.required_reasons ?? [],
+      excludedReasons: validatedParams.excluded_reasons ?? [],
+    };
+    console.log("📦 Query parameters:", {
+      currentUserId: queryParams.currentUserId,
+      periodMonths: queryParams.periodMonths,
+      requiredReasons: queryParams.requiredReasons,
+      excludedReasons: queryParams.excludedReasons,
+      searchContext: {
+        position: queryParams.searchContext.position,
+        domains: queryParams.searchContext.domains,
+        skills: queryParams.searchContext.skills?.slice(0, 3),
+      },
+    });
+
+    let result;
+    try {
+      result = await withReadSession(this.driver, (tx) =>
+        tx.run(cypher, queryParams)
+      );
+    } catch (error) {
+      console.error(
+        "❌ [SearchManager.searchTargetReasonBased] Query execution failed:",
+        error
+      );
+      console.error("Query:", cypher);
+      console.error("Params:", queryParams);
+      throw new Error(
+        `Failed to execute reason-based search: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
+    console.log(
+      "✅ Reason-based query executed, records count:",
+      result.records.length
+    );
+
+    // Parse results using ReasonCombinationSchema
+    const parsedResults = result.records.map((rec, index) => {
+      const reasonCombinationResult = rec.get("reason_combination_result");
+
+      if (!reasonCombinationResult) {
+        console.error(
+          `❌ [SearchManager.searchTargetReasonBased] Record ${index} has null reason_combination_result`
+        );
+        throw new Error(
+          `Invalid query result: reason_combination_result is null at index ${index}`
+        );
+      }
+
+      try {
+        return ReasonCombinationSchema.parse(reasonCombinationResult);
+      } catch (error) {
+        console.error(
+          `❌ [SearchManager.searchTargetReasonBased] Failed to parse record ${index}:`,
+          error
+        );
+        console.error("Raw data:", reasonCombinationResult);
+        throw error;
+      }
+    });
+
+    if (parsedResults.length === 0) {
+      console.warn(
+        "⚠️ [SearchManager.searchTargetReasonBased] No reason combinations found for the given criteria"
+      );
+      console.warn("Debug info:", {
+        lookback_months: validatedParams.lookback_months,
+        required_reasons: validatedParams.required_reasons,
+        excluded_reasons: validatedParams.excluded_reasons,
+        targetContext: {
+          position: validatedParams.targetContext.position,
+          domains: validatedParams.targetContext.domains,
         },
       });
     }

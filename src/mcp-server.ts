@@ -6,6 +6,7 @@ import {
   CurrentToTargetParamsSchema,
   CurrentOnlyParamsSchema,
   CurrentOnlyReasonParamsSchema,
+  TargetOnlyReasonParamsSchema,
   TargetOnlyParamsSchema,
   StoryInputSchema,
   UserIdContextSchema,
@@ -115,6 +116,17 @@ export function createWayMatesServer(
       CurrentOnlyReasonParamsSchema,
       async (params) =>
         searchManager.searchCurrentReasonBased(params)
+    )
+  );
+
+  // Target Only - Reason Based (NEW)
+  server.addTool(
+    tool(
+      "target_only_reason_based",
+      "Analyze who achieved target position, grouped by life event combinations that led to it",
+      TargetOnlyReasonParamsSchema,
+      async (params) =>
+        searchManager.searchTargetReasonBased(params)
     )
   );
 

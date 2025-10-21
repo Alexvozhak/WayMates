@@ -79,12 +79,17 @@ describe("Reason-Based Search Integration Tests", () => {
     ctxFuture: string,
     duration: number
   ) => {
+    // Calculate future date based on duration parameter
+    const currentDate = new Date("2023-01-01T00:00:00Z");
+    const futureDate = new Date(currentDate);
+    futureDate.setMonth(futureDate.getMonth() + duration);
+
     const userStory = {
       user_id: userId,
       contexts: [
         {
           context_id: ctxCurrent,
-          created_at: "2023-01-01T00:00:00Z",
+          created_at: currentDate.toISOString(),
           creation_reason: ["started_working"],
           position: "Junior",
           industry: "IT",
@@ -102,7 +107,7 @@ describe("Reason-Based Search Integration Tests", () => {
         },
         {
           context_id: ctxFuture,
-          created_at: "2024-01-01T00:00:00Z",
+          created_at: futureDate.toISOString(),
           creation_reason: ["position_changed"],
           position: "Middle",
           industry: "IT",
