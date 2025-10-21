@@ -35,7 +35,6 @@ export type DeleteContextParams = z.infer<typeof DeleteContextParamsSchema>;
 export type SearchPresetOptions = z.infer<typeof SearchPresetOptionsSchema>;
 export type DeleteTrailParams = z.infer<typeof DeleteTrailParamsSchema>;
 export type PingParams = z.infer<typeof PingParamsSchema>;
-export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 // Graph-based result types
 export type UserGraphNode = z.infer<typeof UserGraphNodeSchema>;
@@ -445,15 +444,6 @@ export const AssignSkillToCategoryParamsSchema = z.object({
 export const SearchPresetOptionsSchema = z.object({
   currentPreset: z.string(),
   targetPreset: z.string(),
-});
-
-// === Search Result Schema ===
-export const SearchResultSchema = z.object({
-  userId: z.string(),
-  currentContext: z.nullable(UserContextSchema),
-  currentScore: z.nullable(z.number()),
-  targetContext: z.nullable(UserContextSchema),
-  targetScore: z.nullable(z.number()),
 });
 
 // === NEW: Graph-based Result Schemas ===

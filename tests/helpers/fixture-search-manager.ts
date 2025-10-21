@@ -7,7 +7,7 @@ import {
   UserContextSchema,
   TargetContextSchema,
   SearchConstraints,
-  SearchResult,
+  PipelineGraphResult,
 } from "../../src/schemas-zod.js";
 
 import { TestDataManager, type UserKey } from "./test-data-manager.js";
@@ -34,7 +34,7 @@ export class FixtureSearchManager {
     currentPreset: string,
     targetPreset: string,
     searchConstraints: SearchConstraints
-  ): Promise<SearchResult[]> {
+  ): Promise<PipelineGraphResult[]> {
     const userData = this.testDataManager.getStoryBy(userKey);
     await this.persistenceManager.upsertStory(userData);
 

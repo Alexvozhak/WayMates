@@ -258,7 +258,7 @@ describe("Search Manager Integration Tests", () => {
   });
 
   describe("Result Structure Validation", () => {
-    test("pipeline results have both current and target scores", async () => {
+    test("pipeline results have graph structure with match score", async () => {
       const res = await fixtureSearchManager.runPipeline(
         "U1",
         ["U2"],
@@ -269,16 +269,19 @@ describe("Search Manager Integration Tests", () => {
 
       if (res.length > 0) {
         res.forEach((result) => {
-          expect(result).toHaveProperty("userId");
-          expect(result).toHaveProperty("currentContext");
-          expect(result).toHaveProperty("targetContext");
-          // Scores can be null or numbers
-          if (result.currentScore !== null) {
-            expect(typeof result.currentScore).toBe("number");
-          }
-          if (result.targetScore !== null) {
-            expect(typeof result.targetScore).toBe("number");
-          }
+          // PipelineGraphResult structure
+          expect(result).toHaveProperty("user_id");
+          expect(result).toHaveProperty("match_score");
+          expect(result).toHaveProperty("user_graph");
+
+          // user_graph contains user node and matched contexts
+          expect(result.user_graph).toHaveProperty("user");
+          expect(result.user_graph).toHaveProperty("matched_current_context");
+          expect(result.user_graph).toHaveProperty("matched_target_context");
+
+          // match_score is combined (current + target)
+          expect(typeof result.match_score).toBe("number");
+          expect(result.match_score).toBeGreaterThanOrEqual(0);
         });
       }
     });

@@ -3,14 +3,14 @@ import { SearchQueryBuilder } from "./orcestrator/search-query-builder.js";
 import type {
   UserContext,
   TargetContext,
-  SearchResult,
+  PipelineGraphResult,
   SearchConstraints,
   CurrentOnlyReasonParams,
   TargetOnlyReasonParams,
   ReasonCombination,
 } from "./schemas-zod.js";
 import { ReasonCombinationSchema, CurrentOnlyReasonParamsSchema, TargetOnlyReasonParamsSchema } from "./schemas-zod.js";
-import { SearchResultSchema } from "./schemas-zod.js";
+import { PipelineGraphResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 import { SelectivityService } from "./services/selectivity.service.js";
 import {
@@ -35,7 +35,7 @@ export class SearchManager {
     targetContext: TargetContext,
     currentUserId: string,
     searchConstraints: SearchConstraints
-  ): Promise<SearchResult[]> {
+  ): Promise<PipelineGraphResult[]> {
     console.log("🔀 [SearchManager.searchPipeline] Starting pipeline search");
     console.log("📊 Input params:", {
       currentPreset,
@@ -122,22 +122,27 @@ export class SearchManager {
       result.records.length
     );
 
-    const parsedResults = result.records.map((rec) =>
-      SearchResultSchema.parse({
-        userId: rec.get("userId"),
-        currentContext: rec.get("currentContext"),
-        currentScore: rec.get("currentScore"),
-        targetContext: rec.get("targetContext"),
-        targetScore: rec.get("targetScore"),
-      })
-    );
+    const parsedResults = result.records.map((rec) => {
+      const userId = rec.get("userId") as string;
+      const currentScore = rec.get("currentScore") as number;
+      const targetScore = rec.get("targetScore") as number;
+
+      return PipelineGraphResultSchema.parse({
+        user_id: userId,
+        match_score: currentScore + targetScore,
+        user_graph: {
+          user: { user_id: userId },
+          matched_current_context: rec.get("currentContext"),
+          matched_target_context: rec.get("targetContext"),
+        },
+      });
+    });
 
     console.log(
       "🎯 Pipeline results:",
       parsedResults.map((r) => ({
-        userId: r.userId,
-        currentScore: r.currentScore,
-        targetScore: r.targetScore,
+        user_id: r.user_id,
+        match_score: r.match_score,
       }))
     );
 

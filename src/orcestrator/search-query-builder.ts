@@ -1,5 +1,4 @@
 import {
-  buildContextQuery,
   buildPipelineQuery,
 } from "./cypher-builder.js";
 import {
@@ -23,54 +22,6 @@ export class SearchQueryBuilder {
     }
   }
 
-  public constructCurrentContextQuery(
-    orderedStrictFields: ContextField[],
-    flexibleFields: FlexibleField[],
-    searchConstraints: SearchConstraints
-  ): string {
-    const whereClause = buildContextStrictConditions(
-      orderedStrictFields,
-      "candidateContext",
-      "$currentContext"
-    );
-    const scoreClause = buildContextFlexibleConditions(
-      flexibleFields,
-      "candidateContext",
-      "$currentContext",
-      "contextCompatibilityScore"
-    );
-    return buildContextQuery(
-      "all",
-      whereClause,
-      scoreClause,
-      searchConstraints
-    );
-  }
-
-  public constructTargetContextQuery(
-    orderedStrictFields: ContextField[],
-    flexibleFields: FlexibleField[],
-    searchConstraints: SearchConstraints
-  ): string {
-    const whereClause = buildContextStrictConditions(
-      orderedStrictFields,
-      "candidateContext",
-      "$targetContext"
-    );
-    const scoreClause = buildContextFlexibleConditions(
-      flexibleFields,
-      "candidateContext",
-      "$targetContext",
-      "contextCompatibilityScore"
-    );
-    return buildContextQuery(
-      "all",
-      whereClause,
-      scoreClause,
-      searchConstraints,
-      "$targetContext"
-    );
-  }
 
   public constructPipelineQuery(
     orderedCurrentStrictFields: ContextField[],
