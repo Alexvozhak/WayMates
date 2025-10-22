@@ -8,12 +8,12 @@ import {
 } from "vitest";
 
 import type { Driver } from "neo4j-driver";
-import { createDriver, withWriteSession } from "../../src/neo4j.js";
-import { PersistenceManager } from "../../src/persistence-manager.js";
-import { SearchManager } from "../../src/search-manager.js";
-import { SearchQueryBuilder } from "../../src/orcestrator/search-query-builder.js";
-import { SelectivityService } from "../../src/services/selectivity.service.js";
-import { DEFAULT_CONSTRAINTS } from "../../src/config.js";
+import { createDriver, withWriteSession } from "../../../src/neo4j.js";
+import { PersistenceManager } from "../../../src/persistence-manager.js";
+import { SearchManager } from "../../../src/search-manager.js";
+import { SearchQueryBuilder } from "../../../src/orcestrator/search-query-builder.js";
+import { SelectivityService } from "../../../src/services/selectivity.service.js";
+import { DEFAULT_CONSTRAINTS } from "../../../src/config.js";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { ulid } from "ulid";

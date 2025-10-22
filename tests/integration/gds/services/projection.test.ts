@@ -2,34 +2,59 @@
  * Unit tests for GdsProjectionService
  *
  * Tests projection lifecycle: create → reuse → drop
+ *
+ * NOTE: This test suite does NOT use shared setup.ts because it tests
+ * projection lifecycle (create/drop operations). It loads test data
+ * independently to avoid conflicts with other tests.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { GdsProjectionService } from '../../src/gds/services/gds-projection.service.js';
-import { createDriver } from '../../src/neo4j.js';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { GdsProjectionService } from '../../../../src/gds/services/gds-projection.service.js';
+import { createDriver, withWriteSession } from '../../../../src/neo4j.js';
+import { PersistenceManager } from '../../../../src/persistence-manager.js';
+import { TestDataManager } from '../../../helpers/test-data-manager.js';
 import type { Driver } from 'neo4j-driver';
 
 describe('GdsProjectionService', () => {
   let service: GdsProjectionService;
   let driver: Driver;
 
-  beforeEach(async () => {
-    // Use test environment (neo4j-test with GDS plugin)
+  beforeAll(async () => {
+    // Load test data once for projection tests
     driver = createDriver();
+    const persistenceManager = new PersistenceManager(driver);
+    const testDataManager = new TestDataManager();
+
+    await withWriteSession(driver, async (tx) => {
+      await tx.run('MATCH (n) DETACH DELETE n');
+    });
+
+    const userKeys = testDataManager.getAvailableKeys();
+    for (const userKey of userKeys) {
+      const story = testDataManager.getStoryBy(userKey);
+      await persistenceManager.upsertStory(story);
+    }
+
+    console.log(`✅ [Projection Tests] Loaded ${userKeys.length} test users (U1-U7)`);
+  }, 60000);
+
+  beforeEach(async () => {
     service = new GdsProjectionService(driver);
   });
 
   afterEach(async () => {
-    // Cleanup: drop all WayMates projections to avoid pollution
+    // Cleanup: drop all WayMates projections after each test
     const projections = await service.listProjections();
     for (const proj of projections.filter((p) =>
       p.graphName.startsWith('waymates-')
     )) {
       await service.dropProjection(proj.graphName);
     }
-
-    await driver.close();
   });
+
+  afterAll(async () => {
+    await driver.close();
+  }, 30000);
 
   describe('ensureSkillsGraphProjection', () => {
     it('should create skills graph projection', async () => {

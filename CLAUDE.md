@@ -390,6 +390,39 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 - Extract helper functions for repeated logic
 - Avoid spread operator when possible
 
+### DRY (Don't Repeat Yourself) Principle
+
+**CRITICAL**: Duplication of 100+ line methods is a CODE SMELL that must be caught proactively.
+
+**Red flags for duplication:**
+1. **Adjacent methods differing only in constants** - e.g., `findByJaccard` vs `findByOverlap` where only the algorithm name changes
+2. **Similar method signatures** - Same parameter lists, same return types, similar names
+3. **Near-identical implementations** - 95%+ code overlap with minimal variation
+
+**Refactoring strategy:**
+- Use **generic type parameters** instead of duplicate methods: `findSimilarBy(algorithm: 'Jaccard' | 'Overlap', ...)`
+- Extract **configuration constants** to objects: `DEFAULT_CUTOFFS: Record<Algorithm, number>`
+- Keep **deprecated wrappers** for backward compatibility if needed
+
+**Agent responsibilities:**
+- `waymates-code-reviewer` → Flag adjacent methods with high similarity (>90%)
+- `waymates-tech-lead` → Review entire file/class for DRY violations before final approval
+- Both agents should check for this BEFORE user has to point it out
+
+**Example of good refactoring:**
+```typescript
+// ❌ BAD: 170 lines of duplication
+async findSimilarByJaccard(...) { /* 85 lines */ }
+async findSimilarByOverlap(...) { /* 85 lines */ }
+
+// ✅ GOOD: Unified with type parameter
+async findSimilarBy(algorithm: 'Jaccard' | 'Overlap', ...) { /* 85 lines */ }
+
+// Backward compatibility wrappers (optional, 3 lines each)
+async findSimilarByJaccard(...) { return this.findSimilarBy('Jaccard', ...); }
+async findSimilarByOverlap(...) { return this.findSimilarBy('Overlap', ...); }
+```
+
 ### Naming
 - Use canonical Cypher variable names (see table above)
 - Keep Cypher variable names consistent across query blocks

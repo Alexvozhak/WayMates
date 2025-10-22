@@ -11,6 +11,11 @@ export default defineConfig(() => {
       hookTimeout: 30000,
       environment: "node",
 
+      // Projects run SEQUENTIALLY (avoid data race between projects)
+      sequence: {
+        concurrent: false, // Projects use different datasets, must not run in parallel
+      },
+
       // Projects для разных типов тестов с разной изоляцией
       projects: [
         {
@@ -26,18 +31,53 @@ export default defineConfig(() => {
             testTimeout: 10000,
           },
         },
+        // ===== GDS Projection Tests (lifecycle: create/drop) =====
         {
           test: {
-            name: "integration",
-            include: ["tests/integration/**/*.test.ts"],
+            name: "gds-projection-tests",
+            include: ["tests/integration/gds/services/projection.test.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
-                isolate: true, // Изоляция глобального состояния для БД тестов
-                singleThread: true, // Отключаем параллельное выполнение тестов
+                isolate: true,
+                singleThread: true, // Sequential (modifies projection state)
               },
             },
-            // setupFiles: ["./tests/helpers/database-setup.ts"],
+            // NO setupFiles - test manages its own projections
+            testTimeout: 30000,
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
+        // ===== GDS Similarity Tests (read-only algorithms) =====
+        {
+          test: {
+            name: "gds-similarity-tests",
+            include: ["tests/integration/gds/services/similarity.test.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: true,
+                singleThread: false, // Parallel (read-only, shared projection)
+              },
+            },
+            setupFiles: ["./tests/integration/gds/setup.ts"], // Load U1-U7 + create projection once
+            testTimeout: 120000,
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
+        // ===== Reason-Based Tests (dynamic user creation) =====
+        {
+          test: {
+            name: "reason-tests",
+            include: ["tests/integration/reason-based/**/*.test.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: true, // Изоляция глобального состояния
+                singleThread: true, // Shared driver within project
+              },
+            },
+            setupFiles: ["./tests/integration/reason-based/setup.ts"], // Import Reasons once
             testTimeout: 45000, // Больше времени для БД операций
             env: loadEnv("test", process.cwd(), ""),
           },
