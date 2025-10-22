@@ -121,6 +121,7 @@ export class GdsSimilarityService {
    *   - Good for "find people with AT LEAST these skills"
    *
    * Implementation:
+   * - Automatically excludes the user who owns searchContext (no need to pass user_id!)
    * - Uses MATCH + WHERE to filter candidate contexts
    * - Collects filtered nodes into array
    * - Passes node collection to GDS targetNodeFilter (not string expression)
@@ -128,7 +129,6 @@ export class GdsSimilarityService {
    *
    * @param algorithm - Similarity metric to use ('Jaccard' or 'Overlap')
    * @param searchContextId - Context ID to find similarities for
-   * @param excludeUserId - User ID to exclude from results (usually current user)
    * @param filters - Optional filters (position, industry, country, etc.)
    * @param topK - Max number of results (default: 100)
    * @param similarityCutoff - Min similarity score (default: depends on algorithm)
@@ -137,7 +137,6 @@ export class GdsSimilarityService {
   async findSimilarBy(
     algorithm: SimilarityAlgorithm,
     searchContextId: string,
-    excludeUserId: string,
     filters?: SimilarityFilters,
     topK: number = 100,
     similarityCutoff?: number
@@ -148,9 +147,6 @@ export class GdsSimilarityService {
     // Validate parameters (bug #2, #14, #15)
     if (!searchContextId || searchContextId.trim() === '') {
       throw new Error('searchContextId is required and cannot be empty');
-    }
-    if (!excludeUserId || excludeUserId.trim() === '') {
-      throw new Error('excludeUserId is required and cannot be empty');
     }
     if (topK < 1) {
       throw new Error(`topK must be >= 1, got: ${topK}`);
@@ -164,7 +160,6 @@ export class GdsSimilarityService {
 
     console.log(`🔍 [GDS Similarity] Finding similar contexts (${algorithm.toUpperCase()})`);
     console.log(`   Search context: ${searchContextId}`);
-    console.log(`   Exclude user: ${excludeUserId}`);
     console.log(`   Filters:`, filters);
     console.log(`   TopK: ${topK}, Cutoff: ${cutoff}`);
 
@@ -184,10 +179,12 @@ export class GdsSimilarityService {
     }
 
     // 3. Count candidate contexts BEFORE running GDS (bug #12 fix: avoid empty targetNodes)
+    // Also get searchUser to exclude their contexts
     const countQuery = `
-      MATCH (searchCtx:Context {context_id: $searchContextId})
-      MATCH (candidateCtx:Context)
+      MATCH (searchUser:User)-[:HAS_CONTEXT]->(searchCtx:Context {context_id: $searchContextId})
+      MATCH (candidateUser:User)-[:HAS_CONTEXT]->(candidateCtx:Context)
       WHERE candidateCtx <> searchCtx
+        AND candidateUser.user_id <> searchUser.user_id
         ${filters?.position ? 'AND candidateCtx.position = $filterPosition' : ''}
         ${filters?.industry ? 'AND candidateCtx.industry = $filterIndustry' : ''}
         ${filters?.country_code ? 'AND candidateCtx.country_code = $filterCountryCode' : ''}
@@ -222,9 +219,10 @@ export class GdsSimilarityService {
     // CRITICAL: GDS projection only includes Context, Skill, WorkDomain (NOT User!)
     // So we filter by properties on Context nodes, then filter by user_id AFTER GDS call
     const query = `
-      MATCH (searchCtx:Context {context_id: $searchContextId})
-      MATCH (candidateCtx:Context)
+      MATCH (searchUser:User)-[:HAS_CONTEXT]->(searchCtx:Context {context_id: $searchContextId})
+      MATCH (candidateUser:User)-[:HAS_CONTEXT]->(candidateCtx:Context)
       WHERE candidateCtx <> searchCtx
+        AND candidateUser.user_id <> searchUser.user_id
         ${filters?.position ? 'AND candidateCtx.position = $filterPosition' : ''}
         ${filters?.industry ? 'AND candidateCtx.industry = $filterIndustry' : ''}
         ${filters?.country_code ? 'AND candidateCtx.country_code = $filterCountryCode' : ''}
@@ -242,8 +240,6 @@ export class GdsSimilarityService {
       })
       YIELD node2, similarity
       WITH gds.util.asNode(node2) AS candidateContext, similarity
-      MATCH (u:User)-[:HAS_CONTEXT]->(candidateContext)
-      WHERE u.user_id <> $excludeUserId
       RETURN candidateContext.context_id AS context_id, similarity AS match_score
       ORDER BY match_score DESC
     `;
@@ -251,7 +247,6 @@ export class GdsSimilarityService {
     const result = await withReadSession(this.driver, (tx) =>
       tx.run(query, {
         searchContextId,
-        excludeUserId,
         similarityMetric: algorithm.toUpperCase(), // 'JACCARD' or 'OVERLAP'
         topK: int(topK),  // GDS requires Integer, not Double
         similarityCutoff: cutoff,

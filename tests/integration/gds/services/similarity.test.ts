@@ -22,7 +22,6 @@ interface SimilarityTestCase {
   name: string;
   algorithm: SimilarityAlgorithm;
   searchUser: 'U1' | 'U2' | 'U3' | 'U4' | 'U5' | 'U6' | 'U7';
-  excludeUser: 'U1' | 'U2' | 'U3' | 'U4' | 'U5' | 'U6' | 'U7';
   contextIndex?: number; // which context from user's story to use (default: 0)
   filters?: SimilarityFilters;
   topK?: number;
@@ -37,7 +36,6 @@ interface ValidationErrorTestCase {
   name: string;
   algorithm: SimilarityAlgorithm;
   searchContextId: string;
-  excludeUserId: string;
   filters?: SimilarityFilters;
   topK?: number;
   similarityCutoff?: number;
@@ -60,7 +58,6 @@ describe('GdsSimilarityService', () => {
         name: 'Overlap algorithm finds similar contexts',
         algorithm: 'Overlap',
         searchUser: 'U1',
-        excludeUser: 'U1',
         topK: 10,
         similarityCutoff: 0.1,
         shouldReturnResults: true,
@@ -69,7 +66,6 @@ describe('GdsSimilarityService', () => {
         name: 'Jaccard algorithm finds similar contexts',
         algorithm: 'Jaccard',
         searchUser: 'U1',
-        excludeUser: 'U1',
         topK: 10,
         similarityCutoff: 0.3,
         shouldReturnResults: true,
@@ -78,7 +74,6 @@ describe('GdsSimilarityService', () => {
         name: 'Overlap uses default cutoff 0.1 when not specified',
         algorithm: 'Overlap',
         searchUser: 'U1',
-        excludeUser: 'U1',
         topK: 10,
         // similarityCutoff: undefined - should use default 0.1
         shouldReturnResults: true,
@@ -87,7 +82,6 @@ describe('GdsSimilarityService', () => {
         name: 'Jaccard uses default cutoff 0.3 when not specified',
         algorithm: 'Jaccard',
         searchUser: 'U1',
-        excludeUser: 'U1',
         topK: 10,
         // similarityCutoff: undefined - should use default 0.3
         shouldReturnResults: true,
@@ -98,12 +92,10 @@ describe('GdsSimilarityService', () => {
       it(testCase.name, async () => {
         const story = testDataManager.getStoryBy(testCase.searchUser);
         const searchContextId = story.contexts[testCase.contextIndex ?? 0]!.context_id;
-        const excludeUserId = story.user_id;
 
         const results = await similarityService.findSimilarBy(
           testCase.algorithm,
           searchContextId,
-          excludeUserId,
           testCase.filters,
           testCase.topK ?? 100,
           testCase.similarityCutoff
@@ -141,7 +133,6 @@ describe('GdsSimilarityService', () => {
         name: 'filters by position',
         algorithm: 'Overlap',
         searchUser: 'U1',
-        excludeUser: 'U1',
         filters: { position: 'Senior' }, // will be populated from U1's context
         topK: 10,
       },
@@ -149,7 +140,6 @@ describe('GdsSimilarityService', () => {
         name: 'filters by industry',
         algorithm: 'Overlap',
         searchUser: 'U1',
-        excludeUser: 'U1',
         filters: { industry: 'IT' },
         topK: 10,
       },
@@ -157,7 +147,6 @@ describe('GdsSimilarityService', () => {
         name: 'filters by country_code',
         algorithm: 'Overlap',
         searchUser: 'U1',
-        excludeUser: 'U1',
         filters: { country_code: 'US' },
         topK: 10,
       },
@@ -168,7 +157,6 @@ describe('GdsSimilarityService', () => {
         const story = testDataManager.getStoryBy(testCase.searchUser);
         const context = story.contexts[testCase.contextIndex ?? 0]!;
         const searchContextId = context.context_id;
-        const excludeUserId = story.user_id;
 
         // Populate filter with actual context data if needed
         const filters = { ...testCase.filters };
@@ -179,7 +167,6 @@ describe('GdsSimilarityService', () => {
         const results = await similarityService.findSimilarBy(
           testCase.algorithm,
           searchContextId,
-          excludeUserId,
           filters,
           testCase.topK ?? 100
         );
@@ -196,7 +183,6 @@ describe('GdsSimilarityService', () => {
         name: 'throws error for non-existent searchContextId (bug #1 fix)',
         algorithm: 'Overlap',
         searchContextId: 'nonexistent-context-123',
-        excludeUserId: 'some-user',
         topK: 10,
         expectedError: 'Context nonexistent-context-123 not found',
       },
@@ -204,7 +190,6 @@ describe('GdsSimilarityService', () => {
         name: 'throws error for topK = 0 (bug #2 fix)',
         algorithm: 'Overlap',
         searchContextId: '', // will be populated
-        excludeUserId: 'user_01',
         topK: 0,
         expectedError: 'topK must be >= 1',
       },
@@ -212,7 +197,6 @@ describe('GdsSimilarityService', () => {
         name: 'throws error for negative topK (bug #2 fix)',
         algorithm: 'Overlap',
         searchContextId: '', // will be populated
-        excludeUserId: 'user_01',
         topK: -5,
         expectedError: 'topK must be >= 1',
       },
@@ -220,7 +204,6 @@ describe('GdsSimilarityService', () => {
         name: 'throws error for similarityCutoff > 1.0 (bug #2 fix)',
         algorithm: 'Overlap',
         searchContextId: '', // will be populated
-        excludeUserId: 'user_01',
         topK: 10,
         similarityCutoff: 1.5,
         expectedError: 'similarityCutoff must be in [0.0, 1.0]',
@@ -229,32 +212,14 @@ describe('GdsSimilarityService', () => {
         name: 'throws error for negative similarityCutoff (bug #2 fix)',
         algorithm: 'Overlap',
         searchContextId: '', // will be populated
-        excludeUserId: 'user_01',
         topK: 10,
         similarityCutoff: -0.1,
         expectedError: 'similarityCutoff must be in [0.0, 1.0]',
       },
       {
-        name: 'throws error for empty excludeUserId (bug #8 fix)',
-        algorithm: 'Overlap',
-        searchContextId: '', // will be populated
-        excludeUserId: '',
-        topK: 10,
-        expectedError: 'excludeUserId is required and cannot be empty',
-      },
-      {
-        name: 'throws error for whitespace-only excludeUserId (bug #8 fix)',
-        algorithm: 'Overlap',
-        searchContextId: '', // will be populated
-        excludeUserId: '   ',
-        topK: 10,
-        expectedError: 'excludeUserId is required and cannot be empty',
-      },
-      {
         name: 'throws error for empty searchContextId (bug #14 fix)',
         algorithm: 'Overlap',
         searchContextId: '',
-        excludeUserId: 'some-user',
         topK: 10,
         expectedError: 'searchContextId is required and cannot be empty',
       },
@@ -262,7 +227,6 @@ describe('GdsSimilarityService', () => {
         name: 'throws error for whitespace-only searchContextId (bug #14 fix)',
         algorithm: 'Overlap',
         searchContextId: '   ',
-        excludeUserId: 'some-user',
         topK: 10,
         expectedError: 'searchContextId is required and cannot be empty',
       },
@@ -282,7 +246,6 @@ describe('GdsSimilarityService', () => {
           similarityService.findSimilarBy(
             testCase.algorithm,
             searchContextId,
-            testCase.excludeUserId,
             testCase.filters,
             testCase.topK ?? 10,
             testCase.similarityCutoff
@@ -296,10 +259,9 @@ describe('GdsSimilarityService', () => {
     it('should NOT drop projection after each call (persists for concurrent requests)', async () => {
       const u1Story = testDataManager.getStoryBy('U1');
       const searchContextId = u1Story.contexts[0]!.context_id;
-      const excludeUserId = u1Story.user_id;
 
       // First call - creates projection
-      await similarityService.findSimilarBy('Overlap', searchContextId, excludeUserId, undefined, 5);
+      await similarityService.findSimilarBy('Overlap', searchContextId, undefined, 5);
 
       // Check projection still exists (bug #3 fix - projection persists)
       const existsAfterFirstCall = await projectionService.projectionExists(
@@ -308,7 +270,7 @@ describe('GdsSimilarityService', () => {
       expect(existsAfterFirstCall).toBe(true);
 
       // Second call - reuses projection
-      await similarityService.findSimilarBy('Jaccard', searchContextId, excludeUserId, undefined, 5);
+      await similarityService.findSimilarBy('Jaccard', searchContextId, undefined, 5);
 
       // Projection should STILL exist
       const existsAfterSecondCall = await projectionService.projectionExists(
