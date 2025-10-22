@@ -82,6 +82,23 @@ export default defineConfig(() => {
             env: loadEnv("test", process.cwd(), ""),
           },
         },
+        // ===== Reason Analytics Tests (Cypher analytics queries) =====
+        {
+          test: {
+            name: "reason-analytics-tests",
+            include: ["tests/integration/reason-analytics/**/*.test.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: true,
+                singleThread: false, // Parallel (read-only Cypher queries)
+              },
+            },
+            setupFiles: ["./tests/integration/reason-analytics/setup.ts"], // Load U8-U9 + create NEXT relationships
+            testTimeout: 60000,
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
         // {
         //   test: {
         //     name: "functional",

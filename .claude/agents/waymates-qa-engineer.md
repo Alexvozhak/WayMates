@@ -44,12 +44,35 @@ Tests are based on **business logic** (documentation, requirements, expectations
 2. **Integration Tests** (`tests/integration/**/*.test.ts`)
    - Real Neo4j test database (`neo4j-integration`, port 7689:7687, 7476:7474)
    - Test managers, full query execution
-   - Sequential execution (no parallelism)
+   - **Vitest Projects Architecture** (see below)
    - Run: `npm run test:integration`
 
 3. **Functional Tests** (`tests/functional/**/*.test.ts`)
    - End-to-end scenarios
    - Currently in development
+
+### Vitest Projects Architecture (CRITICAL)
+
+**Why projects?** Isolate different test suites with different DB fixtures and parallelism strategies.
+
+**Projects run SEQUENTIALLY** (`sequence.concurrent: false`) - avoid data race between projects.
+
+**4 Integration Projects**:
+```typescript
+1. "unit" - No DB, parallel threads
+2. "gds-projection-tests" - Lifecycle (create/drop), singleThread: true
+3. "gds-similarity-tests" - Read-only, singleThread: false (parallel), setupFiles: U1-U7
+4. "reason-tests" - Dynamic user creation, singleThread: true, setupFiles: import reasons
+5. "reason-analytics-tests" - Read-only Cypher, singleThread: false (parallel), setupFiles: U8-U9
+```
+
+**Key Rules:**
+- ✅ **singleThread: true** for tests that modify DB (create/delete/update)
+- ✅ **singleThread: false** for read-only tests (can run in parallel within project)
+- ✅ **setupFiles** loads fixtures ONCE before all tests in project
+- ✅ **isolate: true** isolates global state between test files
+- ❌ **DON'T add new integration tests to wrong project** - check vitest.config.ts `include` patterns first
+- ❌ **DON'T assume parallel execution** - projects run sequentially, but tests within project may run parallel
 
 ### 🚨 CRITICAL: Mocks vs Reality
 
@@ -248,8 +271,10 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 Rules:
 - ❌ **DON'T** dump JSON structures inside test files
 - ✅ **DO** create separate JSON files (`user_edge_cases_01.json`, `user_large_dataset_01.json`)
-- ✅ **DO** follow existing naming patterns
+- ✅ **DO** follow existing naming patterns (U1-U9 convention)
 - ✅ **DO** reference fixtures by `user_id` in tests
+- ✅ **DO** reuse `UserKey` type from test-data-manager.ts
+- ✅ **DO** reuse TestDataManager helpers (not custom loaders)
 
 **Example:**
 ```typescript
@@ -266,6 +291,42 @@ it('handles null creation_reason', async () => {
   expect(results.find(r => r.user.user_id === 'user_edge_01')).toBeDefined();
 });
 ```
+
+### Fixture Schema Compliance
+
+**MANDATORY** before creating test data:
+
+```bash
+# Check validation patterns
+grep -A 2 "ULID_PATTERN\|USER_ID_PATTERN" src/schemas-zod.ts
+
+# Verify format matches existing
+cat data/trails/users/u1.json | jq '.user_id, .contexts[0].context_id'
+```
+
+**Format requirements:**
+- ULID: **26 chars** exactly, valid Crockford Base32 charset
+- ISO dates: `"2025-01-01T00:00:00Z"` format (trailing Z required)
+- Enum values: exact match with schemas (e.g., `"startup"` not `"Startup"`)
+
+## Test Design Principles
+
+### KISS over Coverage Theater
+
+❌ **Avoid "coverage theater"** - tests checking obvious things:
+```typescript
+// ❌ BAD - testing obvious invariants
+expect(result.transitionsCount).toBeGreaterThan(0); // If result exists, count > 0 is obvious
+
+// ❌ BAD - validating without business justification
+expect(result.minDuration).toBeLessThan(result.maxDuration); // Math works, no need to test
+```
+
+✅ **Focus on:**
+- Business logic correctness (calculations, aggregations)
+- Data integrity constraints with business meaning (median between p25-p75 = domain rule)
+- Edge cases (null handling, empty arrays, division by zero)
+- Unexpected scenarios (concurrent requests, malformed input)
 
 ## Priority
 

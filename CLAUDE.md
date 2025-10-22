@@ -274,6 +274,26 @@ Neo4j's `WITH` clause drops all variables not explicitly listed:
 
 Always verify variable consistency across `WITH` clauses in multi-step queries.
 
+### Cypher Map Projection (Clean Object Return)
+
+**Return objects directly from Cypher instead of field mapping in TypeScript:**
+
+```cypher
+// ✅ GOOD - Type conversions in Cypher
+RETURN {
+  reason: reason,
+  avgDuration: avgDuration,
+  transitionsCount: toInteger(count(*))
+} AS result
+```
+
+```typescript
+// ✅ Clean TypeScript - single cast
+return records.map(record => record.get('result') as MyType);
+```
+
+**Common conversions**: `toInteger(count(*))`, `toFloat(value)`, `toString(value)`
+
 ### Preset System
 
 Presets (`src/orcestrator/presets.ts`) define common search configurations:
@@ -317,11 +337,32 @@ Presets (`src/orcestrator/presets.ts`) define common search configurations:
 2. **Integration Tests** (`tests/integration/**/*.test.ts`)
    - Real Neo4j test database (`neo4j-test` container)
    - Test managers, full query execution
-   - Sequential execution (no parallelism)
+   - **Vitest Projects Architecture** (see vitest.config.ts)
    - Run: `npm run test:integration`
 
 3. **Functional Tests** (`tests/functional/**/*.test.ts`)
    - Currently disabled, planned for end-to-end scenarios
+
+### Vitest Projects (Integration Tests)
+
+**Critical Architecture**: Integration tests use **Vitest projects** for DB fixture isolation and parallelism control.
+
+**Projects run SEQUENTIALLY** (`sequence.concurrent: false`) to avoid data races between projects.
+
+**5 Projects**:
+- `unit` - No DB, parallel execution
+- `gds-projection-tests` - Lifecycle tests (create/drop projections), **singleThread: true**
+- `gds-similarity-tests` - Read-only algorithms, **singleThread: false** (parallel), setupFiles: U1-U7
+- `reason-tests` - Dynamic user creation, **singleThread: true**, setupFiles: import reasons
+- `reason-analytics-tests` - Read-only Cypher, **singleThread: false** (parallel), setupFiles: U8-U9
+
+**Key Patterns**:
+- **singleThread: true** - for tests that modify DB state
+- **singleThread: false** - for read-only tests (safe to parallelize)
+- **setupFiles** - loads fixtures ONCE before all tests in project
+- **isolate: true** - isolates global state between test files
+
+**Adding New Tests**: Check `vitest.config.ts` for correct project `include` pattern.
 
 ### Test Database Isolation
 
@@ -427,6 +468,39 @@ async findSimilarByOverlap(...) { return this.findSimilarBy('Overlap', ...); }
 - Use canonical Cypher variable names (see table above)
 - Keep Cypher variable names consistent across query blocks
 - Use descriptive names for TypeScript functions and variables
+
+### Data Format Standards (Week 1 Lessons)
+
+**ULID Format**:
+- **26 characters** exactly (e.g., `usr_01JAA000000000000000001`)
+- Valid Crockford Base32 charset only
+- Check schemas: `grep "ULID_PATTERN" src/schemas-zod.ts`
+
+**ISO Date Format**:
+- `"2025-01-01T00:00:00Z"` (trailing Z required)
+- Use `new Date().toISOString()` in TypeScript
+- Calculate timestamps based on duration, not hardcoded dates
+
+**Enum Values**:
+- Exact match with schemas: `"startup"` not `"Startup"`
+- Check schema definitions before creating test data
+
+### Test Infrastructure Reuse (Week 1 Lessons)
+
+**DRY in Tests**:
+- Reuse `UserKey` type from `test-data-manager.ts`
+- Reuse `TestDataManager` helpers (not custom loaders)
+- Follow U1-U9 fixture naming convention
+
+**KISS over Coverage Theater**:
+- Don't test obvious invariants (`transitionsCount > 0` when result exists)
+- Don't validate math without business justification (`min < max` is obvious)
+- Focus on business logic correctness, not obvious truths
+
+**Preemptive Optimization Detection**:
+- Flag generic `min*`, `max*`, `cutoff` parameters without business justification
+- Hardcode unless there's explicit requirement for configurability
+- Example: `minTransitionsCount: 1` - why is this a parameter?
 
 ### Documentation Files
 - Dated format: `YYYY_MM_DD_HH_MM_название.md` (Russian naming)

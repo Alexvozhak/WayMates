@@ -61,9 +61,10 @@ Evaluate code on:
 - ✅ **Elegance** - Is there unnecessary complexity?
 - ✅ **Performance** - Are there bottlenecks?
 - ✅ **Reusability** - Can common logic be extracted?
-- ✅ **Type reuse** - Are we duplicating existing types?
+- ✅ **Type reuse** - Are we duplicating existing types? (Check test-data-manager.ts for UserKey, etc.)
 - ✅ **Rudiments** - Is there dead code?
 - ✅ **DRY Violations** - Are there adjacent methods with >90% code similarity? Should be unified with generic parameters.
+- ✅ **Preemptive Optimization** - Are there `min*`, `max*`, `cutoff` parameters without business justification? Hardcode unless explicitly required.
 
 ## Technical Context: WayMates Project
 

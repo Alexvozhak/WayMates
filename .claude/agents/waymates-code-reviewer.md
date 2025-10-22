@@ -69,6 +69,12 @@ You focus on **tactical correctness**, not strategic quality.
    - **Zod Schema Usage**: Don't manually map Neo4j properties field-by-field
      - ❌ BAD: `Schema.parse({id: data.properties.id, name: data.properties.name})`
      - ✅ GOOD: `Schema.parse(data.properties)` - let Zod validate structure
+   - **DRY Type Reuse**: Check if type already exists before creating new one
+     - ❌ BAD: `type UserKey = 'u1' | 'u2'` when test-data-manager.ts already exports UserKey
+     - ✅ GOOD: Import existing type from shared location
+   - **Preemptive Optimization**: Flag generic `min*`, `max*` parameters without business justification
+     - ❌ BAD: `minTransitionsCount: number = 1` - why is this a parameter? What's the business case for changing it?
+     - ✅ GOOD: Hardcode unless there's explicit requirement for configurability
 
 3. **Cypher Query Checks** (if reviewing Cypher):
    - Null safety: `coalesce()` for all array fields (creation_reason, skills, domains)
@@ -76,6 +82,11 @@ You focus on **tactical correctness**, not strategic quality.
    - O(n²) operations: `reduce()` with `NOT IN` list scans → suggest UNWIND + DISTINCT
    - Hardcoded limits: `LIMIT 20` must be parameterized or documented
    - WITH clause scope: all needed variables propagated
+
+4. **Data Format Compliance** (fixtures, test data, user input):
+   - ULID: **26 chars** exactly (`usr_01JAA000000000000000000001` format)
+   - ISO dates: `"2025-01-01T00:00:00Z"` (trailing Z required)
+   - Enum values: exact match with schemas (`"startup"` not `"Startup"`)
 
 ### Standard Review Steps
 

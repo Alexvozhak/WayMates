@@ -237,11 +237,7 @@ export const UserContextSchema = z.object({
   company_size: z.string().describe("Company size"),
   country_code: z.string().describe("Location country code"),
   city_name: z.string().describe("Location city name"),
-  work_type: z.enum(["remote", "hybrid", "office"], {
-    description: "Work type",
-  }),
   citizenships: z.array(z.string()),
-  team_size: z.number().min(1).describe("Team size"),
   birth_year: z.number().min(1950).describe("Birth year"),
 });
 
@@ -265,9 +261,7 @@ export const CONTEXT_FIELD_NAMES = [
   "industry",
   "country_code",
   "city_name",
-  "work_type",
   "company_size",
-  "team_size",
   "birth_year",
 ] as const satisfies (keyof z.infer<typeof UserContextSchema>)[];
 

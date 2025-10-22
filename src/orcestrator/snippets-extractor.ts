@@ -105,28 +105,12 @@ export const FIELD_SNIPPETS: Record<ContextField, FieldSnippet> = {
       `CASE WHEN ${candidateVar}.city_name = ${ourVar}.city_name THEN ${weight} ELSE 0 END`,
   },
 
-  work_type: {
-    startPattern: `MATCH (c:Context {work_type: $value})`,
-    generateStrict: (candidateVar, ourVar) =>
-      `${candidateVar}.work_type = ${ourVar}.work_type`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
-      `CASE WHEN ${candidateVar}.work_type = ${ourVar}.work_type THEN ${weight} ELSE 0 END`,
-  },
-
   company_size: {
     startPattern: `MATCH (c:Context {company_size: $value})`,
     generateStrict: (candidateVar, ourVar) =>
       `${candidateVar}.company_size = ${ourVar}.company_size`,
     generateFlexible: (weight, candidateVar, ourVar) =>
       `CASE WHEN ${candidateVar}.company_size = ${ourVar}.company_size THEN ${weight} ELSE 0 END`,
-  },
-
-  team_size: {
-    startPattern: `MATCH (c:Context {team_size: $value})`,
-    generateStrict: (candidateVar, ourVar) =>
-      `${candidateVar}.team_size = ${ourVar}.team_size`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
-      `CASE WHEN ${candidateVar}.team_size = ${ourVar}.team_size THEN ${weight} ELSE 0 END`,
   },
 
   birth_year: {
