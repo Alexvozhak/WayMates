@@ -15,12 +15,13 @@
  * - Uses waymates-skills-graph projection (Context, Skill, WorkDomain nodes)
  * - Relationships: USES_SKILL, IN_WORK_DOMAIN (UNDIRECTED)
  *
- * ⚠️ SQL Injection Risk (Q3):
- * - targetNodeFilter uses string concatenation (NOT parameterized)
- * - Accepted risk for MVP, will fix in final cleanup phase
+ * Security:
+ * - All queries use parameterized inputs (no SQL injection risk)
+ * - Filters passed as Cypher parameters ($filterPosition, $filterIndustry, etc.)
  */
 
 import type { Driver } from 'neo4j-driver';
+import { int } from 'neo4j-driver';
 import { withReadSession } from '../../neo4j.js';
 import { GdsProjectionService } from './gds-projection.service.js';
 import type { SimilarityResult, SimilarityFilters } from '../schemas.js';
@@ -44,7 +45,11 @@ export class GdsSimilarityService {
    * - Doesn't penalize candidates with extra skills
    * - Good for "find people with AT LEAST these skills"
    *
-   * ⚠️ SQL Injection Risk: filters are NOT parameterized (Q3 decision)
+   * Implementation:
+   * - Uses MATCH + WHERE to filter candidate contexts
+   * - Collects filtered nodes into array
+   * - Passes node collection to GDS targetNodeFilter (not string expression)
+   * - All parameters properly parameterized (no SQL injection)
    *
    * @param searchContextId - Context ID to find similarities for
    * @param excludeUserId - User ID to exclude from results (usually current user)
@@ -80,11 +85,7 @@ export class GdsSimilarityService {
     // 1. Ensure projection exists
     await this.projectionService.ensureSkillsGraphProjection();
 
-    // 2. Build target filter (⚠️ SQL injection risk - accepted for MVP)
-    const targetFilter = this.buildTargetFilter(excludeUserId, filters);
-    console.log(`   Target filter: ${targetFilter}`);
-
-    // 3. Validate searchContextId exists (bug #1)
+    // 2. Validate searchContextId exists (bug #1 fix)
     const validateQuery = `
       MATCH (ctx:Context {context_id: $searchContextId})
       RETURN ctx.context_id AS context_id
@@ -96,12 +97,22 @@ export class GdsSimilarityService {
       throw new Error(`Context ${searchContextId} not found`);
     }
 
-    // 4. Run GDS Filtered Node Similarity (Overlap)
+    // 3. Run GDS Filtered Node Similarity (Overlap)
+    // Note: targetNodeFilter requires a collection of nodes, not a WHERE expression
     const query = `
       MATCH (searchCtx:Context {context_id: $searchContextId})
+      MATCH (candidateCtx:Context)
+      WHERE candidateCtx.user_id <> $excludeUserId
+        ${filters?.position ? 'AND candidateCtx.position = $filterPosition' : ''}
+        ${filters?.industry ? 'AND candidateCtx.industry = $filterIndustry' : ''}
+        ${filters?.country_code ? 'AND candidateCtx.country_code = $filterCountryCode' : ''}
+        ${filters?.city_name ? 'AND candidateCtx.city_name = $filterCityName' : ''}
+        ${filters?.company_size ? 'AND candidateCtx.company_size = $filterCompanySize' : ''}
+        ${filters?.work_type ? 'AND candidateCtx.work_type = $filterWorkType' : ''}
+      WITH searchCtx, collect(candidateCtx) AS targetNodes
       CALL gds.nodeSimilarity.filtered.stream('waymates-skills-graph', {
         sourceNodeFilter: searchCtx,
-        targetNodeFilter: '${targetFilter}',
+        targetNodeFilter: targetNodes,
         relationshipTypes: ['USES_SKILL', 'IN_WORK_DOMAIN'],
         similarityMetric: 'OVERLAP',
         topK: $topK,
@@ -114,7 +125,19 @@ export class GdsSimilarityService {
     `;
 
     const result = await withReadSession(this.driver, (tx) =>
-      tx.run(query, { searchContextId, topK, similarityCutoff })
+      tx.run(query, {
+        searchContextId,
+        excludeUserId,
+        topK: int(topK),  // GDS requires Integer, not Double
+        similarityCutoff,
+        // Optional filter parameters
+        filterPosition: filters?.position,
+        filterIndustry: filters?.industry,
+        filterCountryCode: filters?.country_code,
+        filterCityName: filters?.city_name,
+        filterCompanySize: filters?.company_size,
+        filterWorkType: filters?.work_type,
+      })
     );
 
     console.log(`   ✅ Found ${result.records.length} similar contexts`);
@@ -142,7 +165,11 @@ export class GdsSimilarityService {
    * - Penalizes candidates with many extra skills
    * - Good for "find people with EXACTLY these skills (and not much more)"
    *
-   * ⚠️ SQL Injection Risk: filters are NOT parameterized (Q3 decision)
+   * Implementation:
+   * - Uses MATCH + WHERE to filter candidate contexts
+   * - Collects filtered nodes into array
+   * - Passes node collection to GDS targetNodeFilter (not string expression)
+   * - All parameters properly parameterized (no SQL injection)
    *
    * @param searchContextId - Context ID to find similarities for
    * @param excludeUserId - User ID to exclude from results (usually current user)
@@ -178,11 +205,7 @@ export class GdsSimilarityService {
     // 1. Ensure projection exists
     await this.projectionService.ensureSkillsGraphProjection();
 
-    // 2. Build target filter (⚠️ SQL injection risk - accepted for MVP)
-    const targetFilter = this.buildTargetFilter(excludeUserId, filters);
-    console.log(`   Target filter: ${targetFilter}`);
-
-    // 3. Validate searchContextId exists (bug #1)
+    // 2. Validate searchContextId exists (bug #1 fix)
     const validateQuery = `
       MATCH (ctx:Context {context_id: $searchContextId})
       RETURN ctx.context_id AS context_id
@@ -194,12 +217,22 @@ export class GdsSimilarityService {
       throw new Error(`Context ${searchContextId} not found`);
     }
 
-    // 4. Run GDS Filtered Node Similarity (Jaccard)
+    // 3. Run GDS Filtered Node Similarity (Jaccard)
+    // Note: targetNodeFilter requires a collection of nodes, not a WHERE expression
     const query = `
       MATCH (searchCtx:Context {context_id: $searchContextId})
+      MATCH (candidateCtx:Context)
+      WHERE candidateCtx.user_id <> $excludeUserId
+        ${filters?.position ? 'AND candidateCtx.position = $filterPosition' : ''}
+        ${filters?.industry ? 'AND candidateCtx.industry = $filterIndustry' : ''}
+        ${filters?.country_code ? 'AND candidateCtx.country_code = $filterCountryCode' : ''}
+        ${filters?.city_name ? 'AND candidateCtx.city_name = $filterCityName' : ''}
+        ${filters?.company_size ? 'AND candidateCtx.company_size = $filterCompanySize' : ''}
+        ${filters?.work_type ? 'AND candidateCtx.work_type = $filterWorkType' : ''}
+      WITH searchCtx, collect(candidateCtx) AS targetNodes
       CALL gds.nodeSimilarity.filtered.stream('waymates-skills-graph', {
         sourceNodeFilter: searchCtx,
-        targetNodeFilter: '${targetFilter}',
+        targetNodeFilter: targetNodes,
         relationshipTypes: ['USES_SKILL', 'IN_WORK_DOMAIN'],
         similarityMetric: 'JACCARD',
         topK: $topK,
@@ -212,7 +245,19 @@ export class GdsSimilarityService {
     `;
 
     const result = await withReadSession(this.driver, (tx) =>
-      tx.run(query, { searchContextId, topK, similarityCutoff })
+      tx.run(query, {
+        searchContextId,
+        excludeUserId,
+        topK: int(topK),  // GDS requires Integer, not Double
+        similarityCutoff,
+        // Optional filter parameters
+        filterPosition: filters?.position,
+        filterIndustry: filters?.industry,
+        filterCountryCode: filters?.country_code,
+        filterCityName: filters?.city_name,
+        filterCompanySize: filters?.company_size,
+        filterWorkType: filters?.work_type,
+      })
     );
 
     console.log(`   ✅ Found ${result.records.length} similar contexts`);
@@ -228,55 +273,4 @@ export class GdsSimilarityService {
     }));
   }
 
-  /**
-   * Build target node filter for GDS Filtered Node Similarity
-   *
-   * ⚠️ SECURITY WARNING (Q3):
-   * This method uses string concatenation, NOT parameterized queries.
-   * This is a known SQL injection vulnerability.
-   * Accepted for MVP, will fix in final cleanup phase.
-   *
-   * UPDATED (bug #7 fix): Added escapeString() to prevent Cypher syntax errors
-   * when filter values contain single quotes (e.g., "Software Engineer's Assistant").
-   *
-   * Filter format: Cypher WHERE-like expression as string
-   * Example: "n:Context AND n.user_id <> 'user123' AND n.position = 'Engineer'"
-   *
-   * @param excludeUserId - User ID to exclude
-   * @param filters - Optional strict filters
-   * @returns String filter for GDS targetNodeFilter
-   */
-  private buildTargetFilter(
-    excludeUserId: string,
-    filters?: SimilarityFilters
-  ): string {
-    // Escape single quotes to prevent Cypher syntax errors (bug #7 fix)
-    const escapeString = (str: string): string => str.replace(/'/g, "\\'");
-
-    const conditions: string[] = [
-      'n:Context', // Must be a Context node
-      `n.user_id <> '${escapeString(excludeUserId)}'`, // ⚠️ SQL injection risk remains
-    ];
-
-    if (filters?.position) {
-      conditions.push(`n.position = '${escapeString(filters.position)}'`);
-    }
-    if (filters?.industry) {
-      conditions.push(`n.industry = '${escapeString(filters.industry)}'`);
-    }
-    if (filters?.country_code) {
-      conditions.push(`n.country_code = '${escapeString(filters.country_code)}'`);
-    }
-    if (filters?.city_name) {
-      conditions.push(`n.city_name = '${escapeString(filters.city_name)}'`);
-    }
-    if (filters?.company_size) {
-      conditions.push(`n.company_size = '${escapeString(filters.company_size)}'`);
-    }
-    if (filters?.work_type) {
-      conditions.push(`n.work_type = '${escapeString(filters.work_type)}'`);
-    }
-
-    return conditions.join(' AND ');
-  }
 }
