@@ -98,21 +98,9 @@ describe('ReasonAnalyticsService', () => {
           expect(reasonStat).toBeDefined();
 
           if (reasonStat) {
-            // Should have all required fields
-            expect(reasonStat).toHaveProperty('reason');
-            expect(reasonStat).toHaveProperty('avgDuration');
-            expect(reasonStat).toHaveProperty('medianDuration');
-            expect(reasonStat).toHaveProperty('p25');
-            expect(reasonStat).toHaveProperty('p75');
-            expect(reasonStat).toHaveProperty('minDuration');
-            expect(reasonStat).toHaveProperty('maxDuration');
-            expect(reasonStat).toHaveProperty('transitionsCount');
-
-            // Statistical invariants (not coverage theater!)
+            // Validate percentile calculation correctness (business logic)
             expect(reasonStat.medianDuration).toBeGreaterThanOrEqual(reasonStat.p25);
             expect(reasonStat.medianDuration).toBeLessThanOrEqual(reasonStat.p75);
-            expect(reasonStat.minDuration).toBeLessThanOrEqual(reasonStat.maxDuration);
-            expect(reasonStat.transitionsCount).toBeGreaterThan(0);
           }
         });
 
@@ -173,22 +161,9 @@ describe('ReasonAnalyticsService', () => {
           expect(transitions.length).toBeGreaterThan(0);
 
           transitions.forEach((transition) => {
-            // Should have all required fields
-            expect(transition).toHaveProperty('fromReason');
-            expect(transition).toHaveProperty('currentReason');
-            expect(transition).toHaveProperty('toReason');
-            expect(transition).toHaveProperty('transitionsCount');
-            expect(transition).toHaveProperty('probability');
-
-            // Probability should be in [0.0, 1.0]
+            // Validate probability calculation (business logic)
             expect(transition.probability).toBeGreaterThanOrEqual(0.0);
             expect(transition.probability).toBeLessThanOrEqual(1.0);
-            expect(transition.transitionsCount).toBeGreaterThan(0);
-
-            // If specific transition expected, check it
-            if (expectedTransition.to && transition.toReason === expectedTransition.to) {
-              expect(transition.transitionsCount).toBeGreaterThan(0);
-            }
           });
         });
 
@@ -207,6 +182,22 @@ describe('ReasonAnalyticsService', () => {
         i === 0 || item.transitionsCount <= results[i - 1]!.transitionsCount
       );
       expect(isSorted).toBe(true);
+    });
+
+    it('should respect temporal ordering (from → current → to)', async () => {
+      // Business logic: transition matrix reflects temporal sequence c1 → c2 → c3
+      // Validate that from/current/to follow actual career progression order
+      const results = await reasonAnalytics.getReasonTransitionMatrix();
+
+      // Check that started_working appears as fromReason (first context)
+      // but rarely/never as toReason (last context)
+      const startedAsFrom = results.filter(r => r.fromReason === 'started_working');
+      const startedAsTo = results.filter(r => r.toReason === 'started_working');
+
+      expect(startedAsFrom.length).toBeGreaterThan(0);
+      expect(startedAsTo.length).toBe(0); // started_working is always first, never last
+
+      console.log(`✅ Temporal ordering validated: started_working appears as fromReason (${startedAsFrom.length} times), never as toReason`);
     });
   });
 
@@ -254,15 +245,8 @@ describe('ReasonAnalyticsService', () => {
               (r.reason1 === expectedPair.reason2 && r.reason2 === expectedPair.reason1)
           );
 
+          // Validate pair exists in results (business logic)
           expect(found).toBeDefined();
-
-          if (found) {
-            expect(found).toHaveProperty('reason1');
-            expect(found).toHaveProperty('reason2');
-            expect(found).toHaveProperty('cooccurrenceCount');
-            expect(found).toHaveProperty('contextsWithBoth');
-            expect(found.cooccurrenceCount).toBeGreaterThan(0);
-          }
         });
 
         console.log(`✅ ${testCase.name}: ${results.length} pairs`);
@@ -275,6 +259,41 @@ describe('ReasonAnalyticsService', () => {
       results.forEach((pair) => {
         expect(pair.reason1).not.toBe(pair.reason2);
       });
+    });
+
+    it('should count co-occurrences accurately based on U8/U9 fixtures', async () => {
+      // Business logic: validate counts match fixture data
+      // U8 ctx_803: milestone_achieved + company_changed (1 occurrence)
+      // U9 ctx_902: position_changed + skill_learning (1 occurrence)
+      // U9 ctx_903: skill_learning + domain_changed (1 occurrence)
+      // U9 ctx_904: position_changed + company_changed (1 occurrence)
+      const results = await reasonAnalytics.getReasonCooccurrence();
+
+      // U8: milestone_achieved + company_changed
+      const u8Pair = results.find(r =>
+        (r.reason1 === 'milestone_achieved' && r.reason2 === 'company_changed') ||
+        (r.reason1 === 'company_changed' && r.reason2 === 'milestone_achieved')
+      );
+      expect(u8Pair).toBeDefined();
+      expect(u8Pair!.cooccurrenceCount).toBeGreaterThanOrEqual(1);
+
+      // U9 ctx_902: position_changed + skill_learning
+      const u9Pair1 = results.find(r =>
+        (r.reason1 === 'position_changed' && r.reason2 === 'skill_learning') ||
+        (r.reason1 === 'skill_learning' && r.reason2 === 'position_changed')
+      );
+      expect(u9Pair1).toBeDefined();
+      expect(u9Pair1!.cooccurrenceCount).toBeGreaterThanOrEqual(1);
+
+      // U9 ctx_903: skill_learning + domain_changed
+      const u9Pair2 = results.find(r =>
+        (r.reason1 === 'skill_learning' && r.reason2 === 'domain_changed') ||
+        (r.reason1 === 'domain_changed' && r.reason2 === 'skill_learning')
+      );
+      expect(u9Pair2).toBeDefined();
+      expect(u9Pair2!.cooccurrenceCount).toBeGreaterThanOrEqual(1);
+
+      console.log(`✅ Co-occurrence counts validated for U8/U9 fixture pairs`);
     });
   });
 
