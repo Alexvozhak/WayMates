@@ -15,14 +15,7 @@
 
 import type { Driver } from 'neo4j-driver';
 import { withReadSession, withWriteSession } from '../../neo4j.js';
-
-export interface ProjectionInfo {
-  graphName: string;
-  nodeCount: number;
-  relationshipCount: number;
-  sizeInBytes: number;
-  createdAt: Date;
-}
+import type { ProjectionInfo } from '../schemas.js';
 
 export class GdsProjectionService {
   constructor(private driver: Driver) {}
@@ -68,6 +61,10 @@ export class GdsProjectionService {
     );
 
     const record = result.records[0];
+    if (!record) {
+      throw new Error(`Failed to create projection '${graphName}': no result returned`);
+    }
+
     const info: ProjectionInfo = {
       graphName: record.get('graphName'),
       nodeCount: Number(record.get('nodeCount')),
@@ -132,6 +129,10 @@ export class GdsProjectionService {
     );
 
     const record = result.records[0];
+    if (!record) {
+      throw new Error(`Failed to create projection '${graphName}': no result returned`);
+    }
+
     const info: ProjectionInfo = {
       graphName: record.get('graphName'),
       nodeCount: Number(record.get('nodeCount')),
