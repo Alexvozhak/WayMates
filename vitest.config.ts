@@ -82,19 +82,22 @@ export default defineConfig(() => {
             env: loadEnv("test", process.cwd(), ""),
           },
         },
-        // ===== Reason Analytics Tests (Cypher analytics queries) =====
+        // ===== GDS Pathfinding Tests (Yen's K-Shortest + Reason Analytics) =====
         {
           test: {
-            name: "reason-analytics-tests",
-            include: ["tests/integration/reason-analytics/**/*.test.ts"],
+            name: "gds-pathfinding-tests",
+            include: [
+              "tests/integration/gds/services/pathfinding.test.ts",
+              "tests/integration/gds/services/reason-analytics.test.ts"
+            ],
             pool: "threads",
             poolOptions: {
               threads: {
                 isolate: true,
-                singleThread: false, // Parallel (read-only Cypher queries)
+                singleThread: false, // Parallel (read-only queries: GDS Yen's + Cypher analytics)
               },
             },
-            setupFiles: ["./tests/integration/reason-analytics/setup.ts"], // Load U8-U9 + create NEXT relationships
+            setupFiles: ["./tests/integration/gds/setup-pathfinding.ts"], // Load U8-U9 + create NEXT relationships
             testTimeout: 60000,
             env: loadEnv("test", process.cwd(), ""),
           },

@@ -1,10 +1,14 @@
 /**
- * Shared setup for Reason Analytics integration tests
+ * Shared setup for GDS Pathfinding tests
  *
- * This setup runs ONCE before all reason analytics tests in this project.
- * It loads U8-U9 test data designed for reason transition analytics.
+ * This setup runs ONCE before all pathfinding-related tests.
+ * It loads U8-U9 test data with NEXT relationships (for Yen's K-Shortest + Reason Analytics).
  *
- * Tests in this project use read-only Cypher queries (can run in parallel).
+ * Used by:
+ * - pathfinding.test.ts (GDS Yen's K-Shortest Paths)
+ * - reason-analytics.test.ts (Cypher analytics on transitions)
+ *
+ * Tests in this project use read-only queries (can run in parallel).
  */
 
 import { beforeAll, afterAll } from 'vitest';
@@ -17,7 +21,7 @@ export let driver: Driver;
 export let testDataManager: TestDataManager;
 
 beforeAll(async () => {
-  console.log('🔧 [Reason Analytics Setup] Starting shared setup...');
+  console.log('🔧 [GDS Pathfinding Setup] Starting shared setup...');
 
   driver = createDriver();
   testDataManager = new TestDataManager();
@@ -36,11 +40,11 @@ beforeAll(async () => {
     await persistenceManager.upsertStory(story);
   }
 
-  console.log(`✅ [Reason Analytics Setup] Loaded ${userKeys.length} test users (U8-U9)`);
+  console.log(`✅ [GDS Pathfinding Setup] Loaded ${userKeys.length} test users (U8-U9)`);
 
   // Create NEXT relationships with duration_months
-  // U8: Junior → Middle (12mo) → Senior (18mo) → Tech Lead (24mo)
-  // U9: Junior → Middle (15mo) → Senior (18mo) → Manager (22mo)
+  // U8: Junior → Middle → Senior → Tech Lead
+  // U9: Junior → Middle → Senior → Engineering Manager
   await withWriteSession(driver, async (tx) => {
     await tx.run(`
       MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)
@@ -55,10 +59,10 @@ beforeAll(async () => {
     `);
   });
 
-  console.log('✅ [Reason Analytics Setup] Created NEXT relationships with duration_months');
+  console.log('✅ [GDS Pathfinding Setup] Created NEXT relationships with duration_months');
 }, 60000); // 60s timeout for setup
 
 afterAll(async () => {
-  console.log('🧹 [Reason Analytics Setup] Cleaning up...');
+  console.log('🧹 [GDS Pathfinding Setup] Cleaning up...');
   await driver.close();
 }, 30000); // 30s timeout for cleanup

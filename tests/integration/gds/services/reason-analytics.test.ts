@@ -14,8 +14,8 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { ReasonAnalyticsService } from '../../../src/services/reason-analytics.service.js';
-import { driver } from './setup.js';
+import { ReasonAnalyticsService } from '../../../../src/services/reason-analytics.service.js';
+import { driver } from '../setup-pathfinding.js';
 
 /**
  * Test fixture for getDurationByReason test cases
