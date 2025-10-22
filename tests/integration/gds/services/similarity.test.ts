@@ -13,6 +13,7 @@ import { GdsSimilarityService } from '../../../../src/gds/services/gds-similarit
 import { GdsProjectionService } from '../../../../src/gds/services/gds-projection.service.js';
 import type { SimilarityAlgorithm } from '../../../../src/gds/services/gds-similarity.service.js';
 import type { SimilarityFilters } from '../../../../src/gds/schemas.js';
+import type { UserKey } from '../../../helpers/test-data-manager.js';
 import { driver, testDataManager } from '../setup.js';
 
 /**
@@ -21,7 +22,7 @@ import { driver, testDataManager } from '../setup.js';
 interface SimilarityTestCase {
   name: string;
   algorithm: SimilarityAlgorithm;
-  searchUser: 'U1' | 'U2' | 'U3' | 'U4' | 'U5' | 'U6' | 'U7';
+  searchUser: UserKey;
   contextIndex?: number; // which context from user's story to use (default: 0)
   filters?: SimilarityFilters;
   topK?: number;
