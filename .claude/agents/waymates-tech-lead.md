@@ -179,6 +179,10 @@ What should be refactored later
 - ❌ **Don't create new types** without checking existing ones first
 - ❌ **Don't ignore tech debt** - Rudiments must be removed
 - ❌ **Don't be dogmatic** - YAGNI is more important than "future-proofing"
+- ❌ **NEVER add backward compatibility layers** (deprecated methods, wrapper functions) **without explicit user request**
+  - Internal codebase → just refactor all call sites
+  - No external consumers → no need for deprecation
+  - User must explicitly say "keep backward compatibility" or "add deprecated wrapper"
 
 ## Tool Usage Patterns
 

@@ -281,36 +281,4 @@ export class GdsSimilarityService {
       };
     });
   }
-
-  /**
-   * Find similar contexts using Overlap metric (soft matching)
-   *
-   * @deprecated Use findSimilarBy('Overlap', ...) instead
-   * @see findSimilarBy
-   */
-  async findSimilarByOverlap(
-    searchContextId: string,
-    excludeUserId: string,
-    filters?: SimilarityFilters,
-    topK: number = 100,
-    similarityCutoff?: number
-  ): Promise<SimilarityResult[]> {
-    return this.findSimilarBy('Overlap', searchContextId, excludeUserId, filters, topK, similarityCutoff);
-  }
-
-  /**
-   * Find similar contexts using Jaccard metric (strict matching)
-   *
-   * @deprecated Use findSimilarBy('Jaccard', ...) instead
-   * @see findSimilarBy
-   */
-  async findSimilarByJaccard(
-    searchContextId: string,
-    excludeUserId: string,
-    filters?: SimilarityFilters,
-    topK: number = 100,
-    similarityCutoff?: number
-  ): Promise<SimilarityResult[]> {
-    return this.findSimilarBy('Jaccard', searchContextId, excludeUserId, filters, topK, similarityCutoff);
-  }
 }

@@ -8,240 +8,292 @@
  * - Test data loaded via setup.ts (U1-U7 from JSON)
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { GdsSimilarityService } from '../../../../src/gds/services/gds-similarity.service.js';
 import { GdsProjectionService } from '../../../../src/gds/services/gds-projection.service.js';
+import type { SimilarityAlgorithm } from '../../../../src/gds/services/gds-similarity.service.js';
+import type { SimilarityFilters } from '../../../../src/gds/schemas.js';
 import { driver, testDataManager } from '../setup.js';
+
+/**
+ * Test fixture for similarity search test cases
+ */
+interface SimilarityTestCase {
+  name: string;
+  algorithm: SimilarityAlgorithm;
+  searchUser: 'U1' | 'U2' | 'U3' | 'U4' | 'U5' | 'U6' | 'U7';
+  excludeUser: 'U1' | 'U2' | 'U3' | 'U4' | 'U5' | 'U6' | 'U7';
+  contextIndex?: number; // which context from user's story to use (default: 0)
+  filters?: SimilarityFilters;
+  topK?: number;
+  similarityCutoff?: number;
+  shouldReturnResults?: boolean; // if false, expect empty array
+}
+
+/**
+ * Test fixture for validation error test cases
+ */
+interface ValidationErrorTestCase {
+  name: string;
+  algorithm: SimilarityAlgorithm;
+  searchContextId: string;
+  excludeUserId: string;
+  filters?: SimilarityFilters;
+  topK?: number;
+  similarityCutoff?: number;
+  expectedError: string;
+}
 
 describe('GdsSimilarityService', () => {
   let similarityService: GdsSimilarityService;
   let projectionService: GdsProjectionService;
 
-  // Services are created for each test (lightweight)
-  // Data is shared from setup.ts (heavy operation done once)
-  function createServices() {
+  // Create services once for all tests (no mutable state, thread-safe)
+  beforeAll(() => {
     projectionService = new GdsProjectionService(driver);
     similarityService = new GdsSimilarityService(driver, projectionService);
-  }
+  });
 
-  describe('findSimilarBy with Overlap algorithm', () => {
-    it('should find similar contexts using Overlap metric', async () => {
-      createServices();
+  describe('findSimilarBy - algorithm tests', () => {
+    const algorithmTestCases: SimilarityTestCase[] = [
+      {
+        name: 'Overlap algorithm finds similar contexts',
+        algorithm: 'Overlap',
+        searchUser: 'U1',
+        excludeUser: 'U1',
+        topK: 10,
+        similarityCutoff: 0.1,
+        shouldReturnResults: true,
+      },
+      {
+        name: 'Jaccard algorithm finds similar contexts',
+        algorithm: 'Jaccard',
+        searchUser: 'U1',
+        excludeUser: 'U1',
+        topK: 10,
+        similarityCutoff: 0.3,
+        shouldReturnResults: true,
+      },
+      {
+        name: 'Overlap uses default cutoff 0.1 when not specified',
+        algorithm: 'Overlap',
+        searchUser: 'U1',
+        excludeUser: 'U1',
+        topK: 10,
+        // similarityCutoff: undefined - should use default 0.1
+        shouldReturnResults: true,
+      },
+      {
+        name: 'Jaccard uses default cutoff 0.3 when not specified',
+        algorithm: 'Jaccard',
+        searchUser: 'U1',
+        excludeUser: 'U1',
+        topK: 10,
+        // similarityCutoff: undefined - should use default 0.3
+        shouldReturnResults: true,
+      },
+    ];
 
-      // Use U1's first context to search for similar contexts
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-      const excludeUserId = u1Story.user_id;
+    algorithmTestCases.forEach((testCase) => {
+      it(testCase.name, async () => {
+        const story = testDataManager.getStoryBy(testCase.searchUser);
+        const searchContextId = story.contexts[testCase.contextIndex ?? 0]!.context_id;
+        const excludeUserId = story.user_id;
 
-      const results = await similarityService.findSimilarBy(
-        'Overlap',
-        searchContextId,
-        excludeUserId,
-        undefined, // no filters
-        10, // topK
-        0.1 // similarity cutoff
-      );
+        const results = await similarityService.findSimilarBy(
+          testCase.algorithm,
+          searchContextId,
+          excludeUserId,
+          testCase.filters,
+          testCase.topK ?? 100,
+          testCase.similarityCutoff
+        );
 
-      // Results should be an array
-      expect(Array.isArray(results)).toBe(true);
+        // Results should be an array
+        expect(Array.isArray(results)).toBe(true);
 
-      // Each result should have correct shape
-      results.forEach((result) => {
-        expect(result).toHaveProperty('context_id');
-        expect(result).toHaveProperty('match_score');
-        expect(typeof result.context_id).toBe('string');
-        expect(typeof result.match_score).toBe('number');
-        expect(result.match_score).toBeGreaterThanOrEqual(0.0);
-        expect(result.match_score).toBeLessThanOrEqual(1.0);
+        if (testCase.shouldReturnResults) {
+          // Each result should have correct shape
+          results.forEach((result) => {
+            expect(result).toHaveProperty('context_id');
+            expect(result).toHaveProperty('match_score');
+            expect(typeof result.context_id).toBe('string');
+            expect(typeof result.match_score).toBe('number');
+            expect(result.match_score).toBeGreaterThanOrEqual(0.0);
+            expect(result.match_score).toBeLessThanOrEqual(1.0);
+          });
+
+          // Should exclude search user's contexts
+          results.forEach((result) => {
+            const userContextIds = story.contexts.map((c) => c.context_id);
+            expect(userContextIds).not.toContain(result.context_id);
+          });
+        }
+
+        console.log(`✅ ${testCase.name}: ${results.length} results`);
       });
-
-      // Should exclude U1's contexts
-      results.forEach((result) => {
-        const u1ContextIds = u1Story.contexts.map((c) => c.context_id);
-        expect(u1ContextIds).not.toContain(result.context_id);
-      });
-
-      console.log(`✅ Found ${results.length} similar contexts (Overlap)`);
-    });
-
-    it('should find similar contexts with position filter', async () => {
-      createServices();
-
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-      const position = u1Story.contexts[0]!.position;
-      const excludeUserId = u1Story.user_id;
-
-      const results = await similarityService.findSimilarBy(
-        'Overlap',
-        searchContextId,
-        excludeUserId,
-        { position }, // filter by same position
-        10
-      );
-
-      // Results should match position filter
-      expect(Array.isArray(results)).toBe(true);
-      console.log(`✅ Found ${results.length} contexts with position='${position}'`);
-    });
-
-    it('should use default cutoff 0.1 for Overlap when not specified', async () => {
-      createServices();
-
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-      const excludeUserId = u1Story.user_id;
-
-      // Don't specify cutoff - should use default 0.1
-      const results = await similarityService.findSimilarBy(
-        'Overlap',
-        searchContextId,
-        excludeUserId,
-        undefined,
-        10
-      );
-
-      expect(Array.isArray(results)).toBe(true);
-      console.log(`✅ Overlap default cutoff test passed with ${results.length} results`);
     });
   });
 
-  describe('findSimilarBy with Jaccard algorithm', () => {
-    it('should find similar contexts using Jaccard metric', async () => {
-      createServices();
+  describe('findSimilarBy - filter tests', () => {
+    const filterTestCases: SimilarityTestCase[] = [
+      {
+        name: 'filters by position',
+        algorithm: 'Overlap',
+        searchUser: 'U1',
+        excludeUser: 'U1',
+        filters: { position: 'Senior' }, // will be populated from U1's context
+        topK: 10,
+      },
+      {
+        name: 'filters by industry',
+        algorithm: 'Overlap',
+        searchUser: 'U1',
+        excludeUser: 'U1',
+        filters: { industry: 'IT' },
+        topK: 10,
+      },
+      {
+        name: 'filters by country_code',
+        algorithm: 'Overlap',
+        searchUser: 'U1',
+        excludeUser: 'U1',
+        filters: { country_code: 'US' },
+        topK: 10,
+      },
+    ];
 
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-      const excludeUserId = u1Story.user_id;
+    filterTestCases.forEach((testCase) => {
+      it(testCase.name, async () => {
+        const story = testDataManager.getStoryBy(testCase.searchUser);
+        const context = story.contexts[testCase.contextIndex ?? 0]!;
+        const searchContextId = context.context_id;
+        const excludeUserId = story.user_id;
 
-      const results = await similarityService.findSimilarBy(
-        'Jaccard',
-        searchContextId,
-        excludeUserId,
-        undefined,
-        10,
-        0.3 // higher cutoff for Jaccard
-      );
+        // Populate filter with actual context data if needed
+        const filters = { ...testCase.filters };
+        if (filters.position === 'Senior') {
+          filters.position = context.position;
+        }
 
-      expect(Array.isArray(results)).toBe(true);
+        const results = await similarityService.findSimilarBy(
+          testCase.algorithm,
+          searchContextId,
+          excludeUserId,
+          filters,
+          testCase.topK ?? 100
+        );
 
-      results.forEach((result) => {
-        expect(result).toHaveProperty('context_id');
-        expect(result).toHaveProperty('match_score');
-        expect(typeof result.match_score).toBe('number');
-        expect(result.match_score).toBeGreaterThanOrEqual(0.0);
-        expect(result.match_score).toBeLessThanOrEqual(1.0);
+        expect(Array.isArray(results)).toBe(true);
+        console.log(`✅ ${testCase.name}: ${results.length} results`);
       });
-
-      console.log(`✅ Found ${results.length} similar contexts (Jaccard)`);
-    });
-
-    it('should use default cutoff 0.3 for Jaccard when not specified', async () => {
-      createServices();
-
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-      const excludeUserId = u1Story.user_id;
-
-      // Don't specify cutoff - should use default 0.3
-      const results = await similarityService.findSimilarBy(
-        'Jaccard',
-        searchContextId,
-        excludeUserId,
-        undefined,
-        10
-      );
-
-      expect(Array.isArray(results)).toBe(true);
-      console.log(`✅ Jaccard default cutoff test passed with ${results.length} results`);
     });
   });
 
   describe('parameter validation', () => {
-    it('should throw error for non-existent searchContextId (bug #1 fix)', async () => {
-      createServices();
+    const validationTestCases: ValidationErrorTestCase[] = [
+      {
+        name: 'throws error for non-existent searchContextId (bug #1 fix)',
+        algorithm: 'Overlap',
+        searchContextId: 'nonexistent-context-123',
+        excludeUserId: 'some-user',
+        topK: 10,
+        expectedError: 'Context nonexistent-context-123 not found',
+      },
+      {
+        name: 'throws error for topK = 0 (bug #2 fix)',
+        algorithm: 'Overlap',
+        searchContextId: '', // will be populated
+        excludeUserId: 'user_01',
+        topK: 0,
+        expectedError: 'topK must be >= 1',
+      },
+      {
+        name: 'throws error for negative topK (bug #2 fix)',
+        algorithm: 'Overlap',
+        searchContextId: '', // will be populated
+        excludeUserId: 'user_01',
+        topK: -5,
+        expectedError: 'topK must be >= 1',
+      },
+      {
+        name: 'throws error for similarityCutoff > 1.0 (bug #2 fix)',
+        algorithm: 'Overlap',
+        searchContextId: '', // will be populated
+        excludeUserId: 'user_01',
+        topK: 10,
+        similarityCutoff: 1.5,
+        expectedError: 'similarityCutoff must be in [0.0, 1.0]',
+      },
+      {
+        name: 'throws error for negative similarityCutoff (bug #2 fix)',
+        algorithm: 'Overlap',
+        searchContextId: '', // will be populated
+        excludeUserId: 'user_01',
+        topK: 10,
+        similarityCutoff: -0.1,
+        expectedError: 'similarityCutoff must be in [0.0, 1.0]',
+      },
+      {
+        name: 'throws error for empty excludeUserId (bug #8 fix)',
+        algorithm: 'Overlap',
+        searchContextId: '', // will be populated
+        excludeUserId: '',
+        topK: 10,
+        expectedError: 'excludeUserId is required and cannot be empty',
+      },
+      {
+        name: 'throws error for whitespace-only excludeUserId (bug #8 fix)',
+        algorithm: 'Overlap',
+        searchContextId: '', // will be populated
+        excludeUserId: '   ',
+        topK: 10,
+        expectedError: 'excludeUserId is required and cannot be empty',
+      },
+      {
+        name: 'throws error for empty searchContextId (bug #14 fix)',
+        algorithm: 'Overlap',
+        searchContextId: '',
+        excludeUserId: 'some-user',
+        topK: 10,
+        expectedError: 'searchContextId is required and cannot be empty',
+      },
+      {
+        name: 'throws error for whitespace-only searchContextId (bug #14 fix)',
+        algorithm: 'Overlap',
+        searchContextId: '   ',
+        excludeUserId: 'some-user',
+        topK: 10,
+        expectedError: 'searchContextId is required and cannot be empty',
+      },
+    ];
 
-      await expect(
-        similarityService.findSimilarBy(
-          'Overlap',
-          'nonexistent-context-123',
-          'some-user',
-          undefined,
-          10
-        )
-      ).rejects.toThrow('Context nonexistent-context-123 not found');
-    });
+    validationTestCases.forEach((testCase) => {
+      it(testCase.name, async () => {
+        let searchContextId = testCase.searchContextId;
 
-    it('should throw error for invalid topK parameter (bug #2 fix)', async () => {
-      createServices();
+        // Populate with valid context ID if empty string but not testing empty validation
+        if (searchContextId === '' && !testCase.expectedError.includes('searchContextId')) {
+          const story = testDataManager.getStoryBy('U1');
+          searchContextId = story.contexts[0]!.context_id;
+        }
 
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-
-      // topK = 0 should throw
-      await expect(
-        similarityService.findSimilarBy('Overlap', searchContextId, 'user_01', undefined, 0)
-      ).rejects.toThrow('topK must be >= 1');
-
-      // topK < 0 should throw
-      await expect(
-        similarityService.findSimilarBy('Overlap', searchContextId, 'user_01', undefined, -5)
-      ).rejects.toThrow('topK must be >= 1');
-    });
-
-    it('should throw error for invalid similarityCutoff parameter (bug #2 fix)', async () => {
-      createServices();
-
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-
-      // similarityCutoff > 1.0 should throw
-      await expect(
-        similarityService.findSimilarBy('Overlap', searchContextId, 'user_01', undefined, 10, 1.5)
-      ).rejects.toThrow('similarityCutoff must be in [0.0, 1.0]');
-
-      // similarityCutoff < 0.0 should throw
-      await expect(
-        similarityService.findSimilarBy('Overlap', searchContextId, 'user_01', undefined, 10, -0.1)
-      ).rejects.toThrow('similarityCutoff must be in [0.0, 1.0]');
-    });
-
-    it('should throw error for empty excludeUserId (bug #8 fix)', async () => {
-      createServices();
-
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-
-      // Empty string should throw
-      await expect(
-        similarityService.findSimilarBy('Overlap', searchContextId, '', undefined, 10)
-      ).rejects.toThrow('excludeUserId is required and cannot be empty');
-
-      // Whitespace-only should throw
-      await expect(
-        similarityService.findSimilarBy('Overlap', searchContextId, '   ', undefined, 10)
-      ).rejects.toThrow('excludeUserId is required and cannot be empty');
-    });
-
-    it('should throw error for empty searchContextId (bug #14 fix)', async () => {
-      createServices();
-
-      // Empty string should throw
-      await expect(
-        similarityService.findSimilarBy('Overlap', '', 'some-user', undefined, 10)
-      ).rejects.toThrow('searchContextId is required and cannot be empty');
-
-      // Whitespace-only should throw
-      await expect(
-        similarityService.findSimilarBy('Overlap', '   ', 'some-user', undefined, 10)
-      ).rejects.toThrow('searchContextId is required and cannot be empty');
+        await expect(
+          similarityService.findSimilarBy(
+            testCase.algorithm,
+            searchContextId,
+            testCase.excludeUserId,
+            testCase.filters,
+            testCase.topK ?? 10,
+            testCase.similarityCutoff
+          )
+        ).rejects.toThrow(testCase.expectedError);
+      });
     });
   });
 
   describe('projection lifecycle (bug #3 fix)', () => {
     it('should NOT drop projection after each call (persists for concurrent requests)', async () => {
-      createServices();
-
       const u1Story = testDataManager.getStoryBy('U1');
       const searchContextId = u1Story.contexts[0]!.context_id;
       const excludeUserId = u1Story.user_id;
@@ -265,46 +317,6 @@ describe('GdsSimilarityService', () => {
       expect(existsAfterSecondCall).toBe(true);
 
       console.log('✅ Projection persists across calls (bug #3 fix verified)');
-    });
-  });
-
-  describe('deprecated methods (backward compatibility)', () => {
-    it('findSimilarByOverlap should delegate to findSimilarBy', async () => {
-      createServices();
-
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-      const excludeUserId = u1Story.user_id;
-
-      const results = await similarityService.findSimilarByOverlap(
-        searchContextId,
-        excludeUserId,
-        undefined,
-        10,
-        0.1
-      );
-
-      expect(Array.isArray(results)).toBe(true);
-      console.log(`✅ Deprecated findSimilarByOverlap still works (${results.length} results)`);
-    });
-
-    it('findSimilarByJaccard should delegate to findSimilarBy', async () => {
-      createServices();
-
-      const u1Story = testDataManager.getStoryBy('U1');
-      const searchContextId = u1Story.contexts[0]!.context_id;
-      const excludeUserId = u1Story.user_id;
-
-      const results = await similarityService.findSimilarByJaccard(
-        searchContextId,
-        excludeUserId,
-        undefined,
-        10,
-        0.3
-      );
-
-      expect(Array.isArray(results)).toBe(true);
-      console.log(`✅ Deprecated findSimilarByJaccard still works (${results.length} results)`);
     });
   });
 });
