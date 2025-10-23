@@ -6,6 +6,7 @@ import {
   CurrentToTargetParamsSchema,
   CurrentOnlyReasonParamsSchema,
   TargetOnlyReasonParamsSchema,
+  GdsSimilaritySearchParamsSchema,
   StoryInputSchema,
   UserIdContextSchema,
   UserIdTrailSchema,
@@ -93,6 +94,19 @@ export function createWayMatesServer(
       TargetOnlyReasonParamsSchema,
       async (params) =>
         searchManager.searchTargetReasonBased(params)
+    )
+  );
+
+  // === GDS SIMILARITY SEARCH (Week 2 Day 4) ===
+
+  // Find Similar Contexts using GDS Node Similarity (Jaccard/Overlap)
+  server.addTool(
+    tool(
+      "find_similar_contexts",
+      "Find similar career contexts using GDS Node Similarity algorithms (10x-100x faster than manual Jaccard). Use Jaccard for current-only (strict), Overlap for target-only (lenient).",
+      GdsSimilaritySearchParamsSchema,
+      async (params) =>
+        searchManager.searchSimilarityBased(params)
     )
   );
 

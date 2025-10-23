@@ -32,7 +32,17 @@ describe("Target Reason-Based Search Integration Tests", () => {
     persistenceManager = new PersistenceManager(driver);
     const builder = new SearchQueryBuilder();
     const selectivity = new SelectivityService(driver);
-    searchManager = new SearchManager(driver, builder, selectivity);
+
+    // Initialize GDS services (not used in reason-based tests, but required for SearchManager constructor)
+    const { GdsProjectionService } = require("../../../src/gds/services/gds-projection.service.js");
+    const { GdsSimilarityService } = require("../../../src/gds/services/gds-similarity.service.js");
+    const { GdsPathfindingService } = require("../../../src/gds/services/gds-pathfinding.service.js");
+
+    const gdsProjection = new GdsProjectionService(driver);
+    const gdsSimilarity = new GdsSimilarityService(driver, gdsProjection);
+    const gdsPathfinding = new GdsPathfindingService(driver, gdsProjection);
+
+    searchManager = new SearchManager(driver, builder, selectivity, gdsSimilarity, gdsPathfinding, gdsProjection);
   });
 
   beforeEach(async () => {

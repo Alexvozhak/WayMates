@@ -302,4 +302,47 @@ describe('GdsPathfindingService', () => {
       expect(partialPath[0]!.contexts.length).toBe(3); // Middle, Senior, TechLead
     });
   });
+
+  describe('findKShortestPaths - path uniqueness (QA Priority 2)', () => {
+    it('should return K distinct paths (no duplicates) when k=3', async () => {
+      // Test with k=3 to ensure Yen's algorithm returns unique paths
+      // Note: U8/U9 have linear paths, so actual paths < k, but should still be unique
+      const results = await pathfindingService.findKShortestPaths(
+        'ctx_01JAB000000000000000000801', // U8 Junior
+        'ctx_01JAB000000000000000000804', // U8 TechLead
+        3 // Request 3 paths
+      );
+
+      // Since U8 has only 1 linear path, we expect exactly 1 path (not duplicates)
+      expect(results.length).toBe(1);
+
+      // Validate path uniqueness by checking context_id sequences
+      const pathSignatures = results.map((path) => path.contexts.join('->'));
+
+      // No duplicate signatures
+      const uniqueSignatures = new Set(pathSignatures);
+      expect(uniqueSignatures.size).toBe(pathSignatures.length);
+
+      console.log(`✅ Path uniqueness validated: ${results.length} unique path(s) found (k=3 requested)`);
+      console.log(`   Path signatures: ${pathSignatures.join(', ')}`);
+    });
+
+    it('should handle k > actual paths without duplicating paths', async () => {
+      // Request k=5, but U9 has only 1 linear path (Junior → Middle → Senior → Engineering Manager)
+      const results = await pathfindingService.findKShortestPaths(
+        'ctx_01JAB000000000000000000901', // U9 Junior
+        'ctx_01JAB000000000000000000904', // U9 Engineering Manager
+        5 // Request 5 paths
+      );
+
+      // Should return only 1 path (no duplicates)
+      expect(results.length).toBe(1);
+
+      // Each result should have unique path_index (0-indexed)
+      const pathIndices = results.map((p) => p.path_index);
+      expect(pathIndices).toEqual([0]); // Only one path, index 0
+
+      console.log(`✅ k > actual paths handled correctly: ${results.length} path(s) returned (k=5 requested)`);
+    });
+  });
 });

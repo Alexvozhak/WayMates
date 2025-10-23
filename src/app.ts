@@ -8,6 +8,9 @@ import { SearchManager } from "./search-manager.js";
 import { PersistenceManager } from "./persistence-manager.js";
 import { SkillCategoriesManager } from "./skill-categories-manager.js";
 import { SelectivityService } from "./services/selectivity.service.js";
+import { GdsProjectionService } from "./gds/services/gds-projection.service.js";
+import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
+import { GdsPathfindingService } from "./gds/services/gds-pathfinding.service.js";
 
 async function main() {
   const searchQueryBuilder = new SearchQueryBuilder();
@@ -18,7 +21,20 @@ async function main() {
   await verifyConnection(driver);
 
   const selectivityService = new SelectivityService(driver);
-  const searchManager = new SearchManager(driver, searchQueryBuilder, selectivityService);
+
+  // Initialize GDS services (Week 2 Day 4 integration)
+  const gdsProjectionService = new GdsProjectionService(driver);
+  const gdsSimilarityService = new GdsSimilarityService(driver, gdsProjectionService);
+  const gdsPathfindingService = new GdsPathfindingService(driver, gdsProjectionService);
+
+  const searchManager = new SearchManager(
+    driver,
+    searchQueryBuilder,
+    selectivityService,
+    gdsSimilarityService,
+    gdsPathfindingService,
+    gdsProjectionService
+  );
   const persistenceManager = new PersistenceManager(driver);
   const skillCategoriesManager = new SkillCategoriesManager(driver);
   const server = createWayMatesServer(searchManager, persistenceManager, skillCategoriesManager);

@@ -20,12 +20,18 @@ import {
   isTargetPresetName
 } from "./orcestrator/presets.js";
 import { buildReasonBasedQuery } from "./orcestrator/reason-query-builder.js";
+import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
+import { GdsPathfindingService } from "./gds/services/gds-pathfinding.service.js";
+import { GdsProjectionService } from "./gds/services/gds-projection.service.js";
 
 export class SearchManager {
   constructor(
     private driver: Driver,
     private builder: SearchQueryBuilder,
-    private selectivity: SelectivityService
+    private selectivity: SelectivityService,
+    private gdsSimilarity: GdsSimilarityService,
+    private gdsPathfinding: GdsPathfindingService,
+    private gdsProjection: GdsProjectionService
   ) {}
 
   async searchPipeline(
@@ -443,5 +449,52 @@ export class SearchManager {
     );
 
     return parsedResults;
+  }
+
+  /**
+   * GDS Similarity-Based Search (Week 2 Day 4)
+   *
+   * Finds similar contexts using GDS Node Similarity algorithms (Jaccard/Overlap).
+   * Uses GDS for 10x-100x speedup compared to manual Jaccard in Cypher.
+   *
+   * @param params - Search parameters (searchContextId, algorithm, topK, cutoff, filters)
+   * @returns Array of similar contexts with match scores
+   */
+  async searchSimilarityBased(
+    params: import("./schemas-zod.js").GdsSimilaritySearchParams
+  ): Promise<Array<{ context_id: string; match_score: number }>> {
+    const { GdsSimilaritySearchParamsSchema } = await import("./schemas-zod.js");
+    const validatedParams = GdsSimilaritySearchParamsSchema.parse(params);
+
+    console.log("🔍 [SearchManager.searchSimilarityBased] Starting GDS similarity search");
+    console.log("📊 Input params:", {
+      searchContextId: validatedParams.searchContextId,
+      algorithm: validatedParams.algorithm,
+      topK: validatedParams.topK,
+      similarityCutoff: validatedParams.similarityCutoff,
+      filters: validatedParams.filters,
+    });
+
+    // Ensure GDS skills graph projection exists
+    console.log("🔧 [SearchManager] Ensuring GDS skills graph projection...");
+    await this.gdsProjection.ensureSkillsGraphProjection();
+
+    // Call GDS Similarity service
+    console.log(`🎯 [SearchManager] Calling GDS ${validatedParams.algorithm} similarity...`);
+    const results = await this.gdsSimilarity.findSimilarBy(
+      validatedParams.algorithm,
+      validatedParams.searchContextId,
+      validatedParams.filters,
+      validatedParams.topK,
+      validatedParams.similarityCutoff
+    );
+
+    console.log(`✅ [SearchManager] Found ${results.length} similar contexts`);
+    console.log("📊 Top 5 results:", results.slice(0, 5).map(r => ({
+      context_id: r.context_id,
+      match_score: r.match_score.toFixed(3),
+    })));
+
+    return results;
   }
 }

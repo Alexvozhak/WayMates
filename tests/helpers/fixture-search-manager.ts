@@ -14,6 +14,9 @@ import { TestDataManager, type UserKey } from "./test-data-manager.js";
 import { DEFAULT_CONSTRAINTS } from "../../src/config.js";
 import { PersistenceManager } from "../../src/persistence-manager.js";
 import { SelectivityService } from "../../src/services/selectivity.service.js";
+import { GdsProjectionService } from "../../src/gds/services/gds-projection.service.js";
+import { GdsSimilarityService } from "../../src/gds/services/gds-similarity.service.js";
+import { GdsPathfindingService } from "../../src/gds/services/gds-pathfinding.service.js";
 
 export class FixtureSearchManager {
   private searchManager: SearchManager;
@@ -23,7 +26,20 @@ export class FixtureSearchManager {
   constructor(driver: Driver) {
     const builder = new SearchQueryBuilder();
     const selectivity = new SelectivityService(driver);
-    this.searchManager = new SearchManager(driver, builder, selectivity);
+
+    // Initialize GDS services (for existing reason-based tests, these won't be used)
+    const gdsProjection = new GdsProjectionService(driver);
+    const gdsSimilarity = new GdsSimilarityService(driver, gdsProjection);
+    const gdsPathfinding = new GdsPathfindingService(driver, gdsProjection);
+
+    this.searchManager = new SearchManager(
+      driver,
+      builder,
+      selectivity,
+      gdsSimilarity,
+      gdsPathfinding,
+      gdsProjection
+    );
     this.persistenceManager = new PersistenceManager(driver);
     this.testDataManager = new TestDataManager();
   }

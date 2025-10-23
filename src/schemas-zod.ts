@@ -586,6 +586,36 @@ export const TargetOnlyReasonParamsSchema = z.object({
   searchConstraints: SearchConstraintsSchema.describe("Search constraints (results_limit, timing thresholds)"),
 });
 
+// === GDS SIMILARITY SEARCH PARAMS (Week 2 Day 4) ===
+
+export const GdsSimilaritySearchParamsSchema = z.object({
+  searchContextId: ContextIdSchema.describe("Context ID to find similar contexts for"),
+  algorithm: z.enum(['Jaccard', 'Overlap']).describe("Similarity algorithm: Jaccard (strict, current-only) or Overlap (lenient, target-only)"),
+  topK: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe("Maximum number of similar contexts to return (default: 20 for Jaccard, 30 for Overlap)"),
+  similarityCutoff: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe("Minimum similarity score threshold (default: 0.3 for Jaccard, 0.1 for Overlap)"),
+  filters: z
+    .object({
+      position: z.string().optional().describe("Filter by position name"),
+      industry: z.string().optional().describe("Filter by industry name"),
+      country_code: z.string().optional().describe("Filter by country code"),
+    })
+    .optional()
+    .describe("Optional filters to narrow search results"),
+});
+
+export type GdsSimilaritySearchParams = z.infer<typeof GdsSimilaritySearchParamsSchema>;
+
 // Reason-based result types
 
 export const UpsertContextResultSchema = z.object({
