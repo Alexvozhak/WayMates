@@ -110,6 +110,83 @@ export function createWayMatesServer(
     )
   );
 
+  // === GDS PATHFINDING (Week 2 Day 4 Part 2) ===
+
+  // Find K Shortest Paths (Direct GDS wrapper)
+  server.addTool(
+    tool(
+      "find_k_shortest_paths",
+      "Find K shortest career paths between two contexts using Yen's algorithm. Returns paths ordered by total cost (trail durations).",
+      z.object({
+        sourceContextId: z.string().describe("Starting context ID"),
+        targetContextId: z.string().describe("Target context ID"),
+        k: z.number().int().min(1).max(10).optional().describe("Number of shortest paths (default: 3)"),
+      }).strict(),
+      async (params) =>
+        searchManager.findKShortestPaths(params.sourceContextId, params.targetContextId, params.k)
+    )
+  );
+
+  // Pipeline with Pathfinding (GDS Similarity + Yen's K-Shortest)
+  server.addTool(
+    tool(
+      "find_pipeline_with_pathfinding",
+      "Combines GDS similarity search with pathfinding: finds similar contexts at target position, then shows K shortest paths to reach them.",
+      z.object({
+        searchContextId: z.string().describe("Starting context ID"),
+        targetPosition: z.string().describe("Target position to reach"),
+        algorithm: z.enum(['Jaccard', 'Overlap']).describe("Similarity algorithm"),
+        k: z.number().int().min(1).max(10).optional().describe("Number of paths per context (default: 3)"),
+        topK: z.number().int().min(1).max(100).optional().describe("Max similar contexts (default: 10)"),
+        similarityCutoff: z.number().min(0).max(1).optional().describe("Min similarity threshold (default: 0.0)"),
+      }).strict(),
+      async (params) =>
+        searchManager.searchPipelineWithPathfinding({
+          searchContextId: params.searchContextId,
+          targetPosition: params.targetPosition,
+          algorithm: params.algorithm,
+          ...(params.k !== undefined && { k: params.k }),
+          ...(params.topK !== undefined && { topK: params.topK }),
+          ...(params.similarityCutoff !== undefined && { similarityCutoff: params.similarityCutoff }),
+        })
+    )
+  );
+
+  // === REASON ANALYTICS (Week 2 Day 4 Part 2) ===
+
+  // Get Duration Statistics by Reason
+  server.addTool(
+    tool(
+      "get_duration_by_reason",
+      "Get duration statistics (avg, median, percentiles) for each creation_reason type. Helps analyze how long transitions take based on life events.",
+      z.object({}).strict(),
+      async () =>
+        searchManager.getDurationByReason()
+    )
+  );
+
+  // Get Reason Transition Matrix
+  server.addTool(
+    tool(
+      "get_reason_transitions",
+      "Get reason transition probabilities: P(to_reason | current_reason). Analyzes 3-hop patterns to predict next life events.",
+      z.object({}).strict(),
+      async () =>
+        searchManager.getReasonTransitionMatrix()
+    )
+  );
+
+  // Get Reason Co-occurrence
+  server.addTool(
+    tool(
+      "get_reason_cooccurrence",
+      "Get reason pairs that appear together in same context. Identifies common life event combinations.",
+      z.object({}).strict(),
+      async () =>
+        searchManager.getReasonCooccurrence()
+    )
+  );
+
   // List Available Reasons (NEW)
   server.addTool(
     tool(

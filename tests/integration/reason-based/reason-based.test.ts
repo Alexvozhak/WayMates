@@ -17,6 +17,10 @@ import { DEFAULT_CONSTRAINTS } from "../../../src/config.js";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { ulid } from "ulid";
+import { GdsProjectionService } from "../../../src/gds/services/gds-projection.service.js";
+import { GdsSimilarityService } from "../../../src/gds/services/gds-similarity.service.js";
+import { GdsPathfindingService } from "../../../src/gds/services/gds-pathfinding.service.js";
+import { ReasonAnalyticsService } from "../../../src/services/reason-analytics.service.js";
 
 describe("Reason-Based Search Integration Tests", () => {
   let driver: Driver;
@@ -185,15 +189,12 @@ describe("Reason-Based Search Integration Tests", () => {
       const selectivity = new SelectivityService(driver);
 
       // Initialize GDS services (not used in reason-based tests, but required for SearchManager constructor)
-      const { GdsProjectionService } = require("../../../src/gds/services/gds-projection.service.js");
-      const { GdsSimilarityService } = require("../../../src/gds/services/gds-similarity.service.js");
-      const { GdsPathfindingService } = require("../../../src/gds/services/gds-pathfinding.service.js");
-
       const gdsProjection = new GdsProjectionService(driver);
       const gdsSimilarity = new GdsSimilarityService(driver, gdsProjection);
       const gdsPathfinding = new GdsPathfindingService(driver, gdsProjection);
+      const reasonAnalytics = new ReasonAnalyticsService(driver);
 
-      searchManager = new SearchManager(driver, builder, selectivity, gdsSimilarity, gdsPathfinding, gdsProjection);
+      searchManager = new SearchManager(driver, builder, selectivity, gdsSimilarity, gdsPathfinding, gdsProjection, reasonAnalytics);
     });
 
     test("searchCurrentReasonBased finds users by reason combinations", async () => {

@@ -17,6 +17,7 @@ import { SelectivityService } from "../../src/services/selectivity.service.js";
 import { GdsProjectionService } from "../../src/gds/services/gds-projection.service.js";
 import { GdsSimilarityService } from "../../src/gds/services/gds-similarity.service.js";
 import { GdsPathfindingService } from "../../src/gds/services/gds-pathfinding.service.js";
+import { ReasonAnalyticsService } from "../../src/services/reason-analytics.service.js";
 
 export class FixtureSearchManager {
   private searchManager: SearchManager;
@@ -32,13 +33,17 @@ export class FixtureSearchManager {
     const gdsSimilarity = new GdsSimilarityService(driver, gdsProjection);
     const gdsPathfinding = new GdsPathfindingService(driver, gdsProjection);
 
+    // Initialize ReasonAnalyticsService (Week 2 Day 4 Part 2)
+    const reasonAnalytics = new ReasonAnalyticsService(driver);
+
     this.searchManager = new SearchManager(
       driver,
       builder,
       selectivity,
       gdsSimilarity,
       gdsPathfinding,
-      gdsProjection
+      gdsProjection,
+      reasonAnalytics
     );
     this.persistenceManager = new PersistenceManager(driver);
     this.testDataManager = new TestDataManager();

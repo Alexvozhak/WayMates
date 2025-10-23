@@ -8,8 +8,14 @@ import type {
   CurrentOnlyReasonParams,
   TargetOnlyReasonParams,
   ReasonCombination,
+  GdsSimilaritySearchParams,
 } from "./schemas-zod.js";
-import { ReasonCombinationSchema, CurrentOnlyReasonParamsSchema, TargetOnlyReasonParamsSchema } from "./schemas-zod.js";
+import {
+  ReasonCombinationSchema,
+  CurrentOnlyReasonParamsSchema,
+  TargetOnlyReasonParamsSchema,
+  GdsSimilaritySearchParamsSchema,
+} from "./schemas-zod.js";
 import { PipelineGraphResultSchema } from "./schemas-zod.js";
 import { withReadSession } from "./neo4j.js";
 import { SelectivityService } from "./services/selectivity.service.js";
@@ -23,6 +29,13 @@ import { buildReasonBasedQuery } from "./orcestrator/reason-query-builder.js";
 import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
 import { GdsPathfindingService } from "./gds/services/gds-pathfinding.service.js";
 import { GdsProjectionService } from "./gds/services/gds-projection.service.js";
+import { ReasonAnalyticsService } from "./services/reason-analytics.service.js";
+import type {
+  DurationByReasonResult,
+  ReasonTransitionResult,
+  ReasonCooccurrenceResult,
+} from "./services/reason-analytics.service.js";
+import type { PathResult } from "./gds/schemas.js";
 
 export class SearchManager {
   constructor(
@@ -31,7 +44,8 @@ export class SearchManager {
     private selectivity: SelectivityService,
     private gdsSimilarity: GdsSimilarityService,
     private gdsPathfinding: GdsPathfindingService,
-    private gdsProjection: GdsProjectionService
+    private gdsProjection: GdsProjectionService,
+    private reasonAnalytics: ReasonAnalyticsService
   ) {}
 
   async searchPipeline(
@@ -461,9 +475,8 @@ export class SearchManager {
    * @returns Array of similar contexts with match scores
    */
   async searchSimilarityBased(
-    params: import("./schemas-zod.js").GdsSimilaritySearchParams
+    params: GdsSimilaritySearchParams
   ): Promise<Array<{ context_id: string; match_score: number }>> {
-    const { GdsSimilaritySearchParamsSchema } = await import("./schemas-zod.js");
     const validatedParams = GdsSimilaritySearchParamsSchema.parse(params);
 
     console.log("🔍 [SearchManager.searchSimilarityBased] Starting GDS similarity search");
@@ -495,6 +508,136 @@ export class SearchManager {
       match_score: r.match_score.toFixed(3),
     })));
 
+    return results;
+  }
+
+  /**
+   * GDS Pipeline with Pathfinding (Week 2 Day 4 Part 2)
+   *
+   * Combines GDS Node Similarity (find similar contexts) with Yen's K-Shortest Paths.
+   * Use case: Find users who reached target position AND show career paths they took.
+   *
+   * @param searchContextId - Starting context ID
+   * @param targetPosition - Target position to reach
+   * @param algorithm - Similarity algorithm (Jaccard/Overlap)
+   * @param k - Number of shortest paths to find
+   * @param topK - Max similar contexts to consider
+   * @param similarityCutoff - Minimum similarity threshold
+   * @returns Array of similar contexts with their career paths
+   */
+  async searchPipelineWithPathfinding(params: {
+    searchContextId: string;
+    targetPosition: string;
+    algorithm: 'Jaccard' | 'Overlap';
+    k?: number;
+    topK?: number;
+    similarityCutoff?: number;
+  }): Promise<Array<{
+    context_id: string;
+    match_score: number;
+    paths: PathResult[];
+  }>> {
+    console.log("🚀 [SearchManager.searchPipelineWithPathfinding] Starting GDS pipeline with pathfinding");
+    console.log("📊 Input params:", params);
+
+    // Step 1: Find similar contexts using GDS Node Similarity
+    const similarContexts = await this.searchSimilarityBased({
+      searchContextId: params.searchContextId,
+      algorithm: params.algorithm,
+      topK: params.topK,
+      similarityCutoff: params.similarityCutoff,
+      filters: { position: params.targetPosition },
+    });
+
+    console.log(`✅ Found ${similarContexts.length} similar contexts at target position`);
+
+    // Step 2: For each similar context, find K shortest paths from search context
+    const results = [];
+    for (const similar of similarContexts) {
+      const paths = await this.gdsPathfinding.findKShortestPaths(
+        params.searchContextId,
+        similar.context_id,
+        params.k ?? 3
+      );
+
+      results.push({
+        context_id: similar.context_id,
+        match_score: similar.match_score,
+        paths,
+      });
+    }
+
+    console.log(`✅ Found paths for ${results.length} contexts`);
+    return results;
+  }
+
+  /**
+   * Find K Shortest Paths (Direct GDS wrapper)
+   *
+   * Week 2 Day 4 Part 2 - Direct MCP tool wrapper for GdsPathfindingService
+   *
+   * @param sourceContextId - Starting context ID
+   * @param targetContextId - Target context ID
+   * @param k - Number of shortest paths (default: 3)
+   * @returns Array of paths ordered by total cost
+   */
+  async findKShortestPaths(
+    sourceContextId: string,
+    targetContextId: string,
+    k?: number
+  ): Promise<PathResult[]> {
+    console.log("🛤️ [SearchManager.findKShortestPaths] Finding K shortest paths");
+    console.log("📊 Input params:", { sourceContextId, targetContextId, k });
+
+    const results = await this.gdsPathfinding.findKShortestPaths(
+      sourceContextId,
+      targetContextId,
+      k ?? 3
+    );
+
+    console.log(`✅ Found ${results.length} paths`);
+    return results;
+  }
+
+  /**
+   * Get Duration Statistics by Reason (Week 2 Day 4 Part 2)
+   *
+   * Wrapper for ReasonAnalyticsService.getDurationByReason()
+   *
+   * @returns Duration statistics (avg, median, percentiles) per creation_reason
+   */
+  async getDurationByReason(): Promise<DurationByReasonResult[]> {
+    console.log("📊 [SearchManager.getDurationByReason] Fetching duration statistics");
+    const results = await this.reasonAnalytics.getDurationByReason();
+    console.log(`✅ Found statistics for ${results.length} reasons`);
+    return results;
+  }
+
+  /**
+   * Get Reason Transition Matrix (Week 2 Day 4 Part 2)
+   *
+   * Wrapper for ReasonAnalyticsService.getReasonTransitionMatrix()
+   *
+   * @returns Transition probabilities: P(to_reason | current_reason)
+   */
+  async getReasonTransitionMatrix(): Promise<ReasonTransitionResult[]> {
+    console.log("🔄 [SearchManager.getReasonTransitionMatrix] Fetching transition matrix");
+    const results = await this.reasonAnalytics.getReasonTransitionMatrix();
+    console.log(`✅ Found ${results.length} transition patterns`);
+    return results;
+  }
+
+  /**
+   * Get Reason Co-occurrence (Week 2 Day 4 Part 2)
+   *
+   * Wrapper for ReasonAnalyticsService.getReasonCooccurrence()
+   *
+   * @returns Reason pairs that appear together in same context
+   */
+  async getReasonCooccurrence(): Promise<ReasonCooccurrenceResult[]> {
+    console.log("🔗 [SearchManager.getReasonCooccurrence] Fetching co-occurrence patterns");
+    const results = await this.reasonAnalytics.getReasonCooccurrence();
+    console.log(`✅ Found ${results.length} co-occurrence pairs`);
     return results;
   }
 }
