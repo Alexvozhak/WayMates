@@ -222,13 +222,12 @@ export class SearchManager {
     console.log(cypher);
     console.log("─".repeat(80));
 
-    // New parameter naming: searchContext, periodMonths
     const queryParams = {
       searchContext: validatedParams.currentContext,
       currentUserId: validatedParams.currentUserId,
       periodMonths: validatedParams.lookahead_months,
-      requiredReasons: validatedParams.required_reasons ?? [],
-      excludedReasons: validatedParams.excluded_reasons ?? [],
+      requiredReasons: validatedParams.required_reasons,
+      excludedReasons: validatedParams.excluded_reasons,
     };
     console.log("📦 Query parameters:", {
       currentUserId: queryParams.currentUserId,
@@ -370,13 +369,12 @@ export class SearchManager {
     console.log(cypher);
     console.log("─".repeat(80));
 
-    // New parameter naming: searchContext, periodMonths
     const queryParams = {
       searchContext: validatedParams.targetContext,
       currentUserId: validatedParams.currentUserId,
       periodMonths: validatedParams.lookback_months,
-      requiredReasons: validatedParams.required_reasons ?? [],
-      excludedReasons: validatedParams.excluded_reasons ?? [],
+      requiredReasons: validatedParams.required_reasons,
+      excludedReasons: validatedParams.excluded_reasons,
     };
     console.log("📦 Query parameters:", {
       currentUserId: queryParams.currentUserId,
