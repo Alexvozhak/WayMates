@@ -11,13 +11,11 @@
   "BALANCED": {
     "strictFields": [],
     "flexibleFields": [
-      { "field": "position", "weight": 25 },
-      { "field": "domains", "weight": 25 },
+      { "field": "position", "weight": 30 },
+      { "field": "domains", "weight": 30 },
       { "field": "industry", "weight": 15 },
       { "field": "country_code", "weight": 15 },
-      { "field": "city_name", "weight": 10 },
-      { "field": "work_type", "weight": 5 },
-      { "field": "company_size", "weight": 5 }
+      { "field": "city_name", "weight": 10 }
     ]
   },
   "SKILL_FOCUSED": {
