@@ -46,10 +46,10 @@ export type ReasonCombination = z.infer<typeof ReasonCombinationSchema>;
 export type CurrentOnlyReasonBasedResult = z.infer<
   typeof CurrentOnlyReasonBasedResultSchema
 >;
-export type CurrentOnlyReasonParams = z.infer<
+export type CurrentOnlyReasonParams = z.input<
   typeof CurrentOnlyReasonParamsSchema
 >;
-export type TargetOnlyReasonParams = z.infer<
+export type TargetOnlyReasonParams = z.input<
   typeof TargetOnlyReasonParamsSchema
 >;
 export type SearchContext = z.infer<typeof SearchContextSchema>;
@@ -554,11 +554,13 @@ export const CurrentOnlyReasonParamsSchema = z.object({
     .array(z.string())
     .max(10)
     .optional()
+    .default([])
     .describe("Required reasons (must have ALL, max 10)"),
   excluded_reasons: z
     .array(z.string())
     .max(10)
     .optional()
+    .default([])
     .describe("Excluded reasons (must have NONE, max 10)"),
   searchConstraints: SearchConstraintsSchema.describe("Search constraints (results_limit, timing thresholds)"),
 });
@@ -577,11 +579,13 @@ export const TargetOnlyReasonParamsSchema = z.object({
     .array(z.string())
     .max(10)
     .optional()
+    .default([])
     .describe("Required reasons (must have ALL, max 10)"),
   excluded_reasons: z
     .array(z.string())
     .max(10)
     .optional()
+    .default([])
     .describe("Excluded reasons (must have NONE, max 10)"),
   searchConstraints: SearchConstraintsSchema.describe("Search constraints (results_limit, timing thresholds)"),
 });
