@@ -94,13 +94,13 @@ describe('GdsSimilarityService', () => {
         const story = testDataManager.getStoryBy(testCase.searchUser);
         const searchContextId = story.contexts[testCase.contextIndex ?? 0]!.context_id;
 
-        const results = await similarityService.findSimilarBy(
-          testCase.algorithm,
+        const results = await similarityService.findSimilarBy({
+          algorithm: testCase.algorithm,
           searchContextId,
-          testCase.filters,
-          testCase.topK ?? 100,
-          testCase.similarityCutoff
-        );
+          filters: testCase.filters,
+          topK: testCase.topK ?? 100,
+          similarityCutoff: testCase.similarityCutoff,
+        });
 
         // Results should be an array
         expect(Array.isArray(results)).toBe(true);
@@ -165,12 +165,12 @@ describe('GdsSimilarityService', () => {
           filters.position = context.position;
         }
 
-        const results = await similarityService.findSimilarBy(
-          testCase.algorithm,
+        const results = await similarityService.findSimilarBy({
+          algorithm: testCase.algorithm,
           searchContextId,
           filters,
-          testCase.topK ?? 100
-        );
+          topK: testCase.topK ?? 100,
+        });
 
         expect(Array.isArray(results)).toBe(true);
         console.log(`✅ ${testCase.name}: ${results.length} results`);
@@ -244,13 +244,13 @@ describe('GdsSimilarityService', () => {
         }
 
         await expect(
-          similarityService.findSimilarBy(
-            testCase.algorithm,
+          similarityService.findSimilarBy({
+            algorithm: testCase.algorithm,
             searchContextId,
-            testCase.filters,
-            testCase.topK ?? 10,
-            testCase.similarityCutoff
-          )
+            filters: testCase.filters,
+            topK: testCase.topK ?? 10,
+            similarityCutoff: testCase.similarityCutoff,
+          })
         ).rejects.toThrow(testCase.expectedError);
       });
     });
@@ -262,7 +262,11 @@ describe('GdsSimilarityService', () => {
       const searchContextId = u1Story.contexts[0]!.context_id;
 
       // First call - creates projection
-      await similarityService.findSimilarBy('Overlap', searchContextId, undefined, 5);
+      await similarityService.findSimilarBy({
+        algorithm: 'Overlap',
+        searchContextId,
+        topK: 5,
+      });
 
       // Check projection still exists (bug #3 fix - projection persists)
       const existsAfterFirstCall = await projectionService.projectionExists(
@@ -271,7 +275,11 @@ describe('GdsSimilarityService', () => {
       expect(existsAfterFirstCall).toBe(true);
 
       // Second call - reuses projection
-      await similarityService.findSimilarBy('Jaccard', searchContextId, undefined, 5);
+      await similarityService.findSimilarBy({
+        algorithm: 'Jaccard',
+        searchContextId,
+        topK: 5,
+      });
 
       // Projection should STILL exist
       const existsAfterSecondCall = await projectionService.projectionExists(

@@ -3,7 +3,6 @@ import type { SearchManager } from "./search-manager.js";
 import type { PersistenceManager } from "./persistence-manager.js";
 import type { SkillCategoriesManager } from "./skill-categories-manager.js";
 import {
-  CurrentToTargetParamsSchema,
   CurrentOnlyReasonParamsSchema,
   TargetOnlyReasonParamsSchema,
   GdsSimilaritySearchParamsSchema,
@@ -58,12 +57,12 @@ export function createWayMatesServer(
     };
   }
 
-  // Current to Target
+  // Current to Target (GDS Similarity + Pathfinding)
   server.addTool(
     tool(
       "current_to_target",
-      "Find career transitions from current context to target position",
-      CurrentToTargetParamsSchema,
+      "Find career transitions from current context to target position using GDS Node Similarity + K-Shortest Paths. Returns similar contexts at target position with career paths to reach them.",
+      PipelineWithPathfindingParamsSchema,
       async (params) => searchManager.searchPipeline(params)
     )
   );
@@ -100,21 +99,6 @@ export function createWayMatesServer(
       GdsSimilaritySearchParamsSchema,
       async (params) =>
         searchManager.searchSimilarityBased(params)
-    )
-  );
-
-  // === GDS PIPELINE WITH PATHFINDING ===
-
-  // Pipeline with Pathfinding (GDS Similarity + Yen's K-Shortest)
-  server.addTool(
-    tool(
-      "find_pipeline_with_pathfinding",
-      "Combines GDS similarity search with pathfinding: finds similar contexts at target position, then shows K shortest paths to reach them.",
-      PipelineWithPathfindingParamsSchema,
-      async (params) => {
-        // params already has .default() applied by tool.execute()
-        return searchManager.searchPipelineWithPathfinding(params);
-      }
     )
   );
 

@@ -3,7 +3,6 @@ import {
   verifyConnection,
 } from "./neo4j.js";
 import { createWayMatesServer } from "./mcp-server.js";
-import { SearchQueryBuilder } from "./orcestrator/search-query-builder.js";
 import { SearchManager } from "./search-manager.js";
 import { PersistenceManager } from "./persistence-manager.js";
 import { SkillCategoriesManager } from "./skill-categories-manager.js";
@@ -13,23 +12,17 @@ import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
 import { GdsPathfindingService } from "./gds/services/gds-pathfinding.service.js";
 
 async function main() {
-  const searchQueryBuilder = new SearchQueryBuilder();
-  searchQueryBuilder.validateCurrentPresets();
-
-  const driver = createNeo4jDriver(); //todo нужен ли trycatch?
-  // и нужно разобраться как работаем с енв, централизовано
+  const driver = createNeo4jDriver();
   await verifyConnection(driver);
 
   const selectivityService = new SelectivityService(driver);
 
-  // Initialize GDS services (Week 2 Day 4 integration)
   const gdsProjectionService = new GdsProjectionService(driver);
   const gdsSimilarityService = new GdsSimilarityService(driver, gdsProjectionService);
   const gdsPathfindingService = new GdsPathfindingService(driver, gdsProjectionService);
 
   const searchManager = new SearchManager(
     driver,
-    searchQueryBuilder,
     selectivityService,
     gdsSimilarityService,
     gdsPathfindingService,

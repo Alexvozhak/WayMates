@@ -11,7 +11,6 @@ import type { Driver } from "neo4j-driver";
 import { createDriver, withWriteSession } from "../../../src/neo4j.js";
 import { PersistenceManager } from "../../../src/persistence-manager.js";
 import { SearchManager } from "../../../src/search-manager.js";
-import { SearchQueryBuilder } from "../../../src/orcestrator/search-query-builder.js";
 import { SelectivityService } from "../../../src/services/selectivity.service.js";
 import { DEFAULT_CONSTRAINTS } from "../../../src/config.js";
 import type { StoryInput } from "../../../src/schemas-zod.js";
@@ -21,7 +20,6 @@ import { ulid } from "ulid";
 import { GdsProjectionService } from "../../../src/gds/services/gds-projection.service.js";
 import { GdsSimilarityService } from "../../../src/gds/services/gds-similarity.service.js";
 import { GdsPathfindingService } from "../../../src/gds/services/gds-pathfinding.service.js";
-import { ReasonAnalyticsService } from "../../../src/services/reason-analytics.service.js";
 
 // Helper to create valid user IDs
 const createUserId = () => `usr_${ulid()}`;
@@ -34,23 +32,18 @@ describe("Target Reason-Based Search Integration Tests", () => {
   beforeAll(() => {
     driver = createDriver();
     persistenceManager = new PersistenceManager(driver);
-    const builder = new SearchQueryBuilder();
     const selectivity = new SelectivityService(driver);
 
-    // Initialize GDS services (not used in reason-based tests, but required for SearchManager constructor)
     const gdsProjection = new GdsProjectionService(driver);
     const gdsSimilarity = new GdsSimilarityService(driver, gdsProjection);
     const gdsPathfinding = new GdsPathfindingService(driver, gdsProjection);
-    const reasonAnalytics = new ReasonAnalyticsService(driver);
 
     searchManager = new SearchManager(
       driver,
-      builder,
       selectivity,
       gdsSimilarity,
       gdsPathfinding,
-      gdsProjection,
-      reasonAnalytics
+      gdsProjection
     );
   });
 

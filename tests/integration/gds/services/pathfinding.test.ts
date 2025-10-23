@@ -81,11 +81,12 @@ describe('GdsPathfindingService', () => {
 
     basicTestCases.forEach((testCase) => {
       it(testCase.name, async () => {
-        const results = await pathfindingService.findKShortestPaths(
-          testCase.sourceContextId,
-          testCase.targetContextId,
-          testCase.k
-        );
+        const params = {
+          sourceContextId: testCase.sourceContextId,
+          targetContextId: testCase.targetContextId,
+          ...(testCase.k !== undefined && { k: testCase.k }),
+        };
+        const results = await pathfindingService.findKShortestPaths(params);
 
         expect(Array.isArray(results)).toBe(true);
         expect(results.length).toBeGreaterThan(0);
@@ -149,11 +150,12 @@ describe('GdsPathfindingService', () => {
 
     noPathTestCases.forEach((testCase) => {
       it(testCase.name, async () => {
-        const results = await pathfindingService.findKShortestPaths(
-          testCase.sourceContextId,
-          testCase.targetContextId,
-          testCase.k
-        );
+        const params = {
+          sourceContextId: testCase.sourceContextId,
+          targetContextId: testCase.targetContextId,
+          ...(testCase.k !== undefined && { k: testCase.k }),
+        };
+        const results = await pathfindingService.findKShortestPaths(params);
 
         expect(Array.isArray(results)).toBe(true);
         expect(results.length).toBe(0);
@@ -218,12 +220,13 @@ describe('GdsPathfindingService', () => {
 
     validationErrorTestCases.forEach((testCase) => {
       it(testCase.name, async () => {
+        const params = {
+          sourceContextId: testCase.sourceContextId,
+          targetContextId: testCase.targetContextId,
+          ...(testCase.k !== undefined && { k: testCase.k }),
+        };
         await expect(
-          pathfindingService.findKShortestPaths(
-            testCase.sourceContextId,
-            testCase.targetContextId,
-            testCase.k
-          )
+          pathfindingService.findKShortestPaths(params)
         ).rejects.toThrow(testCase.expectedError);
 
         console.log(`✅ ${testCase.name}: correctly threw error`);
@@ -234,11 +237,11 @@ describe('GdsPathfindingService', () => {
   describe('findKShortestPaths - path properties', () => {
     it('should return path with correct number of steps', async () => {
       // U8: Junior → Middle → Senior → TechLead (3 transitions = 4 contexts)
-      const results = await pathfindingService.findKShortestPaths(
-        'ctx_01JAB000000000000000000801', // U8 Junior
-        'ctx_01JAB000000000000000000804', // U8 TechLead
-        1
-      );
+      const results = await pathfindingService.findKShortestPaths({
+        sourceContextId: 'ctx_01JAB000000000000000000801', // U8 Junior
+        targetContextId: 'ctx_01JAB000000000000000000804', // U8 TechLead
+        k: 1,
+      });
 
       expect(results.length).toBe(1);
       const path = results[0]!;
@@ -262,11 +265,11 @@ describe('GdsPathfindingService', () => {
       // Senior → TechLead: 48 months
       // Total: 24 + 30 + 48 = 102 months
 
-      const results = await pathfindingService.findKShortestPaths(
-        'ctx_01JAB000000000000000000801', // U8 Junior
-        'ctx_01JAB000000000000000000804', // U8 TechLead
-        1
-      );
+      const results = await pathfindingService.findKShortestPaths({
+        sourceContextId: 'ctx_01JAB000000000000000000801', // U8 Junior
+        targetContextId: 'ctx_01JAB000000000000000000804', // U8 TechLead
+        k: 1,
+      });
 
       expect(results.length).toBe(1);
       const path = results[0]!;
@@ -277,18 +280,18 @@ describe('GdsPathfindingService', () => {
 
     it('should find shorter path when starting from intermediate context', async () => {
       // Full path (Junior → TechLead): 102 months
-      const fullPath = await pathfindingService.findKShortestPaths(
-        'ctx_01JAB000000000000000000801', // U8 Junior
-        'ctx_01JAB000000000000000000804', // U8 TechLead
-        1
-      );
+      const fullPath = await pathfindingService.findKShortestPaths({
+        sourceContextId: 'ctx_01JAB000000000000000000801', // U8 Junior
+        targetContextId: 'ctx_01JAB000000000000000000804', // U8 TechLead
+        k: 1,
+      });
 
       // Partial path (Middle → TechLead): 30 + 48 = 78 months
-      const partialPath = await pathfindingService.findKShortestPaths(
-        'ctx_01JAB000000000000000000802', // U8 Middle
-        'ctx_01JAB000000000000000000804', // U8 TechLead
-        1
-      );
+      const partialPath = await pathfindingService.findKShortestPaths({
+        sourceContextId: 'ctx_01JAB000000000000000000802', // U8 Middle
+        targetContextId: 'ctx_01JAB000000000000000000804', // U8 TechLead
+        k: 1,
+      });
 
       expect(fullPath.length).toBe(1);
       expect(partialPath.length).toBe(1);
@@ -307,11 +310,11 @@ describe('GdsPathfindingService', () => {
     it('should return K distinct paths (no duplicates) when k=3', async () => {
       // Test with k=3 to ensure Yen's algorithm returns unique paths
       // Note: U8/U9 have linear paths, so actual paths < k, but should still be unique
-      const results = await pathfindingService.findKShortestPaths(
-        'ctx_01JAB000000000000000000801', // U8 Junior
-        'ctx_01JAB000000000000000000804', // U8 TechLead
-        3 // Request 3 paths
-      );
+      const results = await pathfindingService.findKShortestPaths({
+        sourceContextId: 'ctx_01JAB000000000000000000801', // U8 Junior
+        targetContextId: 'ctx_01JAB000000000000000000804', // U8 TechLead
+        k: 3, // Request 3 paths
+      });
 
       // Since U8 has only 1 linear path, we expect exactly 1 path (not duplicates)
       expect(results.length).toBe(1);
@@ -329,11 +332,11 @@ describe('GdsPathfindingService', () => {
 
     it('should handle k > actual paths without duplicating paths', async () => {
       // Request k=5, but U9 has only 1 linear path (Junior → Middle → Senior → Engineering Manager)
-      const results = await pathfindingService.findKShortestPaths(
-        'ctx_01JAB000000000000000000901', // U9 Junior
-        'ctx_01JAB000000000000000000904', // U9 Engineering Manager
-        5 // Request 5 paths
-      );
+      const results = await pathfindingService.findKShortestPaths({
+        sourceContextId: 'ctx_01JAB000000000000000000901', // U9 Junior
+        targetContextId: 'ctx_01JAB000000000000000000904', // U9 Engineering Manager
+        k: 5, // Request 5 paths
+      });
 
       // Should return only 1 path (no duplicates)
       expect(results.length).toBe(1);
