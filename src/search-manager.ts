@@ -35,7 +35,35 @@ import type {
   ReasonTransitionResult,
   ReasonCooccurrenceResult,
 } from "./services/reason-analytics.service.js";
-import type { PathResult } from "./gds/schemas.js";
+import type {
+  PathResult,
+  GdsPathfindingParams,
+  PipelineWithPathfindingParams,
+  PipelineWithPathfindingResult,
+} from "./gds/schemas.js";
+
+/**
+ * Search direction for reason-based queries
+ * - forward: Current → Future (lookahead)
+ * - backward: Target ← Past (lookback)
+ */
+type SearchDirection = "forward" | "backward";
+
+/**
+ * Internal parameters for unified reason-based search
+ */
+interface ReasonBasedSearchConfig {
+  direction: SearchDirection;
+  presetName: string;
+  searchContext: UserContext | TargetContext;
+  currentUserId: string;
+  periodMonths: number;
+  requiredReasons: string[];
+  excludedReasons: string[];
+  presetType: "current" | "target";
+  methodName: string; // For error logging
+  periodLabel: string; // For warning logging (lookahead_months / lookback_months)
+}
 
 export class SearchManager {
   constructor(
@@ -110,241 +138,190 @@ export class SearchManager {
       });
     });
 
-    console.log(
-      "🎯 Pipeline results:",
-      parsedResults.map((r) => ({
-        user_id: r.user_id,
-        match_score: r.match_score,
-      }))
+    return parsedResults;
+  }
+
+  /**
+   * Unified reason-based search implementation (DRY refactoring)
+   *
+   * Handles both forward (current → future) and backward (target ← past) searches.
+   *
+   * @param config - Search configuration with direction, preset, context, etc.
+   * @returns Array of ReasonCombination results
+   */
+  private async searchReasonBasedInternal(
+    config: ReasonBasedSearchConfig
+  ): Promise<ReasonCombination[]> {
+    const {
+      direction,
+      presetName,
+      searchContext,
+      currentUserId,
+      periodMonths,
+      requiredReasons,
+      excludedReasons,
+      presetType,
+      methodName,
+      periodLabel,
+    } = config;
+
+    // Validate preset
+    const presets = presetType === "current" ? CURRENT_PRESETS : TARGET_PRESETS;
+    const isValidPreset =
+      presetType === "current"
+        ? isCurrentPresetName(presetName)
+        : isTargetPresetName(presetName);
+
+    if (!isValidPreset) {
+      throw new Error(`Invalid ${presetType} preset name: ${presetName}`);
+    }
+
+    const presetConfig = presets[presetName]!;
+
+    // Rank strict fields by selectivity
+    const orderedStrictFields = await this.selectivity.rankStrictFields(
+      presetConfig.strictFields,
+      searchContext
     );
+
+    const flexibleFields = presetConfig.flexibleFields;
+
+    // Build reason-based query with specified direction
+    const cypher = buildReasonBasedQuery(
+      orderedStrictFields,
+      flexibleFields,
+      direction
+    );
+
+    const queryParams = {
+      searchContext,
+      currentUserId,
+      periodMonths,
+      requiredReasons,
+      excludedReasons,
+    };
+
+    let result;
+    try {
+      result = await withReadSession(this.driver, (tx) =>
+        tx.run(cypher, queryParams)
+      );
+    } catch (error) {
+      console.error(
+        `❌ [SearchManager.${methodName}] Query execution failed:`,
+        error
+      );
+      console.error("Query:", cypher);
+      console.error("Params:", queryParams);
+      throw new Error(
+        `Failed to execute reason-based search: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
+    console.log(
+      "✅ Reason-based query executed, records count:",
+      result.records.length
+    );
+
+    // Parse results using ReasonCombinationSchema
+    const parsedResults = result.records.map((rec, index) => {
+      const reasonCombinationResult = rec.get("reason_combination_result");
+
+      if (!reasonCombinationResult) {
+        console.error(
+          `❌ [SearchManager.${methodName}] Record ${index} has null reason_combination_result`
+        );
+        throw new Error(
+          `Invalid query result: reason_combination_result is null at index ${index}`
+        );
+      }
+
+      try {
+        return ReasonCombinationSchema.parse(reasonCombinationResult);
+      } catch (error) {
+        console.error(
+          `❌ [SearchManager.${methodName}] Failed to parse record ${index}:`,
+          error
+        );
+        console.error("Raw data:", reasonCombinationResult);
+        throw error;
+      }
+    });
+
+    if (parsedResults.length === 0) {
+      console.warn(
+        `⚠️ [SearchManager.${methodName}] No reason combinations found for the given criteria`
+      );
+      console.warn("Debug info:", {
+        [periodLabel]: periodMonths,
+        required_reasons: requiredReasons,
+        excluded_reasons: excludedReasons,
+        context: {
+          position: searchContext.position,
+          domains: searchContext.domains,
+        },
+      });
+    }
 
     return parsedResults;
   }
 
+  /**
+   * Current-Only Search (Forward Lookahead)
+   *
+   * Finds reason combinations for transitions FROM current context.
+   * Uses 'forward' direction to look ahead at future contexts.
+   *
+   * @param params - Current-only search parameters
+   * @returns Array of reason combinations with statistics
+   */
   async searchCurrentOnlyMode(
     params: CurrentOnlyReasonParams
   ): Promise<ReasonCombination[]> {
     // Validate all parameters including lookahead_months range
     const validatedParams = CurrentOnlyReasonParamsSchema.parse(params);
 
-    // Validate preset
-    if (!isCurrentPresetName(validatedParams.currentPreset)) {
-      throw new Error(
-        `Invalid current preset name: ${validatedParams.currentPreset}`
-      );
-    }
-
-    const presetConfig = CURRENT_PRESETS[validatedParams.currentPreset]!;
-
-    // Rank strict fields by selectivity
-    const orderedStrictFields = await this.selectivity.rankStrictFields(
-      presetConfig.strictFields,
-      validatedParams.currentContext
-    );
-
-    const flexibleFields = presetConfig.flexibleFields;
-
-    // Build reason-based query with 'forward' direction
-    const cypher = buildReasonBasedQuery(
-      orderedStrictFields,
-      flexibleFields,
-      "forward"
-    );
-
-    const queryParams = {
+    return this.searchReasonBasedInternal({
+      direction: "forward",
+      presetName: validatedParams.currentPreset,
       searchContext: validatedParams.currentContext,
       currentUserId: validatedParams.currentUserId,
       periodMonths: validatedParams.lookaheadMonths,
       requiredReasons: validatedParams.requiredReasons,
       excludedReasons: validatedParams.excludedReasons,
-    };
-
-    let result;
-    try {
-      result = await withReadSession(this.driver, (tx) =>
-        tx.run(cypher, queryParams)
-      );
-    } catch (error) {
-      console.error(
-        "❌ [SearchManager.searchCurrentReasonBased] Query execution failed:",
-        error
-      );
-      console.error("Query:", cypher);
-      console.error("Params:", queryParams);
-      throw new Error(
-        `Failed to execute reason-based search: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-
-    console.log(
-      "✅ Reason-based query executed, records count:",
-      result.records.length
-    );
-
-    // Parse results using ReasonCombinationSchema
-    const parsedResults = result.records.map((rec, index) => {
-      const reasonCombinationResult = rec.get("reason_combination_result");
-
-      if (!reasonCombinationResult) {
-        console.error(
-          `❌ [SearchManager.searchCurrentReasonBased] Record ${index} has null reason_combination_result`
-        );
-        throw new Error(
-          `Invalid query result: reason_combination_result is null at index ${index}`
-        );
-      }
-
-      try {
-        return ReasonCombinationSchema.parse(reasonCombinationResult);
-      } catch (error) {
-        console.error(
-          `❌ [SearchManager.searchCurrentReasonBased] Failed to parse record ${index}:`,
-          error
-        );
-        console.error("Raw data:", reasonCombinationResult);
-        throw error;
-      }
+      presetType: "current",
+      methodName: "searchCurrentReasonBased",
+      periodLabel: "lookahead_months",
     });
-
-    if (parsedResults.length === 0) {
-      console.warn(
-        "⚠️ [SearchManager.searchCurrentReasonBased] No reason combinations found for the given criteria"
-      );
-      console.warn("Debug info:", {
-        lookahead_months: validatedParams.lookaheadMonths,
-        required_reasons: validatedParams.requiredReasons,
-        excluded_reasons: validatedParams.excludedReasons,
-        currentContext: {
-          position: validatedParams.currentContext.position,
-          domains: validatedParams.currentContext.domains,
-        },
-      });
-    }
-
-    console.log(
-      "🎯 Reason-based results:",
-      parsedResults.map((r) => ({
-        combination: r.combination,
-        users_count: r.users_count,
-        avg_duration: r.stats.avg_duration_months,
-        median_duration_months: r.stats.median_duration_months,
-      }))
-    );
-
-    return parsedResults;
   }
 
+  /**
+   * Target-Only Search (Backward Lookback)
+   *
+   * Finds reason combinations for transitions TO target context.
+   * Uses 'backward' direction to look back at past contexts.
+   *
+   * @param params - Target-only search parameters
+   * @returns Array of reason combinations with statistics
+   */
   async searchTargetOnlyMode(
     params: TargetOnlyReasonParams
   ): Promise<ReasonCombination[]> {
     // Validate all parameters including lookback_months range
     const validatedParams = TargetOnlyReasonParamsSchema.parse(params);
 
-    // Validate preset (target presets)
-    if (!isTargetPresetName(validatedParams.targetPreset)) {
-      throw new Error(
-        `Invalid target preset name: ${validatedParams.targetPreset}`
-      );
-    }
-
-    const presetConfig = TARGET_PRESETS[validatedParams.targetPreset]!;
-
-    // Rank strict fields by selectivity
-    const orderedStrictFields = await this.selectivity.rankStrictFields(
-      presetConfig.strictFields,
-      validatedParams.targetContext
-    );
-
-    const flexibleFields = presetConfig.flexibleFields;
-
-    // Build reason-based query with 'backward' direction
-    const cypher = buildReasonBasedQuery(
-      orderedStrictFields,
-      flexibleFields,
-      "backward"
-    );
-
-    const queryParams = {
+    return this.searchReasonBasedInternal({
+      direction: "backward",
+      presetName: validatedParams.targetPreset,
       searchContext: validatedParams.targetContext,
       currentUserId: validatedParams.currentUserId,
       periodMonths: validatedParams.lookbackMonths,
       requiredReasons: validatedParams.requiredReasons,
       excludedReasons: validatedParams.excludedReasons,
-    };
-
-    let result;
-    try {
-      result = await withReadSession(this.driver, (tx) =>
-        tx.run(cypher, queryParams)
-      );
-    } catch (error) {
-      console.error(
-        "❌ [SearchManager.searchTargetReasonBased] Query execution failed:",
-        error
-      );
-      console.error("Query:", cypher);
-      console.error("Params:", queryParams);
-      throw new Error(
-        `Failed to execute reason-based search: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-
-    console.log(
-      "✅ Reason-based query executed, records count:",
-      result.records.length
-    );
-
-    // Parse results using ReasonCombinationSchema
-    const parsedResults = result.records.map((rec, index) => {
-      const reasonCombinationResult = rec.get("reason_combination_result");
-
-      if (!reasonCombinationResult) {
-        console.error(
-          `❌ [SearchManager.searchTargetReasonBased] Record ${index} has null reason_combination_result`
-        );
-        throw new Error(
-          `Invalid query result: reason_combination_result is null at index ${index}`
-        );
-      }
-
-      try {
-        return ReasonCombinationSchema.parse(reasonCombinationResult);
-      } catch (error) {
-        console.error(
-          `❌ [SearchManager.searchTargetReasonBased] Failed to parse record ${index}:`,
-          error
-        );
-        console.error("Raw data:", reasonCombinationResult);
-        throw error;
-      }
+      presetType: "target",
+      methodName: "searchTargetReasonBased",
+      periodLabel: "lookback_months",
     });
-
-    if (parsedResults.length === 0) {
-      console.warn(
-        "⚠️ [SearchManager.searchTargetReasonBased] No reason combinations found for the given criteria"
-      );
-      console.warn("Debug info:", {
-        lookback_months: validatedParams.lookbackMonths,
-        required_reasons: validatedParams.requiredReasons,
-        excluded_reasons: validatedParams.excludedReasons,
-        targetContext: {
-          position: validatedParams.targetContext.position,
-          domains: validatedParams.targetContext.domains,
-        },
-      });
-    }
-
-    console.log(
-      "🎯 Reason-based results:",
-      parsedResults.map((r) => ({
-        combination: r.combination,
-        users_count: r.users_count,
-        avg_duration: r.stats.avg_duration_months,
-        median_duration_months: r.stats.median_duration_months,
-      }))
-    );
-
-    return parsedResults;
   }
 
   /**
@@ -361,25 +338,10 @@ export class SearchManager {
   ): Promise<Array<{ context_id: string; match_score: number }>> {
     const validatedParams = GdsSimilaritySearchParamsSchema.parse(params);
 
-    console.log(
-      "🔍 [SearchManager.searchSimilarityBased] Starting GDS similarity search"
-    );
-    console.log("📊 Input params:", {
-      searchContextId: validatedParams.searchContextId,
-      algorithm: validatedParams.algorithm,
-      topK: validatedParams.topK,
-      similarityCutoff: validatedParams.similarityCutoff,
-      filters: validatedParams.filters,
-    });
-
     // Ensure GDS skills graph projection exists
-    console.log("🔧 [SearchManager] Ensuring GDS skills graph projection...");
     await this.gdsProjection.ensureSkillsGraphProjection();
 
     // Call GDS Similarity service
-    console.log(
-      `🎯 [SearchManager] Calling GDS ${validatedParams.algorithm} similarity...`
-    );
     const results = await this.gdsSimilarity.findSimilarBy(
       validatedParams.algorithm,
       validatedParams.searchContextId,
@@ -389,13 +351,6 @@ export class SearchManager {
     );
 
     console.log(`✅ [SearchManager] Found ${results.length} similar contexts`);
-    console.log(
-      "📊 Top 5 results:",
-      results.slice(0, 5).map((r) => ({
-        context_id: r.context_id,
-        match_score: r.match_score.toFixed(3),
-      }))
-    );
 
     return results;
   }
@@ -406,33 +361,12 @@ export class SearchManager {
    * Combines GDS Node Similarity (find similar contexts) with Yen's K-Shortest Paths.
    * Use case: Find users who reached target position AND show career paths they took.
    *
-   * @param searchContextId - Starting context ID
-   * @param targetPosition - Target position to reach
-   * @param algorithm - Similarity algorithm (Jaccard/Overlap)
-   * @param k - Number of shortest paths to find
-   * @param topK - Max similar contexts to consider
-   * @param similarityCutoff - Minimum similarity threshold
+   * @param params - Pipeline search parameters (validated by FastMCP)
    * @returns Array of similar contexts with their career paths
    */
-  async searchPipelineWithPathfinding(params: {
-    searchContextId: string;
-    targetPosition: string;
-    algorithm: "Jaccard" | "Overlap";
-    k?: number;
-    topK?: number;
-    similarityCutoff?: number;
-  }): Promise<
-    Array<{
-      context_id: string;
-      match_score: number;
-      paths: PathResult[];
-    }>
-  > {
-    console.log(
-      "🚀 [SearchManager.searchPipelineWithPathfinding] Starting GDS pipeline with pathfinding"
-    );
-    console.log("📊 Input params:", params);
-
+  async searchPipelineWithPathfinding(
+    params: PipelineWithPathfindingParams
+  ): Promise<PipelineWithPathfindingResult[]> {
     // Step 1: Find similar contexts using GDS Node Similarity
     const similarContexts = await this.searchSimilarityBased({
       searchContextId: params.searchContextId,
@@ -447,13 +381,13 @@ export class SearchManager {
     );
 
     // Step 2: For each similar context, find K shortest paths from search context
-    const results = [];
+    const results: PipelineWithPathfindingResult[] = [];
     for (const similar of similarContexts) {
-      const paths = await this.gdsPathfinding.findKShortestPaths(
-        params.searchContextId,
-        similar.context_id,
-        params.k ?? 3
-      );
+      const paths = await this.findKShortestPaths({
+        sourceContextId: params.searchContextId,
+        targetContextId: similar.context_id,
+        k: params.k,
+      });
 
       results.push({
         context_id: similar.context_id,
@@ -471,25 +405,14 @@ export class SearchManager {
    *
    * Week 2 Day 4 Part 2 - Direct MCP tool wrapper for GdsPathfindingService
    *
-   * @param sourceContextId - Starting context ID
-   * @param targetContextId - Target context ID
-   * @param k - Number of shortest paths (default: 3)
+   * @param params - Pathfinding parameters (validated by FastMCP)
    * @returns Array of paths ordered by total cost
    */
-  async findKShortestPaths(
-    sourceContextId: string,
-    targetContextId: string,
-    k?: number
-  ): Promise<PathResult[]> {
-    console.log(
-      "🛤️ [SearchManager.findKShortestPaths] Finding K shortest paths"
-    );
-    console.log("📊 Input params:", { sourceContextId, targetContextId, k });
-
+  async findKShortestPaths(params: GdsPathfindingParams): Promise<PathResult[]> {
     const results = await this.gdsPathfinding.findKShortestPaths(
-      sourceContextId,
-      targetContextId,
-      k ?? 3
+      params.sourceContextId,
+      params.targetContextId,
+      params.k
     );
 
     console.log(`✅ Found ${results.length} paths`);
@@ -504,9 +427,6 @@ export class SearchManager {
    * @returns Duration statistics (avg, median, percentiles) per creation_reason
    */
   async getDurationByReason(): Promise<DurationByReasonResult[]> {
-    console.log(
-      "📊 [SearchManager.getDurationByReason] Fetching duration statistics"
-    );
     const results = await this.reasonAnalytics.getDurationByReason();
     console.log(`✅ Found statistics for ${results.length} reasons`);
     return results;
@@ -520,9 +440,6 @@ export class SearchManager {
    * @returns Transition probabilities: P(to_reason | current_reason)
    */
   async getReasonTransitionMatrix(): Promise<ReasonTransitionResult[]> {
-    console.log(
-      "🔄 [SearchManager.getReasonTransitionMatrix] Fetching transition matrix"
-    );
     const results = await this.reasonAnalytics.getReasonTransitionMatrix();
     console.log(`✅ Found ${results.length} transition patterns`);
     return results;
@@ -536,9 +453,6 @@ export class SearchManager {
    * @returns Reason pairs that appear together in same context
    */
   async getReasonCooccurrence(): Promise<ReasonCooccurrenceResult[]> {
-    console.log(
-      "🔗 [SearchManager.getReasonCooccurrence] Fetching co-occurrence patterns"
-    );
     const results = await this.reasonAnalytics.getReasonCooccurrence();
     console.log(`✅ Found ${results.length} co-occurrence pairs`);
     return results;

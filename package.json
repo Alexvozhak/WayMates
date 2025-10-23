@@ -4,9 +4,8 @@
   "scripts": {
     "pretest": "npm run build:cypher",
     "generate:user-keys": "tsx scripts/gen-user-keys.ts",
-    "generate:presets": "tsx scripts/gen-presets.ts",
     "start": "npm run docker:prod:up && npm run db:prod:init && npm run build:cypher && tsx src/app.ts",
-    "build": "npm run generate:presets && npm run build:cypher && tsc",
+    "build": "npm run build:cypher && tsc",
     "build:cypher": "npx tsx scripts/build-cypher.ts",
     "dev": "npm run build:cypher && tsx src/app.ts",
     "lint": "eslint . --ext .ts,.js",

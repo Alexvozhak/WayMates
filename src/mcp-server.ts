@@ -20,6 +20,10 @@ import {
   CreateCustomSkillCategoryParamsSchema,
   AssignSkillToCategoryParamsSchema,
 } from "./schemas-zod.js";
+import {
+  GdsPathfindingParamsSchema,
+  PipelineWithPathfindingParamsSchema,
+} from "./gds/schemas.js";
 import { z } from "zod";
 //tODO заменить все params на CurrentToTargetParamsSchema
 // в методах searchPipeline и searchCurrent и тд (не мельчить)"
@@ -117,13 +121,12 @@ export function createWayMatesServer(
     tool(
       "find_k_shortest_paths",
       "Find K shortest career paths between two contexts using Yen's algorithm. Returns paths ordered by total cost (trail durations).",
-      z.object({
-        sourceContextId: z.string().describe("Starting context ID"),
-        targetContextId: z.string().describe("Target context ID"),
-        k: z.number().int().min(1).max(10).optional().describe("Number of shortest paths (default: 3)"),
-      }).strict(),
-      async (params) =>
-        searchManager.findKShortestPaths(params.sourceContextId, params.targetContextId, params.k)
+      GdsPathfindingParamsSchema,
+      async (rawParams) => {
+        // Apply .default() values by parsing
+        const params = GdsPathfindingParamsSchema.parse(rawParams);
+        return searchManager.findKShortestPaths(params);
+      }
     )
   );
 
@@ -132,23 +135,12 @@ export function createWayMatesServer(
     tool(
       "find_pipeline_with_pathfinding",
       "Combines GDS similarity search with pathfinding: finds similar contexts at target position, then shows K shortest paths to reach them.",
-      z.object({
-        searchContextId: z.string().describe("Starting context ID"),
-        targetPosition: z.string().describe("Target position to reach"),
-        algorithm: z.enum(['Jaccard', 'Overlap']).describe("Similarity algorithm"),
-        k: z.number().int().min(1).max(10).optional().describe("Number of paths per context (default: 3)"),
-        topK: z.number().int().min(1).max(100).optional().describe("Max similar contexts (default: 10)"),
-        similarityCutoff: z.number().min(0).max(1).optional().describe("Min similarity threshold (default: 0.0)"),
-      }).strict(),
-      async (params) =>
-        searchManager.searchPipelineWithPathfinding({
-          searchContextId: params.searchContextId,
-          targetPosition: params.targetPosition,
-          algorithm: params.algorithm,
-          ...(params.k !== undefined && { k: params.k }),
-          ...(params.topK !== undefined && { topK: params.topK }),
-          ...(params.similarityCutoff !== undefined && { similarityCutoff: params.similarityCutoff }),
-        })
+      PipelineWithPathfindingParamsSchema,
+      async (rawParams) => {
+        // Apply .default() values by parsing
+        const params = PipelineWithPathfindingParamsSchema.parse(rawParams);
+        return searchManager.searchPipelineWithPathfinding(params);
+      }
     )
   );
 

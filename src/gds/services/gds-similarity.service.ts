@@ -158,11 +158,6 @@ export class GdsSimilarityService {
       throw new Error(`similarityCutoff must be in [0.0, 1.0], got: ${cutoff}`);
     }
 
-    console.log(`🔍 [GDS Similarity] Finding similar contexts (${algorithm.toUpperCase()})`);
-    console.log(`   Search context: ${searchContextId}`);
-    console.log(`   Filters:`, filters);
-    console.log(`   TopK: ${topK}, Cutoff: ${cutoff}`);
-
     // 1. Ensure projection exists
     await this.projectionService.ensureSkillsGraphProjection();
 
@@ -212,8 +207,6 @@ export class GdsSimilarityService {
       console.log(`   ⚠️ No candidate contexts match filters, returning empty results`);
       return []; // Early return - avoid GDS call with empty targetNodeFilter
     }
-
-    console.log(`   📊 Found ${candidateCount} candidate contexts after filters`);
 
     // 4. Run GDS Filtered Node Similarity in SINGLE query
     // CRITICAL: GDS projection only includes Context, Skill, WorkDomain (NOT User!)

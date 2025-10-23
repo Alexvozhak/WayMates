@@ -145,7 +145,7 @@ get-library-docs({
 # Development - run the MCP server
 npm run dev
 
-# Build everything (presets + Cypher + TypeScript)
+# Build everything (Cypher + TypeScript)
 npm run build
 
 # Lint
@@ -297,9 +297,10 @@ return records.map(record => record.get('result') as MyType);
 ### Preset System
 
 Presets (`src/orcestrator/presets.ts`) define common search configurations:
-- Generated from `data/trails/presets/*.json`
+- **Loaded dynamically** from `config/current-presets.json` and `config/target-presets.json`
 - Specify strict fields (WHERE filters) and flexible fields (scoring)
-- Regenerated via `npm run generate:presets`
+- Validated at runtime using Zod schemas (CurrentPresetsSchema, TargetPresetsSchema)
+- **No build step required** - presets are imported directly via JSON imports
 
 ## Data Model
 
@@ -510,10 +511,10 @@ async findSimilarByOverlap(...) { return this.findSimilarBy('Overlap', ...); }
 
 ### Before Making Changes
 
-1. **Never modify generated files**: `src/generated/queries.generated.ts`, `src/generated/presets.generated.ts`
+1. **Never modify generated files**: `src/generated/queries.generated.ts`
 2. **Always regenerate after Cypher edits**: `npm run build:cypher`
 3. **Check test coverage**: Especially for schema/query changes that mocks won't catch
-4. **Verify preset validity**: SearchQueryBuilder validates presets on startup
+4. **Verify preset validity**: SearchManager validates presets on startup (using Zod schemas)
 
 ### Proactive Agent Usage (MANDATORY)
 

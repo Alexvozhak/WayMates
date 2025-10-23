@@ -144,10 +144,6 @@ export class GdsPathfindingService {
       throw new Error(`k must be <= ${MAX_K_PATHS}, got: ${k}`);
     }
 
-    console.log(`🛤️ [GDS Pathfinding] Finding ${k} shortest paths`);
-    console.log(`   Source: ${sourceContextId}`);
-    console.log(`   Target: ${targetContextId}`);
-
     // 1. Ensure temporal graph projection exists
     await this.projectionService.ensureTemporalGraphProjection();
 
