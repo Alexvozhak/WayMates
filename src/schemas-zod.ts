@@ -549,11 +549,11 @@ export const CurrentOnlyReasonParamsSchema = z.object({
     "User's current context (search params, all fields optional)"
   ),
   currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
-  lookaheadMonths: z
+  searchPeriodMonths: z
     .number()
     .min(1)
     .max(60)
-    .describe("How many months to look ahead (typically 6/12/18/24)"),
+    .describe("Search period in months (forward lookahead, typically 6/12/18/24)"),
   requiredReasons: z
     .array(z.string())
     .max(10)
@@ -580,11 +580,11 @@ export const TargetOnlyReasonParamsSchema = z.object({
     "User's target context (search params, all fields optional)"
   ),
   currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
-  lookbackMonths: z
+  searchPeriodMonths: z
     .number()
     .min(1)
     .max(60)
-    .describe("How many months to look back (typically 6/12/18/24)"),
+    .describe("Search period in months (backward lookback, typically 6/12/18/24)"),
   requiredReasons: z
     .array(z.string())
     .max(10)

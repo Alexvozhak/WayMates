@@ -113,7 +113,7 @@ export class SearchManager {
       presetConfig,
       searchContext: validatedParams.currentContext,
       currentUserId: validatedParams.currentUserId,
-      periodMonths: validatedParams.lookaheadMonths,
+      periodMonths: validatedParams.searchPeriodMonths,
       requiredReasons: validatedParams.requiredReasons,
       excludedReasons: validatedParams.excludedReasons,
     });
@@ -137,7 +137,7 @@ export class SearchManager {
       presetConfig,
       searchContext: validatedParams.targetContext,
       currentUserId: validatedParams.currentUserId,
-      periodMonths: validatedParams.lookbackMonths,
+      periodMonths: validatedParams.searchPeriodMonths,
       requiredReasons: validatedParams.requiredReasons,
       excludedReasons: validatedParams.excludedReasons,
     });

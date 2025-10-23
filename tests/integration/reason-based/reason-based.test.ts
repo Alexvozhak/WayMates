@@ -281,7 +281,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: user1.user_id, // user1 - should be excluded
-        lookaheadMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -371,7 +371,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01HX91F0C0R000000000000000",
-        lookaheadMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -394,7 +394,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
-          lookaheadMonths: 0, // Invalid: below min(1)
+          searchPeriodMonths: 0, // Invalid: below min(1)
           searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow();
@@ -405,7 +405,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
-          lookaheadMonths: 61, // Invalid: above max(60)
+          searchPeriodMonths: 61, // Invalid: above max(60)
           searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow();
@@ -417,7 +417,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
-          lookaheadMonths: 12, // Valid: within range
+          searchPeriodMonths: 12, // Valid: within range
           searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).resolves.toBeDefined();
@@ -499,7 +499,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format) to not exclude anyone
-        lookaheadMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
         requiredReasons: ["position_changed", "skill_learning"],
       });
@@ -590,7 +590,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
-        lookaheadMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
         excludedReasons: ["location_changed"],
       });
@@ -647,7 +647,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
-        lookaheadMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -697,7 +697,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
-        lookaheadMonths: 11, // Will match 10-12 range
+        searchPeriodMonths: 11, // Will match 10-12 range
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -752,7 +752,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
-        lookaheadMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -802,7 +802,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
-        lookaheadMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -852,7 +852,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
-        lookaheadMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
         requiredReasons: ["position_changed"],
         excludedReasons: ["position_changed"], // CONFLICT!
@@ -875,7 +875,7 @@ describe("Reason-Based Search Integration Tests", () => {
             country_code: "RU",
           },
           currentUserId: "usr_01ZZZ000000000000000000000",
-          lookaheadMonths: 12,
+          searchPeriodMonths: 12,
           searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow(); // Should throw validation error

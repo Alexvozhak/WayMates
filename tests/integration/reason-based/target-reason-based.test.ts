@@ -119,7 +119,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           domains: ["backend"],
         },
         currentUserId: createUserId(),
-        lookbackMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -165,7 +165,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: user1Story.user_id,
-        lookbackMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -197,7 +197,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
         requiredReasons: ["company_changed"],
       });
@@ -231,7 +231,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
         excludedReasons: ["company_changed"],
       });
@@ -295,7 +295,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 11,
+        searchPeriodMonths: 11,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results11.length).toBe(1);
@@ -308,7 +308,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 13,
+        searchPeriodMonths: 13,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results13.length).toBe(1);
@@ -321,7 +321,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 10,
+        searchPeriodMonths: 10,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results10.length).toBe(0);
@@ -393,7 +393,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -417,7 +417,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -455,7 +455,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -482,7 +482,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookbackMonths: 12,
+        searchPeriodMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
