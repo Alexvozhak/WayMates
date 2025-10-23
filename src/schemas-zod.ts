@@ -229,7 +229,9 @@ export const UserContextSchema = z.object({
   creation_reason: z
     .array(NewContextReasonSchema)
     .min(1)
-    .describe("Reasons for context creation (always required, use 'started_working' for first job)"),
+    .describe(
+      "Reasons for context creation (always required, use 'started_working' for first job)"
+    ),
   position: PositionSchema,
   domains: z.array(z.string()).min(1).describe("Work domains"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
@@ -543,71 +545,91 @@ export const CurrentOnlyReasonBasedResultSchema = z.object({
 // MCP tool parameters for reason-based current-only search
 export const CurrentOnlyReasonParamsSchema = z.object({
   currentPreset: z.string().describe("Preset name for compatibility scoring"),
-  currentContext: SearchContextSchema.describe("User's current context (search params, all fields optional)"),
+  currentContext: SearchContextSchema.describe(
+    "User's current context (search params, all fields optional)"
+  ),
   currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
-  lookahead_months: z
+  lookaheadMonths: z
     .number()
     .min(1)
     .max(60)
     .describe("How many months to look ahead (typically 6/12/18/24)"),
-  required_reasons: z
+  requiredReasons: z
     .array(z.string())
     .max(10)
     .optional()
     .default([])
     .describe("Required reasons (must have ALL, max 10)"),
-  excluded_reasons: z
+  excludedReasons: z
     .array(z.string())
     .max(10)
     .optional()
     .default([])
     .describe("Excluded reasons (must have NONE, max 10)"),
-  searchConstraints: SearchConstraintsSchema.describe("Search constraints (results_limit, timing thresholds)"),
+  searchConstraints: SearchConstraintsSchema.describe(
+    "Search constraints (results_limit, timing thresholds)"
+  ),
 });
 
 // MCP tool parameters for reason-based target-only search
 export const TargetOnlyReasonParamsSchema = z.object({
-  targetPreset: z.string().describe("Preset name for target compatibility scoring"),
-  targetContext: SearchContextSchema.describe("User's target context (search params, all fields optional)"),
+  targetPreset: z
+    .string()
+    .describe("Preset name for target compatibility scoring"),
+  targetContext: SearchContextSchema.describe(
+    "User's target context (search params, all fields optional)"
+  ),
   currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
-  lookback_months: z
+  lookbackMonths: z
     .number()
     .min(1)
     .max(60)
     .describe("How many months to look back (typically 6/12/18/24)"),
-  required_reasons: z
+  requiredReasons: z
     .array(z.string())
     .max(10)
     .optional()
     .default([])
     .describe("Required reasons (must have ALL, max 10)"),
-  excluded_reasons: z
+  excludedReasons: z
     .array(z.string())
     .max(10)
     .optional()
     .default([])
     .describe("Excluded reasons (must have NONE, max 10)"),
-  searchConstraints: SearchConstraintsSchema.describe("Search constraints (results_limit, timing thresholds)"),
+  searchConstraints: SearchConstraintsSchema.describe(
+    "Search constraints (results_limit, timing thresholds)"
+  ),
 });
 
 // === GDS SIMILARITY SEARCH PARAMS (Week 2 Day 4) ===
 
 export const GdsSimilaritySearchParamsSchema = z.object({
-  searchContextId: ContextIdSchema.describe("Context ID to find similar contexts for"),
-  algorithm: z.enum(['Jaccard', 'Overlap']).describe("Similarity algorithm: Jaccard (strict, current-only) or Overlap (lenient, target-only)"),
+  searchContextId: ContextIdSchema.describe(
+    "Context ID to find similar contexts for"
+  ),
+  algorithm: z
+    .enum(["Jaccard", "Overlap"])
+    .describe(
+      "Similarity algorithm: Jaccard (strict, current-only) or Overlap (lenient, target-only)"
+    ),
   topK: z
     .number()
     .int()
     .min(1)
     .max(100)
     .optional()
-    .describe("Maximum number of similar contexts to return (default: 20 for Jaccard, 30 for Overlap)"),
+    .describe(
+      "Maximum number of similar contexts to return (default: 20 for Jaccard, 30 for Overlap)"
+    ),
   similarityCutoff: z
     .number()
     .min(0)
     .max(1)
     .optional()
-    .describe("Minimum similarity score threshold (default: 0.3 for Jaccard, 0.1 for Overlap)"),
+    .describe(
+      "Minimum similarity score threshold (default: 0.3 for Jaccard, 0.1 for Overlap)"
+    ),
   filters: z
     .object({
       position: z.string().optional().describe("Filter by position name"),
@@ -618,7 +640,9 @@ export const GdsSimilaritySearchParamsSchema = z.object({
     .describe("Optional filters to narrow search results"),
 });
 
-export type GdsSimilaritySearchParams = z.infer<typeof GdsSimilaritySearchParamsSchema>;
+export type GdsSimilaritySearchParams = z.infer<
+  typeof GdsSimilaritySearchParamsSchema
+>;
 
 // Reason-based result types
 

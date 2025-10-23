@@ -43,7 +43,15 @@ describe("Target Reason-Based Search Integration Tests", () => {
     const gdsPathfinding = new GdsPathfindingService(driver, gdsProjection);
     const reasonAnalytics = new ReasonAnalyticsService(driver);
 
-    searchManager = new SearchManager(driver, builder, selectivity, gdsSimilarity, gdsPathfinding, gdsProjection, reasonAnalytics);
+    searchManager = new SearchManager(
+      driver,
+      builder,
+      selectivity,
+      gdsSimilarity,
+      gdsPathfinding,
+      gdsProjection,
+      reasonAnalytics
+    );
   });
 
   beforeEach(async () => {
@@ -118,7 +126,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           domains: ["backend"],
         },
         currentUserId: createUserId(),
-        lookback_months: 12,
+        lookbackMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -164,7 +172,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: user1Story.user_id,
-        lookback_months: 12,
+        lookbackMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -196,9 +204,9 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 12,
+        lookbackMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
-        required_reasons: ["company_changed"],
+        requiredReasons: ["company_changed"],
       });
 
       expect(results.length).toBe(1);
@@ -230,9 +238,9 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 12,
+        lookbackMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
-        excluded_reasons: ["company_changed"],
+        excludedReasons: ["company_changed"],
       });
 
       expect(results.length).toBe(1);
@@ -294,7 +302,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 11,
+        lookbackMonths: 11,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results11.length).toBe(1);
@@ -307,7 +315,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 13,
+        lookbackMonths: 13,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results13.length).toBe(1);
@@ -320,7 +328,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 10,
+        lookbackMonths: 10,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
       expect(results10.length).toBe(0);
@@ -392,7 +400,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 12,
+        lookbackMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -416,7 +424,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 12,
+        lookbackMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -454,7 +462,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 12,
+        lookbackMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -481,7 +489,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
           industry: "IT",
         },
         currentUserId: createUserId(),
-        lookback_months: 12,
+        lookbackMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 

@@ -152,7 +152,9 @@ describe("Reason-Based Search Integration Tests", () => {
 
       expect(reasons).toHaveLength(3);
       expect(reasons[0]).toMatchObject({
-        reason_id: expect.stringMatching(/^(position_changed|location_changed|skill_learning)$/),
+        reason_id: expect.stringMatching(
+          /^(position_changed|location_changed|skill_learning)$/
+        ),
         description: expect.any(String),
         patterns: expect.any(Array),
         examples: expect.any(Array),
@@ -194,7 +196,15 @@ describe("Reason-Based Search Integration Tests", () => {
       const gdsPathfinding = new GdsPathfindingService(driver, gdsProjection);
       const reasonAnalytics = new ReasonAnalyticsService(driver);
 
-      searchManager = new SearchManager(driver, builder, selectivity, gdsSimilarity, gdsPathfinding, gdsProjection, reasonAnalytics);
+      searchManager = new SearchManager(
+        driver,
+        builder,
+        selectivity,
+        gdsSimilarity,
+        gdsPathfinding,
+        gdsProjection,
+        reasonAnalytics
+      );
     });
 
     test("searchCurrentOnlyMode finds users by reason combinations", async () => {
@@ -278,7 +288,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: user1.user_id, // user1 - should be excluded
-        lookahead_months: 12,
+        lookaheadMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -311,14 +321,15 @@ describe("Reason-Based Search Integration Tests", () => {
       });
 
       // Verify common_skills_gained (both users gained typescript and react)
-      expect(positionSkillCombo.stats.common_skills_gained).toContain("typescript");
+      expect(positionSkillCombo.stats.common_skills_gained).toContain(
+        "typescript"
+      );
       expect(positionSkillCombo.stats.common_skills_gained).toContain("react");
 
       // Find the combination with ['location_changed']
       const locationCombo = results.find(
         (r) =>
-          r.combination.length === 1 &&
-          r.combination[0] === "location_changed"
+          r.combination.length === 1 && r.combination[0] === "location_changed"
       );
       expect(locationCombo).toBeDefined();
       if (!locationCombo) throw new Error("locationCombo not found");
@@ -367,7 +378,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01HX91F0C0R000000000000000",
-        lookahead_months: 12,
+        lookaheadMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -390,7 +401,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
-          lookahead_months: 0, // Invalid: below min(1)
+          lookaheadMonths: 0, // Invalid: below min(1)
           searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow();
@@ -401,7 +412,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
-          lookahead_months: 61, // Invalid: above max(60)
+          lookaheadMonths: 61, // Invalid: above max(60)
           searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow();
@@ -413,7 +424,7 @@ describe("Reason-Based Search Integration Tests", () => {
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
-          lookahead_months: 12, // Valid: within range
+          lookaheadMonths: 12, // Valid: within range
           searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).resolves.toBeDefined();
@@ -495,9 +506,9 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format) to not exclude anyone
-        lookahead_months: 12,
+        lookaheadMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
-        required_reasons: ["position_changed", "skill_learning"],
+        requiredReasons: ["position_changed", "skill_learning"],
       });
 
       // CRITICAL: Should return ONLY the combo with ['position_changed', 'skill_learning']
@@ -586,9 +597,9 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
-        lookahead_months: 12,
+        lookaheadMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
-        excluded_reasons: ["location_changed"],
+        excludedReasons: ["location_changed"],
       });
 
       // CRITICAL: Should return ONLY the combo WITHOUT 'location_changed'
@@ -643,7 +654,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
-        lookahead_months: 12,
+        lookaheadMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -693,7 +704,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000", // Non-existent user (valid ULID format)
-        lookahead_months: 11, // Will match 10-12 range
+        lookaheadMonths: 11, // Will match 10-12 range
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -748,7 +759,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
-        lookahead_months: 12,
+        lookaheadMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -798,7 +809,7 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
-        lookahead_months: 12,
+        lookaheadMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
       });
 
@@ -848,10 +859,10 @@ describe("Reason-Based Search Integration Tests", () => {
           country_code: "RU",
         },
         currentUserId: "usr_01ZZZ000000000000000000000",
-        lookahead_months: 12,
+        lookaheadMonths: 12,
         searchConstraints: DEFAULT_CONSTRAINTS,
-        required_reasons: ["position_changed"],
-        excluded_reasons: ["position_changed"], // CONFLICT!
+        requiredReasons: ["position_changed"],
+        excludedReasons: ["position_changed"], // CONFLICT!
       });
 
       // CRITICAL: Conflicting filters should return empty results
@@ -871,8 +882,8 @@ describe("Reason-Based Search Integration Tests", () => {
             country_code: "RU",
           },
           currentUserId: "usr_01ZZZ000000000000000000000",
-          lookahead_months: 12,
-        searchConstraints: DEFAULT_CONSTRAINTS,
+          lookaheadMonths: 12,
+          searchConstraints: DEFAULT_CONSTRAINTS,
         })
       ).rejects.toThrow(); // Should throw validation error
     });

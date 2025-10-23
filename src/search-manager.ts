@@ -23,7 +23,7 @@ import {
   CURRENT_PRESETS,
   TARGET_PRESETS,
   isCurrentPresetName,
-  isTargetPresetName
+  isTargetPresetName,
 } from "./orcestrator/presets.js";
 import { buildReasonBasedQuery } from "./orcestrator/reason-query-builder.js";
 import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
@@ -181,9 +181,9 @@ export class SearchManager {
     console.log("📊 Input params:", {
       currentUserId: validatedParams.currentUserId,
       currentPreset: validatedParams.currentPreset,
-      lookahead_months: validatedParams.lookahead_months,
-      required_reasons: validatedParams.required_reasons,
-      excluded_reasons: validatedParams.excluded_reasons,
+      lookahead_months: validatedParams.lookaheadMonths,
+      required_reasons: validatedParams.requiredReasons,
+      excluded_reasons: validatedParams.excludedReasons,
       currentContext: {
         position: validatedParams.currentContext.position,
         domains: validatedParams.currentContext.domains,
@@ -194,7 +194,9 @@ export class SearchManager {
 
     // Validate preset
     if (!isCurrentPresetName(validatedParams.currentPreset)) {
-      throw new Error(`Invalid current preset name: ${validatedParams.currentPreset}`);
+      throw new Error(
+        `Invalid current preset name: ${validatedParams.currentPreset}`
+      );
     }
 
     const presetConfig = CURRENT_PRESETS[validatedParams.currentPreset]!;
@@ -214,7 +216,7 @@ export class SearchManager {
     const cypher = buildReasonBasedQuery(
       orderedStrictFields,
       flexibleFields,
-      'forward'
+      "forward"
     );
 
     console.log("🔗 Generated Reason-Based Cypher Query:");
@@ -225,9 +227,9 @@ export class SearchManager {
     const queryParams = {
       searchContext: validatedParams.currentContext,
       currentUserId: validatedParams.currentUserId,
-      periodMonths: validatedParams.lookahead_months,
-      requiredReasons: validatedParams.required_reasons,
-      excludedReasons: validatedParams.excluded_reasons,
+      periodMonths: validatedParams.lookaheadMonths,
+      requiredReasons: validatedParams.requiredReasons,
+      excludedReasons: validatedParams.excludedReasons,
     };
     console.log("📦 Query parameters:", {
       currentUserId: queryParams.currentUserId,
@@ -293,9 +295,9 @@ export class SearchManager {
         "⚠️ [SearchManager.searchCurrentReasonBased] No reason combinations found for the given criteria"
       );
       console.warn("Debug info:", {
-        lookahead_months: validatedParams.lookahead_months,
-        required_reasons: validatedParams.required_reasons,
-        excluded_reasons: validatedParams.excluded_reasons,
+        lookahead_months: validatedParams.lookaheadMonths,
+        required_reasons: validatedParams.requiredReasons,
+        excluded_reasons: validatedParams.excludedReasons,
         currentContext: {
           position: validatedParams.currentContext.position,
           domains: validatedParams.currentContext.domains,
@@ -328,9 +330,9 @@ export class SearchManager {
     console.log("📊 Input params:", {
       currentUserId: validatedParams.currentUserId,
       targetPreset: validatedParams.targetPreset,
-      lookback_months: validatedParams.lookback_months,
-      required_reasons: validatedParams.required_reasons,
-      excluded_reasons: validatedParams.excluded_reasons,
+      lookback_months: validatedParams.lookbackMonths,
+      required_reasons: validatedParams.requiredReasons,
+      excluded_reasons: validatedParams.excludedReasons,
       targetContext: {
         position: validatedParams.targetContext.position,
         domains: validatedParams.targetContext.domains,
@@ -341,7 +343,9 @@ export class SearchManager {
 
     // Validate preset (target presets)
     if (!isTargetPresetName(validatedParams.targetPreset)) {
-      throw new Error(`Invalid target preset name: ${validatedParams.targetPreset}`);
+      throw new Error(
+        `Invalid target preset name: ${validatedParams.targetPreset}`
+      );
     }
 
     const presetConfig = TARGET_PRESETS[validatedParams.targetPreset]!;
@@ -361,7 +365,7 @@ export class SearchManager {
     const cypher = buildReasonBasedQuery(
       orderedStrictFields,
       flexibleFields,
-      'backward'
+      "backward"
     );
 
     console.log("🔗 Generated Reason-Based Cypher Query (BACKWARD):");
@@ -372,9 +376,9 @@ export class SearchManager {
     const queryParams = {
       searchContext: validatedParams.targetContext,
       currentUserId: validatedParams.currentUserId,
-      periodMonths: validatedParams.lookback_months,
-      requiredReasons: validatedParams.required_reasons,
-      excludedReasons: validatedParams.excluded_reasons,
+      periodMonths: validatedParams.lookbackMonths,
+      requiredReasons: validatedParams.requiredReasons,
+      excludedReasons: validatedParams.excludedReasons,
     };
     console.log("📦 Query parameters:", {
       currentUserId: queryParams.currentUserId,
@@ -440,9 +444,9 @@ export class SearchManager {
         "⚠️ [SearchManager.searchTargetReasonBased] No reason combinations found for the given criteria"
       );
       console.warn("Debug info:", {
-        lookback_months: validatedParams.lookback_months,
-        required_reasons: validatedParams.required_reasons,
-        excluded_reasons: validatedParams.excluded_reasons,
+        lookback_months: validatedParams.lookbackMonths,
+        required_reasons: validatedParams.requiredReasons,
+        excluded_reasons: validatedParams.excludedReasons,
         targetContext: {
           position: validatedParams.targetContext.position,
           domains: validatedParams.targetContext.domains,
@@ -477,7 +481,9 @@ export class SearchManager {
   ): Promise<Array<{ context_id: string; match_score: number }>> {
     const validatedParams = GdsSimilaritySearchParamsSchema.parse(params);
 
-    console.log("🔍 [SearchManager.searchSimilarityBased] Starting GDS similarity search");
+    console.log(
+      "🔍 [SearchManager.searchSimilarityBased] Starting GDS similarity search"
+    );
     console.log("📊 Input params:", {
       searchContextId: validatedParams.searchContextId,
       algorithm: validatedParams.algorithm,
@@ -491,7 +497,9 @@ export class SearchManager {
     await this.gdsProjection.ensureSkillsGraphProjection();
 
     // Call GDS Similarity service
-    console.log(`🎯 [SearchManager] Calling GDS ${validatedParams.algorithm} similarity...`);
+    console.log(
+      `🎯 [SearchManager] Calling GDS ${validatedParams.algorithm} similarity...`
+    );
     const results = await this.gdsSimilarity.findSimilarBy(
       validatedParams.algorithm,
       validatedParams.searchContextId,
@@ -501,10 +509,13 @@ export class SearchManager {
     );
 
     console.log(`✅ [SearchManager] Found ${results.length} similar contexts`);
-    console.log("📊 Top 5 results:", results.slice(0, 5).map(r => ({
-      context_id: r.context_id,
-      match_score: r.match_score.toFixed(3),
-    })));
+    console.log(
+      "📊 Top 5 results:",
+      results.slice(0, 5).map((r) => ({
+        context_id: r.context_id,
+        match_score: r.match_score.toFixed(3),
+      }))
+    );
 
     return results;
   }
@@ -526,16 +537,20 @@ export class SearchManager {
   async searchPipelineWithPathfinding(params: {
     searchContextId: string;
     targetPosition: string;
-    algorithm: 'Jaccard' | 'Overlap';
+    algorithm: "Jaccard" | "Overlap";
     k?: number;
     topK?: number;
     similarityCutoff?: number;
-  }): Promise<Array<{
-    context_id: string;
-    match_score: number;
-    paths: PathResult[];
-  }>> {
-    console.log("🚀 [SearchManager.searchPipelineWithPathfinding] Starting GDS pipeline with pathfinding");
+  }): Promise<
+    Array<{
+      context_id: string;
+      match_score: number;
+      paths: PathResult[];
+    }>
+  > {
+    console.log(
+      "🚀 [SearchManager.searchPipelineWithPathfinding] Starting GDS pipeline with pathfinding"
+    );
     console.log("📊 Input params:", params);
 
     // Step 1: Find similar contexts using GDS Node Similarity
@@ -547,7 +562,9 @@ export class SearchManager {
       filters: { position: params.targetPosition },
     });
 
-    console.log(`✅ Found ${similarContexts.length} similar contexts at target position`);
+    console.log(
+      `✅ Found ${similarContexts.length} similar contexts at target position`
+    );
 
     // Step 2: For each similar context, find K shortest paths from search context
     const results = [];
@@ -584,7 +601,9 @@ export class SearchManager {
     targetContextId: string,
     k?: number
   ): Promise<PathResult[]> {
-    console.log("🛤️ [SearchManager.findKShortestPaths] Finding K shortest paths");
+    console.log(
+      "🛤️ [SearchManager.findKShortestPaths] Finding K shortest paths"
+    );
     console.log("📊 Input params:", { sourceContextId, targetContextId, k });
 
     const results = await this.gdsPathfinding.findKShortestPaths(
@@ -605,7 +624,9 @@ export class SearchManager {
    * @returns Duration statistics (avg, median, percentiles) per creation_reason
    */
   async getDurationByReason(): Promise<DurationByReasonResult[]> {
-    console.log("📊 [SearchManager.getDurationByReason] Fetching duration statistics");
+    console.log(
+      "📊 [SearchManager.getDurationByReason] Fetching duration statistics"
+    );
     const results = await this.reasonAnalytics.getDurationByReason();
     console.log(`✅ Found statistics for ${results.length} reasons`);
     return results;
@@ -619,7 +640,9 @@ export class SearchManager {
    * @returns Transition probabilities: P(to_reason | current_reason)
    */
   async getReasonTransitionMatrix(): Promise<ReasonTransitionResult[]> {
-    console.log("🔄 [SearchManager.getReasonTransitionMatrix] Fetching transition matrix");
+    console.log(
+      "🔄 [SearchManager.getReasonTransitionMatrix] Fetching transition matrix"
+    );
     const results = await this.reasonAnalytics.getReasonTransitionMatrix();
     console.log(`✅ Found ${results.length} transition patterns`);
     return results;
@@ -633,7 +656,9 @@ export class SearchManager {
    * @returns Reason pairs that appear together in same context
    */
   async getReasonCooccurrence(): Promise<ReasonCooccurrenceResult[]> {
-    console.log("🔗 [SearchManager.getReasonCooccurrence] Fetching co-occurrence patterns");
+    console.log(
+      "🔗 [SearchManager.getReasonCooccurrence] Fetching co-occurrence patterns"
+    );
     const results = await this.reasonAnalytics.getReasonCooccurrence();
     console.log(`✅ Found ${results.length} co-occurrence pairs`);
     return results;
