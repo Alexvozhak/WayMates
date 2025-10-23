@@ -26,7 +26,7 @@ import type { Driver } from 'neo4j-driver';
 import { int } from 'neo4j-driver';
 import { withReadSession } from '../../neo4j.js';
 import { GdsProjectionService } from './gds-projection.service.js';
-import type { PathResult } from '../schemas.js';
+import type { PathResult, GdsPathfindingParams } from '../schemas.js';
 
 /**
  * Maximum allowed value for k parameter (number of paths)
@@ -123,10 +123,11 @@ export class GdsPathfindingService {
    * @returns Array of PathResult objects sorted by total_cost ASC
    */
   async findKShortestPaths(
-    sourceContextId: string,
-    targetContextId: string,
-    k: number = DEFAULT_K_PATHS
+    params: GdsPathfindingParams
   ): Promise<PathResult[]> {
+    // Destructure params
+    const { sourceContextId, targetContextId, k = DEFAULT_K_PATHS } = params;
+
     // Validate parameters
     if (!sourceContextId || sourceContextId.trim() === '') {
       throw new Error('sourceContextId is required and cannot be empty');

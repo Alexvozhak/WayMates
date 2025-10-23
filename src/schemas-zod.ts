@@ -618,9 +618,9 @@ export const GdsSimilaritySearchParamsSchema = z.object({
     .int()
     .min(1)
     .max(100)
-    .optional()
+    .default(100)
     .describe(
-      "Maximum number of similar contexts to return (default: 20 for Jaccard, 30 for Overlap)"
+      "Maximum number of similar contexts to return (default: 100)"
     ),
   similarityCutoff: z
     .number()

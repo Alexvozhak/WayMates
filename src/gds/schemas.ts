@@ -25,6 +25,19 @@ export const SimilarityFiltersSchema = z.object({
 export type SimilarityFilters = z.infer<typeof SimilarityFiltersSchema>;
 
 /**
+ * Parameters for GDS similarity search (internal service use)
+ */
+export const GdsSimilarityServiceParamsSchema = z.object({
+  algorithm: z.enum(['Jaccard', 'Overlap']).describe('Similarity algorithm'),
+  searchContextId: z.string().describe('Context ID to find similar contexts for'),
+  filters: SimilarityFiltersSchema.optional().describe('Optional filters for target contexts'),
+  topK: z.number().int().min(1).default(100).describe('Max number of results (default: 100)'),
+  similarityCutoff: z.number().min(0.0).max(1.0).optional().describe('Minimum similarity threshold'),
+});
+
+export type GdsSimilarityServiceParams = z.infer<typeof GdsSimilarityServiceParamsSchema>;
+
+/**
  * Result of GDS similarity search (single candidate)
  *
  * Returned by:

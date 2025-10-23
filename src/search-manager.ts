@@ -5,6 +5,7 @@ import type {
   TargetContext,
   PipelineGraphResult,
   SearchConstraints,
+  CurrentToTargetParams,
   CurrentOnlyReasonParams,
   TargetOnlyReasonParams,
   ReasonCombination,
@@ -29,15 +30,7 @@ import { buildReasonBasedQuery } from "./orcestrator/reason-query-builder.js";
 import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
 import { GdsPathfindingService } from "./gds/services/gds-pathfinding.service.js";
 import { GdsProjectionService } from "./gds/services/gds-projection.service.js";
-import { ReasonAnalyticsService } from "./services/reason-analytics.service.js";
 import type {
-  DurationByReasonResult,
-  ReasonTransitionResult,
-  ReasonCooccurrenceResult,
-} from "./services/reason-analytics.service.js";
-import type {
-  PathResult,
-  GdsPathfindingParams,
   PipelineWithPathfindingParams,
   PipelineWithPathfindingResult,
 } from "./gds/schemas.js";
@@ -72,18 +65,22 @@ export class SearchManager {
     private selectivity: SelectivityService,
     private gdsSimilarity: GdsSimilarityService,
     private gdsPathfinding: GdsPathfindingService,
-    private gdsProjection: GdsProjectionService,
-    private reasonAnalytics: ReasonAnalyticsService
+    private gdsProjection: GdsProjectionService
   ) {}
 
   async searchPipeline(
-    currentPreset: string,
-    currentContext: UserContext,
-    targetPreset: string,
-    targetContext: TargetContext,
-    currentUserId: string,
-    searchConstraints: SearchConstraints
+    params: CurrentToTargetParams
   ): Promise<PipelineGraphResult[]> {
+    // Destructure params
+    const {
+      currentPreset,
+      currentContext,
+      targetPreset,
+      targetContext,
+      currentUserId,
+      searchConstraints,
+    } = params;
+
     if (!isCurrentPresetName(currentPreset)) {
       throw new Error(`Invalid current preset name: ${currentPreset}`);
     }
@@ -111,10 +108,10 @@ export class SearchManager {
       searchConstraints
     );
 
-    const params = { currentContext, targetContext, me: currentUserId };
+    const cypherParams = { currentContext, targetContext, me: currentUserId };
 
     const result = await withReadSession(this.driver, (tx) =>
-      tx.run(cypher, params)
+      tx.run(cypher, cypherParams)
     );
 
     console.log(
@@ -324,15 +321,6 @@ export class SearchManager {
     });
   }
 
-  /**
-   * GDS Similarity-Based Search (Week 2 Day 4)
-   *
-   * Finds similar contexts using GDS Node Similarity algorithms (Jaccard/Overlap).
-   * Uses GDS for 10x-100x speedup compared to manual Jaccard in Cypher.
-   *
-   * @param params - Search parameters (searchContextId, algorithm, topK, cutoff, filters)
-   * @returns Array of similar contexts with match scores
-   */
   async searchSimilarityBased(
     params: GdsSimilaritySearchParams
   ): Promise<Array<{ context_id: string; match_score: number }>> {
@@ -341,29 +329,14 @@ export class SearchManager {
     // Ensure GDS skills graph projection exists
     await this.gdsProjection.ensureSkillsGraphProjection();
 
-    // Call GDS Similarity service
-    const results = await this.gdsSimilarity.findSimilarBy(
-      validatedParams.algorithm,
-      validatedParams.searchContextId,
-      validatedParams.filters,
-      validatedParams.topK,
-      validatedParams.similarityCutoff
-    );
+    // Call GDS Similarity service with validated params
+    const results = await this.gdsSimilarity.findSimilarBy(validatedParams);
 
     console.log(`✅ [SearchManager] Found ${results.length} similar contexts`);
 
     return results;
   }
 
-  /**
-   * GDS Pipeline with Pathfinding (Week 2 Day 4 Part 2)
-   *
-   * Combines GDS Node Similarity (find similar contexts) with Yen's K-Shortest Paths.
-   * Use case: Find users who reached target position AND show career paths they took.
-   *
-   * @param params - Pipeline search parameters (validated by FastMCP)
-   * @returns Array of similar contexts with their career paths
-   */
   async searchPipelineWithPathfinding(
     params: PipelineWithPathfindingParams
   ): Promise<PipelineWithPathfindingResult[]> {
@@ -383,7 +356,7 @@ export class SearchManager {
     // Step 2: For each similar context, find K shortest paths from search context
     const results: PipelineWithPathfindingResult[] = [];
     for (const similar of similarContexts) {
-      const paths = await this.findKShortestPaths({
+      const paths = await this.gdsPathfinding.findKShortestPaths({
         sourceContextId: params.searchContextId,
         targetContextId: similar.context_id,
         k: params.k,
@@ -397,64 +370,6 @@ export class SearchManager {
     }
 
     console.log(`✅ Found paths for ${results.length} contexts`);
-    return results;
-  }
-
-  /**
-   * Find K Shortest Paths (Direct GDS wrapper)
-   *
-   * Week 2 Day 4 Part 2 - Direct MCP tool wrapper for GdsPathfindingService
-   *
-   * @param params - Pathfinding parameters (validated by FastMCP)
-   * @returns Array of paths ordered by total cost
-   */
-  async findKShortestPaths(params: GdsPathfindingParams): Promise<PathResult[]> {
-    const results = await this.gdsPathfinding.findKShortestPaths(
-      params.sourceContextId,
-      params.targetContextId,
-      params.k
-    );
-
-    console.log(`✅ Found ${results.length} paths`);
-    return results;
-  }
-
-  /**
-   * Get Duration Statistics by Reason (Week 2 Day 4 Part 2)
-   *
-   * Wrapper for ReasonAnalyticsService.getDurationByReason()
-   *
-   * @returns Duration statistics (avg, median, percentiles) per creation_reason
-   */
-  async getDurationByReason(): Promise<DurationByReasonResult[]> {
-    const results = await this.reasonAnalytics.getDurationByReason();
-    console.log(`✅ Found statistics for ${results.length} reasons`);
-    return results;
-  }
-
-  /**
-   * Get Reason Transition Matrix (Week 2 Day 4 Part 2)
-   *
-   * Wrapper for ReasonAnalyticsService.getReasonTransitionMatrix()
-   *
-   * @returns Transition probabilities: P(to_reason | current_reason)
-   */
-  async getReasonTransitionMatrix(): Promise<ReasonTransitionResult[]> {
-    const results = await this.reasonAnalytics.getReasonTransitionMatrix();
-    console.log(`✅ Found ${results.length} transition patterns`);
-    return results;
-  }
-
-  /**
-   * Get Reason Co-occurrence (Week 2 Day 4 Part 2)
-   *
-   * Wrapper for ReasonAnalyticsService.getReasonCooccurrence()
-   *
-   * @returns Reason pairs that appear together in same context
-   */
-  async getReasonCooccurrence(): Promise<ReasonCooccurrenceResult[]> {
-    const results = await this.reasonAnalytics.getReasonCooccurrence();
-    console.log(`✅ Found ${results.length} co-occurrence pairs`);
     return results;
   }
 }

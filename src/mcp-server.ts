@@ -21,12 +21,9 @@ import {
   AssignSkillToCategoryParamsSchema,
 } from "./schemas-zod.js";
 import {
-  GdsPathfindingParamsSchema,
   PipelineWithPathfindingParamsSchema,
 } from "./gds/schemas.js";
 import { z } from "zod";
-//tODO заменить все params на CurrentToTargetParamsSchema
-// в методах searchPipeline и searchCurrent и тд (не мельчить)"
 /**
  * Create MCP server using SearchManager.
  */
@@ -43,11 +40,11 @@ export function createWayMatesServer(
   });
 
   // Helper function to create typed MCP tools
-  function tool<TParams, TResult>(
+  function tool<TSchema extends z.ZodTypeAny, TResult>(
     name: string,
     description: string,
-    schema: z.ZodSchema<TParams>,
-    handler: (params: TParams) => Promise<TResult> | TResult
+    schema: TSchema,
+    handler: (params: z.output<TSchema>) => Promise<TResult> | TResult
   ) {
     return {
       name,
@@ -67,15 +64,7 @@ export function createWayMatesServer(
       "current_to_target",
       "Find career transitions from current context to target position",
       CurrentToTargetParamsSchema,
-      async (params) =>
-        searchManager.searchPipeline(
-          params.currentPreset,
-          params.currentContext,
-          params.targetPreset,
-          params.targetContext,
-          params.currentUserId,
-          params.searchConstraints
-        )
+      async (params) => searchManager.searchPipeline(params)
     )
   );
 
@@ -114,21 +103,7 @@ export function createWayMatesServer(
     )
   );
 
-  // === GDS PATHFINDING (Week 2 Day 4 Part 2) ===
-
-  // Find K Shortest Paths (Direct GDS wrapper)
-  server.addTool(
-    tool(
-      "find_k_shortest_paths",
-      "Find K shortest career paths between two contexts using Yen's algorithm. Returns paths ordered by total cost (trail durations).",
-      GdsPathfindingParamsSchema,
-      async (rawParams) => {
-        // Apply .default() values by parsing
-        const params = GdsPathfindingParamsSchema.parse(rawParams);
-        return searchManager.findKShortestPaths(params);
-      }
-    )
-  );
+  // === GDS PIPELINE WITH PATHFINDING ===
 
   // Pipeline with Pathfinding (GDS Similarity + Yen's K-Shortest)
   server.addTool(
@@ -136,46 +111,10 @@ export function createWayMatesServer(
       "find_pipeline_with_pathfinding",
       "Combines GDS similarity search with pathfinding: finds similar contexts at target position, then shows K shortest paths to reach them.",
       PipelineWithPathfindingParamsSchema,
-      async (rawParams) => {
-        // Apply .default() values by parsing
-        const params = PipelineWithPathfindingParamsSchema.parse(rawParams);
+      async (params) => {
+        // params already has .default() applied by tool.execute()
         return searchManager.searchPipelineWithPathfinding(params);
       }
-    )
-  );
-
-  // === REASON ANALYTICS (Week 2 Day 4 Part 2) ===
-
-  // Get Duration Statistics by Reason
-  server.addTool(
-    tool(
-      "get_duration_by_reason",
-      "Get duration statistics (avg, median, percentiles) for each creation_reason type. Helps analyze how long transitions take based on life events.",
-      z.object({}).strict(),
-      async () =>
-        searchManager.getDurationByReason()
-    )
-  );
-
-  // Get Reason Transition Matrix
-  server.addTool(
-    tool(
-      "get_reason_transitions",
-      "Get reason transition probabilities: P(to_reason | current_reason). Analyzes 3-hop patterns to predict next life events.",
-      z.object({}).strict(),
-      async () =>
-        searchManager.getReasonTransitionMatrix()
-    )
-  );
-
-  // Get Reason Co-occurrence
-  server.addTool(
-    tool(
-      "get_reason_cooccurrence",
-      "Get reason pairs that appear together in same context. Identifies common life event combinations.",
-      z.object({}).strict(),
-      async () =>
-        searchManager.getReasonCooccurrence()
     )
   );
 

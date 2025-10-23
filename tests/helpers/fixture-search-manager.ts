@@ -42,8 +42,7 @@ export class FixtureSearchManager {
       selectivity,
       gdsSimilarity,
       gdsPathfinding,
-      gdsProjection,
-      reasonAnalytics
+      gdsProjection
     );
     this.persistenceManager = new PersistenceManager(driver);
     this.testDataManager = new TestDataManager();
@@ -69,13 +68,13 @@ export class FixtureSearchManager {
       userData.contexts[userData.contexts.length - 1]
     );
 
-    return this.searchManager.searchPipeline(
+    return this.searchManager.searchPipeline({
       currentPreset,
       currentContext,
       targetPreset,
       targetContext,
-      userData.user_id,
-      searchConstraints
-    );
+      currentUserId: userData.user_id,
+      searchConstraints,
+    });
   }
 }

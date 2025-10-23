@@ -24,7 +24,7 @@ import type { Driver } from 'neo4j-driver';
 import { int } from 'neo4j-driver';
 import { withReadSession } from '../../neo4j.js';
 import { GdsProjectionService } from './gds-projection.service.js';
-import type { SimilarityResult, SimilarityFilters } from '../schemas.js';
+import type { SimilarityResult, GdsSimilarityServiceParams } from '../schemas.js';
 
 /**
  * Supported similarity algorithms
@@ -135,12 +135,11 @@ export class GdsSimilarityService {
    * @returns Array of similar contexts sorted by match_score DESC
    */
   async findSimilarBy(
-    algorithm: SimilarityAlgorithm,
-    searchContextId: string,
-    filters?: SimilarityFilters,
-    topK: number = 100,
-    similarityCutoff?: number
+    params: GdsSimilarityServiceParams
   ): Promise<SimilarityResult[]> {
+    // Destructure params
+    const { algorithm, searchContextId, filters, topK = 100, similarityCutoff } = params;
+
     // Use algorithm-specific default cutoff if not provided
     const cutoff = similarityCutoff ?? DEFAULT_CUTOFFS[algorithm];
 

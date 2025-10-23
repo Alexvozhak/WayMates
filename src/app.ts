@@ -11,7 +11,6 @@ import { SelectivityService } from "./services/selectivity.service.js";
 import { GdsProjectionService } from "./gds/services/gds-projection.service.js";
 import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
 import { GdsPathfindingService } from "./gds/services/gds-pathfinding.service.js";
-import { ReasonAnalyticsService } from "./services/reason-analytics.service.js";
 
 async function main() {
   const searchQueryBuilder = new SearchQueryBuilder();
@@ -28,17 +27,13 @@ async function main() {
   const gdsSimilarityService = new GdsSimilarityService(driver, gdsProjectionService);
   const gdsPathfindingService = new GdsPathfindingService(driver, gdsProjectionService);
 
-  // Initialize ReasonAnalyticsService (Week 2 Day 4 Part 2)
-  const reasonAnalyticsService = new ReasonAnalyticsService(driver);
-
   const searchManager = new SearchManager(
     driver,
     searchQueryBuilder,
     selectivityService,
     gdsSimilarityService,
     gdsPathfindingService,
-    gdsProjectionService,
-    reasonAnalyticsService
+    gdsProjectionService
   );
   const persistenceManager = new PersistenceManager(driver);
   const skillCategoriesManager = new SkillCategoriesManager(driver);
