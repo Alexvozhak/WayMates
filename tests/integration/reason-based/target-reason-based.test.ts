@@ -85,7 +85,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
   });
 
   describe("SearchManager - Target Reason-Based Search (BACKWARD)", () => {
-    test("searchTargetReasonBased finds users by reason combinations (backward navigation)", async () => {
+    test("searchTargetOnlyMode finds users by reason combinations (backward navigation)", async () => {
       // Load 3 users who reached CTO position
       const user1Path = join(
         process.cwd(),
@@ -109,7 +109,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(user3Story);
 
       // Search for CTO position, looking back 12 months
-      const results = await searchManager.searchTargetReasonBased({
+      const results = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -148,7 +148,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(combo2!.sample_users.length).toBe(1);
     });
 
-    test("searchTargetReasonBased excludes currentUserId", async () => {
+    test("searchTargetOnlyMode excludes currentUserId", async () => {
       const user1Path = join(
         process.cwd(),
         "data/trails/users/reason_target_user1.json"
@@ -157,7 +157,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(user1Story);
 
       // Exclude user1
-      const results = await searchManager.searchTargetReasonBased({
+      const results = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -172,7 +172,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(results.length).toBe(0);
     });
 
-    test("searchTargetReasonBased filters by required_reasons", async () => {
+    test("searchTargetOnlyMode filters by required_reasons", async () => {
       const user1Path = join(
         process.cwd(),
         "data/trails/users/reason_target_user1.json"
@@ -189,7 +189,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(user3Story);
 
       // Require "company_changed" - only user1 has it
-      const results = await searchManager.searchTargetReasonBased({
+      const results = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -206,7 +206,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(results[0]?.users_count).toBe(1);
     });
 
-    test("searchTargetReasonBased filters by excluded_reasons", async () => {
+    test("searchTargetOnlyMode filters by excluded_reasons", async () => {
       const user1Path = join(
         process.cwd(),
         "data/trails/users/reason_target_user1.json"
@@ -223,7 +223,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(user3Story);
 
       // Exclude "company_changed" - only user3 remains
-      const results = await searchManager.searchTargetReasonBased({
+      const results = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -240,7 +240,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(results[0]?.users_count).toBe(1);
     });
 
-    test("searchTargetReasonBased respects lookback boundary ±1 month", async () => {
+    test("searchTargetOnlyMode respects lookback boundary ±1 month", async () => {
       // Create user with exact 12 months duration
       const prevCtxId = `ctx_${ulid()}`;
       const ctoCtxId = `ctx_${ulid()}`;
@@ -287,7 +287,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(userStory);
 
       // Test 11 months (should match: 12 ± 1)
-      const results11 = await searchManager.searchTargetReasonBased({
+      const results11 = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -300,7 +300,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(results11.length).toBe(1);
 
       // Test 13 months (should match: 12 ± 1)
-      const results13 = await searchManager.searchTargetReasonBased({
+      const results13 = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -313,7 +313,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(results13.length).toBe(1);
 
       // Test 10 months (should NOT match: outside 12 ± 1)
-      const results10 = await searchManager.searchTargetReasonBased({
+      const results10 = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -326,7 +326,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(results10.length).toBe(0);
     });
 
-    test("searchTargetReasonBased calculates median correctly for odd count", async () => {
+    test("searchTargetOnlyMode calculates median correctly for odd count", async () => {
       // Create 3 users with durations: 11, 12, 13 months
       // Median should be 12.0
 
@@ -385,7 +385,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(createUser(createUserId(), 12));
       await persistenceManager.upsertStory(createUser(createUserId(), 13));
 
-      const results = await searchManager.searchTargetReasonBased({
+      const results = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -401,7 +401,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(results[0]?.users_count).toBe(3);
     });
 
-    test("searchTargetReasonBased sample_users have correct graph structure (backward)", async () => {
+    test("searchTargetOnlyMode sample_users have correct graph structure (backward)", async () => {
       const user1Path = join(
         process.cwd(),
         "data/trails/users/reason_target_user1.json"
@@ -409,7 +409,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       const user1Story = JSON.parse(readFileSync(user1Path, "utf-8"));
       await persistenceManager.upsertStory(user1Story);
 
-      const results = await searchManager.searchTargetReasonBased({
+      const results = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -431,7 +431,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(sampleUser?.user_graph.related_context.position).toBe("Senior");
     });
 
-    test("searchTargetReasonBased aggregates previous_positions correctly", async () => {
+    test("searchTargetOnlyMode aggregates previous_positions correctly", async () => {
       const user1Path = join(
         process.cwd(),
         "data/trails/users/reason_target_user1.json"
@@ -447,7 +447,7 @@ describe("Target Reason-Based Search Integration Tests", () => {
       await persistenceManager.upsertStory(user1Story);
       await persistenceManager.upsertStory(user2Story);
 
-      const results = await searchManager.searchTargetReasonBased({
+      const results = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CTO",
@@ -472,9 +472,9 @@ describe("Target Reason-Based Search Integration Tests", () => {
       expect(positions).toContain("TechLead");
     });
 
-    test("searchTargetReasonBased handles empty results gracefully", async () => {
+    test("searchTargetOnlyMode handles empty results gracefully", async () => {
       // Search for non-existent target
-      const results = await searchManager.searchTargetReasonBased({
+      const results = await searchManager.searchTargetOnlyMode({
         targetPreset: "BALANCED",
         targetContext: {
           position: "CEO", // No CEOs in fixtures

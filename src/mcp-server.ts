@@ -75,25 +75,25 @@ export function createWayMatesServer(
     )
   );
 
-  // Current Only - Reason Based
+  // Current Only Mode (grouped by reasons)
   server.addTool(
     tool(
-      "current_only_reason_based",
-      "Analyze career progression grouped by life event combinations (reason-based grouping)",
+      "current_only_mode",
+      "Analyze career progression grouped by life event combinations from current position",
       CurrentOnlyReasonParamsSchema,
       async (params) =>
-        searchManager.searchCurrentReasonBased(params)
+        searchManager.searchCurrentOnlyMode(params)
     )
   );
 
-  // Target Only - Reason Based (NEW)
+  // Target Only Mode (grouped by reasons)
   server.addTool(
     tool(
-      "target_only_reason_based",
+      "target_only_mode",
       "Analyze who achieved target position, grouped by life event combinations that led to it",
       TargetOnlyReasonParamsSchema,
       async (params) =>
-        searchManager.searchTargetReasonBased(params)
+        searchManager.searchTargetOnlyMode(params)
     )
   );
 

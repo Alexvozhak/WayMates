@@ -197,7 +197,7 @@ describe("Reason-Based Search Integration Tests", () => {
       searchManager = new SearchManager(driver, builder, selectivity, gdsSimilarity, gdsPathfinding, gdsProjection, reasonAnalytics);
     });
 
-    test("searchCurrentReasonBased finds users by reason combinations", async () => {
+    test("searchCurrentOnlyMode finds users by reason combinations", async () => {
       // Load test users from JSON files
       const user1 = JSON.parse(
         readFileSync(
@@ -268,7 +268,7 @@ describe("Reason-Based Search Integration Tests", () => {
 
       // Search for reason combinations from Junior context
       // Using user1's ID to test currentUserId exclusion
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -325,7 +325,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(locationCombo.users_count).toBe(1); // user_3
     });
 
-    test("searchCurrentReasonBased handles empty results gracefully", async () => {
+    test("searchCurrentOnlyMode handles empty results gracefully", async () => {
       // Load user that won't match the filters
       const userNoMatch = JSON.parse(
         readFileSync(
@@ -357,7 +357,7 @@ describe("Reason-Based Search Integration Tests", () => {
       });
 
       // Search with completely different context
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -375,7 +375,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results).toEqual([]);
     });
 
-    test("searchCurrentReasonBased validates lookahead_months range", async () => {
+    test("searchCurrentOnlyMode validates lookahead_months range", async () => {
       const validContext = {
         position: "Junior" as const,
         domains: ["backend"],
@@ -386,7 +386,7 @@ describe("Reason-Based Search Integration Tests", () => {
 
       // Test invalid lookahead_months (below min)
       await expect(
-        searchManager.searchCurrentReasonBased({
+        searchManager.searchCurrentOnlyMode({
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
@@ -397,7 +397,7 @@ describe("Reason-Based Search Integration Tests", () => {
 
       // Test invalid lookahead_months (above max)
       await expect(
-        searchManager.searchCurrentReasonBased({
+        searchManager.searchCurrentOnlyMode({
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
@@ -409,7 +409,7 @@ describe("Reason-Based Search Integration Tests", () => {
       // Valid range should work (no error)
       // Note: May return empty results, but shouldn't throw validation error
       await expect(
-        searchManager.searchCurrentReasonBased({
+        searchManager.searchCurrentOnlyMode({
           currentPreset: "full",
           currentContext: validContext,
           currentUserId: "usr_01HX91F0C0R000000000000000",
@@ -419,7 +419,7 @@ describe("Reason-Based Search Integration Tests", () => {
       ).resolves.toBeDefined();
     });
 
-    test("searchCurrentReasonBased filters by required_reasons", async () => {
+    test("searchCurrentOnlyMode filters by required_reasons", async () => {
       // Setup: Load all 3 test users (user1, user2, user3)
       const user1 = JSON.parse(
         readFileSync(
@@ -485,7 +485,7 @@ describe("Reason-Based Search Integration Tests", () => {
       });
 
       // Search with required_reasons filter
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -510,7 +510,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results[0].users_count).toBe(2); // user1 and user2
     });
 
-    test("searchCurrentReasonBased filters by excluded_reasons", async () => {
+    test("searchCurrentOnlyMode filters by excluded_reasons", async () => {
       // Setup: Load all 3 test users
       const user1 = JSON.parse(
         readFileSync(
@@ -576,7 +576,7 @@ describe("Reason-Based Search Integration Tests", () => {
       });
 
       // Search with excluded_reasons filter
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -602,7 +602,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results[0].users_count).toBe(2); // user1 and user2
     });
 
-    test("searchCurrentReasonBased respects lookahead boundary ±1 month", async () => {
+    test("searchCurrentOnlyMode respects lookahead boundary ±1 month", async () => {
       // Create 4 users with different durations: 10, 11, 13, 14 months
       // For lookahead_months=12, should include only 11 and 13 (within ±1 range)
 
@@ -633,7 +633,7 @@ describe("Reason-Based Search Integration Tests", () => {
       );
 
       // Search with lookahead_months=12 (should match 11-13 range)
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -658,7 +658,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results[0].stats.median_duration_months).toBe(12); // (11+13)/2 for even count
     });
 
-    test("searchCurrentReasonBased calculates median correctly for odd count", async () => {
+    test("searchCurrentOnlyMode calculates median correctly for odd count", async () => {
       // Create 3 users with durations: 10, 11, 12 months
       // Median should be 11.0 (middle element)
 
@@ -683,7 +683,7 @@ describe("Reason-Based Search Integration Tests", () => {
       );
 
       // Search with wide lookahead to include all 3 users
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -706,7 +706,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results[0].stats.avg_duration_months).toBeCloseTo(11, 1); // (10+11+12)/3 ≈ 11
     });
 
-    test("searchCurrentReasonBased excludes users with null creation_reason", async () => {
+    test("searchCurrentOnlyMode excludes users with null creation_reason", async () => {
       // Load edge case fixture with null creation_reason
       const userNullReason = JSON.parse(
         readFileSync(
@@ -738,7 +738,7 @@ describe("Reason-Based Search Integration Tests", () => {
       });
 
       // Search - should NOT find user with null creation_reason
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -756,7 +756,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results).toEqual([]);
     });
 
-    test("searchCurrentReasonBased excludes users with empty creation_reason array", async () => {
+    test("searchCurrentOnlyMode excludes users with empty creation_reason array", async () => {
       // Load edge case fixture with empty creation_reason
       const userEmptyReason = JSON.parse(
         readFileSync(
@@ -788,7 +788,7 @@ describe("Reason-Based Search Integration Tests", () => {
       });
 
       // Search - should NOT find user with empty creation_reason
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -806,7 +806,7 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results).toEqual([]);
     });
 
-    test("searchCurrentReasonBased handles required_reasons + excluded_reasons conflict", async () => {
+    test("searchCurrentOnlyMode handles required_reasons + excluded_reasons conflict", async () => {
       // Setup: Load test users
       const user1 = JSON.parse(
         readFileSync(
@@ -838,7 +838,7 @@ describe("Reason-Based Search Integration Tests", () => {
       });
 
       // Search with conflicting filters: require AND exclude 'position_changed'
-      const results = await searchManager.searchCurrentReasonBased({
+      const results = await searchManager.searchCurrentOnlyMode({
         currentPreset: "full",
         currentContext: {
           position: "Junior",
@@ -858,10 +858,10 @@ describe("Reason-Based Search Integration Tests", () => {
       expect(results).toEqual([]);
     });
 
-    test("searchCurrentReasonBased throws error for invalid preset", async () => {
+    test("searchCurrentOnlyMode throws error for invalid preset", async () => {
       // Test with non-existent preset
       await expect(
-        searchManager.searchCurrentReasonBased({
+        searchManager.searchCurrentOnlyMode({
           currentPreset: "NON_EXISTENT_PRESET" as any, // Invalid preset - bypass TypeScript check
           currentContext: {
             position: "Junior",

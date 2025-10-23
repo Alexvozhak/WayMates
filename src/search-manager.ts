@@ -169,14 +169,14 @@ export class SearchManager {
     return parsedResults;
   }
 
-  async searchCurrentReasonBased(
+  async searchCurrentOnlyMode(
     params: CurrentOnlyReasonParams
   ): Promise<ReasonCombination[]> {
     // Validate all parameters including lookahead_months range
     const validatedParams = CurrentOnlyReasonParamsSchema.parse(params);
 
     console.log(
-      "🎯 [SearchManager.searchCurrentReasonBased] Starting reason-based current-only search"
+      "🎯 [SearchManager.searchCurrentOnlyMode] Starting current-only search (grouped by reasons)"
     );
     console.log("📊 Input params:", {
       currentUserId: validatedParams.currentUserId,
@@ -317,14 +317,14 @@ export class SearchManager {
     return parsedResults;
   }
 
-  async searchTargetReasonBased(
+  async searchTargetOnlyMode(
     params: TargetOnlyReasonParams
   ): Promise<ReasonCombination[]> {
     // Validate all parameters including lookback_months range
     const validatedParams = TargetOnlyReasonParamsSchema.parse(params);
 
     console.log(
-      "🎯 [SearchManager.searchTargetReasonBased] Starting reason-based target-only search"
+      "🎯 [SearchManager.searchTargetOnlyMode] Starting target-only search (grouped by reasons)"
     );
     console.log("📊 Input params:", {
       currentUserId: validatedParams.currentUserId,
