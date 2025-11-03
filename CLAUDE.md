@@ -6,80 +6,175 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WayMates is a career transition analysis platform built on Neo4j graph database. It helps users find career paths by matching their current context to target positions through analysis of skills, experience, and transitions of similar professionals. The system operates as an MCP (Model Context Protocol) server using FastMCP.
 
+---
+
+## Your Role: Orchestrator
+
+You are the **main Claude instance** responsible for:
+- Receiving tasks from the user
+- Deciding when to delegate to specialized agents
+- Coordinating agent work
+- Integrating agent outputs
+- Handling simple tasks directly
+
+**For simple tasks**: Work directly without agents.
+**For complex tasks**: Delegate to appropriate agents based on triggers below.
+
+---
+
 ## Sub-Agents Architecture
 
-This project uses **specialized sub-agents** for different development tasks. Claude Code **MUST proactively delegate** to appropriate agents based on context - don't wait for explicit user requests.
+This project uses **3 specialized agents** for different development tasks. You **MUST proactively delegate** to appropriate agents - don't wait for explicit user requests.
 
 ### Agent Roles & Responsibilities
 
 | Agent | Role | When to Call (Proactively) | Model |
 |-------|------|---------------------------|-------|
-| **waymates-code-reviewer** | Tactical code review: bugs, edge cases, correctness | **Immediately** after code implementation | Sonnet |
-| **waymates-tech-lead** | Architectural review: SOLID, elegance, refactoring, tech debt | After feature completion, before commits | Sonnet |
-| **waymates-qa-engineer** | Test coverage, test quality, failure analysis | After schema/Cypher changes, test failures | Sonnet |
-| **waymates-architect** | System design, tech selection, component interactions | Planning features, architecture decisions | Opus |
-| **waymates-business-analyst** | Requirements, UX, user flows, product decisions | Defining features, UX questions | Opus |
+| **planner** | Architecture + requirements + type design | Planning features, architecture decisions | Opus |
+| **reviewer** | Bugs, edge cases, DRY, correctness | **Immediately** after code implementation | Sonnet |
+| **qa** | Test quality, coverage, failure analysis | After schema/Cypher changes, test failures | Sonnet |
 
 ### Proactive Delegation Rules
 
 **CRITICAL**: Call agents automatically in these scenarios:
 
 ```
-✅ Code written → waymates-code-reviewer (bugs/edge cases)
-✅ Feature done → waymates-tech-lead (architecture review)
-✅ Schema/Cypher changed → waymates-qa-engineer (integration tests!)
-✅ Tests fail → waymates-qa-engineer (root cause analysis)
-✅ New feature planned → waymates-architect (design first)
-✅ UX question → waymates-business-analyst (user convenience)
-✅ Refactoring → waymates-tech-lead + waymates-architect (if large)
-✅ Performance issue → waymates-architect (bottleneck analysis)
+✅ Planning feature → planner (architecture + type schema)
+✅ Code written → reviewer (bugs, edge cases, DRY)
+✅ Feature done → qa (test coverage, quality)
+✅ Schema/Cypher changed → qa (integration tests!)
+✅ Tests failing → qa (root cause analysis)
+✅ Refactoring → reviewer (DRY violations) + qa (tests still valid)
 ```
 
-**Workflow example:**
+### Workflow Example
+
 ```
-User: "Add skill scoring to search-manager.ts"
+User: "Add caching for similarity search"
   ↓
-Claude: Implements code
+Claude: ✅ Calls planner
+  - Gets: Architecture design + TYPE SCHEMA + tech choice
   ↓
-Claude: ✅ Calls waymates-code-reviewer (tactical review)
+Claude: Implements code STRICTLY according to type schema
+  ↓
+Claude: ✅ Calls reviewer (automatically)
+  - Gets: Bug report, DRY violations, edge cases
   ↓
 Claude: Fixes critical issues
   ↓
-Claude: ✅ Calls waymates-tech-lead (architectural review)
-  ↓
-Claude: ✅ Calls waymates-qa-engineer (test coverage check)
+Claude: ✅ Calls qa (automatically)
+  - Gets: Test coverage analysis
   ↓
 Claude: Completes with tests
 ```
+
+---
+
+## Type-First Development (MANDATORY)
+
+**CRITICAL**: Types are contracts. Design them BEFORE coding.
+
+### Workflow
+
+1. **User requests feature**
+2. **Call `planner`** → get TYPE SCHEMA + architecture
+3. **Review type schema with user** (if complex)
+4. **Implement STRICTLY according to schema**
+5. **Call `reviewer`** → check type compliance, bugs, DRY
+6. **Call `qa`** → ensure test coverage
+
+### Type Schema Format
+
+planner agent will provide:
+
+```typescript
+// === TYPE SCHEMA ===
+
+// Reused types (imports)
+import { Context } from '@/schemas-zod.js';
+
+// New types (define once)
+export type CacheKey = `cache:${string}`;
+
+// Public signatures (contract locked)
+class CacheManager {
+  get(key: CacheKey): Promise<Data | null>;
+}
+```
+
+### Rules
+
+- **Never create types during implementation** - get them from planner first
+- **Always check `.claude/context/project.md`** - type might exist
+- **Lock signatures before coding** - public API is contract
+- **Update type registry via Memory MCP** - track new types
+
+---
+
+## Skills Available
+
+### test-review
+
+**Invocation**: Simply write `test-review` in your request
+
+**What it does**: Analyzes test files to verify they genuinely validate business logic, not just pass for coverage. Detects:
+- Fake tests (coverage theater)
+- Test manipulation (hardcoded values)
+- Missing edge cases
+- Misalignment with business requirements
+
+**Example usage**:
+```
+User: "test-review в tests/integration/gds-similarity.test.ts"
+→ Claude activates skill and provides structured analysis
+```
+
+---
 
 ## MCP Servers
 
 The following MCP servers provide specialized capabilities:
 
-### 1. **memory** (`@modelcontextprotocol/server-memory`)
+### 1. memory (`@modelcontextprotocol/server-memory`)
+
 **Purpose**: Persistent knowledge graph across sessions
+
 - Store architectural decisions, tech debt, refactoring patterns
 - Track discovered bugs and edge cases
 - Accumulate WayMates-specific conventions
 
 **Usage by agents:**
-- `waymates-tech-lead` → track tech debt
-- `waymates-qa-engineer` → save test patterns
-- `waymates-architect` → store architectural decisions
+- `planner` → store architectural decisions
+- `reviewer` → track tech debt
+- `qa` → save test patterns
 
-### 2. **filesystem** (`@modelcontextprotocol/server-filesystem`)
-**Purpose**: Fast file operations, search, tree navigation
-- Scoped to `/home/alex/projects/WayMatesRemote`
-- Use for bulk reads, pattern search, directory analysis
-- Prefer over individual Read tool for multiple files
+### 2. context7 (system-provided)
 
-**Usage:**
-- Reading multiple test files simultaneously
-- Finding code duplication patterns
-- Analyzing directory structure
+**Purpose**: Fetch up-to-date library documentation
 
-### 3. **neo4j-cypher** (`mcp-neo4j-cypher`)
+- Resolve library names → Context7-compatible IDs
+- Get focused documentation by topic
+
+**Usage by agents:**
+- `planner` → research best practices (Neo4j patterns, Docker, TypeScript)
+
+**Example:**
+```typescript
+// Step 1: Resolve library
+resolve-library-id({ libraryName: "neo4j" })
+
+// Step 2: Get docs
+get-library-docs({
+  context7CompatibleLibraryID: "/neo4j/docs",
+  topic: "Cypher WITH clause scope",
+  tokens: 3000
+})
+```
+
+### 3. neo4j-cypher (`mcp-neo4j-cypher`)
+
 **Purpose**: Direct Cypher query execution on test database
+
 - **Connected to**: `neo4j-test` (bolt://localhost:7689)
 - **Credentials**: neo4j / testpassword123
 - **Database**: neo4j
@@ -96,98 +191,29 @@ The following MCP servers provide specialized capabilities:
 - Debug query performance with EXPLAIN/PROFILE
 
 **Example:**
-```cypher
+```typescript
 // Test WITH clause variable propagation
-read_neo4j_cypher({
+mcp__neo4j-cypher__read_neo4j_cypher({
   query: "MATCH (u:User) WITH u, u.user_id AS uid RETURN u, uid LIMIT 1",
   params: {}
 })
 ```
 
-### 4. **context7** (system-provided)
-**Purpose**: Fetch up-to-date library documentation
-- Resolve library names → Context7-compatible IDs
-- Get focused documentation by topic
-
-**Usage by agents:**
-- `waymates-architect` → research best practices (Neo4j patterns, Docker, TypeScript)
-- `waymates-tech-lead` → validate coding patterns (Vitest, Zod, FastMCP)
-
-**Example:**
-```typescript
-// Step 1: Resolve library
-resolve-library-id({ libraryName: "neo4j" })
-// → Returns: /neo4j/docs
-
-// Step 2: Get docs
-get-library-docs({
-  context7CompatibleLibraryID: "/neo4j/docs",
-  topic: "Cypher WITH clause scope",
-  tokens: 3000
-})
-```
+---
 
 ## Tech Stack
 
 - **Database**: Neo4j (graph database)
-- **Query Language**: Cypher (stored in `.cypher` files, compiled to TypeScript)
+- **Query Language**: Cypher (inline template literals in TypeScript)
 - **Runtime**: Node.js 20+ with TypeScript (ESM modules)
 - **Validation**: Zod schemas
-- **Testing**: Vitest (unit, integration, functional)
+- **Testing**: Vitest (unit, integration)
 - **MCP Framework**: FastMCP for tool-based server interface
-- **ID Generation**: ULID
+- **ID Generation**: UUID v7 (time-ordered, RFC 9562)
 
-## Build and Development Commands
+---
 
-### Essential Commands
-
-```bash
-# Development - run the MCP server
-npm run dev
-
-# Build everything (Cypher + TypeScript)
-npm run build
-
-# Lint
-npm run lint
-npm run lint:fix
-
-# Cypher regeneration (CRITICAL - run after any .cypher file changes)
-npm run build:cypher
-```
-
-### Testing Commands
-
-```bash
-# Run all tests
-npm run test:all
-
-# Run specific test types
-npm run test:unit                    # Unit tests only (no DB)
-npm run test:integration             # Integration tests with test DB
-npm run test:functional              # Functional/E2E tests
-
-# Individual test file
-npx vitest run tests/unit/snippets-extractor.spec.ts
-npx vitest run tests/integration/search-manager.test.ts
-```
-
-### Docker & Database Commands
-
-```bash
-# Production database
-npm run docker:prod:up               # Start Neo4j container
-npm run docker:prod:down             # Stop and remove container
-npm run db:prod:init                 # Initialize schema
-npm run db:prod:clean                # Delete all nodes
-npm run db:prod:status               # Count nodes
-
-# Test database (integration tests)
-npm run test:setup                   # Start test DB and initialize
-npm run docker:test:down             # Stop test DB
-```
-
-### Mandatory Code Quality Checks
+## Mandatory Code Quality Checks
 
 **CRITICAL**: After ANY code changes, ALWAYS run these checks before marking work as complete:
 
@@ -204,366 +230,90 @@ npm run test:integration             # After Cypher/schema changes
 ```
 
 **Important workflow rules:**
-- **Always use `npm run lint`** - project has custom ESLint config, do NOT use `npx eslint` directly
-- **Fix ALL errors before proceeding** - warnings are acceptable in skip-ped tests, but errors must be resolved
-- **Use MCP filesystem tools when available** - prefer `mcp__filesystem__read_multiple_files` and `mcp__filesystem__search_files` over grep/find for bulk operations
-- **Run integration tests after schema/Cypher changes** - unit test mocks won't catch breaking changes in database queries
+- **Always use `npm run lint`** - project has custom ESLint config
+- **Fix ALL errors before proceeding** - warnings acceptable in skipped tests
+- **Run integration tests after schema/Cypher changes** - unit test mocks won't catch breaking changes
 
-## Architecture
+---
 
-### Core Components
+## Code Style and Simplicity Rules
 
-1. **MCP Server** (`src/mcp-server.ts`): Exposes tools via FastMCP
-   - `current_to_target`: Find career transitions from current → target position
-   - `current_only`: Find similar contexts to current position
-   - `target_only`: Find contexts matching target position
-   - Persistence tools: Create/update contexts, trails (learning paths), user stories
+**CRITICAL**: This project enforces strict simplicity and readability standards through ESLint.
 
-2. **Search Manager** (`src/search-manager.ts`): Orchestrates search operations
-   - Coordinates between query builder and Neo4j driver
-   - Processes different search modes (pipeline, current-only, target-only)
+See [docs/eslint_simplicity_rules.md](docs/eslint_simplicity_rules.md) for full details.
 
-3. **Persistence Manager** (`src/persistence-manager.ts`): Handles data creation/updates
-   - Context creation and updates
-   - Trail (learning path) management
-   - User story persistence
+### Key Rules:
 
-4. **Query Builder** (`src/orcestrator/search-query-builder.ts`): Constructs Cypher queries
-   - Uses preset configurations for common searches
-   - Builds strict (WHERE) and flexible (scoring) conditions
-   - Combines multiple Cypher processors
+1. **Spread Operator: FORBIDDEN**
+   - ❌ Object spread: `{ ...obj }`
+   - ❌ Array spread: `[...array]`
+   - ❌ Spread in arguments: `fn(...args)`
+   - ✅ Rest parameters: `function f(...args)` - ALLOWED
 
-### Cypher Query System
+2. **Complexity Limits**:
+   - `max-depth: 2` - maximum 2 levels of nesting
+   - `complexity: 8` - cyclomatic complexity ≤ 8
+   - `max-lines-per-function: 60` - functions up to 60 lines
 
-**CRITICAL WORKFLOW**: Cypher queries are NOT edited directly in TypeScript. They live in `.cypher` files and are compiled:
+3. **Philosophy**: Code must be **explicit and predictable**. No clever tricks, no hidden behavior.
 
-```
-src/cypher/
-├── processors/     # Multi-step query processors (scoring, results assembly)
-├── finders/        # Single-purpose finders (cohort matches, trails)
-└── upserts/        # Data modification queries
+**Why**: Forces developers to write clear, maintainable code. If you can't express logic simply, refactor into smaller functions.
 
-↓ npm run build:cypher
-
-generated/queries.generated.ts  # Auto-generated TypeScript constants
-```
-
-**Cypher Processors** are composable query blocks:
-- `processors/compatibility-score.cypher`: Calculates match metrics between contexts
-- `processors/search-results.cypher`: Main search pipeline orchestrator
-- `finders/cohort-matches.cypher`: Finds similar users
-- `finders/target-achievers.cypher`: Finds users who reached target positions
-
-### Canonical Variable Names in Cypher
-
-The codebase enforces strict variable naming conventions in Cypher queries:
-
-| Stage   | Requested Context | DB Context        | Score Alias                        |
-|---------|-------------------|-------------------|------------------------------------|
-| Current | `requestedCurrentContext` | `dbCurrentContext` | `currentContextCompatibilityScore` |
-| Target  | `requestedTargetContext`  | `dbTargetContext`  | `targetContextCompatibilityScore`  |
-
-**Important**: These names are hardcoded in Cypher builders. Do NOT pass variable names from TypeScript.
-
-### WITH Clause Scope Management
-
-Neo4j's `WITH` clause drops all variables not explicitly listed:
-- `WITH x, y` → only x and y remain in scope
-- `WITH *` → all variables remain in scope
-- `WITH *, newVar` → all old variables + newVar
-
-Always verify variable consistency across `WITH` clauses in multi-step queries.
-
-### Cypher Map Projection (Clean Object Return)
-
-**Return objects directly from Cypher instead of field mapping in TypeScript:**
-
-```cypher
-// ✅ GOOD - Type conversions in Cypher
-RETURN {
-  reason: reason,
-  avgDuration: avgDuration,
-  transitionsCount: toInteger(count(*))
-} AS result
-```
-
+**Alternatives to spread**:
 ```typescript
-// ✅ Clean TypeScript - single cast
-return records.map(record => record.get('result') as MyType);
+// Object merge
+const merged = Object.assign({}, defaults, userConfig);
+
+// Array copy
+const copy = array.slice();
+
+// Immutable update
+const updated = Object.assign({}, context, { field: newValue });
 ```
 
-**Common conversions**: `toInteger(count(*))`, `toFloat(value)`, `toString(value)`
+---
 
-### Preset System
+## Project Details
 
-Presets (`src/orcestrator/presets.ts`) define common search configurations:
-- **Loaded dynamically** from `config/current-presets.json` and `config/target-presets.json`
-- Specify strict fields (WHERE filters) and flexible fields (scoring)
-- Validated at runtime using Zod schemas (CurrentPresetsSchema, TargetPresetsSchema)
-- **No build step required** - presets are imported directly via JSON imports
+For detailed project context, see **`.claude/context/project.md`**:
 
-## Data Model
+- Tech stack, architecture patterns
+- Cypher rules (WITH clause, canonical names, null safety)
+- Data format standards (UUID v7, ISO dates, enums)
+- Testing strategy (Vitest projects, database isolation)
+- Code patterns (Query Builder, Zod, Type Reuse)
+- Method ordering convention
+- Common pitfalls
 
-**Core Nodes**:
-- `User`: User accounts
-- `Context`: Career position/role at a specific time (the central node)
-- `Trail`: Learning paths between contexts (courses, platforms, duration, cost)
+**Agents read this file automatically** - you don't need to include it in agent prompts.
 
-**Reference Nodes**:
-- `Position`, `Industry`, `WorkDomain`, `Skill`, `SkillCategory`
-- `Country`, `City`, `Platform`
+---
 
-**Key Relationships**:
-- `(:User)-[:HAS_CONTEXT]->(:Context)` - User's career history
-- `(:User)-[:HAS_TRAIL]->(:Trail)` - User's learning paths
-- `(:Trail)-[:STEPS_ON]->(:Context)` - Trail originates from context
-- `(:Trail)-[:STEPS_TO]->(:Context)` - Trail leads to context
-- `(:Context)-[:USES_SKILL]->(:Skill)` - Skills in a context
-
-**Context Properties**:
-- `context_id`, `position`, `industry`, `company_size`, `team_size`
-- `work_type`, `country_code`, `city_name`
-- `domains` (array), `skills` (array), `citizenships` (array)
-- `previous_context_id`, `next_context_id` (temporal navigation)
-
-## Testing Strategy
-
-### Three Test Tiers
-
-1. **Unit Tests** (`tests/unit/**/*.spec.ts`)
-   - No database, fast execution
-   - Test query builders, snippet extractors, validators
-   - Run: `npm run test:unit`
-
-2. **Integration Tests** (`tests/integration/**/*.test.ts`)
-   - Real Neo4j test database (`neo4j-test` container)
-   - Test managers, full query execution
-   - **Vitest Projects Architecture** (see vitest.config.ts)
-   - Run: `npm run test:integration`
-
-3. **Functional Tests** (`tests/functional/**/*.test.ts`)
-   - Currently disabled, planned for end-to-end scenarios
-
-### Vitest Projects (Integration Tests)
-
-**Critical Architecture**: Integration tests use **Vitest projects** for DB fixture isolation and parallelism control.
-
-**Projects run SEQUENTIALLY** (`sequence.concurrent: false`) to avoid data races between projects.
-
-**5 Projects**:
-- `unit` - No DB, parallel execution
-- `gds-projection-tests` - Lifecycle tests (create/drop projections), **singleThread: true**
-- `gds-similarity-tests` - Read-only algorithms, **singleThread: false** (parallel), setupFiles: U1-U7
-- `reason-tests` - Dynamic user creation, **singleThread: true**, setupFiles: import reasons
-- `reason-analytics-tests` - Read-only Cypher, **singleThread: false** (parallel), setupFiles: U8-U9
-
-**Key Patterns**:
-- **singleThread: true** - for tests that modify DB state
-- **singleThread: false** - for read-only tests (safe to parallelize)
-- **setupFiles** - loads fixtures ONCE before all tests in project
-- **isolate: true** - isolates global state between test files
-
-**Adding New Tests**: Check `vitest.config.ts` for correct project `include` pattern.
-
-### Test Database Isolation
-
-Each test environment uses isolated Neo4j instances:
-- **prod**: `neo4j-prod` (7687:7687, 7474:7474)
-- **test**: `neo4j-test` (7689:7687, 7476:7474)
-
-Test setup automatically starts containers and initializes schema.
-
-## Development Workflow
-
-### Working with Cypher Queries
-
-1. Edit `.cypher` files in `src/cypher/processors/`, `finders/`, or `upserts/`
-2. **MANDATORY**: Run `npm run build:cypher` to regenerate TypeScript constants
-3. **✅ PROACTIVE**: Call `waymates-code-reviewer` to check for:
-   - WITH clause variable scope issues
-   - Missing null/empty array handling
-   - Canonical variable naming violations
-4. **✅ PROACTIVE**: Call `waymates-qa-engineer` to ensure integration test coverage (mocks won't catch Cypher breakage!)
-5. Test queries with `neo4j-cypher` MCP for edge cases
-6. Run integration tests: `npm run test:integration`
-
-### Schema Changes
-
-1. Edit `database/init.cypher` for constraints and indexes
-2. Reinitialize database: `npm run db:prod:init` or `npm run db:test:init`
-3. Update Zod schemas in `src/schemas-zod.ts` if needed
-4. **✅ PROACTIVE**: Call `waymates-qa-engineer` to review schema impact on tests
-
-### Debugging Cypher Queries
-
-**Use `neo4j-cypher` MCP server** for direct query testing:
-
-```typescript
-// 1. Inspect current schema
-mcp__neo4j-cypher__get_neo4j_schema()
-
-// 2. Test query with edge cases
-mcp__neo4j-cypher__read_neo4j_cypher({
-  query: `
-    MATCH (u:User {user_id: $userId})
-    WITH u, u.user_id AS uid
-    RETURN u, uid
-  `,
-  params: { userId: "user_01" }
-})
-
-// 3. Test WITH clause variable propagation
-mcp__neo4j-cypher__read_neo4j_cypher({
-  query: "MATCH (c:Context) WITH c, c.skills AS skills WHERE size(skills) > 0 RETURN c, skills LIMIT 5",
-  params: {}
-})
-```
-
-**For production queries**, use Neo4j Browser:
-- Prod: http://localhost:7474 (7687)
-- Test: http://localhost:7476 (7689)
-
-## Project Conventions
-
-### Code Style
-- TypeScript strict mode enabled
-- ESM modules (use `.js` extensions in imports)
-- Prefer explicit temporary variables over complex chained operations
-- Extract helper functions for repeated logic
-- Avoid spread operator when possible
-
-### DRY (Don't Repeat Yourself) Principle
-
-**CRITICAL**: Duplication of 100+ line methods is a CODE SMELL that must be caught proactively.
-
-**Red flags for duplication:**
-1. **Adjacent methods differing only in constants** - e.g., `findByJaccard` vs `findByOverlap` where only the algorithm name changes
-2. **Similar method signatures** - Same parameter lists, same return types, similar names
-3. **Near-identical implementations** - 95%+ code overlap with minimal variation
-
-**Refactoring strategy:**
-- Use **generic type parameters** instead of duplicate methods: `findSimilarBy(algorithm: 'Jaccard' | 'Overlap', ...)`
-- Extract **configuration constants** to objects: `DEFAULT_CUTOFFS: Record<Algorithm, number>`
-- Keep **deprecated wrappers** for backward compatibility if needed
-
-**Agent responsibilities:**
-- `waymates-code-reviewer` → Flag adjacent methods with high similarity (>90%)
-- `waymates-tech-lead` → Review entire file/class for DRY violations before final approval
-- Both agents should check for this BEFORE user has to point it out
-
-**Example of good refactoring:**
-```typescript
-// ❌ BAD: 170 lines of duplication
-async findSimilarByJaccard(...) { /* 85 lines */ }
-async findSimilarByOverlap(...) { /* 85 lines */ }
-
-// ✅ GOOD: Unified with type parameter
-async findSimilarBy(algorithm: 'Jaccard' | 'Overlap', ...) { /* 85 lines */ }
-
-// Backward compatibility wrappers (optional, 3 lines each)
-async findSimilarByJaccard(...) { return this.findSimilarBy('Jaccard', ...); }
-async findSimilarByOverlap(...) { return this.findSimilarBy('Overlap', ...); }
-```
-
-### Naming
-- Use canonical Cypher variable names (see table above)
-- Keep Cypher variable names consistent across query blocks
-- Use descriptive names for TypeScript functions and variables
-
-### Data Format Standards (Week 1 Lessons)
-
-**ULID Format**:
-- **26 characters** exactly (e.g., `usr_01JAA000000000000000001`)
-- Valid Crockford Base32 charset only
-- Check schemas: `grep "ULID_PATTERN" src/schemas-zod.ts`
-
-**ISO Date Format**:
-- `"2025-01-01T00:00:00Z"` (trailing Z required)
-- Use `new Date().toISOString()` in TypeScript
-- Calculate timestamps based on duration, not hardcoded dates
-
-**Enum Values**:
-- Exact match with schemas: `"startup"` not `"Startup"`
-- Check schema definitions before creating test data
-
-### Test Infrastructure Reuse (Week 1 Lessons)
-
-**DRY in Tests**:
-- Reuse `UserKey` type from `test-data-manager.ts`
-- Reuse `TestDataManager` helpers (not custom loaders)
-- Follow U1-U9 fixture naming convention
-
-**KISS over Coverage Theater**:
-- Don't test obvious invariants (`transitionsCount > 0` when result exists)
-- Don't validate math without business justification (`min < max` is obvious)
-- Focus on business logic correctness, not obvious truths
-
-**Preemptive Optimization Detection**:
-- Flag generic `min*`, `max*`, `cutoff` parameters without business justification
-- Hardcode unless there's explicit requirement for configurability
-- Example: `minTransitionsCount: 1` - why is this a parameter?
-
-### Documentation Files
-- Dated format: `YYYY_MM_DD_HH_MM_название.md` (Russian naming)
-- Located in `docs/` directory
-
-## Important Rules
-
-### Before Making Changes
-
-1. **Never modify generated files**: `src/generated/queries.generated.ts`
-2. **Always regenerate after Cypher edits**: `npm run build:cypher`
-3. **Check test coverage**: Especially for schema/query changes that mocks won't catch
-4. **Verify preset validity**: SearchManager validates presets on startup (using Zod schemas)
-
-### Proactive Agent Usage (MANDATORY)
-
-**Claude Code MUST call agents automatically** - don't wait for user requests:
-
-| Trigger | Agent | Purpose |
-|---------|-------|---------|
-| 🔧 **Code written/modified** | `waymates-code-reviewer` | Catch bugs, edge cases, null handling |
-| ✅ **Feature completed** | `waymates-tech-lead` → `waymates-qa-engineer` | Architecture review → test coverage |
-| 🗄️ **Schema/Cypher changed** | `waymates-qa-engineer` | Integration tests (mocks hide breakage!) |
-| ❌ **Tests failing** | `waymates-qa-engineer` | Root cause: test outdated or code bug? |
-| 🎨 **Planning new feature** | `waymates-architect` | Design before implementation |
-| 🔄 **Refactoring proposed** | `waymates-tech-lead` (small) or `waymates-architect` (large) | Break into steps, avoid tech debt |
-| 🤔 **UX/Product question** | `waymates-business-analyst` | User convenience first |
-| ⚡ **Performance issue** | `waymates-architect` | Bottleneck analysis, indexing strategy |
-
-**Key principle**: Proactive delegation maintains quality without user micromanagement.
-
-### Testing Philosophy
-
-**CRITICAL PRINCIPLE**: Tests validate business logic, not implementation details.
-
-- **Mocks hide breaking changes** in schema, queries, and integration
-- After architectural changes, if tests pass suspiciously easily → **investigate thoroughly**
-- **Integration tests with real DB are MANDATORY** for Cypher refactoring
-- **Never blindly adjust tests to match code** - determine if test or code is wrong
-- **✅ PROACTIVE**: Call `waymates-qa-engineer` when:
-  - Schema/Cypher queries changed (mocks won't catch breakage)
-  - Tests fail (root cause analysis: test outdated vs. code bug)
-  - Feature completed (ensure adequate coverage)
-  - Refactoring done (verify tests still validate business logic)
-
-### Communication Language
+## Communication Language
 
 - **Russian** for discussions, documentation, commit messages (optional)
 - **English** for code, variable names, comments
 - Structured explanations with examples preferred
 
-## Common Pitfalls
+---
 
-1. **Forgetting `npm run build:cypher`**: Changes to `.cypher` files won't appear until regeneration
-2. **WITH clause scope**: Forgetting to carry forward variables through `WITH` clauses
-3. **Hardcoding variable names**: Don't pass Cypher variable names from TypeScript
-4. **Test isolation**: Integration tests run sequentially to avoid DB conflicts
-5. **Parameter format**: Neo4j Browser requires `:param name => value;` syntax
+## Quality Gates
 
-## Useful Resources
+Before completing any feature:
 
-- Cypher cookbook: `.cursor/rules/training.md`
-- Cypher variable conventions: `.cursor/rules/cypher.rules.mdc`
-- Project workflow rules: `.cursor/rules/rules.mdc`
-- Architecture discussions: `docs/2025_10_11_arch.md`
+1. ✅ **Type schema designed** (from planner)
+2. ✅ **Code reviewed** (by reviewer - bugs, DRY, edge cases)
+3. ✅ **Tests verified** (by qa - quality, coverage)
+4. ✅ **Lint passed** (`npm run lint`)
+5. ✅ **TypeScript compiled** (`npx tsc --noEmit`)
+6. ✅ **Tests passed** (unit + integration if applicable)
+
+---
+
+## Key Principle
+
+**Proactive delegation maintains quality without user micromanagement.**
+
+You should automatically call appropriate agents based on triggers above. The user doesn't need to ask for code review or test analysis - you do it proactively as part of the workflow.
+- фасад и core не должны иметь общие зависимости, чтобы их можно было легко разнести потом по разным репам
+- никаких doxygen комментариев, отладочных комментариев, временных комментариев.

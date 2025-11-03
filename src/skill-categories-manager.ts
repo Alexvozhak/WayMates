@@ -1,13 +1,13 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import YAML from 'yaml';
-import type { Driver } from 'neo4j-driver';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import YAML from "yaml";
+import type { DatabaseContext } from "./database-context.js";
 import {
   SkillCategoryWithSkills,
   SkillCategoryTemplatesConfig,
   SkillCategoryWithSkillsSchema,
-} from './schemas-zod.js';
+} from "./schemas-zod.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +16,27 @@ const __dirname = path.dirname(__filename);
  * Manager for skill categories operations
  */
 export class SkillCategoriesManager {
-  constructor(private driver: Driver) {}
+  constructor(private db: DatabaseContext) {}
+
+  private async executeWrite(
+    query: string,
+    params: Record<string, unknown>
+  ): Promise<void> {
+    await this.db.write(async (tx) => {
+      await tx.run(query, params);
+    });
+  }
+
+  private async executeRead<T>(
+    query: string,
+    params: Record<string, unknown>,
+    mapper: (result: unknown) => T
+  ): Promise<T> {
+    return this.db.read(async (tx) => {
+      const result = await tx.run(query, params);
+      return mapper(result);
+    });
+  }
 
   /**
    * List available skill category templates from YAML
@@ -32,12 +52,17 @@ export class SkillCategoriesManager {
     const templates = this.loadTemplatesFromYAML();
 
     return {
-      available_templates: Object.entries(templates.templates).map(([name, config]) => ({
-        template_name: name,
-        description: config.description,
-        categories_count: config.categories.length,
-        total_skills: config.categories.reduce((sum, cat) => sum + cat.skills.length, 0),
-      })),
+      available_templates: Object.entries(templates.templates).map(
+        ([name, config]) => ({
+          template_name: name,
+          description: config.description,
+          categories_count: config.categories.length,
+          total_skills: config.categories.reduce(
+            (sum, cat) => sum + cat.skills.length,
+            0
+          ),
+        })
+      ),
     };
   }
 
@@ -73,7 +98,7 @@ export class SkillCategoriesManager {
       );
 
       // Create SkillCategory node
-      await this.driver.executeQuery(
+      await this.executeWrite(
         `
         MERGE (sc:SkillCategory {category_id: $categoryId})
         SET sc.template_name = $templateName,
@@ -94,7 +119,7 @@ export class SkillCategoriesManager {
 
       // Assign skills to category
       for (const skillName of category.skills) {
-        await this.driver.executeQuery(
+        await this.executeWrite(
           `
           MERGE (s:Skill {name: $skillName})
           WITH s
@@ -122,16 +147,14 @@ export class SkillCategoriesManager {
   /**
    * List all skill categories from database
    */
-  async listSkillCategories(
-    templateName?: string
-  ): Promise<{
+  async listSkillCategories(templateName?: string): Promise<{
     categories: SkillCategoryWithSkills[];
   }> {
     const query = templateName
       ? `MATCH (sc:SkillCategory {template_name: $templateName})`
       : `MATCH (sc:SkillCategory)`;
 
-    const result = await this.driver.executeQuery(
+    const categories = await this.executeRead(
       `
         ${query}
         OPTIONAL MATCH (s:Skill)-[:BELONGS_TO]->(sc)
@@ -146,23 +169,23 @@ export class SkillCategoriesManager {
                skills
         ORDER BY sc.weight DESC
       `,
-      { templateName }
+      { templateName },
+      (result: any) =>
+        result.records.map((r: any) => {
+          const category = {
+            category_id: r.get("category_id"),
+            template_name: r.get("template_name"),
+            category_name: r.get("category_name"),
+            weight: r.get("weight"),
+            penalty_multiplier: r.get("penalty_multiplier"),
+            is_predefined: r.get("is_predefined"),
+            created_at: r.get("created_at"),
+            skills: r.get("skills"),
+          };
+
+          return SkillCategoryWithSkillsSchema.parse(category);
+        })
     );
-
-    const categories = result.records.map((r) => {
-      const category = {
-        category_id: r.get('category_id'),
-        template_name: r.get('template_name'),
-        category_name: r.get('category_name'),
-        weight: r.get('weight'),
-        penalty_multiplier: r.get('penalty_multiplier'),
-        is_predefined: r.get('is_predefined'),
-        created_at: r.get('created_at'),
-        skills: r.get('skills'),
-      };
-
-      return SkillCategoryWithSkillsSchema.parse(category);
-    });
 
     return { categories };
   }
@@ -182,9 +205,9 @@ export class SkillCategoriesManager {
     category_id: string;
     skills_assigned: number;
   }> {
-    const categoryId = `custom_${params.category_name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
+    const categoryId = `custom_${params.category_name.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`;
 
-    await this.driver.executeQuery(
+    await this.executeWrite(
       `
         MERGE (sc:SkillCategory {category_id: $categoryId})
         SET sc.category_name = $categoryName,
@@ -206,7 +229,7 @@ export class SkillCategoriesManager {
     );
 
     for (const skillName of params.skills) {
-      await this.driver.executeQuery(
+      await this.executeWrite(
         `
           MERGE (s:Skill {name: $skillName})
           WITH s
@@ -233,7 +256,7 @@ export class SkillCategoriesManager {
   }): Promise<{
     success: boolean;
   }> {
-    await this.driver.executeQuery(
+    await this.executeWrite(
       `
         MERGE (s:Skill {name: $skillName})
         WITH s
@@ -250,8 +273,11 @@ export class SkillCategoriesManager {
    * Load templates from YAML file
    */
   private loadTemplatesFromYAML(): SkillCategoryTemplatesConfig {
-    const yamlPath = path.join(__dirname, '../database/skill-category-templates.yaml');
-    const yamlContent = fs.readFileSync(yamlPath, 'utf-8');
+    const yamlPath = path.join(
+      __dirname,
+      "../database/skill-category-templates.yaml"
+    );
+    const yamlContent = fs.readFileSync(yamlPath, "utf-8");
     return YAML.parse(yamlContent) as SkillCategoryTemplatesConfig;
   }
 
@@ -263,7 +289,7 @@ export class SkillCategoriesManager {
     categoryName: string,
     domainPrefix?: string
   ): string {
-    const normalizedName = categoryName.toLowerCase().replace(/\s+/g, '_');
+    const normalizedName = categoryName.toLowerCase().replace(/\s+/g, "_");
     if (domainPrefix) {
       return `${domainPrefix}_${templateName}_${normalizedName}`;
     }

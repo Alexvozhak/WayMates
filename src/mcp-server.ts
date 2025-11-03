@@ -5,7 +5,6 @@ import type { SkillCategoriesManager } from "./skill-categories-manager.js";
 import {
   CurrentOnlyReasonParamsSchema,
   TargetOnlyReasonParamsSchema,
-  GdsSimilaritySearchParamsSchema,
   StoryInputSchema,
   UserIdContextSchema,
   UserIdTrailSchema,
@@ -19,13 +18,8 @@ import {
   CreateCustomSkillCategoryParamsSchema,
   AssignSkillToCategoryParamsSchema,
 } from "./schemas-zod.js";
-import {
-  PipelineWithPathfindingParamsSchema,
-} from "./gds/schemas.js";
 import { z } from "zod";
-/**
- * Create MCP server using SearchManager.
- */
+
 export function createWayMatesServer(
   searchManager: SearchManager,
   persistenceManager: PersistenceManager,
@@ -43,7 +37,7 @@ export function createWayMatesServer(
     name: string,
     description: string,
     schema: TSchema,
-    handler: (params: z.output<TSchema>) => Promise<TResult> | TResult
+    handler: (params: z.infer<TSchema>) => Promise<TResult> | TResult
   ) {
     return {
       name,
@@ -57,15 +51,23 @@ export function createWayMatesServer(
     };
   }
 
-  // Current to Target (GDS Similarity + Pathfinding)
-  server.addTool(
-    tool(
-      "current_to_target",
-      "Find career transitions from current context to target position using GDS Node Similarity + K-Shortest Paths. Returns similar contexts at target position with career paths to reach them.",
-      PipelineWithPathfindingParamsSchema,
-      async (params) => searchManager.searchPipeline(params)
-    )
-  );
+  // Current to Target - LEGACY (moved to Core)
+  // server.addTool(
+  //   tool(
+  //     "current_to_target",
+  //     "Find career transitions from current context to target position",
+  //     CurrentToTargetParamsSchema,
+  //     async (params) =>
+  //       searchManager.searchPipeline(
+  //         params.currentPreset,
+  //         params.currentContext,
+  //         params.targetPreset,
+  //         params.targetContext,
+  //         params.currentUserId,
+  //         params.searchConstraints
+  //       )
+  //   )
+  // );
 
   // Current Only Mode (grouped by reasons)
   server.addTool(
@@ -73,8 +75,7 @@ export function createWayMatesServer(
       "current_only_mode",
       "Analyze career progression grouped by life event combinations from current position",
       CurrentOnlyReasonParamsSchema,
-      async (params) =>
-        searchManager.searchCurrentOnlyMode(params)
+      async (params) => searchManager.searchCurrentOnlyMode(params)
     )
   );
 
@@ -84,23 +85,41 @@ export function createWayMatesServer(
       "target_only_mode",
       "Analyze who achieved target position, grouped by life event combinations that led to it",
       TargetOnlyReasonParamsSchema,
-      async (params) =>
-        searchManager.searchTargetOnlyMode(params)
+      async (params) => searchManager.searchTargetOnlyMode(params)
     )
   );
 
-  // === GDS SIMILARITY SEARCH (Week 2 Day 4) ===
+  // === REASON ANALYTICS (Week 2 Day 4 Part 2) - LEGACY DISABLED ===
 
-  // Find Similar Contexts using GDS Node Similarity (Jaccard/Overlap)
-  server.addTool(
-    tool(
-      "find_similar_contexts",
-      "Find similar career contexts using GDS Node Similarity algorithms (10x-100x faster than manual Jaccard). Use Jaccard for current-only (strict), Overlap for target-only (lenient).",
-      GdsSimilaritySearchParamsSchema,
-      async (params) =>
-        searchManager.searchSimilarityBased(params)
-    )
-  );
+  // // Get Duration Statistics by Reason
+  // server.addTool(
+  //   tool(
+  //     "get_duration_by_reason",
+  //     "Get duration statistics (avg, median, percentiles) for each creation_reason type. Helps analyze how long transitions take based on life events.",
+  //     z.object({}).strict(),
+  //     async () => searchManager.getDurationByReason()
+  //   )
+  // );
+
+  // // Get Reason Transition Matrix
+  // server.addTool(
+  //   tool(
+  //     "get_reason_transitions",
+  //     "Get reason transition probabilities: P(to_reason | current_reason). Analyzes 3-hop patterns to predict next life events.",
+  //     z.object({}).strict(),
+  //     async () => searchManager.getReasonTransitionMatrix()
+  //   )
+  // );
+
+  // // Get Reason Co-occurrence
+  // server.addTool(
+  //   tool(
+  //     "get_reason_cooccurrence",
+  //     "Get reason pairs that appear together in same context. Identifies common life event combinations.",
+  //     z.object({}).strict(),
+  //     async () => searchManager.getReasonCooccurrence()
+  //   )
+  // );
 
   // List Available Reasons (NEW)
   server.addTool(
@@ -108,8 +127,7 @@ export function createWayMatesServer(
       "list_available_reasons",
       "Get all available context creation reasons (life events) from the database",
       z.object({}).strict(),
-      async () =>
-        persistenceManager.listAvailableReasons()
+      async () => persistenceManager.listAvailableReasons()
     )
   );
 
@@ -118,13 +136,25 @@ export function createWayMatesServer(
     tool(
       "create_new_reason",
       "Create a new context creation reason when AI encounters an unknown life event",
-      z.object({
-        reason_id: z.string().describe("Unique reason identifier (snake_case)"),
-        description: z.string().describe("Human-readable description of the reason"),
-        patterns: z.array(z.string()).describe("Common patterns/phrases indicating this reason"),
-        examples: z.array(z.string()).describe("Example sentences using this reason"),
-        context_id: z.string().describe("Context ID where this reason was first encountered"),
-      }).strict(),
+      z
+        .object({
+          reason_id: z
+            .string()
+            .describe("Unique reason identifier (snake_case)"),
+          description: z
+            .string()
+            .describe("Human-readable description of the reason"),
+          patterns: z
+            .array(z.string())
+            .describe("Common patterns/phrases indicating this reason"),
+          examples: z
+            .array(z.string())
+            .describe("Example sentences using this reason"),
+          context_id: z
+            .string()
+            .describe("Context ID where this reason was first encountered"),
+        })
+        .strict(),
       async (params) =>
         persistenceManager.createNewReason(
           params.reason_id,

@@ -2,34 +2,23 @@ import {
   createDriver as createNeo4jDriver,
   verifyConnection,
 } from "./neo4j.js";
+import { DatabaseContext } from "./database-context.js";
 import { createWayMatesServer } from "./mcp-server.js";
 import { SearchManager } from "./search-manager.js";
 import { PersistenceManager } from "./persistence-manager.js";
 import { SkillCategoriesManager } from "./skill-categories-manager.js";
 import { SelectivityService } from "./services/selectivity.service.js";
-import { GdsProjectionService } from "./gds/services/gds-projection.service.js";
-import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
-import { GdsPathfindingService } from "./gds/services/gds-pathfinding.service.js";
 
 async function main() {
   const driver = createNeo4jDriver();
   await verifyConnection(driver);
 
-  const selectivityService = new SelectivityService(driver);
+  const db = new DatabaseContext(driver);
+  const selectivityService = new SelectivityService(db);
+  const searchManager = new SearchManager(db, selectivityService);
+  const persistenceManager = new PersistenceManager(db);
+  const skillCategoriesManager = new SkillCategoriesManager(db);
 
-  const gdsProjectionService = new GdsProjectionService(driver);
-  const gdsSimilarityService = new GdsSimilarityService(driver, gdsProjectionService);
-  const gdsPathfindingService = new GdsPathfindingService(driver, gdsProjectionService);
-
-  const searchManager = new SearchManager(
-    driver,
-    selectivityService,
-    gdsSimilarityService,
-    gdsPathfindingService,
-    gdsProjectionService
-  );
-  const persistenceManager = new PersistenceManager(driver);
-  const skillCategoriesManager = new SkillCategoriesManager(driver);
   const server = createWayMatesServer(searchManager, persistenceManager, skillCategoriesManager);
 
   await server.start({

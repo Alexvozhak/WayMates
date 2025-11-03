@@ -1,4 +1,5 @@
 import type { Driver } from "neo4j-driver";
+import { DatabaseContext } from "../../src/database-context.js";
 import { TestDataManager, type UserKey } from "./test-data-manager.js";
 import { PersistenceManager } from "../../src/persistence-manager.js";
 
@@ -8,7 +9,8 @@ export class FixturePersistenceManager {
     protected persistenceManager: PersistenceManager,
     protected testDataManager: TestDataManager
   ) {
-    this.persistenceManager = new PersistenceManager(driver);
+    const db = new DatabaseContext(driver);
+    this.persistenceManager = new PersistenceManager(db);
     this.testDataManager = new TestDataManager();
   }
 

@@ -1,9 +1,10 @@
-import type { Driver, Session, Plan } from "neo4j-driver";
+import type { ManagedTransaction, Plan } from "neo4j-driver";
 import type {
   ContextField,
   TargetContext,
   UserContext,
 } from "../schemas-zod.js";
+import type { DatabaseContext } from "../database-context.js";
 import { FIELD_SNIPPETS } from "../orcestrator/snippets-extractor.js";
 
 type SelectivityResult = {
@@ -14,7 +15,7 @@ type SelectivityResult = {
 const FALLBACK_SELECTIVITY = 1_000_000;
 
 export class SelectivityService {
-  constructor(private driver: Driver) {}
+  constructor(private db: DatabaseContext) {}
 
   /**
    * Return strict fields ordered by their estimated selectivity (lower first).
@@ -24,28 +25,29 @@ export class SelectivityService {
     strictFields: ContextField[],
     userContext: UserContext | TargetContext
   ): Promise<ContextField[]> {
-    const session = this.driver.session();
-    const results: SelectivityResult[] = [];
+    const results = await this.db.read(async (tx) => {
+      const selectivityResults: SelectivityResult[] = [];
 
-    try {
       for (const fieldName of strictFields) {
         const fieldValue = userContext[fieldName];
-        if (fieldValue != null) {
+        if (fieldValue == null) continue;
+
+        try {
           const result = await this.getFieldSelectivity(
-            session,
+            tx,
             fieldName,
             fieldValue
           );
-          results.push(result);
+          selectivityResults.push(result);
+        } catch {
+          // swallow, continue to next field
         }
       }
-    } catch {
-      // swallow, we fallback later
-    } finally {
-      await session.close();
-    }
 
-    if (!results.length) return strictFields; // fallback
+      return selectivityResults;
+    });
+
+    if (!results.length) return strictFields;
 
     return results
       .sort((a, b) => a.estimatedRows - b.estimatedRows)
@@ -53,7 +55,7 @@ export class SelectivityService {
   }
 
   private async getFieldSelectivity(
-    session: Session,
+    tx: ManagedTransaction,
     fieldName: ContextField,
     fieldValue: unknown
   ): Promise<SelectivityResult> {
@@ -61,9 +63,7 @@ export class SelectivityService {
     const query = `EXPLAIN ${startPattern} RETURN count(c)`;
 
     try {
-      const result = await session.executeRead((tx) =>
-        tx.run(query, { fieldValue })
-      );
+      const result = await tx.run(query, { fieldValue });
       const estimatedRows = this.isPlanWithEstimatedRows(result.summary?.plan)
         ? parseInt(result.summary.plan!.arguments!.EstimatedRows, 10)
         : FALLBACK_SELECTIVITY;

@@ -12,7 +12,7 @@ import type {
   UpsertStoryResult,
   Reason,
 } from "./schemas-zod.js";
-import type { Driver } from "neo4j-driver";
+import type { DatabaseContext } from "./database-context.js";
 import {
   UPSERT_CONTEXTS_QUERY,
   UPSERT_TRAILS_QUERY,
@@ -29,15 +29,14 @@ import {
   UpsertTrailResultSchema,
   ReasonSchema,
 } from "./schemas-zod.js";
-import { withReadSession, withWriteSession } from "./neo4j.js";
-import { ulid } from "ulid";
+import { v7 as uuidv7 } from "uuid";
 import {
   buildListReasonsQuery,
   buildCreateReasonQuery,
 } from "./orcestrator/reason-query-builder.js";
 
 export class PersistenceManager {
-  constructor(private driver: Driver) {}
+  constructor(private db: DatabaseContext) {}
 
   async upsertStory(params: StoryInput): Promise<UpsertStoryResult> {
     const contextsResult: UpsertContextResult = await this.upsertContexts({
@@ -55,7 +54,7 @@ export class PersistenceManager {
   }
 
   async upsertContexts(params: UserIdContext): Promise<UpsertContextResult> {
-    return withWriteSession(this.driver, async (tx) => {
+    return this.db.write(async (tx) => {
       const results: ContextId[] = [];
       for (const context of params.contexts) {
         if (!context.context_id) {
@@ -81,7 +80,7 @@ export class PersistenceManager {
   }
 
   async upsertTrails(params: UserIdTrail): Promise<UpsertTrailResult> {
-    return withWriteSession(this.driver, async (tx) => {
+    return this.db.write(async (tx) => {
       const results: TrailId[] = [];
       for (const trail of params.trails) {
         const trail_id = this.generateTrailId();
@@ -107,7 +106,7 @@ export class PersistenceManager {
   }
 
   async getUserStory(params: GetUserStoryParams): Promise<StoryInput> {
-    return withReadSession(this.driver, async (tx) => {
+    return this.db.read(async (tx) => {
       const result = await tx.run(GET_USER_STORY_QUERY, params);
       const record = result.records[0];
       if (!record)
@@ -119,7 +118,7 @@ export class PersistenceManager {
   }
 
   async deleteContext(params: DeleteContextParams): Promise<boolean> {
-    return withWriteSession(this.driver, async (session) => {
+    return this.db.write(async (session) => {
       const result = await session.run(DELETE_CONTEXT_QUERY, params);
       const record = result.records[0];
       if (!record)
@@ -131,7 +130,7 @@ export class PersistenceManager {
   }
 
   async deleteTrail(params: DeleteTrailParams): Promise<boolean> {
-    return withWriteSession(this.driver, async (session) => {
+    return this.db.write(async (session) => {
       const result = await session.run(DELETE_TRAIL_QUERY, params);
       const record = result.records[0];
       if (!record)
@@ -148,7 +147,7 @@ export class PersistenceManager {
   async listAvailableReasons(): Promise<Reason[]> {
     const query = buildListReasonsQuery();
 
-    return withReadSession(this.driver, async (tx) => {
+    return this.db.read(async (tx) => {
       const result = await tx.run(query);
 
       return result.records.map((rec) => {
@@ -170,7 +169,7 @@ export class PersistenceManager {
   ): Promise<Reason> {
     const query = buildCreateReasonQuery();
 
-    return withWriteSession(this.driver, async (tx) => {
+    return this.db.write(async (tx) => {
       const result = await tx.run(query, {
         reasonId,
         description,
@@ -192,17 +191,17 @@ export class PersistenceManager {
   }
 
   async ping(): Promise<{ status: "ok"; timestamp: string }> {
-    return withReadSession(this.driver, async (session) => {
+    return this.db.read(async (session) => {
       await session.run("RETURN 1 AS ok");
       return { status: "ok", timestamp: new Date().toISOString() };
     });
   }
 
   private generateContextId(): string {
-    return `ctx_${ulid()}`;
+    return `ctx_${uuidv7()}`;
   }
 
   private generateTrailId(): string {
-    return `trl_${ulid()}`;
+    return `trl_${uuidv7()}`;
   }
 }

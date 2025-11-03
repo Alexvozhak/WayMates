@@ -19,8 +19,76 @@ export default defineConfig(
       // Отлавливает избыточные async функции без await
       '@typescript-eslint/require-await': 'error',
       // Дополнительные полезные правила для TypeScript
-      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
+
+      // === Simplicity Rules (docs/eslint_simplicity_rules.md) ===
+
+      // Запрет spread-оператора (кроме rest-параметров)
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ObjectExpression > SpreadElement',
+          message: 'Object spread запрещён. Используйте Object.assign().',
+        },
+        {
+          selector: 'ArrayExpression > SpreadElement',
+          message: 'Array spread запрещён. Используйте array.slice() или Array.from().',
+        },
+        {
+          selector: 'CallExpression > SpreadElement',
+          message: 'Spread в аргументах запрещён. Передавайте аргументы явно.',
+        },
+      ],
+
+      // Ограничение вложенности (максимум 2 уровня)
+      'max-depth': ['error', 2],
+
+      // Ограничение циклической сложности
+      'complexity': ['error', { max: 8 }],
+
+      // Ограничение длины функций
+      'max-lines-per-function': [
+        'error',
+        {
+          max: 60,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+
+      // === Code Organization Rules ===
+
+      // Порядок членов в классах и интерфейсах
+      '@typescript-eslint/member-ordering': [
+        'error',
+        {
+          default: [
+            // Статические свойства и методы
+            'static-field',
+            'static-method',
+
+            // Поля
+            'field',
+
+            // Конструктор
+            'constructor',
+
+            // Публичные методы
+            'public-method',
+
+            // Приватные методы
+            'protected-method',
+            'private-method',
+          ],
+        },
+      ],
     },
   },
   // Менее строгие правила для тестовых файлов

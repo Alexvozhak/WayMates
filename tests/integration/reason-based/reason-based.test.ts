@@ -9,16 +9,14 @@ import {
 
 import type { Driver } from "neo4j-driver";
 import { createDriver, withWriteSession } from "../../../src/neo4j.js";
+import { DatabaseContext } from "../../../src/database-context.js";
 import { PersistenceManager } from "../../../src/persistence-manager.js";
 import { SearchManager } from "../../../src/search-manager.js";
 import { SelectivityService } from "../../../src/services/selectivity.service.js";
 import { DEFAULT_CONSTRAINTS } from "../../../src/config.js";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { ulid } from "ulid";
-import { GdsProjectionService } from "../../../src/gds/services/gds-projection.service.js";
-import { GdsSimilarityService } from "../../../src/gds/services/gds-similarity.service.js";
-import { GdsPathfindingService } from "../../../src/gds/services/gds-pathfinding.service.js";
+import { v7 as uuidv7 } from "uuid";
 
 describe("Reason-Based Search Integration Tests", () => {
   let driver: Driver;
@@ -27,7 +25,8 @@ describe("Reason-Based Search Integration Tests", () => {
 
   beforeAll(() => {
     driver = createDriver();
-    persistenceManager = new PersistenceManager(driver);
+    const db = new DatabaseContext(driver);
+    persistenceManager = new PersistenceManager(db);
 
     // TODO: Uncomment when implementing search tests
     // const builder = new SearchQueryBuilder();
@@ -185,19 +184,10 @@ describe("Reason-Based Search Integration Tests", () => {
     let searchManager: SearchManager;
 
     beforeAll(() => {
-      const selectivity = new SelectivityService(driver);
+      const db = new DatabaseContext(driver);
+      const selectivity = new SelectivityService(db);
 
-      const gdsProjection = new GdsProjectionService(driver);
-      const gdsSimilarity = new GdsSimilarityService(driver, gdsProjection);
-      const gdsPathfinding = new GdsPathfindingService(driver, gdsProjection);
-
-      searchManager = new SearchManager(
-        driver,
-        selectivity,
-        gdsSimilarity,
-        gdsPathfinding,
-        gdsProjection
-      );
+      searchManager = new SearchManager(db, selectivity);
     });
 
     test("searchCurrentOnlyMode finds users by reason combinations", async () => {

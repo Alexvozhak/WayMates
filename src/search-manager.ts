@@ -1,11 +1,9 @@
-import type { Driver } from "neo4j-driver";
 import type {
   UserContext,
   TargetContext,
   CurrentOnlyReasonParams,
   TargetOnlyReasonParams,
   ReasonCombination,
-  GdsSimilaritySearchParams,
   ContextField,
   FlexibleField,
 } from "./schemas-zod.js";
@@ -13,9 +11,8 @@ import {
   ReasonCombinationSchema,
   CurrentOnlyReasonParamsSchema,
   TargetOnlyReasonParamsSchema,
-  GdsSimilaritySearchParamsSchema,
 } from "./schemas-zod.js";
-import { withReadSession } from "./neo4j.js";
+import type { DatabaseContext } from "./database-context.js";
 import { SelectivityService } from "./services/selectivity.service.js";
 import {
   CURRENT_PRESETS,
@@ -24,13 +21,6 @@ import {
   isTargetPresetName,
 } from "./orcestrator/presets.js";
 import { buildReasonBasedQuery } from "./orcestrator/reason-query-builder.js";
-import { GdsSimilarityService } from "./gds/services/gds-similarity.service.js";
-import { GdsPathfindingService } from "./gds/services/gds-pathfinding.service.js";
-import { GdsProjectionService } from "./gds/services/gds-projection.service.js";
-import type {
-  PipelineWithPathfindingParams,
-  PipelineWithPathfindingResult,
-} from "./gds/schemas.js";
 
 type SearchDirection = "forward" | "backward";
 
@@ -49,11 +39,8 @@ interface ReasonBasedSearchConfig {
 
 export class SearchManager {
   constructor(
-    private driver: Driver,
-    private selectivity: SelectivityService,
-    private gdsSimilarity: GdsSimilarityService,
-    private gdsPathfinding: GdsPathfindingService,
-    private gdsProjection: GdsProjectionService
+    private db: DatabaseContext,
+    private selectivity: SelectivityService
   ) {}
 
   private async searchReasonBasedInternal(
@@ -80,19 +67,19 @@ export class SearchManager {
       direction
     );
 
-    const result = await withReadSession(this.driver, (tx) =>
-      tx.run(cypher, {
+    return this.db.read(async (tx) => {
+      const result = await tx.run(cypher, {
         searchContext,
         currentUserId,
         periodMonths,
         requiredReasons,
         excludedReasons,
-      })
-    );
+      });
 
-    return result.records.map((rec) =>
-      ReasonCombinationSchema.parse(rec.get("reason_combination_result"))
-    );
+      return result.records.map((rec) =>
+        ReasonCombinationSchema.parse(rec.get("reason_combination_result"))
+      );
+    });
   }
 
   async searchCurrentOnlyMode(
@@ -141,48 +128,5 @@ export class SearchManager {
       requiredReasons: validatedParams.requiredReasons,
       excludedReasons: validatedParams.excludedReasons,
     });
-  }
-
-  async searchSimilarityBased(
-    params: GdsSimilaritySearchParams
-  ): Promise<Array<{ context_id: string; match_score: number }>> {
-    const validatedParams = GdsSimilaritySearchParamsSchema.parse(params);
-
-    await this.gdsProjection.ensureSkillsGraphProjection();
-
-    const results = await this.gdsSimilarity.findSimilarBy(validatedParams);
-
-    return results;
-  }
-
-  async searchPipeline(
-    params: PipelineWithPathfindingParams
-  ): Promise<PipelineWithPathfindingResult[]> {
-    const { searchContextId, algorithm, topK, similarityCutoff, targetPosition, k } = params;
-
-    const similarContexts = await this.searchSimilarityBased({
-      searchContextId,
-      algorithm,
-      topK,
-      similarityCutoff,
-      filters: { position: targetPosition },
-    });
-
-    const results: PipelineWithPathfindingResult[] = [];
-    for (const similar of similarContexts) {
-      const paths = await this.gdsPathfinding.findKShortestPaths({
-        sourceContextId: searchContextId,
-        targetContextId: similar.context_id,
-        k,
-      });
-
-      results.push({
-        context_id: similar.context_id,
-        match_score: similar.match_score,
-        paths,
-      });
-    }
-
-    return results;
   }
 }

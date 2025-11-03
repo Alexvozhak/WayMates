@@ -18,7 +18,6 @@ SET c.created_at = $context.created_at,
     c.creation_reason = $context.creation_reason,
     c.previous_context_id = $context.previous_context_id,
     c.next_context_id = $context.next_context_id
-    //TODO очень странные дела, почему мы тут следующему контексту ставим id текущего контекста?
 
 MERGE (u)-[:HAS_CONTEXT]->(c)
 SET u.current_context_id = c.context_id
@@ -67,6 +66,7 @@ FOREACH (code IN $context.citizenships |
 )
 
 RETURN c.context_id AS context_id;`;
+
 export const UPSERT_TRAILS_QUERY: string = `MERGE (t:Trail {trail_id: $trail_id})
 SET t.skill = $trail.skill,
     t.platform = $trail.platform,
@@ -131,3 +131,27 @@ export const DELETE_TRAIL_QUERY: string = `MATCH (u:User {user_id: $user_id})-[r
 WITH count(rel) AS deletedCount
 DETACH DELETE t
 RETURN { success: deletedCount > 0 } AS result;`;
+
+export const LIST_REASONS_QUERY: string = `
+MATCH (r:Reason)
+RETURN {
+  reason_id: r.reason_id,
+  description: r.description,
+  patterns: r.patterns,
+  common_combinations: r.common_combinations,
+  examples: r.examples
+} AS reason
+ORDER BY r.reason_id
+`;
+
+export const CREATE_REASON_QUERY: string = `
+MERGE (r:Reason {reason_id: $reasonId})
+SET r.description = $description,
+    r.patterns = $patterns,
+    r.examples = $examples,
+    r.common_combinations = [],
+    r.created_at = datetime(),
+    r.created_by = 'ai_agent',
+    r.first_context_id = $contextId
+RETURN r
+`;

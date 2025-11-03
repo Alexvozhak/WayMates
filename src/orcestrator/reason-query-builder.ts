@@ -1,7 +1,4 @@
-import type {
-  ContextField,
-  FlexibleField,
-} from "../schemas-zod.js";
+import type { ContextField, FlexibleField } from "../schemas-zod.js";
 import {
   buildContextStrictConditions,
   buildContextFlexibleConditions,
@@ -35,10 +32,10 @@ import {
 export function buildReasonBasedQuery(
   orderedStrictFields: ContextField[],
   flexibleFields: FlexibleField[],
-  direction: 'forward' | 'backward' = 'forward'
+  direction: "forward" | "backward" = "forward"
 ): string {
   // Determine variable naming and path based on direction
-  const isForward = direction === 'forward';
+  const isForward = direction === "forward";
   const searchParam = "$searchContext";
   const matchedVar = "matchedContext";
   const relatedVar = "relatedContext";
@@ -71,7 +68,9 @@ export function buildReasonBasedQuery(
   AND (size($requiredReasons) = 0 OR all(req IN $requiredReasons WHERE req IN coalesce(${reasonGroupingVar}.creation_reason, [])))
   AND (size($excludedReasons) = 0 OR none(excl IN $excludedReasons WHERE excl IN coalesce(${reasonGroupingVar}.creation_reason, [])))`;
 
-  const directionLabel = isForward ? "CURRENT-ONLY (FORWARD)" : "TARGET-ONLY (BACKWARD)";
+  const directionLabel = isForward
+    ? "CURRENT-ONLY (FORWARD)"
+    : "TARGET-ONLY (BACKWARD)";
   const stepLabel = isForward ? "lookahead" : "lookback";
 
   const query = `

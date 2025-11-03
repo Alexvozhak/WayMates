@@ -1,29 +1,29 @@
-import reasonsData from './reasons.json' with { type: "json" };
+import positionsData from './positions.json' with { type: "json" };
 import neo4j, { type Driver } from 'neo4j-driver';
 
 /**
- * Import context creation reasons from JSON into Neo4j
+ * Import positions from JSON into Neo4j
  * @param driver Neo4j driver instance
  */
-export async function importReasons(driver: Driver): Promise<void> {
-  const reasons = Object.entries(reasonsData);
+export async function importPositions(driver: Driver): Promise<void> {
+  const positions = Object.entries(positionsData);
 
-  console.log('Starting reasons import...');
-  console.log(`Found ${reasons.length} reasons to import\n`);
+  console.log('Starting positions import...');
+  console.log(`Found ${positions.length} positions to import\n`);
 
-  for (const [reasonId, description] of reasons) {
-    console.log(`Importing reason: ${reasonId}`);
-    console.log(`  Description: ${description}`);
+  for (const [positionId, displayName] of positions) {
+    console.log(`Importing position: ${positionId}`);
+    console.log(`  Display name: ${displayName}`);
 
     await driver.executeQuery(`
-      MERGE (r:Reason {reason_id: $reasonId})
-      SET r.description = $description,
-          r.created_at = datetime()
-    `, { reasonId, description });
+      MERGE (p:Position {position_id: $positionId})
+      SET p.display_name = $displayName,
+          p.created_at = datetime()
+    `, { positionId, displayName });
   }
 
-  console.log('\n✅ Reasons import completed!');
-  console.log(`Total imported: ${reasons.length} reasons`);
+  console.log('\n✅ Positions import completed!');
+  console.log(`Total imported: ${positions.length} positions`);
 }
 
 /**
@@ -44,7 +44,7 @@ async function main() {
     await driver.verifyConnectivity();
     console.log('✅ Connected to Neo4j');
 
-    await importReasons(driver);
+    await importPositions(driver);
 
   } catch (error) {
     console.error('❌ Error during import:', error);
@@ -54,7 +54,6 @@ async function main() {
   }
 }
 
-// Run if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }

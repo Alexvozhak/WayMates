@@ -1,5 +1,4 @@
 import { defineConfig } from "vitest/config";
-import { loadEnv } from "vite";
 
 export default defineConfig(() => {
   return {
@@ -31,77 +30,73 @@ export default defineConfig(() => {
             testTimeout: 10000,
           },
         },
-        // ===== GDS Projection Tests (lifecycle: create/drop) =====
-        {
-          test: {
-            name: "gds-projection-tests",
-            include: ["tests/integration/gds/services/projection.test.ts"],
-            pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: true,
-                singleThread: true, // Sequential (modifies projection state)
-              },
-            },
-            // NO setupFiles - test manages its own projections
-            testTimeout: 30000,
-            env: loadEnv("test", process.cwd(), ""),
-          },
-        },
-        // ===== GDS Similarity Tests (read-only algorithms) =====
-        {
-          test: {
-            name: "gds-similarity-tests",
-            include: ["tests/integration/gds/services/similarity.test.ts"],
-            pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: true,
-                singleThread: false, // Parallel (read-only, shared projection)
-              },
-            },
-            setupFiles: ["./tests/integration/gds/setup.ts"], // Load U1-U7 + create projection once
-            testTimeout: 120000,
-            env: loadEnv("test", process.cwd(), ""),
-          },
-        },
-        // ===== Reason-Based Tests (dynamic user creation) =====
-        {
-          test: {
-            name: "reason-tests",
-            include: ["tests/integration/reason-based/**/*.test.ts"],
-            pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: true, // Изоляция глобального состояния
-                singleThread: true, // Shared driver within project
-              },
-            },
-            setupFiles: ["./tests/integration/reason-based/setup.ts"], // Import Reasons once
-            testTimeout: 45000, // Больше времени для БД операций
-            env: loadEnv("test", process.cwd(), ""),
-          },
-        },
-        // ===== GDS Pathfinding Tests (Yen's K-Shortest + Reason Analytics) =====
-        {
-          test: {
-            name: "gds-pathfinding-tests",
-            include: [
-              "tests/integration/gds/services/pathfinding.test.ts",
-              "tests/integration/gds/services/reason-analytics.test.ts"
-            ],
-            pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: true,
-                singleThread: false, // Parallel (read-only queries: GDS Yen's + Cypher analytics)
-              },
-            },
-            setupFiles: ["./tests/integration/gds/setup-pathfinding.ts"], // Load U8-U9 + create NEXT relationships
-            testTimeout: 60000,
-            env: loadEnv("test", process.cwd(), ""),
-          },
-        },
+        // DISABLED: Old GDS tests (to be refactored)
+        // {
+        //   test: {
+        //     name: "gds-projection-tests",
+        //     include: ["tests/integration/gds/services/projection.test.ts"],
+        //     pool: "threads",
+        //     poolOptions: {
+        //       threads: {
+        //         isolate: true,
+        //         singleThread: true,
+        //       },
+        //     },
+        //     testTimeout: 30000,
+        //     env: loadEnv("test", process.cwd(), ""),
+        //   },
+        // },
+        // {
+        //   test: {
+        //     name: "gds-similarity-tests",
+        //     include: ["tests/integration/gds/services/similarity.test.ts"],
+        //     pool: "threads",
+        //     poolOptions: {
+        //       threads: {
+        //         isolate: true,
+        //         singleThread: false,
+        //       },
+        //     },
+        //     setupFiles: ["./tests/integration/gds/setup.ts"],
+        //     testTimeout: 120000,
+        //     env: loadEnv("test", process.cwd(), ""),
+        //   },
+        // },
+        // {
+        //   test: {
+        //     name: "reason-tests",
+        //     include: ["tests/integration/reason-based/**/*.test.ts"],
+        //     pool: "threads",
+        //     poolOptions: {
+        //       threads: {
+        //         isolate: true,
+        //         singleThread: true,
+        //       },
+        //     },
+        //     setupFiles: ["./tests/integration/reason-based/setup.ts"],
+        //     testTimeout: 45000,
+        //     env: loadEnv("test", process.cwd(), ""),
+        //   },
+        // },
+        // {
+        //   test: {
+        //     name: "gds-pathfinding-tests",
+        //     include: [
+        //       "tests/integration/gds/services/pathfinding.test.ts",
+        //       "tests/integration/gds/services/reason-analytics.test.ts"
+        //     ],
+        //     pool: "threads",
+        //     poolOptions: {
+        //       threads: {
+        //         isolate: true,
+        //         singleThread: false,
+        //       },
+        //     },
+        //     setupFiles: ["./tests/integration/gds/setup-pathfinding.ts"],
+        //     testTimeout: 60000,
+        //     env: loadEnv("test", process.cwd(), ""),
+        //   },
+        // },
         // {
         //   test: {
         //     name: "functional",

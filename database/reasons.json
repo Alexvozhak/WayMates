@@ -1,0 +1,16 @@
+{
+  "position_changed": "Job title, seniority level, or role responsibilities changed",
+  "location_changed": "City or country of work location changed",
+  "company_changed": "Employer or organization changed",
+  "industry_changed": "Industry sector changed (fintech→healthtech, e-commerce→gaming)",
+  "domain_changed": "Technical domain changed (backend→frontend, web→mobile, dev→data)",
+  "work_format_changed": "Work format changed (remote→office, hybrid→remote)",
+  "started_working": "Began professional career or first job",
+  "stopped_working": "Career break, sabbatical, or temporary stop",
+  "skill_learning": "Acquired new technical skills or certifications",
+  "goals_change": "Career goals or priorities changed",
+  "constraints_update": "Personal constraints updated (salary, location, schedule)",
+  "milestone_achieved": "Significant career milestone reached",
+  "system_recommendation": "System-generated update suggestion",
+  "other": "Other reason not covered above"
+}

@@ -60,29 +60,29 @@ export type SearchContext = z.infer<typeof SearchContextSchema>;
 export const ISO_8601_DATETIME_PATTERN =
   "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$";
 
-// ULID regex patterns для валидации и тестирования
-export const ULID_PATTERN = "[0-9A-HJKMNP-TV-Z]{26}";
-export const USER_ID_PATTERN = `^usr_${ULID_PATTERN}$`;
-export const CONTEXT_ID_PATTERN = `^ctx_${ULID_PATTERN}$`;
-export const TRAIL_ID_PATTERN = `^trl_${ULID_PATTERN}$`;
+// UUID v7 regex patterns для валидации и тестирования
+export const UUID_V7_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+export const USER_ID_PATTERN = `^usr_${UUID_V7_PATTERN}$`;
+export const CONTEXT_ID_PATTERN = `^ctx_${UUID_V7_PATTERN}$`;
+export const TRAIL_ID_PATTERN = `^trl_${UUID_V7_PATTERN}$`;
 
 export const UserIdSchema = z
   .string()
-  .regex(new RegExp(USER_ID_PATTERN), "User ID must be in format usr_ULID")
-  .describe("User ID in format usr_ULID");
+  .regex(new RegExp(USER_ID_PATTERN), "User ID must be in format usr_<UUID>")
+  .describe("User ID in format usr_<UUID>");
 
 export const ContextIdSchema = z
   .string()
   .regex(
     new RegExp(CONTEXT_ID_PATTERN),
-    "Context ID must be in format ctx_ULID"
+    "Context ID must be in format ctx_<UUID>"
   )
-  .describe("Context ID in format ctx_ULID");
+  .describe("Context ID in format ctx_<UUID>");
 
 export const TrailIdSchema = z
   .string()
-  .regex(new RegExp(TRAIL_ID_PATTERN), "Trail ID must be in format trl_ULID")
-  .describe("Trail ID in format trl_ULID");
+  .regex(new RegExp(TRAIL_ID_PATTERN), "Trail ID must be in format trl_<UUID>")
+  .describe("Trail ID in format trl_<UUID>");
 
 // === SKILL CATEGORY SCHEMAS ===
 export const SkillCategoryIdSchema = z
@@ -601,48 +601,6 @@ export const TargetOnlyReasonParamsSchema = z.object({
     "Search constraints (results_limit, timing thresholds)"
   ),
 });
-
-// === GDS SIMILARITY SEARCH PARAMS (Week 2 Day 4) ===
-
-export const GdsSimilaritySearchParamsSchema = z.object({
-  searchContextId: ContextIdSchema.describe(
-    "Context ID to find similar contexts for"
-  ),
-  algorithm: z
-    .enum(["Jaccard", "Overlap"])
-    .describe(
-      "Similarity algorithm: Jaccard (strict, current-only) or Overlap (lenient, target-only)"
-    ),
-  topK: z
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .default(100)
-    .describe(
-      "Maximum number of similar contexts to return (default: 100)"
-    ),
-  similarityCutoff: z
-    .number()
-    .min(0)
-    .max(1)
-    .optional()
-    .describe(
-      "Minimum similarity score threshold (default: 0.3 for Jaccard, 0.1 for Overlap)"
-    ),
-  filters: z
-    .object({
-      position: z.string().optional().describe("Filter by position name"),
-      industry: z.string().optional().describe("Filter by industry name"),
-      country_code: z.string().optional().describe("Filter by country code"),
-    })
-    .optional()
-    .describe("Optional filters to narrow search results"),
-});
-
-export type GdsSimilaritySearchParams = z.infer<
-  typeof GdsSimilaritySearchParamsSchema
->;
 
 // Reason-based result types
 
