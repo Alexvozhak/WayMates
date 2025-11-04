@@ -129,9 +129,9 @@ export class SearchManager {
       const result = await tx.run(searchQuery, {
         userId,
         targetPosition,
-        targetCountries: targetCountries || [],
-        targetDomains: targetDomains || [],
-        targetSkills: targetSkills || [],
+        targetCountries,
+        targetDomains,
+        targetSkills,
         recencyThresholdMonths: filters.recencyThresholdMonths,
         limit: filters.limit,
       });
@@ -166,7 +166,7 @@ export class SearchManager {
     return this.db.read(async (tx) => {
       const result = await tx.run(pathsQuery, {
         userIds,
-        excludedCreationReasons: options.excludedCreationReasons || [],
+        excludedCreationReasons: options.excludedCreationReasons,
       });
 
       const map = new Map<string, UserContext[]>();
@@ -326,7 +326,7 @@ export class SearchManager {
     const pathsMap = await this.db.read(async (tx) => {
       const result = await tx.run(pathsQuery, {
         contextIds,
-        excludedCreationReasons: options.excludedCreationReasons || [],
+        excludedCreationReasons: options.excludedCreationReasons,
       });
 
       const map = new Map<string, UserContext[]>();
