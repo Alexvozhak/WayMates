@@ -179,7 +179,7 @@ function buildTargetWithPathReturnClause(): string {
              city_name: ci.name
            } AS matched_context,
            time_since_matched_months,
-           trajectory`;
+           trajectory AS path`;
 }
 
 interface TargetCriteriaExtracted {

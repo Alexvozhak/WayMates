@@ -74,6 +74,6 @@ export function buildPathsQuery(
         : ""
     }
 
-    RETURN id AS ${returnKey}, trajectory
+    RETURN id AS ${returnKey}, trajectory AS path
   `.trim();
 }

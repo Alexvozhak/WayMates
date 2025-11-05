@@ -35,38 +35,6 @@ function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
   );
 }
 
-function parseScoredMatchedCandidate(record: {
-  get: (key: string) => unknown;
-}): ScoredMatchedCandidate {
-  const matched_context = UserContextSchema.parse(
-    record.get("matched_context")
-  );
-
-  return ScoredMatchedCandidateSchema.parse({
-    user_id: record.get("user_id"),
-    matched_context,
-    context_match_score: record.get("context_match_score"),
-    candidate_type: record.get("candidate_type"),
-    time_since_matched_months: record.get("time_since_matched_months"),
-  });
-}
-
-function parseMatchedCandidateWithPath(record: {
-  get: (key: string) => unknown;
-}): MatchedCandidateWithPath {
-  const matched_context = UserContextSchema.parse(
-    record.get("matched_context")
-  );
-  const path = record.get("trajectory") as UserContext[];
-
-  return MatchedCandidateWithPathSchema.parse({
-    user_id: record.get("user_id"),
-    matched_context,
-    time_since_matched_months: record.get("time_since_matched_months"),
-    path,
-  });
-}
-
 export class SearchManager {
   constructor(
     private db: DatabaseContext,
@@ -114,7 +82,9 @@ export class SearchManager {
     return this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);
 
-      return result.records.map(parseMatchedCandidateWithPath);
+      return result.records.map((record) =>
+        MatchedCandidateWithPathSchema.parse(record.toObject())
+      );
     });
   }
 
@@ -155,7 +125,9 @@ export class SearchManager {
     return this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);
 
-      return result.records.map(parseScoredMatchedCandidate);
+      return result.records.map((record) =>
+        ScoredMatchedCandidateSchema.parse(record.toObject())
+      );
     });
   }
 
@@ -229,7 +201,7 @@ export class SearchManager {
 
       const map = new Map<string, UserContext[]>();
       for (const rec of result.records) {
-        map.set(rec.get("contextId"), rec.get("trajectory"));
+        map.set(rec.get("contextId"), rec.get("path"));
       }
       return map;
     });
