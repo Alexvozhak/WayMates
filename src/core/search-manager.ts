@@ -146,14 +146,16 @@ export class SearchManager {
       limit: params.filters.limit,
     });
 
+    const queryParams = {
+      userId: params.userId,
+      referenceContext: params.referenceContext,
+      excludedCreationReasons: params.filters.excludedCreationReasons,
+      recencyThresholdMonths: params.filters.recencyThresholdMonths,
+      limit: params.filters.limit,
+    };
+
     return this.db.read(async (tx) => {
-      const result = await tx.run(query, {
-        userId: params.userId,
-        referenceContext: params.referenceContext,
-        excludedCreationReasons: params.filters.excludedCreationReasons,
-        recencyThresholdMonths: params.filters.recencyThresholdMonths,
-        limit: params.filters.limit,
-      });
+      const result = await tx.run(query, queryParams);
 
       return result.records.map(parseScoredMatchedCandidate);
     });
@@ -225,18 +227,20 @@ export class SearchManager {
     candidates: ScoredMatchedCandidate[],
     options: { excludedCreationReasons: string[] | undefined }
   ) {
-    const pathsQuery = buildPathsQuery({
+    const query = buildPathsQuery({
       pathEnd: "toMatched",
       excludedCreationReasons: options.excludedCreationReasons,
     });
 
     const contextIds = candidates.map((c) => c.matched_context.context_id);
 
+    const queryParams = {
+      contextIds,
+      excludedCreationReasons: options.excludedCreationReasons,
+    };
+
     const pathsMap = await this.db.read(async (tx) => {
-      const result = await tx.run(pathsQuery, {
-        contextIds,
-        excludedCreationReasons: options.excludedCreationReasons,
-      });
+      const result = await tx.run(query, queryParams);
 
       const map = new Map<string, UserContext[]>();
       for (const rec of result.records) {
@@ -274,12 +278,7 @@ export class SearchManager {
 
       candidatesWithDTW.push(
         ScoredMatchedCandidateWithPathAndDTWSchema.parse({
-          user_id: candidate.user_id,
-          matched_context: candidate.matched_context,
-          time_since_matched_months: candidate.time_since_matched_months,
-          path: candidate.path,
-          context_match_score: candidate.context_match_score,
-          candidate_type: candidate.candidate_type,
+          ...candidate,
           dtw_metrics: dtwMetrics,
           dtw_total: dtwTotal,
         })

@@ -14,23 +14,23 @@ export function buildResolveContextQuery(): string {
 
     WITH c, p, wd, s, i, ci, co
 
-    RETURN {
-      context_id: c.context_id,
-      previous_context_id: c.previous_context_id,
-      next_context_id: c.next_context_id,
-      created_at: c.created_at,
-      creation_reason: c.creation_reason,
-      birth_year: c.birth_year,
-      citizenships: c.citizenships,
+    RETURN c {
+      .context_id,
+      .previous_context_id,
+      .next_context_id,
+      .created_at,
+      .creation_reason,
+      .birth_year,
+      .citizenships,
       position: p.name,
       domains: collect(DISTINCT wd.name),
       skills: collect(DISTINCT s.name),
       industry: i.name,
-      company_size: c.company_size,
+      .company_size,
       country_code: co.name,
       city_name: ci.name,
-      work_type: c.work_type,
-      team_size: c.team_size
+      .work_type,
+      .team_size
     } AS context
   `.trim();
 }
