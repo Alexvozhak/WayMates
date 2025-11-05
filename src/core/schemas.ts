@@ -81,21 +81,53 @@ export const SearchFiltersSchema = z.object({
 
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 
-export const PendingSearchParamsSchema = z.object({
-  userId: UserIdSchema.describe("User ID to resolve context from"),
-  filters: SearchFiltersSchema,
+// DTW-specific filters (extends base SearchFilters with analysis limit)
+export const DTWSearchFiltersSchema = SearchFiltersSchema.extend({
+  analysisLimit: z
+    .number()
+    .min(1)
+    .max(500)
+    .default(100)
+    .describe("Number of candidates to collect for DTW analysis (pre-filter)"),
 });
 
-export type PendingSearchParams = z.infer<typeof PendingSearchParamsSchema>;
+export type DTWSearchFilters = z.infer<typeof DTWSearchFiltersSchema>;
 
-export const ReadySearchParamsSchema = z.object({
+export const ContextSearchParamsSchema = z.object({
   userId: UserIdSchema.describe("User ID"),
-  referenceContext: UserContextSchema.describe("Resolved user context"),
   filters: SearchFiltersSchema,
 });
 
-export type ReadySearchParams = z.infer<typeof ReadySearchParamsSchema>;
+export type ContextSearchParams = z.infer<typeof ContextSearchParamsSchema>;
 
+// Core search params - used internally by searchByContext() method
+export const CoreSearchParamsSchema = ContextSearchParamsSchema.extend({
+  referenceContext: UserContextSchema.describe(
+    "Reference context for search (adhoc mode)"
+  ),
+});
+
+export type CoreSearchParams = z.infer<
+  typeof CoreSearchParamsSchema
+>;
+
+// Keep old name for backward compatibility during migration
+export const CurrentContextSearchParamsSchema = CoreSearchParamsSchema;
+export type CurrentContextSearchParams = CoreSearchParams;
+
+// Trajectory search params - user with path + DTW analysis
+export const TrajectorySearchParamsSchema = z.object({
+  userId: UserIdSchema.describe(
+    "User with path (previous_context_id !== null)"
+  ),
+  filters: DTWSearchFiltersSchema.describe(
+    "Filters with analysisLimit for DTW pre-filter and limit for final results"
+  ),
+});
+
+export type TrajectorySearchParams = z.infer<typeof TrajectorySearchParamsSchema>;
+
+// Keep old name for backward compatibility during migration
 export const PathSearchParamsSchema = z.object({
   userId: UserIdSchema.describe(
     "User with path (previous_context_id !== null)"
@@ -172,9 +204,7 @@ export type SkillsAnalysis = z.infer<typeof SkillsAnalysisSchema>;
 export const BasicSearchResultSchema = z.object({
   candidates: z.array(ScoredMatchedCandidateSchema),
   total_count: z.number().describe("Total number of candidates found"),
-  search_mode: z
-    .enum(["pending", "ready"])
-    .describe("Pending = resolved from userId, Ready = context provided"),
+  search_mode: z.literal("context").describe("Search by user's current context"),
 });
 
 export type BasicSearchResult = z.infer<typeof BasicSearchResultSchema>;

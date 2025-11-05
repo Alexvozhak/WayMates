@@ -4,8 +4,8 @@ import type { TrajectorySimilarityService } from "./trajectory-similarity.servic
 import type { PathCollectorService } from "./path-collector.service.js";
 import type { GoalsManager } from "./goals-manager.js";
 import type {
-  PendingSearchParams,
-  ReadySearchParams,
+  ContextSearchParams,
+  CurrentContextSearchParams,
   PathSearchParams,
   TargetOnlySearchParams,
 } from "./schemas.js";
@@ -13,21 +13,18 @@ import {
   UserContextSchema,
   ScoredMatchedCandidateSchema,
   ScoredMatchedCandidateWithPathAndDTWSchema,
-  MatchedCandidateSchema,
+  MatchedCandidateWithPathSchema,
   type UserContext,
   type ScoredMatchedCandidate,
   type ScoredMatchedCandidateWithPathAndDTW,
-  type MatchedCandidate,
   type MatchedCandidateWithPath,
-  type Goal,
 } from "../shared/schemas.js";
 import {
   buildCurrentSearchQuery,
   buildResolveContextQuery,
-  SearchQueryMode,
 } from "./search-query-builder.js";
 import { buildPathsQuery } from "./dtw-query-builder.js";
-import { buildTargetSearchQuery } from "./target-query-builder.js";
+import { buildTargetSearchWithPathsQuery } from "./target-query-builder.js";
 
 function parseScoredMatchedCandidate(record: {
   get: (key: string) => unknown;
@@ -45,6 +42,22 @@ function parseScoredMatchedCandidate(record: {
   });
 }
 
+function parseMatchedCandidateWithPath(record: {
+  get: (key: string) => unknown;
+}): MatchedCandidateWithPath {
+  const matched_context = UserContextSchema.parse(
+    record.get("matched_context")
+  );
+  const path = record.get("trajectory") as UserContext[];
+
+  return MatchedCandidateWithPathSchema.parse({
+    user_id: record.get("user_id"),
+    matched_context,
+    time_since_matched_months: record.get("time_since_matched_months"),
+    path,
+  });
+}
+
 export class SearchManager {
   constructor(
     private db: DatabaseContext,
@@ -54,17 +67,20 @@ export class SearchManager {
     private goalsManager: GoalsManager
   ) {}
 
-  async searchWithContext(
-    params: ReadySearchParams
+  async searchByCurrentContext(
+    params: ContextSearchParams
   ): Promise<ScoredMatchedCandidate[]> {
-    return this.executeCoreSearch(params);
+    const referenceContext = await this.resolveContext(params.userId);
+    return this.searchByContext({
+      ...params,
+      referenceContext,
+    });
   }
 
-  async searchPendingContext(
-    params: PendingSearchParams
+  async searchByCurrentContextAdhoc(
+    params: CurrentContextSearchParams
   ): Promise<ScoredMatchedCandidate[]> {
-    const ready = await this.prepareContext(params);
-    return this.executeCoreSearch(ready);
+    return this.searchByContext(params);
   }
 
   async searchPath(
@@ -81,111 +97,54 @@ export class SearchManager {
     return this.executeCoreSearchWithDTW(params, context);
   }
 
-  async searchTargetOnly(
+  async searchCandidatesByTargetContext(
     params: TargetOnlySearchParams
   ): Promise<MatchedCandidateWithPath[]> {
-    const matchedCandidates = await this.matchTargetCandidates(params);
-
-    if (matchedCandidates.length === 0) {
-      return [];
-    }
-
-    const pathsMap = await this.loadTargetPaths(matchedCandidates, {
-      excludedCreationReasons: params.filters.excludedCreationReasons,
-    });
-
-    return matchedCandidates
-      .filter((c) => pathsMap.has(c.user_id))
-      .map((c) => ({
-        ...c,
-        path: pathsMap.get(c.user_id)!,
-      }));
-  }
-
-  private async matchTargetCandidates(
-    params: TargetOnlySearchParams
-  ): Promise<MatchedCandidate[]> {
-    const {
-      userId,
-      targetPosition,
-      targetCountries,
-      targetDomains,
-      targetSkills,
-      filters,
-    } = params;
-
-    const searchQuery = buildTargetSearchQuery({
-      userId,
-      targetPosition,
-      targetCountries,
-      targetDomains,
-      targetSkills,
-      strictFields: filters.strictFields,
-      recencyThresholdMonths: filters.recencyThresholdMonths,
-      limit: filters.limit,
-    });
+    const { query, queryParams } = buildTargetSearchWithPathsQuery(params);
 
     return this.db.read(async (tx) => {
-      const result = await tx.run(searchQuery, {
-        userId,
-        targetPosition,
-        targetCountries,
-        targetDomains,
-        targetSkills,
-        recencyThresholdMonths: filters.recencyThresholdMonths,
-        limit: filters.limit,
-      });
+      const result = await tx.run(query, queryParams);
 
-      return result.records.map((rec) => {
-        const rawContext = rec.get("matched_context") as Record<
-          string,
-          unknown
-        >;
-        const matched_context = UserContextSchema.parse(rawContext);
-
-        return MatchedCandidateSchema.parse({
-          user_id: rec.get("user_id"),
-          matched_context,
-          time_since_matched_months: rec.get("time_since_matched_months"),
-        });
-      });
+      return result.records.map(parseMatchedCandidateWithPath);
     });
   }
 
-  private async loadTargetPaths(
-    candidates: MatchedCandidate[],
-    options: { excludedCreationReasons: string[] | undefined }
-  ): Promise<Map<string, UserContext[]>> {
-    const pathsQuery = buildPathsQuery({
-      pathEnd: 'toTarget',
-      excludedCreationReasons: options.excludedCreationReasons,
-    });
+  /**
+   * Core search method - used by all search modes (1, 2, 3)
+   * Performs: getUserGoal → rankStrictFields → buildQuery → db.read
+   *
+   * NOTE: This is the DRY implementation - 95% logic reuse
+   */
+  private async searchByContext(
+    params: CurrentContextSearchParams
+  ): Promise<ScoredMatchedCandidate[]> {
+    const goal = await this.goalsManager.getUserGoal(params.userId);
 
-    const userIds = candidates.map((c) => c.user_id);
+    const rankedStrictFields = await this.selectivity.rankStrictFields(
+      params.filters.strictFields,
+      params.referenceContext
+    );
 
-    return this.db.read(async (tx) => {
-      const result = await tx.run(pathsQuery, {
-        userIds,
-        excludedCreationReasons: options.excludedCreationReasons,
-      });
-
-      const map = new Map<string, UserContext[]>();
-      for (const rec of result.records) {
-        map.set(rec.get("userId"), rec.get("trajectory"));
-      }
-      return map;
-    });
-  }
-
-  private async prepareContext(
-    params: PendingSearchParams
-  ): Promise<ReadySearchParams> {
-    const context = await this.resolveContext(params.userId);
-    return {
+    const query = buildCurrentSearchQuery({
+      referenceContext: params.referenceContext,
       userId: params.userId,
-      referenceContext: context,
-      filters: params.filters,
-    };
+      goal,
+      strictFields: rankedStrictFields,
+      recencyThresholdMonths: params.filters.recencyThresholdMonths,
+      limit: params.filters.limit,
+    });
+
+    return this.db.read(async (tx) => {
+      const result = await tx.run(query, {
+        userId: params.userId,
+        referenceContext: params.referenceContext,
+        excludedCreationReasons: params.filters.excludedCreationReasons,
+        recencyThresholdMonths: params.filters.recencyThresholdMonths,
+        limit: params.filters.limit,
+      });
+
+      return result.records.map(parseScoredMatchedCandidate);
+    });
   }
 
   private async resolveContext(userId: string): Promise<UserContext> {
@@ -203,55 +162,13 @@ export class SearchManager {
     });
   }
 
-  private async executeCoreSearch(
-    params: ReadySearchParams
-  ): Promise<ScoredMatchedCandidate[]> {
-    const goal = await this.goalsManager.getUserGoal(params.userId);
-
-    const rankedStrictFields = await this.selectivity.rankStrictFields(
-      params.filters.strictFields,
-      params.referenceContext
-    );
-
-    const query = buildCurrentSearchQuery({
-      referenceContext: params.referenceContext,
-      userId: params.userId,
-      goal,
-      strictFields: rankedStrictFields,
-      excludedCreationReasons: params.filters.excludedCreationReasons,
-      recencyThresholdMonths: params.filters.recencyThresholdMonths,
-      limit: params.filters.limit,
-      mode: SearchQueryMode.BasicRanking,
-    });
-
-    return this.db.read(async (tx) => {
-      const result = await tx.run(query, {
-        userId: params.userId,
-        referenceContext: params.referenceContext,
-        excludedCreationReasons: params.filters.excludedCreationReasons ?? [],
-        recencyThresholdMonths: params.filters.recencyThresholdMonths,
-        limit: params.filters.limit,
-      });
-
-      return result.records.map(parseScoredMatchedCandidate);
-    });
-  }
-
   private async executeCoreSearchWithDTW(
     params: PathSearchParams,
     referenceContext: UserContext
   ): Promise<ScoredMatchedCandidateWithPathAndDTW[]> {
-    const goal = await this.goalsManager.getUserGoal(params.userId);
-    const rankedStrictFields = await this.selectivity.rankStrictFields(
-      params.filters.strictFields,
-      referenceContext
-    );
-
     const topCandidates = await this.preFilterCandidatesForDTW(
       params,
-      referenceContext,
-      goal,
-      rankedStrictFields
+      referenceContext
     );
 
     if (topCandidates.length === 0) {
@@ -273,10 +190,8 @@ export class SearchManager {
 
     return candidatesWithDTW
       .sort((a, b) => {
-        const scoreA =
-          a.dtw_total + a.context_match_score;
-        const scoreB =
-          b.dtw_total + b.context_match_score;
+        const scoreA = a.dtw_total + a.context_match_score;
+        const scoreB = b.dtw_total + b.context_match_score;
         return scoreB - scoreA;
       })
       .slice(0, params.pathLimit);
@@ -284,31 +199,13 @@ export class SearchManager {
 
   private async preFilterCandidatesForDTW(
     params: PathSearchParams,
-    referenceContext: UserContext,
-    goal: Goal | null,
-    strictFields: string[]
+    referenceContext: UserContext
   ): Promise<ScoredMatchedCandidate[]> {
-    const preFilterQuery = buildCurrentSearchQuery({
-      referenceContext,
+    // Reuse searchByContext for pre-filtering
+    return this.searchByContext({
       userId: params.userId,
-      goal,
-      strictFields,
-      excludedCreationReasons: undefined,
-      recencyThresholdMonths: params.filters.recencyThresholdMonths,
-      limit: params.filters.limit,
-      mode: SearchQueryMode.DTWPrefilter,
-    });
-
-    return this.db.read(async (tx) => {
-      const result = await tx.run(preFilterQuery, {
-        userId: params.userId,
-        referenceContext,
-        excludedCreationReasons: [],
-        recencyThresholdMonths: params.filters.recencyThresholdMonths,
-        limit: params.filters.limit,
-      });
-
-      return result.records.map(parseScoredMatchedCandidate);
+      referenceContext,
+      filters: params.filters,
     });
   }
 
@@ -317,7 +214,7 @@ export class SearchManager {
     options: { excludedCreationReasons: string[] | undefined }
   ) {
     const pathsQuery = buildPathsQuery({
-      pathEnd: 'toMatched',
+      pathEnd: "toMatched",
       excludedCreationReasons: options.excludedCreationReasons,
     });
 
