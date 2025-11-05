@@ -3,65 +3,98 @@
  * Matches candidates by target context and builds full trajectories
  */
 
-import type { TargetOnlySearchParams } from "./schemas.js";
+import type { TargetOnlySearchParams, ContextField } from "./schemas.js";
 import { buildMatchedContextBase } from "./search-query-builder.js";
+import { CONTEXT_FIELD_NAMES } from "./schemas.js";
 
-function hasStrictField(strictFields: string[], field: string): boolean {
-  return strictFields.includes(field);
+function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
+  return CONTEXT_FIELD_NAMES.filter(
+    (field): field is ContextField => !excludedFields.includes(field)
+  );
 }
 
-function addTargetFieldCondition(
+function hasStrictField(strictFields: ContextField[], field: string): boolean {
+  return strictFields.includes(field as ContextField);
+}
+
+function addPositionCondition(
   conditions: string[],
-  values: string[] | undefined,
-  strictFields: string[],
-  fieldName: string,
-  condition: string
+  position: string | undefined,
+  strictFields: ContextField[]
 ): void {
-  const hasValues = values && values.length > 0;
-  if (hasValues && hasStrictField(strictFields, fieldName)) {
-    conditions.push(condition);
+  if (position && hasStrictField(strictFields, "position")) {
+    conditions.push("p.name = $targetPosition");
+  }
+}
+
+function addCountryConditions(
+  conditions: string[],
+  desired: string[] | undefined,
+  undesired: string[] | undefined,
+  strictFields: ContextField[]
+): void {
+  if (!hasStrictField(strictFields, "country_code")) return;
+
+  if (desired && desired.length > 0) {
+    conditions.push("co.name IN $desiredCountries");
+  }
+  if (undesired && undesired.length > 0) {
+    conditions.push("NOT co.name IN $undesiredCountries");
+  }
+}
+
+function addDomainConditions(
+  conditions: string[],
+  desired: string[] | undefined,
+  undesired: string[] | undefined,
+  strictFields: ContextField[]
+): void {
+  if (!hasStrictField(strictFields, "domains")) return;
+
+  if (desired && desired.length > 0) {
+    conditions.push("ANY(d IN $desiredDomains WHERE d IN domains)");
+  }
+  if (undesired && undesired.length > 0) {
+    conditions.push("NOT ANY(d IN $undesiredDomains WHERE d IN domains)");
+  }
+}
+
+function addSkillConditions(
+  conditions: string[],
+  desired: string[] | undefined,
+  undesired: string[] | undefined,
+  strictFields: ContextField[]
+): void {
+  if (!hasStrictField(strictFields, "skills")) return;
+
+  if (desired && desired.length > 0) {
+    conditions.push("ANY(s IN $desiredSkills WHERE s IN skills)");
+  }
+  if (undesired && undesired.length > 0) {
+    conditions.push("NOT ANY(s IN $undesiredSkills WHERE s IN skills)");
   }
 }
 
 function buildTargetWhereConditions(
   userId: string,
-  targetCountries: string[] | undefined,
-  targetDomains: string[] | undefined,
-  targetSkills: string[] | undefined,
-  strictFields: string[],
+  position: string | undefined,
+  desiredCountries: string[] | undefined,
+  undesiredCountries: string[] | undefined,
+  desiredDomains: string[] | undefined,
+  undesiredDomains: string[] | undefined,
+  desiredSkills: string[] | undefined,
+  undesiredSkills: string[] | undefined,
+  strictFields: ContextField[],
   recencyThresholdMonths: number | undefined
 ): string[] {
   const conditions: string[] = [];
 
   conditions.push("u.user_id <> $userId");
 
-  if (hasStrictField(strictFields, "position")) {
-    conditions.push("p.name = $targetPosition");
-  }
-
-  addTargetFieldCondition(
-    conditions,
-    targetCountries,
-    strictFields,
-    "country_code",
-    "co.name IN $targetCountries"
-  );
-
-  addTargetFieldCondition(
-    conditions,
-    targetDomains,
-    strictFields,
-    "domains",
-    "ANY(d IN $targetDomains WHERE d IN domains)"
-  );
-
-  addTargetFieldCondition(
-    conditions,
-    targetSkills,
-    strictFields,
-    "skills",
-    "ANY(s IN $targetSkills WHERE s IN skills)"
-  );
+  addPositionCondition(conditions, position, strictFields);
+  addCountryConditions(conditions, desiredCountries, undesiredCountries, strictFields);
+  addDomainConditions(conditions, desiredDomains, undesiredDomains, strictFields);
+  addSkillConditions(conditions, desiredSkills, undesiredSkills, strictFields);
 
   if (recencyThresholdMonths) {
     conditions.push(
@@ -150,24 +183,72 @@ function buildTargetWithPathReturnClause(): string {
            trajectory`;
 }
 
+interface TargetCriteriaExtracted {
+  position: string | undefined;
+  desiredCountries: string[];
+  undesiredCountries: string[];
+  desiredDomains: string[];
+  undesiredDomains: string[];
+  desiredSkills: string[];
+  undesiredSkills: string[];
+}
+
+// eslint-disable-next-line complexity
+function extractTargetCriteria(
+  criteria: import("./schemas.js").TargetCriteria | undefined
+): TargetCriteriaExtracted {
+  return {
+    position: criteria?.position,
+    desiredCountries: criteria?.desired?.countries ?? [],
+    undesiredCountries: criteria?.undesired?.countries ?? [],
+    desiredDomains: criteria?.desired?.domains ?? [],
+    undesiredDomains: criteria?.undesired?.domains ?? [],
+    desiredSkills: criteria?.desired?.skills ?? [],
+    undesiredSkills: criteria?.undesired?.skills ?? [],
+  };
+}
+
+function buildQueryParams(
+  userId: string,
+  extracted: TargetCriteriaExtracted,
+  excludedCreationReasons: string[] | undefined,
+  recencyThresholdMonths: number | undefined,
+  limit: number
+): Record<string, unknown> {
+  return {
+    userId,
+    targetPosition: extracted.position,
+    desiredCountries: extracted.desiredCountries,
+    undesiredCountries: extracted.undesiredCountries,
+    desiredDomains: extracted.desiredDomains,
+    undesiredDomains: extracted.undesiredDomains,
+    desiredSkills: extracted.desiredSkills,
+    undesiredSkills: extracted.undesiredSkills,
+    excludedCreationReasons: excludedCreationReasons ?? [],
+    recencyThresholdMonths,
+    limit,
+  };
+}
+
 export function buildTargetSearchWithPathsQuery(params: TargetOnlySearchParams): {
   query: string;
   queryParams: Record<string, unknown>;
 } {
-  const {
-    userId,
-    targetCountries,
-    targetDomains,
-    targetSkills,
-    filters,
-  } = params;
-  const { strictFields, recencyThresholdMonths, excludedCreationReasons } = filters;
+  const { userId, filters } = params;
+  const { criteria, excludedContextFields, recencyThresholdMonths, excludedCreationReasons } = filters;
+
+  const extracted = extractTargetCriteria(criteria);
+  const strictFields = computeStrictFields(excludedContextFields);
 
   const whereConditions = buildTargetWhereConditions(
     userId,
-    targetCountries,
-    targetDomains,
-    targetSkills,
+    extracted.position,
+    extracted.desiredCountries,
+    extracted.undesiredCountries,
+    extracted.desiredDomains,
+    extracted.undesiredDomains,
+    extracted.desiredSkills,
+    extracted.undesiredSkills,
     strictFields,
     recencyThresholdMonths
   );
@@ -190,15 +271,12 @@ export function buildTargetSearchWithPathsQuery(params: TargetOnlySearchParams):
     ${buildTargetWithPathReturnClause()}
   `.trim();
 
-  const queryParams = Object.assign(
-    {
-      userId,
-      targetPosition: params.targetPosition,
-      targetCountries,
-      targetDomains,
-      targetSkills,
-    },
-    filters
+  const queryParams = buildQueryParams(
+    userId,
+    extracted,
+    excludedCreationReasons,
+    recencyThresholdMonths,
+    filters.limit
   );
 
   return { query, queryParams };

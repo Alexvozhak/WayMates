@@ -8,7 +8,9 @@ import type {
   CurrentContextSearchParams,
   PathSearchParams,
   TargetOnlySearchParams,
+  ContextField,
 } from "./schemas.js";
+import { CONTEXT_FIELD_NAMES } from "./schemas.js";
 import {
   UserContextSchema,
   ScoredMatchedCandidateSchema,
@@ -25,6 +27,12 @@ import {
 } from "./search-query-builder.js";
 import { buildPathsQuery } from "./dtw-query-builder.js";
 import { buildTargetSearchWithPathsQuery } from "./target-query-builder.js";
+
+function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
+  return CONTEXT_FIELD_NAMES.filter(
+    (field): field is ContextField => !excludedFields.includes(field)
+  );
+}
 
 function parseScoredMatchedCandidate(record: {
   get: (key: string) => unknown;
@@ -111,17 +119,21 @@ export class SearchManager {
 
   /**
    * Core search method - used by all search modes (1, 2, 3)
-   * Performs: getUserGoal → rankStrictFields → buildQuery → db.read
+   * Performs: computeStrictFields → getUserGoal → rankStrictFields → buildQuery → db.read
    *
    * NOTE: This is the DRY implementation - 95% logic reuse
    */
   private async searchByContext(
     params: CurrentContextSearchParams
   ): Promise<ScoredMatchedCandidate[]> {
+    const strictFields = computeStrictFields(
+      params.filters.excludedContextFields
+    );
+
     const goal = await this.goalsManager.getUserGoal(params.userId);
 
     const rankedStrictFields = await this.selectivity.rankStrictFields(
-      params.filters.strictFields,
+      strictFields,
       params.referenceContext
     );
 

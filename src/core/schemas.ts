@@ -45,23 +45,29 @@ export {
 // === CORE-SPECIFIC SEARCH SCHEMAS ===
 // ==========================================
 
+// Context field names - must be defined before usage
+export const CONTEXT_FIELD_NAMES = [
+  "position",
+  "domains",
+  "skills",
+  "industry",
+  "country_code",
+  "city_name",
+  "company_size",
+  "birth_year",
+] as const satisfies readonly (keyof UserContext)[];
+
+export const ContextFieldSchema = z.enum(CONTEXT_FIELD_NAMES, {
+  description: "Available field names for search configuration",
+});
+
+export type ContextField = z.infer<typeof ContextFieldSchema>;
+
 export const SearchFiltersSchema = z.object({
-  strictFields: z
-    .array(
-      z.enum([
-        "position",
-        "country_code",
-        "domains",
-        "skills",
-        "industry",
-        "company_size",
-      ])
-    )
-    .describe("Fields for selectivity ranking and strict filtering"),
-  requiredSkills: z
-    .array(z.string())
+  excludedContextFields: z
+    .array(ContextFieldSchema)
     .default([])
-    .describe("Required skills for matching (used in penalty calculation)"),
+    .describe("Fields to exclude from comparison (inverse logic: all fields EXCEPT these are strict)"),
   excludedCreationReasons: z
     .array(NewContextReasonSchema)
     .default([])
@@ -80,6 +86,34 @@ export const SearchFiltersSchema = z.object({
 });
 
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
+
+// Target criteria for reverse search (Mode 4)
+export const TargetCriteriaSchema = z.object({
+  position: z.string().optional().describe("Desired target position"),
+  desired: z
+    .object({
+      countries: z.array(z.string()).default([]),
+      domains: z.array(z.string()).default([]),
+      skills: z.array(z.string()).default([]),
+    })
+    .optional(),
+  undesired: z
+    .object({
+      countries: z.array(z.string()).default([]),
+      domains: z.array(z.string()).default([]),
+      skills: z.array(z.string()).default([]),
+    })
+    .optional(),
+});
+
+export type TargetCriteria = z.infer<typeof TargetCriteriaSchema>;
+
+// Target-specific search filters (extends base SearchFilters with criteria)
+export const TargetSearchFiltersSchema = SearchFiltersSchema.extend({
+  criteria: TargetCriteriaSchema.describe("Target position criteria (desired/undesired)"),
+});
+
+export type TargetSearchFilters = z.infer<typeof TargetSearchFiltersSchema>;
 
 // DTW-specific filters (extends base SearchFilters with analysis limit)
 export const DTWSearchFiltersSchema = SearchFiltersSchema.extend({
@@ -147,11 +181,7 @@ export type PathSearchParams = z.infer<typeof PathSearchParamsSchema>;
 
 export const TargetOnlySearchParamsSchema = z.object({
   userId: UserIdSchema.describe("User ID (to exclude from results)"),
-  targetPosition: z.string().describe("Target position to search for"),
-  targetCountries: z.array(z.string()).default([]).describe("Target countries"),
-  targetDomains: z.array(z.string()).default([]).describe("Target domains"),
-  targetSkills: z.array(z.string()).default([]).describe("Target skills"),
-  filters: SearchFiltersSchema,
+  filters: TargetSearchFiltersSchema.describe("Target search filters with criteria (position, desired/undesired)"),
 });
 
 export type TargetOnlySearchParams = z.infer<
@@ -271,21 +301,6 @@ export const TargetContextSchema = z.object({
   constraints: UserConstraintsSchema.optional(),
 });
 
-export const CONTEXT_FIELD_NAMES = [
-  "position",
-  "domains",
-  "skills",
-  "industry",
-  "country_code",
-  "city_name",
-  "company_size",
-  "birth_year",
-] as const satisfies readonly (keyof UserContext)[];
-
-export const ContextFieldSchema = z.enum(CONTEXT_FIELD_NAMES, {
-  description: "Available field names for search configuration",
-});
-
 export const FlexibleFieldSchema = z.object({
   field: ContextFieldSchema,
   weight: z.number().min(0).max(100),
@@ -326,7 +341,6 @@ export const SearchConstraintsSchema = z.object({
 
 export type SearchContext = z.infer<typeof SearchContextSchema>;
 export type TargetContext = z.infer<typeof TargetContextSchema>;
-export type ContextField = z.infer<typeof ContextFieldSchema>;
 export type FlexibleField = z.infer<typeof FlexibleFieldSchema>;
 export type SearchConstraints = z.infer<typeof SearchConstraintsSchema>;
 
