@@ -1,4 +1,4 @@
-import type { UserContext, Goal } from "../shared/schemas.js";
+import type { Goal } from "../shared/schemas.js";
 import type { ContextField } from "../schemas-zod.js";
 import { buildContextStrictConditions } from "../orcestrator/snippets-extractor.js";
 
@@ -34,16 +34,6 @@ export function buildResolveContextQuery(): string {
     } AS context
   `.trim();
 }
-
-interface SearchQueryOptions {
-  referenceContext: UserContext;
-  userId: string | undefined;
-  goal: Goal | null | undefined;
-  strictFields: string[];
-  recencyThresholdMonths: number | undefined;
-  limit: number;
-}
-
 
 /**
  * Базовая выборка matched context с collect domains и skills.
@@ -159,21 +149,22 @@ function buildSearchReturnClauseFull(): string {
            candidate_type`;
 }
 
-export function buildCurrentSearchQuery(options: SearchQueryOptions): string {
-  const {
-    userId,
-    goal,
-    strictFields,
-    recencyThresholdMonths,
-  } = options;
-
+export function buildCurrentSearchQuery(
+  goal: Goal | null | undefined,
+  strictFields: string[],
+  params: {
+    userId: string | undefined;
+    recencyThresholdMonths: number | undefined;
+    limit: number;
+  }
+): string {
   const whereClause = buildWhereClause(
     strictFields,
-    userId,
-    recencyThresholdMonths
+    params.userId,
+    params.recencyThresholdMonths
   );
 
-  const hasGoal = Boolean(goal && userId);
+  const hasGoal = Boolean(goal && params.userId);
   const goalFilterClause = buildGoalFilterClause(hasGoal);
 
   const returnClause = buildSearchReturnClauseFull();

@@ -18,6 +18,7 @@ import {
   MatchedCandidateWithPathSchema,
   type UserContext,
   type ScoredMatchedCandidate,
+  type ScoredMatchedCandidateWithPath,
   type ScoredMatchedCandidateWithPathAndDTW,
   type MatchedCandidateWithPath,
 } from "../shared/schemas.js";
@@ -137,11 +138,8 @@ export class SearchManager {
       params.referenceContext
     );
 
-    const query = buildCurrentSearchQuery({
-      referenceContext: params.referenceContext,
+    const query = buildCurrentSearchQuery(goal, rankedStrictFields, {
       userId: params.userId,
-      goal,
-      strictFields: rankedStrictFields,
       recencyThresholdMonths: params.filters.recencyThresholdMonths,
       limit: params.filters.limit,
     });
@@ -180,18 +178,20 @@ export class SearchManager {
     params: PathSearchParams,
     referenceContext: UserContext
   ): Promise<ScoredMatchedCandidateWithPathAndDTW[]> {
-    const topCandidates = await this.preFilterCandidatesForDTW(
-      params,
-      referenceContext
-    );
+    const topCandidates = await this.searchByContext({
+      userId: params.userId,
+      referenceContext,
+      filters: params.filters,
+    });
 
     if (topCandidates.length === 0) {
       return [];
     }
 
-    const candidatesWithPaths = await this.loadCandidatePaths(topCandidates, {
-      excludedCreationReasons: params.filters.excludedCreationReasons,
-    });
+    const candidatesWithPaths = await this.loadCandidatePaths(
+      topCandidates,
+      params.filters.excludedCreationReasons
+    );
 
     if (candidatesWithPaths.length === 0) {
       return [];
@@ -211,32 +211,17 @@ export class SearchManager {
       .slice(0, params.pathLimit);
   }
 
-  private async preFilterCandidatesForDTW(
-    params: PathSearchParams,
-    referenceContext: UserContext
-  ): Promise<ScoredMatchedCandidate[]> {
-    // Reuse searchByContext for pre-filtering
-    return this.searchByContext({
-      userId: params.userId,
-      referenceContext,
-      filters: params.filters,
-    });
-  }
-
   private async loadCandidatePaths(
     candidates: ScoredMatchedCandidate[],
-    options: { excludedCreationReasons: string[] | undefined }
-  ) {
-    const query = buildPathsQuery({
-      pathEnd: "toMatched",
-      excludedCreationReasons: options.excludedCreationReasons,
-    });
+    excludedCreationReasons: string[]
+  ): Promise<ScoredMatchedCandidateWithPath[]> {
+    const query = buildPathsQuery("toMatched", excludedCreationReasons);
 
     const contextIds = candidates.map((c) => c.matched_context.context_id);
 
     const queryParams = {
       contextIds,
-      excludedCreationReasons: options.excludedCreationReasons,
+      excludedCreationReasons,
     };
 
     const pathsMap = await this.db.read(async (tx) => {
@@ -259,7 +244,7 @@ export class SearchManager {
 
   private async computeDTWScores(
     userId: string,
-    candidates: Array<ScoredMatchedCandidate & { path: UserContext[] }>
+    candidates: ScoredMatchedCandidateWithPath[]
   ): Promise<ScoredMatchedCandidateWithPathAndDTW[]> {
     const userPath = await this.pathCollector.collectUserTrajectory(userId);
 

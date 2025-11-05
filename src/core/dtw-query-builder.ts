@@ -21,14 +21,11 @@ function buildPathEntryPoint(pathEnd: 'toMatched' | 'toTarget'): string {
  * - 'toMatched': paths from contextIds (for DTW matching)
  * - 'toTarget': paths from userIds (for target-only search)
  */
-export function buildPathsQuery(options: {
-  pathEnd: 'toMatched' | 'toTarget';
-  excludedCreationReasons: string[] | undefined;
-}): string {
-  const { pathEnd, excludedCreationReasons } = options;
-
-  const hasExcludedReasons =
-    excludedCreationReasons && excludedCreationReasons.length > 0;
+export function buildPathsQuery(
+  pathEnd: 'toMatched' | 'toTarget',
+  excludedCreationReasons: string[]
+): string {
+  const hasExcludedReasons = excludedCreationReasons.length > 0;
 
   const entryPoint = buildPathEntryPoint(pathEnd);
   const returnKey = pathEnd === 'toMatched' ? 'contextId' : 'userId';

@@ -105,9 +105,8 @@ function buildTargetWhereConditions(
   return conditions;
 }
 
-function buildTrajectoryClause(excludedCreationReasons: string[] | undefined): string {
-  const hasExcludedReasons =
-    excludedCreationReasons && excludedCreationReasons.length > 0;
+function buildTrajectoryClause(excludedCreationReasons: string[]): string {
+  const hasExcludedReasons = excludedCreationReasons.length > 0;
 
   const trajectoryFilter = hasExcludedReasons
     ? `\n    WHERE NOT ANY(ctx IN trajectory WHERE\n      ANY(reason IN ctx.creation_reason WHERE reason IN $excludedCreationReasons))`
@@ -211,7 +210,7 @@ function extractTargetCriteria(
 function buildQueryParams(
   userId: string,
   extracted: TargetCriteriaExtracted,
-  excludedCreationReasons: string[] | undefined,
+  excludedCreationReasons: string[],
   recencyThresholdMonths: number | undefined,
   limit: number
 ): Record<string, unknown> {
@@ -224,7 +223,7 @@ function buildQueryParams(
     undesiredDomains: extracted.undesiredDomains,
     desiredSkills: extracted.desiredSkills,
     undesiredSkills: extracted.undesiredSkills,
-    excludedCreationReasons: excludedCreationReasons ?? [],
+    excludedCreationReasons,
     recencyThresholdMonths,
     limit,
   };
