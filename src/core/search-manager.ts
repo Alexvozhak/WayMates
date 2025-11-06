@@ -26,7 +26,7 @@ import {
   buildCurrentSearchQuery,
   buildResolveContextQuery,
 } from "./search-query-builder.js";
-import { buildPathsQuery } from "./dtw-query-builder.js";
+import { buildPathQuery } from "./path-query-builder.js";
 import { buildTargetSearchWithPathsQuery } from "./target-query-builder.js";
 
 function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
@@ -88,12 +88,6 @@ export class SearchManager {
     });
   }
 
-  /**
-   * Core search method - used by all search modes (1, 2, 3)
-   * Performs: computeStrictFields → getUserGoal → rankStrictFields → buildQuery → db.read
-   *
-   * NOTE: This is the DRY implementation - 95% logic reuse
-   */
   private async searchByContext(
     params: CurrentContextSearchParams
   ): Promise<ScoredMatchedCandidate[]> {
@@ -132,10 +126,10 @@ export class SearchManager {
   }
 
   private async resolveContext(userId: string): Promise<UserContext> {
-    const query = buildResolveContextQuery();
+    const { query, queryParams } = buildResolveContextQuery(userId);
 
     return this.db.read(async (tx) => {
-      const result = await tx.run(query, { userId });
+      const result = await tx.run(query, queryParams);
 
       const record = result.records[0];
       if (!record) {
@@ -143,6 +137,37 @@ export class SearchManager {
       }
 
       return UserContextSchema.parse(record.get("context"));
+    });
+  }
+
+  private async getCurrentContextId(userId: string): Promise<string> {
+    const query = `
+      MATCH (u:User {user_id: $userId})
+      WHERE u.current_context_id IS NOT NULL
+      RETURN u.current_context_id AS current_context_id
+    `.trim();
+
+    return this.db.read(async (tx) => {
+      const result = await tx.run(query, { userId });
+
+      const record = result.records[0];
+      if (!record) {
+        throw new Error(
+          `getCurrentContextId: user ${userId} not found or current_context_id is null. ` +
+            `Cannot compute DTW without current context.`
+        );
+      }
+
+      const currentContextId = record.get("current_context_id");
+
+      if (!currentContextId) {
+        throw new Error(
+          `getCurrentContextId: user ${userId} has no current_context_id. ` +
+            `Cannot compute DTW without current context.`
+        );
+      }
+
+      return currentContextId;
     });
   }
 
@@ -171,7 +196,8 @@ export class SearchManager {
 
     const candidatesWithDTW = await this.computeDTWScores(
       params.userId,
-      candidatesWithPaths
+      candidatesWithPaths,
+      params.filters.excludedCreationReasons
     );
 
     return candidatesWithDTW
@@ -187,7 +213,7 @@ export class SearchManager {
     candidates: ScoredMatchedCandidate[],
     excludedCreationReasons: string[]
   ): Promise<ScoredMatchedCandidateWithPath[]> {
-    const query = buildPathsQuery("toMatched", excludedCreationReasons);
+    const query = buildPathQuery(excludedCreationReasons);
 
     const contextIds = candidates.map((c) => c.matched_context.context_id);
 
@@ -201,7 +227,7 @@ export class SearchManager {
 
       const map = new Map<string, UserContext[]>();
       for (const rec of result.records) {
-        map.set(rec.get("contextId"), rec.get("path"));
+        map.set(rec.get("id"), rec.get("path"));
       }
       return map;
     });
@@ -216,9 +242,23 @@ export class SearchManager {
 
   private async computeDTWScores(
     userId: string,
-    candidates: ScoredMatchedCandidateWithPath[]
+    candidates: ScoredMatchedCandidateWithPath[],
+    excludedReasons: string[]
   ): Promise<ScoredMatchedCandidateWithPathAndDTW[]> {
-    const userPath = await this.pathCollector.collectUserTrajectory(userId);
+    const currentContextId = await this.getCurrentContextId(userId);
+
+    const userPaths = await this.pathCollector.collectTrajectories(
+      [currentContextId],
+      excludedReasons
+    );
+
+    if (userPaths.length === 0 || !userPaths[0]) {
+      throw new Error(
+        `computeDTWScores: failed to load trajectory for user ${userId} context ${currentContextId}`
+      );
+    }
+
+    const userPath = userPaths[0].path;
 
     const candidatesWithDTW: ScoredMatchedCandidateWithPathAndDTW[] = [];
 
