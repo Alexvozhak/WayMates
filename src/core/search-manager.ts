@@ -78,7 +78,21 @@ export class SearchManager {
   async searchCandidatesByTargetContext(
     params: TargetOnlySearchParams
   ): Promise<MatchedCandidateWithPath[]> {
-    const { query, queryParams } = buildTargetSearchWithPathsQuery(params);
+    const query = buildTargetSearchWithPathsQuery(params);
+
+    const { userId, filters } = params;
+    const { criteria, excludedCreationReasons, recencyThresholdMonths, limit } = filters;
+
+    const queryParams = {
+      userId,
+      position: criteria?.position,
+      countries: criteria?.countries,
+      domains: criteria?.domains,
+      skills: criteria?.skills,
+      excludedCreationReasons,
+      recencyThresholdMonths,
+      limit,
+    };
 
     return this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);

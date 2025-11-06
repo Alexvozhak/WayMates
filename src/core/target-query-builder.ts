@@ -7,6 +7,82 @@ import type { TargetOnlySearchParams, ContextField } from "./schemas.js";
 import { buildMatchedContextBase } from "./search-query-builder.js";
 import { CONTEXT_FIELD_NAMES } from "./schemas.js";
 
+// ==========================================
+// === SNIPPET FUNCTIONS (REUSABLE CYPHER) ===
+// ==========================================
+
+/**
+ * Generates Cypher CASE statement for singular field filtering (position, country)
+ * Handles null safety and mode-based filtering
+ *
+ * @param paramName - Parameter name (e.g., "$position", "$countries")
+ * @param cypherVar - Cypher variable name (e.g., "p", "co")
+ * @param property - Property to check (default: "name")
+ * @returns Cypher CASE statement with null check and mode switching
+ *
+ * @example
+ * // For position filter
+ * buildSingularFieldCase("$position", "p", "name")
+ * // Returns:
+ * // CASE
+ * //   WHEN $position IS NULL THEN true
+ * //   WHEN $position.mode = 'desired' THEN p.name IN $position.values
+ * //   WHEN $position.mode = 'undesired' THEN NOT p.name IN $position.values
+ * //   ELSE true
+ * // END
+ */
+function buildSingularFieldCase(
+  paramName: string,
+  cypherVar: string,
+  property = "name"
+): string {
+  return `
+    CASE
+      WHEN ${paramName} IS NULL THEN true
+      WHEN ${paramName}.mode = 'desired' THEN ${cypherVar}.${property} IN ${paramName}.values
+      WHEN ${paramName}.mode = 'undesired' THEN NOT ${cypherVar}.${property} IN ${paramName}.values
+      ELSE true
+    END
+  `.trim();
+}
+
+/**
+ * Generates Cypher CASE statement for collected field filtering (domains, skills)
+ * Handles null safety and mode-based filtering with ANY/NONE predicates
+ *
+ * @param paramName - Parameter name (e.g., "$domains", "$skills")
+ * @param arrayVariable - Array variable name (e.g., "domains", "skills")
+ * @returns Cypher CASE statement with null check and mode switching
+ *
+ * @example
+ * // For domains filter
+ * buildCollectedFieldCase("$domains", "domains")
+ * // Returns:
+ * // CASE
+ * //   WHEN $domains IS NULL THEN true
+ * //   WHEN $domains.mode = 'desired' THEN ANY(item IN domains WHERE item IN $domains.values)
+ * //   WHEN $domains.mode = 'undesired' THEN NONE(item IN domains WHERE item IN $domains.values)
+ * //   ELSE true
+ * // END
+ */
+function buildCollectedFieldCase(
+  paramName: string,
+  arrayVariable: string
+): string {
+  return `
+    CASE
+      WHEN ${paramName} IS NULL THEN true
+      WHEN ${paramName}.mode = 'desired' THEN ANY(item IN ${arrayVariable} WHERE item IN ${paramName}.values)
+      WHEN ${paramName}.mode = 'undesired' THEN NONE(item IN ${arrayVariable} WHERE item IN ${paramName}.values)
+      ELSE true
+    END
+  `.trim();
+}
+
+// ==========================================
+// === HELPER FUNCTIONS ===
+// ==========================================
+
 function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
   return CONTEXT_FIELD_NAMES.filter(
     (field): field is ContextField => !excludedFields.includes(field)
@@ -17,84 +93,32 @@ function hasStrictField(strictFields: ContextField[], field: string): boolean {
   return strictFields.includes(field as ContextField);
 }
 
-function addPositionCondition(
-  conditions: string[],
-  position: string | undefined,
-  strictFields: ContextField[]
-): void {
-  if (position && hasStrictField(strictFields, "position")) {
-    conditions.push("p.name = $targetPosition");
-  }
-}
-
-function addCountryConditions(
-  conditions: string[],
-  desired: string[] | undefined,
-  undesired: string[] | undefined,
-  strictFields: ContextField[]
-): void {
-  if (!hasStrictField(strictFields, "country_code")) return;
-
-  if (desired && desired.length > 0) {
-    conditions.push("co.name IN $desiredCountries");
-  }
-  if (undesired && undesired.length > 0) {
-    conditions.push("NOT co.name IN $undesiredCountries");
-  }
-}
-
-function addDomainConditions(
-  conditions: string[],
-  desired: string[] | undefined,
-  undesired: string[] | undefined,
-  strictFields: ContextField[]
-): void {
-  if (!hasStrictField(strictFields, "domains")) return;
-
-  if (desired && desired.length > 0) {
-    conditions.push("ANY(d IN $desiredDomains WHERE d IN domains)");
-  }
-  if (undesired && undesired.length > 0) {
-    conditions.push("NOT ANY(d IN $undesiredDomains WHERE d IN domains)");
-  }
-}
-
-function addSkillConditions(
-  conditions: string[],
-  desired: string[] | undefined,
-  undesired: string[] | undefined,
-  strictFields: ContextField[]
-): void {
-  if (!hasStrictField(strictFields, "skills")) return;
-
-  if (desired && desired.length > 0) {
-    conditions.push("ANY(s IN $desiredSkills WHERE s IN skills)");
-  }
-  if (undesired && undesired.length > 0) {
-    conditions.push("NOT ANY(s IN $undesiredSkills WHERE s IN skills)");
-  }
-}
-
-function buildTargetWhereConditions(
-  userId: string,
-  position: string | undefined,
-  desiredCountries: string[] | undefined,
-  undesiredCountries: string[] | undefined,
-  desiredDomains: string[] | undefined,
-  undesiredDomains: string[] | undefined,
-  desiredSkills: string[] | undefined,
-  undesiredSkills: string[] | undefined,
+/**
+ * Builds WHERE clause using snippet pattern for target search
+ * Uses CASE statements for mode-based filtering (desired/undesired)
+ */
+function buildTargetWhereClause(
   strictFields: ContextField[],
   recencyThresholdMonths: number | undefined
-): string[] {
-  const conditions: string[] = [];
+): string {
+  const conditions: string[] = ["u.user_id <> $userId"];
 
-  conditions.push("u.user_id <> $userId");
+  // Add filter conditions using snippets (only if field is strict)
+  if (hasStrictField(strictFields, "position")) {
+    conditions.push(buildSingularFieldCase("$position", "p"));
+  }
 
-  addPositionCondition(conditions, position, strictFields);
-  addCountryConditions(conditions, desiredCountries, undesiredCountries, strictFields);
-  addDomainConditions(conditions, desiredDomains, undesiredDomains, strictFields);
-  addSkillConditions(conditions, desiredSkills, undesiredSkills, strictFields);
+  if (hasStrictField(strictFields, "country_code")) {
+    conditions.push(buildSingularFieldCase("$countries", "co"));
+  }
+
+  if (hasStrictField(strictFields, "domains")) {
+    conditions.push(buildCollectedFieldCase("$domains", "domains"));
+  }
+
+  if (hasStrictField(strictFields, "skills")) {
+    conditions.push(buildCollectedFieldCase("$skills", "skills"));
+  }
 
   if (recencyThresholdMonths) {
     conditions.push(
@@ -102,56 +126,63 @@ function buildTargetWhereConditions(
     );
   }
 
-  return conditions;
+  return `WHERE ${conditions.join(" AND ")}`;
 }
 
+/**
+ * Builds trajectory collection fragment for embedding in target search query.
+ * NOTE: This is fragment mode - preserved for Phase 1, will be refactored in Phase 2.
+ *
+ * @param excludedCreationReasons - Creation reasons to exclude from trajectories
+ * @returns Cypher fragment that collects trajectory from matched context backwards
+ */
 function buildTrajectoryClause(excludedCreationReasons: string[]): string {
-  const hasExcludedReasons = excludedCreationReasons.length > 0;
-
-  const trajectoryFilter = hasExcludedReasons
-    ? `\n    WHERE NOT ANY(ctx IN trajectory WHERE\n      ANY(reason IN ctx.creation_reason WHERE reason IN $excludedCreationReasons))`
-    : "";
+  const exclusionFilter = excludedCreationReasons.length > 0
+    ? `
+    WHERE NOT ANY(ctx IN trajectory WHERE
+      ANY(reason IN ctx.creation_reason WHERE reason IN $excludedCreationReasons))
+    `
+    : '';
 
   return `
     MATCH path = (c)<-[:PREVIOUS_CONTEXT*0..]-(start:Context)
     WHERE start.previous_context_id IS NULL
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months,
-         [node IN nodes(path) | node] AS pathNodes
-
+    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, [node IN nodes(path) | node] AS pathNodes
     UNWIND pathNodes AS ctx
-    OPTIONAL MATCH (ctx)-[:HAS_POSITION]->(pCtx:Position)
-    OPTIONAL MATCH (ctx)-[:IN_WORK_DOMAIN]->(wdCtx:WorkDomain)
-    OPTIONAL MATCH (ctx)-[:USES_SKILL]->(sCtx:Skill)
-    OPTIONAL MATCH (ctx)-[:IN_INDUSTRY]->(iCtx:Industry)
-    OPTIONAL MATCH (ctx)-[:IN_CITY]->(ciCtx:City)
-    OPTIONAL MATCH (ctx)-[:IN_COUNTRY]->(coCtx:Country)
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, ctx, pCtx, wdCtx, sCtx, iCtx, ciCtx, coCtx,
-         collect(DISTINCT wdCtx.name) AS ctxDomains,
-         collect(DISTINCT sCtx.name) AS ctxSkills
+    OPTIONAL MATCH (ctx)-[:HAS_POSITION]->(tp:Position)
+    OPTIONAL MATCH (ctx)-[:IN_WORK_DOMAIN]->(twd:WorkDomain)
+    OPTIONAL MATCH (ctx)-[:USES_SKILL]->(ts:Skill)
+    OPTIONAL MATCH (ctx)-[:IN_INDUSTRY]->(ti:Industry)
+    OPTIONAL MATCH (ctx)-[:IN_CITY]->(tci:City)
+    OPTIONAL MATCH (ctx)-[:IN_COUNTRY]->(tco:Country)
+
+    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, ctx, tp, twd, ts, ti, tci, tco,
+         collect(DISTINCT twd.name) AS ctx_domains,
+         collect(DISTINCT ts.name) AS ctx_skills
     ORDER BY ctx.created_at ASC
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months,
-         collect({
-           context_id: ctx.context_id,
-           position: pCtx.name,
-           domains: ctxDomains,
-           skills: ctxSkills,
-           industry: iCtx.name,
-           company_size: ctx.company_size,
-           country_code: coCtx.name,
-           city_name: ciCtx.name,
-           work_type: ctx.work_type,
-           citizenships: ctx.citizenships,
-           team_size: ctx.team_size,
-           birth_year: ctx.birth_year,
-           creation_reason: ctx.creation_reason,
-           created_at: ctx.created_at,
-           previous_context_id: ctx.previous_context_id,
-           next_context_id: ctx.next_context_id
-         }) AS trajectory
-${trajectoryFilter}`.trim();
+    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, collect(ctx {
+      .context_id,
+      .previous_context_id,
+      .next_context_id,
+      .created_at,
+      .creation_reason,
+      .birth_year,
+      .citizenships,
+      .company_size,
+      .work_type,
+      .team_size,
+      position: tp.name,
+      domains: [d IN ctx_domains WHERE d IS NOT NULL],
+      skills: [sk IN ctx_skills WHERE sk IS NOT NULL],
+      industry: ti.name,
+      country_code: tco.name,
+      city_name: tci.name
+    }) AS trajectory
+    ${exclusionFilter}
+  `.trim();
 }
 
 function buildTargetWithPathReturnClause(): string {
@@ -182,82 +213,23 @@ function buildTargetWithPathReturnClause(): string {
            trajectory AS path`;
 }
 
-interface TargetCriteriaExtracted {
-  position: string | undefined;
-  desiredCountries: string[];
-  undesiredCountries: string[];
-  desiredDomains: string[];
-  undesiredDomains: string[];
-  desiredSkills: string[];
-  undesiredSkills: string[];
-}
+/**
+ * Builds target search query with paths (Mode 4: Reverse Search)
+ * Now returns query string only - parameters are built separately in SearchManager
+ *
+ * Uses discriminated union pattern: TargetContext with FieldFilter {mode, values}
+ * Replaces old nested {desired, undesired} structure
+ */
+export function buildTargetSearchWithPathsQuery(params: TargetOnlySearchParams): string {
+  const { filters } = params;
+  const { excludedContextFields, recencyThresholdMonths, excludedCreationReasons } = filters;
 
-// eslint-disable-next-line complexity
-function extractTargetCriteria(
-  criteria: import("./schemas.js").TargetCriteria | undefined
-): TargetCriteriaExtracted {
-  return {
-    position: criteria?.position,
-    desiredCountries: criteria?.desired?.countries ?? [],
-    undesiredCountries: criteria?.undesired?.countries ?? [],
-    desiredDomains: criteria?.desired?.domains ?? [],
-    undesiredDomains: criteria?.undesired?.domains ?? [],
-    desiredSkills: criteria?.desired?.skills ?? [],
-    undesiredSkills: criteria?.undesired?.skills ?? [],
-  };
-}
-
-function buildQueryParams(
-  userId: string,
-  extracted: TargetCriteriaExtracted,
-  excludedCreationReasons: string[],
-  recencyThresholdMonths: number | undefined,
-  limit: number
-): Record<string, unknown> {
-  return {
-    userId,
-    targetPosition: extracted.position,
-    desiredCountries: extracted.desiredCountries,
-    undesiredCountries: extracted.undesiredCountries,
-    desiredDomains: extracted.desiredDomains,
-    undesiredDomains: extracted.undesiredDomains,
-    desiredSkills: extracted.desiredSkills,
-    undesiredSkills: extracted.undesiredSkills,
-    excludedCreationReasons,
-    recencyThresholdMonths,
-    limit,
-  };
-}
-
-export function buildTargetSearchWithPathsQuery(params: TargetOnlySearchParams): {
-  query: string;
-  queryParams: Record<string, unknown>;
-} {
-  const { userId, filters } = params;
-  const { criteria, excludedContextFields, recencyThresholdMonths, excludedCreationReasons } = filters;
-
-  const extracted = extractTargetCriteria(criteria);
   const strictFields = computeStrictFields(excludedContextFields);
 
-  const whereConditions = buildTargetWhereConditions(
-    userId,
-    extracted.position,
-    extracted.desiredCountries,
-    extracted.undesiredCountries,
-    extracted.desiredDomains,
-    extracted.undesiredDomains,
-    extracted.desiredSkills,
-    extracted.undesiredSkills,
-    strictFields,
-    recencyThresholdMonths
-  );
-
-  const whereClause =
-    whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
-
   const basePart = buildMatchedContextBase();
+  const whereClause = buildTargetWhereClause(strictFields, recencyThresholdMonths);
 
-  const query = `
+  return `
     ${basePart}
 
     ${whereClause}
@@ -269,16 +241,6 @@ export function buildTargetSearchWithPathsQuery(params: TargetOnlySearchParams):
 
     ${buildTargetWithPathReturnClause()}
   `.trim();
-
-  const queryParams = buildQueryParams(
-    userId,
-    extracted,
-    excludedCreationReasons,
-    recencyThresholdMonths,
-    filters.limit
-  );
-
-  return { query, queryParams };
 }
 
 

@@ -6,12 +6,12 @@ import {
   TrailIdSchema,
   UserContextSchema,
   NewContextReasonSchema,
-  UserConstraintsSchema,
   ScoredMatchedCandidateSchema,
   ScoredMatchedCandidateWithPathAndDTWSchema,
   MatchedCandidateWithPathSchema,
   UserContext,
   TrailSchema,
+  TargetContextSchema,
 } from "../shared/schemas.js";
 
 // Re-export shared types for core use
@@ -30,6 +30,9 @@ export type {
   MatchedCandidateWithPath,
   ScoredMatchedCandidateWithPath,
   ScoredMatchedCandidateWithPathAndDTW,
+  TargetContext,
+  FilterMode,
+  FieldFilter,
 } from "../shared/schemas.js";
 
 // Re-export schemas for validation
@@ -39,6 +42,7 @@ export {
   TrailIdSchema,
   UserContextSchema,
   NewContextReasonSchema,
+  TargetContextSchema,
 };
 
 // ==========================================
@@ -87,30 +91,10 @@ export const SearchFiltersSchema = z.object({
 
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 
-// Target criteria for reverse search (Mode 4)
-export const TargetCriteriaSchema = z.object({
-  position: z.string().optional().describe("Desired target position"),
-  desired: z
-    .object({
-      countries: z.array(z.string()).default([]),
-      domains: z.array(z.string()).default([]),
-      skills: z.array(z.string()).default([]),
-    })
-    .optional(),
-  undesired: z
-    .object({
-      countries: z.array(z.string()).default([]),
-      domains: z.array(z.string()).default([]),
-      skills: z.array(z.string()).default([]),
-    })
-    .optional(),
-});
-
-export type TargetCriteria = z.infer<typeof TargetCriteriaSchema>;
-
 // Target-specific search filters (extends base SearchFilters with criteria)
+// Now uses TargetContext from Shared with discriminated union pattern
 export const TargetSearchFiltersSchema = SearchFiltersSchema.extend({
-  criteria: TargetCriteriaSchema.describe("Target position criteria (desired/undesired)"),
+  criteria: TargetContextSchema.describe("Target context criteria (FieldFilter with mode/values)"),
 });
 
 export type TargetSearchFilters = z.infer<typeof TargetSearchFiltersSchema>;
@@ -287,20 +271,6 @@ export const SearchContextSchema = UserContextSchema.omit({
   citizenships: true,
 }).partial();
 
-// TargetContext for reverse search (Mode 4) with included/excluded logic
-const IncludedExcludedFieldSchema = z.object({
-  included: z.array(z.string()).default([]),
-  excluded: z.array(z.string()).default([]),
-});
-
-export const TargetContextSchema = z.object({
-  position: IncludedExcludedFieldSchema.optional(),
-  country: IncludedExcludedFieldSchema.optional(),
-  domains: IncludedExcludedFieldSchema.optional(),
-  skills: IncludedExcludedFieldSchema.optional(),
-  constraints: UserConstraintsSchema.optional(),
-});
-
 export const FlexibleFieldSchema = z.object({
   field: ContextFieldSchema,
   weight: z.number().min(0).max(100),
@@ -340,7 +310,6 @@ export const SearchConstraintsSchema = z.object({
 });
 
 export type SearchContext = z.infer<typeof SearchContextSchema>;
-export type TargetContext = z.infer<typeof TargetContextSchema>;
 export type FlexibleField = z.infer<typeof FlexibleFieldSchema>;
 export type SearchConstraints = z.infer<typeof SearchConstraintsSchema>;
 
