@@ -126,10 +126,10 @@ export class SearchManager {
   }
 
   private async resolveContext(userId: string): Promise<UserContext> {
-    const { query, queryParams } = buildResolveContextQuery(userId);
+    const query = buildResolveContextQuery();
 
     return this.db.read(async (tx) => {
-      const result = await tx.run(query, queryParams);
+      const result = await tx.run(query, { userId });
 
       const record = result.records[0];
       if (!record) {
