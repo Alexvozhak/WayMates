@@ -2,7 +2,7 @@ import type { Goal } from "../shared/schemas.js";
 import type { ContextField } from "../schemas-zod.js";
 import { buildContextStrictConditions } from "../orcestrator/snippets-extractor.js";
 
-export function buildResolveContextQuery(): string {
+export function userCurrentContextQuery(): string {
   return `
     MATCH (u:User {user_id: $userId})-[:HAS_CONTEXT]->(c:Context {context_id: u.current_context_id})
     OPTIONAL MATCH (c)-[:HAS_POSITION]->(p:Position)
@@ -32,6 +32,14 @@ export function buildResolveContextQuery(): string {
       .work_type,
       .team_size
     } AS context
+  `.trim();
+}
+
+export function userCurrentContextIdQuery(): string {
+  return `
+    MATCH (u:User {user_id: $userId})
+    WHERE u.current_context_id IS NOT NULL
+    RETURN u.current_context_id AS current_context_id
   `.trim();
 }
 

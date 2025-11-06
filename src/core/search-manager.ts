@@ -24,7 +24,8 @@ import {
 } from "../shared/schemas.js";
 import {
   buildCurrentSearchQuery,
-  buildResolveContextQuery,
+  userCurrentContextQuery,
+  userCurrentContextIdQuery,
 } from "./search-query-builder.js";
 import { buildPathQuery } from "./path-query-builder.js";
 import { buildTargetSearchWithPathsQuery } from "./target-query-builder.js";
@@ -126,7 +127,7 @@ export class SearchManager {
   }
 
   private async resolveContext(userId: string): Promise<UserContext> {
-    const query = buildResolveContextQuery();
+    const query = userCurrentContextQuery();
 
     return this.db.read(async (tx) => {
       const result = await tx.run(query, { userId });
@@ -141,11 +142,7 @@ export class SearchManager {
   }
 
   private async getCurrentContextId(userId: string): Promise<string> {
-    const query = `
-      MATCH (u:User {user_id: $userId})
-      WHERE u.current_context_id IS NOT NULL
-      RETURN u.current_context_id AS current_context_id
-    `.trim();
+    const query = userCurrentContextIdQuery();
 
     return this.db.read(async (tx) => {
       const result = await tx.run(query, { userId });
