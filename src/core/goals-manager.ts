@@ -16,7 +16,7 @@ export class GoalsManager {
     return this.db.write(async (tx) => {
       const result = await tx.run(SET_GOAL_QUERY, {
         user_id: params.userId,
-        target_criteria: params.targetCriteria,
+        target_criteria: params.targetContext,
         created_at,
       });
 
@@ -41,22 +41,16 @@ export class GoalsManager {
     });
   }
 
-  async deleteGoal(userId: string): Promise<void> {
-    const success = await this.db.write(async (tx) => {
+  async deleteGoal(userId: string): Promise<boolean> {
+    return this.db.write(async (tx) => {
       const result = await tx.run(DELETE_GOAL_QUERY, {
         user_id: userId,
       });
       const record = result.records[0];
       if (!record) {
-        throw new Error(
-          `deleteGoal: no result returned for user=${userId}`
-        );
+        return false;
       }
       return Boolean(record.get('success'));
     });
-
-    if (!success) {
-      throw new Error(`Failed to delete goal for user ${userId}`);
-    }
   }
 }

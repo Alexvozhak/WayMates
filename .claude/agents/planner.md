@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Architecture planning, requirements analysis, and type design. Use when planning new features, evaluating technology choices, designing component interactions, or analyzing business requirements.
-model: opus
+model: sonnet
 color: blue
 ---
 

@@ -34,11 +34,11 @@ export class StoryManager {
 
   async upsertStory(params: StoryInput): Promise<UpsertStoryResult> {
     const contextsResult: UpsertContextResult = await this.upsertContexts(
-      params.user_id,
+      params.userId,
       params.contexts
     );
     const trailsResult: UpsertTrailResult = await this.upsertTrails(
-      params.user_id,
+      params.userId,
       params.trails
     );
     return UpsertStoryResultSchema.parse({
@@ -144,11 +144,11 @@ export class StoryManager {
       const results: ContextId[] = [];
       for (const context of contexts) {
         const contextWithId = Object.assign({}, context, {
-          context_id: context.context_id || this.generateContextId(),
+          contextId: context.contextId || this.generateContextId(),
         });
 
         const result = await tx.run(UPSERT_CONTEXTS_QUERY, {
-          user_id: userId,
+          userId,
           context: contextWithId,
         });
         const record = result.records[0];
@@ -173,12 +173,9 @@ export class StoryManager {
     return this.db.write(async (tx) => {
       const results: TrailId[] = [];
       for (const trail of trails) {
-        const trail_id = this.generateTrailId();
+        const trailId = this.generateTrailId();
         const result = await tx.run(UPSERT_TRAILS_QUERY, {
-          trail_id,
-          from_context_id: trail.from_context_id,
-          to_context_id: trail.to_context_id,
-          user_id: userId,
+          trailId,
           trail,
         });
         const record = result.records[0];

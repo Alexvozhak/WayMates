@@ -1,20 +1,18 @@
-import express from 'express';
-import type { Request, Response } from 'express';
-import type { SearchManager } from './search-manager.js';
-import type { StoryManager } from './story-manager.js';
-import type { GoalsManager } from './goals-manager.js';
+import express from "express";
+import type { Request, Response } from "express";
+import type { SearchManager } from "./search-manager.js";
+import type { StoryManager } from "./story-manager.js";
+import type { GoalsManager } from "./goals-manager.js";
 import {
   StoryInputSchema,
   CreateGoalInputSchema,
   UserIdSchema,
-  GoalIdSchema,
-} from '../shared/schemas.js';
+} from "../shared/schemas.js";
 import {
-  AdHocSearchParamsSchema,
-  SavedCurrentSearchParamsSchema,
-  TrajectorySearchParamsSchema,
-  TargetOnlySearchParamsSchema,
-} from './schemas.js';
+  SearchByContextParamsSchema,
+  UserSearchParamsSchema,
+  TargetSearchParamsSchema,
+} from "./schemas.js";
 
 interface CoreContext {
   searchManager?: SearchManager;
@@ -22,78 +20,18 @@ interface CoreContext {
   goalsManager: GoalsManager;
 }
 
-function registerSearchRoutes(app: express.Express, context: CoreContext) {
-  if (!context.searchManager) {
-    return;
-  }
-
-  app.post('/api/search/ad-hoc', async (req: Request, res: Response) => {
-    const params = AdHocSearchParamsSchema.parse(req.body);
-    const result = await context.searchManager!.searchAdHoc(params);
-    res.json(result);
-  });
-
-  app.post('/api/search/saved-current', async (req: Request, res: Response) => {
-    const params = SavedCurrentSearchParamsSchema.parse(req.body);
-    const result = await context.searchManager!.searchSavedCurrent(params);
-    res.json(result);
-  });
-
-  app.post('/api/search/trajectory', async (req: Request, res: Response) => {
-    const params = TrajectorySearchParamsSchema.parse(req.body);
-    const result = await context.searchManager!.searchTrajectory(params);
-    res.json(result);
-  });
-
-  app.post('/api/search/target-only', async (req: Request, res: Response) => {
-    const params = TargetOnlySearchParamsSchema.parse(req.body);
-    const result = await context.searchManager!.searchTargetOnly(params);
-    res.json(result);
-  });
-}
-
-function registerStoryRoutes(app: express.Express, context: CoreContext) {
-  app.post('/api/story/upsert', async (req: Request, res: Response) => {
-    const params = StoryInputSchema.parse(req.body);
-    const result = await context.storyManager.upsertStory(params);
-    res.json(result);
-  });
-
-  app.get('/api/story/:userId', async (req: Request, res: Response) => {
-    const userId = UserIdSchema.parse(req.params.userId);
-    const result = await context.storyManager.getUserStory(userId);
-    res.json(result);
-  });
-}
-
-function registerGoalRoutes(app: express.Express, context: CoreContext) {
-  app.post('/api/goal/create', async (req: Request, res: Response) => {
-    const params = CreateGoalInputSchema.parse(req.body);
-    const result = await context.goalsManager.createGoal(params);
-    res.json(result);
-  });
-
-  app.get('/api/goal/:userId', async (req: Request, res: Response) => {
-    const userId = UserIdSchema.parse(req.params.userId);
-    const result = await context.goalsManager.getUserGoalContexts(userId);
-    res.json(result);
-  });
-
-  app.delete('/api/goal/:goalId', async (req: Request, res: Response) => {
-    const goalId = GoalIdSchema.parse(req.params.goalId);
-    const userId = UserIdSchema.parse(req.query.userId);
-    await context.goalsManager.deleteGoal(goalId, userId);
-    res.json({ success: true });
-  });
-}
+const HTTP_STATUS = {
+  BAD_REQUEST: 400,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
 
 export function createRestServer(context: CoreContext) {
   const app = express();
 
   app.use(express.json());
 
-  app.get('/health', (_req: Request, res: Response) => {
-    res.json({ status: 'ok', timestamp: Date.now() });
+  app.get("/health", (_req: Request, res: Response) => {
+    res.json({ status: "ok", timestamp: Date.now() });
   });
 
   registerSearchRoutes(app, context);
@@ -102,10 +40,12 @@ export function createRestServer(context: CoreContext) {
 
   app.use((err: unknown, _req: Request, res: Response, _next: unknown) => {
     if (err instanceof Error) {
-      res.status(400).json({ error: err.message });
+      res.status(HTTP_STATUS.BAD_REQUEST).json({ error: err.message });
       return;
     }
-    res.status(500).json({ error: 'Internal server error' });
+    res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json({ error: "Internal server error" });
   });
 
   return app;
@@ -113,8 +53,8 @@ export function createRestServer(context: CoreContext) {
 
 export async function startRestServer(
   context: CoreContext,
-  port: number = 9000,
-  host: string = '0.0.0.0'
+  port: number,
+  host: string
 ) {
   const app = createRestServer(context);
 
@@ -123,5 +63,69 @@ export async function startRestServer(
       console.log(`🚀 WayMates Core REST API listening on ${host}:${port}`);
       resolve();
     });
+  });
+}
+
+function registerSearchRoutes(app: express.Express, context: CoreContext) {
+  if (!context.searchManager) {
+    return;
+  }
+
+  // Режим 1: Ad-Hoc Search
+  app.post(
+    "/api/search/adhoc",
+    async (req: Request, res: Response) => {
+      const params = SearchByContextParamsSchema.parse(req.body);
+      const result = await context.searchManager!.searchAdhoc(params);
+      res.json(result);
+    }
+  );
+
+  // Режимы 2+3: User Search (автоматический DTW)
+  app.post("/api/search/user", async (req: Request, res: Response) => {
+    const params = UserSearchParamsSchema.parse(req.body);
+    const result = await context.searchManager!.searchByUser(params);
+    res.json(result);
+  });
+
+  // Режим 4: Target-Only Search
+  app.post("/api/search/target", async (req: Request, res: Response) => {
+    const params = TargetSearchParamsSchema.parse(req.body);
+    const result = await context.searchManager!.searchByTarget(params);
+    res.json(result);
+  });
+}
+
+function registerStoryRoutes(app: express.Express, context: CoreContext) {
+  app.post("/api/story/upsert", async (req: Request, res: Response) => {
+    const params = StoryInputSchema.parse(req.body);
+    const result = await context.storyManager.upsertStory(params);
+    res.json(result);
+  });
+
+  app.get("/api/story/:userId", async (req: Request, res: Response) => {
+    const userId = UserIdSchema.parse(req.params.userId);
+    const result = await context.storyManager.getUserStory(userId);
+    res.json(result);
+  });
+}
+
+function registerGoalRoutes(app: express.Express, context: CoreContext) {
+  app.post("/api/goal/set", async (req: Request, res: Response) => {
+    const params = CreateGoalInputSchema.parse(req.body);
+    const result = await context.goalsManager.setGoal(params);
+    res.json({ user_id: result });
+  });
+
+  app.get("/api/goal/:userId", async (req: Request, res: Response) => {
+    const userId = UserIdSchema.parse(req.params.userId);
+    const result = await context.goalsManager.getUserGoal(userId);
+    res.json(result);
+  });
+
+  app.delete("/api/goal/:userId", async (req: Request, res: Response) => {
+    const userId = UserIdSchema.parse(req.params.userId);
+    const success = await context.goalsManager.deleteGoal(userId);
+    res.json({ success });
   });
 }

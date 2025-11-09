@@ -57,8 +57,8 @@ export class PersistenceManager {
     return this.db.write(async (tx) => {
       const results: ContextId[] = [];
       for (const context of params.contexts) {
-        if (!context.context_id) {
-          context.context_id = this.generateContextId();
+        if (!context.contextId) {
+          context.contextId = this.generateContextId();
         }
 
         const result = await tx.run(UPSERT_CONTEXTS_QUERY, {

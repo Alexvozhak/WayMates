@@ -52,35 +52,35 @@ export const NewContextReasonSchema = z.enum(REASON_IDS);
 export type NewContextReason = z.infer<typeof NewContextReasonSchema>;
 
 export const ScheduleSchema = z.object({
-  sessions_per_week: z.number().describe("Sessions per week"),
-  hours_per_session: z.number().describe("Hours per session"),
+  sessionsPerWeek: z.number().describe("Sessions per week"),
+  hoursPerSession: z.number().describe("Hours per session"),
 });
 
 export const TrailSchema = z.object({
   skill: z.string().describe("Skill being developed"),
   platform: z.string().describe("Learning platform used"),
-  from_context_id: ContextIdSchema,
-  to_context_id: z
+  fromContextId: ContextIdSchema,
+  toContextId: z
     .union([ContextIdSchema, z.null().describe("null for ongoing trails")])
     .describe("Target context ID - string for completed, null for ongoing"),
-  total_duration_weeks: z.number().describe("Total duration in weeks"),
+  totalDurationWeeks: z.number().describe("Total duration in weeks"),
   schedule: ScheduleSchema,
-  cost_usd: z.number().describe("Cost in USD"),
-  rating_course: z.number().min(1).max(5).describe("Course rating 1-5"),
-  rating_platform: z.number().min(1).max(5).describe("Platform rating 1-5"),
-  rating_schedule: z.number().min(1).max(5).describe("Schedule rating 1-5"),
-  course_name: z.string().describe("Course name").optional(),
-  course_link: z.string().describe("Course URL").optional(),
-  user_feedback: z.string().describe("User feedback").optional(),
+  costUsd: z.number().describe("Cost in USD"),
+  ratingCourse: z.number().min(1).max(5).describe("Course rating 1-5"),
+  ratingPlatform: z.number().min(1).max(5).describe("Platform rating 1-5"),
+  ratingSchedule: z.number().min(1).max(5).describe("Schedule rating 1-5"),
+  courseName: z.string().describe("Course name").optional(),
+  courseLink: z.string().describe("Course URL").optional(),
+  userFeedback: z.string().describe("User feedback").optional(),
 });
 
 export const UserConstraintsSchema = z.object({
-  max_hours_per_week: z.number().describe("Maximum hours per week").optional(),
-  max_monthly_budget: z
+  maxHoursPerWeek: z.number().describe("Maximum hours per week").optional(),
+  maxMonthlyBudget: z
     .number()
     .describe("Maximum monthly budget in USD")
     .optional(),
-  deadline_date: z
+  deadlineDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Deadline date must be in YYYY-MM-DD format")
     .describe("Deadline date in YYYY-MM-DD format")
@@ -88,14 +88,14 @@ export const UserConstraintsSchema = z.object({
 });
 
 export const UserContextSchema = z.object({
-  context_id: z.string(),
-  previous_context_id: ContextIdSchema.nullable().optional(),
-  next_context_id: ContextIdSchema.nullable().optional(),
-  created_at: z
+  contextId: z.string(),
+  previousContextId: ContextIdSchema.nullable().optional(),
+  nextContextId: ContextIdSchema.nullable().optional(),
+  createdAt: z
     .string()
     .regex(new RegExp(ISO_8601_DATETIME_PATTERN), "Must be ISO 8601 format")
     .describe("When this context/event occurred (ISO 8601 format)"),
-  creation_reason: z
+  creationReason: z
     .array(NewContextReasonSchema)
     .min(1)
     .describe(
@@ -105,11 +105,11 @@ export const UserContextSchema = z.object({
   domains: z.array(z.string()).min(1).describe("Work domains"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
   industry: z.string().describe("Company industry"),
-  company_size: z.string().describe("Company size"),
-  country_code: z.string().describe("Location country code"),
-  city_name: z.string().describe("Location city name"),
+  companySize: z.string().describe("Company size"),
+  countryCode: z.string().describe("Location country code"),
+  cityName: z.string().describe("Location city name"),
   citizenships: z.array(z.string()),
-  birth_year: z.number().min(1950).describe("Birth year"),
+  birthYear: z.number().min(1950).describe("Birth year"),
 });
 
 export type Schedule = z.infer<typeof ScheduleSchema>;
@@ -153,16 +153,86 @@ export const TargetContextSchema = z.object({
   countries: FieldFilterSchema.optional().describe("Target countries filter"),
   domains: FieldFilterSchema.optional().describe("Target work domains filter"),
   skills: FieldFilterSchema.optional().describe("Target skills filter"),
-});
+}).refine(
+  (data) => {
+    const hasAtLeastOne =
+      data.position !== undefined ||
+      data.countries !== undefined ||
+      data.domains !== undefined ||
+      data.skills !== undefined;
+    return hasAtLeastOne;
+  },
+  { message: "At least one target criterion is required (position, countries, domains, or skills)" }
+);
 
 export type TargetContext = z.infer<typeof TargetContextSchema>;
+
+// ==========================================
+// === SEARCH FILTERS SCHEMAS ===
+// ==========================================
+
+/**
+ * Available context field names for search configuration
+ */
+export const ContextFieldSchema = z.enum([
+  "position",
+  "domains",
+  "skills",
+  "industry",
+  "countryCode",
+  "cityName",
+  "companySize",
+  "birthYear",
+], {
+  description: "Available field names for search configuration",
+});
+
+export type ContextField = z.infer<typeof ContextFieldSchema>;
+
+/**
+ * Base search filters for all search modes
+ */
+export const SearchFiltersSchema = z.object({
+  excludedContextFields: z
+    .array(ContextFieldSchema)
+    .default([])
+    .describe("Fields to exclude from comparison (inverse logic: all fields EXCEPT these are strict)"),
+  excludedCreationReasons: z
+    .array(NewContextReasonSchema)
+    .default([])
+    .describe("Exclude candidates with these transition reasons"),
+  recencyThresholdMonths: z
+    .number()
+    .min(1)
+    .optional()
+    .describe("Filter by recency (months since last update)"),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe("Maximum number of results to return"),
+});
+
+export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
+
+/**
+ * Ad-hoc search parameters with custom reference context
+ */
+export const SearchByContextParamsSchema = z.object({
+  userId: UserIdSchema.describe("User ID for Goal filter"),
+  referenceContext: UserContextSchema.describe("Custom reference context (extracted from user text)"),
+  filters: SearchFiltersSchema,
+});
+
+export type SearchByContextParams = z.infer<typeof SearchByContextParamsSchema>;
 
 // ==========================================
 // === STORY & GOAL OPERATIONS ===
 // ==========================================
 
 export const StoryInputSchema = z.object({
-  user_id: UserIdSchema,
+  userId: UserIdSchema,
   contexts: z.array(UserContextSchema).min(1),
   trails: z.array(TrailSchema).min(0),
 });
@@ -183,10 +253,9 @@ export const UpsertStoryResultSchema = z.object({
 });
 
 export const GoalSchema = z.object({
-  goal_id: GoalIdSchema,
-  user_id: UserIdSchema,
-  target_criteria: TargetContextSchema.describe("Target position criteria with FieldFilter pattern"),
-  created_at: z
+  userId: UserIdSchema,
+  targetCriteria: TargetContextSchema.describe("Target position criteria with FieldFilter pattern"),
+  createdAt: z
     .string()
     .regex(new RegExp(ISO_8601_DATETIME_PATTERN), "Must be ISO 8601 format")
     .describe("When goal was created (ISO 8601 format)"),
@@ -194,7 +263,7 @@ export const GoalSchema = z.object({
 
 export const CreateGoalInputSchema = z.object({
   userId: UserIdSchema,
-  targetCriteria: TargetContextSchema.describe("Target search criteria"),
+  targetContext: TargetContextSchema.describe("Target search criteria"),
 });
 
 export type StoryInput = z.infer<typeof StoryInputSchema>;
@@ -293,10 +362,12 @@ export type DTWFields = z.infer<typeof DTWFieldsSchema>;
 export const MatchedCandidateSchema = CandidateCoreSchema;
 export type MatchedCandidate = CandidateCore;
 
-// Type 2: Core + Scoring
-export const ScoredMatchedCandidateSchema = CandidateCoreSchema.merge(
-  ContextScoringFieldsSchema
-);
+// Type 2: Core + Scoring + Optional Path + Optional DTW
+// Unified type for both simple context search and DTW search
+export const ScoredMatchedCandidateSchema = CandidateCoreSchema
+  .merge(ContextScoringFieldsSchema)
+  .merge(PathFieldsSchema.partial())
+  .merge(DTWFieldsSchema.partial());
 export type ScoredMatchedCandidate = z.infer<
   typeof ScoredMatchedCandidateSchema
 >;
@@ -426,8 +497,8 @@ export type CandidateWithDTW = z.infer<typeof CandidateWithDTWSchema>;
  * Result of batch path collection query
  */
 export const PathBatchResultSchema = z.object({
-  contextId: z.string().describe("Context ID for which trajectory was collected"),
-  path: z.array(UserContextSchema).describe("Trajectory from career start to this context")
+  userId: z.string().describe("User ID for which trajectory was collected"),
+  path: z.array(UserContextSchema).describe("Trajectory from career start to current context")
 });
 
 export type PathBatchResult = z.infer<typeof PathBatchResultSchema>;

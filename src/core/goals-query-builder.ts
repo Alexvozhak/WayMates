@@ -1,23 +1,26 @@
 export const SET_GOAL_QUERY: string = `
-MERGE (u:User {user_id: $user_id})
-MERGE (u)-[:HAS_GOAL]->(g:Goal {user_id: $user_id})
-SET g.target_criteria = $target_criteria,
-    g.created_at = COALESCE(g.created_at, $created_at)
-RETURN g.user_id AS user_id
+MERGE (u:User {userId: $userId})
+MERGE (u)-[:HAS_GOAL]->(g:Goal)
+ON CREATE SET
+  g.userId = $userId,
+  g.createdAt = $createdAt,
+  g.targetCriteria = $targetCriteria
+ON MATCH SET
+  g.targetCriteria = $targetCriteria
+RETURN g.userId AS userId
 `;
 
 export const GET_USER_GOAL_QUERY: string = `
-MATCH (u:User {user_id: $user_id})-[:HAS_GOAL]->(g:Goal)
+MATCH (u:User {userId: $userId})-[:HAS_GOAL]->(g:Goal)
 RETURN g {
-  goal_id: g.user_id,
-  .user_id,
-  .target_criteria,
-  .created_at
+  .userId,
+  .targetCriteria,
+  .createdAt
 } AS goal
 `;
 
 export const DELETE_GOAL_QUERY: string = `
-MATCH (u:User {user_id: $user_id})-[rel:HAS_GOAL]->(g:Goal)
+MATCH (u:User {userId: $userId})-[rel:HAS_GOAL]->(g:Goal)
 DETACH DELETE g
 RETURN count(rel) > 0 AS success
 `;

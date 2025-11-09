@@ -10,8 +10,14 @@ import {
   ScoredMatchedCandidateWithPathAndDTWSchema,
   MatchedCandidateWithPathSchema,
   UserContext,
-  TrailSchema,
   TargetContextSchema,
+  ContextFieldSchema,
+  SearchFiltersSchema,
+  SearchByContextParamsSchema,
+  StoryInputSchema,
+  UpsertContextResultSchema,
+  UpsertTrailResultSchema,
+  UpsertStoryResultSchema,
 } from "../shared/schemas.js";
 
 // Re-export shared types for core use
@@ -33,6 +39,14 @@ export type {
   TargetContext,
   FilterMode,
   FieldFilter,
+  ContextField,
+  SearchFilters,
+  SearchByContextParams,
+  StoryInput,
+  UpsertContextResult,
+  UpsertTrailResult,
+  UpsertStoryResult,
+  Goal,
 } from "../shared/schemas.js";
 
 // Re-export schemas for validation
@@ -43,53 +57,30 @@ export {
   UserContextSchema,
   NewContextReasonSchema,
   TargetContextSchema,
+  ContextFieldSchema,
+  SearchFiltersSchema,
+  SearchByContextParamsSchema,
+  StoryInputSchema,
+  UpsertContextResultSchema,
+  UpsertTrailResultSchema,
+  UpsertStoryResultSchema,
 };
 
 // ==========================================
 // === CORE-SPECIFIC SEARCH SCHEMAS ===
 // ==========================================
 
-// Context field names - must be defined before usage
+// Context field names - used for type validation
 export const CONTEXT_FIELD_NAMES = [
   "position",
   "domains",
   "skills",
   "industry",
-  "country_code",
-  "city_name",
-  "company_size",
-  "birth_year",
+  "countryCode",
+  "cityName",
+  "companySize",
+  "birthYear",
 ] as const satisfies readonly (keyof UserContext)[];
-
-export const ContextFieldSchema = z.enum(CONTEXT_FIELD_NAMES, {
-  description: "Available field names for search configuration",
-});
-
-export type ContextField = z.infer<typeof ContextFieldSchema>;
-
-export const SearchFiltersSchema = z.object({
-  excludedContextFields: z
-    .array(ContextFieldSchema)
-    .default([])
-    .describe("Fields to exclude from comparison (inverse logic: all fields EXCEPT these are strict)"),
-  excludedCreationReasons: z
-    .array(NewContextReasonSchema)
-    .default([])
-    .describe("Exclude candidates with these transition reasons"),
-  recencyThresholdMonths: z
-    .number()
-    .min(1)
-    .optional()
-    .describe("Filter by recency (months since last update)"),
-  limit: z
-    .number()
-    .min(1)
-    .max(100)
-    .default(20)
-    .describe("Maximum number of results to return"),
-});
-
-export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 
 // Target-specific search filters (extends base SearchFilters with criteria)
 // Now uses TargetContext from Shared with discriminated union pattern
@@ -111,72 +102,36 @@ export const DTWSearchFiltersSchema = SearchFiltersSchema.extend({
 
 export type DTWSearchFilters = z.infer<typeof DTWSearchFiltersSchema>;
 
-export const ContextSearchParamsSchema = z.object({
-  userId: UserIdSchema.describe("User ID"),
-  filters: SearchFiltersSchema,
-});
+// ==========================================
+// === NEW SEARCH API PARAMS (Refactored) ===
+// ==========================================
 
-export type ContextSearchParams = z.infer<typeof ContextSearchParamsSchema>;
-
-// Core search params - used internally by searchByContext() method
-export const CoreSearchParamsSchema = ContextSearchParamsSchema.extend({
-  referenceContext: UserContextSchema.describe(
-    "Reference context for search (adhoc mode)"
-  ),
-});
-
-export type CoreSearchParams = z.infer<
-  typeof CoreSearchParamsSchema
->;
-
-// Keep old name for backward compatibility during migration
-export const CurrentContextSearchParamsSchema = CoreSearchParamsSchema;
-export type CurrentContextSearchParams = CoreSearchParams;
-
-// Trajectory search params - user with path + DTW analysis
-export const TrajectorySearchParamsSchema = z.object({
-  userId: UserIdSchema.describe(
-    "User with path (previous_context_id !== null)"
-  ),
-  filters: DTWSearchFiltersSchema.describe(
-    "Filters with analysisLimit for DTW pre-filter and limit for final results"
-  ),
-});
-
-export type TrajectorySearchParams = z.infer<typeof TrajectorySearchParamsSchema>;
-
-// Keep old name for backward compatibility during migration
-export const PathSearchParamsSchema = z.object({
-  userId: UserIdSchema.describe(
-    "User with path (previous_context_id !== null)"
-  ),
+// Режим 2+3: User Search (автоматический DTW если есть траектория)
+export const UserSearchParamsSchema = z.object({
+  userId: UserIdSchema.describe("User ID (resolves context from DB)"),
   filters: SearchFiltersSchema,
   pathLimit: z
     .number()
     .min(1)
     .max(100)
     .default(20)
-    .describe(
-      "Final result limit after DTW (limit = pre-filter for context matching)"
-    ),
+    .describe("Final result limit after DTW (filters.limit = pre-filter before DTW)"),
 });
 
-export type PathSearchParams = z.infer<typeof PathSearchParamsSchema>;
+export type UserSearchParams = z.infer<typeof UserSearchParamsSchema>;
 
-export const TargetOnlySearchParamsSchema = z.object({
-  userId: UserIdSchema.describe("User ID (to exclude from results)"),
-  filters: TargetSearchFiltersSchema.describe("Target search filters with criteria (position, desired/undesired)"),
+// Режим 4: Target-Only Search (БЕЗ userId - нет reference context!)
+export const TargetSearchParamsSchema = z.object({
+  filters: TargetSearchFiltersSchema.describe("Target search filters with criteria (FieldFilter pattern)"),
 });
 
-export type TargetOnlySearchParams = z.infer<
-  typeof TargetOnlySearchParamsSchema
->;
+export type TargetSearchParams = z.infer<typeof TargetSearchParamsSchema>;
 
 // Use shared candidate schemas (imported above, re-exported for compatibility)
 
 export const SkillPenaltySchema = z.object({
   skill: z.string().describe("Skill name"),
-  category_name: z
+  categoryName: z
     .string()
     .nullable()
     .describe("Category this skill belongs to"),
@@ -185,25 +140,25 @@ export const SkillPenaltySchema = z.object({
     .min(0)
     .max(100)
     .describe("Weight for this skill (from category or default 5.0)"),
-  penalty_multiplier: z
+  penaltyMultiplier: z
     .number()
     .min(0)
     .describe("Penalty multiplier (from category or default 1.0)"),
-  penalty_score: z
+  penaltyScore: z
     .number()
-    .describe("Calculated penalty: weight * penalty_multiplier"),
+    .describe("Calculated penalty: weight * penaltyMultiplier"),
 });
 
 export type SkillPenalty = z.infer<typeof SkillPenaltySchema>;
 
 export const SkillsAnalysisSchema = z.object({
-  matched_skills: z
+  matchedSkills: z
     .array(z.string())
     .describe("Skills that match user requirements"),
-  extra_skills: z
+  extraSkills: z
     .array(z.string())
     .describe("Skills candidate has but user doesn't need"),
-  total_penalty: z
+  totalPenalty: z
     .number()
     .min(0)
     .max(1)
@@ -217,24 +172,24 @@ export type SkillsAnalysis = z.infer<typeof SkillsAnalysisSchema>;
 
 export const BasicSearchResultSchema = z.object({
   candidates: z.array(ScoredMatchedCandidateSchema),
-  total_count: z.number().describe("Total number of candidates found"),
-  search_mode: z.literal("context").describe("Search by user's current context"),
+  totalCount: z.number().describe("Total number of candidates found"),
+  searchMode: z.literal("context").describe("Search by user's current context"),
 });
 
 export type BasicSearchResult = z.infer<typeof BasicSearchResultSchema>;
 
 export const PathSearchResultSchema = z.object({
   candidates: z.array(ScoredMatchedCandidateWithPathAndDTWSchema),
-  total_count: z.number().describe("Total number of candidates found"),
-  search_mode: z.literal("path").describe("Path search with DTW"),
+  totalCount: z.number().describe("Total number of candidates found"),
+  searchMode: z.literal("path").describe("Path search with DTW"),
 });
 
 export type PathSearchResult = z.infer<typeof PathSearchResultSchema>;
 
 export const TargetOnlySearchResultSchema = z.object({
   candidates: z.array(MatchedCandidateWithPathSchema),
-  total_count: z.number().describe("Total number of candidates found"),
-  search_mode: z.literal("target_only").describe("Reverse search by target"),
+  totalCount: z.number().describe("Total number of candidates found"),
+  searchMode: z.literal("target_only").describe("Reverse search by target"),
 });
 
 export type TargetOnlySearchResult = z.infer<
@@ -246,10 +201,10 @@ export type TargetOnlySearchResult = z.infer<
 // ==========================================
 
 export const ReasonSchema = z.object({
-  reason_id: z.string().describe("Unique reason identifier"),
+  reasonId: z.string().describe("Unique reason identifier"),
   description: z.string().describe("Human-readable description"),
   patterns: z.array(z.string()).describe("Patterns for AI recognition"),
-  common_combinations: z
+  commonCombinations: z
     .array(z.string())
     .describe("Common combinations as comma-separated strings"),
   examples: z.array(z.string()).describe("Example usage"),
@@ -262,12 +217,12 @@ export type Reason = z.infer<typeof ReasonSchema>;
 // ==========================================
 
 export const SearchContextSchema = UserContextSchema.omit({
-  context_id: true,
-  created_at: true,
-  creation_reason: true,
-  previous_context_id: true,
-  next_context_id: true,
-  birth_year: true,
+  contextId: true,
+  createdAt: true,
+  creationReason: true,
+  previousContextId: true,
+  nextContextId: true,
+  birthYear: true,
   citizenships: true,
 }).partial();
 
@@ -286,27 +241,27 @@ const FlexibleFieldsSchema = z
   );
 
 export const SearchConstraintsSchema = z.object({
-  max_timing_diff_months: z.number().describe("Relevance within N months"),
-  timing_diff_threshold_percent: z
+  maxTimingDiffMonths: z.number().describe("Relevance within N months"),
+  timingDiffThresholdPercent: z
     .number()
     .describe("Percentage threshold for timing filtering"),
-  max_experience_diff_months: z
+  maxExperienceDiffMonths: z
     .number()
     .describe("Maximum experience difference in months"),
-  results_limit: z
+  resultsLimit: z
     .number()
     .min(1)
     .max(20)
     .describe("Results limit for Cypher LIMIT (must be between 1 and 20)"),
-  min_experience_months: z
+  minExperienceMonths: z
     .number()
     .describe("Minimum work experience")
     .optional(),
-  max_experience_months: z
+  maxExperienceMonths: z
     .number()
     .describe("Maximum work experience")
     .optional(),
-  required_skills: z.array(z.string()).default([]).describe("Required skills"),
+  requiredSkills: z.array(z.string()).default([]).describe("Required skills"),
 });
 
 export type SearchContext = z.infer<typeof SearchContextSchema>;
@@ -380,17 +335,17 @@ export const TargetOnlyReasonParamsSchema = z.object({
 });
 
 export const GetUserStoryParamsSchema = z.object({
-  user_id: UserIdSchema,
+  userId: UserIdSchema,
 });
 
 export const DeleteContextParamsSchema = z.object({
-  user_id: UserIdSchema,
-  context_id: ContextIdSchema,
+  userId: UserIdSchema,
+  contextId: ContextIdSchema,
 });
 
 export const DeleteTrailParamsSchema = z.object({
-  user_id: UserIdSchema,
-  trail_id: TrailIdSchema,
+  userId: UserIdSchema,
+  trailId: TrailIdSchema,
 });
 
 export type CurrentOnlyReasonParams = z.input<
@@ -411,15 +366,15 @@ export const ReasonCombinationSchema = z.object({
   combination: z
     .array(z.string())
     .describe("Array of reason_ids in this combination"),
-  users_count: z
+  usersCount: z
     .number()
     .describe("Total number of users with this combination"),
   stats: z.object({
-    avg_duration_months: z
+    avgDurationMonths: z
       .number()
       .describe("Average duration to reach future context"),
-    median_duration_months: z.number().describe("Median duration in months"),
-    target_positions: z
+    medianDurationMonths: z.number().describe("Median duration in months"),
+    targetPositions: z
       .array(
         z.object({
           position: z.string(),
@@ -427,32 +382,32 @@ export const ReasonCombinationSchema = z.object({
         })
       )
       .describe("Array of position frequency objects"),
-    common_skills_gained: z
+    commonSkillsGained: z
       .array(z.string())
       .describe("Most common skills gained"),
-    avg_courses_taken: z
+    avgCoursesTaken: z
       .number()
       .optional()
       .describe("Average number of courses/trails"),
-    avg_investment_usd: z
+    avgInvestmentUsd: z
       .number()
       .optional()
       .describe("Average investment in learning"),
   }),
-  sample_users: z
+  sampleUsers: z
     .array(
       z.object({
-        user_id: UserIdSchema,
-        match_score: z.number(),
+        userId: UserIdSchema,
+        matchScore: z.number(),
       })
     )
     .describe("Sample users with this combination"),
 });
 
 export const CurrentOnlyReasonBasedResultSchema = z.object({
-  lookahead_months: z.number().describe("Time period for lookahead"),
-  total_candidates: z.number().describe("Total number of candidates found"),
-  reason_combinations: z
+  lookaheadMonths: z.number().describe("Time period for lookahead"),
+  totalCandidates: z.number().describe("Total number of candidates found"),
+  reasonCombinations: z
     .array(ReasonCombinationSchema)
     .describe("Combinations grouped by creation_reason"),
 });
@@ -466,31 +421,15 @@ export type CurrentOnlyReasonBasedResult = z.infer<
 // === PERSISTENCE ===
 // ==========================================
 
-export const StoryInputSchema = z.object({
-  user_id: UserIdSchema,
-  contexts: z.array(UserContextSchema).min(1),
-  trails: z.array(TrailSchema).min(0),
-});
+// === MOVED: Re-export from shared schemas ===
+// StoryInputSchema
+// UpsertContextResultSchema
+// UpsertTrailResultSchema
+// UpsertStoryResultSchema
+// See imports at top of file
 
-export const UpsertContextResultSchema = z.object({
-  success: z.boolean(),
-  contextIds: z.array(ContextIdSchema),
-});
-
-export const UpsertTrailResultSchema = z.object({
-  success: z.boolean(),
-  trailIds: z.array(TrailIdSchema),
-});
-
-export const UpsertStoryResultSchema = z.object({
-  contexts: UpsertContextResultSchema,
-  trails: UpsertTrailResultSchema,
-});
-
-export type StoryInput = z.infer<typeof StoryInputSchema>;
-export type UpsertContextResult = z.infer<typeof UpsertContextResultSchema>;
-export type UpsertTrailResult = z.infer<typeof UpsertTrailResultSchema>;
-export type UpsertStoryResult = z.infer<typeof UpsertStoryResultSchema>;
+// Types are now imported from shared/schemas.js above
+// (previously defined locally, now using single source of truth)
 
 // ==========================================
 // === SKILL CATEGORIES ===
@@ -502,18 +441,18 @@ export const SkillCategoryIdSchema = z
   .describe("Skill category ID");
 
 export const SkillCategorySchema = z.object({
-  category_id: SkillCategoryIdSchema,
-  template_name: z.string().describe("Template this category belongs to"),
-  category_name: z.string().describe("Human-readable category name"),
+  categoryId: SkillCategoryIdSchema,
+  templateName: z.string().describe("Template this category belongs to"),
+  categoryName: z.string().describe("Human-readable category name"),
   weight: z.number().min(0).max(100).describe("Weight for positive scoring"),
-  penalty_multiplier: z
+  penaltyMultiplier: z
     .number()
     .min(0)
     .describe("Multiplier for penalty scoring"),
-  is_predefined: z
+  isPredefined: z
     .boolean()
     .describe("Whether category is from predefined template"),
-  created_at: z.string().describe("ISO 8601 datetime"),
+  createdAt: z.string().describe("ISO 8601 datetime"),
 });
 
 export const SkillCategoryWithSkillsSchema = SkillCategorySchema.extend({
@@ -521,9 +460,9 @@ export const SkillCategoryWithSkillsSchema = SkillCategorySchema.extend({
 });
 
 export const SkillCategoryTemplateSchema = z.object({
-  category_name: z.string(),
+  categoryName: z.string(),
   weight: z.number().min(0).max(100),
-  penalty_multiplier: z.number().min(0),
+  penaltyMultiplier: z.number().min(0),
   skills: z.array(z.string()),
 });
 
@@ -539,37 +478,37 @@ export const SkillCategoryTemplatesConfigSchema = z.object({
 export const ListSkillCategoryTemplatesParamsSchema = z.object({});
 
 export const ApplySkillCategoryTemplateParamsSchema = z.object({
-  template_name: z
+  templateName: z
     .string()
     .describe("Template name (e.g., 'it_software', 'it_data_science')"),
-  domain_prefix: z
+  domainPrefix: z
     .string()
     .optional()
     .describe("Optional prefix for category IDs (e.g., 'company_name')"),
 });
 
 export const ListSkillCategoriesParamsSchema = z.object({
-  template_name: z.string().optional().describe("Filter by template name"),
+  templateName: z.string().optional().describe("Filter by template name"),
 });
 
 export const CreateCustomSkillCategoryParamsSchema = z.object({
-  category_name: z.string().describe("Human-readable category name"),
+  categoryName: z.string().describe("Human-readable category name"),
   description: z.string().describe("Category description"),
   weight: z.number().min(0).max(100).describe("Weight for positive scoring"),
-  penalty_multiplier: z
+  penaltyMultiplier: z
     .number()
     .min(0)
     .describe("Multiplier for penalty scoring"),
   skills: z.array(z.string()).describe("List of skill names to assign"),
-  template_name: z
+  templateName: z
     .string()
     .optional()
     .describe("Associate with template (optional)"),
 });
 
 export const AssignSkillToCategoryParamsSchema = z.object({
-  skill_name: z.string().describe("Skill name to assign"),
-  category_id: z.string().describe("Target category ID"),
+  skillName: z.string().describe("Skill name to assign"),
+  categoryId: z.string().describe("Target category ID"),
 });
 
 export type SkillCategory = z.infer<typeof SkillCategorySchema>;

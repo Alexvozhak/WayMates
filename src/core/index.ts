@@ -17,14 +17,15 @@ async function main() {
   const selectivityService = new SelectivityService(db);
   const trajectorySimilarity = new TrajectorySimilarityService();
   const pathCollector = new PathCollectorService(db);
+  const storyManager = new StoryManager(db);
+  const goalsManager = new GoalsManager(db);
   const searchManager = new SearchManager(
     db,
     selectivityService,
     trajectorySimilarity,
-    pathCollector
+    pathCollector,
+    goalsManager
   );
-  const storyManager = new StoryManager(db);
-  const goalsManager = new GoalsManager(db);
 
   const port = Number(process.env.CORE_PORT) || 9000;
   const host = process.env.CORE_HOST || '0.0.0.0';

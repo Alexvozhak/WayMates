@@ -1,27 +1,25 @@
-export const UPSERT_CONTEXTS_QUERY: string = `MERGE (u:User {user_id: $user_id})
-ON CREATE SET u.current_context_id = null
+export const UPSERT_CONTEXTS_QUERY: string = `MERGE (u:User {userId: $userId})
+ON CREATE SET u.currentContextId = null
 
-MERGE (c:Context {context_id: $context.context_id})
-  ON CREATE SET c.created_at = $context.created_at
-SET c.created_at = $context.created_at,
+MERGE (c:Context {contextId: $context.contextId})
+  ON CREATE SET c.createdAt = $context.createdAt
+SET c.createdAt = $context.createdAt,
     c.position = $context.position,
     c.domains = $context.domains,
     c.skills = $context.skills,
     c.industry = $context.industry,
-    c.company_size = $context.company_size,
-    c.country_code = $context.country_code,
-    c.city_name = $context.city_name,
-    c.work_type = $context.work_type,
+    c.companySize = $context.companySize,
+    c.countryCode = $context.countryCode,
+    c.cityName = $context.cityName,
     c.citizenships = $context.citizenships,
-    c.team_size = $context.team_size,
-    c.birth_year = $context.birth_year,
-    c.creation_reason = $context.creation_reason,
-    c.previous_context_id = $context.previous_context_id,
-    c.next_context_id = $context.next_context_id
+    c.birthYear = $context.birthYear,
+    c.creationReason = $context.creationReason,
+    c.previousContextId = $context.previousContextId,
+    c.nextContextId = $context.nextContextId
     //TODO очень странные дела, почему мы тут следующему контексту ставим id текущего контекста?
 
 MERGE (u)-[:HAS_CONTEXT]->(c)
-SET u.current_context_id = c.context_id
+SET u.currentContextId = c.contextId
 
 // Position
 MERGE (p:Position {name: $context.position})
@@ -45,18 +43,18 @@ UNWIND skills AS skillName
 
 // Location nodes
 WITH c
-MERGE (cty:Country {name: $context.country_code})
-MERGE (ci:City {name: $context.city_name})
+MERGE (cty:Country {name: $context.countryCode})
+MERGE (ci:City {name: $context.cityName})
 MERGE (ci)-[:IN_COUNTRY]->(cty)
 MERGE (c)-[:IN_CITY]->(ci)
 MERGE (c)-[:IN_COUNTRY]->(cty)
 
 // Temporal context links
 WITH c
-OPTIONAL MATCH (prev:Context {context_id: c.previous_context_id})
+OPTIONAL MATCH (prev:Context {contextId: c.previousContextId})
 FOREACH (_ IN CASE WHEN prev IS NOT NULL THEN [1] ELSE [] END |
   MERGE (prev)-[:NEXT]->(c)
-  SET prev.next_context_id = c.context_id
+  SET prev.nextContextId = c.contextId
 )
 
 // Citizenship relations
@@ -66,12 +64,12 @@ FOREACH (code IN $context.citizenships |
   MERGE (c)-[:CITIZEN_OF]->(ct)
 )
 
-RETURN c.context_id AS context_id;`;
-export const UPSERT_TRAILS_QUERY: string = `MERGE (t:Trail {trail_id: $trail_id})
+RETURN c.contextId AS contextId;`;
+export const UPSERT_TRAILS_QUERY: string = `MERGE (t:Trail {trailId: $trailId})
 SET t.skill = $trail.skill,
     t.platform = $trail.platform,
-    t.from_context_id = $trail.from_context_id,
-    t.to_context_id = $trail.to_context_id,
+    t.fromContextId = $trail.fromContextId,
+    t.toContextId = $trail.toContextId,
     t.total_duration_weeks = $trail.total_duration_weeks,
     t.sessions_per_week = $trail.schedule.sessions_per_week,
     t.hours_per_session = $trail.schedule.hours_per_session,
@@ -89,27 +87,27 @@ MERGE (spn)-[:ON_PLATFORM]->(p)
 MERGE (t)-[:DEVELOPS]->(spn)
 
 WITH t
-MERGE (from_ctx:Context {context_id: $from_context_id})
+MERGE (from_ctx:Context {contextId: $fromContextId})
 MERGE (from_ctx)-[:STEPS_ON]->(t)
 
-FOREACH (_ IN CASE WHEN $to_context_id IS NULL THEN [] ELSE [1] END |
-  MERGE (to_ctx:Context {context_id: $to_context_id})
+FOREACH (_ IN CASE WHEN $toContextId IS NULL THEN [] ELSE [1] END |
+  MERGE (to_ctx:Context {contextId: $toContextId})
   MERGE (t)-[:STEPS_TO]->(to_ctx)
 )
 
 // Create direct User-Trail relationship for better query performance
-MERGE (u:User {user_id: $user_id})
+MERGE (u:User {userId: $userId})
 MERGE (u)-[:HAS_TRAIL]->(t)
 
-RETURN t.trail_id AS trail_id;`;
+RETURN t.trailId AS trailId;`;
 
 export const GET_USER_STORY_QUERY: string = `CALL {
-  MATCH (u:User {user_id: $user_id})
-  OPTIONAL MATCH (u)-[:HAS_CONTEXT]->(currentCtx:Context {context_id: u.current_context_id})-[:CITIZEN_OF]->(cit:Country)
+  MATCH (u:User {userId: $userId})
+  OPTIONAL MATCH (u)-[:HAS_CONTEXT]->(currentCtx:Context {contextId: u.currentContextId})-[:CITIZEN_OF]->(cit:Country)
   RETURN { user: u, citizenships: collect(DISTINCT cit.name) } AS userData
 }
 CALL {
-  MATCH (u:User {user_id: $user_id})-[:HAS_CONTEXT]->(c:Context)
+  MATCH (u:User {userId: $userId})-[:HAS_CONTEXT]->(c:Context)
   OPTIONAL MATCH (c)-[:HAS_POSITION]->(p:Position)
   OPTIONAL MATCH (c)-[:IN_WORK_DOMAIN]->(wd:WorkDomain)
   OPTIONAL MATCH (c)-[:USES_SKILL]->(s:Skill)-[:IN_CATEGORY]->(sc:SkillCategory)
@@ -117,17 +115,17 @@ CALL {
   RETURN collect({ context: c, position: position, domains: domains, rawSkills: rawSkills }) AS contexts
 }
 CALL {
-  MATCH (u:User {user_id: $user_id})-[:HAS_TRAIL]->(t:Trail)
+  MATCH (u:User {userId: $userId})-[:HAS_TRAIL]->(t:Trail)
   RETURN collect(t) AS trails
 }
 RETURN { user: userData, contexts: contexts, trails: trails } AS result;`;
 
-export const DELETE_CONTEXT_QUERY: string = `MATCH (u:User {user_id: $user_id})-[rel:HAS_CONTEXT]->(c:Context {context_id: $context_id})
+export const DELETE_CONTEXT_QUERY: string = `MATCH (u:User {userId: $userId})-[rel:HAS_CONTEXT]->(c:Context {contextId: $contextId})
 WITH count(rel) AS deletedCount
 DETACH DELETE c
 RETURN { success: deletedCount > 0 } AS result;`;
 
-export const DELETE_TRAIL_QUERY: string = `MATCH (u:User {user_id: $user_id})-[rel:HAS_TRAIL]->(t:Trail {trail_id: $trail_id})
+export const DELETE_TRAIL_QUERY: string = `MATCH (u:User {userId: $userId})-[rel:HAS_TRAIL]->(t:Trail {trailId: $trailId})
 WITH count(rel) AS deletedCount
 DETACH DELETE t
 RETURN { success: deletedCount > 0 } AS result;`;

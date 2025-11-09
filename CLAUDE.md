@@ -24,13 +24,14 @@ You are the **main Claude instance** responsible for:
 
 ## Sub-Agents Architecture
 
-This project uses **3 specialized agents** for different development tasks. You **MUST proactively delegate** to appropriate agents - don't wait for explicit user requests.
+This project uses **4 specialized agents** for different development tasks. You **MUST proactively delegate** to appropriate agents - don't wait for explicit user requests.
 
 ### Agent Roles & Responsibilities
 
 | Agent | Role | When to Call (Proactively) | Model |
 |-------|------|---------------------------|-------|
 | **planner** | Architecture + requirements + type design | Planning features, architecture decisions | Opus |
+| **cypher-expert** | Neo4j Cypher queries, optimization, schema validation | Writing/changing Cypher, query performance issues | Sonnet |
 | **reviewer** | Bugs, edge cases, DRY, correctness | **Immediately** after code implementation | Sonnet |
 | **qa** | Test quality, coverage, failure analysis | After schema/Cypher changes, test failures | Sonnet |
 
@@ -40,20 +41,25 @@ This project uses **3 specialized agents** for different development tasks. You 
 
 ```
 ✅ Planning feature → planner (architecture + type schema)
+✅ Writing/modifying Cypher → cypher-expert (query design + optimization)
 ✅ Code written → reviewer (bugs, edge cases, DRY)
 ✅ Feature done → qa (test coverage, quality)
 ✅ Schema/Cypher changed → qa (integration tests!)
 ✅ Tests failing → qa (root cause analysis)
+✅ Query performance issues → cypher-expert (PROFILE analysis + optimization)
 ✅ Refactoring → reviewer (DRY violations) + qa (tests still valid)
 ```
 
 ### Workflow Example
 
 ```
-User: "Add caching for similarity search"
+User: "Add flexible scoring for domains in current search"
   ↓
 Claude: ✅ Calls planner
   - Gets: Architecture design + TYPE SCHEMA + tech choice
+  ↓
+Claude: ✅ Calls cypher-expert (for scoring query design)
+  - Gets: Tested Cypher query + optimization notes
   ↓
 Claude: Implements code STRICTLY according to type schema
   ↓
@@ -66,6 +72,24 @@ Claude: ✅ Calls qa (automatically)
   - Gets: Test coverage analysis
   ↓
 Claude: Completes with tests
+```
+
+**Another example** (Cypher-focused task):
+
+```
+User: "Optimize the target search query - it's slow"
+  ↓
+Claude: ✅ Calls cypher-expert (immediately)
+  - Expert runs PROFILE via MCP
+  - Identifies missing index usage
+  - Provides optimized query with USING INDEX hint
+  ↓
+Claude: Updates query builder with optimized query
+  ↓
+Claude: ✅ Calls qa (verify no regressions)
+  - Runs integration tests
+  ↓
+Claude: Completes with performance improvement notes
 ```
 
 ---
@@ -108,6 +132,19 @@ class CacheManager {
 - **Always check `.claude/context/project.md`** - type might exist
 - **Lock signatures before coding** - public API is contract
 - **Update type registry via Memory MCP** - track new types
+
+---
+
+## Task Management with Vikunja
+
+**CRITICAL**: При работе с задачами в Vikunja **ОБЯЗАТЕЛЬНО** следуй процессу из `.claude/commands/vikunja-workflow.md`:
+
+1. **Анализируй контекст** из кодовой базы
+2. **Формулируй по шаблону** с критериями приемки
+3. **Показывай для проверки** перед отправкой
+4. **Отправляй только после подтверждения** пользователя
+
+См. полный процесс: [.claude/commands/vikunja-workflow.md](.claude/commands/vikunja-workflow.md)
 
 ---
 
@@ -213,6 +250,131 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 
 ---
 
+## Cypher Best Practices
+
+**CRITICAL**: Always follow these Neo4j Cypher conventions:
+
+### 1. Map Projection (MANDATORY)
+
+**ALWAYS** use map projection syntax for returning node properties:
+
+```cypher
+// ✅ CORRECT - Map projection
+RETURN c {
+  .context_id,
+  .created_at,
+  .birth_year,
+  position: p.name,
+  skills: collect(DISTINCT s.name)
+} AS matched_context
+
+// ❌ WRONG - Manual enumeration
+RETURN {
+  context_id: c.context_id,
+  created_at: c.created_at,
+  birth_year: c.birth_year,
+  position: p.name,
+  skills: collect(DISTINCT s.name)
+} AS matched_context
+```
+
+**Why**:
+- Cleaner, more concise
+- Standard Neo4j syntax
+- Less error-prone
+- Better performance
+
+### 2. Other Rules
+
+See `.claude/context/project.md` for:
+- WITH clause scope rules
+- Canonical variable naming
+- Null safety patterns
+- Parameter binding conventions
+
+---
+
+## Cypher Development Workflow
+
+When working with Cypher queries, **ALWAYS delegate to cypher-expert agent** for:
+
+### When to Call cypher-expert
+
+**Mandatory triggers** (call immediately):
+- ✅ Writing new Cypher queries in query builders
+- ✅ Modifying existing Cypher queries
+- ✅ Query performance issues (slow queries, high DB hits)
+- ✅ Schema changes (new nodes, relationships, properties)
+- ✅ Complex scoring logic with aggregations
+- ✅ Trajectory collection and path queries
+
+**What cypher-expert provides**:
+1. ✅ **Tested queries** - validated via MCP neo4j-cypher against test DB
+2. ✅ **Performance analysis** - PROFILE output with optimization recommendations
+3. ✅ **Schema validation** - ensures query matches current DB schema
+4. ✅ **Convention compliance** - map projection, canonical names, null safety
+5. ✅ **Integration notes** - parameter types, expected output, TypeScript examples
+
+### Workflow with cypher-expert
+
+```
+You (Main Claude): Need to write/modify Cypher query
+  ↓
+You: Call cypher-expert agent with requirements
+  ↓
+cypher-expert:
+  1. Checks schema via MCP get_neo4j_schema
+  2. Drafts query following project conventions
+  3. Tests query via MCP read_neo4j_cypher
+  4. Runs PROFILE for performance analysis
+  5. Provides final tested query + integration notes
+  ↓
+You: Integrate query into TypeScript query builder
+  ↓
+You: Call reviewer (check TypeScript integration)
+  ↓
+You: Call qa (verify integration tests pass)
+```
+
+### Example: Delegating to cypher-expert
+
+```typescript
+// ❌ DON'T: Write Cypher directly without expert validation
+const query = `
+  MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)
+  WHERE u.user_id = $userId
+  RETURN c
+`;
+
+// ✅ DO: Delegate to cypher-expert first
+// You: "cypher-expert, I need a query to find all contexts for a user.
+//      Requirements:
+//      - Filter by user_id parameter
+//      - Return contexts with position, skills, domains
+//      - Use map projection
+//      - Order by created_at DESC
+//      Please test against neo4j-test DB and provide optimized query."
+//
+// cypher-expert returns tested query with PROFILE analysis
+// Then you integrate it into the code
+```
+
+### Cypher Query Checklist
+
+Before submitting any Cypher query to code review, ensure:
+
+- [ ] ✅ **Delegated to cypher-expert** for validation
+- [ ] ✅ **Tested** against neo4j-test via MCP
+- [ ] ✅ **Map projection** used for RETURN statements
+- [ ] ✅ **Canonical variable names** (if applicable)
+- [ ] ✅ **Null safety** with coalesce() for arrays
+- [ ] ✅ **PROFILE** analysis shows good performance
+- [ ] ✅ **Integration tests** pass
+
+**Remember**: cypher-expert has direct MCP access to test database. Use it!
+
+---
+
 ## Mandatory Code Quality Checks
 
 **CRITICAL**: After ANY code changes, ALWAYS run these checks before marking work as complete:
@@ -244,32 +406,14 @@ See [docs/eslint_simplicity_rules.md](docs/eslint_simplicity_rules.md) for full 
 
 ### Key Rules:
 
-1. **Spread Operator: FORBIDDEN**
-   - ❌ Object spread: `{ ...obj }`
-   - ❌ Array spread: `[...array]`
-   - ❌ Spread in arguments: `fn(...args)`
-   - ✅ Rest parameters: `function f(...args)` - ALLOWED
-
-2. **Complexity Limits**:
+1. **Complexity Limits**:
    - `max-depth: 2` - maximum 2 levels of nesting
    - `complexity: 8` - cyclomatic complexity ≤ 8
    - `max-lines-per-function: 60` - functions up to 60 lines
 
-3. **Philosophy**: Code must be **explicit and predictable**. No clever tricks, no hidden behavior.
+2. **Philosophy**: Code must be **explicit and predictable**. No clever tricks, no hidden behavior.
 
 **Why**: Forces developers to write clear, maintainable code. If you can't express logic simply, refactor into smaller functions.
-
-**Alternatives to spread**:
-```typescript
-// Object merge
-const merged = Object.assign({}, defaults, userConfig);
-
-// Array copy
-const copy = array.slice();
-
-// Immutable update
-const updated = Object.assign({}, context, { field: newValue });
-```
 
 ---
 
@@ -317,3 +461,22 @@ Before completing any feature:
 You should automatically call appropriate agents based on triggers above. The user doesn't need to ask for code review or test analysis - you do it proactively as part of the workflow.
 - фасад и core не должны иметь общие зависимости, чтобы их можно было легко разнести потом по разным репам
 - никаких doxygen комментариев, отладочных комментариев, временных комментариев.
+
+---
+
+## 📚 Memory Bank - Persistent Context
+
+### Current Work Context
+@memory-bank/activeContext.md
+@memory-bank/tasks.md
+@memory-bank/progress.md
+
+### Session Management
+Use `/sync-memory` command at the end of each session to:
+1. Sync tasks with Vikunja
+2. Update progress log
+3. Save architectural decisions (creative-*.md)
+4. Document lessons learned (reflect-*.md)
+5. Update Memory MCP graph
+
+See: [.claude/commands/sync-memory.md](.claude/commands/sync-memory.md)

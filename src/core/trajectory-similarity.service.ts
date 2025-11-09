@@ -1,4 +1,4 @@
-import type { UserContext, DTWMetrics } from "./schemas.js";
+import type { UserContext, DTWMetrics } from "../shared/schemas.js";
 
 export class TrajectorySimilarityService {
   computeDTWMetrics(

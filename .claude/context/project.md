@@ -138,6 +138,31 @@ RETURN {
 return records.map(record => record.get('result') as MyType);
 ```
 
+### CALL Subquery Variable Import (Neo4j 25+)
+
+**DEPRECATED** (Neo4j 25): Using `WITH` inside CALL subquery to import variables.
+
+**NEW** (Neo4j 25+): Use variable scope clause `CALL (var1, var2) {...}`.
+
+```cypher
+// ❌ BAD - Deprecated syntax
+CALL {
+  WITH c
+  MATCH (c)-[:RELATION]->(other)
+  RETURN count(other) AS cnt
+}
+
+// ✅ GOOD - Variable scope clause
+CALL (c) {
+  MATCH (c)-[:RELATION]->(other)
+  RETURN count(other) AS cnt
+}
+```
+
+**Why**: Neo4j 25+ deprecated the `WITH` clause for variable import. The variable scope clause `(c)` explicitly declares which outer variables are accessible inside the subquery.
+
+**Common use case**: Filtering by trajectory (excludedCreationReasons) - subquery traverses path from matched context.
+
 ---
 
 ## Data Format Standards
@@ -165,17 +190,68 @@ return records.map(record => record.get('result') as MyType);
 
 ### Neo4j Query Builder Pattern
 
-**CRITICAL**: If query uses `$paramName`, builder function should NOT have `paramName` parameter.
+**Two patterns** for query builders:
+
+#### Pattern 1: Simple Query Builders (NEW, 2025-11-07)
+
+**Use when**: Query is static, only parameters change
 
 ```typescript
-// ❌ BAD
-function buildQuery(userId: string, context: Context) {
-  return `MATCH (u:User {user_id: $userId}) ...`; // userId param conflicts!
+// ✅ GOOD - Returns query string only
+export function userCurrentContextQuery(): string {
+  return `
+    MATCH (u:User {user_id: $userId})-[:HAS_CONTEXT]->(c:Context)
+    RETURN c { .* } AS context
+  `.trim();
 }
 
-// ✅ GOOD
-function buildQuery(orderedFields: string[]) {
-  return `MATCH (u:User {user_id: $userId}) ...`; // Only params affecting conditional logic
+// Usage - parameters passed directly to tx.run()
+const query = userCurrentContextQuery();
+const result = await tx.run(query, { userId });
+```
+
+**Naming convention**:
+- ❌ NO `build` prefix: `buildUserQuery` → `userCurrentContextQuery`
+- ✅ Descriptive name: what data + purpose
+- ✅ Returns `string` only
+
+#### Pattern 2: Complex Query Builders (for dynamic queries)
+
+**Use when**: Query structure depends on input parameters (e.g., conditional WHERE clauses)
+
+```typescript
+// ✅ GOOD - Returns string, takes parameters affecting query structure
+export function buildCurrentSearchQuery(
+  goal: Goal | null,
+  strictFields: string[]
+): string {
+  const whereClause = strictFields.length > 0
+    ? buildWhereClause(strictFields)
+    : '';
+
+  return `
+    MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)
+    ${whereClause}
+    RETURN u, c
+  `.trim();
+}
+
+// Usage - query structure + data parameters separated
+const query = buildCurrentSearchQuery(goal, ['position', 'skills']);
+const result = await tx.run(query, { userId, referenceContext });
+```
+
+**CRITICAL RULE**: If query uses `$paramName`, builder function should NOT have `paramName` parameter.
+
+```typescript
+// ❌ BAD - parameter name conflict
+function buildQuery(userId: string) {
+  return `MATCH (u:User {user_id: $userId}) ...`; // userId shadows Cypher param!
+}
+
+// ✅ GOOD - only params affecting query structure
+function buildQuery(strictFields: string[]) {
+  return `MATCH (u:User {user_id: $userId}) ...`; // $userId from tx.run()
 }
 ```
 
@@ -223,7 +299,9 @@ function analyze() {
 
 ---
 
-## Method Ordering Convention
+## Code Organization Convention
+
+### Classes
 
 Classes should organize members in this order:
 
@@ -254,6 +332,34 @@ class GdsSimilarityService {
   private validateCount(...) {}
   private validateMatchScore(...) {}
 }
+```
+
+### Modules
+
+For modules with standalone functions:
+
+1. **Imports**
+2. **Types/Interfaces** (public first, then private)
+3. **Exported functions** (public API - most important first)
+4. **Non-exported functions** (private helpers - alphabetical)
+
+**Rationale**: Same as classes - public API visible immediately, implementation details last.
+
+**Example**:
+```typescript
+// 1. Imports
+import express from 'express';
+
+// 2. Types
+interface CoreContext { /* ... */ }
+
+// 3. Exported functions (public API)
+export function createServer(context: CoreContext) { /* ... */ }
+export function startServer(context: CoreContext) { /* ... */ }
+
+// 4. Non-exported helpers (private)
+function registerRoutes(app: express.Express) { /* ... */ }
+function setupMiddleware(app: express.Express) { /* ... */ }
 ```
 
 ---

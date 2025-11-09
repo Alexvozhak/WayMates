@@ -1,5 +1,6 @@
 import { join } from "path";
-import { ContextField, SearchConstraints } from "./schemas-zod.js";
+import { ContextField } from "./core/schemas.js";
+import type { SearchConstraints } from "./core/schemas.js";
 
 export const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
   "position",
@@ -10,10 +11,11 @@ export const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
 export const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
 
 export const DEFAULT_CONSTRAINTS: SearchConstraints = {
-  max_timing_diff_months: 12,
-  timing_diff_threshold_percent: 50,
-  max_experience_diff_months: 120,
-  results_limit: 20,
+  maxTimingDiffMonths: 12,
+  timingDiffThresholdPercent: 50,
+  maxExperienceDiffMonths: 120,
+  resultsLimit: 20,
+  requiredSkills: [],
 };
 // Add other config constants here as needed
 // export const DATABASE_URL = process.env.NEO4J_URI || "bolt://localhost:7687";

@@ -21,6 +21,8 @@
     "test:functional:run": "vitest --run --project functional",
     "test:setup": "docker compose --env-file .env.test up neo4j-test -d --wait && npm run db:test:init",
     "validate": "tsx scripts/validate.ts",
+    "migrate:test-data": "tsx scripts/migrate-test-data-to-uuid7.ts",
+    "validate:test-data": "tsx scripts/validate-test-data.ts",
     "docker:prod:up": "docker compose --env-file .env.prod up neo4j-prod -d --wait",
     "docker:prod:down": "docker compose --env-file .env.prod stop neo4j-prod && docker compose --env-file .env.prod rm -f neo4j-prod",
     "docker:prod:logs": "docker compose --env-file .env.prod logs -f neo4j-prod",

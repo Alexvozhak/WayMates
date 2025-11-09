@@ -219,14 +219,14 @@ export const PositionSchema = z.enum([
 ]);
 
 export const UserContextSchema = z.object({
-  context_id: z.string(),
-  previous_context_id: ContextIdSchema.nullable().optional(),
-  next_context_id: ContextIdSchema.nullable().optional(),
-  created_at: z
+  contextId: z.string(),
+  previousContextId: ContextIdSchema.nullable().optional(),
+  nextContextId: ContextIdSchema.nullable().optional(),
+  createdAt: z
     .string()
     .regex(new RegExp(ISO_8601_DATETIME_PATTERN), "Must be ISO 8601 format")
     .describe("When this context/event occurred (ISO 8601 format)"),
-  creation_reason: z
+  creationReason: z
     .array(NewContextReasonSchema)
     .min(1)
     .describe(
@@ -236,21 +236,21 @@ export const UserContextSchema = z.object({
   domains: z.array(z.string()).min(1).describe("Work domains"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
   industry: z.string().describe("Company industry"),
-  company_size: z.string().describe("Company size"),
-  country_code: z.string().describe("Location country code"),
-  city_name: z.string().describe("Location city name"),
+  companySize: z.string().describe("Company size"),
+  countryCode: z.string().describe("Location country code"),
+  cityName: z.string().describe("Location city name"),
   citizenships: z.array(z.string()),
-  birth_year: z.number().min(1950).describe("Birth year"),
+  birthYear: z.number().min(1950).describe("Birth year"),
 });
 
 // Search context schema - only relevant fields for matching, all optional
 export const SearchContextSchema = UserContextSchema.omit({
-  context_id: true,
-  created_at: true,
-  creation_reason: true,
-  previous_context_id: true,
-  next_context_id: true,
-  birth_year: true,
+  contextId: true,
+  createdAt: true,
+  creationReason: true,
+  previousContextId: true,
+  nextContextId: true,
+  birthYear: true,
   citizenships: true,
 }).partial();
 
@@ -261,10 +261,10 @@ export const CONTEXT_FIELD_NAMES = [
   "domains",
   "skills",
   "industry",
-  "country_code",
-  "city_name",
-  "company_size",
-  "birth_year",
+  "countryCode",
+  "cityName",
+  "companySize",
+  "birthYear",
 ] as const satisfies (keyof z.infer<typeof UserContextSchema>)[];
 
 export const ContextFieldSchema = z.enum(CONTEXT_FIELD_NAMES, {

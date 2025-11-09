@@ -19,6 +19,7 @@ generated/queries.generated.ts
 .env.production.local
 .env.integration
 .env.functional
+.env.projecthub
 
 # IDE files
 .vscode/
@@ -86,3 +87,9 @@ dist/
 .env.prod
 .env.integration
 .env.functional
+.env.focalboard
+.env.vikunja
+
+# Kanban board data
+focalboard-data/
+vikunja-data/

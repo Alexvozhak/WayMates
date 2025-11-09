@@ -4,7 +4,7 @@ import { buildContextStrictConditions } from "../orcestrator/snippets-extractor.
 
 export function userCurrentContextQuery(): string {
   return `
-    MATCH (u:User {user_id: $userId})-[:HAS_CONTEXT]->(c:Context {context_id: u.current_context_id})
+    MATCH (u:User {userId: $userId})-[:HAS_CONTEXT]->(c:Context {contextId: u.currentContextId})
     OPTIONAL MATCH (c)-[:HAS_POSITION]->(p:Position)
     OPTIONAL MATCH (c)-[:IN_WORK_DOMAIN]->(wd:WorkDomain)
     OPTIONAL MATCH (c)-[:USES_SKILL]->(s:Skill)
@@ -15,31 +15,29 @@ export function userCurrentContextQuery(): string {
     WITH c, p, wd, s, i, ci, co
 
     RETURN c {
-      .context_id,
-      .previous_context_id,
-      .next_context_id,
-      .created_at,
-      .creation_reason,
-      .birth_year,
+      .contextId,
+      .previousContextId,
+      .nextContextId,
+      .createdAt,
+      .creationReason,
+      .birthYear,
       .citizenships,
       position: p.name,
       domains: collect(DISTINCT wd.name),
       skills: collect(DISTINCT s.name),
       industry: i.name,
-      .company_size,
-      country_code: co.name,
-      city_name: ci.name,
-      .work_type,
-      .team_size
+      .companySize,
+      countryCode: co.name,
+      cityName: ci.name
     } AS context
   `.trim();
 }
 
 export function userCurrentContextIdQuery(): string {
   return `
-    MATCH (u:User {user_id: $userId})
-    WHERE u.current_context_id IS NOT NULL
-    RETURN u.current_context_id AS current_context_id
+    MATCH (u:User {userId: $userId})
+    WHERE u.currentContextId IS NOT NULL
+    RETURN u.currentContextId AS currentContextId
   `.trim();
 }
 
@@ -52,7 +50,7 @@ export function userCurrentContextIdQuery(): string {
  */
 export function buildMatchedContextBase(): string {
   return `
-    MATCH (u:User)-[:HAS_CONTEXT]->(c:Context {context_id: u.current_context_id})
+    MATCH (u:User)-[:HAS_CONTEXT]->(c:Context {contextId: u.currentContextId})
     OPTIONAL MATCH (c)-[:HAS_POSITION]->(p:Position)
     OPTIONAL MATCH (c)-[:IN_WORK_DOMAIN]->(wd:WorkDomain)
     OPTIONAL MATCH (c)-[:USES_SKILL]->(s:Skill)
@@ -78,12 +76,12 @@ function buildWhereClause(
   const searchConditions: string[] = [];
 
   if (userId) {
-    searchConditions.push(`u.user_id <> $userId`);
+    searchConditions.push(`u.userId <> $userId`);
   }
 
   if (recencyThresholdMonths) {
     searchConditions.push(
-      `duration.between(datetime(c.created_at), datetime()).months <= $recencyThresholdMonths`
+      `duration.between(datetime(c.createdAt), datetime()).months <= $recencyThresholdMonths`
     );
   }
 
@@ -101,8 +99,8 @@ function buildExcludedCreationReasonsFilter(): string {
   return `
     CALL (c) {
       MATCH path = (c)<-[:PREVIOUS_CONTEXT*0..]-(start:Context)
-      WHERE start.previous_context_id IS NULL
-      WITH [node IN nodes(path) | node.creation_reason] AS allReasons
+      WHERE start.previousContextId IS NULL
+      WITH [node IN nodes(path) | node.creationReason] AS allReasons
       RETURN NOT ANY(reason IN allReasons
         WHERE ANY(r IN reason WHERE r IN $excludedCreationReasons)) AS passesFilter
     }
@@ -114,7 +112,7 @@ function buildExcludedCreationReasonsFilter(): string {
 function buildGoalFilterClause(hasGoal: boolean): string {
   if (hasGoal) {
     return `
-    OPTIONAL MATCH (searchingUser:User {user_id: $userId})-[:HAS_GOAL]->(searchingUserGoal:Goal)
+    OPTIONAL MATCH (searchingUser:User {userId: $userId})-[:HAS_GOAL]->(searchingUserGoal:Goal)
     OPTIONAL MATCH (u)-[:HAS_GOAL]->(candidateGoal:Goal)
     WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, context_match_score,
          CASE
@@ -142,16 +140,16 @@ function buildSearchReturnClauseFull(): string {
     ORDER BY context_match_score DESC, time_since_matched_months ASC
     LIMIT $limit
 
-    RETURN u.user_id AS user_id,
+    RETURN u.userId AS userId,
            c {
              .*,
              position: p.name,
              domains: domains,
              skills: skills,
              industry: i.name,
-             country_code: co.name,
-             city_name: ci.name
-           } AS matched_context,
+             countryCode: co.name,
+             cityName: ci.name
+           } AS matchedContext,
            time_since_matched_months,
            context_match_score,
            candidate_type`;
@@ -186,7 +184,7 @@ export function buildCurrentSearchQuery(
     ${whereClause}
 
     WITH u, c, p, domains, skills, i, ci, co,
-         duration.between(datetime(c.created_at), datetime()).months AS time_since_matched_months
+         duration.between(datetime(c.createdAt), datetime()).months AS time_since_matched_months
 
     ${excludedReasonsFilter}
 
@@ -198,7 +196,7 @@ export function buildCurrentSearchQuery(
       OPTIONAL MATCH (s:Skill {name: extraSkill})-[:BELONGS_TO]->(sc:SkillCategory)
       RETURN collect({
         skill: extraSkill,
-        penalty: coalesce(sc.penalty_multiplier, 1.0)
+        penalty: coalesce(sc.penaltyMultiplier, 1.0)
       }) AS extraSkillsWithPenalty
     }
 

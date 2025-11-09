@@ -3,7 +3,7 @@
  * Matches candidates by target context and builds full trajectories
  */
 
-import type { TargetOnlySearchParams, ContextField } from "./schemas.js";
+import type { ContextField } from "./schemas.js";
 import { buildMatchedContextBase } from "./search-query-builder.js";
 import { CONTEXT_FIELD_NAMES } from "./schemas.js";
 
@@ -101,14 +101,14 @@ function buildTargetWhereClause(
   strictFields: ContextField[],
   recencyThresholdMonths: number | undefined
 ): string {
-  const conditions: string[] = ["u.user_id <> $userId"];
+  const conditions: string[] = ["u.userId <> $userId"];
 
   // Add filter conditions using snippets (only if field is strict)
   if (hasStrictField(strictFields, "position")) {
     conditions.push(buildSingularFieldCase("$position", "p"));
   }
 
-  if (hasStrictField(strictFields, "country_code")) {
+  if (hasStrictField(strictFields, "countryCode")) {
     conditions.push(buildSingularFieldCase("$countries", "co"));
   }
 
@@ -122,7 +122,7 @@ function buildTargetWhereClause(
 
   if (recencyThresholdMonths) {
     conditions.push(
-      "duration.between(datetime(c.created_at), datetime()).months <= $recencyThresholdMonths"
+      "duration.between(datetime(c.createdAt), datetime()).months <= $recencyThresholdMonths"
     );
   }
 
@@ -140,13 +140,13 @@ function buildTrajectoryClause(excludedCreationReasons: string[]): string {
   const exclusionFilter = excludedCreationReasons.length > 0
     ? `
     WHERE NOT ANY(ctx IN trajectory WHERE
-      ANY(reason IN ctx.creation_reason WHERE reason IN $excludedCreationReasons))
+      ANY(reason IN ctx.creationReason WHERE reason IN $excludedCreationReasons))
     `
     : '';
 
   return `
     MATCH path = (c)<-[:PREVIOUS_CONTEXT*0..]-(start:Context)
-    WHERE start.previous_context_id IS NULL
+    WHERE start.previousContextId IS NULL
 
     WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, [node IN nodes(path) | node] AS pathNodes
     UNWIND pathNodes AS ctx
@@ -161,25 +161,23 @@ function buildTrajectoryClause(excludedCreationReasons: string[]): string {
     WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, ctx, tp, twd, ts, ti, tci, tco,
          collect(DISTINCT twd.name) AS ctx_domains,
          collect(DISTINCT ts.name) AS ctx_skills
-    ORDER BY ctx.created_at ASC
+    ORDER BY ctx.createdAt ASC
 
     WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, collect(ctx {
-      .context_id,
-      .previous_context_id,
-      .next_context_id,
-      .created_at,
-      .creation_reason,
-      .birth_year,
+      .contextId,
+      .previousContextId,
+      .nextContextId,
+      .createdAt,
+      .creationReason,
+      .birthYear,
       .citizenships,
-      .company_size,
-      .work_type,
-      .team_size,
+      .companySize,
       position: tp.name,
       domains: [d IN ctx_domains WHERE d IS NOT NULL],
       skills: [sk IN ctx_skills WHERE sk IS NOT NULL],
       industry: ti.name,
-      country_code: tco.name,
-      city_name: tci.name
+      countryCode: tco.name,
+      cityName: tci.name
     }) AS trajectory
     ${exclusionFilter}
   `.trim();
@@ -190,25 +188,23 @@ function buildTargetWithPathReturnClause(): string {
     ORDER BY time_since_matched_months ASC
     LIMIT $limit
 
-    RETURN u.user_id AS user_id,
+    RETURN u.userId AS userId,
            c {
-             .context_id,
-             .creation_reason,
-             .created_at,
-             .birth_year,
+             .contextId,
+             .creationReason,
+             .createdAt,
+             .birthYear,
              .citizenships,
-             .company_size,
-             .work_type,
-             .team_size,
-             .previous_context_id,
-             .next_context_id,
+             .companySize,
+             .previousContextId,
+             .nextContextId,
              position: p.name,
              domains: domains,
              skills: skills,
              industry: i.name,
-             country_code: co.name,
-             city_name: ci.name
-           } AS matched_context,
+             countryCode: co.name,
+             cityName: ci.name
+           } AS matchedContext,
            time_since_matched_months,
            trajectory AS path`;
 }
@@ -220,7 +216,9 @@ function buildTargetWithPathReturnClause(): string {
  * Uses discriminated union pattern: TargetContext with FieldFilter {mode, values}
  * Replaces old nested {desired, undesired} structure
  */
-export function buildTargetSearchWithPathsQuery(params: TargetOnlySearchParams): string {
+export function buildTargetSearchWithPathsQuery(
+  params: { filters: import('./schemas.js').TargetSearchFilters }
+): string {
   const { filters } = params;
   const { excludedContextFields, recencyThresholdMonths, excludedCreationReasons } = filters;
 
@@ -235,7 +233,7 @@ export function buildTargetSearchWithPathsQuery(params: TargetOnlySearchParams):
     ${whereClause}
 
     WITH u, c, p, domains, skills, i, ci, co,
-         duration.between(datetime(c.created_at), datetime()).months AS time_since_matched_months
+         duration.between(datetime(c.createdAt), datetime()).months AS time_since_matched_months
 
     ${buildTrajectoryClause(excludedCreationReasons)}
 

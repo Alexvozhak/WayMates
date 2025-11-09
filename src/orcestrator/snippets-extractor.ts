@@ -14,27 +14,27 @@ type FieldSnippet = {
 export const FIELD_SNIPPETS: Record<ContextField, FieldSnippet> = {
   position: {
     startPattern: `MATCH (c:Context {position: $value})`,
-    generateStrict: (candidateVar, ourVar) =>
+    generateStrict: (candidateVar: string, ourVar: string) =>
       `${candidateVar}.position = ${ourVar}.position`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
+    generateFlexible: (weight: number, candidateVar: string, ourVar: string) =>
       `CASE WHEN ${candidateVar}.position = ${ourVar}.position THEN ${weight} ELSE 0 END`,
   },
 
   domains: {
     startPattern: `MATCH (c:Context) WHERE ANY(d IN $domains WHERE d IN c.domains)`,
-    generateStrict: (candidateVar, ourVar) =>
+    generateStrict: (candidateVar: string, ourVar: string) =>
       `all(d IN ${ourVar}.domains WHERE d IN ${candidateVar}.domains)`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
-      `CASE WHEN size([d IN ${ourVar}.domains WHERE d IN ${candidateVar}.domains]) > 0 
-      THEN ${weight} * (toFloat(size([d IN ${ourVar}.domains WHERE d IN ${candidateVar}.domains])) / size(${ourVar}.domains)) 
+    generateFlexible: (weight: number, candidateVar: string, ourVar: string) =>
+      `CASE WHEN size([d IN ${ourVar}.domains WHERE d IN ${candidateVar}.domains]) > 0
+      THEN ${weight} * (toFloat(size([d IN ${ourVar}.domains WHERE d IN ${candidateVar}.domains])) / size(${ourVar}.domains))
       ELSE 0 END`,
   },
 
   skills: {
     startPattern: `MATCH (c:Context) WHERE ANY(s IN $skills WHERE s IN c.skills)`,
-    generateStrict: (candidateVar, ourVar) =>
+    generateStrict: (candidateVar: string, ourVar: string) =>
       `all(s IN ${ourVar}.skills WHERE s IN ${candidateVar}.skills)`,
-    generateFlexible: (_weight, candidateVar, ourVar) => {
+    generateFlexible: (_weight: number, candidateVar: string, ourVar: string) => {
       // NOTE: Игнорируем переданный weight - используем веса из категорий в БД
       // Scoring происходит через категории навыков с penalty за лишние skills
       return `
@@ -83,53 +83,45 @@ export const FIELD_SNIPPETS: Record<ContextField, FieldSnippet> = {
 
   industry: {
     startPattern: `MATCH (c:Context {industry: $value})`,
-    generateStrict: (candidateVar, ourVar) =>
+    generateStrict: (candidateVar: string, ourVar: string) =>
       `${candidateVar}.industry = ${ourVar}.industry`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
+    generateFlexible: (weight: number, candidateVar: string, ourVar: string) =>
       `CASE WHEN ${candidateVar}.industry = ${ourVar}.industry THEN ${weight} ELSE 0 END`,
   },
 
-  country_code: {
+  countryCode: {
     startPattern: `MATCH (c:Context {country_code: $value})`,
-    generateStrict: (candidateVar, ourVar) =>
+    generateStrict: (candidateVar: string, ourVar: string) =>
       `${candidateVar}.country_code = ${ourVar}.country_code`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
+    generateFlexible: (weight: number, candidateVar: string, ourVar: string) =>
       `CASE WHEN ${candidateVar}.country_code = ${ourVar}.country_code THEN ${weight} ELSE 0 END`,
   },
 
-  city_name: {
+  cityName: {
     startPattern: `MATCH (c:Context {city_name: $value})`,
-    generateStrict: (candidateVar, ourVar) =>
+    generateStrict: (candidateVar: string, ourVar: string) =>
       `${candidateVar}.city_name = ${ourVar}.city_name`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
+    generateFlexible: (weight: number, candidateVar: string, ourVar: string) =>
       `CASE WHEN ${candidateVar}.city_name = ${ourVar}.city_name THEN ${weight} ELSE 0 END`,
   },
 
-  company_size: {
+  companySize: {
     startPattern: `MATCH (c:Context {company_size: $value})`,
-    generateStrict: (candidateVar, ourVar) =>
+    generateStrict: (candidateVar: string, ourVar: string) =>
       `${candidateVar}.company_size = ${ourVar}.company_size`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
+    generateFlexible: (weight: number, candidateVar: string, ourVar: string) =>
       `CASE WHEN ${candidateVar}.company_size = ${ourVar}.company_size THEN ${weight} ELSE 0 END`,
   },
 
-  birth_year: {
+  birthYear: {
     startPattern: `MATCH (c:Context {birth_year: $value})`,
-    generateStrict: (candidateVar, ourVar) =>
+    generateStrict: (candidateVar: string, ourVar: string) =>
       `${candidateVar}.birth_year = ${ourVar}.birth_year`,
-    generateFlexible: (weight, candidateVar, ourVar) =>
+    generateFlexible: (weight: number, candidateVar: string, ourVar: string) =>
       `CASE WHEN ${candidateVar}.birth_year = ${ourVar}.birth_year THEN ${weight} ELSE 0 END`,
   },
 } as const satisfies Record<ContextField, FieldSnippet>;
 
-// === UNIVERSAL BUILDER FUNCTIONS ===
-
-/**
- * Build strict WHERE conditions for context matching
- * @param strictFields - Fields to match strictly
- * @param dbVarName - Database variable name (e.g., "candidateContext", "matchedContext")
- * @param paramName - Query parameter name (e.g., "$searchContext", "$currentContext")
- */
 export function buildContextStrictConditions(
   strictFields: ContextField[],
   dbVarName: string = "candidateContext",
@@ -141,13 +133,6 @@ export function buildContextStrictConditions(
   return conditions.length > 0 ? conditions.join(" AND\n  ") : "";
 }
 
-/**
- * Build flexible scoring conditions for context compatibility
- * @param flexibleFields - Fields with weights for scoring
- * @param dbVarName - Database variable name
- * @param paramName - Query parameter name
- * @param scoreAlias - Alias for the calculated score
- */
 export function buildContextFlexibleConditions(
   flexibleFields: FlexibleField[],
   dbVarName: string = "candidateContext",
@@ -162,5 +147,42 @@ export function buildContextFlexibleConditions(
   return conditions.length > 0
     ? `(\n  ${conditions.join(" +\n  ")}\n) AS ${scoreAlias}\nWHERE ${scoreAlias} > 0`
     : `0 AS ${scoreAlias}`;
+}
+
+const GOAL_FIELDS = ["positions", "countries", "domains", "skills"] as const;
+
+type GoalField = (typeof GOAL_FIELDS)[number];
+
+const GOAL_FIELD_MAPPING: Record<
+  GoalField,
+  { contextField: string; isArray: boolean }
+> = {
+  positions: { contextField: "position", isArray: false },
+  countries: { contextField: "countryCode", isArray: false },
+  domains: { contextField: "domains", isArray: true },
+  skills: { contextField: "skills", isArray: true },
+};
+
+export function buildGoalFilterConditions(
+  contextVarName = "c"
+): string {
+  const desiredConditions = GOAL_FIELDS.map((field) => {
+    const mapping = GOAL_FIELD_MAPPING[field];
+    if (mapping.isArray) {
+      return `($desired.${field} IS NULL OR ANY(v IN $desired.${field} WHERE v IN ${contextVarName}.${mapping.contextField}))`;
+    }
+    return `($desired.${field} IS NULL OR ANY(v IN $desired.${field} WHERE ${contextVarName}.${mapping.contextField} = v))`;
+  });
+
+  const undesiredConditions = GOAL_FIELDS.map((field) => {
+    const mapping = GOAL_FIELD_MAPPING[field];
+    if (mapping.isArray) {
+      return `($undesired.${field} IS NULL OR NONE(v IN $undesired.${field} WHERE v IN ${contextVarName}.${mapping.contextField}))`;
+    }
+    return `($undesired.${field} IS NULL OR NONE(v IN $undesired.${field} WHERE ${contextVarName}.${mapping.contextField} = v))`;
+  });
+
+  const allConditions = desiredConditions.concat(undesiredConditions);
+  return allConditions.join(" AND\n  ");
 }
 

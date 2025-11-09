@@ -4,30 +4,24 @@ import type { TrajectorySimilarityService } from "./trajectory-similarity.servic
 import type { PathCollectorService } from "./path-collector.service.js";
 import type { GoalsManager } from "./goals-manager.js";
 import type {
-  ContextSearchParams,
-  CurrentContextSearchParams,
-  PathSearchParams,
-  TargetOnlySearchParams,
   ContextField,
+  UserSearchParams,
+  TargetSearchParams,
+  SearchByContextParams,
 } from "./schemas.js";
 import { CONTEXT_FIELD_NAMES } from "./schemas.js";
 import {
   UserContextSchema,
   ScoredMatchedCandidateSchema,
-  ScoredMatchedCandidateWithPathAndDTWSchema,
   MatchedCandidateWithPathSchema,
   type UserContext,
   type ScoredMatchedCandidate,
-  type ScoredMatchedCandidateWithPath,
-  type ScoredMatchedCandidateWithPathAndDTW,
   type MatchedCandidateWithPath,
 } from "../shared/schemas.js";
 import {
   buildCurrentSearchQuery,
   userCurrentContextQuery,
-  userCurrentContextIdQuery,
 } from "./search-query-builder.js";
-import { buildPathQuery } from "./path-query-builder.js";
 import { buildTargetSearchWithPathsQuery } from "./target-query-builder.js";
 
 function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
@@ -45,46 +39,39 @@ export class SearchManager {
     private goalsManager: GoalsManager
   ) {}
 
-  async searchByCurrentContext(
-    params: ContextSearchParams
-  ): Promise<ScoredMatchedCandidate[]> {
-    const referenceContext = await this.resolveContext(params.userId);
-    return this.searchByContext({
-      ...params,
-      referenceContext,
-    });
-  }
-
-  async searchByCurrentContextAdhoc(
-    params: CurrentContextSearchParams
+  async searchAdhoc(
+    params: SearchByContextParams
   ): Promise<ScoredMatchedCandidate[]> {
     return this.searchByContext(params);
   }
 
-  async searchPath(
-    params: PathSearchParams
-  ): Promise<ScoredMatchedCandidateWithPathAndDTW[]> {
+  async searchByUser(
+    params: UserSearchParams
+  ): Promise<ScoredMatchedCandidate[]> {
     const context = await this.resolveContext(params.userId);
+    const hasTrajectory = context.previousContextId !== null;
 
-    if (context.previous_context_id === null) {
-      throw new Error(
-        "searchPath requires user with path (previous_context_id !== null)"
-      );
+    if (hasTrajectory) {
+      return this.executeCoreSearchWithDTW(params, context);
+    } else {
+      return this.searchByContext({
+        userId: params.userId,
+        referenceContext: context,
+        filters: params.filters,
+      });
     }
-
-    return this.executeCoreSearchWithDTW(params, context);
   }
 
-  async searchCandidatesByTargetContext(
-    params: TargetOnlySearchParams
+  async searchByTarget(
+    params: TargetSearchParams
   ): Promise<MatchedCandidateWithPath[]> {
     const query = buildTargetSearchWithPathsQuery(params);
 
-    const { userId, filters } = params;
-    const { criteria, excludedCreationReasons, recencyThresholdMonths, limit } = filters;
+    const { filters } = params;
+    const { criteria, excludedCreationReasons, recencyThresholdMonths, limit } =
+      filters;
 
     const queryParams = {
-      userId,
       position: criteria?.position,
       countries: criteria?.countries,
       domains: criteria?.domains,
@@ -104,31 +91,33 @@ export class SearchManager {
   }
 
   private async searchByContext(
-    params: CurrentContextSearchParams
+    params: SearchByContextParams
   ): Promise<ScoredMatchedCandidate[]> {
+    const { referenceContext, filters, userId } = params;
+
     const strictFields = computeStrictFields(
-      params.filters.excludedContextFields
+      filters.excludedContextFields
     );
 
-    const goal = await this.goalsManager.getUserGoal(params.userId);
+    const goal = await this.goalsManager.getUserGoal(userId);
 
     const rankedStrictFields = await this.selectivity.rankStrictFields(
       strictFields,
-      params.referenceContext
+      referenceContext
     );
 
     const query = buildCurrentSearchQuery(goal, rankedStrictFields, {
-      userId: params.userId,
-      recencyThresholdMonths: params.filters.recencyThresholdMonths,
-      limit: params.filters.limit,
+      userId: userId,
+      recencyThresholdMonths: filters.recencyThresholdMonths,
+      limit: filters.limit,
     });
 
     const queryParams = {
-      userId: params.userId,
-      referenceContext: params.referenceContext,
-      excludedCreationReasons: params.filters.excludedCreationReasons,
-      recencyThresholdMonths: params.filters.recencyThresholdMonths,
-      limit: params.filters.limit,
+      userId: userId,
+      referenceContext: referenceContext,
+      excludedCreationReasons: filters.excludedCreationReasons,
+      recencyThresholdMonths: filters.recencyThresholdMonths,
+      limit: filters.limit,
     };
 
     return this.db.read(async (tx) => {
@@ -155,37 +144,10 @@ export class SearchManager {
     });
   }
 
-  private async getCurrentContextId(userId: string): Promise<string> {
-    const query = userCurrentContextIdQuery();
-
-    return this.db.read(async (tx) => {
-      const result = await tx.run(query, { userId });
-
-      const record = result.records[0];
-      if (!record) {
-        throw new Error(
-          `getCurrentContextId: user ${userId} not found or current_context_id is null. ` +
-            `Cannot compute DTW without current context.`
-        );
-      }
-
-      const currentContextId = record.get("current_context_id");
-
-      if (!currentContextId) {
-        throw new Error(
-          `getCurrentContextId: user ${userId} has no current_context_id. ` +
-            `Cannot compute DTW without current context.`
-        );
-      }
-
-      return currentContextId;
-    });
-  }
-
   private async executeCoreSearchWithDTW(
-    params: PathSearchParams,
+    params: UserSearchParams,
     referenceContext: UserContext
-  ): Promise<ScoredMatchedCandidateWithPathAndDTW[]> {
+  ): Promise<ScoredMatchedCandidate[]> {
     const topCandidates = await this.searchByContext({
       userId: params.userId,
       referenceContext,
@@ -196,103 +158,82 @@ export class SearchManager {
       return [];
     }
 
-    const candidatesWithPaths = await this.loadCandidatePaths(
-      topCandidates,
-      params.filters.excludedCreationReasons
-    );
+    const candidateIds = topCandidates.map((c) => c.user_id);
+    const pathsMap = await this.pathCollector.collectTrajectories([
+      params.userId,
+      ...candidateIds,
+    ]);
 
-    if (candidatesWithPaths.length === 0) {
-      return [];
+    const userPath = pathsMap.get(params.userId);
+    if (!userPath) {
+      throw new Error(`User ${params.userId} has no trajectory`);
     }
 
-    const candidatesWithDTW = await this.computeDTWScores(
-      params.userId,
-      candidatesWithPaths,
-      params.filters.excludedCreationReasons
-    );
+    const excludedReasons = params.filters.excludedCreationReasons;
+    const candidatesWithDTW: ScoredMatchedCandidate[] = [];
+
+    for (const candidate of topCandidates) {
+      const enrichedCandidate = await this.enrichCandidateWithDTW(
+        candidate,
+        userPath,
+        pathsMap,
+        excludedReasons,
+        params.userId
+      );
+
+      if (enrichedCandidate) {
+        candidatesWithDTW.push(enrichedCandidate);
+      }
+    }
 
     return candidatesWithDTW
       .sort((a, b) => {
-        const scoreA = a.dtw_total + a.context_match_score;
-        const scoreB = b.dtw_total + b.context_match_score;
+        const scoreA = (a.dtw_total || 0) + a.context_match_score;
+        const scoreB = (b.dtw_total || 0) + b.context_match_score;
         return scoreB - scoreA;
       })
       .slice(0, params.pathLimit);
   }
 
-  private async loadCandidatePaths(
-    candidates: ScoredMatchedCandidate[],
-    excludedCreationReasons: string[]
-  ): Promise<ScoredMatchedCandidateWithPath[]> {
-    const query = buildPathQuery(excludedCreationReasons);
+  private async enrichCandidateWithDTW(
+    candidate: ScoredMatchedCandidate,
+    userPath: UserContext[],
+    pathsMap: Map<string, UserContext[]>,
+    excludedReasons: string[],
+    userId: string
+  ): Promise<ScoredMatchedCandidate | null> {
+    if (candidate.user_id === userId) {
+      return null;
+    }
 
-    const contextIds = candidates.map((c) => c.matched_context.context_id);
+    const path = pathsMap.get(candidate.user_id);
+    if (!path) {
+      return null;
+    }
 
-    const queryParams = {
-      contextIds,
-      excludedCreationReasons,
-    };
+    const hasExcluded = path.some((ctx) =>
+      ctx.creationReason.some((r: string) => excludedReasons.includes(r))
+    );
+    if (hasExcluded) {
+      return null;
+    }
 
-    const pathsMap = await this.db.read(async (tx) => {
-      const result = await tx.run(query, queryParams);
-
-      const map = new Map<string, UserContext[]>();
-      for (const rec of result.records) {
-        map.set(rec.get("id"), rec.get("path"));
-      }
-      return map;
-    });
-
-    return candidates
-      .filter((c) => pathsMap.has(c.matched_context.context_id))
-      .map((c) => ({
-        ...c,
-        path: pathsMap.get(c.matched_context.context_id)!,
-      }));
-  }
-
-  private async computeDTWScores(
-    userId: string,
-    candidates: ScoredMatchedCandidateWithPath[],
-    excludedReasons: string[]
-  ): Promise<ScoredMatchedCandidateWithPathAndDTW[]> {
-    const currentContextId = await this.getCurrentContextId(userId);
-
-    const userPaths = await this.pathCollector.collectTrajectories(
-      [currentContextId],
-      excludedReasons
+    const dtwMetrics = await this.trajectorySimilarity.computeDTWMetrics(
+      userPath,
+      path
     );
 
-    if (userPaths.length === 0 || !userPaths[0]) {
-      throw new Error(
-        `computeDTWScores: failed to load trajectory for user ${userId} context ${currentContextId}`
-      );
-    }
+    const dtwTotal =
+      dtwMetrics.shape_similarity +
+      dtwMetrics.tempo_similarity +
+      dtwMetrics.stability_score;
 
-    const userPath = userPaths[0].path;
-
-    const candidatesWithDTW: ScoredMatchedCandidateWithPathAndDTW[] = [];
-
-    for (const candidate of candidates) {
-      const dtwMetrics = await this.trajectorySimilarity.computeDTWMetrics(
-        userPath,
-        candidate.path
-      );
-
-      const dtwTotal =
-        dtwMetrics.shape_similarity +
-        dtwMetrics.tempo_similarity +
-        dtwMetrics.stability_score;
-
-      candidatesWithDTW.push(
-        ScoredMatchedCandidateWithPathAndDTWSchema.parse({
-          ...candidate,
-          dtw_metrics: dtwMetrics,
-          dtw_total: dtwTotal,
-        })
-      );
-    }
-
-    return candidatesWithDTW;
+    return {
+      ...candidate,
+      path,
+      dtw_metrics: dtwMetrics,
+      dtw_total: dtwTotal,
+    };
   }
+
 }

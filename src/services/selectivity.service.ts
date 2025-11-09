@@ -1,10 +1,7 @@
 import type { ManagedTransaction, Plan } from "neo4j-driver";
-import type {
-  ContextField,
-  TargetContext,
-  UserContext,
-} from "../schemas-zod.js";
 import type { DatabaseContext } from "../database-context.js";
+import type { ContextField } from "../core/schemas.js";
+import type { UserContext } from "../shared/schemas.js";
 import { FIELD_SNIPPETS } from "../orcestrator/snippets-extractor.js";
 
 type SelectivityResult = {
@@ -23,13 +20,13 @@ export class SelectivityService {
    */
   async rankStrictFields(
     strictFields: ContextField[],
-    userContext: UserContext | TargetContext
+    userContext: UserContext
   ): Promise<ContextField[]> {
     const results = await this.db.read(async (tx) => {
       const selectivityResults: SelectivityResult[] = [];
 
       for (const fieldName of strictFields) {
-        const fieldValue = userContext[fieldName];
+        const fieldValue = this.getContextFieldValue(userContext, fieldName);
         if (fieldValue == null) continue;
 
         try {
@@ -54,12 +51,31 @@ export class SelectivityService {
       .map((r) => r.fieldName);
   }
 
+  private getContextFieldValue(context: UserContext, field: ContextField): unknown {
+    if (field === "position") return context.position;
+    if (field === "domains") return context.domains;
+    if (field === "skills") return context.skills;
+    if (field === "industry") return context.industry;
+    if (field === "companySize") return context.companySize;
+    if (field === "countryCode") return context.countryCode;
+    if (field === "cityName") return context.cityName;
+    return context.birthYear;
+  }
+
+  private getStartPattern(fieldName: ContextField): string | undefined {
+    return FIELD_SNIPPETS[fieldName]?.startPattern;
+  }
+
   private async getFieldSelectivity(
     tx: ManagedTransaction,
     fieldName: ContextField,
     fieldValue: unknown
   ): Promise<SelectivityResult> {
-    const startPattern = FIELD_SNIPPETS[fieldName].startPattern;
+    const startPattern = this.getStartPattern(fieldName);
+    if (!startPattern) {
+      return { fieldName, estimatedRows: FALLBACK_SELECTIVITY };
+    }
+
     const query = `EXPLAIN ${startPattern} RETURN count(c)`;
 
     try {

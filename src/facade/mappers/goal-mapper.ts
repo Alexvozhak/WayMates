@@ -3,24 +3,36 @@ import { CreateGoalInputSchema } from '../../shared/schemas.js';
 import type { MapperContext, ValidationResult, MapperOptions } from './types.js';
 import { retryWithValidation } from './helpers.js';
 
-const GOAL_PROMPT = `Extract career goal from user query.
+const GOAL_PROMPT = `Extract career goal from user query with included/excluded logic.
 
 Extract:
 - userId (provided)
-- targetContextId (Context ID of target position - will be found/created later)
-- targetPosition (string, target position title)
-- targetSkills (array of strings, optional - skills user wants to acquire)
-- deadline (ISO 8601 date, optional)
+- targetPositions (object with included/excluded arrays)
+- targetCountries (object with included/excluded arrays, optional)
+- targetDomains (object with included/excluded arrays, optional)
+- targetSkills (object with included/excluded arrays, optional)
 
 Return JSON:
 {
   "userId": "provided_user_id",
-  "targetPosition": "extracted position",
-  "targetSkills": ["skill1", "skill2"],  // optional
-  "deadline": "2025-12-31T00:00:00.000Z"  // optional
+  "targetPositions": {
+    "included": ["Staff Engineer", "Principal Engineer"],
+    "excluded": ["Junior Engineer"]  // optional
+  },
+  "targetCountries": {
+    "included": ["Germany", "Netherlands"],
+    "excluded": ["China"]  // optional
+  },  // optional
+  "targetDomains": {
+    "included": ["Backend", "Infrastructure"]
+  },  // optional
+  "targetSkills": {
+    "included": ["Kubernetes", "Go"],
+    "excluded": ["PHP"]  // optional
+  }  // optional
 }
 
-CRITICAL: Return ONLY valid JSON, no explanations.`;
+CRITICAL: Return ONLY valid JSON, no explanations. Use 'included' for desired values, 'excluded' for unwanted values.`;
 
 async function callLLM(
   ctx: MapperContext,

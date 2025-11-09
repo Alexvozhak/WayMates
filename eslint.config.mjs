@@ -30,22 +30,8 @@ export default defineConfig(
 
       // === Simplicity Rules (docs/eslint_simplicity_rules.md) ===
 
-      // Запрет spread-оператора (кроме rest-параметров)
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'ObjectExpression > SpreadElement',
-          message: 'Object spread запрещён. Используйте Object.assign().',
-        },
-        {
-          selector: 'ArrayExpression > SpreadElement',
-          message: 'Array spread запрещён. Используйте array.slice() или Array.from().',
-        },
-        {
-          selector: 'CallExpression > SpreadElement',
-          message: 'Spread в аргументах запрещён. Передавайте аргументы явно.',
-        },
-      ],
+      // Spread operator разрешён (изменено по требованию)
+      // 'no-restricted-syntax': [...] - удалено
 
       // Ограничение вложенности (максимум 2 уровня)
       'max-depth': ['error', 2],

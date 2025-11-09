@@ -64,9 +64,9 @@ export function buildReasonBasedQuery(
   const reasonGroupingVar = isForward ? relatedVar : matchedVar;
 
   // Reason filtering with null safety and empty array handling
-  const reasonFilters = `AND size(coalesce(${reasonGroupingVar}.creation_reason, [])) > 0
-  AND (size($requiredReasons) = 0 OR all(req IN $requiredReasons WHERE req IN coalesce(${reasonGroupingVar}.creation_reason, [])))
-  AND (size($excludedReasons) = 0 OR none(excl IN $excludedReasons WHERE excl IN coalesce(${reasonGroupingVar}.creation_reason, [])))`;
+  const reasonFilters = `AND size(coalesce(${reasonGroupingVar}.creationReason, [])) > 0
+  AND (size($requiredReasons) = 0 OR all(req IN $requiredReasons WHERE req IN coalesce(${reasonGroupingVar}.creationReason, [])))
+  AND (size($excludedReasons) = 0 OR none(excl IN $excludedReasons WHERE excl IN coalesce(${reasonGroupingVar}.creationReason, [])))`;
 
   const directionLabel = isForward
     ? "CURRENT-ONLY (FORWARD)"
@@ -83,7 +83,7 @@ export function buildReasonBasedQuery(
 MATCH (user:User)-[:HAS_CONTEXT]->(${matchedVar}:Context)
 WHERE
   $searchContext IS NOT NULL
-  AND user.user_id <> $currentUserId
+  AND user.userId <> $currentUserId
   ${whereClause ? `AND ${whereClause}` : ""}
 
 // === STEP 2: Calculate compatibility score ===
@@ -103,8 +103,8 @@ WITH *,
   // For forward: duration from matched (earlier) to related (later)
   // For backward: duration from related (earlier) to matched (later)
   duration.inMonths(
-    datetime(${isForward ? matchedVar : relatedVar}.created_at),
-    datetime(${isForward ? relatedVar : matchedVar}.created_at)
+    datetime(${isForward ? matchedVar : relatedVar}.createdAt),
+    datetime(${isForward ? relatedVar : matchedVar}.createdAt)
   ).months AS durationMonths
 
 // Filter by period window (± 1 month tolerance)
@@ -115,7 +115,7 @@ WHERE durationMonths >= $periodMonths - 1
 ${reasonFilters}
 
 // === STEP 5: Group by exact reason combination ===
-WITH ${reasonGroupingVar}.creation_reason AS reasonCombination,
+WITH ${reasonGroupingVar}.creationReason AS reasonCombination,
   collect({
     user: user,
     matched_context: ${matchedVar},
@@ -205,48 +205,44 @@ UNWIND top_users AS sample_user_data
 // Prepare context maps with explicit fields (Neo4j doesn't support excluding keys from maps)
 WITH reasonCombination, users_count, stats,
   collect({
-    user_id: sample_user_data.user.user_id,
-    match_score: sample_user_data.match_score,
-    user_graph: {
+    userId: sample_user_data.user.userId,
+    matchScore: sample_user_data.match_score,
+    userGraph: {
       user: {
-        user_id: sample_user_data.user.user_id,
-        birth_year: sample_user_data.matched_context.birth_year
+        userId: sample_user_data.user.userId,
+        birthYear: sample_user_data.matched_context.birthYear
       },
-      matched_context: {
-        context_id: sample_user_data.matched_context.context_id,
-        previous_context_id: sample_user_data.matched_context.previous_context_id,
-        next_context_id: sample_user_data.matched_context.next_context_id,
-        created_at: toString(sample_user_data.matched_context.created_at),
-        creation_reason: sample_user_data.matched_context.creation_reason,
+      matchedContext: {
+        contextId: sample_user_data.matched_context.contextId,
+        previousContextId: sample_user_data.matched_context.previousContextId,
+        nextContextId: sample_user_data.matched_context.nextContextId,
+        createdAt: toString(sample_user_data.matched_context.createdAt),
+        creationReason: sample_user_data.matched_context.creationReason,
         position: sample_user_data.matched_context.position,
         domains: sample_user_data.matched_context.domains,
         skills: sample_user_data.matched_context.skills,
         industry: sample_user_data.matched_context.industry,
-        company_size: sample_user_data.matched_context.company_size,
-        country_code: sample_user_data.matched_context.country_code,
-        city_name: sample_user_data.matched_context.city_name,
-        work_type: sample_user_data.matched_context.work_type,
+        companySize: sample_user_data.matched_context.companySize,
+        countryCode: sample_user_data.matched_context.countryCode,
+        cityName: sample_user_data.matched_context.cityName,
         citizenships: sample_user_data.matched_context.citizenships,
-        team_size: sample_user_data.matched_context.team_size,
-        birth_year: sample_user_data.matched_context.birth_year
+        birthYear: sample_user_data.matched_context.birthYear
       },
-      related_context: {
-        context_id: sample_user_data.related_context.context_id,
-        previous_context_id: sample_user_data.related_context.previous_context_id,
-        next_context_id: sample_user_data.related_context.next_context_id,
-        created_at: toString(sample_user_data.related_context.created_at),
-        creation_reason: sample_user_data.related_context.creation_reason,
+      relatedContext: {
+        contextId: sample_user_data.related_context.contextId,
+        previousContextId: sample_user_data.related_context.previousContextId,
+        nextContextId: sample_user_data.related_context.nextContextId,
+        createdAt: toString(sample_user_data.related_context.createdAt),
+        creationReason: sample_user_data.related_context.creationReason,
         position: sample_user_data.related_context.position,
         domains: sample_user_data.related_context.domains,
         skills: sample_user_data.related_context.skills,
         industry: sample_user_data.related_context.industry,
-        company_size: sample_user_data.related_context.company_size,
-        country_code: sample_user_data.related_context.country_code,
-        city_name: sample_user_data.related_context.city_name,
-        work_type: sample_user_data.related_context.work_type,
+        companySize: sample_user_data.related_context.companySize,
+        countryCode: sample_user_data.related_context.countryCode,
+        cityName: sample_user_data.related_context.cityName,
         citizenships: sample_user_data.related_context.citizenships,
-        team_size: sample_user_data.related_context.team_size,
-        birth_year: sample_user_data.related_context.birth_year
+        birthYear: sample_user_data.related_context.birthYear
       }
     }
   }) AS sample_users
@@ -270,13 +266,13 @@ export function buildListReasonsQuery(): string {
   return `
 MATCH (r:Reason)
 RETURN {
-  reason_id: r.reason_id,
+  reasonId: r.reasonId,
   description: r.description,
   patterns: r.patterns,
-  common_combinations: r.common_combinations,
+  commonCombinations: r.commonCombinations,
   examples: r.examples
 } AS reason
-ORDER BY r.reason_id
+ORDER BY r.reasonId
 `;
 }
 
@@ -292,14 +288,14 @@ ORDER BY r.reason_id
  */
 export function buildCreateReasonQuery(): string {
   return `
-MERGE (r:Reason {reason_id: $reasonId})
+MERGE (r:Reason {reasonId: $reasonId})
 SET r.description = $description,
     r.patterns = $patterns,
     r.examples = $examples,
-    r.common_combinations = [],
-    r.created_at = datetime(),
-    r.created_by = 'ai_agent',
-    r.first_context_id = $contextId
+    r.commonCombinations = [],
+    r.createdAt = datetime(),
+    r.createdBy = 'ai_agent',
+    r.firstContextId = $contextId
 RETURN r
 `;
 }
