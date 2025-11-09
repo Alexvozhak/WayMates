@@ -223,6 +223,12 @@ const UserSearchParamsBaseSchema = z.object({
     .max(100)
     .default(20)
     .describe("Final result limit after DTW analysis (ignored if user has no trajectory)"),
+  durationCapMonths: z
+    .number()
+    .min(12)
+    .max(120)
+    .default(36)
+    .describe("Maximum duration difference (months) for normalization in DTW distance calculation"),
 });
 
 /**
@@ -277,6 +283,12 @@ export const TargetSearchParamsSchema = z.object({
     .max(100)
     .default(20)
     .describe("Maximum number of results to return"),
+  durationCapMonths: z
+    .number()
+    .min(12)
+    .max(120)
+    .default(36)
+    .describe("Maximum duration difference (months) for normalization in DTW distance calculation"),
 });
 
 export type TargetSearchParams = z.infer<typeof TargetSearchParamsSchema>;
@@ -333,17 +345,17 @@ export type CreateGoalInput = z.infer<typeof CreateGoalInputSchema>;
 
 // DTW metrics schema
 export const DTWMetricsSchema = z.object({
-  shape_similarity: z
+  shapeSimilarity: z
     .number()
     .min(0)
     .max(1)
     .describe("Path shape similarity (0-1)"),
-  tempo_similarity: z
+  tempoSimilarity: z
     .number()
     .min(0)
     .max(1)
     .describe("Career speed similarity (0-1)"),
-  stability_score: z
+  stabilityScore: z
     .number()
     .min(0)
     .max(1)
@@ -449,9 +461,9 @@ export const ScoredMatchedCandidateWithPathAndDTWSchema =
     .refine(
       (data) => {
         const computed =
-          data.dtwMetrics.shape_similarity +
-          data.dtwMetrics.tempo_similarity +
-          data.dtwMetrics.stability_score;
+          data.dtwMetrics.shapeSimilarity +
+          data.dtwMetrics.tempoSimilarity +
+          data.dtwMetrics.stabilityScore;
         return Math.abs(data.dtwTotal - computed) < 0.001;
       },
       { message: "dtwTotal must equal sum of dtwMetrics" }

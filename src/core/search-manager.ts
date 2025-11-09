@@ -160,19 +160,20 @@ export class SearchManager {
     ]);
 
     const userPath = pathsMap.get(params.userId);
-    if (!userPath || userPath.length === 0) {
-      // No trajectory - return candidates without DTW (pathLimit ignored)
+    if (!userPath || userPath.length < 3) {
+      // Insufficient trajectory (< 3 contexts) - return candidates without DTW (pathLimit ignored)
       return topCandidates;
     }
 
     // Step 3: Enrich candidates with DTW metrics (filter out null)
     const enrichedCandidates: ScoredMatchedCandidate[] = [];
     for (const candidate of topCandidates) {
-      const enriched = await this.enrichCandidateWithDTW(
+      const enriched = this.enrichCandidateWithDTW(
         candidate,
         userPath,
         pathsMap,
-        params.userId
+        params.userId,
+        params.durationCapMonths
       );
       if (enriched) {
         enrichedCandidates.push(enriched);
@@ -189,30 +190,33 @@ export class SearchManager {
       .slice(0, params.pathLimit);
   }
 
-  private async enrichCandidateWithDTW(
+  private enrichCandidateWithDTW(
     candidate: ScoredMatchedCandidate,
     userPath: UserContext[],
     pathsMap: Map<string, UserContext[]>,
-    userId: string
-  ): Promise<ScoredMatchedCandidate | null> {
+    userId: string,
+    durationCapMonths: number
+  ): ScoredMatchedCandidate | null {
     if (candidate.userId === userId) {
       return null;
     }
 
     const path = pathsMap.get(candidate.userId);
-    if (!path) {
+    if (!path || path.length < 3) {
+      // Skip candidates with insufficient trajectory (< 3 contexts)
       return null;
     }
 
-    const dtwMetrics = await this.trajectorySimilarity.computeDTWMetrics(
+    const dtwMetrics = this.trajectorySimilarity.computeDTWMetrics(
       userPath,
-      path
+      path,
+      durationCapMonths
     );
 
     const dtwTotal =
-      dtwMetrics.shape_similarity +
-      dtwMetrics.tempo_similarity +
-      dtwMetrics.stability_score;
+      dtwMetrics.shapeSimilarity +
+      dtwMetrics.tempoSimilarity +
+      dtwMetrics.stabilityScore;
 
     return {
       ...candidate,
