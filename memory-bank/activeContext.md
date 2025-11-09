@@ -1,133 +1,147 @@
 # 🎯 Active Context
 
 ## Current Focus
-**Module**: Schema + Cypher + TypeScript layer
-**Feature**: Naming Convention Migration to camelCase (COMPLETED ✅)
-**Status**: Full codebase migrated and validated
-**Session**: 2025-11-08
-**Last activity**: PHASE 4 validation completed, all changes committed
+**Module**: Search Schemas + Candidate Types
+**Feature**: Search Params Refactoring + camelCase Migration (COMPLETED ✅)
+**Status**: Ready for commit
+**Session**: 2025-11-09
+**Last activity**: Full refactoring + camelCase migration completed
 
-## Completed: Full Naming Convention Migration (camelCase)
+## Completed: Search Params Schemas Refactoring + Candidate camelCase Migration
 
 ### What Changed
-Системная миграция от смешанного стиля (snake_case в DB, camelCase в API) к единому camelCase стилю по всему коду:
+Двойной рефакторинг за одну сессию:
 
-**Architecture**:
-- TypeScript/API code: **camelCase** (idiomatic for JavaScript)
-- Database properties: **camelCase** (Neo4j official recommendation)
-- MCP tool names: **snake_case** (MCP community convention)
+**Part 1: Search Params Schemas** (Breaking Changes):
+- User/Adhoc → flat structure с inverse logic (excludedContextFields)
+- Target → nested structure с positive logic (criteria + FieldFilter)
+- Единый источник истины в `src/shared/schemas.ts`
 
-**Implementation**:
-- PHASE 1: 80+ schema properties renamed
-- PHASE 2: 3 MCP goal tools renamed to snake_case
-- PHASE 3: 13 DB constraints + 13 indexes + 8 query builders updated
-- PHASE 4: Full validation (ESLint 0 errors, TypeScript OK)
+**Part 2: Candidate Schemas to camelCase** (Breaking Changes):
+- Завершена незаконченная миграция от 2025-11-08
+- Все candidate properties мигрированы: userId, matchedContext, timeSinceMatchedMonths, contextMatchScore, candidateType, dtwMetrics, dtwTotal
+- Все Cypher query builders обновлены (WITH переменные в camelCase)
 
-### Key Changes by Phase
+### Files Modified (7)
 
-#### PHASE 1: Schema Properties
-Files modified: 10+
-- `src/shared/schemas.ts` - Domain entities (UserContext, Trail, Schedule, Goals)
-- `src/core/schemas.ts` - API response schemas (SearchResult, SkillsAnalysis, Reasons)
-- `src/config.ts` - Configuration constants
-- 7 more files with property access updates
+#### Part 1: Search Params
+1. **src/shared/schemas.ts**:
+   - Удалены: SearchFiltersSchema, SearchByContextParamsSchema
+   - Созданы: UserSearchParamsSchema (flat + pathLimit), AdhocSearchParamsSchema (extends User), TargetSearchParamsSchema (nested filters + userId)
 
-#### PHASE 2: MCP Tool Names
-File modified: 1 (src/core/core-mcp-server.ts)
-- `setGoal` → `set_goal`
-- `getUserGoal` → `get_user_goal`
-- `deleteGoal` → `delete_goal`
+2. **src/core/schemas.ts**:
+   - Удалены: TargetSearchFiltersSchema, legacy UserSearchParams
+   - Обновлены: импорты и re-exports на shared schemas
 
-#### PHASE 3: Database & Cypher
-- `database/init.cypher` - 13 constraints + 13 indexes updated to camelCase
-- 8 query builders updated:
-  - src/core/search-query-builder.ts
-  - src/core/target-query-builder.ts
-  - src/core/goals-query-builder.ts
-  - src/core/path-query-builder.ts
-  - src/core/persistence-query-builder.ts
-  - src/orcestrator/search-query-builder.ts
-  - src/orcestrator/reason-query-builder.ts
-  - src/persistence-query-builder.ts (legacy)
+3. **src/core/target-query-builder.ts**:
+   - Strict fields из `Object.keys(criteria)` вместо excludedContextFields
+   - Удалена функция computeStrictFields
 
-#### PHASE 4: Validation
-- ✅ ESLint: 0 errors on all updated source files
-- ✅ TypeScript: No new compilation errors in source code
-- ✅ Property mappings: 22+ replacement rules applied
-- ✅ Legacy properties removed: work_type, team_size cleaned up
+4. **src/core/search-manager.ts**:
+   - Flat params (без вложенного filters)
+   - Убрана DTW фильтрация по excludedCreationReasons (теперь только Cypher)
+   - Spread syntax в executeCoreSearchWithDTW
+   - ES6 shorthand в enrichCandidateWithDTW
 
-### Files Modified Summary
-- **Total files**: 20+
-- **Schema properties renamed**: 80+
-- **Database constraints updated**: 13
-- **Database indexes updated**: 13
-- **Query builders refactored**: 8
-- **MCP tools renamed**: 3
-- **Property mapping rules**: 22+
+5-7. **REST/MCP servers**:
+   - SearchByContextParamsSchema → AdhocSearchParamsSchema
+
+#### Part 2: Candidate camelCase
+8. **src/shared/schemas.ts**:
+   - CandidateCoreSchema: user_id → userId, matched_context → matchedContext, time_since_matched_months → timeSinceMatchedMonths
+   - ContextScoringFieldsSchema: context_match_score → contextMatchScore, candidate_type → candidateType
+   - DTWFieldsSchema: dtw_metrics → dtwMetrics, dtw_total → dtwTotal
+
+9. **src/core/search-query-builder.ts**:
+   - WITH переменные: timeSinceMatchedMonths, contextMatchScore, candidateType
+   - RETURN без AS (переменные уже camelCase)
+
+10. **src/core/target-query-builder.ts**:
+    - WITH переменные: timeSinceMatchedMonths
+    - RETURN без AS
 
 ### Key Decisions Made
-1. **camelCase for TypeScript code** - idiomatic and follows JS conventions
-2. **camelCase for database properties** - Neo4j official recommendation
-3. **snake_case for MCP tool names** - MCP community standard
-4. **Unified across layers** - No inconsistency between domain and API
-5. **Removed legacy properties** - work_type, team_size no longer referenced
+
+**Architecture**:
+1. **User/Adhoc flat structure** - более ergonomic API, параметры на верхнем уровне
+2. **Target nested filters** - сохранена для семантической группировки
+3. **Spread syntax** - `{...params, referenceContext}` вместо перечисления
+4. **ES6 shorthand** - `{dtwMetrics, dtwTotal}` вместо `{dtwMetrics: dtwMetrics}`
+5. **camelCase в Cypher WITH** - переменные создаются сразу в camelCase (не алиасы в RETURN)
+
+**Breaking Changes (Intentional)**:
+- API изменения: SearchByContextParams → AdhocSearchParams
+- Schema fields: все candidate properties в camelCase
+- Cypher variables: все WITH переменные в camelCase
+- Нет обратной совместимости
 
 ### Validation Results
-- ✅ ESLint: 0 errors (after fixing unused import)
-- ✅ TypeScript: All schema changes compile correctly
-- ✅ Cypher: All property references updated in 8 query builders
-- ✅ Constraints: 13 constraints migrated to camelCase
-- ✅ Indexes: 13 indexes migrated to camelCase
+- ✅ ESLint: 0 errors на всех 7 файлах
+- ✅ TypeScript: 0 errors (1 hint в deprecated schema)
+- ✅ Reviewer: 2 критичные проблемы найдены и исправлены
+- ✅ Code quality: spread, shorthand, camelCase throughout
 
-## Previous Context (2025-11-08)
+### Critical Fixes (from reviewer agent)
 
-### SearchManager Schema Refactoring (Завершено)
-- Removed duplicate AdhocSearchParams schema
-- Moved search schemas to shared layer (ContextField, SearchFilters, SearchByContextParams)
-- Made userId required everywhere for consistency
-- Extracted DTW enrichment to separate method
-- Removed stale src/search-manager.ts file
+**BLOCKER #1**: Отсутствовал userId в TargetSearchParamsSchema
+- **Problem**: Cypher WHERE требует `$userId`, но параметр не передавался
+- **Fix**: Добавлен userId на верхний уровень TargetSearchParamsSchema
 
-**Files**: 5 modified | **Agent Reviews**: 0 | **Tests**: ESLint ✅, TypeScript ✅
+**BLOCKER #2**: Незавершенная camelCase миграция
+- **Problem**: Naming convention migration от 2025-11-08 пропустила candidate schemas
+- **Fix**: Полная миграция всех candidate properties + Cypher query builders
 
-### TargetCriteria Refactoring (2025-11-07)
-Полная миграция от nested `{desired, undesired}` к discriminated union `{mode, values}`:
-- FieldFilter as domain primitive in shared
-- Empty arrays forbidden (.min(1) validation)
-- Null safety in Cypher (WHEN $param IS NULL check)
-- Query Builder Pattern 1 adopted
-- Goals system updated with new API
+**HIGH #3**: Перечисление полей вместо spread
+- **Problem**: 6 строк дублирования в executeCoreSearchWithDTW
+- **Fix**: `{...params, referenceContext}` с ES6 spread
 
-**Files**: 7 modified | **Agent Reviews**: planner + reviewer | **Commits**: 2 | **Cypher tests**: 6/6 ✅
+## Previous Context
+
+### Session 2025-11-08: Naming Convention Migration (camelCase)
+- PHASE 1: 80+ domain schema properties
+- PHASE 2: MCP tool names → snake_case
+- PHASE 3: Database constraints + indexes
+- PHASE 4: Validation
+- **Пропущено**: Candidate schemas (исправлено сегодня)
+
+### Session 2025-11-08 (Earlier): SearchManager Schema Consolidation
+- Removed duplicate AdhocSearchParams
+- Moved schemas to shared layer
+- Made userId required
+
+### Session 2025-11-07: TargetCriteria Refactoring
+- Discriminated union pattern для FieldFilter
+- Goals system updated
+- Query Builder Pattern 1
 
 ## Next Steps
 
 ### Immediate (High Priority)
-1. Database Migration Script - Apply init.cypher to production (needs camelCase properties)
-2. Data Migration - Update existing Neo4j nodes with camelCase properties
-3. Integration Tests - Write tests for new naming convention
-4. API Documentation - Update with camelCase property names
+1. **Commit changes** - Breaking changes ready
+2. **Update API documentation** - новые schemas (User/Adhoc/Target)
+3. **Database deployment** - camelCase properties из 2025-11-08 + сегодняшние
+4. **Integration tests** - обновить под новые schemas
 
 ### Follow-up (Medium Priority)
-5. Facade mapper updates (if needed)
-6. Performance testing with new indices
-7. Backward compatibility layer (if supporting old clients)
+5. **Facade updates** - если нужно
+6. **Performance testing** - проверить после миграции
+7. **Backward compatibility layer** - если требуется (сейчас breaking)
 
 ## Tech Stack Reminder
-- **Database**: Neo4j with camelCase properties (official recommendation)
-- **Query Language**: Cypher with map projection syntax
-- **Runtime**: Node.js 20+ with ESM modules
-- **Validation**: Zod schemas (camelCase throughout)
-- **Testing**: Vitest + MCP neo4j-cypher for Cypher validation
-- **Architecture**: Facade (MCP) + Core (logic)
+- **Schemas**: Zod с camelCase (shared → core re-export)
+- **API**: Flat для User/Adhoc, nested для Target
+- **Cypher**: camelCase переменные в WITH clauses
+- **TypeScript**: ES6 spread + shorthand
+- **Breaking changes**: Полные (без легаси)
 
 ## Open Questions
-1. ~~Which naming convention to use?~~ → **Resolved**: camelCase for TypeScript/DB, snake_case for MCP tools
-2. ~~How to handle database constraints?~~ → **Resolved**: Updated in init.cypher
-3. Do we need backward compatibility layer? → TBD based on requirements
-4. When to apply database migration? → Coordinate with DB team
+1. ~~Нужен ли userId в TargetSearchParams?~~ → **Resolved**: Да, для WHERE exclusion
+2. ~~Spread или перечисление?~~ → **Resolved**: Spread (DRY)
+3. ~~camelCase в Cypher - WITH или RETURN?~~ → **Resolved**: WITH (переменные, не алиасы)
+4. Backward compatibility? → TBD (сейчас breaking changes)
+5. Когда деплоить database migration? → Координация с DB team
 
 ---
-*Last sync: 2025-11-08*
-*Naming convention migration fully completed ✅*
-*Ready for database deployment*
+*Last sync: 2025-11-09*
+*Search params refactoring + candidate camelCase migration fully completed ✅*
+*Ready for commit*

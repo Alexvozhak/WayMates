@@ -89,7 +89,11 @@ dist/
 .env.functional
 .env.focalboard
 .env.vikunja
+.env.plane
+.env.planka
 
 # Kanban board data
 focalboard-data/
 vikunja-data/
+plane-data/
+planka-data/
