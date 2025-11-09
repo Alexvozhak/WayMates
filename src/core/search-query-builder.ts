@@ -106,7 +106,7 @@ function buildExcludedCreationReasonsFilter(): string {
     }
     WHERE passesFilter = true OR size($excludedCreationReasons) = 0
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months`;
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths`;
 }
 
 function buildGoalFilterClause(hasGoal: boolean): string {
@@ -114,7 +114,7 @@ function buildGoalFilterClause(hasGoal: boolean): string {
     return `
     OPTIONAL MATCH (searchingUser:User {userId: $userId})-[:HAS_GOAL]->(searchingUserGoal:Goal)
     OPTIONAL MATCH (u)-[:HAS_GOAL]->(candidateGoal:Goal)
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, context_match_score,
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths, contextMatchScore,
          CASE
            WHEN searchingUserGoal.desired.positions IS NOT NULL
                 AND p.name IN searchingUserGoal.desired.positions
@@ -127,17 +127,17 @@ function buildGoalFilterClause(hasGoal: boolean): string {
                           WHERE x IN searchingUserGoal.desired.positions]) > 0
            THEN 'waymate'
            ELSE null
-         END AS candidate_type`;
+         END AS candidateType`;
   }
 
   return `
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, context_match_score,
-         null AS candidate_type`;
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths, contextMatchScore,
+         null AS candidateType`;
 }
 
 function buildSearchReturnClauseFull(): string {
   return `
-    ORDER BY context_match_score DESC, time_since_matched_months ASC
+    ORDER BY contextMatchScore DESC, timeSinceMatchedMonths ASC
     LIMIT $limit
 
     RETURN u.userId AS userId,
@@ -150,9 +150,9 @@ function buildSearchReturnClauseFull(): string {
              countryCode: co.name,
              cityName: ci.name
            } AS matchedContext,
-           time_since_matched_months,
-           context_match_score,
-           candidate_type`;
+           timeSinceMatchedMonths,
+           contextMatchScore,
+           candidateType`;
 }
 
 export function buildCurrentSearchQuery(
@@ -184,11 +184,11 @@ export function buildCurrentSearchQuery(
     ${whereClause}
 
     WITH u, c, p, domains, skills, i, ci, co,
-         duration.between(datetime(c.createdAt), datetime()).months AS time_since_matched_months
+         duration.between(datetime(c.createdAt), datetime()).months AS timeSinceMatchedMonths
 
     ${excludedReasonsFilter}
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months,
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths,
          [skill IN skills WHERE NOT skill IN $referenceContext.skills] AS extraSkills
 
     CALL (extraSkills) {
@@ -200,13 +200,13 @@ export function buildCurrentSearchQuery(
       }) AS extraSkillsWithPenalty
     }
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months,
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths,
          reduce(penaltyScore = 0.0, extra IN extraSkillsWithPenalty |
            penaltyScore + extra.penalty
          ) AS skillsPenaltyScore
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months,
-         (1.0 - (skillsPenaltyScore / 100.0)) AS context_match_score
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths,
+         (1.0 - (skillsPenaltyScore / 100.0)) AS contextMatchScore
 
     ${goalFilterClause}
 

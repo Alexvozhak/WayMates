@@ -9,7 +9,7 @@ import {
   UserIdSchema,
 } from "../shared/schemas.js";
 import {
-  SearchByContextParamsSchema,
+  AdhocSearchParamsSchema,
   UserSearchParamsSchema,
   TargetSearchParamsSchema,
 } from "./schemas.js";
@@ -75,7 +75,7 @@ function registerSearchRoutes(app: express.Express, context: CoreContext) {
   app.post(
     "/api/search/adhoc",
     async (req: Request, res: Response) => {
-      const params = SearchByContextParamsSchema.parse(req.body);
+      const params = AdhocSearchParamsSchema.parse(req.body);
       const result = await context.searchManager!.searchAdhoc(params);
       res.json(result);
     }

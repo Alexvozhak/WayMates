@@ -12,8 +12,9 @@ import {
   UserContext,
   TargetContextSchema,
   ContextFieldSchema,
-  SearchFiltersSchema,
-  SearchByContextParamsSchema,
+  UserSearchParamsSchema,
+  AdhocSearchParamsSchema,
+  TargetSearchParamsSchema,
   StoryInputSchema,
   UpsertContextResultSchema,
   UpsertTrailResultSchema,
@@ -40,8 +41,9 @@ export type {
   FilterMode,
   FieldFilter,
   ContextField,
-  SearchFilters,
-  SearchByContextParams,
+  UserSearchParams,
+  AdhocSearchParams,
+  TargetSearchParams,
   StoryInput,
   UpsertContextResult,
   UpsertTrailResult,
@@ -58,8 +60,9 @@ export {
   NewContextReasonSchema,
   TargetContextSchema,
   ContextFieldSchema,
-  SearchFiltersSchema,
-  SearchByContextParamsSchema,
+  UserSearchParamsSchema,
+  AdhocSearchParamsSchema,
+  TargetSearchParamsSchema,
   StoryInputSchema,
   UpsertContextResultSchema,
   UpsertTrailResultSchema,
@@ -67,7 +70,7 @@ export {
 };
 
 // ==========================================
-// === CORE-SPECIFIC SEARCH SCHEMAS ===
+// === CORE-SPECIFIC CONSTANTS ===
 // ==========================================
 
 // Context field names - used for type validation
@@ -81,53 +84,6 @@ export const CONTEXT_FIELD_NAMES = [
   "companySize",
   "birthYear",
 ] as const satisfies readonly (keyof UserContext)[];
-
-// Target-specific search filters (extends base SearchFilters with criteria)
-// Now uses TargetContext from Shared with discriminated union pattern
-export const TargetSearchFiltersSchema = SearchFiltersSchema.extend({
-  criteria: TargetContextSchema.describe("Target context criteria (FieldFilter with mode/values)"),
-});
-
-export type TargetSearchFilters = z.infer<typeof TargetSearchFiltersSchema>;
-
-// DTW-specific filters (extends base SearchFilters with analysis limit)
-export const DTWSearchFiltersSchema = SearchFiltersSchema.extend({
-  analysisLimit: z
-    .number()
-    .min(1)
-    .max(500)
-    .default(100)
-    .describe("Number of candidates to collect for DTW analysis (pre-filter)"),
-});
-
-export type DTWSearchFilters = z.infer<typeof DTWSearchFiltersSchema>;
-
-// ==========================================
-// === NEW SEARCH API PARAMS (Refactored) ===
-// ==========================================
-
-// Режим 2+3: User Search (автоматический DTW если есть траектория)
-export const UserSearchParamsSchema = z.object({
-  userId: UserIdSchema.describe("User ID (resolves context from DB)"),
-  filters: SearchFiltersSchema,
-  pathLimit: z
-    .number()
-    .min(1)
-    .max(100)
-    .default(20)
-    .describe("Final result limit after DTW (filters.limit = pre-filter before DTW)"),
-});
-
-export type UserSearchParams = z.infer<typeof UserSearchParamsSchema>;
-
-// Режим 4: Target-Only Search (БЕЗ userId - нет reference context!)
-export const TargetSearchParamsSchema = z.object({
-  filters: TargetSearchFiltersSchema.describe("Target search filters with criteria (FieldFilter pattern)"),
-});
-
-export type TargetSearchParams = z.infer<typeof TargetSearchParamsSchema>;
-
-// Use shared candidate schemas (imported above, re-exported for compatibility)
 
 export const SkillPenaltySchema = z.object({
   skill: z.string().describe("Skill name"),

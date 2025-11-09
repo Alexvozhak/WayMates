@@ -190,17 +190,82 @@ export const ContextFieldSchema = z.enum([
 export type ContextField = z.infer<typeof ContextFieldSchema>;
 
 /**
- * Base search filters for all search modes
+ * Base schema for user/adhoc search parameters (shared fields)
+ * Internal only - not exported
  */
-export const SearchFiltersSchema = z.object({
+const UserSearchParamsBaseSchema = z.object({
+  userId: UserIdSchema.describe("User ID (resolves context from DB)"),
   excludedContextFields: z
     .array(ContextFieldSchema)
     .default([])
-    .describe("Fields to exclude from comparison (inverse logic: all fields EXCEPT these are strict)"),
+    .describe(
+      "Fields to exclude from comparison (inverse logic: all fields EXCEPT these are strict). " +
+      "WARNING: Excluding all fields will match all users - not recommended for production use."
+    ),
   excludedCreationReasons: z
     .array(NewContextReasonSchema)
     .default([])
-    .describe("Exclude candidates with these transition reasons"),
+    .describe("Exclude candidates with these transition reasons (backward path filter in Cypher)"),
+  recencyThresholdMonths: z
+    .number()
+    .min(1)
+    .optional()
+    .describe("Filter by recency (months since last update)"),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe("Maximum number of results to return (pre-filter before DTW)"),
+  pathLimit: z
+    .number()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe("Final result limit after DTW analysis (ignored if user has no trajectory)"),
+});
+
+/**
+ * User search parameters (Mode 2: search by user's current context)
+ * Flat structure with inverse field filtering logic
+ */
+export const UserSearchParamsSchema = UserSearchParamsBaseSchema.refine(
+  (data) => data.pathLimit <= data.limit,
+  {
+    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
+    path: ["pathLimit"],
+  }
+);
+
+export type UserSearchParams = z.infer<typeof UserSearchParamsSchema>;
+
+/**
+ * Ad-hoc search parameters with custom reference context (Mode 1)
+ * Extends UserSearchParams with explicit referenceContext
+ */
+export const AdhocSearchParamsSchema = UserSearchParamsBaseSchema.extend({
+  referenceContext: UserContextSchema.describe("Custom reference context (extracted from user text)"),
+}).refine(
+  (data) => data.pathLimit <= data.limit,
+  {
+    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
+    path: ["pathLimit"],
+  }
+);
+
+export type AdhocSearchParams = z.infer<typeof AdhocSearchParamsSchema>;
+
+/**
+ * Target search parameters (Mode 4: reverse search by target criteria)
+ * Flat structure with positive field filtering logic
+ */
+export const TargetSearchParamsSchema = z.object({
+  userId: UserIdSchema.describe("User ID to exclude from results (avoid self-match)"),
+  criteria: TargetContextSchema.describe("Target context criteria (FieldFilter with mode/values)"),
+  excludedCreationReasons: z
+    .array(NewContextReasonSchema)
+    .default([])
+    .describe("Exclude candidates with these transition reasons (backward path filter)"),
   recencyThresholdMonths: z
     .number()
     .min(1)
@@ -214,18 +279,7 @@ export const SearchFiltersSchema = z.object({
     .describe("Maximum number of results to return"),
 });
 
-export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
-
-/**
- * Ad-hoc search parameters with custom reference context
- */
-export const SearchByContextParamsSchema = z.object({
-  userId: UserIdSchema.describe("User ID for Goal filter"),
-  referenceContext: UserContextSchema.describe("Custom reference context (extracted from user text)"),
-  filters: SearchFiltersSchema,
-});
-
-export type SearchByContextParams = z.infer<typeof SearchByContextParamsSchema>;
+export type TargetSearchParams = z.infer<typeof TargetSearchParamsSchema>;
 
 // ==========================================
 // === STORY & GOAL OPERATIONS ===
@@ -304,11 +358,11 @@ export type DTWMetrics = z.infer<typeof DTWMetricsSchema>;
 
 // Block 1: Core fields
 export const CandidateCoreSchema = z.object({
-  user_id: UserIdSchema.describe("Candidate user ID"),
-  matched_context: UserContextSchema.describe(
+  userId: UserIdSchema.describe("Candidate user ID"),
+  matchedContext: UserContextSchema.describe(
     "Context that matched search criteria"
   ),
-  time_since_matched_months: z
+  timeSinceMatchedMonths: z
     .number()
     .min(0)
     .describe("Months since matched context was created"),
@@ -318,14 +372,14 @@ export type CandidateCore = z.infer<typeof CandidateCoreSchema>;
 
 // Block 2: Context scoring fields
 export const ContextScoringFieldsSchema = z.object({
-  context_match_score: z
+  contextMatchScore: z
     .number()
     .min(0)
     .max(1)
     .describe(
       "Context match score (0-1, computed as 1.0 - skills_penalty in Cypher)"
     ),
-  candidate_type: z
+  candidateType: z
     .enum(["pathfinder", "waymate"])
     .nullable()
     .describe("Pathfinder = reached goal, Waymate = same goal, null = regular"),
@@ -344,8 +398,8 @@ export type PathFields = z.infer<typeof PathFieldsSchema>;
 
 // Block 4: DTW fields
 export const DTWFieldsSchema = z.object({
-  dtw_metrics: DTWMetricsSchema,
-  dtw_total: z
+  dtwMetrics: DTWMetricsSchema,
+  dtwTotal: z
     .number()
     .min(0)
     .max(3)
@@ -395,12 +449,12 @@ export const ScoredMatchedCandidateWithPathAndDTWSchema =
     .refine(
       (data) => {
         const computed =
-          data.dtw_metrics.shape_similarity +
-          data.dtw_metrics.tempo_similarity +
-          data.dtw_metrics.stability_score;
-        return Math.abs(data.dtw_total - computed) < 0.001;
+          data.dtwMetrics.shape_similarity +
+          data.dtwMetrics.tempo_similarity +
+          data.dtwMetrics.stability_score;
+        return Math.abs(data.dtwTotal - computed) < 0.001;
       },
-      { message: "dtw_total must equal sum of dtw_metrics" }
+      { message: "dtwTotal must equal sum of dtwMetrics" }
     );
 export type ScoredMatchedCandidateWithPathAndDTW = z.infer<
   typeof ScoredMatchedCandidateWithPathAndDTWSchema
@@ -431,7 +485,7 @@ export type CandidateWithPath = z.infer<typeof CandidateWithPathSchema>;
  * @deprecated Internal type, will be removed. Use ScoredMatchedCandidate instead.
  */
 export const CandidatePreDTWSchema = CandidateCoreSchema.omit({
-  time_since_matched_months: true,
+  timeSinceMatchedMonths: true,
 }).extend({
   skills_penalty: z
     .number()

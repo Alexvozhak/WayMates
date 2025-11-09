@@ -9,7 +9,7 @@ import {
   UserIdSchema,
 } from "../shared/schemas.js";
 import {
-  SearchByContextParamsSchema,
+  AdhocSearchParamsSchema,
   UserSearchParamsSchema,
   TargetSearchParamsSchema,
 } from "./schemas.js";
@@ -49,7 +49,7 @@ function registerNewSearchTools(server: FastMCP, context: CoreContext) {
     tool(
       "search_adhoc",
       "Ad-hoc search with custom reference context (userId required for Goal filter, NO DTW)",
-      SearchByContextParamsSchema,
+      AdhocSearchParamsSchema,
       async (params) => context.newSearchManager!.searchAdhoc(params)
     )
   );

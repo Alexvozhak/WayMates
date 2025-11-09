@@ -3,9 +3,9 @@
  * Matches candidates by target context and builds full trajectories
  */
 
-import type { ContextField } from "./schemas.js";
+import type { ContextField, TargetSearchParams } from "./schemas.js";
+import { ContextFieldSchema } from "./schemas.js";
 import { buildMatchedContextBase } from "./search-query-builder.js";
-import { CONTEXT_FIELD_NAMES } from "./schemas.js";
 
 // ==========================================
 // === SNIPPET FUNCTIONS (REUSABLE CYPHER) ===
@@ -83,12 +83,6 @@ function buildCollectedFieldCase(
 // === HELPER FUNCTIONS ===
 // ==========================================
 
-function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
-  return CONTEXT_FIELD_NAMES.filter(
-    (field): field is ContextField => !excludedFields.includes(field)
-  );
-}
-
 function hasStrictField(strictFields: ContextField[], field: string): boolean {
   return strictFields.includes(field as ContextField);
 }
@@ -148,7 +142,7 @@ function buildTrajectoryClause(excludedCreationReasons: string[]): string {
     MATCH path = (c)<-[:PREVIOUS_CONTEXT*0..]-(start:Context)
     WHERE start.previousContextId IS NULL
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, [node IN nodes(path) | node] AS pathNodes
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths, [node IN nodes(path) | node] AS pathNodes
     UNWIND pathNodes AS ctx
 
     OPTIONAL MATCH (ctx)-[:HAS_POSITION]->(tp:Position)
@@ -158,12 +152,12 @@ function buildTrajectoryClause(excludedCreationReasons: string[]): string {
     OPTIONAL MATCH (ctx)-[:IN_CITY]->(tci:City)
     OPTIONAL MATCH (ctx)-[:IN_COUNTRY]->(tco:Country)
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, ctx, tp, twd, ts, ti, tci, tco,
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths, ctx, tp, twd, ts, ti, tci, tco,
          collect(DISTINCT twd.name) AS ctx_domains,
          collect(DISTINCT ts.name) AS ctx_skills
     ORDER BY ctx.createdAt ASC
 
-    WITH u, c, p, domains, skills, i, ci, co, time_since_matched_months, collect(ctx {
+    WITH u, c, p, domains, skills, i, ci, co, timeSinceMatchedMonths, collect(ctx {
       .contextId,
       .previousContextId,
       .nextContextId,
@@ -185,7 +179,7 @@ function buildTrajectoryClause(excludedCreationReasons: string[]): string {
 
 function buildTargetWithPathReturnClause(): string {
   return `
-    ORDER BY time_since_matched_months ASC
+    ORDER BY timeSinceMatchedMonths ASC
     LIMIT $limit
 
     RETURN u.userId AS userId,
@@ -205,7 +199,7 @@ function buildTargetWithPathReturnClause(): string {
              countryCode: co.name,
              cityName: ci.name
            } AS matchedContext,
-           time_since_matched_months,
+           timeSinceMatchedMonths,
            trajectory AS path`;
 }
 
@@ -217,12 +211,14 @@ function buildTargetWithPathReturnClause(): string {
  * Replaces old nested {desired, undesired} structure
  */
 export function buildTargetSearchWithPathsQuery(
-  params: { filters: import('./schemas.js').TargetSearchFilters }
+  params: TargetSearchParams
 ): string {
-  const { filters } = params;
-  const { excludedContextFields, recencyThresholdMonths, excludedCreationReasons } = filters;
+  const { criteria, recencyThresholdMonths, excludedCreationReasons } = params;
 
-  const strictFields = computeStrictFields(excludedContextFields);
+  // Strict fields = fields specified in criteria (type-safe with runtime check)
+  const strictFields = Object.keys(criteria).filter(
+    (key): key is ContextField => ContextFieldSchema.options.includes(key as ContextField)
+  );
 
   const basePart = buildMatchedContextBase();
   const whereClause = buildTargetWhereClause(strictFields, recencyThresholdMonths);
@@ -233,7 +229,7 @@ export function buildTargetSearchWithPathsQuery(
     ${whereClause}
 
     WITH u, c, p, domains, skills, i, ci, co,
-         duration.between(datetime(c.createdAt), datetime()).months AS time_since_matched_months
+         duration.between(datetime(c.createdAt), datetime()).months AS timeSinceMatchedMonths
 
     ${buildTrajectoryClause(excludedCreationReasons)}
 
