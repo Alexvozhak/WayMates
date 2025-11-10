@@ -22,6 +22,60 @@ You are the **main Claude instance** responsible for:
 
 ---
 
+## Asking Questions Pattern
+
+When you need to gather user preferences, clarify ambiguous requirements, or make decisions during execution:
+
+**MANDATORY**: Use `AskUserQuestion` tool with multiple questions in a SINGLE call.
+
+**Key benefits**:
+- Each question creates a separate tab in the UI (clean UX)
+- Structured options (2-4 choices per question) vs free-form text
+- Clear headers (max 12 chars) for tab labels
+- Efficient batching (max 4 questions per call)
+
+**Use cases**:
+- Architecture decisions (library choice, pattern selection, technology stack)
+- Data structure design (batch organization, test grouping, schema layout)
+- Implementation approach (migration strategy, naming convention, refactoring path)
+- Feature priorities (P0/P1/P2 trade-offs, what to implement first)
+- Ambiguous requirements (multiple valid interpretations)
+
+**Example**:
+```typescript
+AskUserQuestion({
+  questions: [
+    {
+      question: "How to handle trajectories < 3 contexts for DTW tests?",
+      header: "DTW data fix",
+      multiSelect: false,
+      options: [
+        { label: "Extend U1/U2 to 3 contexts", description: "Minimal changes, reuse existing data" },
+        { label: "Create new U10-U13", description: "Clean separation, more test coverage" }
+      ]
+    },
+    {
+      question: "How to organize batch data and setup?",
+      header: "Setup pattern",
+      multiSelect: false,
+      options: [
+        { label: "Single batch U1-U9", description: "Simple setup, load once" },
+        { label: "Two batches: Adhoc + DTW", description: "Separation of concerns" }
+      ]
+    }
+  ]
+})
+```
+
+**DON'T**: Ask questions in plain text ("What do you think about X?") - use the tool for structured input.
+
+**When NOT to use**:
+- Obvious next steps (just do it)
+- Single yes/no question (use tool anyway for consistency)
+- User already provided clear direction
+
+---
+
 ## Sub-Agents Architecture
 
 This project uses **4 specialized agents** for different development tasks. You **MUST proactively delegate** to appropriate agents - don't wait for explicit user requests.
@@ -145,26 +199,6 @@ class CacheManager {
 4. **Отправляй только после подтверждения** пользователя
 
 См. полный процесс: [.claude/commands/vikunja-workflow.md](.claude/commands/vikunja-workflow.md)
-
----
-
-## Skills Available
-
-### test-review
-
-**Invocation**: Simply write `test-review` in your request
-
-**What it does**: Analyzes test files to verify they genuinely validate business logic, not just pass for coverage. Detects:
-- Fake tests (coverage theater)
-- Test manipulation (hardcoded values)
-- Missing edge cases
-- Misalignment with business requirements
-
-**Example usage**:
-```
-User: "test-review в tests/integration/gds-similarity.test.ts"
-→ Claude activates skill and provides structured analysis
-```
 
 ---
 

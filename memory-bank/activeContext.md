@@ -1,11 +1,29 @@
 # 🎯 Active Context
 
 ## Current Focus
-**Module**: DTW Trajectory Similarity Metrics
-**Feature**: DTW метрики реализованы + параметризация
-**Status**: ✅ COMPLETED - Ready for integration tests
-**Session**: 2025-11-09
-**Last activity**: DTW implementation + durationCapMonths parameter
+**Module**: Code Quality & ESLint
+**Feature**: Strict ESLint config (import-x, unicorn, naming conventions)
+**Status**: ✅ COMPLETED - 0 errors, 16 warnings
+**Session**: 2025-11-10
+**Last activity**: Mass rename (108 schemas PascalCase→camelCase) + strict rules
+
+### What Changed (Session 2025-11-10)
+**ESLint Strict Configuration**:
+- Installed: `eslint-plugin-import-x` (2-3x faster than import), `eslint-plugin-unicorn` (100+ quality rules)
+- Enforced: strict camelCase naming, import organization, type-first imports
+- Mass rename: 108 schema variables (PascalCase→camelCase), 20+ object properties (snake_case→camelCase)
+- Fixed: 146 violations via auto-fix + manual edits (async removal, top-level await, immutable sort)
+- Result: **0 errors, 16 warnings** (only no-non-null-assertion)
+- Scope: `src/core`, `src/facade`, `src/shared` only
+
+**Key Decisions**:
+- **Пресеты вместо ручной конфигурации**: используем `importX.flatConfigs.recommended` (короче, проще)
+- **Scope в package.json**: `"lint": "eslint src/core src/facade src/shared"` (элегантнее чем files/ignores)
+- **Убрали inline re-export запрет**: разрешили `export { X } from` для barrel exports
+- **Отключили проверку импортов**: `selector: 'import', format: null` (внешние библиотеки)
+- Disabled resolver rules (TypeScript handles imports)
+- `@typescript-eslint/no-non-null-assertion` → warning (not error)
+- Disabled `unicorn/no-await-expression-member` (overly strict)
 
 ## Completed: DTW Trajectory Similarity Implementation
 
@@ -137,6 +155,5 @@
 4. Backward compatibility для DTWMetrics? → Breaking changes (нет легаси)
 
 ---
-*Last sync: 2025-11-09*
-*DTW metrics fully implemented + optimized ✅*
-*Ready for integration testing*
+*Last sync: 2025-11-10*
+*ESLint strict config completed ✅ | DTW ready for integration testing*

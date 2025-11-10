@@ -1,7 +1,10 @@
 import { z } from 'zod';
+
 import { UserContextSchema } from '../../shared/schemas.js';
-import type { MapperContext, ValidationResult, MapperOptions } from './types.js';
+
 import { retryWithValidation } from './helpers.js';
+
+import type { MapperContext, MapperOptions, ValidationResult } from './types.js';
 
 const SEARCH_PROMPT = `Extract search parameters from user query.
 
@@ -24,11 +27,11 @@ Return JSON:
 If field not mentioned in query, OMIT it from response.
 CRITICAL: Return ONLY valid JSON, no explanations.`;
 
-const SearchParamsSchema = z.object({
+const searchParamsSchema = z.object({
   context: UserContextSchema.partial().required({ position: true }),
 });
 
-type SearchParams = z.infer<typeof SearchParamsSchema>;
+type SearchParams = z.infer<typeof searchParamsSchema>;
 
 async function callLLM(
   ctx: MapperContext,
@@ -65,7 +68,7 @@ export async function mapSearchParams(
       const response = await callLLM(ctx, prompt, options);
       return JSON.parse(response);
     },
-    SearchParamsSchema,
+    searchParamsSchema,
     maxRetries
   );
 }

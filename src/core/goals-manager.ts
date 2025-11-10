@@ -1,23 +1,25 @@
+import { GoalSchema, UserIdSchema } from '../shared/schemas.js';
+
+import {
+  DELETE_GOAL_QUERY,
+  GET_USER_GOAL_QUERY,
+  SET_GOAL_QUERY,
+} from './goals-query-builder.js';
+
 import type { DatabaseContext } from '../database-context.js';
 import type { CreateGoalInput, Goal, UserId } from '../shared/schemas.js';
-import { GoalSchema, UserIdSchema } from '../shared/schemas.js';
-import {
-  SET_GOAL_QUERY,
-  GET_USER_GOAL_QUERY,
-  DELETE_GOAL_QUERY,
-} from './goals-query-builder.js';
 
 export class GoalsManager {
   constructor(private db: DatabaseContext) {}
 
   async setGoal(params: CreateGoalInput): Promise<UserId> {
-    const created_at = new Date().toISOString();
+    const createdAt = new Date().toISOString();
 
     return this.db.write(async (tx) => {
       const result = await tx.run(SET_GOAL_QUERY, {
-        user_id: params.userId,
-        target_criteria: params.targetContext,
-        created_at,
+        userId: params.userId,
+        targetCriteria: params.targetContext,
+        createdAt,
       });
 
       const record = result.records[0];
@@ -31,7 +33,7 @@ export class GoalsManager {
 
   async getUserGoal(userId: string): Promise<Goal | null> {
     return this.db.read(async (tx) => {
-      const result = await tx.run(GET_USER_GOAL_QUERY, { user_id: userId });
+      const result = await tx.run(GET_USER_GOAL_QUERY, { userId: userId });
       const record = result.records[0];
       if (!record) {
         return null;
@@ -44,7 +46,7 @@ export class GoalsManager {
   async deleteGoal(userId: string): Promise<boolean> {
     return this.db.write(async (tx) => {
       const result = await tx.run(DELETE_GOAL_QUERY, {
-        user_id: userId,
+        userId: userId,
       });
       const record = result.records[0];
       if (!record) {

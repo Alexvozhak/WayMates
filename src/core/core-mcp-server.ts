@@ -1,18 +1,22 @@
 import { FastMCP } from "fastmcp";
 import { z } from "zod";
-import type { SearchManager as NewSearchManager } from "./search-manager.js";
-import type { StoryManager } from "./story-manager.js";
-import type { GoalsManager } from "./goals-manager.js";
+
 import {
-  StoryInputSchema,
   CreateGoalInputSchema,
+  StoryInputSchema,
   UserIdSchema,
 } from "../shared/schemas.js";
+
 import {
   AdhocSearchParamsSchema,
-  UserSearchParamsSchema,
   TargetSearchParamsSchema,
+  UserSearchParamsSchema,
 } from "./schemas.js";
+
+import type { GoalsManager } from "./goals-manager.js";
+import type { SearchManager as NewSearchManager } from "./search-manager.js";
+import type { StoryManager } from "./story-manager.js";
+
 
 interface CoreContext {
   newSearchManager?: NewSearchManager;
@@ -26,7 +30,12 @@ function tool<TSchema extends z.ZodTypeAny, TResult>(
   description: string,
   schema: TSchema,
   handler: (params: z.infer<TSchema>) => Promise<TResult> | TResult
-) {
+): {
+  name: string;
+  description: string;
+  parameters: TSchema;
+  execute: (args: unknown) => Promise<string>;
+} {
   return {
     name,
     description,
@@ -39,7 +48,7 @@ function tool<TSchema extends z.ZodTypeAny, TResult>(
   };
 }
 
-function registerNewSearchTools(server: FastMCP, context: CoreContext) {
+function registerNewSearchTools(server: FastMCP, context: CoreContext): void {
   if (!context.newSearchManager) {
     return;
   }
@@ -75,7 +84,7 @@ function registerNewSearchTools(server: FastMCP, context: CoreContext) {
   );
 }
 
-function registerStoryTools(server: FastMCP, context: CoreContext) {
+function registerStoryTools(server: FastMCP, context: CoreContext): void {
   server.addTool(
     tool(
       "execute_upsert_story",
@@ -121,7 +130,7 @@ function registerStoryTools(server: FastMCP, context: CoreContext) {
   );
 }
 
-function registerReasonTools(server: FastMCP, context: CoreContext) {
+function registerReasonTools(server: FastMCP, context: CoreContext): void {
   server.addTool(
     tool(
       "list_available_reasons",
@@ -154,7 +163,7 @@ function registerReasonTools(server: FastMCP, context: CoreContext) {
   );
 }
 
-function registerGoalTools(server: FastMCP, context: CoreContext) {
+function registerGoalTools(server: FastMCP, context: CoreContext): void {
   // MCP tool names use snake_case per community convention (not enforced by ESLint as they're string literals)
   server.addTool(
     tool(
@@ -186,7 +195,7 @@ function registerGoalTools(server: FastMCP, context: CoreContext) {
   );
 }
 
-export function createCoreServer(context: CoreContext) {
+export function createCoreServer(context: CoreContext): FastMCP {
   const server = new FastMCP({
     name: "waymates-core",
     version: "1.0.0",

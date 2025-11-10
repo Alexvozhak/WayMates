@@ -1,14 +1,5 @@
-import type { DatabaseContext } from '../database-context.js';
-import type {
-  StoryInput,
-  UpsertStoryResult,
-  UpsertContextResult,
-  UpsertTrailResult,
-  ContextId,
-  TrailId,
-  UserContext,
-  Trail,
-} from '../shared/schemas.js';
+import { v7 as uuidv7 } from 'uuid';
+
 import {
   ContextIdSchema,
   StoryInputSchema,
@@ -17,17 +8,29 @@ import {
   UpsertStoryResultSchema,
   UpsertTrailResultSchema,
 } from '../shared/schemas.js';
-import { v7 as uuidv7 } from 'uuid';
+
 import {
-  UPSERT_CONTEXTS_QUERY,
-  UPSERT_TRAILS_QUERY,
-  GET_USER_STORY_QUERY,
+  CREATE_REASON_QUERY,
   DELETE_CONTEXT_QUERY,
   DELETE_TRAIL_QUERY,
+  GET_USER_STORY_QUERY,
   LIST_REASONS_QUERY,
-  CREATE_REASON_QUERY,
+  UPSERT_CONTEXTS_QUERY,
+  UPSERT_TRAILS_QUERY,
 } from './persistence-query-builder.js';
-import { ReasonSchema, type Reason } from './schemas.js';
+import { type Reason, ReasonSchema } from './schemas.js';
+
+import type { DatabaseContext } from '../database-context.js';
+import type {
+  ContextId,
+  StoryInput,
+  Trail,
+  TrailId,
+  UpsertContextResult,
+  UpsertStoryResult,
+  UpsertTrailResult,
+  UserContext,
+} from '../shared/schemas.js';
 
 export class StoryManager {
   constructor(private db: DatabaseContext) {}
@@ -49,7 +52,7 @@ export class StoryManager {
 
   async getUserStory(userId: string): Promise<StoryInput> {
     return this.db.read(async (tx) => {
-      const result = await tx.run(GET_USER_STORY_QUERY, { user_id: userId });
+      const result = await tx.run(GET_USER_STORY_QUERY, { userId: userId });
       const record = result.records[0];
       if (!record) {
         throw new Error(`getUserStory: no record returned for user ${userId}`);
@@ -61,8 +64,8 @@ export class StoryManager {
   async deleteContext(userId: string, contextId: string): Promise<void> {
     const success = await this.db.write(async (tx) => {
       const result = await tx.run(DELETE_CONTEXT_QUERY, {
-        user_id: userId,
-        context_id: contextId,
+        userId: userId,
+        contextId: contextId,
       });
       const record = result.records[0];
       if (!record) {
@@ -81,8 +84,8 @@ export class StoryManager {
   async deleteTrail(userId: string, trailId: string): Promise<void> {
     const success = await this.db.write(async (tx) => {
       const result = await tx.run(DELETE_TRAIL_QUERY, {
-        user_id: userId,
-        trail_id: trailId,
+        userId: userId,
+        trailId: trailId,
       });
       const record = result.records[0];
       if (!record) {

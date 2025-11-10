@@ -1,55 +1,48 @@
 import { z } from 'zod';
 
 // Import shared schemas (domain entities)
-import type {
-  UserContext,
-  Trail,
-  Goal,
-  StoryInput,
-  UpsertStoryResult,
-  CreateGoalInput,
-} from '../shared/schemas.js';
+
 
 // Re-export for Facade use
-export type { UserContext, Trail, Goal, StoryInput, UpsertStoryResult, CreateGoalInput };
+
 
 // ==========================================
 // === FACADE-SPECIFIC TYPES ===
 // ==========================================
 
 // Auth Types
-export type FacadeUser = {
+export interface FacadeUser {
   userId: string;
   token: string;
   createdAt: number;
   lastActiveAt?: number;
-};
+}
 
 // Intent Types (discriminated union with Zod schemas)
-export const IntentSearchSchema = z.object({
+export const intentSearchSchema = z.object({
   action: z.literal('search'),
   mode: z.enum(['fromCurrent', 'toTarget']),
 });
 
-export const IntentStorySchema = z.object({
+export const intentStorySchema = z.object({
   action: z.literal('story'),
 });
 
-export const IntentGoalSchema = z.object({
+export const intentGoalSchema = z.object({
   action: z.literal('goal'),
   operation: z.enum(['create', 'get']),
 });
 
-export const IntentSchema = z.discriminatedUnion('action', [
-  IntentSearchSchema,
-  IntentStorySchema,
-  IntentGoalSchema,
+export const intentSchema = z.discriminatedUnion('action', [
+  intentSearchSchema,
+  intentStorySchema,
+  intentGoalSchema,
 ]);
 
-export type IntentSearch = z.infer<typeof IntentSearchSchema>;
-export type IntentStory = z.infer<typeof IntentStorySchema>;
-export type IntentGoal = z.infer<typeof IntentGoalSchema>;
-export type Intent = z.infer<typeof IntentSchema>;
+export type IntentSearch = z.infer<typeof intentSearchSchema>;
+export type IntentStory = z.infer<typeof intentStorySchema>;
+export type IntentGoal = z.infer<typeof intentGoalSchema>;
+export type Intent = z.infer<typeof intentSchema>;
 
 // Core Tool Types
 export type CoreToolName =
@@ -60,7 +53,9 @@ export type CoreToolName =
   | 'getUserGoals';
 
 // Facade Response Types
-export type FacadeResponse = {
+export interface FacadeResponse {
   message: string;
   data?: unknown;
-};
+}
+
+export { type CreateGoalInput,type Goal, type StoryInput, type Trail, type UpsertStoryResult, type UserContext} from '../shared/schemas.js';

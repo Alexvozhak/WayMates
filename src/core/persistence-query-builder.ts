@@ -1,4 +1,4 @@
-export const UPSERT_CONTEXTS_QUERY: string = `MERGE (u:User {userId: $userId})
+export const UPSERT_CONTEXTS_QUERY = `MERGE (u:User {userId: $userId})
 ON CREATE SET u.currentContextId = null
 
 MERGE (c:Context {contextId: $context.contextId})
@@ -65,7 +65,7 @@ FOREACH (code IN $context.citizenships |
 
 RETURN c.contextId AS contextId;`;
 
-export const UPSERT_TRAILS_QUERY: string = `MERGE (t:Trail {trailId: $trailId})
+export const UPSERT_TRAILS_QUERY = `MERGE (t:Trail {trailId: $trailId})
 SET t.skill = $trail.skill,
     t.platform = $trail.platform,
     t.fromContextId = $trail.fromContextId,
@@ -101,7 +101,7 @@ MERGE (u)-[:HAS_TRAIL]->(t)
 
 RETURN t.trailId AS trailId;`;
 
-export const GET_USER_STORY_QUERY: string = `CALL {
+export const GET_USER_STORY_QUERY = `CALL {
   MATCH (u:User {userId: $userId})
   OPTIONAL MATCH (u)-[:HAS_CONTEXT]->(currentCtx:Context {contextId: u.currentContextId})-[:CITIZEN_OF]->(cit:Country)
   RETURN { user: u, citizenships: collect(DISTINCT cit.name) } AS userData
@@ -120,17 +120,17 @@ CALL {
 }
 RETURN { user: userData, contexts: contexts, trails: trails } AS result;`;
 
-export const DELETE_CONTEXT_QUERY: string = `MATCH (u:User {userId: $userId})-[rel:HAS_CONTEXT]->(c:Context {contextId: $contextId})
+export const DELETE_CONTEXT_QUERY = `MATCH (u:User {userId: $userId})-[rel:HAS_CONTEXT]->(c:Context {contextId: $contextId})
 WITH count(rel) AS deletedCount
 DETACH DELETE c
 RETURN { success: deletedCount > 0 } AS result;`;
 
-export const DELETE_TRAIL_QUERY: string = `MATCH (u:User {userId: $userId})-[rel:HAS_TRAIL]->(t:Trail {trailId: $trailId})
+export const DELETE_TRAIL_QUERY = `MATCH (u:User {userId: $userId})-[rel:HAS_TRAIL]->(t:Trail {trailId: $trailId})
 WITH count(rel) AS deletedCount
 DETACH DELETE t
 RETURN { success: deletedCount > 0 } AS result;`;
 
-export const LIST_REASONS_QUERY: string = `
+export const LIST_REASONS_QUERY = `
 MATCH (r:Reason)
 RETURN {
   reasonId: r.reasonId,
@@ -142,7 +142,7 @@ RETURN {
 ORDER BY r.reasonId
 `;
 
-export const CREATE_REASON_QUERY: string = `
+export const CREATE_REASON_QUERY = `
 MERGE (r:Reason {reasonId: $reasonId})
 SET r.description = $description,
     r.patterns = $patterns,

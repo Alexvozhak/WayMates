@@ -1,28 +1,30 @@
-import type { DatabaseContext } from "../database-context.js";
-import type { SelectivityService } from "../services/selectivity.service.js";
-import type { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
-import type { PathCollectorService } from "./path-collector.service.js";
-import type { GoalsManager } from "./goals-manager.js";
-import type {
-  ContextField,
-  UserSearchParams,
-  TargetSearchParams,
-  AdhocSearchParams,
-} from "./schemas.js";
-import { CONTEXT_FIELD_NAMES } from "./schemas.js";
 import {
-  UserContextSchema,
-  ScoredMatchedCandidateSchema,
-  MatchedCandidateWithPathSchema,
-  type UserContext,
-  type ScoredMatchedCandidate,
   type MatchedCandidateWithPath,
+  type ScoredMatchedCandidate,
+  type UserContext,
+  MatchedCandidateWithPathSchema,
+  ScoredMatchedCandidateSchema,
+  UserContextSchema,
 } from "../shared/schemas.js";
+
+import { CONTEXT_FIELD_NAMES } from "./schemas.js";
 import {
   buildCurrentSearchQuery,
   userCurrentContextQuery,
 } from "./search-query-builder.js";
 import { buildTargetSearchWithPathsQuery } from "./target-query-builder.js";
+
+import type { GoalsManager } from "./goals-manager.js";
+import type { PathCollectorService } from "./path-collector.service.js";
+import type {
+  AdhocSearchParams,
+  ContextField,
+  TargetSearchParams,
+  UserSearchParams,
+} from "./schemas.js";
+import type { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
+import type { DatabaseContext } from "../database-context.js";
+import type { SelectivityService } from "../services/selectivity.service.js";
 
 function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
   return CONTEXT_FIELD_NAMES.filter(
@@ -51,14 +53,10 @@ export class SearchManager {
     const context = await this.resolveContext(params.userId);
     const hasTrajectory = context.previousContextId !== null;
 
-    if (hasTrajectory) {
-      return this.executeCoreSearchWithDTW(params, context);
-    } else {
-      return this.searchByContext({
+    return hasTrajectory ? this.executeCoreSearchWithDTW(params, context) : this.searchByContext({
         ...params,
         referenceContext: context,
       });
-    }
   }
 
   async searchByTarget(
@@ -182,7 +180,7 @@ export class SearchManager {
 
     // Step 4: Apply pathLimit AFTER DTW analysis
     return enrichedCandidates
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const scoreA = (a.dtwTotal || 0) + a.contextMatchScore;
         const scoreB = (b.dtwTotal || 0) + b.contextMatchScore;
         return scoreB - scoreA;

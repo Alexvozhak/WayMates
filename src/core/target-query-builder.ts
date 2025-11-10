@@ -3,9 +3,10 @@
  * Matches candidates by target context and builds full trajectories
  */
 
-import type { ContextField, TargetSearchParams } from "./schemas.js";
 import { ContextFieldSchema } from "./schemas.js";
 import { buildMatchedContextBase } from "./search-query-builder.js";
+
+import type { ContextField, TargetSearchParams } from "./schemas.js";
 
 // ==========================================
 // === SNIPPET FUNCTIONS (REUSABLE CYPHER) ===

@@ -1,6 +1,7 @@
-import type { Goal } from "../shared/schemas.js";
-import type { ContextField } from "../schemas-zod.js";
 import { buildContextStrictConditions } from "../orcestrator/snippets-extractor.js";
+
+import type { ContextField } from "../schemas-zod.js";
+import type { Goal } from "../shared/schemas.js";
 
 export function userCurrentContextQuery(): string {
   return `

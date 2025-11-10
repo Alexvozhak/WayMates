@@ -1,8 +1,8 @@
-import type { AxiosInstance } from 'axios';
 import type { AuthService } from './auth-service.js';
 import type { LLMTranslator } from './llm-translator.js';
 import type { RateLimiter } from './rate-limiter.js';
 import type { FacadeResponse, Intent } from './types.js';
+import type { AxiosInstance } from 'axios';
 
 export class FacadeOrchestrator {
   constructor(
@@ -14,8 +14,8 @@ export class FacadeOrchestrator {
 
   async processQuery(query: string, token?: string): Promise<FacadeResponse> {
     const userId = token
-      ? await this.auth.authenticate(token)
-      : (await this.auth.createUser()).userId;
+      ? this.auth.authenticate(token)
+      : this.auth.createUser().userId;
 
     const intent = await this.translator.extractIntent(query);
 

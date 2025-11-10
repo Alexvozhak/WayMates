@@ -1,6 +1,8 @@
-import type { DatabaseContext } from "../database-context.js";
-import { UserContextSchema, type UserContext } from "../shared/schemas.js";
+import { type UserContext, UserContextSchema } from "../shared/schemas.js";
+
 import { buildPathQuery } from "./path-query-builder.js";
+
+import type { DatabaseContext } from "../database-context.js";
 
 export class PathCollectorService {
   constructor(private db: DatabaseContext) {}

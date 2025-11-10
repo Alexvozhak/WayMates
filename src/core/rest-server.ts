@@ -1,18 +1,21 @@
 import express from "express";
-import type { Request, Response } from "express";
-import type { SearchManager } from "./search-manager.js";
-import type { StoryManager } from "./story-manager.js";
-import type { GoalsManager } from "./goals-manager.js";
+
 import {
-  StoryInputSchema,
   CreateGoalInputSchema,
+  StoryInputSchema,
   UserIdSchema,
 } from "../shared/schemas.js";
+
 import {
   AdhocSearchParamsSchema,
-  UserSearchParamsSchema,
   TargetSearchParamsSchema,
+  UserSearchParamsSchema,
 } from "./schemas.js";
+
+import type { GoalsManager } from "./goals-manager.js";
+import type { SearchManager } from "./search-manager.js";
+import type { StoryManager } from "./story-manager.js";
+import type { Request, Response } from "express";
 
 interface CoreContext {
   searchManager?: SearchManager;
@@ -21,11 +24,11 @@ interface CoreContext {
 }
 
 const HTTP_STATUS = {
-  BAD_REQUEST: 400,
-  INTERNAL_SERVER_ERROR: 500,
+  badRequest: 400,
+  internalServerError: 500,
 } as const;
 
-export function createRestServer(context: CoreContext) {
+export function createRestServer(context: CoreContext): express.Express {
   const app = express();
 
   app.use(express.json());
@@ -55,7 +58,7 @@ export async function startRestServer(
   context: CoreContext,
   port: number,
   host: string
-) {
+): Promise<void> {
   const app = createRestServer(context);
 
   return new Promise<void>((resolve) => {
@@ -66,7 +69,7 @@ export async function startRestServer(
   });
 }
 
-function registerSearchRoutes(app: express.Express, context: CoreContext) {
+function registerSearchRoutes(app: express.Express, context: CoreContext): void {
   if (!context.searchManager) {
     return;
   }
@@ -96,7 +99,7 @@ function registerSearchRoutes(app: express.Express, context: CoreContext) {
   });
 }
 
-function registerStoryRoutes(app: express.Express, context: CoreContext) {
+function registerStoryRoutes(app: express.Express, context: CoreContext): void {
   app.post("/api/story/upsert", async (req: Request, res: Response) => {
     const params = StoryInputSchema.parse(req.body);
     const result = await context.storyManager.upsertStory(params);
@@ -110,11 +113,11 @@ function registerStoryRoutes(app: express.Express, context: CoreContext) {
   });
 }
 
-function registerGoalRoutes(app: express.Express, context: CoreContext) {
+function registerGoalRoutes(app: express.Express, context: CoreContext): void {
   app.post("/api/goal/set", async (req: Request, res: Response) => {
     const params = CreateGoalInputSchema.parse(req.body);
     const result = await context.goalsManager.setGoal(params);
-    res.json({ user_id: result });
+    res.json({ userId: result });
   });
 
   app.get("/api/goal/:userId", async (req: Request, res: Response) => {

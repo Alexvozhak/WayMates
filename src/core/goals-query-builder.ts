@@ -1,4 +1,4 @@
-export const SET_GOAL_QUERY: string = `
+export const SET_GOAL_QUERY = `
 MERGE (u:User {userId: $userId})
 MERGE (u)-[:HAS_GOAL]->(g:Goal)
 ON CREATE SET
@@ -10,7 +10,7 @@ ON MATCH SET
 RETURN g.userId AS userId
 `;
 
-export const GET_USER_GOAL_QUERY: string = `
+export const GET_USER_GOAL_QUERY = `
 MATCH (u:User {userId: $userId})-[:HAS_GOAL]->(g:Goal)
 RETURN g {
   .userId,
@@ -19,7 +19,7 @@ RETURN g {
 } AS goal
 `;
 
-export const DELETE_GOAL_QUERY: string = `
+export const DELETE_GOAL_QUERY = `
 MATCH (u:User {userId: $userId})-[rel:HAS_GOAL]->(g:Goal)
 DETACH DELETE g
 RETURN count(rel) > 0 AS success

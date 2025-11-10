@@ -1,8 +1,9 @@
-import type { OpenAI } from 'openai';
-import { IntentSchema, type Intent, type FacadeResponse } from './types.js';
+import { mapGoalParams } from './mappers/goal-mapper.js';
 import { mapSearchParams } from './mappers/search-mapper.js';
 import { mapStoryParams } from './mappers/story-mapper.js';
-import { mapGoalParams } from './mappers/goal-mapper.js';
+import { type FacadeResponse, type Intent, IntentSchema } from './types.js';
+
+import type { OpenAI } from 'openai';
 
 const SYSTEM_PROMPT = `You are WayMates career advisor. Your role:
 1. Extract user intent from natural language queries

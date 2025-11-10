@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import type { ValidationResult } from './types.js';
 
 export function handleValidationError<T>(
@@ -32,7 +33,7 @@ export function handleValidationError<T>(
 export async function retryWithValidation<T>(
   fn: () => Promise<unknown>,
   schema: z.ZodSchema<T>,
-  maxRetries: number = 2
+  maxRetries = 2
 ): Promise<ValidationResult<T>> {
   let lastError: unknown;
 

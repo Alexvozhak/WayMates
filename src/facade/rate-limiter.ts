@@ -3,7 +3,7 @@ import type { Redis } from 'ioredis';
 export class RateLimiter {
   constructor(
     private redis: Redis,
-    private limitPerHour: number = 100
+    private limitPerHour = 100
   ) {}
 
   async checkLimit(userId: string, endpoint: string): Promise<boolean> {

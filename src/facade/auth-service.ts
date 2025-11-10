@@ -1,25 +1,27 @@
 import { v7 as uuidv7 } from 'uuid';
-import Database from 'better-sqlite3';
+
 import { USERS_TABLE_MIGRATION } from '../../database/migrations/001_users_table.js';
+
 import type { FacadeUser } from './types.js';
+import type database from 'better-sqlite3';
 
 export class AuthService {
-  constructor(private db: Database.Database) {
+  constructor(private db: database.database) {
     this.initializeDatabase();
   }
 
-  async authenticate(token: string): Promise<string> {
+  authenticate(token: string): string {
     const stmt = this.db.prepare('SELECT user_id FROM users WHERE token = ?');
-    const row = stmt.get(token) as { user_id: string } | undefined;
+    const row = stmt.get(token) as { userId: string } | undefined;
 
     if (!row) {
       throw new Error('Invalid token');
     }
 
-    return Promise.resolve(row.user_id);
+    return row.user_id;
   }
 
-  async createUser(): Promise<FacadeUser> {
+  createUser(): FacadeUser {
     const userId = `usr_${uuidv7()}`;
     const token = uuidv7();
     const createdAt = Date.now();
@@ -29,28 +31,28 @@ export class AuthService {
     );
     stmt.run(userId, token, createdAt);
 
-    return Promise.resolve({
+    return {
       userId,
       token,
       createdAt,
-    });
+    };
   }
 
-  async getUser(userId: string): Promise<FacadeUser | null> {
+  getUser(userId: string): FacadeUser | null {
     const stmt = this.db.prepare(
       'SELECT user_id, token, created_at, last_active_at FROM users WHERE user_id = ?'
     );
     const row = stmt.get(userId) as
       | {
-          user_id: string;
+          userId: string;
           token: string;
-          created_at: number;
-          last_active_at: number | null;
+          createdAt: number;
+          lastActiveAt: number | null;
         }
       | undefined;
 
     if (!row) {
-      return Promise.resolve(null);
+      return null;
     }
 
     const result: FacadeUser = {
@@ -63,7 +65,7 @@ export class AuthService {
       result.lastActiveAt = row.last_active_at;
     }
 
-    return Promise.resolve(result);
+    return result;
   }
 
   private initializeDatabase(): void {

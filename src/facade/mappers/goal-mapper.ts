@@ -1,7 +1,10 @@
-import { z } from 'zod';
+
 import { CreateGoalInputSchema } from '../../shared/schemas.js';
-import type { MapperContext, ValidationResult, MapperOptions } from './types.js';
+
 import { retryWithValidation } from './helpers.js';
+
+import type { MapperContext, MapperOptions, ValidationResult } from './types.js';
+import type { z } from 'zod';
 
 const GOAL_PROMPT = `Extract career goal from user query with included/excluded logic.
 

@@ -1,13 +1,15 @@
-// @ts-check
-
 import eslint from '@eslint/js';
-import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import importX from 'eslint-plugin-import-x';
+import unicorn from 'eslint-plugin-unicorn';
 
-
-export default defineConfig(
+export default [
   eslint.configs.recommended,
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.strict,
+  ...tseslint.configs.stylistic,
+  unicorn.configs.recommended,
+  importX.flatConfigs.recommended,
+
   {
     languageOptions: {
       parserOptions: {
@@ -15,31 +17,162 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+
     rules: {
-      // Отлавливает избыточные async функции без await
+      '@typescript-eslint/naming-convention': [
+        'error',
+        {
+          selector: 'default',
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          selector: 'variable',
+          format: ['camelCase', 'UPPER_CASE'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          selector: 'function',
+          format: ['camelCase']
+        },
+        {
+          selector: 'parameter',
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          selector: 'typeLike',
+          format: ['PascalCase'],
+        },
+        {
+          selector: 'enumMember',
+          format: ['PascalCase'],
+        },
+        {
+          selector: 'import',
+          format: null,  // Не проверять импорты (внешние библиотеки)
+        },
+        {
+          selector: 'property',
+          format: null,
+          modifiers: ['requiresQuotes']
+        }
+      ],
+
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'separate-type-imports',
+          disallowTypeAnnotations: true,
+        },
+      ],
+      '@typescript-eslint/no-import-type-side-effects': 'error',
+      '@typescript-eslint/array-type': [
+        'error',
+        {
+          default: 'array',
+          readonly: 'array',
+        },
+      ],
+
+      'import-x/no-unresolved': 'off',
+      'import-x/namespace': 'off',
+      'import-x/default': 'off',
+      'import-x/no-named-as-default': 'off',
+      'import-x/no-named-as-default-member': 'off',
+      'import-x/no-cycle': 'off',
+
+      'import-x/no-duplicates': [
+        'error',
+        {
+          'prefer-inline': false,
+        },
+      ],
+      'import-x/order': [
+        'error',
+        {
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
+            'type',
+          ],
+          'newlines-between': 'always',
+          alphabetize: {
+            order: 'asc',
+            caseInsensitive: true,
+          },
+          named: {
+            enabled: true,
+            types: 'types-first',
+          },
+        },
+      ],
+      'import-x/extensions': [
+        'error',
+        'always',
+        {
+          ignorePackages: true,
+        },
+      ],
+      'import-x/no-default-export': 'error', // Запретить default export
+      'import-x/prefer-default-export': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ExportAllDeclaration',
+          message: 'Re-export всё (export * from) запрещён. Используйте именованные экспорты.',
+        },
+      ],
+      '@typescript-eslint/no-explicit-any': 'error', // Запретить any полностью
       '@typescript-eslint/require-await': 'error',
-      // Дополнительные полезные правила для TypeScript
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
         },
       ],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/ban-ts-comment': [
+        'error',
+        {
+          'ts-expect-error': 'allow-with-description',
+          'ts-ignore': false,
+          minimumDescriptionLength: 10,
+        },
+      ],
+      '@typescript-eslint/explicit-function-return-type': [
+        'error',
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+          allowHigherOrderFunctions: true,
+        },
+      ],
+      '@typescript-eslint/no-floating-promises': [
+        'error',
+        {
+          ignoreVoid: true,
+          ignoreIIFE: true,
+        },
+      ],
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        {
+          checksVoidReturn: true,
+          checksConditionals: true,
+        },
+      ],
+      '@typescript-eslint/no-non-null-assertion': 'warn',
 
-      // === Simplicity Rules (docs/eslint_simplicity_rules.md) ===
-
-      // Spread operator разрешён (изменено по требованию)
-      // 'no-restricted-syntax': [...] - удалено
-
-      // Ограничение вложенности (максимум 2 уровня)
       'max-depth': ['error', 2],
-
-      // Ограничение циклической сложности
-      'complexity': ['error', { max: 8 }],
-
-      // Ограничение длины функций
+      complexity: ['error', { max: 8 }],
       'max-lines-per-function': [
         'error',
         {
@@ -49,53 +182,27 @@ export default defineConfig(
         },
       ],
 
-      // === Code Organization Rules ===
-
-      // Порядок членов в классах и интерфейсах
       '@typescript-eslint/member-ordering': [
         'error',
         {
           default: [
-            // Статические свойства и методы
             'static-field',
             'static-method',
-
-            // Поля
             'field',
-
-            // Конструктор
             'constructor',
-
-            // Публичные методы
             'public-method',
-
-            // Приватные методы
             'protected-method',
             'private-method',
           ],
         },
       ],
+
+
+      'unicorn/prevent-abbreviations': 'off', // Разрешить сокращения
+      'unicorn/no-null': 'off', // Для Neo4j драйвера null нужен
+      'unicorn/no-array-reduce': 'warn', // Warn вместо error
+      'unicorn/no-await-expression-member': 'off', // Разрешить (await foo()).bar
     },
   },
-  // Менее строгие правила для тестовых файлов
-  {
-    files: ['**/*.test.ts', '**/*.test.js', '**/tests/**/*.ts', '**/tests/**/*.js'],
-    rules: {
-      // В тестах разрешаем неиспользуемые переменные (для моков, заглушек)
-      '@typescript-eslint/no-unused-vars': 'warn',
-      // В тестах разрешаем any (для гибкости тестирования)
-      '@typescript-eslint/no-explicit-any': 'off',
-      // В тестах разрешаем async без await (для тестовых функций)
-      '@typescript-eslint/require-await': 'warn',
-    },
-  },
-  {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      '*.js',
-      '*.mjs',
-      'scripts/**/*.js',
-    ],
-  },
-);
+
+];

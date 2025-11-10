@@ -1,14 +1,15 @@
-import { createDriver, verifyConnection } from '../neo4j.js';
 import { DatabaseContext } from '../database-context.js';
+import { createDriver, verifyConnection } from '../neo4j.js';
 import { SelectivityService } from '../services/selectivity.service.js';
-import { SearchManager } from './search-manager.js';
-import { TrajectorySimilarityService } from './trajectory-similarity.service.js';
-import { PathCollectorService } from './path-collector.service.js';
-import { StoryManager } from './story-manager.js';
-import { GoalsManager } from './goals-manager.js';
-import { startRestServer } from './rest-server.js';
 
-async function main() {
+import { GoalsManager } from './goals-manager.js';
+import { PathCollectorService } from './path-collector.service.js';
+import { startRestServer } from './rest-server.js';
+import { SearchManager } from './search-manager.js';
+import { StoryManager } from './story-manager.js';
+import { TrajectorySimilarityService } from './trajectory-similarity.service.js';
+
+async function main(): Promise<void> {
   const driver = createDriver();
   await verifyConnection(driver);
 
@@ -41,4 +42,4 @@ async function main() {
   );
 }
 
-main().catch(console.error);
+await main();
