@@ -1,5 +1,16 @@
 # Key Decisions (Важные решения)
 
+## Test Data Import: Node.js Module Cache (2025-11-12)
+**Проблема**: После изменения JSON тестовых данных (`data/trails/users/u*.json`) тесты используют старые данные из cache.
+
+**Причина**: `test-data-manager.ts` импортирует JSON напрямую → Node.js кеширует модули.
+
+**Решение**: См. `package.json` скрипты `test:*` для правильного перезапуска тестов после изменения JSON.
+
+**См.**: Bug #2.4 fix, tests/helpers/test-data-manager.ts
+
+---
+
 ## Helper Functions Pattern for Cypher (2025-11-11)
 **Решение**: Helper Functions pattern для Cypher query composition (вместо DSL/Builder chains)
 

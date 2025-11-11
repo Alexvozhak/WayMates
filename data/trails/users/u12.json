@@ -1,0 +1,129 @@
+{
+  "userId": "usr_019a6ea7-18c1-75bc-9276-bf699e07067b",
+  "currentContextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81",
+  "contexts": [
+    {
+      "contextId": "ctx_019a6ea7-18c1-75bc-9276-c25b5134c1cc",
+      "createdAt": "2022-01-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        "html",
+        "css",
+        "javascript"
+      ],
+      "countryCode": "ru",
+      "cityName": "Moscow",
+      "birthYear": 1995,
+      "citizenships": [
+        "ru"
+      ]
+    },
+    {
+      "contextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078",
+      "previousContextId": "ctx_019a6ea7-18c1-75bc-9276-c25b5134c1cc",
+      "createdAt": "2023-01-01T00:00:00Z",
+      "creationReason": [
+        "position_changed",
+        "company_changed"
+      ],
+      "position": "Middle",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        "html",
+        "css",
+        "javascript",
+        "react",
+        "redux",
+        "typescript"
+      ],
+      "countryCode": "ru",
+      "cityName": "Moscow",
+      "birthYear": 1995,
+      "citizenships": [
+        "ru"
+      ]
+    },
+    {
+      "contextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a",
+      "previousContextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078",
+      "createdAt": "2024-06-01T00:00:00Z",
+      "creationReason": [
+        "position_changed"
+      ],
+      "position": "Senior",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        "html",
+        "css",
+        "javascript",
+        "react",
+        "redux",
+        "typescript",
+        "nextjs",
+        "graphql",
+        "testing"
+      ],
+      "countryCode": "ru",
+      "cityName": "Moscow",
+      "birthYear": 1995,
+      "citizenships": [
+        "ru"
+      ]
+    },
+    {
+      "contextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81",
+      "previousContextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a",
+      "createdAt": "2025-01-01T00:00:00Z",
+      "creationReason": [
+        "position_changed",
+        "company_changed"
+      ],
+      "position": "Senior",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "Backend",
+        "DevOps",
+        "Frontend"
+      ],
+      "skills": [
+        "html",
+        "css",
+        "javascript",
+        "react",
+        "redux",
+        "typescript",
+        "nextjs",
+        "graphql",
+        "testing",
+        "team-management",
+        "architecture",
+        "mentoring"
+      ],
+      "countryCode": "ru",
+      "cityName": "Moscow",
+      "birthYear": 1995,
+      "citizenships": [
+        "ru",
+        "de"
+      ]
+    }
+  ],
+  "trails": []
+}

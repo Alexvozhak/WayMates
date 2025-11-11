@@ -1,10 +1,11 @@
 import DynamicTimeWarping from "dynamic-time-warping-ts";
-import type { UserContext, DTWMetrics } from "../shared/schemas.js";
+
+import type { DTWMetrics, UserContext } from "../shared/schemas.js";
 
 type StepWithDuration = {
   context: UserContext;
   duration: number;
-};
+}
 
 export class TrajectorySimilarityService {
   /**
@@ -19,7 +20,7 @@ export class TrajectorySimilarityService {
   computeDTWMetrics(
     userTrajectory: UserContext[],
     candidateTrajectory: UserContext[],
-    durationCapMonths: number = 36
+    durationCapMonths = 36
   ): DTWMetrics {
     // 1. Calculate durations once (used by all 3 metrics)
     const userDurations = this.calculateDurationMonths(userTrajectory);
@@ -60,15 +61,20 @@ export class TrajectorySimilarityService {
 
     // 4. Compute Shape and Stability from cached DTW result
     const shapeSimilarity = 1 / (1 + distance / pathLength);
-    const stabilityScore =
-      Math.min(userTrajectory.length, candidateTrajectory.length) / pathLength;
+
+    // Stability: userLength / pathLength
+    // Measures how compressed user's trajectory is in DTW alignment
+    // Higher score = less warping needed (more stable)
+    // User trajectory is always baseline
+    const stabilityScore = userTrajectory.length / pathLength;
 
     // 5. Compute Tempo (separate DTW on derivatives)
     const tempoSimilarity = this.computeTempoSimilarity(
       userDurations,
       candidateDurations,
       userTrajectory.length,
-      candidateTrajectory.length
+      candidateTrajectory.length,
+      durationCapMonths
     );
 
     return {
@@ -86,10 +92,19 @@ export class TrajectorySimilarityService {
     userDurations: number[],
     candidateDurations: number[],
     userTrajectoryLength: number,
-    candidateTrajectoryLength: number
+    candidateTrajectoryLength: number,
+    durationCapMonths: number
   ): number {
-    const userDeriv = this.derivative(userDurations);
-    const candidateDeriv = this.derivative(candidateDurations);
+    // Apply duration cap before computing derivatives
+    const cappedUserDurations = userDurations.map((d) =>
+      Math.min(d, durationCapMonths)
+    );
+    const cappedCandidateDurations = candidateDurations.map((d) =>
+      Math.min(d, durationCapMonths)
+    );
+
+    const userDeriv = this.derivative(cappedUserDurations);
+    const candidateDeriv = this.derivative(cappedCandidateDurations);
 
     const dtw = new DynamicTimeWarping(
       userDeriv,
@@ -119,11 +134,23 @@ export class TrajectorySimilarityService {
     userTrajectoryLength: number,
     candidateTrajectoryLength: number
   ): void {
+    const minExpectedPath = Math.max(
+      userTrajectoryLength,
+      candidateTrajectoryLength
+    );
+
     if (pathLength === 0) {
       throw new Error(
-        `DTW path length is zero (library bug). ` +
+        `DTW path length is zero (library bug or identical trajectories). ` +
           `User trajectory: ${userTrajectoryLength} steps, ` +
           `Candidate trajectory: ${candidateTrajectoryLength} steps.`
+      );
+    }
+
+    if (pathLength < minExpectedPath) {
+      throw new Error(
+        `DTW path length (${pathLength}) is less than max trajectory length (${minExpectedPath}). ` +
+          `This indicates DTW library bug or incorrect distance function.`
       );
     }
   }
@@ -144,6 +171,14 @@ export class TrajectorySimilarityService {
       const next = trajectory[i + 1]
         ? new Date(trajectory[i + 1].createdAt)
         : now;
+
+      if (next.getTime() < created.getTime()) {
+        throw new Error(
+          `Context ${i + 1} createdAt (${trajectory[i + 1]?.createdAt}) is before ` +
+            `Context ${i} createdAt (${ctx.createdAt}). Contexts must be chronologically ordered.`
+        );
+      }
+
       return Math.round(
         (next.getTime() - created.getTime()) / MILLISECONDS_PER_30_DAY_MONTH
       );
@@ -170,12 +205,36 @@ export class TrajectorySimilarityService {
   }
 
   /**
+   * Compute Jaccard distance between two sets
+   * Returns distance [0, 1] where 0 = identical sets, 1 = no overlap
+   *
+   * Jaccard similarity = |A ∩ B| / |A ∪ B|
+   * Jaccard distance = 1 - similarity
+   *
+   * Edge case: Both sets empty → similarity = 1.0, distance = 0.0
+   */
+  private computeJaccardDistance(setA: Set<string>, setB: Set<string>): number {
+    let intersection = 0;
+    // eslint-disable-next-line unicorn/no-array-for-each -- Set.forEach() avoids --downlevelIteration flag
+    setA.forEach((item) => {
+      if (setB.has(item)) {
+        intersection++;
+      }
+    });
+
+    const unionSize = setA.size + setB.size - intersection;
+    const jaccardSimilarity = unionSize > 0 ? intersection / unionSize : 1;
+    return 1 - jaccardSimilarity;
+  }
+
+  /**
    * Calculate distance between two trajectory steps
    * Returns normalized distance [0, 1] where 0 = identical, 1 = maximum difference
    *
    * Components (equal weights):
    * - Position: binary 0 or 1
    * - Duration: |diff| / durationCapMonths, capped at 1.0
+   * - Domains: Jaccard distance (1 - similarity)
    * - Reasons: Jaccard distance (1 - similarity)
    */
   private trajectoryDistance(
@@ -194,22 +253,17 @@ export class TrajectorySimilarityService {
       1
     );
 
-    // 3. Reasons overlap (Jaccard distance: 1 - similarity)
+    // 3. Domains overlap (Jaccard distance: 1 - similarity)
+    const domainsA = new Set(stepA.domains);
+    const domainsB = new Set(stepB.domains);
+    const domainsDiff = this.computeJaccardDistance(domainsA, domainsB);
+
+    // 4. Reasons overlap (Jaccard distance: 1 - similarity)
     const reasonsA = new Set(stepA.creationReason);
     const reasonsB = new Set(stepB.creationReason);
+    const reasonsDiff = this.computeJaccardDistance(reasonsA, reasonsB);
 
-    let intersection = 0;
-    reasonsA.forEach((reason) => {
-      if (reasonsB.has(reason)) {
-        intersection++;
-      }
-    });
-
-    const unionSize = reasonsA.size + reasonsB.size - intersection;
-    const jaccardSimilarity = unionSize > 0 ? intersection / unionSize : 1.0;
-    const reasonsDiff = 1 - jaccardSimilarity;
-
-    // Average of three normalized components (equal weights)
-    return (positionDiff + durationDiff + reasonsDiff) / 3;
+    // Average of four normalized components (equal weights)
+    return (positionDiff + durationDiff + domainsDiff + reasonsDiff) / 4;
   }
 }
