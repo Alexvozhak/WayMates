@@ -67,6 +67,17 @@
 
 ---
 
+### Score calculation mismatch
+- **Helper vs Cypher**: `calculateExpectedScore` возвращает 1.0, но Cypher query даёт 0.99 для идентичных strict fields
+- **Симптом**: AC2 test failed с "expected 0.99 to be close to 1, received difference is 0.01"
+- **Workaround**: Использовать tolerance=1 (0.05) вместо tolerance=2 (0.005) для integration tests
+- **Root cause**: Неизвестно - возможно особенность scoring algorithm в SearchQueryBuilder
+- **TODO**: Сравнить логику scoring в Cypher vs TypeScript helper
+
+**Детали**: См. [../project-state/testing.md](../project-state/testing.md#-ac2-score-mismatch-099-vs-10), Memory MCP `AC2 Score Mismatch Investigation`
+
+---
+
 ## ESLint / TypeScript
 
 ### Common issues

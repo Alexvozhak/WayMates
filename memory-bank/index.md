@@ -11,6 +11,7 @@
 | Пишу тесты | [project-state/testing.md](project-state/testing.md) |
 | Пишу Cypher | [project-state/cypher.md](project-state/cypher.md) + [knowledge/cypher-mistakes.md](knowledge/cypher-mistakes.md) |
 | Багфиксинг | [history/breaking-changes.md](history/breaking-changes.md) + git blame |
+| Нашел баг | `/report-bug` → [knowledge/bugs-registry.md](knowledge/bugs-registry.md) |
 | Архитектурный вопрос | [project-state/domain-model.md](project-state/domain-model.md) + Memory MCP |
 | Lint/TypeScript errors | [project-state/linting.md](project-state/linting.md) |
 | Код ревью | [knowledge/code-quality.md](knowledge/code-quality.md) |
@@ -30,6 +31,7 @@
 - **[sessions-brief.md](history/sessions-brief.md)** - Бизнес-смысл сессий (5-10 строк)
 
 ### knowledge/ (Быстрые справочники)
+- **[bugs-registry.md](knowledge/bugs-registry.md)** - Production bugs registry (используй `/report-bug`)
 - **[cypher-mistakes.md](knowledge/cypher-mistakes.md)** - Типовые ошибки в Cypher (мои)
 - **[pitfalls.md](knowledge/pitfalls.md)** - Грабли (Neo4j, TypeScript edge cases)
 - **[decisions.md](knowledge/decisions.md)** - Важные решения (почему так)

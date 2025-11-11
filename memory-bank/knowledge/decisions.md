@@ -1,5 +1,42 @@
 # Key Decisions (Важные решения)
 
+## Helper Functions Pattern for Cypher (2025-11-11)
+**Решение**: Helper Functions pattern для Cypher query composition (вместо DSL/Builder chains)
+
+**Структура**: `src/cypher/{nodes, patterns, enrichment, helpers, queries}/`
+
+**Ключевые паттерны**:
+- **Compositor pattern**: `enrichContext()` возвращает `{patterns, withClause, projection}`, не выполняет side effects
+- **Functional composition**: `applyOptionalMatches(query, patterns)` вместо imperative loops
+- **MapProjection**: `new Cypher.MapProjection(node, ['.field'], {extra})` для Neo4j convention
+
+**Причина**: Композиция через конфиги читаемее fluent chains. Разделение concerns: helpers знают Cypher API, business queries только композируют.
+
+**См. commit**: `3dc48d9`
+
+---
+
+## Skills Never in WHERE Clause (2025-11-11)
+**Context**: AC2 test failing - skills в WHERE требовали exact match (U1 react не находил U4 svelte), но scoring logic требовал penalty-based градацию
+
+**Decision**: Skills NEVER participate в WHERE clause filtering - всегда excluded из `computeStrictFields()`
+
+**Why**:
+- Skills нуждаются в penalty-based scoring (градация по весам из БД), не boolean exact-match
+- WHERE с skills слишком restrictive - excludes candidates с разными skills
+- Без skills penalties нет способа ранжировать кандидатов (все score = 1.0)
+
+**Implementation**:
+- `computeStrictFields()` always filters 'skills' из strictFields (`field !== 'skills'`)
+- Schema validation forbids 'skills' в `excludedContextFields` (`.refine()`)
+- Penalties всегда applied в scoring: `score = 1.0 - (sum(penalties) / 100)`
+
+**Alternative**: Skills in WHERE as INTERSECTION (`ANY(s IN $ref.skills WHERE s IN cand.skills)`) - rejected (too complex, loses penalty weights)
+
+**См. Memory MCP**: `Skills Scoring Architecture Decision 2025-11-11`, `AC2 Score Mismatch Investigation`
+
+---
+
 ## InPath Suffix Pattern (2025-11-10)
 **Context**: target-query-builder.ts has trajectory and matched context в одном scope
 

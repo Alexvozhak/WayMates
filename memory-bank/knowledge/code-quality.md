@@ -172,6 +172,33 @@ const sorted = array.toSorted();
 
 ---
 
+### 11. Type over interface (typescript-eslint/consistent-type-definitions)
+**Что**: Используй `type` вместо `interface` для type definitions.
+
+**Почему**: Консистентность в project-specific code style, композиция через `&` проще чем `extends`.
+
+**Пример** (плохо):
+```typescript
+// ❌ Interface
+interface User {
+  id: string;
+  name: string;
+}
+```
+
+**Пример** (хорошо):
+```typescript
+// ✅ Type
+type User = {
+  id: string;
+  name: string;
+};
+```
+
+**Контекст**: Правило добавлено как override для TypeScript preset `tseslint.configs.stylistic`, который по умолчанию требует `interface`.
+
+---
+
 ## Readability Preferences
 
 ### User feedback quotes:
