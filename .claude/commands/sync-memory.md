@@ -22,6 +22,7 @@ memory-bank/
 │   ├── breaking-changes.md       # Breaking changes + fixes
 │   └── sessions-brief.md         # Бизнес-смысл сессий (5-10 строк)
 └── knowledge/                    # Справочники
+    ├── bugs-registry.md          # Production bugs registry (use /report-bug)
     ├── cypher-mistakes.md        # Типовые ошибки
     ├── pitfalls.md               # Грабли
     ├── decisions.md              # Важные решения
@@ -39,6 +40,7 @@ memory-bank/
 - `history/breaking-changes.md` - если breaking change
 - `history/sessions-brief.md` - **ВСЕГДА** (5-10 строк на сессию)
 - `knowledge/*` - если новые уроки/грабли
+- `knowledge/bugs-registry.md` - **НЕТ** (используй `/report-bug` для багов)
 
 ### 2. Memory MCP (ВСЕГДА)
 - Архитектурные паттерны (entities + relations)
@@ -193,6 +195,24 @@ mcp__memory__create_relations({
 git add memory-bank/ docs/architecture/
 git commit -m "docs: update memory-bank after [session summary]"
 ```
+
+### Шаг 5: Cleanup завершенных задач
+
+Анализирую текущую сессию: если есть observations с "Completed: ..." - **СПРАШИВАЮ ПОЛЬЗОВАТЕЛЯ**:
+
+```
+❓ В этой сессии завершены задачи:
+  - DTW trajectory implementation
+  - Test data U10-U13 creation
+
+Удалить их из Memory MCP? (summary останется в sessions-brief.md)
+[Да/Нет]
+```
+
+Если **Да** - удаляю entities через `mcp__memory__delete_entities`.
+Если **Нет** - оставляю в графе.
+
+**Принцип**: Завершенные задачи → в history/sessions-brief.md, не в Memory MCP.
 
 ---
 
