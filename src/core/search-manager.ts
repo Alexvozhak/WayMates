@@ -2,9 +2,9 @@ import {
   type MatchedCandidateWithPath,
   type ScoredMatchedCandidate,
   type UserContext,
-  MatchedCandidateWithPathSchema,
-  ScoredMatchedCandidateSchema,
-  UserContextSchema,
+  matchedCandidateWithPathSchema,
+  scoredMatchedCandidateSchema,
+  userContextSchema,
 } from "../shared/schemas.js";
 
 import { CONTEXT_FIELD_NAMES } from "./schemas.js";
@@ -26,9 +26,17 @@ import type { TrajectorySimilarityService } from "./trajectory-similarity.servic
 import type { DatabaseContext } from "../database-context.js";
 import type { SelectivityService } from "../services/selectivity.service.js";
 
+/**
+ * Compute strict fields for WHERE clause
+ *
+ * IMPORTANT: Skills are NEVER in WHERE clause - they are scored via penalties only.
+ * This allows finding candidates with different skills (penalty-based scoring) rather than
+ * requiring exact skill match (which would exclude too many candidates).
+ */
 function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
   return CONTEXT_FIELD_NAMES.filter(
-    (field): field is ContextField => !excludedFields.includes(field)
+    (field): field is ContextField =>
+      field !== 'skills' && !excludedFields.includes(field)
   );
 }
 
@@ -76,7 +84,7 @@ export class SearchManager {
       const result = await tx.run(query, queryParams);
 
       return result.records.map((record) =>
-        MatchedCandidateWithPathSchema.parse(record.toObject())
+        matchedCandidateWithPathSchema.parse(record.toObject())
       );
     });
   }
@@ -111,7 +119,7 @@ export class SearchManager {
     const queryParams = {
       userId,
       referenceContext,
-      excludedCreationReasons,
+      excludedCreationReasons: excludedCreationReasons ?? [],
       recencyThresholdMonths,
       limit,
     };
@@ -120,7 +128,7 @@ export class SearchManager {
       const result = await tx.run(query, queryParams);
 
       return result.records.map((record) =>
-        ScoredMatchedCandidateSchema.parse(record.toObject())
+        scoredMatchedCandidateSchema.parse(record.toObject())
       );
     });
   }
@@ -136,7 +144,7 @@ export class SearchManager {
         throw new Error(`resolveContext: user ${userId} not found`);
       }
 
-      return UserContextSchema.parse(record.get("context"));
+      return userContextSchema.parse(record.get("context"));
     });
   }
 

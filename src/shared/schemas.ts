@@ -202,6 +202,12 @@ const userSearchParamsBaseSchema = z.object({
     .describe(
       "Fields to exclude from comparison (inverse logic: all fields EXCEPT these are strict). " +
       "WARNING: Excluding all fields will match all users - not recommended for production use."
+    )
+    .refine(
+      (fields) => !fields.includes('skills'),
+      {
+        message: "Cannot exclude 'skills' - skills scoring (penalties) is required for ranking candidates when no trajectory exists"
+      }
     ),
   excludedCreationReasons: z
     .array(newContextReasonSchema)
