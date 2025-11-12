@@ -1,70 +1,85 @@
-import Cypher from '@neo4j/cypher-builder';
-import { userById } from '../nodes/user.js';
-import { goalCreate } from '../nodes/goal.js';
-import { userHasGoal } from '../patterns/user-goal.js';
+/**
+ * Goals queries
+ */
 
 /**
- * Helper для Goal projection
+ * Set or update user's goal (UPSERT)
+ *
+ * Creates user if doesn't exist, creates/updates goal
+ *
+ * Parameters:
+ * - $userId: User ID (string)
+ * - $createdAt: Goal creation timestamp (ISO string)
+ * - $targetCriteria: Target criteria object (TargetCriteria)
+ *
+ * Returns:
+ * - userId: string (confirmation)
+ *
+ * @example
+ * const query = setGoalQuery();
+ * const result = await tx.run(query, {
+ *   userId: 'usr_123',
+ *   createdAt: new Date().toISOString(),
+ *   targetCriteria: { ... }
+ * });
  */
-function projectGoal(goalNode: Cypher.Node): Cypher.MapProjection {
-  return new Cypher.MapProjection(goalNode, [
-    'userId',
-    'targetCriteria',
-    'createdAt'
-  ]);
+export function setGoalQuery(): string {
+  return `
+MERGE (searchingUser:User {userId: $userId})
+MERGE (searchingUser)-[:HAS_GOAL]->(g:Goal)
+ON CREATE SET
+  g.userId = $userId,
+  g.createdAt = $createdAt,
+  g.targetCriteria = $targetCriteria
+ON MATCH SET
+  g.targetCriteria = $targetCriteria
+RETURN g.userId AS userId
+  `.trim();
 }
 
 /**
- * Установить/обновить цель пользователя
+ * Get user's goal
+ *
+ * Parameters:
+ * - $userId: User ID (string)
+ *
+ * Returns:
+ * - goal: Goal object { userId, targetCriteria, createdAt } | null
+ *
+ * @example
+ * const query = getUserGoalQuery();
+ * const result = await tx.run(query, { userId: 'usr_123' });
+ * const goal = result.records[0]?.get('goal');
  */
-export function setGoalQuery(): Cypher.Return {
-  const { node: user, pattern: userPattern } = userById('userId');
-  const { node: goal } = goalCreate();
-
-  return new Cypher.Merge(userPattern)
-    .merge(userHasGoal(user, goal))
-    .onCreateSet(
-      [goal.property('userId'), new Cypher.NamedParam('userId', 'userId')],
-      [goal.property('createdAt'), new Cypher.NamedParam('createdAt', 'createdAt')],
-      [goal.property('targetCriteria'), new Cypher.NamedParam('targetCriteria', 'targetCriteria')]
-    )
-    .onMatchSet(
-      [goal.property('targetCriteria'), new Cypher.NamedParam('targetCriteria', 'targetCriteria')]
-    )
-    .return([goal.property('userId'), 'userId']);
+export function getUserGoalQuery(): string {
+  return `
+MATCH (searchingUser:User {userId: $userId})-[:HAS_GOAL]->(g:Goal)
+RETURN g {
+  .userId,
+  .targetCriteria,
+  .createdAt
+} AS goal
+  `.trim();
 }
 
 /**
- * Получить цель пользователя
+ * Delete user's goal
+ *
+ * Parameters:
+ * - $userId: User ID (string)
+ *
+ * Returns:
+ * - success: boolean (true if goal existed and was deleted)
+ *
+ * @example
+ * const query = deleteGoalQuery();
+ * const result = await tx.run(query, { userId: 'usr_123' });
+ * const success = result.records[0].get('success');
  */
-export function getUserGoalQuery(): Cypher.Return {
-  const { node: user, pattern: userPattern } = userById('userId');
-  const { node: goal } = goalCreate();
-
-  const pattern = userPattern
-    .related(new Cypher.NamedRelationship('hasGoal'), { type: 'HAS_GOAL' })
-    .to(goal, { labels: ['Goal'] });
-
-  return new Cypher.Match(pattern)
-    .return([projectGoal(goal), 'goal']);
-}
-
-/**
- * Удалить цель пользователя
- */
-export function deleteGoalQuery(): Cypher.Return {
-  const { node: user, pattern: userPattern } = userById('userId');
-  const { node: goal } = goalCreate();
-  const hasGoalRel = new Cypher.NamedRelationship('rel');
-
-  const pattern = userPattern
-    .related(hasGoalRel, { type: 'HAS_GOAL' })
-    .to(goal, { labels: ['Goal'] });
-
-  return new Cypher.Match(pattern)
-    .detachDelete(goal)
-    .return([
-      Cypher.gt(Cypher.count(hasGoalRel), new Cypher.Literal(0)),
-      'success'
-    ]);
+export function deleteGoalQuery(): string {
+  return `
+MATCH (searchingUser:User {userId: $userId})-[rel:HAS_GOAL]->(g:Goal)
+DETACH DELETE g
+RETURN count(rel) > 0 AS success
+  `.trim();
 }

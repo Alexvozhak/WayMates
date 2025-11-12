@@ -1,35 +1,58 @@
-import Cypher from '@neo4j/cypher-builder';
-import { userById } from '../nodes/user.js';
-import { contextCreate } from '../nodes/context.js';
-import { userHasCurrentContext } from '../patterns/user-context.js';
-import { enrichContext } from '../enrichment/context.js';
-import { applyOptionalMatches } from '../helpers/query.js';
+/**
+ * Search queries
+ */
+
+import { buildOptionalMatchRelationships } from '../helpers/relationships.js';
+import { buildWithCollect } from '../helpers/aggregation.js';
+import { buildContextMapProjection } from '../constants/projections.js';
 
 /**
- * Получить текущий контекст пользователя с enrichment
+ * Get user's current context with enrichment
+ *
+ * Returns single context object with all relationships resolved
+ *
+ * Parameters:
+ * - $userId: User ID (string)
+ *
+ * Returns:
+ * - context: UserContext object
+ *
+ * @example
+ * const query = userCurrentContextQuery();
+ * const result = await tx.run(query, { userId: 'usr_123' });
+ * const context = result.records[0].get('context');
  */
-export function userCurrentContextQuery(): Cypher.Return {
-  const { node: user } = userById('userId');
-  const { node: context } = contextCreate();
+export function userCurrentContextQuery(): string {
+  return `
+MATCH (searchingUser:User {userId: $userId})-[:HAS_CONTEXT]->(searchingContext:Context {contextId: searchingUser.currentContextId})
+${buildOptionalMatchRelationships('searchingContext')}
 
-  const mainPattern = userHasCurrentContext(user, context);
-  const enriched = enrichContext(context);
+${buildWithCollect('searchingContext')}
 
-  return applyOptionalMatches(
-      new Cypher.Match(mainPattern),
-      enriched.patterns
-    )
-    .with(...enriched.withClause)
-    .return([enriched.projection, 'context']);
+RETURN ${buildContextMapProjection('searching')} AS context
+  `.trim();
 }
 
 /**
- * Получить currentContextId пользователя
+ * Get user's current context ID (lightweight query)
+ *
+ * Returns only contextId without enrichment
+ *
+ * Parameters:
+ * - $userId: User ID (string)
+ *
+ * Returns:
+ * - currentContextId: string | null
+ *
+ * @example
+ * const query = userCurrentContextIdQuery();
+ * const result = await tx.run(query, { userId: 'usr_123' });
+ * const contextId = result.records[0].get('currentContextId');
  */
-export function userCurrentContextIdQuery(): Cypher.Return {
-  const { node: user, pattern: userPattern } = userById('userId');
-
-  return new Cypher.Match(userPattern)
-    .where(Cypher.isNotNull(user.property('currentContextId')))
-    .return([user.property('currentContextId'), 'currentContextId']);
+export function userCurrentContextIdQuery(): string {
+  return `
+MATCH (searchingUser:User {userId: $userId})
+WHERE searchingUser.currentContextId IS NOT NULL
+RETURN searchingUser.currentContextId AS currentContextId
+  `.trim();
 }
