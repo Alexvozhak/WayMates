@@ -270,6 +270,42 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 })
 ```
 
+### 4. filesystem (`@modelcontextprotocol/server-filesystem`)
+
+**Purpose**: Direct file system access for reading/writing project files
+
+- **Allowed directory**: `/home/alex/projects/WayMatesRemote`
+- **Access level**: Full read/write
+
+**When to use:**
+- **Reading multiple files** for analysis (architecture review, codebase exploration)
+- **Batch file operations** (renaming, moving, creating directory structures)
+- **Documentation updates** across multiple files
+- **Agent deep-dive analysis** when Read tool context is insufficient
+
+**Usage by agents:**
+- `planner` → read architecture docs, analyze codebase structure, update design documents
+- `reviewer` → read multiple source files for cross-file DRY analysis
+- `qa` → read test suites, analyze coverage patterns, update test plans
+- `cypher-expert` → read all query builders for consistency analysis
+
+**Examples:**
+```typescript
+// Agent reads all query builders to analyze patterns
+mcp__filesystem__search_files({
+  path: "/home/alex/projects/WayMatesRemote/src/core",
+  pattern: "*-query-builder.ts"
+})
+
+// Agent updates architecture documentation
+mcp__filesystem__write_file({
+  path: "/home/alex/projects/WayMatesRemote/docs/decisions/ADR-005.md",
+  content: "# ADR-005: Discriminated Union Pattern..."
+})
+```
+
+**Note**: Prefer built-in Read/Write/Edit tools for single-file operations. Use filesystem for batch operations or agent deep analysis.
+
 ---
 
 ## Tech Stack
@@ -500,10 +536,36 @@ You should automatically call appropriate agents based on triggers above. The us
 
 ## 📚 Memory Bank - Persistent Context
 
-### Current Work Context
-@memory-bank/activeContext.md
-@memory-bank/tasks.md
-@memory-bank/progress.md
+### Bugs Registry Workflow
+
+**Use dedicated commands for bug management:**
+
+1. **Add bug**: Use `/report-bug` command (see `.claude/commands/report-bug.md`)
+2. **Fix bug**: Use `/fix-bug` command (see `.claude/commands/fix-bug.md`)
+   - Provides interactive bug selection with `AskUserQuestion` tool
+   - Auto-loads relevant context (affected files, tests, git history, Memory Bank)
+   - Follows standard workflow with mandatory reviewer + qa checks
+   - Auto-updates bug status to RESOLVED + links commit
+   - Runs quality gates (lint + tsc + integration tests)
+
+**Manual bug fixing (if not using /fix-bug):**
+
+1. **During fix**: Update bug status to `RESOLVED` in Registry table
+   ```markdown
+   | #1 | 2025-11-11 | search-query-builder | Skills penalty when excluded | RESOLVED | 🔴 P0 |
+   ```
+
+2. **During `/sync-memory`**: Auto-cleanup triggers
+   - Detects RESOLVED status → offers to archive
+   - Moves to Resolved Bugs section with brief trace
+   - Adds links to `decisions.md` + Memory MCP
+
+**Principles**:
+- ✅ Use `/report-bug` for adding bugs (structured with ACs)
+- ✅ Use `/fix-bug` for fixing bugs (automated workflow)
+- ✅ Let `/sync-memory` handle archiving RESOLVED bugs
+- ❌ Don't delete bugs immediately after fix
+- ❌ Don't manually move bugs to archive during coding
 
 ### Session Management
 Use `/sync-memory` command at the end of each session to:
@@ -512,5 +574,6 @@ Use `/sync-memory` command at the end of each session to:
 3. Save architectural decisions (creative-*.md)
 4. Document lessons learned (reflect-*.md)
 5. Update Memory MCP graph
+6. **Archive resolved bugs** (auto-cleanup)
 
 See: [.claude/commands/sync-memory.md](.claude/commands/sync-memory.md)

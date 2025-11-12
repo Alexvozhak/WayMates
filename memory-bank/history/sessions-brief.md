@@ -1,5 +1,63 @@
 # Sessions Brief (Business Context)
 
+## 2025-11-11 (Evening Session 4): Kaggle Cold Start Analysis ✅
+
+**Commit**: (pending) Cold start: Kaggle dataset analysis and top 500 selection
+
+**Проблема**: Need 300-500 real career trajectories for MVP cold start. Kaggle 54k Resume Dataset available but need quality filtering pipeline.
+
+**Решение**: Built 7-stage analysis pipeline with multi-criteria scoring:
+1. Dataset exploration (46k with 3+ jobs, 79% relocations) → sufficient ✅
+2. Complete data filter (location + skills + dates + titles) → 26k candidates
+3. Education analysis → rejected (63% work-first, poor quality)
+4. Entry-level filter (exclude senior-first jobs) → 21k candidates (81% genuine starts)
+5. Strict IT filter (≥50% IT roles) → 15k IT trajectories
+6. Multi-criteria scoring: Recency(40%) + Progression(25%) + Diversity(35%) → **top 500**
+
+**Результат**: Selected 500 high-quality IT trajectories (kaggle-top-500-mvp.json). Quality metrics: 90% from 2015+, avg 68 skills, clear Junior→Senior growth. Decision on started_working: first job = started_working (entry-level filter ensures semantic correctness, no stub context needed).
+
+**Ключевой инсайт**: Multi-stage filtering crucial for data quality. Entry-level filter eliminated 24% senior-first trajectories but gained semantic correctness for started_working (no need for Core refactoring). Education data not suitable for starter context (chronology issues).
+
+**Lessons learned**:
+- Scoring weights matter: recency priority (40%) ensured fresh data (90% from 2015+)
+- Strict IT filter (≥50%) balanced purity vs quantity (15k candidates remaining)
+- Education as starter context seems logical but data quality breaks it (63% work-first chronology)
+
+**Next**: Phase 2 - Schema Design (SyntheticContextInput) + LLM enrichment for missing fields
+
+**См. Memory MCP**: `Kaggle Cold Start Dataset Strategy`, `started_working Context Handling`
+
+**Output files**: 7 scripts in scripts/, kaggle-top-500-mvp.json (final), kaggle/README.md (pipeline documentation)
+
+---
+
+## 2025-11-12: Bug #2 - DTW Metrics Calculation Fix
+**Commit**: `d91e01f` - fix: DTW metrics calculation - 4 issues (Bug #2)
+
+**Проблема**: 4 критических ошибки в trajectory-similarity.service.ts обнаружены при реализации DT1-DT5 integration tests: (1) stabilityScore всегда низкий (0.56 вместо >0.9) из-за DTW warping effect, (2) shapeSimilarity игнорирует domains (Backend vs Frontend показывали 0.89), (3) durationCapMonths не влияет на tempoSimilarity (derivatives от raw durations), (4) U12 test data в неправильном порядке + нет company_changed reasons.
+
+**Решение (4 fix + 3 улучшения)**:
+1. stabilityScore формула: `userLength / pathLength` (user trajectory как baseline, не min/max)
+2. trajectoryDistance: добавлены domains через новый helper `computeJaccardDistance()` (4 компонента: position + duration + domains + reasons)
+3. computeTempoSimilarity: apply `durationCapMonths` **перед** derivatives (capped durations)
+4. U12 test data: исправлен хронологический порядок + добавлены `company_changed` reasons
+5. Улучшение: `computeJaccardDistance()` helper для переиспользования (domains + reasons)
+6. Улучшение: `validatePathLength()` с min check (pathLength >= max(userLen, candidateLen))
+7. Улучшение: chronological validation в `calculateDurationMonths()` (throw error if next < current)
+
+**Результат**: DT1-DT5 integration tests passed (4 passed | 1 skipped). ESLint 0 errors. TypeScript clean. Metrics теперь корректно отражают бизнес-логику: stability учитывает user baseline, shape учитывает domain transitions, tempo чувствителен к durationCapMonths.
+
+**Ключевой инсайт**: User trajectory всегда baseline для всех DTW метрик (не min/max обеих траекторий) - это фундаментальная асимметрия алгоритма.
+
+**Lessons learned**:
+- Node.js кеширует JSON imports → тесты требуют полный перезапуск после изменения test data (см. package.json scripts)
+- Set.forEach() избегает TypeScript --downlevelIteration flag (unicorn правило требует eslint-disable-next-line)
+- Helper functions pattern для переиспользования (Jaccard distance в 2+ местах)
+
+**См. Memory MCP**: `Bug #2 DTW Metrics Fix`, `Test Data Import Cache Pattern`
+
+---
+
 ## 2025-11-11 (Evening Session 3): Cypher Helpers Architecture
 **Commit**: `3dc48d9` - feat(cypher): implement Helper Functions pattern
 
