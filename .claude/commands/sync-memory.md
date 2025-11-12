@@ -123,6 +123,16 @@ git status             # Unstaged changes
 - **pitfalls.md** - если новые грабли
 - **decisions.md** - если важное решение
 - **code-quality.md** - если новое правило
+- **bugs-registry.md** - **АВТО-АРХИВИРОВАНИЕ** RESOLVED багов:
+  - Детектить баги со статусом RESOLVED
+  - Предложить пользователю архивировать
+  - Переместить в "Resolved Bugs" секцию
+  - Добавить ссылки в decisions.md + Memory MCP
+- **features-registry.md** - **АВТО-АРХИВИРОВАНИЕ** DONE фич:
+  - Детектить фичи со статусом DONE
+  - Предложить пользователю архивировать
+  - Переместить в "Completed Features" секцию с кратким summary
+  - Добавить ссылки в decisions.md + Memory MCP
 
 ### Шаг 2: Memory MCP (ВСЕГДА)
 

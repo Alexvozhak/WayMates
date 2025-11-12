@@ -567,6 +567,56 @@ You should automatically call appropriate agents based on triggers above. The us
 - ❌ Don't delete bugs immediately after fix
 - ❌ Don't manually move bugs to archive during coding
 
+### Features Registry Workflow
+
+**Use dedicated commands for feature management:**
+
+1. **Add feature**: Use `/request-feature` command (see `.claude/commands/request-feature.md`)
+   - Interactive gathering: title, component, priority, motivation, ACs, impact
+   - Auto-assigns Feature ID
+   - Adds to `memory-bank/knowledge/features-registry.md`
+
+2. **Implement feature**: Use `/implement-feature` command (see `.claude/commands/implement-feature.md`)
+   - Interactive feature selection from TODO list
+   - Auto-updates status: TODO → IN_PROGRESS → DONE
+   - Full workflow: **planner** → **cypher-expert** → implementation → **reviewer** → **qa**
+   - Quality gates: lint + tsc + tests
+   - Auto-updates registry with commit hash + implementation notes
+
+**Workflow**:
+```
+/request-feature → TODO status in registry
+  ↓
+/implement-feature → IN_PROGRESS (auto)
+  ↓
+planner agent → TYPE SCHEMA + architecture
+  ↓
+cypher-expert agent → tested Cypher queries (if needed)
+  ↓
+Implementation → follow type schema
+  ↓
+reviewer agent → bugs, DRY, edge cases
+  ↓
+qa agent → test coverage
+  ↓
+Quality gates → lint + tsc + tests
+  ↓
+DONE status (auto) + commit hash + implementation notes
+```
+
+**During `/sync-memory`**: Auto-cleanup triggers
+- Detects DONE status → offers to archive
+- Moves to Completed Features section with brief summary
+- Adds links to `decisions.md` + Memory MCP
+
+**Principles**:
+- ✅ Use `/request-feature` for adding features (structured with ACs)
+- ✅ Use `/implement-feature` for implementation (automated workflow with planner)
+- ✅ Break large features into sub-tasks in Acceptance Criteria
+- ✅ Let `/sync-memory` handle archiving DONE features
+- ❌ Don't skip planner call - type schema is mandatory
+- ❌ Don't manually move features to archive during coding
+
 ### Session Management
 Use `/sync-memory` command at the end of each session to:
 1. Sync tasks with Vikunja
