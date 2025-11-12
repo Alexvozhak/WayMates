@@ -97,3 +97,8 @@ focalboard-data/
 vikunja-data/
 plane-data/
 planka-data/
+todo-dropbox/
+
+# Kaggle datasets (large CSV files)
+kaggle/
+US Department of Labor/
