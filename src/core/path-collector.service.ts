@@ -1,6 +1,6 @@
-import { type UserContext, UserContextSchema } from "../shared/schemas.js";
+import { buildPathQuery } from "../cypher/queries/paths.js";
+import { type UserContext, userContextSchema } from "../shared/schemas.js";
 
-import { buildPathQuery } from "./path-query-builder.js";
 
 import type { DatabaseContext } from "../database-context.js";
 
@@ -27,7 +27,7 @@ export class PathCollectorService {
 
         try {
           const path = rawPath.map((ctx: unknown) =>
-            UserContextSchema.parse(ctx)
+            userContextSchema.parse(ctx)
           );
           pathsMap.set(userId, path);
         } catch (error) {

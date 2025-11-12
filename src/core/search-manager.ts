@@ -1,4 +1,9 @@
 import {
+  buildCurrentSearchQuery,
+  buildTargetSearchWithPathsQuery,
+  userCurrentContextQuery,
+} from "../cypher/queries/search.js";
+import {
   type MatchedCandidateWithPath,
   type ScoredMatchedCandidate,
   type UserContext,
@@ -8,11 +13,6 @@ import {
 } from "../shared/schemas.js";
 
 import { CONTEXT_FIELD_NAMES } from "./schemas.js";
-import {
-  buildCurrentSearchQuery,
-} from "./search-query-builder.js";
-import { userCurrentContextQuery } from "../cypher/queries/search.js";
-import { buildTargetSearchWithPathsQuery } from "./target-query-builder.js";
 
 import type { GoalsManager } from "./goals-manager.js";
 import type { PathCollectorService } from "./path-collector.service.js";
