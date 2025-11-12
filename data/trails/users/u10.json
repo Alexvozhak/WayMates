@@ -1,0 +1,91 @@
+{
+  "userId": "usr_019a6ea7-18c0-743c-ade8-dacde0e02c58",
+  "currentContextId": "ctx_019a6ea7-18c0-743c-ade8-e73f1763720d",
+  "contexts": [
+    {
+      "contextId": "ctx_019a6ea7-18c0-743c-ade8-ddb8079671cb",
+      "createdAt": "2022-01-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
+      "position": "Junior",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        "javascript",
+        "nodejs",
+        "rest-api"
+      ],
+      "countryCode": "ru",
+      "cityName": "Moscow",
+      "birthYear": 1995,
+      "citizenships": [
+        "ru"
+      ]
+    },
+    {
+      "contextId": "ctx_019a6ea7-18c0-743c-ade8-e28941c36a88",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-ddb8079671cb",
+      "createdAt": "2023-01-01T00:00:00Z",
+      "creationReason": [
+        "position_changed"
+      ],
+      "position": "Middle",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        "javascript",
+        "nodejs",
+        "rest-api",
+        "typescript",
+        "postgresql",
+        "docker"
+      ],
+      "countryCode": "ru",
+      "cityName": "Moscow",
+      "birthYear": 1995,
+      "citizenships": [
+        "ru"
+      ]
+    },
+    {
+      "contextId": "ctx_019a6ea7-18c0-743c-ade8-e73f1763720d",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-e28941c36a88",
+      "createdAt": "2025-01-01T00:00:00Z",
+      "creationReason": [
+        "position_changed"
+      ],
+      "position": "Senior",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "Backend",
+        "DevOps"
+      ],
+      "skills": [
+        "javascript",
+        "nodejs",
+        "rest-api",
+        "typescript",
+        "postgresql",
+        "docker",
+        "system-design",
+        "microservices",
+        "kubernetes"
+      ],
+      "countryCode": "ru",
+      "cityName": "Moscow",
+      "birthYear": 1995,
+      "citizenships": [
+        "ru"
+      ]
+    }
+  ],
+  "trails": []
+}

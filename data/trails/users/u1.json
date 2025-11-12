@@ -1,37 +1,49 @@
 {
-  "user_id": "usr_01HX91EZ7WTKZ70YTN4ZD4X31T",
+  "userId": "usr_019a6ea7-18be-770d-85a1-ea515ab10d65",
   "contexts": [
     {
-      "context_id": "ctx_01HX91F0C0R000000000000001",
-      "created_at": "2025-01-01T00:00:00Z",
-      "creation_reason": ["started_working"],
+      "contextId": "ctx_019a6ea7-18be-770d-85a1-ef22b035ffb2",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
       "position": "Junior",
       "industry": "tech",
-      "company_size": "startup",
-      "domains": ["Frontend"],
-      "skills": ["react"],
-      "work_type": "remote",
-      "team_size": 3,
-      "country_code": "de",
-      "city_name": "berlin",
-      "birth_year": 1995,
-      "citizenships": ["de"]
+      "companySize": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        "react"
+      ],
+      "countryCode": "de",
+      "cityName": "berlin",
+      "birthYear": 1995,
+      "citizenships": [
+        "de"
+      ]
     },
     {
-      "context_id": "ctx_01HX91F0C0R000000000000002",
-      "created_at": "2026-01-01T00:00:00Z",
-      "creation_reason": ["milestone_achieved"],
+      "contextId": "ctx_019a6ea7-18be-770d-85a1-f28efbd4e3a5",
+      "createdAt": "2025-10-01T00:00:00Z",
+      "creationReason": [
+        "milestone_achieved"
+      ],
       "position": "Middle",
       "industry": "tech",
-      "company_size": "startup",
-      "domains": ["Frontend"],
-      "skills": ["react"],
-      "work_type": "remote",
-      "team_size": 4,
-      "country_code": "de",
-      "city_name": "berlin",
-      "birth_year": 1995,
-      "citizenships": ["de"]
+      "companySize": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        "react"
+      ],
+      "countryCode": "de",
+      "cityName": "berlin",
+      "birthYear": 1995,
+      "citizenships": [
+        "de"
+      ]
     }
   ],
   "trails": []

@@ -2,9 +2,7 @@
 
 **Description**: Analyzes test files to verify they genuinely validate business logic, not just pass for coverage. Detects fake tests, test manipulation, missing edge cases, and misalignment with business requirements.
 
-**Invocation keyword**: `test-review` (single word trigger)
-
-**Alternative keywords**: "review tests", "check test quality", "verify tests", "are tests real"
+**Usage**: `/test-review [path/to/test/file.ts]`
 
 ---
 
@@ -230,14 +228,14 @@ Provide structured analysis:
 1. **Read test file** (use Read tool)
 2. **Read corresponding source code** (understand business logic)
 3. **Apply checklist** (all 5 checks)
-4. **For complex analysis**: Delegate to `waymates-qa` sub-agent
+4. **For complex analysis**: Delegate to `qa` sub-agent
 5. **Output structured report**
 
 ---
 
 ## When to Use Sub-Agent
 
-**Use `waymates-qa` sub-agent when:**
+**Use `qa` sub-agent when:**
 - Test suite is large (>200 lines)
 - Need to analyze test failures
 - Require fixture/schema validation
@@ -245,7 +243,7 @@ Provide structured analysis:
 
 **Example delegation:**
 ```
-Task(waymates-qa, "Analyze tests/integration/gds-similarity.test.ts for:
+Task(qa, "Analyze tests/integration/gds-similarity.test.ts for:
 1. Coverage theater (obvious assertions)
 2. Test manipulation (hardcoded values)
 3. Missing edge cases (null, empty, boundaries)

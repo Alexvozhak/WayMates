@@ -1,37 +1,52 @@
 {
-  "user_id": "usr_01HX95EZ7WTKZ70YTN4ZD4X35Y",
+  "userId": "usr_019a6ea7-18bf-744a-afe5-24e235e06bcb",
   "contexts": [
     {
-      "context_id": "ctx_01HX95F0C0R000000000000051",
-      "created_at": "2024-01-01T00:00:00Z",
-      "creation_reason": ["started_working"],
+      "contextId": "ctx_019a6ea7-18bf-744a-afe5-28769a3a268f",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
       "position": "Middle",
       "industry": "tech",
-      "company_size": "startup",
-      "domains": ["Frontend"],
-      "skills": ["react", "typescript"],
-      "work_type": "remote",
-      "team_size": 5,
-      "country_code": "de",
-      "city_name": "berlin",
-      "birth_year": 1993,
-      "citizenships": ["de"]
+      "companySize": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        "react",
+        "typescript"
+      ],
+      "countryCode": "de",
+      "cityName": "berlin",
+      "birthYear": 1993,
+      "citizenships": [
+        "de"
+      ]
     },
     {
-      "context_id": "ctx_01HX95F0C0R000000000000052",
-      "created_at": "2026-06-01T00:00:00Z",
-      "creation_reason": ["position_changed"],
+      "contextId": "ctx_019a6ea7-18bf-744a-afe5-2fd6cec1abf7",
+      "createdAt": "2025-11-08T00:00:00Z",
+      "creationReason": [
+        "position_changed"
+      ],
       "position": "Senior",
       "industry": "tech",
-      "company_size": "startup",
-      "domains": ["Frontend"],
-      "skills": ["react", "typescript", "node.js"],
-      "work_type": "remote",
-      "team_size": 8,
-      "country_code": "de",
-      "city_name": "berlin",
-      "birth_year": 1993,
-      "citizenships": ["de"]
+      "companySize": "startup",
+      "domains": [
+        "Frontend"
+      ],
+      "skills": [
+        "react",
+        "typescript",
+        "node.js"
+      ],
+      "countryCode": "de",
+      "cityName": "berlin",
+      "birthYear": 1993,
+      "citizenships": [
+        "de"
+      ]
     }
   ],
   "trails": []

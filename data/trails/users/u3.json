@@ -1,37 +1,49 @@
 {
-  "user_id": "usr_01HX93EZ7WTKZ70YTN4ZD4X33V",
+  "userId": "usr_019a6ea7-18bf-744a-afe5-1021f89d019b",
   "contexts": [
     {
-      "context_id": "ctx_01HX93F0C0R000000000000031",
-      "created_at": "2025-03-01T00:00:00Z",
-      "creation_reason": ["started_working"],
+      "contextId": "ctx_019a6ea7-18bf-744a-afe5-1471112c9020",
+      "createdAt": "2024-04-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
       "position": "Junior",
       "industry": "tech",
-      "company_size": "startup",
-      "domains": ["Backend"],
-      "skills": ["go"],
-      "work_type": "remote",
-      "team_size": 3,
-      "country_code": "fr",
-      "city_name": "paris",
-      "birth_year": 1988,
-      "citizenships": ["fr"]
+      "companySize": "startup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        "go"
+      ],
+      "countryCode": "fr",
+      "cityName": "paris",
+      "birthYear": 1988,
+      "citizenships": [
+        "fr"
+      ]
     },
     {
-      "context_id": "ctx_01HX93F0C0R000000000000032",
-      "created_at": "2026-03-01T00:00:00Z",
-      "creation_reason": ["position_changed"],
+      "contextId": "ctx_019a6ea7-18bf-744a-afe5-1ab27557130c",
+      "createdAt": "2025-11-05T00:00:00Z",
+      "creationReason": [
+        "position_changed"
+      ],
       "position": "Middle",
       "industry": "tech",
-      "company_size": "startup",
-      "domains": ["Backend"],
-      "skills": ["go"],
-      "work_type": "remote",
-      "team_size": 4,
-      "country_code": "fr",
-      "city_name": "paris",
-      "birth_year": 1988,
-      "citizenships": ["fr"]
+      "companySize": "startup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        "go"
+      ],
+      "countryCode": "fr",
+      "cityName": "paris",
+      "birthYear": 1988,
+      "citizenships": [
+        "fr"
+      ]
     }
   ],
   "trails": []

@@ -228,6 +228,7 @@ No lengthy explanations - just: Issue → Fix code → Why (1 line).
 - **context7**: Check best practices for patterns
 - **neo4j-cypher**: Validate Cypher query correctness
 - **memory**: Track tech debt for future fixes
+- **filesystem**: Read multiple source files for cross-file DRY analysis
 
 ---
 

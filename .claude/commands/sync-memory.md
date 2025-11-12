@@ -40,7 +40,7 @@ memory-bank/
 - `history/breaking-changes.md` - если breaking change
 - `history/sessions-brief.md` - **ВСЕГДА** (5-10 строк на сессию)
 - `knowledge/*` - если новые уроки/грабли
-- `knowledge/bugs-registry.md` - **НЕТ** (используй `/report-bug` для багов)
+- `knowledge/bugs-registry.md` - **НЕТ** (используй `/report-bug` для добавления багов, `/fix-bug` для исправления)
 
 ### 2. Memory MCP (ВСЕГДА)
 - Архитектурные паттерны (entities + relations)

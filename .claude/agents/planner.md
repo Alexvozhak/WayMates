@@ -136,6 +136,7 @@ Use these tools proactively to ground recommendations:
 - **context7**: Research best practices for any technology (Neo4j, TypeScript, Docker, etc.)
 - **neo4j-cypher**: Test architectural hypotheses on actual database
 - **memory**: Store architectural decisions for future reference
+- **filesystem**: Read architecture docs, analyze codebase structure, update design documents
 
 ---
 

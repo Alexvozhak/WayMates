@@ -1,21 +1,28 @@
 {
-  "user_id": "usr_01HX97EZ7WTKZ70YTN4ZD4X37A",
+  "userId": "usr_019a6ea7-18c0-743c-ade8-a824f4bc8908",
   "contexts": [
     {
-      "context_id": "ctx_01HX97F0C0R000000000000071",
-      "created_at": "2025-01-01T00:00:00Z",
-      "creation_reason": ["started_working"],
+      "contextId": "ctx_019a6ea7-18c0-743c-ade8-acd8c3b54eb0",
+      "createdAt": "2025-01-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
       "position": "Junior",
       "industry": "fintech",
-      "company_size": "startup",
-      "domains": ["Backend"],
-      "skills": ["java", "spring"],
-      "work_type": "remote",
-      "team_size": 4,
-      "country_code": "gb",
-      "city_name": "london",
-      "birth_year": 1994,
-      "citizenships": ["gb"]
+      "companySize": "startup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        "java",
+        "spring"
+      ],
+      "countryCode": "gb",
+      "cityName": "london",
+      "birthYear": 1994,
+      "citizenships": [
+        "gb"
+      ]
     }
   ],
   "trails": []

@@ -1,61 +1,107 @@
 {
-  "user_id": "usr_01JAB000000000000000000008",
+  "userId": "usr_019a6ea7-18c0-743c-ade8-b262f1b18312",
   "contexts": [
     {
-      "context_id": "ctx_01JAB000000000000000000801",
-      "created_at": "2020-01-01T00:00:00Z",
-      "creation_reason": ["started_working"],
+      "contextId": "ctx_019a6ea7-18c0-743c-ade8-b565ba2f2fb0",
+      "createdAt": "2020-01-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
       "position": "Junior",
       "industry": "IT",
-      "company_size": "startup",
-      "domains": ["Backend"],
-      "skills": ["python", "sql"],
-      "country_code": "US",
-      "city_name": "new york",
-      "birth_year": 1998,
-      "citizenships": ["US"]
+      "companySize": "startup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        "python",
+        "sql"
+      ],
+      "countryCode": "US",
+      "cityName": "new york",
+      "birthYear": 1998,
+      "citizenships": [
+        "US"
+      ]
     },
     {
-      "context_id": "ctx_01JAB000000000000000000802",
-      "created_at": "2021-01-01T00:00:00Z",
-      "creation_reason": ["skill_learning"],
+      "contextId": "ctx_019a6ea7-18c0-743c-ade8-badf138904c0",
+      "createdAt": "2021-01-01T00:00:00Z",
+      "creationReason": [
+        "skill_learning"
+      ],
       "position": "Middle",
       "industry": "IT",
-      "company_size": "startup",
-      "domains": ["Backend"],
-      "skills": ["python", "sql", "docker"],
-      "country_code": "US",
-      "city_name": "new york",
-      "birth_year": 1998,
-      "citizenships": ["US"]
+      "companySize": "startup",
+      "domains": [
+        "Backend"
+      ],
+      "skills": [
+        "python",
+        "sql",
+        "docker"
+      ],
+      "countryCode": "US",
+      "cityName": "new york",
+      "birthYear": 1998,
+      "citizenships": [
+        "US"
+      ]
     },
     {
-      "context_id": "ctx_01JAB000000000000000000803",
-      "created_at": "2022-07-01T00:00:00Z",
-      "creation_reason": ["milestone_achieved", "company_changed"],
+      "contextId": "ctx_019a6ea7-18c0-743c-ade8-bfdc78c3b1b2",
+      "createdAt": "2022-07-01T00:00:00Z",
+      "creationReason": [
+        "milestone_achieved",
+        "company_changed"
+      ],
       "position": "Senior",
       "industry": "IT",
-      "company_size": "medium",
-      "domains": ["Backend", "DevOps"],
-      "skills": ["python", "sql", "docker", "kubernetes"],
-      "country_code": "US",
-      "city_name": "san francisco",
-      "birth_year": 1998,
-      "citizenships": ["US"]
+      "companySize": "medium",
+      "domains": [
+        "Backend",
+        "DevOps"
+      ],
+      "skills": [
+        "python",
+        "sql",
+        "docker",
+        "kubernetes"
+      ],
+      "countryCode": "US",
+      "cityName": "san francisco",
+      "birthYear": 1998,
+      "citizenships": [
+        "US"
+      ]
     },
     {
-      "context_id": "ctx_01JAB000000000000000000804",
-      "created_at": "2024-07-01T00:00:00Z",
-      "creation_reason": ["position_changed"],
+      "contextId": "ctx_019a6ea7-18c0-743c-ade8-c384e8c836e4",
+      "createdAt": "2024-07-01T00:00:00Z",
+      "creationReason": [
+        "position_changed"
+      ],
       "position": "TechLead",
       "industry": "IT",
-      "company_size": "large",
-      "domains": ["Backend", "DevOps", "Architecture"],
-      "skills": ["python", "sql", "docker", "kubernetes", "system_design"],
-      "country_code": "US",
-      "city_name": "san francisco",
-      "birth_year": 1998,
-      "citizenships": ["US"]
+      "companySize": "large",
+      "domains": [
+        "Backend",
+        "DevOps",
+        "Architecture"
+      ],
+      "skills": [
+        "python",
+        "sql",
+        "docker",
+        "kubernetes",
+        "system_design"
+      ],
+      "countryCode": "US",
+      "cityName": "san francisco",
+      "birthYear": 1998,
+      "citizenships": [
+        "US"
+      ]
     }
   ],
   "trails": []
