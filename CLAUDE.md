@@ -202,6 +202,29 @@ class CacheManager {
 
 ---
 
+## Test Quality Standards
+
+**CRITICAL**: Follow test quality standards to avoid coverage theater and fake tests.
+
+See detailed guide: [routers/test/standards.md](.claude/routers/test/standards.md)
+
+**Quick reference**:
+- ✅ Validate business logic, not implementation
+- ✅ Avoid coverage theater (obvious invariants, Zod duplicates)
+- ✅ Ask 4 questions before writing assertions:
+  1. ❌ Is this guaranteed by Zod? → **Skip it**
+  2. ❌ Is this guaranteed by math/existence? → **Skip it**
+  3. ✅ Does this validate a **business rule**? → **Keep it**
+  4. ✅ Would this fail if business logic regresses? → **Keep it**
+
+**For full details**:
+- [routers/test/standards.md](.claude/routers/test/standards.md) - 5 Checks (Coverage Theater, Test Manipulation, Business Goal, Edge Cases, Schema/Cypher Risk)
+- [routers/test/test-rules.md](.claude/routers/test/test-rules.md) - Dev tips + test-specific mistakes
+- [routers/test/workflows.md](.claude/routers/test/workflows.md) - Processes, delegation rules, quality gates
+- [routers/test/environment.md](.claude/routers/test/environment.md) - Vitest config, setup, commands
+
+---
+
 ## MCP Servers
 
 The following MCP servers provide specialized capabilities:
@@ -320,51 +343,45 @@ mcp__filesystem__write_file({
 
 ---
 
-## Cypher Best Practices
+## Knowledge Router
 
-**CRITICAL**: Always follow these Neo4j Cypher conventions:
+**CRITICAL**: Для сложных задач (Cypher, QA, ESLint, LangGraph) используй knowledge router.
 
-### 1. Map Projection (MANDATORY)
+**Workflow**:
+1. Загрузи [.claude/routers/router.md](.claude/routers/router.md)
+2. Найди свою задачу в модулях
+3. Загрузи module-specific router (например, `.claude/routers/cypher/router.md`)
+4. Следуй инструкциям модуля
 
-**ALWAYS** use map projection syntax for returning node properties:
+**Self-awareness**: После работы используй `/reflect [module]` для анализа и улучшения документации.
 
-```cypher
-// ✅ CORRECT - Map projection
-RETURN c {
-  .context_id,
-  .created_at,
-  .birth_year,
-  position: p.name,
-  skills: collect(DISTINCT s.name)
-} AS matched_context
+**Примеры**:
+- Работа с Cypher → загрузи `.claude/routers/cypher/router.md`
+- После Cypher-работы → `/reflect cypher`
 
-// ❌ WRONG - Manual enumeration
-RETURN {
-  context_id: c.context_id,
-  created_at: c.created_at,
-  birth_year: c.birth_year,
-  position: p.name,
-  skills: collect(DISTINCT s.name)
-} AS matched_context
-```
+---
 
-**Why**:
-- Cleaner, more concise
-- Standard Neo4j syntax
-- Less error-prone
-- Better performance
+## Cypher Rules
 
-### 2. Other Rules
+**CRITICAL**: Для работы с Cypher queries **ВСЕГДА** загружай `.claude/routers/cypher/router.md` первым.
 
-See `.claude/context/project.md` for:
-- WITH clause scope rules
-- Canonical variable naming
-- Null safety patterns
-- Parameter binding conventions
+**Quick reference** (полный checklist в `.claude/routers/cypher/cypher-rules.md`):
+- ✅ Map projection: `RETURN c { .field, custom: value }`
+- ✅ Canonical naming: `searchingContext`, `matchedContext`, `searchingPathContext`, `matchedPathContext`
+- ✅ Null safety: `coalesce($array, [])`
+- ✅ Bounded patterns: `*0..20` (never unbounded)
+- ✅ Business logic: проверяй фильтры в `business-logic.md` (90% search багов = wrong filter!)
+- ✅ Integer params: `toInteger($limit)` для LIMIT/SKIP
+
+**Полный контекст**: [.claude/routers/cypher/router.md](.claude/routers/cypher/router.md)
 
 ---
 
 ## Cypher Development Workflow
+
+**IMPORTANT**: Before debugging Cypher queries, read these guides:
+- [Search Modes Business Logic](docs/search_modes_business_logic.md) - Understand WHAT query should do
+- [Cypher Debugging Guide](docs/cypher_debugging_guide.md) - HOW to debug queries
 
 When working with Cypher queries, **ALWAYS delegate to cypher-expert agent** for:
 
@@ -472,11 +489,11 @@ npm run test:integration             # After Cypher/schema changes
 
 **CRITICAL**: This project enforces strict simplicity and readability standards through ESLint.
 
-See [docs/eslint_simplicity_rules.md](docs/eslint_simplicity_rules.md) for full details.
+**Source of truth**: `eslint.config.mjs` (все правила, naming conventions, category-specific overrides)
 
 ### Key Rules:
 
-1. **Complexity Limits**:
+1. **Complexity Limits** (строки 175-184):
    - `max-depth: 2` - maximum 2 levels of nesting
    - `complexity: 8` - cyclomatic complexity ≤ 8
    - `max-lines-per-function: 60` - functions up to 60 lines

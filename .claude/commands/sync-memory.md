@@ -31,6 +31,20 @@ memory-bank/
 
 ---
 
+## Core Principle: Memory Bank as Navigation Layer
+
+**Memory Bank - это индекс/навигация, НЕ полный контекст!**
+
+**ОБЯЗАТЕЛЬНО** оставляй "хлебные крошки" к источникам полного контекста:
+- Test Plan: `docs/mvp_final/TEST_PLAN_*.md` (lines X-Y)
+- Architecture: `docs/decisions/ADR-*.md`
+- Requirements: `docs/*/feature-spec.md`
+- Session context: `memory-bank/history/sessions-brief.md` (date)
+
+**Why**: Memory Bank краткий (быстро читается). Полный контекст в `docs/` (детальный, версионируемый). Хлебные крошки = мост между ними.
+
+---
+
 ## Что обновляю:
 
 ### 1. memory-bank (выборочно, по изменениям)

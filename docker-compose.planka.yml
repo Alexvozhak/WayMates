@@ -1,0 +1,94 @@
+# Planka Kanban - Minimal Docker Compose (host network for VPN compatibility)
+# Documentation: https://docs.planka.cloud/
+#
+# Simplified version:
+# - Only 2 services: planka + postgres (vs Plane's 6 services!)
+# - Uses host network (VPN-friendly, no port mapping issues)
+# - Custom ports to avoid conflicts with WayMates and Plane
+#
+# Quick start:
+#   1. cp .env.planka.example .env.planka
+#   2. Edit .env.planka: set SECRET_KEY and passwords
+#   3. docker-compose -f docker-compose.planka.yml --env-file .env.planka up -d
+#   4. Open http://localhost:3000
+#   5. Login with admin credentials from .env.planka
+#   6. Update .mcp.json with your credentials
+#   7. Reload Claude Code window
+
+services:
+  planka-postgres:
+    image: postgres:15-alpine
+    container_name: planka-postgres
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: planka
+      POSTGRES_PASSWORD: ${PLANKA_DB_PASSWORD:-planka}
+      POSTGRES_DB: planka
+      POSTGRES_HOST_AUTH_METHOD: trust
+      # Use custom port to avoid conflicts
+      # WayMates Neo4j: 7689, Plane: 5433, Planka: 5434
+      PGPORT: 5434
+    volumes:
+      - planka_postgres_data:/var/lib/postgresql/data
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-p"
+      - "5434"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U planka -d planka -p 5434"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  planka:
+    image: ghcr.io/plankanban/planka:latest
+    container_name: planka
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      # Base URL (http://localhost:3000 for local dev)
+      BASE_URL: ${PLANKA_BASE_URL:-http://localhost:3000}
+      TRUST_PROXY: ${PLANKA_TRUST_PROXY:-0}
+
+      # Database (host network, custom port)
+      DATABASE_URL: postgresql://planka:${PLANKA_DB_PASSWORD:-planka}@localhost:5434/planka?sslmode=disable
+
+      # Secret Key (CHANGE THIS!)
+      SECRET_KEY: ${PLANKA_SECRET_KEY:-changeme-generate-random-secret-min-32-chars}
+
+      # Default admin credentials (created on first run)
+      DEFAULT_ADMIN_EMAIL: ${PLANKA_ADMIN_EMAIL:-admin@planka.local}
+      DEFAULT_ADMIN_PASSWORD: ${PLANKA_ADMIN_PASSWORD:-admin}
+      DEFAULT_ADMIN_NAME: ${PLANKA_ADMIN_NAME:-Administrator}
+      DEFAULT_ADMIN_USERNAME: ${PLANKA_ADMIN_USERNAME:-admin}
+
+      # Node.js environment
+      NODE_ENV: production
+
+      # Port (Planka runs on 1337 internally, we expose via PORT env)
+      PORT: 3000
+    depends_on:
+      planka-postgres:
+        condition: service_healthy
+    volumes:
+      - planka_user_files:/app/public/user-files
+      - planka_user_avatars:/app/public/user-avatars
+      - planka_project_backgrounds:/app/public/project-background-images
+      - planka_attachments:/app/private/attachments
+
+volumes:
+  planka_postgres_data:
+    driver: local
+  planka_user_files:
+    driver: local
+  planka_user_avatars:
+    driver: local
+  planka_project_backgrounds:
+    driver: local
+  planka_attachments:
+    driver: local
