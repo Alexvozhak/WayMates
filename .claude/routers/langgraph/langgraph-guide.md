@@ -25,7 +25,8 @@ Practical guide для implementation LangGraph workflows в TypeScript. Ада�
 5. [Resume Workflow](#5-resume-workflow)
 6. [Conditional Edges vs Dynamic Routing](#6-conditional-edges-vs-dynamic-routing)
 7. [Send Pattern for Parallel Execution](#7-send-pattern-for-parallel-execution)
-8. [Common Pitfalls](#8-common-pitfalls)
+8. [Stream Modes for Progress Tracking](#8-stream-modes-for-progress-tracking)
+9. [Common Pitfalls](#9-common-pitfalls)
 
 ---
 
@@ -518,17 +519,38 @@ async function runWorkflow(userId: string, message: string, threadId?: string) {
 - ✅ **thread_id** уникален для каждого workflow instance
 - ❌ **НЕ создавать новый RedisSaver** для каждого `graph.invoke()`
 
-### vs SQLite Checkpointer
+### Checkpointer Comparison
 
-| Feature | RedisSaver | SqliteSaver |
-|---------|------------|-------------|
-| TTL | ✅ Automatic (`EXPIRE`) | ❌ Manual cleanup required |
-| Distributed | ✅ Yes | ❌ File-based |
-| Performance | ✅ In-memory | ⚠️ Disk I/O |
-| Persistence | ⚠️ Requires AOF | ✅ Always persistent |
-| Session Management | ✅ One client | ⚠️ New session per operation |
+| Feature | RedisSaver | SqliteSaver | MemorySaver |
+|---------|------------|-------------|-------------|
+| TTL | ✅ Automatic (`EXPIRE`) | ❌ Manual cleanup required | ⚠️ Process lifetime only |
+| Distributed | ✅ Yes | ❌ File-based | ❌ In-process |
+| Performance | ✅ In-memory | ⚠️ Disk I/O | ✅ Fastest (no I/O) |
+| Persistence | ⚠️ Requires AOF | ✅ Always persistent | ❌ Lost on restart |
+| Session Management | ✅ One client | ⚠️ New session per operation | ✅ Simple singleton |
+| Use Case | Production (distributed) | Production (single node) | **Tests & prototypes only** |
 
 **WayMates Choice**: RedisSaver (TTL + distributed-ready + same Redis for dictionaries cache)
+
+**MemorySaver Usage**:
+```typescript
+import { MemorySaver } from "@langchain/langgraph";
+
+// ✅ For tests and short sessions only
+const checkpointer = new MemorySaver();
+const graph = workflow.compile({ checkpointer });
+
+const result = await graph.invoke(
+  { userId: "usr_123" },
+  { configurable: { thread_id: "test_session" } }
+);
+```
+
+**⚠️ Important**: MemorySaver state is lost when process terminates. Use ONLY for:
+- Unit tests
+- Integration tests
+- Local prototyping
+- **NEVER** for production workflows
 
 ---
 
@@ -827,7 +849,74 @@ const graph = new StateGraph(DataIngestionState)
 
 ---
 
-## 8. Common Pitfalls
+## 8. Stream Modes for Progress Tracking
+
+### invoke vs stream
+
+**invoke / ainvoke**: Returns only final result after workflow completes.
+
+```typescript
+// ✅ Use when you only need final result
+const result = await workflow.invoke(
+  { userId: "usr_123", messages: ["Hello"] },
+  config
+);
+console.log(result); // Final state only
+```
+
+**stream / astream**: Returns intermediate updates as workflow executes.
+
+```typescript
+// ✅ Use when you need progress tracking
+for await (const event of workflow.stream(input, config)) {
+  console.log("Update:", event);
+}
+```
+
+### Stream Modes
+
+| Mode | Output | Use Case |
+|------|--------|----------|
+| `updates` | Changes to state after each node | Track what each node modified |
+| `values` | Full state after each node | See complete state progression |
+| `messages` | Only message updates | Chat-like interfaces |
+
+### Example: Track Validation Progress
+
+```typescript
+// Show user which validation step is running
+async function runWithProgress(userId: string, message: string) {
+  const config = {
+    configurable: { thread_id: `thr_${uuidv7()}` },
+  };
+
+  for await (const event of workflow.stream(
+    { userId, messages: [message] },
+    config,
+    { streamMode: "updates" } // Get updates after each node
+  )) {
+    // event = { nodeName: "semantic", update: { semanticErrors: [...] } }
+    console.log(`Step: ${event.nodeName}`);
+
+    if (event.nodeName === "semantic" && event.update.semanticErrors?.length > 0) {
+      console.log(`⚠️ Validation errors: ${event.update.semanticErrors.join(", ")}`);
+    }
+  }
+}
+```
+
+### WayMates Usage
+
+**Current Design**: Use `invoke` for simplicity (LibreChat doesn't need progress tracking).
+
+**Potential Future Use**:
+- Progress indicators in LibreChat UI
+- Real-time validation feedback
+- Debug logging in development
+
+---
+
+## 9. Common Pitfalls
 
 ### ❌ Pitfall 1: Try/Catch Around Interrupt
 
@@ -952,10 +1041,12 @@ async function myNode(state: State) {
 1. ✅ **Interrupt Pattern**: Node re-executes after resume, check `state.resumeValue` at beginning
 2. ✅ **Command Pattern**: Always use `Command({update, goto})`, never plain object
 3. ✅ **Reducers**: CONCAT for arrays (messages), MERGE for objects (extractedContext), REPLACE for errors
-4. ✅ **Redis Checkpointer**: One client per app, TTL automatic, thread_id per workflow instance
-5. ✅ **Resume**: Use `Command({resume: value})` with SAME thread_id
-6. ✅ **Dynamic Routing**: Use `Command({goto})` for flexible routing with state updates
-7. ❌ **Never**: Try/catch around interrupt, forget checkpointer, use wrong reducer, different thread_id on resume
+4. ✅ **Checkpointers**: RedisSaver (production), SqliteSaver (single node), MemorySaver (tests only)
+5. ✅ **Redis Checkpointer**: One client per app, TTL automatic, thread_id per workflow instance
+6. ✅ **Resume**: Use `Command({resume: value})` with SAME thread_id
+7. ✅ **Dynamic Routing**: Use `Command({goto})` for flexible routing with state updates
+8. ✅ **Stream Modes**: `invoke` for final result, `stream(mode="updates")` for progress tracking
+9. ❌ **Never**: Try/catch around interrupt, forget checkpointer, use wrong reducer, different thread_id on resume, use MemorySaver in production
 
 ---
 
@@ -963,7 +1054,6 @@ async function myNode(state: State) {
 
 - [LangGraph.js Docs](https://langchain-ai.github.io/langgraphjs/)
 - [WayMates architecture.md](../../../docs/architecture/workflows/facade/features-5-7-architecture.md)
-- [langgraph_rules.md](../../../langgraph_rules.md) (Python, but concepts apply)
 - [Context7 LangGraph Examples](https://context7.com/langchain-ai/langgraphjs)
 
 ---

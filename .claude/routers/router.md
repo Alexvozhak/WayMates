@@ -75,12 +75,14 @@
 ---
 
 ### 🤖 LangGraph (AI Workflow)
-**Роутер**: knowledge/langgraph/router.md *(planned)*
+**Роутер**: [langgraph/router.md](langgraph/router.md)
 
 **Когда загружать**:
 - Проектируешь LangGraph workflow
-- Работаешь с AI agents orchestration
-- Настраиваешь state management
+- Пишешь/дебажишь LangGraph nodes
+- Работаешь с interrupt/resume patterns
+- Настраиваешь checkpointers (Redis/SQLite/Memory)
+- Настраиваешь state management (State Annotation, reducers)
 - Дебажишь workflow execution
 
 **После работы**: `/reflect langgraph`
