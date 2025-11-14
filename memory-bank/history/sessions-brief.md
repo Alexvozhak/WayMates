@@ -1,5 +1,33 @@
 # Sessions Brief (Business Context)
 
+## 2025-11-14 (Evening): Facade Scenarios 5-11 + Review Issues ✅
+
+**Commit**: `0a32b89` - docs: complete Facade Scenarios 5-11 + implementation questions
+
+**Проблема**: Завершить Scenarios 5-11 для add_experience workflow (LangGraph с 11 nodes, 4 interrupts, validation cycles). Reviewer нашел 12 issues в architecture doc - исправить P0.
+
+**Решение**:
+1. **Scenarios 5-11 Created**: Happy Path (5), Interrupted Session (6), Semantic Errors (7), Schema Errors (8), Normalization Warnings (9), Preview Corrections (10), Cancel Workflow (11). 7 детальных Mermaid sequence diagrams для всех edge cases LangGraph workflow.
+2. **Interrupt Pattern Fixed**: Corrected resumeValue logic в Scenarios 5-10 - node **re-executes** после resume (не continues from interrupt point). Critical для LangGraph correctness.
+3. **Interrupt Count Fixed**: 3 → 4 potential interrupts (clarify_semantic, clarify_schema, handle_normalization, confirm). Documentation inconsistency caught proactively.
+4. **Implementation Questions Doc**: Создан implementation-questions.md (10 вопросов для pre-coding discussion) - отдельно от ADR для operational decisions (Redis pattern, thread ID generation, session TTL extension, max cycles limit).
+5. **Feature #17 Planned**: Core-Facade API Contract добавлен в Features Registry как parent feature для #15-16 + DictionariesManager (3 NEW endpoints).
+6. **Architecture Review**: review-features-5-7.md создан (12 issues: 4 P0 Critical, 5 P1 Major, 3 P2 Minor) - proactive quality check перед implementation.
+
+**Результат**: Scenarios 5-11 завершены (total: 12 scenarios от 0 до 11). Phase 3 (User Scenarios) **COMPLETE**. Phase 4 (Core API Requirements) ready to start - inventory собран, но core-api-inventory.md и core-facade-api-contract.md **отложены** на отдельную сессию (user deleted drafts).
+
+**Ключевой инсайт**: LangGraph interrupt pattern requires resumeValue check - node re-executes, doesn't continue (critical для state management). Architecture review нашел 4 P0 issues ДО implementation: interrupt pattern bug, interrupt count inconsistency, missing cancel scenario, implementation questions отсутствовали. Proactive quality gates work.
+
+**Lessons learned**:
+- Reviewer agent catches architecture bugs early - interrupt pattern correctness validated before implementation phase
+- Implementation questions separate from ADR - operational decisions (Redis singleton? TTL extension?) не architectural
+- Large scenario (old Scenario 7 was 400+ lines) better split into 4 focused scenarios (7-10) - easier to review/implement
+- Cancel workflow needs explicit scenario even if "obvious" - documentation completeness matters
+
+**См. Memory MCP**: `Facade Scenarios 5-11 Complete 2025-11-14`, `LangGraph Interrupt Pattern`, `Implementation Questions Pattern`
+
+---
+
 ## 2025-11-14: Facade Architecture - Scenarios 0-4 ✅
 
 **Commit**: `c4095d0` - docs: add Facade architecture (Features #5-7) - Scenarios 0-4
