@@ -256,7 +256,6 @@ Options (multiSelect):
 ### Feature #N: [Title]
 **Component**: [component(s)]
 **Date**: [today's date YYYY-MM-DD]
-**Status**: TODO
 **Priority**: [🔴 P0 / 🟡 P1 / 🟢 P2]
 
 **Motivation**:

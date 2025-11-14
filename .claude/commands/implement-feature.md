@@ -164,7 +164,9 @@ Before marking feature as DONE:
 | #1 | 2025-11-12 | Context schema | Salary range (min/max) | IN_PROGRESS | 🟡 P1 |
 
 ### Feature #1: Add salary range to Context schema
-**Status**: IN_PROGRESS
+**Component**: Context schema, search-query-builder
+**Date**: 2025-11-12
+**Priority**: 🟡 P1 (Important)
 ...
 **Acceptance Criteria**:
 - [ ] Context node has `salary_min` and `salary_max` properties
@@ -178,7 +180,9 @@ Before marking feature as DONE:
 | #1 | 2025-11-12 | Context schema | Salary range (min/max) | DONE | 🟡 P1 |
 
 ### Feature #1: Add salary range to Context schema
-**Status**: DONE
+**Component**: Context schema, search-query-builder
+**Date**: 2025-11-12
+**Priority**: 🟡 P1 (Important)
 ...
 **Acceptance Criteria**:
 - [x] Context node has `salary_min` and `salary_max` properties
