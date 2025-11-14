@@ -1,5 +1,32 @@
 # Key Decisions (Важные решения)
 
+## Core Module Independence: SelectivityService Migration (2025-11-15)
+
+**Problem**: SelectivityService в `src/services/` использовался core модулем → архитектурная зависимость (core зависит от services). Нарушение принципа модульной независимости, блокирует будущий split на отдельные репозитории.
+
+**Decision**: Переместить SelectivityService в `src/core/`, удалить зависимость core → services.
+
+**Why**:
+- **Architectural boundary**: Core должен быть независимым модулем (business logic layer), services - утилиты
+- **Future-proof**: Core + Facade будут split в отдельные репы - нельзя тащить services зависимости
+- **Ownership**: SelectivityService = Cypher query optimization = core business logic (не utility service)
+
+**Implementation**:
+- Moved: `src/services/selectivity.service.ts` → `src/core/selectivity.service.ts`
+- Inlined: field-snippets.ts → `Record<ContextField, string>` (exhaustiveness check)
+- Updated: imports в `core/index.ts`, `search-manager.ts`, `tests/helpers/fixture-search-manager.ts`
+- Bonus: tsconfig target es2022 → es2023 (`.toSorted()` support, -8 TypeScript errors)
+
+**Key Insight**:
+- `Record<ContextField, string>` > switch/case - TypeScript exhaustiveness check бесплатно, IDE autocomplete
+- Early boundary enforcement проще чем refactoring после split
+
+**См. commit**: `ace53f4` - refactor: move SelectivityService to core and inline field snippets
+
+**См. Memory MCP**: `SelectivityService Core Migration 2025-11-15`, `Record Pattern for Field Mapping`
+
+---
+
 ## LangGraph Integration: Hybrid Architecture (2025-11-12)
 
 **Problem**: Нужен ли Facade для LangGraph или клиенты (LibreChat, Cursor) могут работать с Core напрямую?

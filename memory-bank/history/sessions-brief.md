@@ -1,5 +1,30 @@
 # Sessions Brief (Business Context)
 
+## 2025-11-15 (Night): SelectivityService Refactoring ✅
+
+**Commit**: `ace53f4` - refactor: move SelectivityService to core and inline field snippets
+
+**Проблема**: SelectivityService находился в `src/services/`, но использовался core модулем → архитектурная зависимость нарушает принцип разделения (core не должен зависеть от services для будущего split на отдельные репы). field-snippets.ts содержал simple Record, дублировал логику.
+
+**Решение**:
+1. **Moved to core**: `src/services/selectivity.service.ts` → `src/core/selectivity.service.ts` - устранена зависимость services → core.
+2. **Inlined field-snippets.ts**: Удален файл, паттерны встроены как `Record<ContextField, string>` с exhaustiveness check (TypeScript гарантирует покрытие всех полей).
+3. **Upgraded tsconfig**: `target: "es2022"` → `"es2023"` для `.toSorted()` support (Node 20+ compatible) - исправлено **8 TypeScript ошибок** (76 → 68).
+4. **Updated imports**: `src/core/index.ts`, `search-manager.ts`, `tests/helpers/fixture-search-manager.ts`.
+
+**Результат**: Core модуль **независим** от services, готов к split на отдельные репозитории. field-snippets.ts удален (46 строк → 8 строк в Record). Integration tests passed (19+ tests). TypeScript errors: -8.
+
+**Ключевой инсайт**: `Record<ContextField, string>` элегантнее switch/case - exhaustiveness check + декларативность + автокомплит IDE. tsconfig target=es2023 безопасен для Node 20 (ESLint требует `.toSorted()`, TypeScript поддерживает).
+
+**Lessons learned**:
+- Architectural boundaries matter early - проще исправить dependency до split чем после
+- Record type mapping > switch/case для field patterns (TypeScript exhaustiveness check бесплатно)
+- ESLint/TypeScript target alignment prevents conflicts (es2022 vs toSorted() требовал es2023)
+
+**См. Memory MCP**: `SelectivityService Core Migration 2025-11-15`, `Record Pattern for Field Mapping`
+
+---
+
 ## 2025-11-14 (Evening): Facade Scenarios 5-11 + Review Issues ✅
 
 **Commit**: `0a32b89` - docs: complete Facade Scenarios 5-11 + implementation questions
