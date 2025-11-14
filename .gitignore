@@ -97,7 +97,7 @@ focalboard-data/
 vikunja-data/
 plane-data/
 planka-data/
-todo-dropbox/
+todo-dropbox
 
 # Kaggle datasets (large CSV files)
 kaggle/
