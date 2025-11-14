@@ -101,6 +101,13 @@ git status             # Unstaged changes
 6. **Новые уроки?** (из reviewer/qa output)
    → Обновляю knowledge/* (cypher-mistakes, pitfalls, decisions)
 
+7. **Code changes ready to commit?**
+   - Если есть unstaged/staged changes из текущей сессии → **ПРЕДЛОЖИ ПОЛЬЗОВАТЕЛЮ закоммитить СЕЙЧАС**
+   - Покажи список файлов с датами (разделяй текущая сессия / прошлые сессии)
+   - После подтверждения: `git add` + `git commit` с описанием
+   - **Запомни commit hash** - он понадобится в Шаг 1 для sessions-brief.md
+   - **Причина**: sessions-brief.md ссылается на commit hash, нельзя записать hash до создания коммита
+
 ### Шаг 1: Обновляю memory-bank (по результатам Шаг 0)
 
 #### project-state/* (актуализация)
@@ -212,9 +219,9 @@ mcp__memory__create_relations({
 - **workspace.dsl** - если архитектура изменилась
 - **README.md** - всегда обновляю дату + метрики готовности
 
-### Шаг 4: Git commit (рекомендация)
+### Шаг 4: Git commit memory-bank
 
-Если были изменения в memory-bank:
+Если были изменения в memory-bank (Шаг 1) или docs/architecture (Шаг 3):
 ```bash
 git add memory-bank/ docs/architecture/
 git commit -m "docs: update memory-bank after [session summary]"
