@@ -1,5 +1,31 @@
 # Sessions Brief (Business Context)
 
+## 2025-11-14: Facade Architecture - Scenarios 0-4 ✅
+
+**Commit**: `c4095d0` - docs: add Facade architecture (Features #5-7) - Scenarios 0-4
+
+**Проблема**: Спроектировать детальные user scenarios для Features #5-7 (Facade NLP Gateway). Определить API между Facade и Core, выявить missing endpoints.
+
+**Решение**:
+1. **Session-based Auth Architecture**: Token только для register/authenticate, session_id в каждом запросе (TTL 1h, Redis). **Single Active Session pattern** - новая auth invalidates старую (защита от session hijacking). Session leak менее критичен чем token leak (max 1h vs permanent).
+2. **Scenarios 0-4 Created**: Registration (0), Re-auth (0b), Simple Search (1), get_story (2), set_goal (3), update_context (4). Mermaid sequence diagrams с normalization cache layer (Redis → Neo4j → WebSearch).
+3. **Core API Gaps Identified**: Feature #15 (security - client не должен контролировать contextId, нужен tempId → UUID mapping), Feature #16 (missing CRUD endpoints: update_current_context, add_context, add_trail, update_trail, get_trails).
+4. **C4 Structure Decision**: Оставить all-in-one document (features-5-7-architecture.md) для Phase 3, decompose в scenarios/ после завершения всех сценариев. Update /plan-feature prompt в конце.
+
+**Результат**: Scenarios 0-4 завершены с детальными Mermaid диаграммами. Phase 4 (Core API Requirements) **BLOCKED** Feature #15-16. Остались Scenarios 5-7 (add_experience - самый сложный LangGraph workflow, + 2 edge cases).
+
+**Ключевой инсайт**: Session-based auth с Single Active Session pattern обеспечивает баланс security/UX - утекший session_id менее критичен чем token (max 1h impact vs permanent), новая auth автоматически kicks out attacker. Architecture planning выявил 2 критичных Core API gaps ДО implementation phase (proactive bug prevention).
+
+**Lessons learned**:
+- Business analyst approach works: context → problem → solution structure перед вопросами
+- Mermaid sequence diagrams only - no redundant text summaries (избегаем "coverage theater" в docs)
+- All-in-one approach для linear planning, decompose после полного context (avoid premature structure)
+- Scenarios reveal API gaps early - Feature #15-16 созданы проактивно из architecture analysis, не из bug reports
+
+**См. Memory MCP**: `Session-based Auth Architecture 2025-11-14`, `Single Active Session Pattern`, `Facade Scenarios 0-4`
+
+---
+
 ## 2025-11-13 (Evening): LangGraph Q2-Q4 Decisions + Feature #10 ✅
 
 **Commit**: (pending) docs: resolve Q2-Q4 (Redis checkpoints, tool naming, LibreChat integration)
