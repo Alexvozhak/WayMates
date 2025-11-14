@@ -1,5 +1,82 @@
 # Key Decisions (Важные решения)
 
+## LangGraph Integration: Hybrid Architecture (2025-11-12)
+
+**Problem**: Нужен ли Facade для LangGraph или клиенты (LibreChat, Cursor) могут работать с Core напрямую?
+
+**Decision**: Hybrid Architecture - Facade как NLP Gateway для нормализации + LangGraph orchestration, простые операции через client LLM direct tool calling.
+
+**Why**:
+- **Client LLM может**: Simple tool calling (search_careers, get_my_story, set_goal) - один вызов, один ответ, нет state
+- **Client LLM НЕ МОЖЕТ**: Complex stateful workflows (data ingestion) - нет гарантии правильности, нет state persistence, нет deterministic execution order
+- **LangGraph решает**: Interrupts (паузы с сохранением), Checkpoints (SQLite persistence), Deterministic graph (гарантированные переходы)
+- **Facade нужен для**: NLP normalization ("Москва" → "Moscow"), auth validation (userId из token), LangGraph workflows orchestration
+
+**Implementation**:
+```
+Clients (LibreChat, Cursor, Telegram)
+  ↓ MCP protocol
+Facade MCP (4 tools):
+  - search_careers(from, to?) → NLP parsing + Core call
+  - get_my_story() → passthrough + auth
+  - set_goal(goal) → NLP parsing + Core call
+  - add_experience(message, thread_id?) → LangGraph workflow (10 nodes, interrupts, checkpoints)
+  ↓
+Core MCP (business logic):
+  - execute_search(params) - raw schemas
+  - execute_upsert_story(StoryInput)
+  - get_user_story(userId)
+```
+
+**Key Insight**: Не нужен "dumb LLM" с одним `process_query()` tool. Client LLM должна выбирать инструменты (MCP protocol), но для complex workflows нужен stateful orchestrator (LangGraph).
+
+**Documentation Created**:
+- `docs/after_mvp/langgraph/00_open_questions.md` - 9 вопросов для resolution
+- `docs/after_mvp/langgraph/01_business_requirements.md` - Business case для LangGraph
+- `docs/after_mvp/langgraph/02_architecture_design.md` - Полная архитектура (3 уровня)
+
+**Features Added**: #5 Facade NLP Gateway, #6 LangGraph Workflow, #7 LibreChat integration
+
+**См. Memory MCP**: `LangGraph Architecture Decision 2025-11-12`, `Facade NLP Gateway Pattern`
+
+---
+
+## Search Modes: currentContextId Filter Strategy (2025-11-12)
+
+**Problem**: Different search modes have conflicting requirements for context filtering:
+- searchByUser needs to compare **current** positions (apples-to-apples)
+- searchAdhoc needs to search **all** contexts (historical + current)
+- Universal `buildMatchedContextBase()` with currentContextId filter broke adhoc search
+
+**Decision**: Remove currentContextId filter from `buildMatchedContextBase()` - let search modes handle their own filtering strategy
+
+**Why**:
+- searchAdhoc business logic: "Find people with ANY context matching criteria" (not just current)
+- searchByTarget business logic: "Find people who REACHED target" (target can be past position)
+- searchByUser still works: compares current states naturally (both users use currentContext as reference)
+- Shared base query should be minimal - mode-specific logic belongs in mode implementations
+
+**Implementation**:
+```cypher
+// BEFORE (breaks adhoc/target)
+MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context {contextId: matchedUser.currentContextId})
+
+// AFTER (universal - works for all modes)
+MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context)
+```
+
+**Key Insight**: 90% of search bugs come from wrong currentContextId filter. Always understand business logic FIRST:
+- "Current state comparison" → need filter
+- "Historical/flexible matching" → no filter
+
+**Documentation Created**:
+- `docs/search_modes_business_logic.md` - Decision tree for when to use currentContextId filter
+- `docs/cypher_debugging_guide.md` - Debugging workflow for Cypher queries
+
+**См.**: Bug #4, `src/cypher/queries/search.ts:80`
+
+---
+
 ## Test Data Import: Node.js Module Cache (2025-11-12)
 **Проблема**: После изменения JSON тестовых данных (`data/trails/users/u*.json`) тесты используют старые данные из cache.
 

@@ -1,5 +1,138 @@
 # Sessions Brief (Business Context)
 
+## 2025-11-13 (Evening): LangGraph Q2-Q4 Decisions + Feature #10 ✅
+
+**Commit**: (pending) docs: resolve Q2-Q4 (Redis checkpoints, tool naming, LibreChat integration)
+
+**Проблема**: Критичные вопросы по LangGraph реализации:
+- Q2: Где хранить checkpoints (SQLite vs Redis)? Как чистить старые?
+- Q3: Финальные имена Facade MCP tools? Связь с Core terminology?
+- Q4: Где хранить system prompt для LibreChat? Как передавать в Docker?
+
+**Решение**:
+1. **Q2 Resolved**: **Redis вместо SQLite** для checkpoints. TTL 7 дней через `EXPIRE` автоматически. Библиотека `@langchain/langgraph-checkpoint-redis`. Причины: встроенный TTL, быстрее (in-memory), единый Redis для справочников+checkpoints, готовность к distributed setup.
+2. **Q3 Resolved**: Финальные имена tools: `search_careers`, `add_experience`, `set_goal`, `get_story(userId)`, `update_context`, `delete_context`. Критерии: понятность LLM, краткость (8-14 chars), согласованность с Core Manager методами, соответствие WayMates терминологии (GLOSSARY.md).
+3. **Q4 Resolved**: **Гибридный подход** - LibreChat через `docker-compose.librechat.yml` (опциональный). System prompt в `librechat-config/system-prompt.txt` (версионируется в Git), передаётся через Docker volume mount. Запуск: `docker-compose -f docker-compose.yml -f docker-compose.librechat.yml up`.
+4. **Feature #10 Created**: `get_story` расширение (просмотр + редактирование). 3 новых tools: `get_story(userId)` (read any user), `update_context(contextId)` (edit own), `delete_context(contextId)` (delete own with trail reconnection). Priority: P1 Important.
+
+**Результат**: Q2-Q4 fully documented в `implementation.md` Section 2-3, `00_open_questions.md` updated. Feature #10 добавлена в features-registry.md. Открытых критичных вопросов: 0. Готовы к Q5-Q9.
+
+**Ключевой инсайт**: Redis универсальное решение для кешей + checkpoints - единый контейнер, автоматический TTL, готовность к масштабированию. Privacy model "read any, write own" позволяет просматривать чужие stories без сложных tier levels. Opциональный docker-compose.librechat.yml даёт гибкость - Core+Facade работают без LibreChat, но prompt остаётся в нашем репо.
+
+**См. Memory MCP**: `Redis Checkpoints Pattern`, `LibreChat Integration Pattern`, `Feature #10`
+
+---
+
+## 2025-11-13 (Early Morning): Facade Q1 Normalization + Documentation Migration ✅
+
+**Commit**: (pending) docs: migrate Facade docs to architecture/workflows/facade, resolve Q1 normalization
+
+**Проблема**: Q1 - где реализовывать Normalization Layer (user NLP → canonical names)? Нужна ли fuzzy matching библиотека? Плюс старая структура docs/after_mvp/langgraph требует миграции в docs/architecture/.
+
+**Решение**:
+1. **Q1 Resolved**: Normalization в Facade с LLM-based подходом (gpt-4o-mini). Без fuzzy matching библиотек - LLM исправляет опечатки, переводит языки ("питон" → "Python"), сопоставляет со справочниками из Neo4j. Strict validation - LLM НЕ ДОДУМЫВАЕТ новые термины.
+2. **Redis cache**: Справочники кешируются с TTL 24h. Core MCP tool `get_dictionaries()` возвращает canonical names. Facade → Core MCP only (без прямого доступа к Neo4j).
+3. **Documentation Migration**: docs/after_mvp/langgraph/ → docs/architecture/workflows/facade/. Создана структура с разделением business/architecture/implementation. Mermaid блок-схема для нормализации, Structurizr для компонентов.
+4. **workspace.dsl updated**: Добавлены компоненты Normalizer, DictionariesCache, FacadeLLM с relationships.
+
+**Результат**: Q1 fully documented (open-questions.md updated), normalization-workflow.md с детальной Mermaid диаграммой создан. Все ссылки обновлены. Готовы к Q2 (SQLite checkpoints).
+
+**Ключевой инсайт**: Structurizr dynamic views не подходят для простых linear flows (нормализация). Используем Mermaid для блок-схем процессов (условия, циклы), Structurizr для компонентов и их взаимодействий. Не нужно дублировать - каждый формат для своей задачи.
+
+**См. Memory MCP**: `Normalization Layer Architecture Pattern`, `Documentation Migration Pattern`
+
+---
+
+## 2025-11-12 (Night): LangGraph Architecture Design ✅
+
+**Commit**: (pending) docs: add LangGraph integration architecture (Features #5, #6, #7)
+
+**Проблема**: Спроектировать архитектуру интеграции LangGraph для data ingestion workflow. Вопрос: нужен ли Facade или клиенты идут в Core напрямую?
+
+**Решение**:
+1. **Hybrid Architecture**: Client LLM для простых tool calls (search, get_story, set_goal), LangGraph для complex stateful workflows (add_experience)
+2. **Facade как NLP Gateway**: Нормализация ("Москва" → "Moscow"), auth validation (userId из token), LangGraph orchestration
+3. **3 документа созданы**: 00_open_questions.md (9 вопросов), 01_business_requirements.md (business case), 02_architecture_design.md (полная архитектура)
+4. **3 фичи добавлены**: #5 Facade NLP Gateway, #6 LangGraph Workflow, #7 LibreChat integration
+
+**Результат**: Архитектура задокументирована с 9 open questions для следующей итерации. Features #5-#7 готовы к реализации после Q1-Q7 resolution.
+
+**Ключевой инсайт**: Client LLM (LibreChat, Cursor) может простые операции (tool calling), но НЕ МОЖЕТ гарантировать правильность complex stateful workflows (нет state, нет guaranteed execution order, нет persistence). LangGraph решает это через interrupts + checkpoints + deterministic graph.
+
+**См. Memory MCP**: `LangGraph Architecture Decision 2025-11-12`, `Facade NLP Gateway Pattern`
+
+---
+
+## 2025-11-12 (Evening Late): Cypher Builder Migration Completion ✅
+
+**Commit**: (pending) chore: complete Raw Cypher migration - remove legacy query builders
+
+**Проблема**: Завершить миграцию на Raw Cypher архитектуру - удалить все OLD query builders (17 файлов), убедиться что integration tests проходят.
+
+**Решение**:
+1. **Cleanup**: Удалены все legacy query builders (9 файлов), legacy entry points (6 файлов), src/orcestrator/ полностью
+2. **Новая архитектура**: src/cypher/queries/{search, goals, paths, persistence}.ts (18/18 queries покрыто 100%)
+3. **Миграция managers**: SearchManager, GoalsManager, PathCollector, StoryManager → используют NEW queries
+4. **Fix imports**: Обновлены тесты (schemas-zod → shared/schemas, PersistenceManager → StoryManager)
+5. **Создан field-snippets.ts**: Минимальная версия для SelectivityService (startPattern only)
+
+**Результат**: 12/12 integration tests passing ✅. ESLint 0 errors. Удалено 3025 строк legacy кода. Миграция завершена на 100%.
+
+**Ключевой инсайт**: Legacy файлы (src/app.ts, src/mcp-server.ts, src/persistence-manager.ts) НЕ использовались в core/facade - можно было удалить сразу. SelectivityService требовал только `startPattern` из FIELD_SNIPPETS (не full implementation).
+
+**Lessons learned**:
+- Grep imports ПЕРЕД удалением файлов (избегаем broken imports)
+- Разделение legacy (src/) vs active (src/core, src/facade) важно для рефакторинга
+- Integration tests как safety net - если проходят после cleanup, миграция успешна
+
+**См. Memory MCP**: `Raw Cypher Migration Complete 2025-11-12`, `Legacy Code Cleanup Pattern`
+
+**Удалено**:
+- Query builders (9): search, target, path, persistence, goals (core + orcestrator)
+- Legacy entry points (6): app.ts, mcp-server.ts, persistence-manager.ts, schemas-zod.ts, etc
+- Directory: src/orcestrator/ (полностью)
+
+**Создано**:
+- src/cypher/queries/persistence.ts (CRUD operations)
+- src/cypher/queries/paths.ts (trajectory collection)
+- src/services/field-snippets.ts (для SelectivityService)
+
+---
+
+## 2025-11-12 (Evening): Bug #4 - searchAdhoc currentContextId Filter Fix ✅
+
+**Commit**: (pending) fix: remove currentContextId filter from buildMatchedContextBase
+
+**Проблема**: AC1-AC6 adhoc integration tests failing (0 results). Root cause discovered after 2h debugging: `buildMatchedContextBase()` filtered by `currentContextId` for ALL search modes → searchAdhoc/searchByTarget couldn't find historical contexts (e.g., U2 Junior when current is Middle).
+
+**Решение**:
+1. **Query fix**: Removed `{contextId: matchedUser.currentContextId}` filter from `buildMatchedContextBase()` (src/cypher/queries/search.ts:80)
+2. **Setup fix**: Database state check instead of module-level flag (tests/integration/search-manager/setup-read-only.ts) - prevents race condition
+3. **Vitest config**: Verified parallel mode works (singleThread: false) - no duplicates after setup fix
+4. **Documentation**: Created 2 debugging guides to prevent similar bugs:
+   - `docs/search_modes_business_logic.md` - WHAT each search mode does (when to filter by currentContextId)
+   - `docs/cypher_debugging_guide.md` - HOW to debug Cypher queries (MCP tools, PROFILE analysis)
+
+**Результат**: 12/12 integration tests passing (AC1-AC6 ✅, UN1-UN4 ✅, DT1-DT5 ✅). Parallel test execution works. ESLint warnings only (no errors). TypeScript errors pre-existing.
+
+**Ключевой инсайт**: 90% of search bugs = wrong currentContextId filter. Must understand business logic FIRST:
+- searchByUser → compares **current** states (apples-to-apples)
+- searchAdhoc → searches **ALL** contexts (historical + current)
+- searchByTarget → searches **ALL** contexts (target can be past position)
+
+**Why debugging took 2h**: Insufficient business context → debugged wrong things (race conditions, Integer conversion, citizenships field) instead of asking "Should adhoc search use currentContextId filter?" first.
+
+**Lessons learned**:
+- Read business logic docs BEFORE looking at code (saved 115 minutes)
+- Decision tree pattern works: "Should this query filter by currentContextId?" → 5-minute fix
+- Documentation prevents repeated mistakes (search_modes_business_logic.md = "udochka" for future debugging)
+
+**См. Memory MCP**: `Bug #4 currentContextId Filter Fix`, `Search Modes Business Logic Decision`
+
+**См. knowledge**: `decisions.md#Search Modes: currentContextId Filter Strategy`, `cypher-mistakes.md#Wrong currentContextId filter`
+
+---
+
 ## 2025-11-11 (Evening Session 4): Kaggle Cold Start Analysis ✅
 
 **Commit**: (pending) Cold start: Kaggle dataset analysis and top 500 selection
