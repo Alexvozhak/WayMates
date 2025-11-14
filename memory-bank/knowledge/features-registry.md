@@ -38,7 +38,7 @@
 
 | # | Date | Component | Title | Completed | Commit |
 |---|------|-----------|-------|-----------|--------|
-| #2 | 2025-11-12 | Context schema | Add education level enum to Context | 2025-11-15 | TBD |
+| #2 | 2025-11-12 | Context schema | Add education level enum to Context | 2025-11-15 | ec4073a |
 
 ---
 
@@ -146,7 +146,7 @@ As a user searching for career paths, I want to filter by education level, so th
 - **Business logic**: Missing education in candidate = wildcard (always included), strict matching when both present
 - **Lessons learned**: When adding Context field, must update: schema, Cypher filters, persistence, **map projection** (forgot initially), selectivity, index
 
-**Commit**: TBD
+**Commit**: ec4073a
 
 ---
 
