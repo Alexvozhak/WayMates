@@ -1,6 +1,6 @@
 ---
 description: "Добавить production bug в bugs-registry.md с полным описанием и критериями приемки"
-allowed-tools: ["Read", "Edit", "mcp__memory__*"]
+allowed-tools: ["Read", "Edit", "AskUserQuestion", "mcp__memory__*"]
 argument-hint: "[optional: bug title]"
 ---
 
@@ -10,178 +10,356 @@ $ARGUMENTS
 
 ## Цель
 
-Зарегистрировать production bug или design flaw в `memory-bank/knowledge/bugs-registry.md`:
-- Добавить строку в таблицу Registry
-- Добавить детальное описание в Bug Details
-- Создать Memory MCP entity для трекинга
+Зарегистрировать production bug или design flaw в `memory-bank/knowledge/bugs-registry.md` через интерактивный сбор информации.
+
+**Key Principle**: DON'T invent details - ask user for everything through `AskUserQuestion`.
 
 ---
 
-## Процесс
+## Workflow
 
-### Шаг 1: Собрать информацию (интерактивно)
+### Step 1: Gather Basic Info (обязательные поля)
 
-Спросить у пользователя (или вывести из контекста):
+Use `AskUserQuestion` to gather:
 
-1. **Bug Title** (краткое описание, ≤ 60 chars)
-   - Пример: "Skills penalty applied when skills excluded"
+**1.1 Bug Title**
+- Short, descriptive (≤ 60 chars)
+- User writes through "Other" option
+- Example: "Skills penalty applied when skills excluded"
 
-2. **Component** (файл:строки)
-   - Пример: `src/core/search-query-builder.ts:186-204`
+**1.2 Component**
+- Single select (user can pick one primary component)
+- Options: search-query-builder, target-query-builder, goals-query-builder, persistence-query-builder, search-manager, goals-manager, story-manager, schemas, integration tests, etc.
+- Provide "Other" for custom component name
 
-3. **Priority** (P0/P1/P2)
-   - 🔴 P0: Blocking, affects correctness
-   - 🟡 P1: Important, affects maintainability/UX
-   - 🟢 P2: Nice to have, minor issues
-
-4. **How to Reproduce** (код/команда)
-   - Минимальный воспроизводимый пример
-
-5. **Expected vs Actual**
-   - Что ожидаем vs что получаем
-
-6. **Root Cause** (если известен)
-   - Cypher snippet / код с комментарием
-
-7. **Impact** (список с ❌/⚠️)
-   - Пример: "❌ Scoring mismatch", "⚠️ Workaround needed"
-
-8. **Fix Ideas** (опционально)
-   - Option 1, Option 2, etc. с Pros/Cons
-
-9. **Acceptance Criteria** (checklist)
-   - [ ] Criteria 1
-   - [ ] Criteria 2
+**1.3 Priority**
+- Single select: 🔴 P0 (Critical) / 🟡 P1 (Important) / 🟢 P2 (Minor)
+- Guidelines:
+  - 🔴 P0: Data corruption, incorrect business logic, security issue, blocking
+  - 🟡 P1: UX issue, performance degradation, maintainability problem
+  - 🟢 P2: Minor issue, edge case, nice-to-have fix
 
 ---
 
-### Шаг 2: Обновить bugs-registry.md
+### Step 2: Standard Sections (всегда спрашиваем последовательно)
 
-#### 2.1: Добавить строку в таблицу Registry
+**2.1 How to Reproduce**
 
-```markdown
-| ID | Date | Component | Issue | Status | Priority |
-|----|------|-----------|-------|--------|----------|
-| #1 | 2025-11-11 | search-query-builder | Skills penalty when excluded | Open | 🔴 P0 |
-| #2 | YYYY-MM-DD | component-name | Bug title | Open | 🟡 P1 |  ← NEW
+```
+Question: "How to Reproduce - опиши минимальный пример:"
+Options (single select):
+( ) Напишу сам (через Other - пользователь пишет текстом)
 ```
 
-**ID assignment**:
-- Автоматически определяю следующий ID (max ID + 1)
-- Date = сегодняшняя дата (YYYY-MM-DD)
-- Status = "Open"
+User provides:
+- Code snippet
+- Test case name
+- API call with parameters
+- Steps to reproduce
 
-#### 2.2: Добавить детали в Bug Details
+**Example**:
+```typescript
+const result = await searchManager.searchByUser({
+  userId: 'usr_1',
+  mode: 'adhoc',
+  referenceContext: { skills: [], excludedSkills: ['react'] }
+});
+// Bug: penalty applied even though skills array is empty
+```
+
+---
+
+**2.2 Expected vs Actual**
+
+```
+Question: "Expected vs Actual - что ожидаешь и что получаешь:"
+Options (single select):
+( ) Напишу сам (через Other)
+```
+
+User provides structured description:
+- **Expected**: [what should happen]
+- **Actual**: [what actually happens]
+
+**Example**:
+```
+Expected: No skill penalty when skills=[] and excludedSkills=['react']
+Actual: Penalty 0.01 applied (1 excluded skill * default penalty 1.0)
+```
+
+---
+
+**2.3 Root Cause** (optional, но рекомендуется)
+
+```
+Question: "Root Cause - если известен, опиши:"
+Options (single select):
+( ) Напишу сам (через Other)
+( ) Пока не знаю (requires investigation)
+```
+
+User provides:
+- Cypher query snippet with comment
+- Code logic explanation
+- Configuration issue description
+
+**Example**:
+```cypher
+// Bug: penalty calculated from excludedSkills length, not skills length
+WITH size(coalesce($excludedSkills, [])) AS numExcluded
+RETURN 1.0 - (numExcluded * $skillPenalty / 100.0) AS score
+// Should use: size(coalesce($skills, []))
+```
+
+---
+
+**2.4 Impact**
+
+```
+Question: "Impact - опиши последствия:"
+Options (single select):
+( ) Напишу сам (через Other)
+```
+
+User provides bullet list with ❌ (critical) or ⚠️ (warning):
+
+**Example**:
+```
+❌ Scoring mismatch: excluded skills penalize when they shouldn't
+⚠️ Affects adhoc search when excludedSkills provided
+⚠️ Integration test doesn't catch this (uses wrong expected value)
+```
+
+---
+
+**2.5 Acceptance Criteria**
+
+```
+Question: "Acceptance Criteria - выбери нужные пункты для bug fix:"
+Options (multiSelect):
+[ ] Bug reproduced with test case
+[ ] Root cause identified and documented
+[ ] Fix implemented in affected component
+[ ] Test updated to catch regression
+[ ] All integration tests pass (no regressions)
+[ ] Code reviewed (by reviewer agent or manually)
+[ ] Documentation updated (if logic changed)
+```
+
+---
+
+### Step 3: Optional Sections
+
+```
+Question: "Заполнить дополнительные секции?"
+Options (multiSelect):
+[ ] Fix Ideas (варианты решения с Pros/Cons)
+[ ] References (links to tests, related bugs, Memory MCP entities)
+[ ] Context (как обнаружен, в каком сценарии)
+```
+
+If user selects any → ask follow-up:
+
+**3.1 Fix Ideas** (if selected):
+```
+Question: "Fix Ideas - опиши варианты решения:"
+Options (single select):
+( ) Напишу сам (через Other)
+```
+
+User provides structured options:
+
+**Example**:
+```
+**Option 1**: Use skills.length instead of excludedSkills.length
+- Pros: Correct logic, minimal change
+- Cons: None
+
+**Option 2**: Remove penalty logic entirely
+- Pros: Simpler code
+- Cons: Changes scoring behavior
+```
+
+**3.2 References** (if selected):
+```
+Question: "References - какие ссылки добавить:"
+Options (multiSelect):
+[ ] Test file (укажи путь)
+[ ] Related bug ID
+[ ] Memory MCP entity
+[ ] Git commit / PR
+[ ] Documentation link
+[ ] Other (напишу сам)
+```
+
+**3.3 Context** (if selected):
+```
+Question: "Context - как обнаружен:"
+Options (single select):
+( ) Напишу сам (через Other)
+```
+
+User provides discovery context:
+
+**Example**:
+```
+Discovered during Feature #4 implementation (integration test improvements).
+Reviewer agent flagged AC2 test with hardcoded expected score 0.99.
+Investigation revealed penalty calculation uses wrong array.
+```
+
+---
+
+### Step 4: Assembly and Save
+
+1. **Read** `bugs-registry.md` to get next Bug ID (max ID + 1)
+2. **Generate bug entry** based on collected info
+3. **Add to table** in Registry section
+4. **Add detailed section** in Bug Details
+5. **Create Memory MCP entity** (ALWAYS)
+6. **Show summary** to user with Bug ID
+
+---
+
+## Template Structure
+
+### Registry Table Entry:
 
 ```markdown
-### #2: Bug Title Here
+| #N | YYYY-MM-DD | component-name | Bug title | Open | 🔴 P0 |
+```
 
-**Discovered**: YYYY-MM-DD (context: where/how)
+### Bug Details Section:
 
-**Component**: `path/to/file.ts:lines`
+```markdown
+### #N: Bug Title
+
+**Discovered**: YYYY-MM-DD ([context if provided])
+
+**Component**: `path/to/file.ts:lines` or component name
 
 **How to Reproduce**:
-[code block or steps]
+[code block or steps from Step 2.1]
 
 **Expected**:
-[description]
+[description from Step 2.2]
 
 **Actual**:
-[description]
+[description from Step 2.2]
 
-**Root Cause**:
-[explanation + code snippet if known]
+**Root Cause**: [if provided from Step 2.3]
+[explanation + code snippet]
 
 **Impact**:
-[bullet list with ❌/⚠️]
+[bullet list from Step 2.4]
 
-**Fix Ideas**:
+**Fix Ideas**: [if provided from Step 3.1]
 **Option 1**: Description
 - Pros: ...
 - Cons: ...
 
-**Acceptance Criteria**:
+**Acceptance Criteria**: [from Step 2.5]
 - [ ] Criteria 1
 - [ ] Criteria 2
 
-**Decision**: PENDING / APPROVED / REJECTED
+**Decision**: PENDING
 
-**References**:
-- Test: path/to/test.ts:line
-- Memory MCP: Entity name
+**References**: [if provided from Step 3.2]
+- [links]
 ```
 
----
-
-### Шаг 3: Memory MCP entity (ВСЕГДА)
+### Memory MCP Entity (ALWAYS):
 
 ```typescript
 mcp__memory__create_entities({
-  entities: [
-    {
-      name: "Bug #2: Bug Title",
-      entityType: "bug",
-      observations: [
-        "Component: path/to/file.ts:lines",
-        "Priority: P1",
-        "Status: Open",
-        "Root cause: [brief explanation]",
-        "Impact: [main impact]",
-        "Discovered: YYYY-MM-DD"
-      ]
-    }
-  ]
+  entities: [{
+    name: "Bug #N: Bug Title",
+    entityType: "bug",
+    observations: [
+      "Component: [component]",
+      "Priority: [priority]",
+      "Status: Open",
+      "Root cause: [brief if known]",
+      "Impact: [main impact]",
+      "Discovered: YYYY-MM-DD"
+    ]
+  }]
 })
 ```
 
 ---
 
-### Шаг 4: Итоговый отчет
+## Priority Guidelines
 
-Показать пользователю:
+- **🔴 P0 (Critical)**: Data corruption, incorrect business logic results, security issue, blocking production
+- **🟡 P1 (Important)**: UX confusion, performance issue, maintainability problem, affects many users
+- **🟢 P2 (Minor)**: Edge case, cosmetic issue, minor inconsistency
+
+---
+
+## Important Notes
+
+1. **NEVER invent details** - always ask through `AskUserQuestion`
+2. **Bug ID assignment**: Always max(existing IDs) + 1
+3. **Date format**: YYYY-MM-DD (ISO)
+4. **Status**: Always "Open" при создании
+5. **Code snippets**: Use ```typescript or ```cypher blocks
+6. **Impact bullets**: Start with ❌ (critical) or ⚠️ (warning)
+7. **Memory MCP**: Create entity ALWAYS (for tracking across sessions)
+8. **Decision**: Always "PENDING" initially (approve/reject during fix planning)
+
+---
+
+## Example Execution
 
 ```
-✅ Bug #2 зарегистрирован в bugs-registry.md
+User: /report-bug
 
-📋 Summary:
-- Title: Bug title
-- Component: component-name
-- Priority: 🟡 P1
-- Status: Open
+Step 1.1: Bug Title?
+→ User writes: "Skills penalty applied when skills excluded"
 
-📝 Next steps:
-- Review fix options
-- Approve decision
-- Implement fix (create Vikunja task via /plane-workflow if needed)
+Step 1.2: Component?
+→ User selects: "search-query-builder"
 
-🔗 References:
-- Registry: memory-bank/knowledge/bugs-registry.md#2
-- Memory MCP: "Bug #2: Bug Title"
+Step 1.3: Priority?
+→ User selects: 🔴 P0
+
+Step 2.1: How to Reproduce?
+→ User writes: "Call searchByUser with skills=[], excludedSkills=['react']"
+
+Step 2.2: Expected vs Actual?
+→ User writes:
+   Expected: No penalty (skills array empty)
+   Actual: Penalty 0.01 applied
+
+Step 2.3: Root Cause?
+→ User writes: "Cypher uses excludedSkills.length instead of skills.length"
+
+Step 2.4: Impact?
+→ User writes:
+   ❌ Scoring mismatch
+   ⚠️ Integration test uses wrong expected value
+
+Step 2.5: Acceptance Criteria?
+→ User selects: [Bug reproduced, Fix implemented, Test updated, All tests pass]
+
+Step 3: Additional sections?
+→ User selects: [Fix Ideas, Context]
+
+Step 3.1: Fix Ideas?
+→ User writes: "Use skills.length instead"
+
+Step 3.3: Context?
+→ User writes: "Discovered during Feature #4"
+
+Step 4: Generate Bug #3, add to registry, create Memory MCP entity, show summary
+→ "✅ Bug #3 registered. Use `/fix-bug 3` to start fix workflow."
 ```
 
 ---
 
-## Примеры использования
+## Next Steps After Registration
 
-```bash
-# Автоматический сбор из контекста
-/report-bug
-
-# С указанием заголовка
-/report-bug "User context returns stale data"
-```
-
----
-
-## Правила
-
-1. **ID assignment**: Всегда max(existing IDs) + 1
-2. **Date format**: YYYY-MM-DD (ISO)
-3. **Status**: Всегда "Open" при создании
-4. **Component path**: Относительный от repo root
-5. **Code snippets**: Используй ```typescript или ```cypher
-6. **Impact bullets**: Начинай с ❌ (critical) или ⚠️ (warning)
-
----
-
-💡 **После регистрации бага**: используй `/plane-workflow` для создания Vikunja task на fix (если нужен)
+- Use `/fix-bug N` to start fix workflow (loads context, implements fix, runs tests)
+- Or manually implement fix and update bug status to RESOLVED in registry
+- Use `/sync-memory` to archive RESOLVED bugs

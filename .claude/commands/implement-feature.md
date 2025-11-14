@@ -19,6 +19,22 @@ description: Implement feature from registry with planner → cypher-expert → 
    - User selects feature to implement
 4. **Update status** to IN_PROGRESS in registry
 
+### Phase 1.5: Understand Context (if applicable)
+
+**If feature involves tests**:
+- Read test data (`data/trails/users/*.json`, test setup files)
+- Show brief summary: which users, trajectories, expected behavior
+- Confirm understanding before coding
+- 💡 Saves 15+ minutes searching for data, clarifies test expectations
+
+**If feature involves complex schemas**:
+- Read existing types (`src/shared/schemas.ts`)
+- Show relevant type definitions
+- Note conflicts/dependencies
+- 💡 Prevents type mismatches, saves debugging time
+
+**Skip if**: Pure logic feature, no tests, user provided full context
+
 ### Phase 2: Planning & Architecture (MANDATORY)
 
 5. **Call `planner` agent** with feature requirements:
@@ -60,15 +76,27 @@ description: Implement feature from registry with planner → cypher-expert → 
     - Check test quality
     - Verify integration tests (if schema/Cypher changed)
 
-13. **Run quality checks**:
+13. **Run quality checks** (with pre-flight checks):
     ```bash
+    # Pre-flight: Check test DB availability
+    docker ps | grep neo4j-test
+
+    # Always run:
     npm run lint          # MANDATORY
     npx tsc --noEmit      # MANDATORY
+
+    # If DB running:
     npm run test:unit     # If logic changed
     npm run test:integration  # If schema/Cypher changed
+
+    # If DB NOT running:
+    # - Skip integration tests
+    # - Inform user: "Integration tests skipped (DB not running)"
+    # - Rely on static analysis (reviewer + qa agents)
     ```
 
 14. **Fix ALL errors** before proceeding
+    - 💡 Pre-flight checks save 5+ minutes waiting for failing tests
 
 ### Phase 5: Completion
 

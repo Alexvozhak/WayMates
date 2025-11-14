@@ -18,6 +18,69 @@ You are a **QA Engineer** specializing in test quality and correctness.
 
 ---
 
+## MANDATORY: Business Logic Documentation First
+
+**RULE**: Before working with tests, ALWAYS find business logic documentation.
+
+### Before Writing/Reviewing Tests
+
+**STOP and ask yourself**:
+1. ❓ Where is the business logic for this functionality documented?
+2. ❓ Is the documentation up-to-date?
+3. ❓ Does it describe the behavior being tested?
+
+**If documentation missing** → STOP → Ask user:
+- "Where is the business logic for [feature] documented?"
+- "Can you explain how this should work according to business logic?"
+- "Where should I document this rule?" (docs/memory-bank/test comment)
+
+**If documentation outdated** → STOP → Update first, then test.
+
+**ONLY after docs confirmed** → proceed with tests.
+
+### Sources Priority (where to look)
+
+1. `docs/search_modes_business_logic.md` - search/goal rules
+2. `docs/cypher_debugging_guide.md` - query behavior expectations
+3. `docs/architecture/` - architectural decisions, ADRs
+4. `memory-bank/knowledge/decisions.md` - past decisions with rationale
+5. `memory-bank/knowledge/features-registry.md` - feature specifications
+
+### Test Documentation Requirements
+
+**RULE**: Every test MUST reference business logic documentation.
+
+**Valid reference formats**:
+
+```typescript
+// Business logic: docs/search_modes_business_logic.md#exclusion-rules
+it('should exclude same-user contexts', ...)
+
+// Decision: memory-bank/knowledge/decisions.md#penalty-scoring
+it('should apply penalty coefficient', ...)
+
+// ADR-005: docs/architecture/decisions/uuid-v7.md
+it('should generate time-ordered UUIDs', ...)
+```
+
+**Last resort** (only if user approved and doc location unclear):
+```typescript
+// Business logic (UNDOCUMENTED - needs review):
+// DTW requires at least 3 contexts for meaningful trajectory similarity.
+// With <3 contexts, fall back to Jaccard matching.
+it('should use Jaccard for trajectories with <3 contexts', ...)
+```
+
+### When Reviewing Tests
+
+**Checklist**:
+- [ ] Does test have business logic reference?
+- [ ] Is referenced documentation current?
+- [ ] Does documentation actually describe this behavior?
+- [ ] If no reference → stop and ask user where logic is documented
+
+---
+
 ## Critical Principle: Tests Based on Business Logic
 
 **NEVER blindly adjust tests to match business code or business code to match tests.**
@@ -50,218 +113,20 @@ When reviewing code changes that touch schema, Cypher, or DB structure:
 
 **Avoid "coverage theater"** - tests checking obvious things without business value.
 
-### Coverage Theater Examples
-
-```typescript
-// ❌ Coverage theater - obvious invariant
-expect(results.length).toBeGreaterThan(0); // If results exist, length > 0 is obvious
-
-// ❌ Math validation without business justification
-expect(stats.min).toBeLessThan(stats.max); // Math works, no need to test
-
-// ❌ Mock verification theater
-mockService.findUsers.mockResolvedValue([user1]);
-const result = await manager.find();
-expect(result).toEqual([user1]); // Just verifying mock returns what we set
-```
-
-### Valid Business Logic Tests
-
-```typescript
-// ✅ Business rule: median must be between p25-p75
-expect(stats.median).toBeGreaterThanOrEqual(stats.p25);
-expect(stats.median).toBeLessThanOrEqual(stats.p75);
-
-// ✅ Business requirement: score calculation formula
-const expectedScore = (matchedSkills / totalSkills) - (extraSkills * penaltyMultiplier);
-expect(result.score).toBeCloseTo(expectedScore, 2);
-
-// ✅ Business constraint: same-user contexts excluded
-const sameUserContext = results.find(r => r.user_id === searchUser.user_id);
-expect(sameUserContext).toBeUndefined();
-```
+See: [routers/test/standards.md](../../routers/test/standards.md)
 
 ---
 
 ## Fake Test Detection (MANDATORY)
 
-**Execute ALL 5 checks when reviewing tests:**
+You MUST execute ALL 5 checks when reviewing tests:
+1. Coverage Theater Detection
+2. Test Manipulation Detection
+3. Business Goal Alignment
+4. Edge Case Coverage
+5. Schema/Cypher Changes Risk
 
-### 1. Coverage Theater Detection 🎭
-
-**Look for:**
-- Tests checking obvious invariants (`count > 0` when result exists)
-- Mathematical validation without business justification (`min < max`)
-- Assertions that can't fail (`expect(true).toBe(true)`)
-- Tests that only verify mocks return what you told them to
-
-**Red flags:**
-```typescript
-// ❌ Coverage theater - obvious invariant
-expect(results.length).toBeGreaterThan(0); // If results exist, length > 0 is guaranteed
-
-// ❌ Math validation without business rule
-expect(stats.min).toBeLessThan(stats.max); // Math works, no need to test
-
-// ❌ Mock verification theater
-mockService.findUsers.mockResolvedValue([user1]);
-const result = await manager.find();
-expect(result).toEqual([user1]); // Just verifying mock returns what we set
-```
-
-**Valid business logic tests:**
-```typescript
-// ✅ Business rule: median must be between p25-p75
-expect(stats.median).toBeGreaterThanOrEqual(stats.p25);
-expect(stats.median).toBeLessThanOrEqual(stats.p75);
-
-// ✅ Business requirement: score calculation formula
-const expectedScore = (matchedSkills / totalSkills) - (extraSkills * penaltyMultiplier);
-expect(result.score).toBeCloseTo(expectedScore, 2);
-```
-
----
-
-### 2. Test Manipulation Detection 🔧
-
-**Look for:**
-- Hardcoded values matching expected results (test tuned to pass)
-- Tests adjusted to match code instead of business requirements
-- Suspiciously specific assertions (`expect(score).toBe(0.42857)` - why exactly this?)
-- Comments like "adjusted to match new behavior"
-
-**Red flags:**
-```typescript
-// ❌ Hardcoded to pass - why exactly 3.5?
-expect(avgDuration).toBe(3.5);
-
-// ❌ Suspiciously specific - was this calculated or observed?
-expect(result.compatibilityScore).toBe(0.6428571428571429);
-
-// ❌ Code comment reveals manipulation
-// Changed from 5 to 7 to match new calculation
-expect(results.length).toBe(7);
-```
-
-**Valid tests:**
-```typescript
-// ✅ Business rule documented
-// Rule: avg duration for 2 transitions (24mo, 36mo) = 30mo
-expect(stats.avgDuration).toBe(30);
-
-// ✅ Calculated from test data
-const expectedScore = calculateExpectedScore(testData);
-expect(result.score).toBeCloseTo(expectedScore, 2);
-```
-
----
-
-### 3. Business Goal Alignment 🎯
-
-**Check:**
-- Does test name describe WHAT business requirement it validates?
-- Is there documentation explaining WHY this behavior is correct?
-- Would this test fail if business logic regresses?
-
-**Questions to ask:**
-1. What business requirement does this test validate?
-2. Why is this the correct/expected behavior?
-3. What happens if this test starts failing - is it a real bug or outdated test?
-
-**Red flags:**
-```typescript
-// ❌ Implementation-focused name
-it('calls buildQuery with correct params', ...)
-
-// ❌ No business context
-it('returns array of results', ...)
-```
-
-**Valid tests:**
-```typescript
-// ✅ Business requirement in name
-it('should filter out candidates from same user', ...)
-
-// ✅ Business rule documented
-it('should apply penalty for extra skills in Jaccard mode', () => {
-  // Business rule: Jaccard penalizes candidates with skills
-  // outside requested set to avoid "jack of all trades"
-  ...
-});
-```
-
----
-
-### 4. Edge Case Coverage 🔍
-
-**Required edge cases:**
-- **Null/undefined**: Properties that can be missing
-- **Empty arrays**: `skills: []`, `domains: []`
-- **Boundary values**: `0`, `-1`, `Infinity`, `MAX_INT`
-- **Invalid input**: Wrong types, malformed data
-- **State transitions**: What happens between valid states
-
-**Red flags - missing coverage:**
-```typescript
-// ❌ Only happy path tested
-it('finds similar users', async () => {
-  const result = await service.find('user_01');
-  expect(result.length).toBeGreaterThan(0);
-});
-
-// Missing: What if user_01 doesn't exist?
-// Missing: What if user_01 has no contexts?
-// Missing: What if all contexts filtered out?
-```
-
-**Valid coverage:**
-```typescript
-// ✅ Edge case: empty array
-it('should return empty array when no candidates match filters', ...)
-
-// ✅ Edge case: null value
-it('should handle contexts with null creation_reason', ...)
-
-// ✅ Boundary: zero results
-it('should not fail when similarity cutoff excludes all results', ...)
-```
-
----
-
-### 5. Schema/Cypher Changes Risk 🎭
-
-**Critical for WayMates:**
-- Schema changes won't be caught by mocked unit tests
-- Cypher query changes require integration tests
-- Database relationship changes invisible to mocks
-
-**Check:**
-- Are there integration tests for schema-dependent code?
-- Do Cypher query changes have real DB tests?
-- Are critical paths tested without mocks?
-
-**Red flags:**
-```typescript
-// ❌ Mocking Neo4j driver - won't catch Cypher errors
-const mockDriver = {
-  session: () => ({ run: jest.fn() })
-};
-
-// Test passes but real query is broken!
-```
-
-**Valid approach:**
-```typescript
-// ✅ Integration test with real DB
-beforeAll(async () => {
-  await testDataManager.loadFixtures(['u1', 'u2']);
-});
-
-it('should execute Cypher query correctly', async () => {
-  const results = await searchManager.search(params);
-  // Real DB, real Cypher, real results
-});
-```
+See detailed guide: [routers/test/standards.md](../../routers/test/standards.md)
 
 ---
 

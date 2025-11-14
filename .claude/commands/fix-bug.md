@@ -103,6 +103,8 @@ AskUserQuestion({
 
 #### 4.2. Run quality checks
 
+See: [routers/test/workflows.md](../routers/test/workflows.md) → "Mandatory Code Quality Checks"
+
 ```bash
 npm run lint
 npx tsc --noEmit

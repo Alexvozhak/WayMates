@@ -70,6 +70,102 @@ Presets define common search configurations:
 
 ---
 
+## Architecture Workflow
+
+**КРИТИЧНО**: Следуй дисциплине архитектора при проработке фич.
+
+### Команды
+
+- **`/plan-feature [id]`** - Системная архитектурная проработка фичи из реестра
+- **`/reflect architecture`** - Анализ архитектурной работы
+
+### Процесс (10 фаз с checkpoints)
+
+**НЕ начинай с C4 diagrams!** Архитектор НЕ рисует диаграммы сразу.
+
+**Правильный порядок**:
+1. **Phase 0**: Выбор фичи из features-registry.md
+2. **Phase 1**: Problem Analysis (что решаем, почему сложно)
+3. **Phase 2**: Alternatives Analysis (какие подходы, почему этот)
+4. **Phase 3**: User Scenarios (с system internals - как данные идут!)
+5. **Phase 4**: Dataflow Diagram (детальный поток через систему)
+6. **Phase 5**: Component Interaction (кто кого дергает, interfaces)
+7. **Phase 6**: Edge Cases (что если... + handling)
+8. **Phase 7**: Type Contracts (public API, internal state)
+9. **Phase 8**: Risks & Mitigations (что может пойти не так)
+10. **Phase 9**: Implementation Plan (TodoList + Definition of Done)
+11. **Phase 10**: Architecture Diagrams (C1, C2, C3 как ВИЗУАЛИЗАЦИЯ)
+
+### Checkpoints (ОБЯЗАТЕЛЬНО!)
+
+После КАЖДОЙ фазы:
+1. Показать результат пользователю
+2. Задать уточняющие вопросы через `AskUserQuestion`
+3. Дождаться утверждения ✅
+4. **НЕ переходить к следующей фазе без одобрения**
+
+### Документация
+
+- **Один файл**: `docs/architecture/workflows/facade/langgraph/architecture.md`
+- **Структура**: Phase 1 → 2 → 3 → ... → 10 → ADRs
+- **НЕ создавать**: новые .md файлы без явного разрешения
+- **Обновлять**: через Edit tool, показывать diff перед сохранением
+
+### Дисциплина
+
+**❌ ЗАПРЕЩЕНО**:
+- Перепрыгивать через фазы (строго 1→2→3→...→10)
+- Писать код до завершения всех фаз
+- Плодить документы (один файл `architecture.md`)
+- Рисовать диаграммы без проработки сценариев/dataflow
+- Смешивать уровни C4 в одном разделе
+- Предполагать - всегда спрашивать через `AskUserQuestion`
+
+**✅ ОБЯЗАТЕЛЬНО**:
+- Показывать system internals в сценариях (какие компоненты, API calls, DB queries)
+- Проработать dataflow до деталей (формат данных на каждом этапе)
+- Предусмотреть все edge cases (ошибки, граничные условия)
+- Определить type contracts ПЕРЕД coding
+- Создать TodoList через TodoWrite (Phase 9)
+
+### Цель `/plan-feature`
+
+После выполнения команды:
+- ✅ **Готовое ТЗ** для разработчиков (что реализовать, как тестировать)
+- ✅ **TodoList** для трекинга прогресса между сессиями
+- ✅ **Риски** идентифицированы и митигированы
+- ✅ **Edge cases** предусмотрены
+- ✅ **Type contracts** определены
+- ✅ **Визуализация** (C4 diagrams) как ИЛЛЮСТРАЦИЯ проработки
+
+**Результат**: Уверенность в подходе, никаких сюрпризов при имплементации.
+
+**См. также**:
+- `.claude/commands/plan-feature.md` - Детальный workflow
+- `.claude/routers/architecture/router.md` - Router для быстрой загрузки контекста
+- `.claude/routers/architecture/checklist.md` - Чеклист для отслеживания прогресса
+
+---
+
+## Search & Cypher Documentation
+
+**IMPORTANT**: Before debugging search queries, read these guides:
+
+1. **[Search Modes Business Logic](../../docs/search_modes_business_logic.md)** - WHAT each search mode does
+   - When to use currentContextId filter
+   - searchByUser vs searchAdhoc vs searchByTarget
+   - Common confusion patterns
+
+2. **[Cypher Debugging Guide](../../docs/cypher_debugging_guide.md)** - HOW to debug queries
+   - MCP neo4j-cypher tools usage
+   - PROFILE/EXPLAIN analysis
+   - Common bug patterns
+   - Debugging workflow
+
+**Quick rule**: 90% of search bugs = wrong currentContextId filter. Check business logic doc first!
+
+---
+
 ## Critical Cypher Rules
 
 ### WITH Clause Scope Management
