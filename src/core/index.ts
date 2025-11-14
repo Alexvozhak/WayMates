@@ -1,11 +1,11 @@
 import { DatabaseContext } from '../database-context.js';
 import { createDriver, verifyConnection } from '../neo4j.js';
-import { SelectivityService } from '../services/selectivity.service.js';
 
 import { GoalsManager } from './goals-manager.js';
 import { PathCollectorService } from './path-collector.service.js';
 import { startRestServer } from './rest-server.js';
 import { SearchManager } from './search-manager.js';
+import { SelectivityService } from './selectivity.service.js';
 import { StoryManager } from './story-manager.js';
 import { TrajectorySimilarityService } from './trajectory-similarity.service.js';
 

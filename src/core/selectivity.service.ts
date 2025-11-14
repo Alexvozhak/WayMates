@@ -1,8 +1,7 @@
-import type { ManagedTransaction, Plan } from "neo4j-driver";
+import type { ContextField } from "./schemas.js";
 import type { DatabaseContext } from "../database-context.js";
-import type { ContextField } from "../core/schemas.js";
 import type { UserContext } from "../shared/schemas.js";
-import { FIELD_SNIPPETS } from "../orcestrator/snippets-extractor.js";
+import type { ManagedTransaction, Plan } from "neo4j-driver";
 
 type SelectivityResult = {
   fieldName: ContextField;
@@ -12,12 +11,19 @@ type SelectivityResult = {
 const FALLBACK_SELECTIVITY = 1_000_000;
 
 export class SelectivityService {
+  private readonly explainPatterns: Record<ContextField, string> = {
+    position: 'MATCH (c:Context {position: $fieldValue})',
+    domains: 'MATCH (c:Context) WHERE ANY(d IN $fieldValue WHERE d IN c.domains)',
+    skills: 'MATCH (c:Context) WHERE ANY(s IN $fieldValue WHERE s IN c.skills)',
+    industry: 'MATCH (c:Context {industry: $fieldValue})',
+    companySize: 'MATCH (c:Context {companySize: $fieldValue})',
+    countryCode: 'MATCH (c:Context {countryCode: $fieldValue})',
+    cityName: 'MATCH (c:Context {cityName: $fieldValue})',
+    birthYear: 'MATCH (c:Context {birthYear: $fieldValue})',
+  };
+
   constructor(private db: DatabaseContext) {}
 
-  /**
-   * Return strict fields ordered by their estimated selectivity (lower first).
-   * Falls back to the original order if EXPLAIN fails or no field values present.
-   */
   async rankStrictFields(
     strictFields: ContextField[],
     userContext: UserContext
@@ -44,10 +50,10 @@ export class SelectivityService {
       return selectivityResults;
     });
 
-    if (!results.length) return strictFields;
+    if (results.length === 0) return strictFields;
 
     return results
-      .sort((a, b) => a.estimatedRows - b.estimatedRows)
+      .toSorted((a, b) => a.estimatedRows - b.estimatedRows)
       .map((r) => r.fieldName);
   }
 
@@ -62,8 +68,8 @@ export class SelectivityService {
     return context.birthYear;
   }
 
-  private getStartPattern(fieldName: ContextField): string | undefined {
-    return FIELD_SNIPPETS[fieldName]?.startPattern;
+  private buildExplainPattern(fieldName: ContextField): string {
+    return this.explainPatterns[fieldName];
   }
 
   private async getFieldSelectivity(
@@ -71,17 +77,13 @@ export class SelectivityService {
     fieldName: ContextField,
     fieldValue: unknown
   ): Promise<SelectivityResult> {
-    const startPattern = this.getStartPattern(fieldName);
-    if (!startPattern) {
-      return { fieldName, estimatedRows: FALLBACK_SELECTIVITY };
-    }
-
-    const query = `EXPLAIN ${startPattern} RETURN count(c)`;
+    const pattern = this.buildExplainPattern(fieldName);
+    const query = `EXPLAIN ${pattern} RETURN count(c)`;
 
     try {
       const result = await tx.run(query, { fieldValue });
       const estimatedRows = this.isPlanWithEstimatedRows(result.summary?.plan)
-        ? parseInt(result.summary.plan!.arguments!.EstimatedRows, 10)
+        ? Number.parseInt(result.summary.plan.arguments.EstimatedRows, 10)
         : FALLBACK_SELECTIVITY;
 
       return { fieldName, estimatedRows };
@@ -91,6 +93,7 @@ export class SelectivityService {
   }
 
   private isPlanWithEstimatedRows(plan: unknown): plan is Plan & {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     arguments: { EstimatedRows: string };
   } {
     return (

@@ -24,7 +24,7 @@ import type {
 } from "./schemas.js";
 import type { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
 import type { DatabaseContext } from "../database-context.js";
-import type { SelectivityService } from "../services/selectivity.service.js";
+import type { SelectivityService } from "./selectivity.service.js";
 
 /**
  * Compute strict fields for WHERE clause

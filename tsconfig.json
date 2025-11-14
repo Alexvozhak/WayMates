@@ -7,7 +7,7 @@
 
     // Цель окружения Node (ESM)
     "module": "node20", // модульная система Node ESM
-    "target": "es2022", // современный JS под Node 20/22
+    "target": "es2023", // современный JS под Node 20/22
     "moduleResolution": "nodenext", // резолв модулей как у Node ESM
 
     // Удобства
