@@ -189,19 +189,6 @@ class CacheManager {
 
 ---
 
-## Task Management with Vikunja
-
-**CRITICAL**: При работе с задачами в Vikunja **ОБЯЗАТЕЛЬНО** следуй процессу из `.claude/commands/vikunja-workflow.md`:
-
-1. **Анализируй контекст** из кодовой базы
-2. **Формулируй по шаблону** с критериями приемки
-3. **Показывай для проверки** перед отправкой
-4. **Отправляй только после подтверждения** пользователя
-
-См. полный процесс: [.claude/commands/vikunja-workflow.md](.claude/commands/vikunja-workflow.md)
-
----
-
 ## Test Quality Standards
 
 **CRITICAL**: Follow test quality standards to avoid coverage theater and fake tests.
