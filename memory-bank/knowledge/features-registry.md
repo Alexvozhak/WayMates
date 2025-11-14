@@ -28,6 +28,8 @@
 | #12 | 2025-11-13 | Client integration | Telegram Bot Service (Node.js + Telegraf) | TODO | 🟢 P2 |
 | #13 | 2025-11-13 | Facade workflows | Resume Upload Entry Point (PDF parser + conversational flow) | TODO | 🟢 P2 |
 | #14 | 2025-11-13 | Integration tests | Add test for extreme duration outliers (120+ months) | TODO | 🟡 P1 |
+| #15 | 2025-11-14 | Core Manager, Schema | Refactor import_story: tempId mapping + Neo4j UUID generation | TODO | 🔴 P0 |
+| #16 | 2025-11-14 | Core Manager, Core MCP | Add CRUD endpoints for Context/Trail management | TODO | 🔴 P0 |
 
 ---
 
@@ -1090,3 +1092,99 @@ This closes the test coverage gap identified by qa agent and prevents Bug #5 reg
 - Other edge cases (zero durations, identical durations) - covered by existing tests implicitly
 - Unit tests for `trajectoryDistance` - integration test is sufficient
 - Additional outlier variations (multiple outliers, negative durations) - out of scope for MVP
+
+---
+
+### Feature #15: Refactor import_story: tempId mapping + Neo4j UUID generation
+**Component**: Core Manager (StoryManager), Schema (Zod), Integration tests, Neo4j constraints
+**Date**: 2025-11-14
+**Status**: TODO
+**Priority**: 🔴 P0 (Critical)
+
+**Motivation**:
+Security issue: Клиент (Facade) может передавать contextId, что позволяет подделать ID другого пользователя или создать collision. Core должен полностью владеть генерацией ID для гарантии уникальности и безопасности.
+
+**Problem**:
+- Текущий `execute_upsert_story` принимает `contextId` от клиента
+- Клиент контролирует UUID → security risk (может подделать ID)
+- Нет проверки уникальности при генерации
+- Название "upsert" вводит в заблуждение (update не работает)
+
+**Requirement**:
+- Facade передает простые temporary IDs (`tempId: number`) для установления топологии
+- Core генерирует real UUID через Neo4j `randomUUID()`
+- Core возвращает mapping `tempId → realId` для клиента
+- Гарантия уникальности через Neo4j CONSTRAINT
+
+**Solution** (концептуально):
+1. Input schema: `tempId: number` (вместо `contextId: string`)
+2. Core генерирует: `context_id = "ctx_" + randomUUID()` в Cypher query
+3. Batch create: `UNWIND contexts AS ctx CREATE (c:Context {context_id: "ctx_" + randomUUID(), ...})`
+4. Return: `{idMapping: {"1": "ctx_uuid...", "2": "ctx_uuid..."}, contexts, trails}`
+5. Neo4j CONSTRAINT: `CREATE CONSTRAINT FOR (c:Context) REQUIRE c.context_id IS UNIQUE`
+
+**Acceptance Criteria**:
+- [ ] Input schema изменен: `tempId: z.number().int()` вместо `contextId`
+- [ ] Cypher query генерирует UUID через `randomUUID()`
+- [ ] Возвращается `idMapping: Record<number, string>`
+- [ ] Trails переписываются с real IDs (from/to mapping)
+- [ ] Neo4j CONSTRAINT добавлен для `context_id` uniqueness
+- [ ] Integration tests обновлены (используют idMapping для проверки)
+- [ ] Тесты проверяют: mapping корректный, IDs уникальные, топология сохранена
+
+**Impact Assessment**:
+- Schema change: YES (tempId: number вместо contextId: string)
+- Breaking change: YES (Facade должна передавать tempId)
+- Requires migration: NO (только изменение API contract)
+- Affected components: StoryManager, import_story input schema, integration tests
+- New dependencies: None
+
+---
+
+### Feature #16: Add CRUD endpoints for Context/Trail management
+**Component**: Core Manager (StoryManager), Core MCP tools, Query builders, Integration tests
+**Date**: 2025-11-14
+**Status**: TODO
+**Priority**: 🔴 P0 (Critical)
+
+**Motivation**:
+Отсутствуют базовые CRUD операции для редактирования карьерной истории. Пользователи не могут обновить текущий контекст (добавить skill), создать новый контекст (смена работы), редактировать trail. Есть только `import_story` для холодного старта.
+
+**Problem**:
+- Нет `update_current_context` → нельзя добавить skill к текущей позиции
+- Нет `add_context` → нельзя добавить новую работу в историю
+- Нет `add_trail` / `update_trail` → нельзя управлять переходами
+- Нет `get_trails` → нельзя получить список переходов
+- `delete_context` существует, но неясно как работает reconnection trails
+
+**Requirement**:
+Добавить CRUD endpoints, которые НЕ требуют передачи contextId от клиента (Core генерирует):
+1. `update_current_context(userId, updates)` - обновить is_current=true контекст
+2. `add_context(userId, contextData, transitionReason?)` - создать новый + Trail от current
+3. `update_context_by_id(userId, contextId, updates)` - обновить конкретный (с ownership check)
+4. `add_trail(userId, from, to, trailData)` - создать Trail между существующими
+5. `update_trail(userId, trailId, updates)` - обновить Trail
+6. `get_trails(userId)` - получить все Trails пользователя
+
+**Solution** (концептуально):
+- Endpoints НЕ принимают ID на вход для create операций (Core генерирует через randomUUID)
+- Ownership validation: проверка что Context/Trail принадлежат userId
+- update_current: находит Context с is_current=true для userId
+- add_context: создает Context + опционально Trail от current context
+- Query builders: новые/расширенные Cypher queries для каждой операции
+
+**Acceptance Criteria**:
+- [ ] 6 новых MCP tools определены в `core/index.ts`
+- [ ] StoryManager методы реализованы для каждого endpoint
+- [ ] Query builders: новые Cypher queries (update, create Trail, get Trails)
+- [ ] Ownership validation во всех endpoints (userId check)
+- [ ] Neo4j генерирует IDs через `randomUUID()` для create операций
+- [ ] Integration tests покрывают все 6 endpoints (happy path + ownership errors)
+- [ ] Error handling: NotFound, Unauthorized, business logic errors
+
+**Impact Assessment**:
+- Schema change: NO
+- Breaking change: NO (новые endpoints, не меняют существующие)
+- Requires migration: NO
+- Affected components: StoryManager, Core MCP tools, Query builders, Integration tests
+- New dependencies: None
