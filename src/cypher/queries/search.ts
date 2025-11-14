@@ -77,7 +77,7 @@ RETURN searchingUser.currentContextId AS currentContextId
  */
 export function buildMatchedContextBase(): string {
   return `
-MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context {contextId: matchedUser.currentContextId})
+MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context)
 ${buildOptionalMatchRelationships('matchedContext')}
 
 ${buildWithCollect('matchedContext', ['matchedUser'])}
@@ -100,6 +100,7 @@ ${buildWithCollect('matchedContext', ['matchedUser'])}
  * - $excludedCreationReasons: Reasons to exclude from trajectories
  * - $limit: Max results
  * - $recencyThresholdMonths: (optional) Max age of matched context in months
+ * - $goalPositions: (optional) Array of desired position names from user's goal
  *
  * Returns:
  * - userId: Matched user ID
@@ -108,13 +109,13 @@ ${buildWithCollect('matchedContext', ['matchedUser'])}
  * - contextMatchScore: Score based on skills penalty
  * - candidateType: 'pathfinder' | 'waymate' | null
  *
- * @param goal - User's goal (for pathfinder/waymate classification)
+ * @param goalPositions - Extracted position values from user's goal (null if no goal)
  * @param strictFields - Fields to match exactly
  * @param params - Query parameters (userId, recencyThresholdMonths, limit)
  * @returns Complete Cypher query
  */
 export function buildCurrentSearchQuery(
-  goal: Goal | null | undefined,
+  goalPositions: string[] | null,
   strictFields: ContextField[],
   params: {
     userId?: string;
@@ -122,7 +123,7 @@ export function buildCurrentSearchQuery(
     limit: number;
   }
 ): string {
-  const hasGoal = Boolean(goal && params.userId);
+  const hasGoal = Boolean(goalPositions && params.userId);
 
   // WHERE clause: strict fields + userId exclusion + recency
   const strictWhere = buildStrictWhereClause(strictFields, 'matchedContext', '$referenceContext');
@@ -150,21 +151,20 @@ export function buildCurrentSearchQuery(
   // Goal filtering CASE statement
   const goalFilterClause = hasGoal
     ? `
-OPTIONAL MATCH (searchingUser:User {userId: $userId})-[:HAS_GOAL]->(searchingUserGoal:Goal)
 OPTIONAL MATCH (matchedUser)-[:HAS_GOAL]->(candidateGoal:Goal)
 
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry,
      timeSinceMatchedMonths, contextMatchScore,
      CASE
-       WHEN searchingUserGoal.targetCriteria.positions IS NOT NULL
-            AND matchedPosition.name IN searchingUserGoal.targetCriteria.positions
-            AND (searchingUserGoal.targetCriteria.undesiredPositions IS NULL
-                 OR NOT matchedPosition.name IN searchingUserGoal.targetCriteria.undesiredPositions)
+       // Pathfinder: candidate achieved user's desired position
+       WHEN $goalPositions IS NOT NULL
+            AND matchedPosition.name IN $goalPositions
        THEN 'pathfinder'
-       WHEN candidateGoal.targetCriteria.positions IS NOT NULL
-            AND searchingUserGoal.targetCriteria.positions IS NOT NULL
-            AND size([x IN candidateGoal.targetCriteria.positions
-                      WHERE x IN searchingUserGoal.targetCriteria.positions]) > 0
+       // Waymate: candidate's goal contains at least one of user's desired positions (string matching)
+       WHEN $goalPositions IS NOT NULL
+            AND candidateGoal.targetCriteria IS NOT NULL
+            AND ANY(goalPos IN $goalPositions
+                    WHERE candidateGoal.targetCriteria CONTAINS ('"' + goalPos + '"'))
        THEN 'waymate'
        ELSE null
      END AS candidateType

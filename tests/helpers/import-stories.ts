@@ -1,7 +1,7 @@
 import type { Driver } from 'neo4j-driver';
 import { DatabaseContext } from '../../src/database-context.js';
 import { StoryManager } from '../../src/core/story-manager.js';
-import type { StoryInput } from '../../src/schemas-zod.js';
+import type { StoryInput } from '../../src/shared/schemas.js';
 
 /**
  * Import multiple stories into the database
@@ -12,6 +12,7 @@ export async function importStories(driver: Driver, stories: StoryInput[]): Prom
   const storyManager = new StoryManager(db);
 
   for (const story of stories) {
+    console.log(`[Import] Importing ${story.userId}, first context position: ${story.contexts[0]?.position}`);
     await storyManager.upsertStory(story);
   }
 }

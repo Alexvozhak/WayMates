@@ -10,7 +10,6 @@
  * - Low similarity detection (DT2)
  * - excludedCreationReasons in paths (DT3)
  * - Multiple candidates ranking by dtwTotal (DT4)
- * - durationCapMonths parameter impact (DT5)
  */
 
 import { describe, it, expect } from "vitest";
@@ -35,12 +34,11 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       domains: u10.contexts.map((c) => c.domains),
     });
 
-    // Act - Search by U10's userId with default durationCapMonths (36)
+    // Act - Search by U10's userId
     const results = await searchManager.searchByUser({
       userId: u10.userId,
       limit: 10,
       pathLimit: 10,
-      durationCapMonths: 36, // Default cap
       excludedContextFields: ["birthYear", "countryCode", "cityName"],
       excludedCreationReasons: [],
     });
@@ -60,20 +58,16 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       }))
     );
 
-    expect(results).toBeInstanceOf(Array);
-    expect(results.length).toBeGreaterThan(0);
-
-    // U11 should be in results with HIGH DTW scores
+    // Business rule: U10 (Backend Node.js) vs U11 (Backend Python) = VERY similar trajectories
+    // - Both Backend (Node.js vs Python)
+    // - Both 3 contexts Junior→Middle→Senior
+    // - Similar trajectory patterns
+    // - Both stable growth (position_changed only)
     const u11 = dataManager.getStoryBy("U11");
     const u11Result = results.find((r) => r.userId === u11.userId);
     expect(u11Result).toBeDefined();
 
     if (u11Result) {
-      // Business rule: U10 and U11 are VERY similar trajectories
-      // - Both Backend (Node.js vs Python)
-      // - Both 3 contexts Junior→Middle→Senior
-      // - Similar trajectory patterns
-      // - Both stable growth (position_changed only)
       expect(u11Result.dtwMetrics).toBeDefined();
 
       const { shapeSimilarity, tempoSimilarity, stabilityScore } =
@@ -87,17 +81,43 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
         dtwTotal,
       });
 
-      // Expected thresholds (updated after Bug #2 fixes)
+      // DTW formula thresholds documentation:
+      // U10 vs U11 trajectories:
+      //   - Both: Junior→Middle→Senior (3 contexts, same progression pattern)
+      //   - Both: Backend domain (Node.js vs Python - only tech stack differs)
+      //   - Both: Identical durations (1 year each: 2022-01→2023-01→2025-01)
+      //   - Both: position_changed reasons only (stable growth)
+      // Expected DTW component breakdown:
+      //   - shapeSimilarity ~ 0.9 (identical Junior→Middle→Senior pattern)
+      //   - tempoSimilarity ~ 0.85 (same durations: 1yr, 1yr, 2yr)
+      //   - stabilityScore ~ 0.8 (both stable: ratio userLength/pathLength ~ 1.0)
+      //   - dtwTotal = 0.9 + 0.85 + 0.8 = 2.55 (excellent match)
+      // Thresholds set BELOW expected values to allow ±0.05 variance from DTW algorithm
+      // If fails: Check DTW calculation logic in Cypher OR trajectory data changed
       expect(shapeSimilarity).toBeGreaterThan(0.85); // Very high shape similarity
       expect(tempoSimilarity).toBeGreaterThan(0.8); // High tempo similarity
       expect(stabilityScore).toBeGreaterThan(0.75); // Stable (userLength/pathLength formula)
       expect(dtwTotal).toBeGreaterThan(2.55); // Excellent match (> 2.4)
 
-      // Verify DTW metrics are in valid range [0, 1] for each component
+      // DTW formula validation - Range checks
+      expect(shapeSimilarity).toBeGreaterThanOrEqual(0);
       expect(shapeSimilarity).toBeLessThanOrEqual(1);
+      expect(tempoSimilarity).toBeGreaterThanOrEqual(0);
       expect(tempoSimilarity).toBeLessThanOrEqual(1);
+      expect(stabilityScore).toBeGreaterThanOrEqual(0);
       expect(stabilityScore).toBeLessThanOrEqual(1);
-      expect(dtwTotal).toBeLessThanOrEqual(3); // Max 3.0
+
+      // DTW formula validation - Component sum (shapeSimilarity formula is 1 - normalized_distance)
+      const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
+      console.log("[DT1] DTW formula breakdown:", {
+        shapeSimilarity,
+        tempoSimilarity,
+        stabilityScore,
+        sum: calculatedTotal,
+        dtwTotal,
+        matches: Math.abs(calculatedTotal - dtwTotal) < 0.01,
+      });
+      expect(dtwTotal).toBeCloseTo(calculatedTotal, 2); // dtwTotal = shape + tempo + stability
     }
   });
 
@@ -118,7 +138,6 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       userId: u10.userId,
       limit: 10,
       pathLimit: 10,
-      durationCapMonths: 36,
       excludedContextFields: ["birthYear", "countryCode", "cityName"],
       excludedCreationReasons: [],
     });
@@ -157,7 +176,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
         shapeSimilarity: u13Result.dtwMetrics.shapeSimilarity,
         tempoSimilarity: u13Result.dtwMetrics.tempoSimilarity,
         stabilityScore: u13Result.dtwMetrics.stabilityScore,
-        dtwTotal: u13Result.dtwMetrics.dtwTotal,
+        dtwTotal: u13Result.dtwTotal,
       });
 
       // Business rule: U10 (Backend) vs U13 (Data Science) = HIGH-MEDIUM similarity
@@ -202,7 +221,6 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       userId: u10.userId,
       limit: 10,
       pathLimit: 10,
-      durationCapMonths: 36,
       excludedContextFields: ["birthYear", "countryCode", "cityName"],
       excludedCreationReasons: ["company_changed"], // Filter out U12
     });
@@ -254,7 +272,6 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       userId: u10.userId,
       limit: 10,
       pathLimit: 10,
-      durationCapMonths: 36,
       excludedContextFields: ["birthYear", "countryCode", "cityName"],
       excludedCreationReasons: [], // No exclusions - rank all
     });
@@ -301,99 +318,79 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       expect(u13Total).toBeGreaterThan(u12Total); // U13 high-medium
       // U12 medium
 
-      // Verify thresholds match expected ranges
+      // DTW formula thresholds documentation for ranking:
+      // U10 (Backend Node.js): Junior→Middle→Senior (3 contexts, 2022→2023→2025)
+      //
+      // Expected ranking by similarity to U10:
+      // 1️⃣ U11 (Backend Python): Junior→Middle→Senior (3 contexts, same dates)
+      //    - shapeSimilarity ~ 0.9 (identical progression pattern)
+      //    - tempoSimilarity ~ 0.85 (same durations)
+      //    - stabilityScore ~ 0.8 (both stable)
+      //    - dtwTotal ~ 2.55 (excellent match)
+      //
+      // 2️⃣ U13 (Data Science): Junior→Middle→Senior (3 contexts, same dates)
+      //    - shapeSimilarity ~ 0.75-0.85 (same pattern, different domain)
+      //    - tempoSimilarity ~ 0.8 (same durations)
+      //    - stabilityScore ~ 0.8 (stable)
+      //    - dtwTotal ~ 2.0-2.6 (high-medium match)
+      //
+      // 3️⃣ U12 (Frontend): Junior→Middle→Senior→Senior (4 contexts, company_changed)
+      //    - shapeSimilarity ~ 0.5-0.7 (similar but 4 contexts vs 3)
+      //    - tempoSimilarity ~ 0.5-0.7 (different durations: 1yr, 1.5yr, 0.5yr)
+      //    - stabilityScore ~ 0.5-0.6 (less stable: 4 contexts, company changes)
+      //    - dtwTotal ~ 1.5-2.0 (medium match)
+      //
+      // Thresholds allow ±0.1 variance from expected values (DTW algorithm + Phase 3 Raw Cypher migration)
+      // If fails: Check DTW component calculations OR trajectory data changed
       expect(u11Total).toBeGreaterThan(2.55); // Excellent
       expect(u13Total).toBeGreaterThan(2.0); // High-medium
       expect(u13Total).toBeLessThan(2.9); // Allow variance after Phase 3 Raw Cypher migration
       expect(u12Total).toBeGreaterThan(1.5); // Medium
       expect(u12Total).toBeLessThan(2.0);
+
+      // DTW formula validation - Verify dtwTotal = shape + tempo + stability for all results
+      if (u11Result.dtwMetrics) {
+        const { shapeSimilarity, tempoSimilarity, stabilityScore } =
+          u11Result.dtwMetrics;
+        const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
+        console.log("[DT4] U11 DTW formula breakdown:", {
+          shapeSimilarity,
+          tempoSimilarity,
+          stabilityScore,
+          sum: calculatedTotal,
+          dtwTotal: u11Total,
+        });
+        expect(u11Total).toBeCloseTo(calculatedTotal, 2);
+      }
+
+      if (u13Result.dtwMetrics) {
+        const { shapeSimilarity, tempoSimilarity, stabilityScore } =
+          u13Result.dtwMetrics;
+        const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
+        console.log("[DT4] U13 DTW formula breakdown:", {
+          shapeSimilarity,
+          tempoSimilarity,
+          stabilityScore,
+          sum: calculatedTotal,
+          dtwTotal: u13Total,
+        });
+        expect(u13Total).toBeCloseTo(calculatedTotal, 2);
+      }
+
+      if (u12Result.dtwMetrics) {
+        const { shapeSimilarity, tempoSimilarity, stabilityScore } =
+          u12Result.dtwMetrics;
+        const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
+        console.log("[DT4] U12 DTW formula breakdown:", {
+          shapeSimilarity,
+          tempoSimilarity,
+          stabilityScore,
+          sum: calculatedTotal,
+          dtwTotal: u12Total,
+        });
+        expect(u12Total).toBeCloseTo(calculatedTotal, 2);
+      }
     }
   });
 
-  it.skip("DT5: durationCapMonths parameter - affects tempoSimilarity for unstable trajectories", async () => {
-    // NOTE: Skipped because U12 is now stable after Bug #2.4 fix (chronological order)
-    // U12 durations: [12, 17, 7, 10] - all below cap thresholds (24, 36, 60)
-    // No outliers to test durationCapMonths impact
-    // TODO: Create U14 with extreme outliers [6, 72, 6, 96] for this test
-
-    // Arrange
-    const fixture = new FixtureSearchManager(driver);
-    const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
-
-    const u10 = dataManager.getStoryBy("U10");
-    const u12 = dataManager.getStoryBy("U12");
-
-    console.log("[DT5] Testing durationCapMonths impact on U12");
-    console.log("[DT5] U10 durations (stable)");
-    console.log("[DT5] U12 durations (stable)");
-
-    // Test A: Low cap (24 months) - should INCREASE tempoSimilarity (outliers capped)
-    console.log("[DT5] Test A: durationCapMonths = 24 (low cap)");
-    const resultsLowCap = await searchManager.searchByUser({
-      userId: u10.userId,
-      limit: 10,
-      pathLimit: 10,
-      durationCapMonths: 24, // Low cap - smooths outliers
-      excludedContextFields: ["birthYear", "countryCode", "cityName"],
-      excludedCreationReasons: [],
-    });
-
-    const u12LowCap = resultsLowCap.find((r) => r.userId === u12.userId);
-
-    // Test B: High cap (60 months) - should DECREASE tempoSimilarity (outliers preserved)
-    console.log("[DT5] Test B: durationCapMonths = 60 (high cap)");
-    const resultsHighCap = await searchManager.searchByUser({
-      userId: u10.userId,
-      limit: 10,
-      pathLimit: 10,
-      durationCapMonths: 60, // High cap - preserves outliers
-      excludedContextFields: ["birthYear", "countryCode", "cityName"],
-      excludedCreationReasons: [],
-    });
-
-    const u12HighCap = resultsHighCap.find((r) => r.userId === u12.userId);
-
-    // Test C: Default cap (36 months) - intermediate value
-    console.log("[DT5] Test C: durationCapMonths = 36 (default)");
-    const resultsDefaultCap = await searchManager.searchByUser({
-      userId: u10.userId,
-      limit: 10,
-      pathLimit: 10,
-      durationCapMonths: 36, // Default cap
-      excludedContextFields: ["birthYear", "countryCode", "cityName"],
-      excludedCreationReasons: [],
-    });
-
-    const u12DefaultCap = resultsDefaultCap.find((r) => r.userId === u12.userId);
-
-    // Assert
-    expect(u12LowCap).toBeDefined();
-    expect(u12HighCap).toBeDefined();
-    expect(u12DefaultCap).toBeDefined();
-
-    if (u12LowCap && u12HighCap && u12DefaultCap) {
-      const tempoLow = u12LowCap.dtwMetrics?.tempoSimilarity ?? 0;
-      const tempoHigh = u12HighCap.dtwMetrics?.tempoSimilarity ?? 0;
-      const tempoDefault = u12DefaultCap.dtwMetrics?.tempoSimilarity ?? 0;
-
-      console.log("[DT5] Tempo similarity comparison:", {
-        lowCap24: tempoLow,
-        defaultCap36: tempoDefault,
-        highCap60: tempoHigh,
-      });
-
-      // NOTE: This test will fail because U12 is stable (no outliers)
-      // All caps produce same tempoSimilarity
-      // Business rule: Low cap smooths outliers → HIGHER tempo similarity
-      // High cap preserves outliers → LOWER tempo similarity
-      // expect(tempoLow).toBeGreaterThan(tempoHigh);
-      // expect(tempoDefault).toBeGreaterThan(tempoHigh);
-      // expect(tempoDefault).toBeLessThan(tempoLow);
-
-      // Verify impact is meaningful (not just noise)
-      // const impactLowVsHigh = tempoLow - tempoHigh;
-      // expect(impactLowVsHigh).toBeGreaterThan(0.05); // At least 5% difference
-    }
-  });
 });

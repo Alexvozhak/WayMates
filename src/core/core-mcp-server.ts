@@ -18,7 +18,7 @@ import type { SearchManager as NewSearchManager } from "./search-manager.js";
 import type { StoryManager } from "./story-manager.js";
 
 
-interface CoreContext {
+type CoreContext = {
   newSearchManager?: NewSearchManager;
   storyManager: StoryManager;
   goalsManager: GoalsManager;

@@ -19,8 +19,7 @@ export class TrajectorySimilarityService {
    */
   computeDTWMetrics(
     userTrajectory: UserContext[],
-    candidateTrajectory: UserContext[],
-    durationCapMonths = 36
+    candidateTrajectory: UserContext[]
   ): DTWMetrics {
     // 1. Calculate durations once (used by all 3 metrics)
     const userDurations = this.calculateDurationMonths(userTrajectory);
@@ -45,8 +44,7 @@ export class TrajectorySimilarityService {
           a.context,
           b.context,
           a.duration,
-          b.duration,
-          durationCapMonths
+          b.duration
         )
     );
 
@@ -73,8 +71,7 @@ export class TrajectorySimilarityService {
       userDurations,
       candidateDurations,
       userTrajectory.length,
-      candidateTrajectory.length,
-      durationCapMonths
+      candidateTrajectory.length
     );
 
     return {
@@ -92,19 +89,10 @@ export class TrajectorySimilarityService {
     userDurations: number[],
     candidateDurations: number[],
     userTrajectoryLength: number,
-    candidateTrajectoryLength: number,
-    durationCapMonths: number
+    candidateTrajectoryLength: number
   ): number {
-    // Apply duration cap before computing derivatives
-    const cappedUserDurations = userDurations.map((d) =>
-      Math.min(d, durationCapMonths)
-    );
-    const cappedCandidateDurations = candidateDurations.map((d) =>
-      Math.min(d, durationCapMonths)
-    );
-
-    const userDeriv = this.derivative(cappedUserDurations);
-    const candidateDeriv = this.derivative(cappedCandidateDurations);
+    const userDeriv = this.derivative(userDurations);
+    const candidateDeriv = this.derivative(candidateDurations);
 
     const dtw = new DynamicTimeWarping(
       userDeriv,
@@ -233,7 +221,9 @@ export class TrajectorySimilarityService {
    *
    * Components (equal weights):
    * - Position: binary 0 or 1
-   * - Duration: |diff| / durationCapMonths, capped at 1.0
+   * - Duration: normalized by MAX(durationA, durationB) (Bug #5 fix: no artificial capping)
+   *   - Edge case: both durations = 0 → durationDiff = 0 (no difference)
+   *   - Outliers: 120mo vs 1mo → durationDiff ≈ 0.99 (correctly penalized, not capped)
    * - Domains: Jaccard distance (1 - similarity)
    * - Reasons: Jaccard distance (1 - similarity)
    */
@@ -241,17 +231,18 @@ export class TrajectorySimilarityService {
     stepA: UserContext,
     stepB: UserContext,
     durationA: number,
-    durationB: number,
-    durationCapMonths: number
+    durationB: number
   ): number {
     // 1. Position difference (0 = same position, 1 = different)
     const positionDiff = stepA.position === stepB.position ? 0 : 1;
 
-    // 2. Duration difference (normalized to 0-1, capped at durationCapMonths)
-    const durationDiff = Math.min(
-      Math.abs(durationA - durationB) / durationCapMonths,
-      1
-    );
+    // 2. Duration difference (normalized to 0-1 by max duration)
+    // Business logic: Extreme outliers (e.g., 120 months vs 1 month) produce high distance (~0.99)
+    // This is CORRECT behavior - outliers should be penalized, not capped (Bug #5 fix)
+    const maxDuration = Math.max(durationA, durationB);
+    const durationDiff = maxDuration > 0
+      ? Math.abs(durationA - durationB) / maxDuration
+      : 0; // Both durations zero (identical timestamps) → no difference
 
     // 3. Domains overlap (Jaccard distance: 1 - similarity)
     const domainsA = new Set(stepA.domains);

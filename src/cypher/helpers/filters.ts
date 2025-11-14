@@ -19,25 +19,27 @@ function extractPrefix(contextVar: string): string {
 /**
  * Generate strict condition for a single field
  *
- * IMPORTANT: Skills are NEVER in strict conditions (penalty-based scoring instead)
+ * IMPORTANT:
+ * - Skills are NEVER in strict conditions (penalty-based scoring instead)
+ * - Uses canonical variables after aggregation (matchedPosition, matchedDomains, etc.)
  *
  * @param field - Context field to match
- * @param candidateVar - Candidate variable (e.g., 'matchedContext')
+ * @param prefix - Canonical variable prefix (e.g., 'matched' from 'matchedContext')
  * @param searchingVar - Searching variable (e.g., '$referenceContext')
  * @returns Condition string
  */
 function generateStrictCondition(
   field: ContextField,
-  candidateVar: string,
+  prefix: string,
   searchingVar: string
 ): string {
   switch (field) {
     case 'position':
-      return `${candidateVar}.position = ${searchingVar}.position`;
+      return `${prefix}Position.name = ${searchingVar}.position`;
 
     case 'domains':
       // All domains must be present
-      return `all(d IN ${searchingVar}.domains WHERE d IN ${candidateVar}.domains)`;
+      return `all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)`;
 
     case 'skills':
       // NEVER strict - handled by penalty scoring
@@ -46,19 +48,19 @@ function generateStrictCondition(
       );
 
     case 'industry':
-      return `${candidateVar}.industry = ${searchingVar}.industry`;
+      return `${prefix}Industry.name = ${searchingVar}.industry`;
 
     case 'countryCode':
-      return `${candidateVar}.countryCode = ${searchingVar}.countryCode`;
+      return `${prefix}Country.name = ${searchingVar}.countryCode`;
 
     case 'cityName':
-      return `${candidateVar}.cityName = ${searchingVar}.cityName`;
+      return `${prefix}City.name = ${searchingVar}.cityName`;
 
     case 'companySize':
-      return `${candidateVar}.companySize = ${searchingVar}.companySize`;
+      return `${prefix}Context.companySize = ${searchingVar}.companySize`;
 
     case 'birthYear':
-      return `${candidateVar}.birthYear = ${searchingVar}.birthYear`;
+      return `${prefix}Context.birthYear = ${searchingVar}.birthYear`;
 
     default:
       throw new Error(`Unknown field: ${field}`);
@@ -68,23 +70,25 @@ function generateStrictCondition(
 /**
  * Build WHERE clause for strict field matching
  *
- * IMPORTANT: Skills are automatically filtered out (never strict)
+ * IMPORTANT:
+ * - Skills are automatically filtered out (never strict)
+ * - Uses canonical variables after aggregation (matchedPosition, matchedDomains, etc.)
  *
  * @param strictFields - Fields to match exactly
- * @param candidateVar - Candidate context variable (e.g., 'matchedContext')
+ * @param candidateVar - Candidate context variable (e.g., 'matchedContext') - used to extract prefix
  * @param searchingVar - Searching context parameter (e.g., '$referenceContext')
  * @returns WHERE clause (or empty string if no conditions)
  *
  * @example
  * buildStrictWhereClause(['position', 'domains'], 'matchedContext', '$referenceContext')
  * // Returns:
- * // WHERE matchedContext.position = $referenceContext.position AND
- * //       all(d IN $referenceContext.domains WHERE d IN matchedContext.domains)
+ * // WHERE matchedPosition.name = $referenceContext.position AND
+ * //       all(d IN $referenceContext.domains WHERE d IN matchedDomains)
  *
  * @example
  * buildStrictWhereClause(['position', 'skills'], 'matchedContext', '$referenceContext')
  * // Returns:
- * // WHERE matchedContext.position = $referenceContext.position
+ * // WHERE matchedPosition.name = $referenceContext.position
  * // (skills filtered out automatically)
  */
 export function buildStrictWhereClause(
@@ -92,6 +96,9 @@ export function buildStrictWhereClause(
   candidateVar: string,
   searchingVar: string
 ): string {
+  // Extract prefix from candidateVar (e.g., 'matched' from 'matchedContext')
+  const prefix = extractPrefix(candidateVar);
+
   // Filter out skills (never strict)
   const validFields = strictFields.filter((field) => field !== 'skills');
 
@@ -100,7 +107,7 @@ export function buildStrictWhereClause(
   }
 
   const conditions = validFields
-    .map((field) => generateStrictCondition(field, candidateVar, searchingVar))
+    .map((field) => generateStrictCondition(field, prefix, searchingVar))
     .filter(Boolean);
 
   return conditions.length > 0 ? `WHERE ${conditions.join(' AND\n  ')}` : '';

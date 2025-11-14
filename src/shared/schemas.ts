@@ -230,12 +230,6 @@ const userSearchParamsBaseSchema = z.object({
     .max(100)
     .default(20)
     .describe("Final result limit after DTW analysis (ignored if user has no trajectory)"),
-  durationCapMonths: z
-    .number()
-    .min(12)
-    .max(120)
-    .default(36)
-    .describe("Maximum duration difference (months) for normalization in DTW distance calculation"),
 });
 
 /**
@@ -290,12 +284,6 @@ export const targetSearchParamsSchema = z.object({
     .max(100)
     .default(20)
     .describe("Maximum number of results to return"),
-  durationCapMonths: z
-    .number()
-    .min(12)
-    .max(120)
-    .default(36)
-    .describe("Maximum duration difference (months) for normalization in DTW distance calculation"),
 });
 
 export type TargetSearchParams = z.infer<typeof targetSearchParamsSchema>;

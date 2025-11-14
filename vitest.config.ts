@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { loadEnv } from "vite";
 
 export default defineConfig(() => {
   return {
@@ -28,6 +29,61 @@ export default defineConfig(() => {
               },
             },
             testTimeout: 10000,
+          },
+        },
+        // SearchManager integration tests (read-only, parallel)
+        {
+          test: {
+            name: "integration-search-read-only",
+            include: [
+              "tests/integration/search-manager/adhoc-context-without-dtw.integration.ts",
+              "tests/integration/search-manager/target-search.integration.ts",
+              "tests/integration/search-manager/current-context-without-dtw.integration.ts",
+              "tests/integration/search-manager/current-context-with-dtw.integration.ts"
+            ],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: false,      // Shared state (U1-U13 loaded once)
+                singleThread: false, // Parallel execution ✅
+              },
+            },
+            setupFiles: ["./tests/integration/search-manager/setup-read-only.ts"],
+            testTimeout: 30000,
+          },
+        },
+        // SearchManager Goals integration tests (write, sequential)
+        {
+          test: {
+            name: "integration-search-goals",
+            include: ["tests/integration/search-manager/goals-integration.integration.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: true,
+                singleThread: true,  // Sequential execution ⚠️
+              },
+            },
+            setupFiles: ["./tests/integration/search-manager/setup-goals.ts"],
+            testTimeout: 30000,
+          },
+        },
+        // StoryManager integration tests (write, sequential)
+        {
+          test: {
+            name: "integration-story-manager",
+            include: ["tests/integration/story-manager/story-manager.integration.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: true,
+                singleThread: true,  // Sequential execution ⚠️
+              },
+            },
+            setupFiles: ["./tests/integration/story-manager/setup.ts"],
+            testTimeout: 30000,
+            hookTimeout: 30000,
+            env: loadEnv("test", process.cwd(), ""),
           },
         },
         // DISABLED: Old GDS tests (to be refactored)

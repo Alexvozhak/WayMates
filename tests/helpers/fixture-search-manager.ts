@@ -1,7 +1,7 @@
 import { Driver } from "neo4j-driver";
 import { DatabaseContext } from "../../src/database-context.js";
 import { SearchManager } from "../../src/core/search-manager.js";
-import { PersistenceManager } from "../../src/persistence-manager.js";
+import { StoryManager } from "../../src/core/story-manager.js";
 import { SelectivityService } from "../../src/services/selectivity.service.js";
 import { TrajectorySimilarityService } from "../../src/core/trajectory-similarity.service.js";
 import { PathCollectorService } from "../../src/core/path-collector.service.js";
@@ -9,7 +9,7 @@ import { GoalsManager } from "../../src/core/goals-manager.js";
 
 export class FixtureSearchManager {
   private searchManager: SearchManager;
-  private persistenceManager: PersistenceManager;
+  private storyManager: StoryManager;
 
   constructor(driver: Driver) {
     const db = new DatabaseContext(driver);
@@ -25,14 +25,14 @@ export class FixtureSearchManager {
       pathCollector,
       goalsManager
     );
-    this.persistenceManager = new PersistenceManager(db);
+    this.storyManager = new StoryManager(db);
   }
 
   getSearchManager(): SearchManager {
     return this.searchManager;
   }
 
-  getPersistenceManager(): PersistenceManager {
-    return this.persistenceManager;
+  getStoryManager(): StoryManager {
+    return this.storyManager;
   }
 }

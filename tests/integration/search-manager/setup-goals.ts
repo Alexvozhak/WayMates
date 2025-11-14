@@ -1,14 +1,14 @@
 /**
  * Setup for Goals CRUD integration tests
  *
- * Reloads test data (U1, U2, U3) BEFORE EACH test with cleanup.
+ * Reloads test data (U1-U13) BEFORE EACH test with cleanup.
  * Tests in this project run SEQUENTIALLY (singleThread: true).
  *
  * Goals tests modify the database (create/delete Goal nodes),
  * so we need isolation between tests.
  *
  * Used by:
- * - goals.integration.ts (G1-G5)
+ * - goals-integration.integration.ts (G1-G5)
  */
 
 import { beforeAll, beforeEach, afterAll } from 'vitest';
@@ -26,7 +26,7 @@ export let driver: Driver;
 let dataManager: TestDataManager;
 
 beforeAll(async () => {
-  console.log('[Goals Setup] Starting setup for Goals tests (U1, U2, U3)...');
+  console.log('[Goals Setup] Starting setup for Goals tests (U1-U13)...');
 
   driver = createDriver();
   dataManager = new TestDataManager();
@@ -38,11 +38,14 @@ beforeEach(async () => {
     await tx.run('MATCH (n) WHERE n:Goal OR n:User OR n:Context DETACH DELETE n');
   });
 
-  // Reimport base users for Goals tests
-  const stories = dataManager.getUserStories(['U1', 'U2', 'U3']);
+  // Reimport all test users (G5 needs U10 Middle Backend context)
+  const stories = dataManager.getUserStories([
+    'U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7', 'U8', 'U9',
+    'U10', 'U11', 'U12', 'U13'
+  ]);
   await importStories(driver, stories);
 
-  console.log('[Goals Setup] Test data reloaded (U1, U2, U3)');
+  console.log('[Goals Setup] Test data reloaded (U1-U13)');
 }, 30000);
 
 afterAll(async () => {

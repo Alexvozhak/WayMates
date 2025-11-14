@@ -75,6 +75,7 @@ export default [
           readonly: 'array',
         },
       ],
+      '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
 
       'import-x/no-unresolved': 'off',
       'import-x/namespace': 'off',
@@ -202,6 +203,16 @@ export default [
       'unicorn/no-null': 'off', // Для Neo4j драйвера null нужен
       'unicorn/no-array-reduce': 'warn', // Warn вместо error
       'unicorn/no-await-expression-member': 'off', // Разрешить (await foo()).bar
+    },
+  },
+
+  // Relaxed rules for tests
+  {
+    files: ['tests/**/*.ts', 'vitest.config.ts'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off', // Не требовать return type в тестах
+      'max-lines-per-function': 'off', // Разрешить длинные test describe блоки
+      'import-x/no-default-export': 'off', // Для vitest.config.ts нужен default export
     },
   },
 

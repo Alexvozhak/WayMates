@@ -2,23 +2,23 @@ import { z } from "zod";
 
 import { REQUIRED_FIELDS_FOR_CURRENT_CONTEXT } from "../config.js";
 import {
-  
-  ContextFieldSchema,
-  ContextIdSchema,
-  MatchedCandidateWithPathSchema,
-  
-  ScoredMatchedCandidateSchema,
-  ScoredMatchedCandidateWithPathAndDTWSchema,
-  
-  
-  
-  TrailIdSchema,
-  
-  
-  
-  UserContextSchema,
-  UserIdSchema,
-  
+
+  contextFieldSchema,
+  contextIdSchema,
+  matchedCandidateWithPathSchema,
+
+  scoredMatchedCandidateSchema,
+  scoredMatchedCandidateWithPathAndDTWSchema,
+
+
+
+  trailIdSchema,
+
+
+
+  userContextSchema,
+  userIdSchema,
+
 } from "../shared/schemas.js";
 
 import type {
@@ -115,7 +115,7 @@ export const skillsAnalysisSchema = z.object({
 export type SkillsAnalysis = z.infer<typeof skillsAnalysisSchema>;
 
 export const basicSearchResultSchema = z.object({
-  candidates: z.array(ScoredMatchedCandidateSchema),
+  candidates: z.array(scoredMatchedCandidateSchema),
   totalCount: z.number().describe("Total number of candidates found"),
   searchMode: z.literal("context").describe("Search by user's current context"),
 });
@@ -123,7 +123,7 @@ export const basicSearchResultSchema = z.object({
 export type BasicSearchResult = z.infer<typeof basicSearchResultSchema>;
 
 export const pathSearchResultSchema = z.object({
-  candidates: z.array(ScoredMatchedCandidateWithPathAndDTWSchema),
+  candidates: z.array(scoredMatchedCandidateWithPathAndDTWSchema),
   totalCount: z.number().describe("Total number of candidates found"),
   searchMode: z.literal("path").describe("Path search with DTW"),
 });
@@ -131,7 +131,7 @@ export const pathSearchResultSchema = z.object({
 export type PathSearchResult = z.infer<typeof pathSearchResultSchema>;
 
 export const targetOnlySearchResultSchema = z.object({
-  candidates: z.array(MatchedCandidateWithPathSchema),
+  candidates: z.array(matchedCandidateWithPathSchema),
   totalCount: z.number().describe("Total number of candidates found"),
   searchMode: z.literal("target_only").describe("Reverse search by target"),
 });
@@ -160,7 +160,7 @@ export type Reason = z.infer<typeof reasonSchema>;
 // === LEGACY SEARCH TYPES (to be removed) ===
 // ==========================================
 
-export const searchContextSchema = UserContextSchema.omit({
+export const searchContextSchema = userContextSchema.omit({
   contextId: true,
   createdAt: true,
   creationReason: true,
@@ -171,7 +171,7 @@ export const searchContextSchema = UserContextSchema.omit({
 }).partial();
 
 export const flexibleFieldSchema = z.object({
-  field: ContextFieldSchema,
+  field: contextFieldSchema,
   weight: z.number().min(0).max(100),
 });
 
@@ -221,7 +221,7 @@ export const currentOnlyReasonParamsSchema = z.object({
   currentContext: searchContextSchema.describe(
     "User's current context (search params, all fields optional)"
   ),
-  currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
+  currentUserId: userIdSchema.describe("User ID (to exclude from results)"),
   searchPeriodMonths: z
     .number()
     .min(1)
@@ -253,7 +253,7 @@ export const targetOnlyReasonParamsSchema = z.object({
   targetContext: searchContextSchema.describe(
     "User's target context (search params, all fields optional)"
   ),
-  currentUserId: UserIdSchema.describe("User ID (to exclude from results)"),
+  currentUserId: userIdSchema.describe("User ID (to exclude from results)"),
   searchPeriodMonths: z
     .number()
     .min(1)
@@ -279,17 +279,17 @@ export const targetOnlyReasonParamsSchema = z.object({
 });
 
 export const getUserStoryParamsSchema = z.object({
-  userId: UserIdSchema,
+  userId: userIdSchema,
 });
 
 export const deleteContextParamsSchema = z.object({
-  userId: UserIdSchema,
-  contextId: ContextIdSchema,
+  userId: userIdSchema,
+  contextId: contextIdSchema,
 });
 
 export const deleteTrailParamsSchema = z.object({
-  userId: UserIdSchema,
-  trailId: TrailIdSchema,
+  userId: userIdSchema,
+  trailId: trailIdSchema,
 });
 
 export type CurrentOnlyReasonParams = z.input<
@@ -341,7 +341,7 @@ export const reasonCombinationSchema = z.object({
   sampleUsers: z
     .array(
       z.object({
-        userId: UserIdSchema,
+        userId: userIdSchema,
         matchScore: z.number(),
       })
     )
@@ -471,7 +471,7 @@ export type SkillCategoryTemplatesConfig = z.infer<
 
 export const currentPresetConfigSchema = z.object({
   strictFields: z
-    .array(ContextFieldSchema)
+    .array(contextFieldSchema)
     .refine(
       (fields) =>
         REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.every((required) =>
@@ -486,7 +486,7 @@ export const currentPresetConfigSchema = z.object({
 });
 
 export const targetPresetConfigSchema = z.object({
-  strictFields: z.array(ContextFieldSchema),
+  strictFields: z.array(contextFieldSchema),
   flexibleFields: flexibleFieldsSchema,
 });
 
@@ -497,4 +497,4 @@ export type QueryConfig =
   | z.infer<typeof currentPresetConfigSchema>
   | z.infer<typeof targetPresetConfigSchema>;
 
-export { AdhocSearchParamsSchema, ContextFieldSchema, ContextIdSchema, NewContextReasonSchema, StoryInputSchema, TargetContextSchema, TargetSearchParamsSchema, TrailIdSchema,UpsertContextResultSchema, UpsertStoryResultSchema, UpsertTrailResultSchema, UserContextSchema, UserIdSchema, UserSearchParamsSchema} from "../shared/schemas.js";
+export { adhocSearchParamsSchema, contextFieldSchema, contextIdSchema, newContextReasonSchema, storyInputSchema, targetContextSchema, targetSearchParamsSchema, trailIdSchema, upsertContextResultSchema, upsertStoryResultSchema, upsertTrailResultSchema, userContextSchema, userIdSchema, userSearchParamsSchema } from "../shared/schemas.js";

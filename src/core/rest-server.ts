@@ -17,7 +17,7 @@ import type { SearchManager } from "./search-manager.js";
 import type { StoryManager } from "./story-manager.js";
 import type { Request, Response } from "express";
 
-interface CoreContext {
+type CoreContext = {
   searchManager?: SearchManager;
   storyManager: StoryManager;
   goalsManager: GoalsManager;

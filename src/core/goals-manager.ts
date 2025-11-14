@@ -18,7 +18,7 @@ export class GoalsManager {
     return this.db.write(async (tx) => {
       const result = await tx.run(setGoalQuery(), {
         userId: params.userId,
-        targetCriteria: params.targetContext,
+        targetCriteria: JSON.stringify(params.targetContext),
         createdAt,
       });
 
@@ -27,7 +27,7 @@ export class GoalsManager {
         throw new Error(`setGoal: no result returned for user=${params.userId}`);
       }
 
-      return userIdSchema.parse(record.get('user_id'));
+      return userIdSchema.parse(record.get('userId'));
     });
   }
 
@@ -39,7 +39,14 @@ export class GoalsManager {
         return null;
       }
       const goalData = record.get('goal');
-      return goalSchema.parse(goalData);
+
+      // Deserialize targetCriteria from JSON string
+      const goalWithParsedCriteria = {
+        ...goalData,
+        targetCriteria: JSON.parse(goalData.targetCriteria)
+      };
+
+      return goalSchema.parse(goalWithParsedCriteria);
     });
   }
 

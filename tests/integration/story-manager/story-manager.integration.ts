@@ -19,7 +19,7 @@ import { type UserKey, TestDataManager } from '../../helpers/test-data-manager.j
 import { driver } from './setup.js';
 
 
-import type { StoryInput } from '../../../src/schemas-zod.js';
+import type { StoryInput } from '../../../src/shared/schemas.js';
 
 describe('StoryManager Integration Tests', () => {
   const testDataManager = new TestDataManager();

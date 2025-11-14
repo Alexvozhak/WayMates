@@ -27,14 +27,25 @@ const env = loadEnv('test', process.cwd(), '');
 Object.assign(process.env, env);
 
 export let driver: Driver;
-let isDataLoaded = false;
 
 beforeAll(async () => {
-  console.log('[Read-only Setup] Loading ALL test data (U1-U13)...');
+  console.log('[Read-only Setup] Initializing...');
 
   driver = createDriver();
 
-  if (!isDataLoaded) {
+  // Check if data already loaded (database state check)
+  const checkSession = driver.session();
+  let userCount = 0;
+  try {
+    const result = await checkSession.run('MATCH (u:User) RETURN count(u) AS count');
+    userCount = Number(result.records[0]?.get('count')) || 0;
+    console.log(`[Read-only Setup] Found ${userCount} users in database`);
+  } finally {
+    await checkSession.close();
+  }
+
+  if (userCount === 0) {
+    // Database is empty → load test data (no cleanup needed)
     const dataManager = new TestDataManager();
 
     // Load ALL users at once (Batch A + Batch B)
@@ -44,8 +55,9 @@ beforeAll(async () => {
     ]);
 
     await importStories(driver, stories);
-    isDataLoaded = true;
     console.log('[Read-only Setup] All test data loaded successfully (U1-U13)');
+  } else {
+    console.log('[Read-only Setup] Data already loaded, skipping import');
   }
 }, 30000); // 30s timeout
 

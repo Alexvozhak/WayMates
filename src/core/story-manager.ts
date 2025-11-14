@@ -1,15 +1,6 @@
 import { v7 as uuidv7 } from 'uuid';
 
 import {
-  ContextIdSchema,
-  StoryInputSchema,
-  TrailIdSchema,
-  UpsertContextResultSchema,
-  UpsertStoryResultSchema,
-  UpsertTrailResultSchema,
-} from '../shared/schemas.js';
-
-import {
   CREATE_REASON_QUERY,
   DELETE_CONTEXT_QUERY,
   DELETE_TRAIL_QUERY,
@@ -17,7 +8,16 @@ import {
   LIST_REASONS_QUERY,
   UPSERT_CONTEXTS_QUERY,
   UPSERT_TRAILS_QUERY,
-} from './persistence-query-builder.js';
+} from '../cypher/queries/persistence.js';
+import {
+  contextIdSchema,
+  storyInputSchema,
+  trailIdSchema,
+  upsertContextResultSchema,
+  upsertStoryResultSchema,
+  upsertTrailResultSchema,
+} from '../shared/schemas.js';
+
 import { type Reason, ReasonSchema } from './schemas.js';
 
 import type { DatabaseContext } from '../database-context.js';
@@ -44,7 +44,7 @@ export class StoryManager {
       params.userId,
       params.trails
     );
-    return UpsertStoryResultSchema.parse({
+    return upsertStoryResultSchema.parse({
       contexts: contextsResult,
       trails: trailsResult,
     });
@@ -57,7 +57,7 @@ export class StoryManager {
       if (!record) {
         throw new Error(`getUserStory: no record returned for user ${userId}`);
       }
-      return StoryInputSchema.parse(record.get('result'));
+      return storyInputSchema.parse(record.get('result'));
     });
   }
 
@@ -152,7 +152,7 @@ export class StoryManager {
 
         const result = await tx.run(UPSERT_CONTEXTS_QUERY, {
           userId,
-          context: contextWithId,
+          ctx: contextWithId,
         });
         const record = result.records[0];
         if (!record) {
@@ -160,9 +160,9 @@ export class StoryManager {
             `upsertContexts: no result returned for user=${userId}`
           );
         }
-        results.push(ContextIdSchema.parse(record.get('context_id')));
+        results.push(contextIdSchema.parse(record.get('contextId')));
       }
-      return UpsertContextResultSchema.parse({
+      return upsertContextResultSchema.parse({
         success: true,
         contextIds: results,
       });
@@ -178,6 +178,7 @@ export class StoryManager {
       for (const trail of trails) {
         const trailId = this.generateTrailId();
         const result = await tx.run(UPSERT_TRAILS_QUERY, {
+          userId,
           trailId,
           trail,
         });
@@ -185,9 +186,9 @@ export class StoryManager {
         if (!record) {
           throw new Error(`upsertTrails: no result returned for user=${userId}`);
         }
-        results.push(TrailIdSchema.parse(record.get('trail_id')));
+        results.push(trailIdSchema.parse(record.get('trailId')));
       }
-      return UpsertTrailResultSchema.parse({
+      return upsertTrailResultSchema.parse({
         success: true,
         trailIds: results,
       });

@@ -105,12 +105,17 @@ export class SearchManager {
 
     const goal = await this.goalsManager.getUserGoal(userId);
 
+    // Extract goal positions for Cypher parameter (null if no goal or no position filter)
+    const goalPositions = goal?.targetCriteria.position?.mode === 'desired'
+      ? goal.targetCriteria.position.values
+      : null;
+
     const rankedStrictFields = await this.selectivity.rankStrictFields(
       strictFields,
       referenceContext
     );
 
-    const query = buildCurrentSearchQuery(goal, rankedStrictFields, {
+    const query = buildCurrentSearchQuery(goalPositions, rankedStrictFields, {
       userId,
       recencyThresholdMonths,
       limit,
@@ -122,6 +127,7 @@ export class SearchManager {
       excludedCreationReasons: excludedCreationReasons ?? [],
       recencyThresholdMonths,
       limit,
+      goalPositions,
     };
 
     return this.db.read(async (tx) => {
@@ -178,8 +184,7 @@ export class SearchManager {
         candidate,
         userPath,
         pathsMap,
-        params.userId,
-        params.durationCapMonths
+        params.userId
       );
       if (enriched) {
         enrichedCandidates.push(enriched);
@@ -200,8 +205,7 @@ export class SearchManager {
     candidate: ScoredMatchedCandidate,
     userPath: UserContext[],
     pathsMap: Map<string, UserContext[]>,
-    userId: string,
-    durationCapMonths: number
+    userId: string
   ): ScoredMatchedCandidate | null {
     if (candidate.userId === userId) {
       return null;
@@ -215,8 +219,7 @@ export class SearchManager {
 
     const dtwMetrics = this.trajectorySimilarity.computeDTWMetrics(
       userPath,
-      path,
-      durationCapMonths
+      path
     );
 
     const dtwTotal =
