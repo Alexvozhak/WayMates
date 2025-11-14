@@ -22,6 +22,17 @@ WayMates is a career transition analysis platform built on Neo4j graph database.
 
 ## Architecture Patterns
 
+### Module Isolation
+
+**Dependency rules** (для будущего split на репо):
+- ✅ `core/` → ONLY `shared/`
+- ❌ `core/` → NEVER `facade/`, `services/`
+- ✅ `facade/` → can use `core/`, `shared/`
+
+**Check**: `Grep "from.*services" src/core/` должен быть пустым.
+
+---
+
 ### Core Components
 
 1. **MCP Server** (`src/mcp-server.ts`)
