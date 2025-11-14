@@ -52,6 +52,18 @@ export const newContextReasonSchema = z.enum(REASON_IDS);
 
 export type NewContextReason = z.infer<typeof newContextReasonSchema>;
 
+export const educationLevelSchema = z.enum([
+  "NONE",
+  "HIGH_SCHOOL",
+  "ASSOCIATE",
+  "BACHELOR",
+  "MASTER",
+  "DOCTORATE",
+  "PROFESSIONAL",
+]);
+
+export type EducationLevel = z.infer<typeof educationLevelSchema>;
+
 export const scheduleSchema = z.object({
   sessionsPerWeek: z.number().describe("Sessions per week"),
   hoursPerSession: z.number().describe("Hours per session"),
@@ -111,6 +123,7 @@ export const userContextSchema = z.object({
   cityName: z.string().describe("Location city name"),
   citizenships: z.array(z.string()),
   birthYear: z.number().min(1950).describe("Birth year"),
+  educationLevel: educationLevelSchema.nullable().optional().describe("Education level"),
 });
 
 export type Schedule = z.infer<typeof scheduleSchema>;
@@ -184,6 +197,7 @@ export const contextFieldSchema = z.enum([
   "cityName",
   "companySize",
   "birthYear",
+  "educationLevel",
 ], {
   description: "Available field names for search configuration",
 });

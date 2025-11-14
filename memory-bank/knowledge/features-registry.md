@@ -14,8 +14,8 @@
 
 | # | Date | Component | Title | Status | Priority |
 |---|------|-----------|-------|--------|----------|
-| #1 | 2025-11-12 | Context schema | Add salary range (min/max) to Context | TODO | 🔴 P0 |
-| #2 | 2025-11-12 | Context schema | Add education level enum to Context | TODO | 🟡 P1 |
+| #1 | 2025-11-12 | Context schema | Add salary range (min/max) to Context | IN_PROGRESS | 🔴 P0 |
+| #2 | 2025-11-12 | Context schema | Add education level enum to Context | DONE | 🟡 P1 |
 | #3 | 2025-11-12 | Admin CLI | Import Kaggle synthetic dataset (297 candidates) | TODO | 🔴 P0 |
 | #4 | 2025-11-12 | Integration tests | Improve integration test quality (MEDIUM priority enhancements) | DONE | 🟡 P1 |
 | #5 | 2025-11-12 | Facade MCP | Facade NLP Gateway (simple tools + infrastructure) | TODO | 🔴 P0 |
@@ -30,6 +30,7 @@
 | #14 | 2025-11-13 | Integration tests | Add test for extreme duration outliers (120+ months) | TODO | 🟡 P1 |
 | #15 | 2025-11-14 | Core Manager, Schema | Refactor import_story: tempId mapping + Neo4j UUID generation | TODO | 🔴 P0 |
 | #16 | 2025-11-14 | Core Manager, Core MCP | Add CRUD endpoints for Context/Trail management | TODO | 🔴 P0 |
+| #17 | 2025-11-14 | Core API, Facade MCP | Core-Facade API Contract (DictionariesManager + #15-16) | TODO | 🔴 P0 |
 
 ---
 
@@ -37,7 +38,7 @@
 
 | # | Date | Component | Title | Completed | Commit |
 |---|------|-----------|-------|-----------|--------|
-| - | - | - | No completed features yet | - | - |
+| #2 | 2025-11-12 | Context schema | Add education level enum to Context | 2025-11-15 | TBD |
 
 ---
 
@@ -46,7 +47,7 @@
 ### Feature #1: Add salary range (min/max) to Context
 **Component**: Context schema, search-query-builder, persistence-query-builder
 **Date**: 2025-11-12
-**Status**: TODO
+**Status**: IN_PROGRESS
 **Priority**: 🔴 P0 (Critical)
 
 **Motivation**:
@@ -86,7 +87,7 @@ As a user planning career transition, I want to see salary ranges for contexts, 
 ### Feature #2: Add education level enum to Context
 **Component**: Context schema, search-query-builder, Kaggle import
 **Date**: 2025-11-12
-**Status**: TODO
+**Status**: DONE
 **Priority**: 🟡 P1 (Important)
 
 **Motivation**:
@@ -100,7 +101,7 @@ Education level is an important career context factor that:
 As a user searching for career paths, I want to filter by education level, so that I see transitions matching my academic background and understand typical education requirements for target positions.
 
 **Acceptance Criteria**:
-- [ ] Define `EducationLevel` enum with international scale:
+- [x] Define `EducationLevel` enum with international scale:
   - `NONE` (no formal education)
   - `HIGH_SCHOOL` (secondary education)
   - `ASSOCIATE` (2-year college)
@@ -108,19 +109,18 @@ As a user searching for career paths, I want to filter by education level, so th
   - `MASTER` (graduate degree)
   - `DOCTORATE` (PhD)
   - `PROFESSIONAL` (MBA, JD, MD)
-- [ ] Context schema extended with `educationLevel` (enum, optional)
-- [ ] Migration script adds property to existing Context nodes (nullable)
-- [ ] Search query builder supports education level filtering
-- [ ] Creation reason `education_completed` added when education level increases
-- [ ] Kaggle import script parses `03_education.csv`:
-  - Map `program` field → EducationLevel enum
-  - Apply highest education level to all contexts
-  - Handle missing/unclear data gracefully
-- [ ] Integration tests cover:
-  - Education level filtering
-  - Education-based creation reason detection
-  - Kaggle import edge cases (multiple degrees, unclear programs)
-- [ ] Schema documentation updated
+- [x] Context schema extended with `educationLevel` (enum, optional, nullable)
+- [x] Database index added for educationLevel filtering
+- [x] Search query builder supports education level filtering (strict + excluded modes)
+- [x] Null wildcard behavior: missing educationLevel matches all levels
+- [x] Creation reason `education_completed` added to reasons.json
+- [x] Integration tests cover:
+  - AC7: Strict education level filtering (finds only matching level)
+  - AC8: Excluded education level filtering (finds different levels)
+  - AC9: Null educationLevel wildcard (finds any level)
+- [x] Selectivity service supports educationLevel for query optimization
+- [x] Map projections return educationLevel in search results
+- [ ] Kaggle import (DEFERRED to Feature #3 - isolated task per user decision)
 
 **Impact Assessment**:
 - Schema change: YES (adds `educationLevel` enum to Context node)
@@ -134,6 +134,19 @@ As a user searching for career paths, I want to filter by education level, so th
   - `scripts/import-kaggle-synthetic.ts` (parse education data)
   - `database/init.cypher` (index for education filtering)
   - Integration tests
+
+**Implementation Notes**:
+- **Schema**: Added `educationLevelSchema` enum (7 levels: NONE → PROFESSIONAL)
+- **Null handling**: `.nullable().optional()` - Neo4j returns null for missing properties in map projection, data files can omit field
+- **Cypher filtering**: CASE logic for null wildcard behavior (null in search OR candidate → always show)
+- **Test data**: U1-U13 all got BACHELOR (same value, no existing test impact), new U14-U16 for education-specific tests
+- **Test coverage**: AC7 (strict match), AC8 (excluded field), AC9 (null wildcard)
+- **Selectivity**: Refactored `getContextFieldValue()` from if-chain to Record mapping (complexity fix)
+- **Map projections**: Added educationLevel to both `buildContextMapProjection()` and `CONTEXT_MAP_PROJECTION_CANONICAL`
+- **Business logic**: Missing education in candidate = wildcard (always included), strict matching when both present
+- **Lessons learned**: When adding Context field, must update: schema, Cypher filters, persistence, **map projection** (forgot initially), selectivity, index
+
+**Commit**: TBD
 
 ---
 
@@ -1188,3 +1201,163 @@ Security issue: Клиент (Facade) может передавать contextId,
 - Requires migration: NO
 - Affected components: StoryManager, Core MCP tools, Query builders, Integration tests
 - New dependencies: None
+
+---
+
+### Feature #17: Core-Facade API Contract (DictionariesManager + #15-16)
+**Component**: Core API, Facade MCP (DictionariesManager, StoryManager, ContextManager)
+**Date**: 2025-11-14
+**Status**: TODO
+**Priority**: 🔴 P0 (Critical)
+
+**Motivation**:
+Facade NLP Gateway (Features #5-7) requires 9 Core API endpoints для работы. Inventory из Scenarios 0-11 показал:
+- ✅ **3 EXISTING** endpoints работают (get_user_story, search_adhoc, create_goal)
+- ⚙️ **1 MODIFIED** endpoint нуждается в доработке (import_story - Feature #15)
+- ❌ **5 NEW** endpoints отсутствуют:
+  - 🔴 P0: get_dictionaries, find_term, add_term (DictionariesManager)
+  - 🟡 P1: update_context (Feature #16)
+  - ❓ P2: get_context_schema (questionable)
+
+Без DictionariesManager (3 endpoints) Facade не может работать - Normalizer не имеет справочников для canonical name mapping. Без Feature #15 (tempId mapping) Facade не знает какой context_id был создан. Без Feature #16 (update_context) Scenario 4 не работает.
+
+**Goal**: Полный API contract между Core и Facade со всеми сигнатурами, errors, examples, security rules.
+
+**Acceptance Criteria**:
+
+**1. Implement DictionariesManager (3 NEW endpoints) - P0 Critical**:
+- [ ] `get_dictionaries() → {positions: string[], skills: string[], domains: string[], cities: string[], industries: string[]}`
+  - Manager: DictionariesManager
+  - Query: Neo4j - `MATCH (n:Position|Skill|Domain|City|Industry) WHERE verified = true RETURN canonical names`
+  - Cache: Redis (24h TTL)
+  - Used by: Normalizer (Scenarios 1, 3, 4, 5)
+  - Tests: integration tests (cache HIT/MISS, verified filtering)
+
+- [ ] `find_term({type, value}) → {canonical: string, verified: boolean} | null`
+  - Manager: DictionariesManager
+  - Query: Neo4j - fuzzy matching `MATCH (n:Skill|Position) WHERE name =~ $fuzzyPattern`
+  - Used by: Normalizer 3-tier verification (Redis → **Neo4j** → WebSearch)
+  - Tests: integration tests (exact match, fuzzy match, not found)
+
+- [ ] `add_term({type, value, verified, userId}) → {termId: string, canonical: string, verified: boolean}`
+  - Manager: DictionariesManager
+  - Query: Neo4j - `MERGE (n:Skill {name: $value}) SET verified = $verified, addedBy = $userId`
+  - Deduplication: MERGE ensures no duplicates
+  - Used by: Normalizer after WebSearch verification (Scenarios 5, 9)
+  - Tests: integration tests (verified/unverified, deduplication, admin moderation)
+
+**2. Complete Feature #15: tempId mapping (import_story modification) - P0 Critical**:
+- [ ] Modify `execute_upsert_story` → `import_story`
+- [ ] Input schema: `contexts: {tempId: number, ...UserContext}[]` (replace `contextId`)
+- [ ] Core generates: `context_id = "ctx_" + randomUUID()` in Neo4j
+- [ ] Return: `{contextId: string, idMapping: {[tempId: number]: string}}`
+- [ ] Security: Core owns UUID generation (not client)
+- [ ] Tests: integration tests (idMapping correctness, uniqueness, topology preservation)
+
+**3. Complete Feature #16: update_context endpoint - P1 Important**:
+- [ ] Implement `update_context({userId, contextId, updates, operation})`
+  - Manager: ContextManager
+  - Operations: APPEND (add to array), REPLACE (overwrite), REMOVE (delete from array)
+  - Ownership check: verify userId owns contextId
+  - Query: Neo4j - `MATCH Context WHERE owned by userId, MERGE relationships, UPDATE properties`
+  - Used by: Scenario 4 (update_context tool)
+  - Tests: integration tests (ownership, operations, normalization)
+
+**4. Create Core-Facade API Contract Document**:
+- [ ] Document: `docs/architecture/core-facade-api-contract.md`
+- [ ] Full specification for all 9 endpoints:
+  - Signatures: parameters, return types (TypeScript)
+  - Examples: request/response для каждого endpoint
+  - Errors: error codes (session_expired, context_not_found, unauthorized, validation_error)
+  - Security: ownership checks, authentication flow, session management
+  - Business rules: unique constraints, validation logic, cascade behavior
+- [ ] Gap analysis matrix: EXISTING/MODIFIED/NEW status per endpoint
+- [ ] CRUD matrix: Create/Read/Update/Delete coverage для Context, Trail, Goal, Dictionary
+
+**5. Integration Tests**:
+- [ ] DictionariesManager tests (get/find/add terms):
+  - Cache behavior (Redis HIT/MISS)
+  - Verified filtering (only verified in cache)
+  - Fuzzy matching accuracy
+  - Deduplication (MERGE behavior)
+  - Admin moderation flow (unverified terms)
+- [ ] import_story tests (tempId mapping):
+  - idMapping correctness (tempId → real UUID)
+  - Uniqueness (no collisions)
+  - Topology preservation (trails reference correct IDs)
+  - Security (client cannot provide contextId)
+- [ ] update_context tests:
+  - Ownership validation (only own contexts)
+  - Operations (APPEND/REPLACE/REMOVE)
+  - Normalization (canonical names)
+  - Error handling (NotFound, Unauthorized)
+
+**6. Documentation & Architecture**:
+- [ ] Update `docs/architecture/workflows/facade/features-5-7-architecture.md`:
+  - Replace "TODO: Phase 4 - Core API Requirements" with link to contract doc
+  - Update Scenario 5 comments (import_story signature change)
+- [ ] Create Mermaid sequence diagrams for:
+  - DictionariesManager flow (Redis → Neo4j → WebSearch)
+  - tempId mapping flow (client sends tempId → Core returns idMapping)
+  - update_context flow (ownership check → normalization → persist)
+- [ ] Update Memory Bank:
+  - Link from features-registry.md to core-facade-api-contract.md
+  - Document decision: Core owns all ID generation (security principle)
+
+**Impact Assessment**:
+- Schema change: YES (DictionariesManager adds verified/addedBy/createdAt to dictionary nodes)
+- Breaking change: YES (import_story signature change - tempId instead of contextId)
+- Requires migration: NO (API contract change, not data migration)
+- Affected components:
+  - **Core**: DictionariesManager (NEW), StoryManager (modify import_story), ContextManager (NEW update_context)
+  - **Facade**: Normalizer (uses DictionariesManager), LangGraph workflow (uses import_story with tempId)
+  - **Neo4j**: New queries (dictionary CRUD), updated import_story query (randomUUID generation)
+  - **Integration tests**: All 3 managers
+  - **Documentation**: core-facade-api-contract.md, features-5-7-architecture.md
+- New dependencies: None (uses existing Neo4j, Redis, FastMCP)
+
+**Technical Design Notes**:
+- **DictionariesManager location**: `src/core/dictionaries-manager.ts` (NEW file)
+- **Query builders**: `src/cypher/queries/dictionaries.ts` (NEW file для dictionary CRUD)
+- **Cache strategy**: Redis TTL 24h, only verified terms cached (3-tier verification)
+- **Security principle**: Core generates ALL IDs through Neo4j `randomUUID()` (tempId pattern)
+- **MERGE deduplication**: Prevent duplicate skills/positions in Neo4j
+- **Ownership validation**: All write operations check userId owns resource
+- **Error handling**: Standard error codes (session_expired, unauthorized, not_found, validation_error)
+
+**Subtasks** (tracked separately in registry):
+- Feature #15: tempId mapping (StoryManager modification) - 🔴 P0
+- Feature #16: update_context endpoint (ContextManager) - 🟡 P1
+- DictionariesManager implementation (3 endpoints) - 🔴 P0 (new subtask)
+
+**Timeline**:
+- **Week 1** (Features #5-7 implementation):
+  - Day 1-2: DictionariesManager (3 endpoints)
+  - Day 3: Feature #15 (tempId mapping)
+  - Day 4: Feature #16 (update_context)
+  - Day 5: Integration tests + documentation
+- **Blocker for**: Feature #5 (Facade NLP Gateway), Feature #6 (LangGraph workflow)
+
+**Definition of Done**:
+- [ ] All 9 endpoints documented in core-facade-api-contract.md
+- [ ] DictionariesManager implemented (3 endpoints) + tests pass
+- [ ] Feature #15 completed (tempId mapping) + tests pass
+- [ ] Feature #16 completed (update_context) + tests pass
+- [ ] Integration tests pass (npm run test:integration)
+- [ ] Lint passes (npm run lint)
+- [ ] TypeScript compiles (npx tsc --noEmit)
+- [ ] Memory Bank updated (links, architecture docs, ADR if needed)
+- [ ] Facade team can start Feature #5 implementation (contract finalized)
+
+**Out of Scope** (defer to Feature #11 or post-MVP):
+- Admin CLI for dictionary moderation (approve/reject/replace) - Feature #11
+- get_context_schema endpoint (questionable, may hardcode in Facade)
+- Full CRUD for Goal/Trail (only Context CRUD in Feature #16)
+- Advanced dictionary features (synonyms, aliases, translations)
+
+**References**:
+- [Core API Inventory](../workflows/facade/core-api-inventory.md) - all 9 endpoints from Scenarios 0-11
+- [Features #5-7 Architecture](../workflows/facade/features-5-7-architecture.md) - user scenarios requiring Core API
+- [Implementation Questions](../workflows/facade/implementation-questions.md) - Q1 (get_context_schema?) pending discussion
+
+---

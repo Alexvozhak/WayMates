@@ -29,6 +29,7 @@ CREATE INDEX context_domains IF NOT EXISTS FOR (c:Context) ON (c.domains);
 CREATE INDEX context_skills IF NOT EXISTS FOR (c:Context) ON (c.skills);
 CREATE INDEX context_citizenships IF NOT EXISTS FOR (c:Context) ON (c.citizenships);
 CREATE INDEX context_creation_reason IF NOT EXISTS FOR (c:Context) ON (c.creationReason);
+CREATE INDEX context_education_level IF NOT EXISTS FOR (c:Context) ON (c.educationLevel);
 
 // Temporal navigation indexes
 CREATE INDEX context_previous IF NOT EXISTS FOR (c:Context) ON (c.previousContextId);

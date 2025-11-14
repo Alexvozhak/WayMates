@@ -19,6 +19,7 @@
       "countryCode": "fr",
       "cityName": "paris",
       "birthYear": 1988,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "fr"
       ]
@@ -41,6 +42,7 @@
       "countryCode": "fr",
       "cityName": "paris",
       "birthYear": 1988,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "fr"
       ]

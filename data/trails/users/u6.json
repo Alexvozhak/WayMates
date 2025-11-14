@@ -19,6 +19,7 @@
       "countryCode": "de",
       "cityName": "berlin",
       "birthYear": 1996,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "de"
       ]
@@ -45,6 +46,7 @@
       "countryCode": "de",
       "cityName": "berlin",
       "birthYear": 1996,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "de"
       ]

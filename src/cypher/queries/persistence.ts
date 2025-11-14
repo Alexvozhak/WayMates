@@ -35,6 +35,7 @@ SET context.createdAt = $ctx.createdAt,
     context.cityName = $ctx.cityName,
     context.citizenships = $ctx.citizenships,
     context.birthYear = $ctx.birthYear,
+    context.educationLevel = $ctx.educationLevel,
     context.creationReason = $ctx.creationReason,
     context.previousContextId = $ctx.previousContextId,
     context.nextContextId = $ctx.nextContextId

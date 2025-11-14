@@ -444,4 +444,158 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       );
     });
   });
+
+  it("AC7: educationLevel strict filter - finds only matching education level", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    const u1 = dataManager.getStoryBy("U1");
+    const u1Context = u1.contexts[0]!; // Junior Frontend React, BACHELOR
+
+    console.log("[AC7] Searching with educationLevel strict filter");
+    console.log("[AC7] Reference education:", u1Context.educationLevel);
+    console.log("[AC7] Expected: U1 (BACHELOR), U2 (BACHELOR)");
+    console.log("[AC7] NOT expected: U14 (MASTER)");
+
+    // Act - Search with educationLevel strict (not excluded)
+    const results = await searchManager.searchAdhoc({
+      userId: u1.userId,
+      referenceContext: u1Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [], // educationLevel NOT excluded → strict matching
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[AC7] Results count:", results.length);
+    console.log(
+      "[AC7] Results:",
+      results.map((r) => ({
+        userId: r.userId,
+        education: r.matchedContext.educationLevel,
+      }))
+    );
+
+    // Business rule: educationLevel strict filter
+    // U1 (BACHELOR) should find U2 (BACHELOR) but NOT U14 (MASTER)
+    const u2 = dataManager.getStoryBy("U2");
+    const u14 = dataManager.getStoryBy("U14");
+
+    expect(results.find((r) => r.userId === u2.userId)).toBeDefined();
+    expect(results.find((r) => r.userId === u14.userId)).toBeUndefined();
+
+    // All results should have BACHELOR education level (or null wildcard)
+    results.forEach((r) => {
+      const education = r.matchedContext.educationLevel;
+      expect(education === "BACHELOR" || education === null).toBe(true);
+    });
+  });
+
+  it("AC8: educationLevel excluded filter - finds candidates with different education levels", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[AC8] Searching with educationLevel excluded from matching");
+    const u1Context = dataManager.getStoryBy("U1").contexts[0];
+    const u14 = dataManager.getStoryBy("U14");
+    const u16 = dataManager.getStoryBy("U16");
+
+    console.log("[AC8] Reference education:", u1Context.educationLevel);
+    console.log("[AC8] Expected: U14 (MASTER), U16 (HIGH_SCHOOL), U15 (null)");
+
+    // Act
+    const results = await searchManager.searchAdhoc({
+      userId: dataManager.getStoryBy("U1").userId,
+      referenceContext: u1Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [
+        "educationLevel",
+        "position",
+        "domains",
+        "skills",
+        "companySize",
+        "countryCode",
+        "cityName",
+        "birthYear",
+      ], // Relax all fields except industry to find diverse education levels
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[AC8] Results count:", results.length);
+    console.log(
+      "[AC8] Results:",
+      results.map((r) => ({
+        userId: r.userId,
+        education: r.matchedContext.educationLevel,
+      }))
+    );
+
+    // Business rule: educationLevel excluded → ignore education in matching
+    // Should find candidates with different education levels
+    expect(results.find((r) => r.userId === u14.userId)).toBeDefined();
+    expect(results.find((r) => r.userId === u16.userId)).toBeDefined();
+
+    // Verify we have multiple education levels in results
+    const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
+    expect(educationLevels.size).toBeGreaterThan(1);
+  });
+
+  it("AC9: null educationLevel wildcard - finds candidates with any education level", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[AC9] Searching with null educationLevel (wildcard behavior)");
+    const u15Context = dataManager.getStoryBy("U15").contexts[0]; // educationLevel = undefined
+    const u2 = dataManager.getStoryBy("U2"); // BACHELOR
+    const u14 = dataManager.getStoryBy("U14"); // MASTER
+
+    console.log("[AC9] Reference education:", u15Context.educationLevel);
+    console.log("[AC9] Expected: Find candidates with ANY education level (BACHELOR, MASTER, HIGH_SCHOOL, null)");
+
+    // Act
+    const results = await searchManager.searchAdhoc({
+      userId: dataManager.getStoryBy("U15").userId,
+      referenceContext: u15Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [
+        "position",
+        "domains",
+        "skills",
+        "companySize",
+        "countryCode",
+        "cityName",
+        "birthYear",
+      ], // Relax all fields except industry to test educationLevel wildcard
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[AC9] Results count:", results.length);
+    console.log(
+      "[AC9] Results:",
+      results.map((r) => ({
+        userId: r.userId,
+        education: r.matchedContext.educationLevel,
+      }))
+    );
+
+    // Business rule: null educationLevel in reference → wildcard (finds all education levels)
+    // Should find both BACHELOR and MASTER candidates
+    expect(results.find((r) => r.userId === u2.userId)).toBeDefined();
+    expect(results.find((r) => r.userId === u14.userId)).toBeDefined();
+
+    // Verify we have multiple education levels in results (wildcard behavior)
+    const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
+    expect(educationLevels.size).toBeGreaterThan(1);
+  });
 });

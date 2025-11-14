@@ -20,6 +20,7 @@
       "countryCode": "gb",
       "cityName": "london",
       "birthYear": 1994,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "gb"
       ]

@@ -1,8 +1,8 @@
 {
-  "userId": "usr_019a6ea7-18be-770d-85a1-ea515ab10d65",
+  "userId": "usr_019a6ea7-18be-770d-85a1-ea515ab10d71",
   "contexts": [
     {
-      "contextId": "ctx_019a6ea7-18be-770d-85a1-ef22b035ffb2",
+      "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d72",
       "createdAt": "2025-09-01T00:00:00Z",
       "creationReason": [
         "started_working"
@@ -19,13 +19,13 @@
       "countryCode": "de",
       "cityName": "berlin",
       "birthYear": 1995,
-      "educationLevel": "BACHELOR",
+      "educationLevel": "MASTER",
       "citizenships": [
         "de"
       ]
     },
     {
-      "contextId": "ctx_019a6ea7-18be-770d-85a1-f28efbd4e3a5",
+      "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d73",
       "createdAt": "2025-10-01T00:00:00Z",
       "creationReason": [
         "milestone_achieved"
@@ -42,7 +42,7 @@
       "countryCode": "de",
       "cityName": "berlin",
       "birthYear": 1995,
-      "educationLevel": "BACHELOR",
+      "educationLevel": "MASTER",
       "citizenships": [
         "de"
       ]

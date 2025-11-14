@@ -62,6 +62,13 @@ function generateStrictCondition(
     case 'birthYear':
       return `${prefix}Context.birthYear = ${searchingVar}.birthYear`;
 
+    case 'educationLevel':
+      return `CASE
+    WHEN ${searchingVar}.educationLevel IS NULL THEN true
+    WHEN ${prefix}Context.educationLevel IS NULL THEN true
+    ELSE ${prefix}Context.educationLevel = ${searchingVar}.educationLevel
+  END`;
+
     default:
       throw new Error(`Unknown field: ${field}`);
   }

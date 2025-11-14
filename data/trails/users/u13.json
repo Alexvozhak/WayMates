@@ -22,6 +22,7 @@
       "countryCode": "ru",
       "cityName": "Moscow",
       "birthYear": 1995,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
       ]
@@ -51,6 +52,7 @@
       "countryCode": "ru",
       "cityName": "Moscow",
       "birthYear": 1995,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
       ]
@@ -84,6 +86,7 @@
       "countryCode": "ru",
       "cityName": "Moscow",
       "birthYear": 1995,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
       ]

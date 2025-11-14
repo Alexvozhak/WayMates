@@ -20,6 +20,7 @@
       "countryCode": "US",
       "cityName": "new york",
       "birthYear": 1998,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "US"
       ]
@@ -44,6 +45,7 @@
       "countryCode": "US",
       "cityName": "new york",
       "birthYear": 1998,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "US"
       ]
@@ -71,6 +73,7 @@
       "countryCode": "US",
       "cityName": "san francisco",
       "birthYear": 1998,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "US"
       ]
@@ -99,6 +102,7 @@
       "countryCode": "US",
       "cityName": "san francisco",
       "birthYear": 1998,
+      "educationLevel": "BACHELOR",
       "citizenships": [
         "US"
       ]

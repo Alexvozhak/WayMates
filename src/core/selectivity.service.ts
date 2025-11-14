@@ -20,6 +20,7 @@ export class SelectivityService {
     countryCode: 'MATCH (c:Context {countryCode: $fieldValue})',
     cityName: 'MATCH (c:Context {cityName: $fieldValue})',
     birthYear: 'MATCH (c:Context {birthYear: $fieldValue})',
+    educationLevel: 'MATCH (c:Context {educationLevel: $fieldValue})',
   };
 
   constructor(private db: DatabaseContext) {}
@@ -58,14 +59,18 @@ export class SelectivityService {
   }
 
   private getContextFieldValue(context: UserContext, field: ContextField): unknown {
-    if (field === "position") return context.position;
-    if (field === "domains") return context.domains;
-    if (field === "skills") return context.skills;
-    if (field === "industry") return context.industry;
-    if (field === "companySize") return context.companySize;
-    if (field === "countryCode") return context.countryCode;
-    if (field === "cityName") return context.cityName;
-    return context.birthYear;
+    const fieldMap: Record<ContextField, unknown> = {
+      position: context.position,
+      domains: context.domains,
+      skills: context.skills,
+      industry: context.industry,
+      companySize: context.companySize,
+      countryCode: context.countryCode,
+      cityName: context.cityName,
+      birthYear: context.birthYear,
+      educationLevel: context.educationLevel,
+    };
+    return fieldMap[field];
   }
 
   private buildExplainPattern(fieldName: ContextField): string {

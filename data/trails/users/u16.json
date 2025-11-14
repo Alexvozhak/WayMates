@@ -1,0 +1,29 @@
+{
+  "userId": "usr_019a6ea7-18be-770d-85a1-ea515ab10d76",
+  "contexts": [
+    {
+      "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d77",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
+      "position": "Senior",
+      "industry": "tech",
+      "companySize": "enterprise",
+      "domains": [
+        "DevOps"
+      ],
+      "skills": [
+        "kubernetes"
+      ],
+      "countryCode": "gb",
+      "cityName": "london",
+      "birthYear": 1988,
+      "educationLevel": "HIGH_SCHOOL",
+      "citizenships": [
+        "gb"
+      ]
+    }
+  ],
+  "trails": []
+}
