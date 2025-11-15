@@ -44,6 +44,15 @@
 
 ## Archive Notes
 
+### FEAT-018: Add languages B2+ support to Context
+- Added `languages` field (ISO 639-1 codes, nullable/optional array)
+- Created Language dictionary (17 languages), SPEAKS_FLUENT relationships
+- Adhoc/current search: strict/excluded/null modes (AND logic)
+- Target search: desired (OR logic) / undesired (NONE logic)
+- 7 integration tests (SC1-7, TG-LANG-1/2)
+- **Critical bug fixed**: WITH clause variable propagation in persistence.ts
+- **Lesson**: Always propagate variables through WITH chains explicitly
+
 ### FEAT-001: Add salary range to Context
 - Added `salaryExact`, `salaryMin`, `salaryMax` with mutual exclusion validation
 - Created `userContextSchemaBase` export for schema operations
