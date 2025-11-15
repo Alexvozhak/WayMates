@@ -153,7 +153,7 @@ export function buildCurrentSearchQuery(
     ? `
 OPTIONAL MATCH (matchedUser)-[:HAS_GOAL]->(candidateGoal:Goal)
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      timeSinceMatchedMonths, contextMatchScore,
      CASE
        // Pathfinder: candidate achieved user's desired position
@@ -170,7 +170,7 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
      END AS candidateType
     `
     : `
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      timeSinceMatchedMonths, contextMatchScore,
      null AS candidateType
     `;
@@ -180,7 +180,7 @@ ${buildMatchedContextBase()}
 
 ${whereClause}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
 ${buildExcludedReasonsFilter('matchedContext', [
@@ -189,13 +189,14 @@ ${buildExcludedReasonsFilter('matchedContext', [
   'matchedPosition',
   'matchedDomains',
   'matchedSkills',
+  'matchedLanguages',
   'matchedIndustry',
   'matchedCity',
   'matchedCountry',
   'timeSinceMatchedMonths',
 ])}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      [skill IN matchedSkills WHERE NOT skill IN $referenceContext.skills] AS extraSkills
 
 CALL (extraSkills) {
@@ -207,12 +208,12 @@ CALL (extraSkills) {
   }) AS extraSkillsWithPenalty
 }
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      reduce(penaltyScore = 0.0, extra IN extraSkillsWithPenalty |
        penaltyScore + extra.penalty
      ) AS skillsPenaltyScore
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      (1.0 - (skillsPenaltyScore / 100.0)) AS contextMatchScore
 
 ${goalFilterClause}
@@ -313,6 +314,17 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
     END`.trim());
   }
 
+  // Languages filter (if strict)
+  if ('languages' in criteria) {
+    conditions.push(`
+    CASE
+      WHEN $languages IS NULL THEN true
+      WHEN $languages.mode = 'desired' THEN ANY(item IN matchedLanguages WHERE item IN $languages.values)
+      WHEN $languages.mode = 'undesired' THEN NONE(item IN matchedLanguages WHERE item IN $languages.values)
+      ELSE true
+    END`.trim());
+  }
+
   // Recency filter (if specified)
   if (recencyThresholdMonths) {
     conditions.push('duration.between(datetime(matchedContext.createdAt), datetime()).months <= $recencyThresholdMonths');
@@ -330,7 +342,7 @@ ${buildMatchedContextBase()}
 
 ${whereClause}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
 ${buildMatchPath('matchedContext')}
@@ -339,11 +351,11 @@ ${buildUnwindPath('matchedPathNodes', 'matchedPathContext')}
 
 ${buildOptionalMatchRelationships('matchedPathContext')}
 
-${buildWithCollect('matchedPathContext', ['matchedUser', 'matchedContext', 'matchedPosition', 'matchedDomains', 'matchedSkills', 'matchedIndustry', 'matchedCity', 'matchedCountry', 'timeSinceMatchedMonths'])}
+${buildWithCollect('matchedPathContext', ['matchedUser', 'matchedContext', 'matchedPosition', 'matchedDomains', 'matchedSkills', 'matchedLanguages', 'matchedIndustry', 'matchedCity', 'matchedCountry', 'timeSinceMatchedMonths'])}
 
 ORDER BY matchedPathContext.createdAt ASC
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      collect(${buildContextMapProjection('matchedPath')}) AS trajectory
 ${excludedReasonsCheck}
 

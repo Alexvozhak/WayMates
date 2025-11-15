@@ -64,6 +64,18 @@ export const educationLevelSchema = z.enum([
 
 export type EducationLevel = z.infer<typeof educationLevelSchema>;
 
+/**
+ * ISO 639-1 language code (2-letter lowercase)
+ * Valid codes defined in database/languages.json
+ */
+export const languageCodeSchema = z
+  .string()
+  .length(2)
+  .regex(/^[a-z]{2}$/, "Language code must be lowercase ISO 639-1 format")
+  .describe("ISO 639-1 language code (e.g., 'en', 'de', 'ru')");
+
+export type LanguageCode = z.infer<typeof languageCodeSchema>;
+
 export const scheduleSchema = z.object({
   sessionsPerWeek: z.number().describe("Sessions per week"),
   hoursPerSession: z.number().describe("Hours per session"),
@@ -133,6 +145,14 @@ const userContextSchemaBase = z.object({
     .describe("Salary range minimum in USD. For privacy, specify range instead of exact. Use with salaryMax."),
   salaryMax: z.number().min(0).nullable().optional()
     .describe("Salary range maximum in USD. For privacy, specify range instead of exact. Use with salaryMin."),
+
+  // Languages (B2+ proficiency)
+  // Semantics: If language in array → B2+ level (fluent for work)
+  languages: z
+    .array(languageCodeSchema)
+    .nullable()
+    .optional()
+    .describe("Languages with B2+ proficiency (if present → work-ready level)"),
 });
 
 // Schema with salary validation
@@ -204,16 +224,18 @@ export const targetContextSchema = z.object({
   countries: fieldFilterSchema.optional().describe("Target countries filter"),
   domains: fieldFilterSchema.optional().describe("Target work domains filter"),
   skills: fieldFilterSchema.optional().describe("Target skills filter"),
+  languages: fieldFilterSchema.optional().describe("Target languages filter"),
 }).refine(
   (data) => {
     const hasAtLeastOne =
       data.position !== undefined ||
       data.countries !== undefined ||
       data.domains !== undefined ||
-      data.skills !== undefined;
+      data.skills !== undefined ||
+      data.languages !== undefined;
     return hasAtLeastOne;
   },
-  { message: "At least one target criterion is required (position, countries, domains, or skills)" }
+  { message: "At least one target criterion is required (position, countries, domains, skills, or languages)" }
 );
 
 export type TargetContext = z.infer<typeof targetContextSchema>;
@@ -235,6 +257,7 @@ export const contextFieldSchema = z.enum([
   "companySize",
   "birthYear",
   "educationLevel",
+  "languages",
 ], {
   description: "Available field names for search configuration",
 });

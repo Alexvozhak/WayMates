@@ -72,6 +72,7 @@ export const CONTEXT_FIELD_NAMES = [
   "companySize",
   "birthYear",
   "educationLevel",
+  "languages",
 ] as const satisfies readonly (keyof UserContext)[];
 
 export const skillPenaltySchema = z.object({

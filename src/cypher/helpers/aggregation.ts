@@ -66,6 +66,7 @@ export function buildWithCollect(
   return `
 WITH ${allVars},
      collect(DISTINCT ${prefix}WorkDomain.name) AS ${prefix}Domains,
-     collect(DISTINCT ${prefix}Skill.name) AS ${prefix}Skills
+     collect(DISTINCT ${prefix}Skill.name) AS ${prefix}Skills,
+     collect(DISTINCT ${prefix}Language.code) AS ${prefix}Languages
   `.trim();
 }

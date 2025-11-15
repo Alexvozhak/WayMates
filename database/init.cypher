@@ -14,10 +14,12 @@ CREATE CONSTRAINT trail_id_unique IF NOT EXISTS FOR (t:Trail) REQUIRE t.trailId 
 CREATE CONSTRAINT platform_name_unique IF NOT EXISTS FOR (p:Platform) REQUIRE p.name IS UNIQUE;
 CREATE CONSTRAINT reason_id_unique IF NOT EXISTS FOR (r:Reason) REQUIRE r.reasonId IS UNIQUE;
 CREATE CONSTRAINT goal_user_id_unique IF NOT EXISTS FOR (g:Goal) REQUIRE g.userId IS UNIQUE;
+CREATE CONSTRAINT language_code_unique IF NOT EXISTS FOR (l:Language) REQUIRE l.code IS UNIQUE;
 
 // Indexes for filters
 CREATE INDEX skill_name IF NOT EXISTS FOR (s:Skill) ON (s.name);
 CREATE INDEX skill_platform_composite IF NOT EXISTS FOR (spn:SkillPlatformNode) ON (spn.skill, spn.platform);
+CREATE INDEX language_code IF NOT EXISTS FOR (l:Language) ON (l.code);
 
 // Context field indexes for fast search
 CREATE INDEX context_position IF NOT EXISTS FOR (c:Context) ON (c.position);

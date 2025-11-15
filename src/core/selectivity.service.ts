@@ -21,6 +21,7 @@ export class SelectivityService {
     cityName: 'MATCH (c:Context {cityName: $fieldValue})',
     birthYear: 'MATCH (c:Context {birthYear: $fieldValue})',
     educationLevel: 'MATCH (c:Context {educationLevel: $fieldValue})',
+    languages: 'MATCH (c:Context)-[:SPEAKS_FLUENT]->(l:Language) WHERE l.code IN $fieldValue',
   };
 
   constructor(private db: DatabaseContext) {}
@@ -69,6 +70,7 @@ export class SelectivityService {
       cityName: context.cityName,
       birthYear: context.birthYear,
       educationLevel: context.educationLevel,
+      languages: context.languages,
     };
     return fieldMap[field];
   }

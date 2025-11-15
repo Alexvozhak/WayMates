@@ -533,4 +533,136 @@ describe("Target Search (TG1-TG7)", () => {
     // Path structure validation
     validateAllPaths(results, "TG7");
   });
+
+  it("TG-LANG-1: Desired languages - finds candidates with ANY specified language (OR logic)", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[TG-LANG-1] Searching for languages: ['en', 'fr'] (desired mode, OR logic)");
+    const u3 = dataManager.getStoryBy("U3");
+
+    // Act - Search by target criteria with desired languages
+    const results = await searchManager.searchByTarget({
+      userId: u3.userId,
+      criteria: {
+        languages: {
+          mode: "desired",
+          values: ["en", "fr"],
+        },
+      },
+      excludedCreationReasons: [],
+      limit: 10,
+    });
+
+    // Assert
+    console.log("[TG-LANG-1] Results count:", results.length);
+    console.log(
+      "[TG-LANG-1] Matched users:",
+      results.map((r) => ({
+        userId: r.userId,
+        languages: r.matchedContext.languages,
+      }))
+    );
+
+    // Business rule: Desired mode → ANY match (OR logic)
+    // Expected: U1 (["en"]) and U4 (["en", "de"]) should match
+    // U2 (["de"]) should NOT match (neither "en" nor "fr")
+
+    const u1 = dataManager.getStoryBy("U1");
+    const u4 = dataManager.getStoryBy("U4");
+    const u2 = dataManager.getStoryBy("U2");
+
+    const hasU1 = results.some((r) => r.userId === u1.userId);
+    const hasU4 = results.some((r) => r.userId === u4.userId);
+    const hasU2 = results.some((r) => r.userId === u2.userId);
+
+    expect(hasU1).toBe(true); // U1 has "en" → matches
+    expect(hasU4).toBe(true); // U4 has "en" → matches
+    expect(hasU2).toBe(false); // U2 has only "de" → does NOT match
+
+    // Verify all results have at least ONE language from ["en", "fr"]
+    results.forEach((r) => {
+      const languages = r.matchedContext.languages || [];
+      const hasMatch = languages.some((lang) => ["en", "fr"].includes(lang));
+      expect(hasMatch).toBe(true);
+    });
+
+    console.log(
+      `[TG-LANG-1] All results match desired languages (ANY)? ${results.every((r) => {
+        const langs = r.matchedContext.languages || [];
+        return langs.some((l) => ["en", "fr"].includes(l));
+      })}`
+    );
+
+    // Path structure validation
+    validateAllPaths(results, "TG-LANG-1");
+  });
+
+  it("TG-LANG-2: Undesired languages - excludes candidates with ANY specified language (NONE logic)", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[TG-LANG-2] Searching for undesired languages: ['en'] (exclude ALL with 'en')");
+    const u3 = dataManager.getStoryBy("U3");
+
+    // Act - Search by target criteria with undesired languages
+    const results = await searchManager.searchByTarget({
+      userId: u3.userId,
+      criteria: {
+        languages: {
+          mode: "undesired",
+          values: ["en"],
+        },
+      },
+      excludedCreationReasons: [],
+      limit: 10,
+    });
+
+    // Assert
+    console.log("[TG-LANG-2] Results count:", results.length);
+    console.log(
+      "[TG-LANG-2] Matched users:",
+      results.map((r) => ({
+        userId: r.userId,
+        languages: r.matchedContext.languages,
+      }))
+    );
+
+    // Business rule: Undesired mode → NONE match (exclude all with "en")
+    // Expected: U2 (["de"]) should match
+    // U1 (["en"]) and U4 (["en", "de"]) should NOT match
+
+    const u1 = dataManager.getStoryBy("U1");
+    const u4 = dataManager.getStoryBy("U4");
+    const u2 = dataManager.getStoryBy("U2");
+
+    const hasU1 = results.some((r) => r.userId === u1.userId);
+    const hasU4 = results.some((r) => r.userId === u4.userId);
+    const hasU2 = results.some((r) => r.userId === u2.userId);
+
+    expect(hasU1).toBe(false); // U1 has "en" → excluded
+    expect(hasU4).toBe(false); // U4 has "en" → excluded
+    expect(hasU2).toBe(true); // U2 has only "de" → included
+
+    // Verify NO results have "en" in their languages
+    results.forEach((r) => {
+      const languages = r.matchedContext.languages || [];
+      const hasEn = languages.includes("en");
+      expect(hasEn).toBe(false);
+    });
+
+    console.log(
+      `[TG-LANG-2] All results exclude undesired language 'en'? ${results.every((r) => {
+        const langs = r.matchedContext.languages || [];
+        return !langs.includes("en");
+      })}`
+    );
+
+    // Path structure validation
+    validateAllPaths(results, "TG-LANG-2");
+  });
 });

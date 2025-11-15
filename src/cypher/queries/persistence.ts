@@ -39,6 +39,7 @@ SET context.createdAt = $ctx.createdAt,
     context.salaryExact = $ctx.salaryExact,
     context.salaryMin = $ctx.salaryMin,
     context.salaryMax = $ctx.salaryMax,
+    context.languages = $ctx.languages,
     context.creationReason = $ctx.creationReason,
     context.previousContextId = $ctx.previousContextId,
     context.nextContextId = $ctx.nextContextId
@@ -53,7 +54,8 @@ WITH context, user,
      $ctx.skills AS skills,
      $ctx.countryCode AS countryCode,
      $ctx.cityName AS cityName,
-     $ctx.citizenships AS citizenships
+     $ctx.citizenships AS citizenships,
+     $ctx.languages AS languages
 
 MERGE (p:Position {name: position})
 MERGE (context)-[:HAS_POSITION]->(p)
@@ -61,17 +63,17 @@ MERGE (context)-[:HAS_POSITION]->(p)
 MERGE (i:Industry {name: industry})
 MERGE (context)-[:IN_INDUSTRY]->(i)
 
-WITH context, work_domains, skills, countryCode, cityName, citizenships
+WITH context, work_domains, skills, countryCode, cityName, citizenships, languages
 UNWIND work_domains AS wdName
   MERGE (wd:WorkDomain {name: wdName})
   MERGE (context)-[:IN_WORK_DOMAIN]->(wd)
 
-WITH context, skills, countryCode, cityName, citizenships
+WITH context, skills, countryCode, cityName, citizenships, languages
 UNWIND skills AS skillName
   MERGE (s:Skill {name: skillName})
   MERGE (context)-[:USES_SKILL]->(s)
 
-WITH context, countryCode, cityName, citizenships
+WITH context, countryCode, cityName, citizenships, languages
 MERGE (co:Country {name: countryCode})
 MERGE (ci:City {name: cityName})
 MERGE (ci)-[:IN_COUNTRY]->(co)
@@ -86,10 +88,16 @@ FOREACH (_ IN CASE WHEN prev IS NOT NULL THEN [1] ELSE [] END |
   SET prev.nextContextId = context.contextId
 )
 
-WITH context, citizenships
+WITH context, citizenships, languages
 FOREACH (code IN citizenships |
   MERGE (ct:Country {name: code})
   MERGE (context)-[:CITIZEN_OF]->(ct)
+)
+
+WITH context, languages
+FOREACH (langCode IN coalesce(languages, []) |
+  MERGE (lang:Language {code: langCode})
+  MERGE (context)-[:SPEAKS_FLUENT]->(lang)
 )
 
 RETURN context.contextId AS contextId;`;

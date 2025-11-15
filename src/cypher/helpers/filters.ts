@@ -69,6 +69,14 @@ function generateStrictCondition(
     ELSE ${prefix}Context.educationLevel = ${searchingVar}.educationLevel
   END`;
 
+    case 'languages':
+      // Null wildcard: if searchingVar.languages is null, match everyone
+      // Strict matching: ALL languages must be present (AND logic)
+      return `CASE
+    WHEN ${searchingVar}.languages IS NULL THEN true
+    ELSE all(lang IN ${searchingVar}.languages WHERE lang IN ${prefix}Languages)
+  END`;
+
     default:
       throw new Error(`Unknown field: ${field}`);
   }

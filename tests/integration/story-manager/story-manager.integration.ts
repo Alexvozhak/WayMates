@@ -405,5 +405,88 @@ describe('StoryManager Integration Tests', () => {
       // Should be same count (no duplicates)
       expect(afterCount).toBe(beforeCount);
     });
+
+    test('SC6: persists languages field and creates SPEAKS_FLUENT relationships', async () => {
+      const { testData, context } = await upsertSingleContext('U1', 0);
+      const contextId = context.contextId;
+
+      // Verify languages array is stored on Context node
+      const contextResult = await withReadSession(driver, (tx) =>
+        tx.run('MATCH (c:Context {contextId: $contextId}) RETURN c.languages AS languages', {
+          contextId,
+        })
+      );
+      expect(contextResult.records).toHaveLength(1);
+      const dbLanguages = contextResult.records[0]!.get('languages');
+      expect(dbLanguages).toEqual(['en']); // U1 has languages: ["en"]
+
+      // Verify Language nodes exist and SPEAKS_FLUENT relationships created
+      const languagesResult = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (c:Context {contextId: $contextId})-[:SPEAKS_FLUENT]->(l:Language)
+           RETURN l.code AS code, l.name AS name
+           ORDER BY l.code`,
+          { contextId }
+        )
+      );
+      expect(languagesResult.records).toHaveLength(1);
+      expect(languagesResult.records[0]!.get('code')).toBe('en');
+      expect(languagesResult.records[0]!.get('name')).toBe('English');
+
+      // Test multiple languages (U4 has ["en", "de"])
+      const u4 = testDataManager.getStoryBy('U4');
+      const u4Context = u4.contexts[0];
+      if (!u4Context) {
+        throw new Error('U4 context not found');
+      }
+
+      const u4StoryInput: StoryInput = {
+        userId: u4.userId,
+        contexts: [u4Context],
+        trails: [],
+      };
+
+      const db = new DatabaseContext(driver);
+      const storyManager = new StoryManager(db);
+      await storyManager.upsertStory(u4StoryInput);
+
+      // Verify multiple languages
+      const u4LanguagesResult = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (c:Context {contextId: $contextId})-[:SPEAKS_FLUENT]->(l:Language)
+           RETURN l.code AS code
+           ORDER BY l.code`,
+          { contextId: u4Context.contextId }
+        )
+      );
+      expect(u4LanguagesResult.records).toHaveLength(2);
+      const codes = u4LanguagesResult.records.map((r) => r.get('code'));
+      expect(codes).toEqual(['de', 'en']); // Sorted alphabetically
+
+      // Verify null languages (U3 has no languages field)
+      const u3 = testDataManager.getStoryBy('U3');
+      const u3Context = u3.contexts[0];
+      if (!u3Context) {
+        throw new Error('U3 context not found');
+      }
+
+      const u3StoryInput: StoryInput = {
+        userId: u3.userId,
+        contexts: [u3Context],
+        trails: [],
+      };
+
+      await storyManager.upsertStory(u3StoryInput);
+
+      // Verify no SPEAKS_FLUENT relationships for null languages
+      const u3LanguagesResult = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (c:Context {contextId: $contextId})-[:SPEAKS_FLUENT]->(l:Language)
+           RETURN count(l) AS count`,
+          { contextId: u3Context.contextId }
+        )
+      );
+      expect(u3LanguagesResult.records[0]!.get('count').toNumber()).toBe(0);
+    });
   });
 });

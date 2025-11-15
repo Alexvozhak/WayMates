@@ -231,7 +231,9 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     // Threshold: >= 2 (expect BOTH U2 and U6 to match since they're perfect non-geo matches)
     // If fails: Either U2 or U6 was incorrectly excluded (check Cypher WHERE clause for geo filtering)
     expect(germanResults.length).toBeGreaterThanOrEqual(2);
-    console.log(`[AC3] German results count: ${germanResults.length} (expected >= 2)`);
+    console.log(
+      `[AC3] German results count: ${germanResults.length} (expected >= 2)`
+    );
   });
 
   it("AC4: Only position strict - finds candidates with same position regardless of other fields", async () => {
@@ -298,7 +300,9 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     // Threshold: >= 2 (expect at least 2 of 3 Backend Juniors to match, since domains excluded)
     // If fails: Backend Juniors incorrectly excluded OR position filtering broken
     expect(backendResults.length).toBeGreaterThanOrEqual(2);
-    console.log(`[AC4] Backend results count: ${backendResults.length} (expected >= 2)`);
+    console.log(
+      `[AC4] Backend results count: ${backendResults.length} (expected >= 2)`
+    );
 
     // Verify U3 or U7 is in results (Backend Juniors)
     const hasBackendCandidate = results.some(
@@ -374,7 +378,8 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         u2Score: u2Result.contextMatchScore,
         u2Reasons: u2.contexts.map((c) => c.creationReason),
         u1Excluded: "U1 filtered out (has milestone_achieved in trajectory)",
-        filterLogic: "excludedCreationReasons works as HARD filter, not score penalty",
+        filterLogic:
+          "excludedCreationReasons works as HARD filter, not score penalty",
       });
     }
 
@@ -547,7 +552,9 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(results.find((r) => r.userId === u16.userId)).toBeDefined();
 
     // Verify we have multiple education levels in results
-    const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
+    const educationLevels = new Set(
+      results.map((r) => r.matchedContext.educationLevel)
+    );
     expect(educationLevels.size).toBeGreaterThan(1);
   });
 
@@ -563,7 +570,9 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u14 = dataManager.getStoryBy("U14"); // MASTER
 
     console.log("[AC9] Reference education:", u15Context.educationLevel);
-    console.log("[AC9] Expected: Find candidates with ANY education level (BACHELOR, MASTER, HIGH_SCHOOL, null)");
+    console.log(
+      "[AC9] Expected: Find candidates with ANY education level (BACHELOR, MASTER, HIGH_SCHOOL, null)"
+    );
 
     // Act
     const results = await searchManager.searchAdhoc({
@@ -599,7 +608,9 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(results.find((r) => r.userId === u14.userId)).toBeDefined();
 
     // Verify we have multiple education levels in results (wildcard behavior)
-    const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
+    const educationLevels = new Set(
+      results.map((r) => r.matchedContext.educationLevel)
+    );
     expect(educationLevels.size).toBeGreaterThan(1);
   });
 
@@ -610,13 +621,13 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const dataManager = new TestDataManager();
 
     console.log("[AC10] Searching for U17 with salaryExact field");
-    const u1 = dataManager.getStoryBy("U1");  // Search WITH U1
-    const u17 = dataManager.getStoryBy("U17");  // FIND U17
+    const u1 = dataManager.getStoryBy("U1"); // Search WITH U1
+    const u17 = dataManager.getStoryBy("U17"); // FIND U17
     const u17Context = u17.contexts[0]!; // Middle Backend Python, salaryExact: 70000
 
     // Act - Search adhoc with U1 userId but U17 context to find U17
     const results = await searchManager.searchAdhoc({
-      userId: u1.userId,  // Use U1 to avoid self-exclusion
+      userId: u1.userId, // Use U1 to avoid self-exclusion
       referenceContext: u17Context,
       limit: 10,
       pathLimit: 10,
@@ -660,13 +671,13 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const dataManager = new TestDataManager();
 
     console.log("[AC11] Searching for U18 with salaryMin/salaryMax fields");
-    const u1 = dataManager.getStoryBy("U1");  // Search WITH U1
-    const u18 = dataManager.getStoryBy("U18");  // FIND U18
+    const u1 = dataManager.getStoryBy("U1"); // Search WITH U1
+    const u18 = dataManager.getStoryBy("U18"); // FIND U18
     const u18Context = u18.contexts[0]!; // Senior Backend Python, salaryMin: 60000, salaryMax: 80000
 
     // Act - Search adhoc with U1 userId but U18 context to find U18
     const results = await searchManager.searchAdhoc({
-      userId: u1.userId,  // Use U1 to avoid self-exclusion
+      userId: u1.userId, // Use U1 to avoid self-exclusion
       referenceContext: u18Context,
       limit: 10,
       pathLimit: 10,
@@ -709,7 +720,9 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();
 
-    console.log("[AC12] Searching with U1 (no salary fields) - backward compatibility");
+    console.log(
+      "[AC12] Searching with U1 (no salary fields) - backward compatibility"
+    );
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!; // Junior Frontend React, NO salary fields
 
@@ -746,6 +759,234 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     // Search still works correctly (U2 should match U1 with perfect score)
     if (u2Result) {
       expect(u2Result.contextMatchScore).toBeCloseTo(1.0, 2);
+    }
+  });
+
+  it("SC1: Strict languages matching (single language)", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[SC1] Searching for candidates with languages: ['en']");
+    const u1 = dataManager.getStoryBy("U1");
+    const u1Context = u1.contexts[0]!; // Has languages: ["en"]
+
+    // Act - Search adhoc with U1 context (strict languages matching)
+    const results = await searchManager.searchAdhoc({
+      userId: u1.userId,
+      referenceContext: u1Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [], // Strict matching on ALL fields including languages
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[SC1] Results count:", results.length);
+    console.log(
+      "[SC1] Results userIds:",
+      results.map((r) => r.userId)
+    );
+
+    // Business rule: Only candidates with languages containing "en" should match
+    // Expected: U1 (["en"]) and U4 (["en", "de"]) should be in results
+    // U2 (["de"]) and U3 (null) should NOT be in results
+
+    const u4 = dataManager.getStoryBy("U4");
+    const u4Result = results.find((r) => r.userId === u4.userId);
+    expect(u4Result).toBeDefined();
+
+    const u2 = dataManager.getStoryBy("U2");
+    const u2Result = results.find((r) => r.userId === u2.userId);
+    expect(u2Result).toBeUndefined(); // U2 has ["de"], not ["en"]
+
+    const u3 = dataManager.getStoryBy("U3");
+    const u3Result = results.find((r) => r.userId === u3.userId);
+    expect(u3Result).toBeUndefined(); // U3 has null languages
+  });
+
+  it("SC3: Strict languages matching (multiple AND)", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[SC3] Searching for candidates with languages: ['en', 'de']");
+    const u4 = dataManager.getStoryBy("U4");
+    const u4Context = u4.contexts[0]!; // Has languages: ["en", "de"]
+
+    // Act - Search adhoc with U4 context (strict languages matching)
+    const results = await searchManager.searchAdhoc({
+      userId: u4.userId,
+      referenceContext: u4Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [], // Strict matching on ALL fields including languages
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[SC3] Results count:", results.length);
+    console.log(
+      "[SC3] Results userIds:",
+      results.map((r) => r.userId)
+    );
+
+    // Business rule: Only candidates with BOTH "en" AND "de" should match
+    // Expected: Only U4 (["en", "de"]) should be in results
+    // U1 (["en"]), U2 (["de"]), U3 (null) should NOT be in results
+
+    const u1 = dataManager.getStoryBy("U1");
+    const u1Result = results.find((r) => r.userId === u1.userId);
+    expect(u1Result).toBeUndefined(); // U1 has only ["en"]
+
+    const u2 = dataManager.getStoryBy("U2");
+    const u2Result = results.find((r) => r.userId === u2.userId);
+    expect(u2Result).toBeUndefined(); // U2 has only ["de"]
+
+    const u3 = dataManager.getStoryBy("U3");
+    const u3Result = results.find((r) => r.userId === u3.userId);
+    expect(u3Result).toBeUndefined(); // U3 has null languages
+  });
+
+  it("SC2: Languages excluded (inverse logic)", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[SC2] Searching with excludedContextFields: ['languages']");
+    const u1 = dataManager.getStoryBy("U1");
+    const u1Context = u1.contexts[0]!; // Has languages: ["en"]
+
+    // Act - Search adhoc with languages excluded
+    const results = await searchManager.searchAdhoc({
+      userId: u1.userId,
+      referenceContext: u1Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: ["languages"], // Ignore languages filter
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[SC2] Results count:", results.length);
+    console.log(
+      "[SC2] Results userIds:",
+      results.map((r) => r.userId)
+    );
+
+    // Business rule: When languages is excluded, ALL candidates should match (regardless of languages)
+    // Expected: U2 (["de"]) and U3 (null) should now be in results
+    const u2 = dataManager.getStoryBy("U2");
+    const u2Result = results.find((r) => r.userId === u2.userId);
+    expect(u2Result).toBeDefined(); // U2 should match now (languages excluded)
+
+    const u3 = dataManager.getStoryBy("U3");
+    const u3Result = results.find((r) => r.userId === u3.userId);
+    expect(u3Result).toBeDefined(); // U3 should match now (languages excluded)
+  });
+
+  it("SC4: Null wildcard (backward compatibility)", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[SC4] Searching with languages: null (wildcard)");
+    const u3 = dataManager.getStoryBy("U3");
+    const u3Context = u3.contexts[0]!; // Has languages: null
+
+    // Act - Search adhoc with null languages
+    const results = await searchManager.searchAdhoc({
+      userId: u3.userId,
+      referenceContext: u3Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [], // Strict matching, but languages is null
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[SC4] Results count:", results.length);
+    console.log(
+      "[SC4] Results userIds:",
+      results.map((r) => r.userId)
+    );
+
+    // Business rule: When search languages is null → wildcard (match ALL candidates)
+    // Expected: U1 (["en"]), U2 (["de"]), U4 (["en", "de"]) should all match
+    const u1 = dataManager.getStoryBy("U1");
+    const u1Result = results.find((r) => r.userId === u1.userId);
+    expect(u1Result).toBeDefined(); // Null wildcard matches U1
+
+    const u2 = dataManager.getStoryBy("U2");
+    const u2Result = results.find((r) => r.userId === u2.userId);
+    expect(u2Result).toBeDefined(); // Null wildcard matches U2
+
+    const u4 = dataManager.getStoryBy("U4");
+    const u4Result = results.find((r) => r.userId === u4.userId);
+    expect(u4Result).toBeDefined(); // Null wildcard matches U4
+  });
+
+  it("SC7: Map projection returns languages array", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[SC7] Verify map projection returns languages field");
+    const u1 = dataManager.getStoryBy("U1");
+    const u1Context = u1.contexts[0]!; // Has languages: ["en"]
+
+    // Act - Search adhoc
+    const results = await searchManager.searchAdhoc({
+      userId: u1.userId,
+      referenceContext: u1Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [],
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[SC7] Results count:", results.length);
+    expect(results.length).toBeGreaterThan(0);
+
+    // Business rule: Map projection must return languages field
+    const u4 = dataManager.getStoryBy("U4");
+    const u4Result = results.find((r) => r.userId === u4.userId);
+    expect(u4Result).toBeDefined();
+
+    if (u4Result) {
+      console.log(
+        "[SC7] U4 languages field:",
+        u4Result.matchedContext.languages
+      );
+      expect(u4Result.matchedContext.languages).toBeDefined();
+      expect(u4Result.matchedContext.languages).toEqual(["en", "de"]);
+    }
+
+    // Verify null languages are returned correctly (backward compatibility)
+    const u3 = dataManager.getStoryBy("U3");
+    const u3Results = await searchManager.searchAdhoc({
+      userId: u3.userId,
+      referenceContext: u3.contexts[0]!,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [],
+      excludedCreationReasons: [],
+    });
+
+    const u1InU3Search = u3Results.find((r) => r.userId === u1.userId);
+    expect(u1InU3Search).toBeDefined();
+    if (u1InU3Search) {
+      console.log(
+        "[SC7] U1 languages field:",
+        u1InU3Search.matchedContext.languages
+      );
+      expect(u1InU3Search.matchedContext.languages).toEqual(["en"]);
     }
   });
 });

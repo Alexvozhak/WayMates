@@ -22,6 +22,9 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "nl"
+      ],
+      "languages": [
+        "de"
       ]
     },
     {
@@ -45,6 +48,9 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "nl",
+        "de"
+      ],
+      "languages": [
         "de"
       ]
     }

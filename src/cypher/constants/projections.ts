@@ -62,7 +62,8 @@ ${prefix}Context {
   skills: ${prefix}Skills,
   industry: ${prefix}Industry.name,
   countryCode: ${prefix}Country.name,
-  cityName: ${prefix}City.name
+  cityName: ${prefix}City.name,
+  languages: ${prefix}Languages
 }
   `.trim();
 }
@@ -93,6 +94,7 @@ context {
   skills: skills,
   industry: industry.name,
   countryCode: country.name,
-  cityName: city.name
+  cityName: city.name,
+  languages: languages
 }
 `.trim();

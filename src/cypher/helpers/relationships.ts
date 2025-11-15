@@ -63,5 +63,6 @@ OPTIONAL MATCH (${contextVar})-[:USES_SKILL]->(${prefix}Skill:Skill)
 OPTIONAL MATCH (${contextVar})-[:IN_INDUSTRY]->(${prefix}Industry:Industry)
 OPTIONAL MATCH (${contextVar})-[:IN_CITY]->(${prefix}City:City)
 OPTIONAL MATCH (${contextVar})-[:IN_COUNTRY]->(${prefix}Country:Country)
+OPTIONAL MATCH (${contextVar})-[:SPEAKS_FLUENT]->(${prefix}Language:Language)
   `.trim();
 }
