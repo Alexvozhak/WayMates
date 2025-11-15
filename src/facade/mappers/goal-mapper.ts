@@ -1,5 +1,5 @@
 
-import { CreateGoalInputSchema } from '../../shared/schemas.js';
+import { createGoalInputSchema } from '../../shared/schemas.js';
 
 import { retryWithValidation } from './helpers.js';
 
@@ -63,7 +63,7 @@ async function callLLM(
 export async function mapGoalParams(
   ctx: MapperContext,
   options: MapperOptions = {}
-): Promise<ValidationResult<z.infer<typeof CreateGoalInputSchema>>> {
+): Promise<ValidationResult<z.infer<typeof createGoalInputSchema>>> {
   const { maxRetries = 2 } = options;
 
   return retryWithValidation(
@@ -72,7 +72,7 @@ export async function mapGoalParams(
       const response = await callLLM(ctx, prompt, options);
       return JSON.parse(response);
     },
-    CreateGoalInputSchema,
+    createGoalInputSchema,
     maxRetries
   );
 }

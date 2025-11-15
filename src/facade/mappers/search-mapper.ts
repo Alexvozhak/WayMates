@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { UserContextSchema } from '../../shared/schemas.js';
+import { userContextSchemaBase } from '../../shared/schemas.js';
 
 import { retryWithValidation } from './helpers.js';
 
@@ -28,7 +28,7 @@ If field not mentioned in query, OMIT it from response.
 CRITICAL: Return ONLY valid JSON, no explanations.`;
 
 const searchParamsSchema = z.object({
-  context: UserContextSchema.partial().required({ position: true }),
+  context: userContextSchemaBase.partial().required({ position: true }),
 });
 
 type SearchParams = z.infer<typeof searchParamsSchema>;

@@ -16,7 +16,7 @@ import {
 
 
 
-  userContextSchema,
+  userContextSchemaBase,
   userIdSchema,
 
 } from "../shared/schemas.js";
@@ -161,7 +161,7 @@ export type Reason = z.infer<typeof reasonSchema>;
 // === LEGACY SEARCH TYPES (to be removed) ===
 // ==========================================
 
-export const searchContextSchema = userContextSchema.omit({
+export const searchContextSchema = userContextSchemaBase.omit({
   contextId: true,
   createdAt: true,
   creationReason: true,

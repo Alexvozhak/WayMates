@@ -100,7 +100,8 @@ export const userConstraintsSchema = z.object({
     .optional(),
 });
 
-export const userContextSchema = z.object({
+// Base schema without refine (for .omit() and .partial() compatibility)
+const userContextSchemaBase = z.object({
   contextId: z.string(),
   previousContextId: contextIdSchema.nullable().optional(),
   nextContextId: contextIdSchema.nullable().optional(),
@@ -124,7 +125,43 @@ export const userContextSchema = z.object({
   citizenships: z.array(z.string()),
   birthYear: z.number().min(1950).describe("Birth year"),
   educationLevel: educationLevelSchema.nullable().optional().describe("Education level"),
+
+  // Salary (EITHER exact OR range, mutually exclusive)
+  salaryExact: z.number().min(0).nullable().optional()
+    .describe("Exact salary in USD. Use if willing to disclose precise amount. Mutually exclusive with salaryMin/salaryMax."),
+  salaryMin: z.number().min(0).nullable().optional()
+    .describe("Salary range minimum in USD. For privacy, specify range instead of exact. Use with salaryMax."),
+  salaryMax: z.number().min(0).nullable().optional()
+    .describe("Salary range maximum in USD. For privacy, specify range instead of exact. Use with salaryMin."),
 });
+
+// Schema with salary validation
+export const userContextSchema = userContextSchemaBase.refine(
+  (data) => {
+    const hasExact = data.salaryExact != null;
+    const hasRange = data.salaryMin != null || data.salaryMax != null;
+
+    // Cannot specify both exact and range
+    if (hasExact && hasRange) {
+      return false;
+    }
+
+    // If range specified, min <= max
+    if (data.salaryMin != null && data.salaryMax != null) {
+      return data.salaryMin <= data.salaryMax;
+    }
+
+    // If only min OR only max specified - allow (e.g., ">100k" or "<150k")
+    return true;
+  },
+  {
+    message: "Specify either exact salary OR salary range (min/max), not both. If range, min must be <= max.",
+    path: ["salaryExact"],
+  }
+);
+
+// Export base for internal use (.omit(), .partial())
+export { userContextSchemaBase };
 
 export type Schedule = z.infer<typeof scheduleSchema>;
 export type Trail = z.infer<typeof trailSchema>;

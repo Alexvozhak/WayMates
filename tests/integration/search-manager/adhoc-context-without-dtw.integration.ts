@@ -1,14 +1,18 @@
 /**
- * Adhoc Context Search Integration Tests (AC1-AC6)
+ * Adhoc Context Search Integration Tests (AC1-AC12)
  *
  * Tests searchAdhoc() with custom referenceContext (Mode 1)
  * Uses Batch A test data (U1-U9) - trajectories < 3 contexts
+ * Uses Batch C test data (U14-U16) - educationLevel tests
+ * Uses Batch D test data (U17-U18) - salary tests
  *
  * Test focus:
  * - Strict matching по полям (AC1)
  * - excludedContextFields работает (AC2-AC4)
  * - excludedCreationReasons filter (AC5)
  * - recencyThresholdMonths filter (AC6)
+ * - educationLevel matching (AC7-AC9)
+ * - salary field return (AC10-AC12)
  */
 
 import { describe, it, expect } from "vitest";
@@ -597,5 +601,151 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     // Verify we have multiple education levels in results (wildcard behavior)
     const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
     expect(educationLevels.size).toBeGreaterThan(1);
+  });
+
+  it("AC10: Salary exact value returned - search results include salaryExact field", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[AC10] Searching for U17 with salaryExact field");
+    const u1 = dataManager.getStoryBy("U1");  // Search WITH U1
+    const u17 = dataManager.getStoryBy("U17");  // FIND U17
+    const u17Context = u17.contexts[0]!; // Middle Backend Python, salaryExact: 70000
+
+    // Act - Search adhoc with U1 userId but U17 context to find U17
+    const results = await searchManager.searchAdhoc({
+      userId: u1.userId,  // Use U1 to avoid self-exclusion
+      referenceContext: u17Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [
+        "position",
+        "domains",
+        "skills",
+        "companySize",
+        "countryCode",
+        "cityName",
+        "birthYear",
+        "educationLevel",
+      ], // Relax all fields except industry
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[AC10] Results count:", results.length);
+    const u17Result = results.find((r) => r.userId === u17.userId);
+    expect(u17Result).toBeDefined();
+
+    if (u17Result) {
+      // Business rule: Salary fields are DISPLAY ONLY (returned AS IS, no filtering/scoring)
+      // U17 has salaryExact: 70000 → verify it's returned correctly
+      console.log("[AC10] U17 salary data:", {
+        salaryExact: u17Result.matchedContext.salaryExact,
+        salaryMin: u17Result.matchedContext.salaryMin,
+        salaryMax: u17Result.matchedContext.salaryMax,
+      });
+
+      expect(u17Result.matchedContext.salaryExact).toBe(70000);
+      expect(u17Result.matchedContext.salaryMin).toBeNull();
+      expect(u17Result.matchedContext.salaryMax).toBeNull();
+    }
+  });
+
+  it("AC11: Salary range returned - search results include salaryMin/salaryMax fields", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[AC11] Searching for U18 with salaryMin/salaryMax fields");
+    const u1 = dataManager.getStoryBy("U1");  // Search WITH U1
+    const u18 = dataManager.getStoryBy("U18");  // FIND U18
+    const u18Context = u18.contexts[0]!; // Senior Backend Python, salaryMin: 60000, salaryMax: 80000
+
+    // Act - Search adhoc with U1 userId but U18 context to find U18
+    const results = await searchManager.searchAdhoc({
+      userId: u1.userId,  // Use U1 to avoid self-exclusion
+      referenceContext: u18Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [
+        "position",
+        "domains",
+        "skills",
+        "companySize",
+        "countryCode",
+        "cityName",
+        "birthYear",
+        "educationLevel",
+      ], // Relax all fields except industry
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[AC11] Results count:", results.length);
+    const u18Result = results.find((r) => r.userId === u18.userId);
+    expect(u18Result).toBeDefined();
+
+    if (u18Result) {
+      // Business rule: Salary fields are DISPLAY ONLY (returned AS IS, no filtering/scoring)
+      // U18 has salaryMin: 60000, salaryMax: 80000 → verify both returned correctly
+      console.log("[AC11] U18 salary data:", {
+        salaryExact: u18Result.matchedContext.salaryExact,
+        salaryMin: u18Result.matchedContext.salaryMin,
+        salaryMax: u18Result.matchedContext.salaryMax,
+      });
+
+      expect(u18Result.matchedContext.salaryExact).toBeNull();
+      expect(u18Result.matchedContext.salaryMin).toBe(60000);
+      expect(u18Result.matchedContext.salaryMax).toBe(80000);
+    }
+  });
+
+  it("AC12: Backward compatibility - users without salary fields work correctly", async () => {
+    // Arrange
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new TestDataManager();
+
+    console.log("[AC12] Searching with U1 (no salary fields) - backward compatibility");
+    const u1 = dataManager.getStoryBy("U1");
+    const u1Context = u1.contexts[0]!; // Junior Frontend React, NO salary fields
+
+    // Act - Search adhoc with U1 context
+    const results = await searchManager.searchAdhoc({
+      userId: u1.userId,
+      referenceContext: u1Context,
+      limit: 10,
+      pathLimit: 10,
+      excludedContextFields: [],
+      excludedCreationReasons: [],
+    });
+
+    // Assert
+    console.log("[AC12] Results count:", results.length);
+    const u2 = dataManager.getStoryBy("U2");
+    const u2Result = results.find((r) => r.userId === u2.userId);
+    expect(u2Result).toBeDefined();
+
+    if (u2Result) {
+      // Business rule: Users without salary fields should have null salary values (Cypher map projection behavior)
+      // U2 has no salary fields → verify all salary fields are null
+      console.log("[AC12] U2 salary data (should be null):", {
+        salaryExact: u2Result.matchedContext.salaryExact,
+        salaryMin: u2Result.matchedContext.salaryMin,
+        salaryMax: u2Result.matchedContext.salaryMax,
+      });
+
+      expect(u2Result.matchedContext.salaryExact).toBeNull();
+      expect(u2Result.matchedContext.salaryMin).toBeNull();
+      expect(u2Result.matchedContext.salaryMax).toBeNull();
+    }
+
+    // Search still works correctly (U2 should match U1 with perfect score)
+    if (u2Result) {
+      expect(u2Result.contextMatchScore).toBeCloseTo(1.0, 2);
+    }
   });
 });

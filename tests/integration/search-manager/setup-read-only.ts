@@ -1,16 +1,17 @@
 /**
  * Setup for read-only SearchManager integration tests
  *
- * Loads ALL test data (U1-U16) ONCE before all tests.
+ * Loads ALL test data (U1-U18) ONCE before all tests.
  * Tests in this project run in PARALLEL (singleThread: false).
  *
  * Data batches:
  * - Batch A (U1-U9): Adhoc/Target search tests
  * - Batch B (U10-U13): DTW trajectory tests
  * - Batch C (U14-U16): educationLevel tests (AC7-AC9)
+ * - Batch D (U17-U18): salary tests (AC10-AC12)
  *
  * Used by:
- * - adhoc-context-without-dtw.integration.ts (AC1-AC9)
+ * - adhoc-context-without-dtw.integration.ts (AC1-AC12)
  * - target-context.integration.ts (TG1-TG7)
  * - current-context-without-dtw.integration.ts (UN1, UN4)
  * - current-context-with-dtw.integration.ts (DT1-DT5)
@@ -45,21 +46,32 @@ beforeAll(async () => {
     await checkSession.close();
   }
 
-  if (userCount === 0) {
-    // Database is empty → load test data (no cleanup needed)
+  if (userCount !== 18) {
+    // Database missing users → clear and reload all test data
+    if (userCount > 0) {
+      console.log('[Read-only Setup] Clearing incomplete data...');
+      const clearSession = driver.session();
+      try {
+        await clearSession.run('MATCH (n) DETACH DELETE n');
+      } finally {
+        await clearSession.close();
+      }
+    }
+
     const dataManager = new TestDataManager();
 
-    // Load ALL users at once (Batch A + Batch B + Batch C)
+    // Load ALL users at once (Batch A + Batch B + Batch C + Batch D)
     const stories = dataManager.getUserStories([
       'U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7', 'U8', 'U9',  // Batch A: Adhoc/Target
       'U10', 'U11', 'U12', 'U13',                             // Batch B: DTW
-      'U14', 'U15', 'U16'                                     // Batch C: educationLevel
+      'U14', 'U15', 'U16',                                    // Batch C: educationLevel
+      'U17', 'U18'                                            // Batch D: salary
     ]);
 
     await importStories(driver, stories);
-    console.log('[Read-only Setup] All test data loaded successfully (U1-U16)');
+    console.log('[Read-only Setup] All test data loaded successfully (U1-U18)');
   } else {
-    console.log('[Read-only Setup] Data already loaded, skipping import');
+    console.log('[Read-only Setup] Data already loaded (18 users), skipping import');
   }
 }, 30000); // 30s timeout
 

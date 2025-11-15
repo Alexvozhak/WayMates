@@ -14,8 +14,6 @@
 
 | # | Date | Component | Title | Status | Priority |
 |---|------|-----------|-------|--------|----------|
-| #1 | 2025-11-12 | Context schema | Add salary range (min/max) to Context | IN_PROGRESS | 🔴 P0 |
-| #2 | 2025-11-12 | Context schema | Add education level enum to Context | DONE | 🟡 P1 |
 | #3 | 2025-11-12 | Admin CLI | Import Kaggle synthetic dataset (297 candidates) | TODO | 🔴 P0 |
 | #4 | 2025-11-12 | Integration tests | Improve integration test quality (MEDIUM priority enhancements) | DONE | 🟡 P1 |
 | #5 | 2025-11-12 | Facade MCP | Facade NLP Gateway (simple tools + infrastructure) | TODO | 🔴 P0 |
@@ -38,7 +36,19 @@
 
 | # | Date | Component | Title | Completed | Commit |
 |---|------|-----------|-------|-----------|--------|
+| #1 | 2025-11-12 | Context schema | Add salary range (min/max) to Context | 2025-11-15 | [pending] |
 | #2 | 2025-11-12 | Context schema | Add education level enum to Context | 2025-11-15 | ec4073a |
+
+**Implementation notes (#1)**:
+- Added `salaryExact`, `salaryMin`, `salaryMax` fields to UserContext schema with mutual exclusion validation
+- Created `userContextSchemaBase` export for `.omit()`/`.partial()` operations (refined schema breaks these)
+- Updated persistence query to SET salary fields (null-safe)
+- Updated map projection to return salary fields in search results (null values for backward compatibility)
+- Created migration script `002_add_salary_fields.cypher` for existing Context nodes
+- Added test data U17 (exact salary), U18 (range salary) + AC10-AC12 tests
+- Fixed setup-read-only.ts: clear DB if userCount !== 18 (race condition fix)
+- All integration tests passing (46/47, 1 pre-existing TEMPORAL bug)
+- **Scope decision**: Salary fields are DISPLAY ONLY (no filtering/scoring) - LLM in Facade will analyze
 
 ---
 

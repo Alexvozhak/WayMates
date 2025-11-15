@@ -1,5 +1,5 @@
 
-import { StoryInputSchema } from '../../shared/schemas.js';
+import { storyInputSchema } from '../../shared/schemas.js';
 
 import { retryWithValidation } from './helpers.js';
 
@@ -60,7 +60,7 @@ async function callLLM(
 export async function mapStoryParams(
   ctx: MapperContext,
   options: MapperOptions = {}
-): Promise<ValidationResult<z.infer<typeof StoryInputSchema>>> {
+): Promise<ValidationResult<z.infer<typeof storyInputSchema>>> {
   const { maxRetries = 2 } = options;
 
   return retryWithValidation(
@@ -69,7 +69,7 @@ export async function mapStoryParams(
       const response = await callLLM(ctx, prompt, options);
       return JSON.parse(response);
     },
-    StoryInputSchema,
+    storyInputSchema,
     maxRetries
   );
 }

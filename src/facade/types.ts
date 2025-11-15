@@ -11,7 +11,7 @@ import { z } from 'zod';
 // ==========================================
 
 // Auth Types
-export interface FacadeUser {
+export type FacadeUser = {
   userId: string;
   token: string;
   createdAt: number;
@@ -53,7 +53,7 @@ export type CoreToolName =
   | 'getUserGoals';
 
 // Facade Response Types
-export interface FacadeResponse {
+export type FacadeResponse = {
   message: string;
   data?: unknown;
 }
