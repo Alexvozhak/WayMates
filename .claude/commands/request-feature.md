@@ -1,322 +1,215 @@
 ---
-description: Add new feature request to features registry with structured template
+description: "Создать FEAT-XXX.md (PENDING) + запись в features-registry.md"
+allowed-tools: ["Read", "Write", "AskUserQuestion", "Bash"]
+argument-hint: "[optional: feature title]"
 ---
 
-# Request Feature Command
+# ✨ Request Feature (New Workflow)
 
-**Purpose**: Add a new feature to `memory-bank/knowledge/features-registry.md` with structured information gathered interactively through `AskUserQuestion` tool.
+$ARGUMENTS
 
-**Key Principle**: DON'T invent details - ask user for everything through structured questions.
+## Цель
+
+Создать МИНИМАЛЬНЫЙ task file (PENDING) + запись в features-registry.md для дальнейшей проработки через /plan-feature.
+
+**Key Principle**: Быстрая фиксация идеи, детальная проработка (Type Schema, Architecture) - позже.
 
 ---
 
 ## Workflow
 
-### Step 1: Gather Basic Info (обязательные поля)
+### Step 1: Gather Minimal Context (обязательные поля)
 
 Use `AskUserQuestion` to gather:
 
 **1.1 Feature Title**
-- Provide 3-4 options based on context or let user write their own (Other)
 - Short, descriptive (5-10 words)
+- User writes through "Other" option
+- Example: "Add salary range to Context schema"
 
 **1.2 Component/Module**
-- MultiSelect: which components affected?
-- Options: Facade MCP, Core Manager, LangGraph workflow, Schema, Admin CLI, Integration tests, Client integration, etc.
+- Single select: which component affected?
+- Options: Facade MCP, Core Manager, LangGraph workflow, Schema, Admin CLI, Integration tests, Client integration, Context schema, Search query builder, etc.
+- Provide "Other" for custom component
 
 **1.3 Priority**
 - Single select: 🔴 P0 (Critical) / 🟡 P1 (Important) / 🟢 P2 (Nice-to-have)
-
-**1.4 Motivation**
-- Provide 3-4 typical motivations or let user write (Other)
-- Examples: "Lower barrier to entry", "Fix critical bug", "Improve UX", "Technical debt"
+- Guidelines:
+  - 🔴 P0: Blocking MVP, security issue, critical business value
+  - 🟡 P1: High business value, important for MVP, user requested
+  - 🟢 P2: Enhancement after MVP, optimization, nice-to-have
 
 ---
 
-### Step 2: Standard Sections (всегда спрашиваем последовательно)
+### Step 2: Feature Context
 
 **2.1 User Story**
 
 ```
-Question: "User Story - выбери подходящую:"
+Question: "User Story - опиши в формате As a X, I want Y, so that Z:"
 Options (single select):
-( ) [Generate 3-4 options based on motivation and component]
-( ) Пропустить User Story (not needed)
-( ) Напишу свою (через Other)
+( ) Напишу сам (через Other)
 ```
 
-**Example options** (for Resume Upload feature):
-- As a user with resume, I want to upload PDF for quick start, so that AI extracts info and asks clarifying questions
-- As a user, I want to start with resume instead of full conversation, so that I save time on data entry
-
----
-
-**2.2 Acceptance Criteria**
-
+User provides:
 ```
-Question: "Acceptance Criteria - выбери нужные пункты:"
-Options (multiSelect):
-[Generate 5-10 typical AC items based on component type - see templates below]
+As a [user type], I want [goal], so that [benefit].
 ```
 
-**AC Templates by Component:**
-
-**Facade MCP tools:**
-- [ ] New MCP tool definition with Zod schema
-- [ ] Auth validation (userId from token)
-- [ ] Error handling (UserError for user-facing errors)
-- [ ] Integration with Core/LangGraph
-- [ ] Tool description for LLM
-- [ ] Unit tests (auth, validation, business logic)
-- [ ] Integration tests (full MCP → manager flow)
-
-**LangGraph workflow:**
-- [ ] Workflow nodes implementation ([list specific nodes])
-- [ ] State annotation with reducers for parallel fields
-- [ ] Interrupt handling (clarify, confirm)
-- [ ] Checkpointer integration (Redis, TTL 7 days)
-- [ ] Error handling in nodes (try/catch)
-- [ ] Unit tests (individual nodes with mocks)
-- [ ] Integration tests (full workflow with real DB/Redis)
-
-**Core Manager:**
-- [ ] New manager methods ([list method names])
-- [ ] Cypher queries (new/modified in query builders)
-- [ ] Schema validation (Zod)
-- [ ] Error handling (business logic errors)
-- [ ] Unit tests (manager logic with mocked Neo4j)
-- [ ] Integration tests (real Neo4j queries)
-
-**Schema changes:**
-- [ ] Update schema definition (Zod + TypeScript types)
-- [ ] Migration script (database/migrations/)
-- [ ] Update affected query builders
-- [ ] Update indexes/constraints (database/init.cypher)
-- [ ] Integration tests (schema validation)
-- [ ] Documentation (schema comments in shared/schemas.ts)
-
-**Admin CLI:**
-- [ ] CLI commands implementation ([list commands])
-- [ ] Interactive prompts (inquirer or similar)
-- [ ] Integration with Core managers
-- [ ] Error handling (graceful failures, continue on error)
-- [ ] Progress logging (per-item, per-batch, summary)
-- [ ] Usage documentation (README or --help)
-
-**Client integration:**
-- [ ] Client setup (config files, docker-compose)
-- [ ] MCP connection config
-- [ ] Auth integration (JWT/API keys)
-- [ ] System prompts (instructions for LLM)
-- [ ] User documentation (setup guide)
-
-**PDF/Parser services:**
-- [ ] Parser service implementation
-- [ ] Library integration ([specify library: pdf-parse, csv-parse, etc.])
-- [ ] Error handling (invalid input, corrupted files)
-- [ ] Unit tests (valid/invalid inputs)
-- [ ] Edge case handling (empty, malformed data)
-
-**Integration tests:**
-- [ ] Test coverage plan ([list test scenarios])
-- [ ] Test data setup (fixtures, test users)
-- [ ] Edge cases (boundary values, error conditions)
-- [ ] Performance checks (if applicable)
-- [ ] Documentation (test expectations in comments)
-
----
-
-**2.3 Impact Assessment**
-
+**Example**:
 ```
-Question: "Impact Assessment - что затронуто?"
-Options (multiSelect):
-[ ] Schema change (добавление/изменение полей в Neo4j)
-[ ] Breaking change (несовместимость с текущим API/contracts)
-[ ] Migration required (нужен скрипт миграции данных)
-[ ] Affected: Core managers
-[ ] Affected: Facade MCP tools
-[ ] Affected: LangGraph workflows
-[ ] Affected: Integration tests
-[ ] Affected: Admin CLI
-[ ] Affected: Client integration (LibreChat/Telegram)
-[ ] New dependencies ([ask which libraries])
+As a user planning career transition, I want to see salary ranges for contexts, so that I can filter realistic opportunities matching my financial expectations.
 ```
 
 ---
 
-**2.4 Tests**
+**2.2 AS IS (current state)**
 
 ```
-Question: "Tests - выбери test cases (с указанием типа теста):"
-Options (multiSelect - generate based on AC):
-[Provide 5-10 specific test cases with test type in parentheses]
+Question: "AS IS - текущее состояние (кратко, лаконично, по делу):"
+Options (single select):
+( ) Напишу сам (через Other)
 ```
 
-**Test Case Templates:**
+User provides brief current state description.
 
-**For Facade MCP tools:**
-- [ ] Valid input → tool executes successfully (unit)
-- [ ] Invalid input → validation error (unit)
-- [ ] Unauthenticated request → auth error (unit)
-- [ ] Full workflow: MCP call → manager → Neo4j (integration)
-
-**For LangGraph workflow:**
-- [ ] Single node execution with valid state (unit, mocked dependencies)
-- [ ] Interrupt handling → state persisted to Redis (integration)
-- [ ] Full workflow: start → clarify → confirm → persist (integration)
-- [ ] Resume from checkpoint after interrupt (integration)
-- [ ] Error in node → graceful handling (unit + integration)
-
-**For Core Manager:**
-- [ ] Manager method with valid input → correct output (unit, mocked Neo4j)
-- [ ] Manager method with invalid input → business logic error (unit)
-- [ ] Cypher query execution → correct Neo4j results (integration)
-- [ ] Edge case: empty result set (integration)
-
-**For Schema changes:**
-- [ ] Migration script → schema updated correctly (integration)
-- [ ] New properties added to existing nodes (integration)
-- [ ] Queries use new schema fields (integration)
-
-**For PDF/Parser services:**
-- [ ] Valid PDF → text extracted correctly (unit)
-- [ ] Invalid/corrupted PDF → error handling (unit)
-- [ ] Empty file → graceful error (unit)
-- [ ] Unsupported format → user-friendly error message (unit)
-
-**For Integration tests quality:**
-- [ ] Test validates business logic (not Zod guarantees)
-- [ ] Test uses exact expectations (not weak assertions like `length > 0`)
-- [ ] Test covers edge cases (boundary values, null, empty arrays)
-
----
-
-### Step 3: Additional Sections (опциональные, спрашиваем multiSelect)
-
+**Example**:
 ```
-Question: "Заполнить дополнительные секции?"
-Options (multiSelect):
-[ ] Technical Design Notes (архитектурные решения, выбор библиотек, patterns)
-[ ] Timeline/Dependencies (когда делать, что блокирует, prerequisites)
-[ ] Out of Scope (что явно НЕ входит в feature, отложено в after MVP)
-[ ] Philosophy/Context (как в Feature #13 - vision, why it matters, user value)
-```
-
-If user selects any → ask follow-up questions for each with structured options.
-
-**Example for Technical Design Notes:**
-```
-Question: "Technical Design Notes - выбери что документировать:"
-Options (multiSelect):
-[ ] Library choice rationale (why pdf-parse vs pdfjs-dist?)
-[ ] Architecture pattern (why this approach vs alternatives?)
-[ ] State management strategy (why reducers vs manual merge?)
-[ ] Performance considerations (caching, batching, optimization)
-[ ] Security considerations (auth, validation, sanitization)
-```
-
-**Example for Timeline/Dependencies:**
-```
-Question: "Timeline/Dependencies:"
-Options (multiSelect):
-[ ] Blocked by: Feature #X (specify)
-[ ] Depends on: Q&A resolution (specify which questions from 00_open_questions.md)
-[ ] Implement before MVP
-[ ] Implement after MVP (Phase 2)
-[ ] Implement after Feature #X completes
-```
-
-**Example for Out of Scope:**
-```
-Question: "Out of Scope - что НЕ делаем в этой feature:"
-Options (multiSelect):
-[ ] Advanced features (specify: OCR for scanned PDFs, bulk import, etc.)
-[ ] Performance optimization (defer to later)
-[ ] UI/UX polish (focus on functionality first)
-[ ] Edge cases handling (specify which edge cases to skip)
-[ ] Integration with external services (specify which)
+Context schema has no salary information. Users cannot filter by salary or see typical compensation progression in career paths.
 ```
 
 ---
 
-### Step 4: Assembly and Save
+**2.3 TO BE (desired state)**
 
-1. **Read** `features-registry.md` to get next Feature ID
-2. **Generate feature entry** based on collected info
-3. **Add to table** in "Pending Features" section
-4. **Add detailed section** with all filled sections
-5. **Show summary** to user with Feature ID and confirm
+```
+Question: "TO BE - желаемое состояние (кратко, лаконично, по делу):"
+Options (single select):
+( ) Напишу сам (через Other)
+```
+
+User provides brief desired state description.
+
+**Example**:
+```
+Context schema extended with `salaryMin`, `salaryMax` (optional, USD). Search supports salary range filtering. Map projection returns salary fields. Test data demonstrates usage.
+```
 
 ---
 
-## Template Structure
+### Step 3: Generate and Save
+
+1. **Read** `memory-bank/knowledge/features-registry.md` to get next Feature ID:
+   - Parse table, find max ID (FEAT-001, FEAT-002, etc.)
+   - Next ID = max + 1
+   - Format: `FEAT-XXX` (zero-padded 3 digits: FEAT-001, FEAT-010, FEAT-100)
+
+2. **Create** `tasks/features/FEAT-XXX.md` with PENDING template:
 
 ```markdown
-### Feature #N: [Title]
-**Component**: [component(s)]
-**Date**: [today's date YYYY-MM-DD]
-**Priority**: [🔴 P0 / 🟡 P1 / 🟢 P2]
+# [Feature Title from Step 1.1]
 
-**Motivation**:
-[Why needed - from Step 1.4]
+**Component**: [component from Step 1.2]
 
-**User Story**: [if provided in Step 2.1]
-[As a X, I want Y, so that Z]
+**Priority**: [priority emoji from Step 1.3]
 
-**Acceptance Criteria**: [from Step 2.2]
-- [ ] [Criterion 1]
-- [ ] [Criterion 2]
-- [ ] Tests cover [specific scenarios from Step 2.4]
+---
 
-**Impact Assessment**: [from Step 2.3]
-- Schema change: YES/NO
-- Breaking change: YES/NO
-- Requires migration: YES/NO
-- Affected components: [list]
-- New dependencies: [list if any]
+## User Story
 
-**Tests**: [from Step 2.4]
-- [ ] [Test case 1 with type]
-- [ ] [Test case 2 with type]
+[user story from Step 2.1]
 
-[Optional sections from Step 3:]
+---
 
-**Technical Design Notes**: [if selected]
-[Architecture decisions, library choices, patterns]
+## AS IS
 
-**Timeline/Dependencies**: [if selected]
-- Blocked by: [list]
-- Implement: [when - before/after MVP, after Feature #X]
+[current state from Step 2.2]
 
-**Out of Scope**: [if selected]
-- [Item 1 not included in this feature]
-- [Item 2 deferred to after MVP]
+---
 
-**Philosophy/Context**: [if selected]
-[Vision, user value, why it matters]
+## TO BE
+
+[desired state from Step 2.3]
+```
+
+3. **Add registry entry** to `memory-bank/knowledge/features-registry.md`:
+   - Find table section (after `# Features Registry`)
+   - Add new row:
+
+```markdown
+| FEAT-XXX | YYYY-MM-DD | PENDING | [Feature Title] | [Priority] | [Component] | [tasks/features/FEAT-XXX.md](../../tasks/features/FEAT-XXX.md) | session-[current] |
+```
+
+**Note**: Session ID = current Claude session (timestamp или env)
+
+4. **Show summary** to user:
+
+```markdown
+✅ Feature FEAT-XXX created!
+
+**Status**: PENDING (needs planning)
+**File**: tasks/features/FEAT-XXX.md
+**Registry**: memory-bank/knowledge/features-registry.md
+
+**Next steps**:
+1. Run `/plan-feature FEAT-XXX` to design Type Schema and Architecture (PENDING → READY_FOR_WORK)
+2. Run `/implement-feature FEAT-XXX` to implement (requires READY_FOR_WORK status)
 ```
 
 ---
 
-## Priority Guidelines
+## Template: FEAT-XXX.md (PENDING)
 
-- **🔴 P0 (Critical)**: Blocking MVP launch, security issue, data corruption risk, must have immediately
-- **🟡 P1 (Important)**: High business value, user requested, improves UX significantly, important for MVP
-- **🟢 P2 (Nice-to-have)**: Enhancement after MVP, optimization, quality-of-life improvement
+```markdown
+# [Feature Title]
+
+**Component**: [component-name]
+
+**Priority**: [🔴 P0 / 🟡 P1 / 🟢 P2]
+
+---
+
+## User Story
+
+[As a X, I want Y, so that Z]
+
+---
+
+## AS IS
+
+[Текущее состояние - кратко, лаконично, ёмко, по делу]
+
+---
+
+## TO BE
+
+[Желаемое состояние - кратко, лаконично, ёмко, по делу]
+```
+
+---
+
+## Registry Entry Format
+
+Table in `memory-bank/knowledge/features-registry.md`:
+
+```markdown
+| ID | Date | Status | Title | Priority | Component | File | Session |
+|----|------|--------|-------|----------|-----------|------|---------|
+| FEAT-001 | 2025-11-15 | PENDING | Add salary range to Context | 🟡 P1 | context-schema | [tasks/features/FEAT-001.md](../../tasks/features/FEAT-001.md) | session-abc123 |
+```
 
 ---
 
 ## Important Notes
 
 1. **NEVER invent details** - always ask through `AskUserQuestion`
-2. **Use multiSelect** wherever user might want multiple options
-3. **Provide "Other" option** for text input when appropriate
-4. **Auto-assign Feature ID** by reading registry and finding next number
-5. **Show summary** after adding feature for user confirmation
-6. **Don't implement** - this command only adds to registry. Use `/implement-feature` to start work
-7. **Update table** in "Pending Features" section with one-line summary
-8. **Add detailed section** at the end of file with full information
+2. **Feature ID assignment**: Always max(existing IDs) + 1, zero-padded 3 digits
+3. **Date format**: YYYY-MM-DD (ISO)
+4. **Status**: Always "PENDING" при создании
+5. **Session ID**: timestamp или env variable
+6. **File path**: Relative link from registry: `../../tasks/features/FEAT-XXX.md`
+7. **Minimal context**: Just User Story + AS IS + TO BE, проработка (Type Schema, Architecture) в /plan-feature
+8. **Brevity**: AS IS и TO BE должны быть минимально достаточными, без воды
 
 ---
 
@@ -326,38 +219,36 @@ Options (multiSelect):
 User: /request-feature
 
 Step 1.1: Feature Title?
-→ User selects: "Resume Upload Entry Point"
+→ User writes: "Add salary range to Context schema"
 
-Step 1.2: Components?
-→ User selects: [Facade MCP tools, LangGraph workflow, PDF Parser service]
+Step 1.2: Component?
+→ User selects: "context-schema"
 
 Step 1.3: Priority?
-→ User selects: 🟢 P2
-
-Step 1.4: Motivation?
-→ User selects: "Lower barrier to entry"
+→ User selects: 🟡 P1
 
 Step 2.1: User Story?
-→ User selects: "As a user with resume, I want to upload PDF..."
+→ User writes: "As a user planning career transition, I want to see salary ranges, so that I can filter realistic opportunities"
 
-Step 2.2: Acceptance Criteria?
-→ User selects: [PDF parser service, LLM extraction, Integration with LangGraph, Full validation, Error handling]
+Step 2.2: AS IS?
+→ User writes: "Context schema has no salary info"
 
-Step 2.3: Impact Assessment?
-→ User selects: [Affected: Facade MCP tools, New dependencies: pdf-parse]
+Step 2.3: TO BE?
+→ User writes: "Context with salaryMin/salaryMax fields, map projection returns them"
 
-Step 2.4: Tests?
-→ User selects: [Valid PDF parsing (unit), Full workflow (integration), Edge case: corrupted PDF (unit)]
-
-Step 3: Additional sections?
-→ User selects: [Philosophy/Context, Out of Scope]
-
-Step 3.1: Philosophy/Context?
-→ User provides text about "Resume as starting point, not truth"
-
-Step 3.2: Out of Scope?
-→ User selects: [OCR for scanned PDFs, Bulk import, LinkedIn integration]
-
-Step 4: Generate Feature #13, add to registry, show summary
-→ "✅ Feature #13 added to registry. Use `/implement-feature 13` to start work."
+Step 3: Generate FEAT-001, create task file, add registry entry, show summary
+→ "✅ Feature FEAT-001 created. Run /plan-feature FEAT-001 to design Type Schema."
 ```
+
+---
+
+## Next Steps After Creation
+
+- Use `/plan-feature FEAT-XXX` to design Type Schema, Architecture, Implementation Plan (PENDING → READY_FOR_WORK)
+- Use `/implement-feature FEAT-XXX` to implement (requires READY_FOR_WORK status)
+
+---
+
+Would you like to:
+1. Create git commit? `git add . && git commit -m "request: Feature FEAT-XXX - [title]"`
+2. Run /sync-memory to update Memory Bank?

@@ -7,330 +7,61 @@ Production bugs and design flaws discovered in the codebase.
 - 🟡 P1: Important, affects maintainability/UX
 - 🟢 P2: Nice to have, minor issues
 
----
-
-## Registry
-
-| ID | Date | Component | Issue | Status | Priority | Resolved |
-|----|------|-----------|-------|--------|----------|----------|
-| #6 | 2025-11-15 | Test infrastructure | Race condition в setup-read-only.ts при параллельных тестах | Open | 🟡 P1 | - |
-| #5 | 2025-11-13 | trajectory-similarity.service | durationCapMonths parameter has flawed business logic | RESOLVED | 🟡 P1 | 2025-11-13 |
-| #4 | 2025-11-12 | cypher/queries/search | searchAdhoc returns 0 results - currentContextId filter breaks historical search | RESOLVED | 🔴 P0 | 2025-11-12 |
-| #3 | 2025-11-12 | cypher/queries/search | DTW metrics values differ after Phase 3 migration | RESOLVED | 🟡 P1 | 2025-11-12 |
-| #2 | 2025-11-11 | trajectory-similarity.service | DTW metrics calculation issues (4 problems) | RESOLVED | 🔴 P0 | 2025-11-12 |
+**Workflow**:
+1. Use `/report-bug` to add new bug → status: PENDING
+2. Use `/plan-bug` to analyze and prepare fix plan → status: READY_FOR_WORK
+3. Use `/fix-bug` to implement fix → status: RESOLVED
+4. Use `/sync-memory` to archive resolved bugs
 
 ---
 
-## Bug Details
+## Active Bugs
 
-### #6: Race Condition в setup-read-only.ts при параллельных тестах
-
-**Discovered**: 2025-11-15 (Feature #1 implementation - salary fields)
-
-**Component**:
-- `tests/integration/search-manager/setup-read-only.ts:38-75`
-- `vitest.config.ts` - concurrent projects configuration
-
-**How to Reproduce**:
-1. Run `integration-search-goals` project (loads U1-U13 to shared test DB)
-2. Run `integration-search-read-only` project in parallel (expects U1-U18)
-3. `setup-read-only.ts` checks `userCount=13 > 0` → skips import
-4. Tests fail: U14-U18 missing (AC8-AC11 fail)
-
-**Expected**:
-Каждый test project должен загружать свои данные изолированно или использовать глобальный setup который импортирует данные **один раз** для всех параллельных тестов перед их запуском.
-
-**Actual**:
-- Оба проекта используют одну БД (`bolt://localhost:7689`)
-- Проверка `userCount > 0` не проверяет **какие именно** users загружены
-- Race condition: первый проект загружает свои данные, второй думает что "уже загружено" и пропускает импорт
-- Текущий "фикс" `userCount !== 18` - magic number (хрупкий код)
-
-**Root Cause**:
-```typescript
-// setup-read-only.ts:49-75
-if (userCount !== 18) {  // ❌ MAGIC NUMBER - breaks when U19 added
-  // Clear and reload
-}
-```
-
-Проблемы:
-1. **Shared DB**: Оба проекта используют одну БД без изоляции
-2. **Weak check**: Проверка count вместо проверки конкретных user IDs
-3. **Magic number**: Hardcoded `18` - добавление U19 сломает код
-4. **No global setup**: Нет единого setup для загрузки данных перед всеми тестами
-
-**Impact**:
-⚠️ **Хрупкий код**: Добавление U19 потребует изменения magic number в setup-read-only.ts
-⚠️ **Race condition**: Нестабильные результаты при параллельном запуске (зависит от порядка)
-⚠️ **Tech debt**: Неочевидно почему `18` без комментариев (maintainability)
-⚠️ **Coupling**: setup-read-only.ts знает про данные других тест-проектов
-
-**Fix Ideas**:
-
-**Option 1: Global Setup (Best)**
-```typescript
-// vitest.config.ts
-export default defineConfig({
-  test: {
-    globalSetup: './tests/setup/global-setup.ts',
-    concurrent: true,  // Projects can run in parallel AFTER global setup
-  }
-});
-
-// tests/setup/global-setup.ts
-export async function setup() {
-  // Load U1-U18 ONCE before all projects
-  await clearDB();
-  await loadTestData(['U1', ..., 'U18']);
-}
-```
-- ✅ Pros: Данные загружаются один раз, изоляция проектов
-- ✅ Pros: Нет magic numbers, нет race conditions
-- ❌ Cons: Требует Vitest >= 0.30 (globalSetup)
-
-**Option 2: Check Specific User IDs**
-```typescript
-// setup-read-only.ts
-const EXPECTED_USERS = ['U1', 'U2', ..., 'U18'];
-const expectedUserIds = EXPECTED_USERS.map(key => getUserId(key));
-
-const result = await session.run(
-  'MATCH (u:User) WHERE u.userId IN $userIds RETURN count(u) AS count',
-  { userIds: expectedUserIds }
-);
-
-if (count !== EXPECTED_USERS.length) {
-  clearAndReload(EXPECTED_USERS);
-}
-```
-- ✅ Pros: Проверяет конкретные users, не magic number
-- ✅ Pros: Минимальные изменения в код
-- ⚠️ Cons: Все еще race condition (два проекта могут одновременно clear)
-
-**Option 3: Sequential Projects**
-```typescript
-// vitest.config.ts
-export default defineConfig({
-  test: {
-    concurrent: false,  // Projects run one by one
-  }
-});
-```
-- ✅ Pros: Простейшее решение, нет race conditions
-- ❌ Cons: Медленнее (sequential execution)
-
-**Option 4: Separate Databases**
-- `integration-search-read-only` → `neo4j-test-readonly` (port 7689)
-- `integration-search-goals` → `neo4j-test-goals` (port 7690)
-- ✅ Pros: Полная изоляция
-- ❌ Cons: Требует дополнительный Docker контейнер
-
-**Acceptance Criteria**:
-- [ ] Bug reproduced with test case (parallel run показывает race condition)
-- [ ] Fix implemented (один из вариантов выше)
-- [ ] All tests pass (46/47 baseline сохранен)
-
-**Decision**: PENDING (выбрать Option 1, 2, 3 или 4)
-
-**References**:
-- Related: Feature #1 implementation (commit [pending])
-- File: `tests/integration/search-manager/setup-read-only.ts:49-75`
-- Config: `vitest.config.ts:16` (concurrent: false setting)
-
----
-
-### #5: durationCapMonths Parameter Has Flawed Business Logic
-
-**Discovered**: 2025-11-13 (during test quality review)
-
-**Component**:
-- `src/core/trajectory-similarity.service.ts:22,96-104,192-195`
-- `src/shared/schemas.ts:226-231,286-291`
-- `src/core/search-manager.ts:176,197,212`
-
-**Design Flaw**:
-`durationCapMonths` parameter was introduced to "normalize" duration differences in DTW trajectory comparison. It caps durations at specified value (default 36 months) before computing similarity.
-
-**Business Logic Problem**:
-```typescript
-// Current behavior (FLAWED):
-const cappedUserDurations = userDurations.map(d => Math.min(d, durationCapMonths));
-// User: [12, 24, 36] months (steady growth)
-// Candidate: [6, 120, 6] months (stuck in middle 10 years!)
-// With cap=36: [6, 36, 6] → similarity ARTIFICIALLY INFLATED
-// Candidate appears more similar than they actually are
-```
-
-**Why This Is Wrong**:
-- ❌ **Forgives outliers**: Someone stuck in position for 10 years looks "similar" to steady 3-year growth
-- ❌ **Hides red flags**: Career stagnation (120 months in same role) should be penalized, not hidden
-- ❌ **Dishonest comparison**: We're making candidates look more similar than they actually are
-- ❌ **No business justification**: User searches for similar trajectories, not "normalized" ones
-
-**Expected Behavior**:
-Tempo similarity should reflect **actual** duration differences:
-- 24 months vs 120 months = LOW similarity (candidate's career pattern is different)
-- Outliers are signal, not noise (stuck for 10 years = important information)
-
-**Root Cause**:
-Parameter introduced in DTW implementation (commit b6e362a) with reasoning:
-> "Flexibility для разных карьерных контекстов (junior vs executive)"
-
-But this reasoning is flawed:
-1. Junior vs executive careers should be compared honestly
-2. If someone's trajectory differs significantly → similarity SHOULD be low
-3. Cap artificially boosts similarity → misleading search results
-
-**Impact**:
-- ⚠️ **Inaccurate search results**: Candidates with stagnant careers rank higher than they should
-- ⚠️ **Misleading similarity scores**: tempoSimilarity doesn't reflect actual tempo differences
-- ⚠️ **Code complexity**: Parameter adds complexity without business value
-- ⚠️ **Test complexity**: DT5 test exists solely to verify this flawed parameter
-
-**Evidence from Code Review**:
-Test plan explicitly documents the cap's effect:
-```
-DT5: Low cap (24) → сглаживает выбросы → выше tempo similarity
-```
-This is the OPPOSITE of what we want! Outliers are valuable information.
-
-**Fix Strategy**:
-
-**Option 1: Remove durationCapMonths entirely** (RECOMMENDED)
-- Remove parameter from all interfaces (UserSearchParams, AdhocSearchParams, TargetSearchParams)
-- Simplify trajectoryDistance() - remove normalization by cap
-- Simplify computeTempoSimilarity() - remove capping logic
-- Delete DT5 test (tests flawed behavior)
-- Pros: Honest comparisons, simpler code, accurate similarity
-- Cons: None (this is correct behavior)
-
-**Option 2: Use fixed cap for numerical stability only**
-- Keep cap=MAX (e.g., 240 months = 20 years) to prevent infinity
-- Only for edge cases (someone worked 50 years in one position)
-- Pros: Numerical stability
-- Cons: Still dishonest, just less
-
-**Option 3: Remove cap, add warning for outliers**
-- No capping, but log warning if duration > 120 months
-- Let similarity be low (correct behavior)
-- Pros: Transparent, honest
-- Cons: More complex than Option 1
-
-**Recommended Fix**: **Option 1** (complete removal)
-- Simplest solution
-- Most honest
-- Aligns with business logic ("find similar trajectories")
-
-**Acceptance Criteria**:
-- [ ] Remove `durationCapMonths` parameter from all schemas
-- [ ] Remove capping logic from `trajectoryDistance()` (lines 192-195)
-- [ ] Remove capping logic from `computeTempoSimilarity()` (lines 98-104)
-- [ ] Delete DT5 test entirely (tests flawed behavior)
-- [ ] Update DT1-DT4 tests (remove durationCapMonths parameter)
-- [ ] Verify no regressions: DT1-DT4 still pass with new logic
-- [ ] Update TEST_PLAN: mark DT5 as REMOVED (not DEFERRED)
-- [ ] Update docs: remove references to durationCapMonths
-
-**Regression Prevention**:
-After removal, verify:
-1. DT1 (high similarity) still > 2.55 - steady trajectories remain similar
-2. DT2 (low similarity) still < 2.0 - different domains still dissimilar
-3. No test relies on cap behavior
-
-**Decision**: PENDING review and approval
-
-**References**:
-- Implementation: commit b6e362a (DTW trajectory similarity)
-- Bug fix using cap: Bug #2.3 (Apply cap before derivatives)
-- Test: `tests/integration/search-manager/current-context-with-dtw.integration.ts:401-486` (DT5 skipped)
-- Docs: `docs/mvp_final/TEST_PLAN_SEARCH_MANAGER_v3.md` (DT5 section)
-- Docs: `docs/2025_11_08_DTW_IMPLEMENTATION_PLAN.md` (Duration Cap Parametrization)
+| ID | Date | Status | Title | Priority | Component | File | Session |
+|----|------|--------|-------|----------|-----------|------|---------|
+| BUG-001 | 2025-11-15 | PENDING | Race condition in setup-read-only.ts with parallel tests | 🟡 P1 | Test infrastructure | [tasks/bugs/BUG-001-race-condition-setup.md](../../tasks/bugs/BUG-001-race-condition-setup.md) | session-2025-11-15 |
 
 ---
 
 ## Resolved Bugs (Archive)
 
-Brief history of resolved bugs. Full details in `memory-bank/knowledge/decisions.md` and Memory MCP.
+Brief history of resolved bugs. Full details in task files and Memory MCP.
 
-### #5: durationCapMonths Parameter Has Flawed Business Logic ✅ RESOLVED
-- **Discovered**: 2025-11-13 (during test quality review)
-- **Resolved**: 2025-11-13 (via /fix-bug command)
-- **Root Cause**: `durationCapMonths` parameter artificially inflated similarity scores by capping outliers
-  - User with steady growth (12, 24, 36 months) vs candidate stuck 10 years (6, 120, 6 months)
-  - Old formula: capped 120 → 36, making trajectories appear more similar than reality
-  - Design flaw: parameter introduced for "flexibility" but actually hid career stagnation signals
-- **Solution**: Complete removal of `durationCapMonths` parameter (Option 1)
-  - Removed from schemas: `userSearchParamsBaseSchema`, `targetSearchParamsSchema`
-  - Removed capping logic from `computeTempoSimilarity()` - durations no longer capped before derivatives
-  - Updated `trajectoryDistance()`: normalize by `max(durationA, durationB)` instead of cap
-  - Deleted DT5 test (tested flawed capping behavior)
-  - Updated all test calls (DT1-DT4, UN1, UN4, AC1) - removed parameter
-- **New normalization formula**:
-  - `durationDiff = |durationA - durationB| / max(durationA, durationB)`
-  - Edge case: `maxDuration = 0` → `durationDiff = 0` (zero division guard)
-  - Outliers: 120 months vs 1 month → `durationDiff ≈ 0.99` (correctly penalized, not capped)
-- **Impact**: MEDIUM - improved similarity accuracy, simpler code (-10 LOC), honest outlier handling
-- **Tests**: DT1-DT4 integration tests (4/4 passed) - DT5 deleted (tested flawed behavior)
-- **Quality checks**: lint PASSED, integration tests PASSED (12/12)
-- **Key Lesson**: "Flexibility" parameters that hide signal (outliers) should be removed, not tuned
-- **Files changed**:
-  - `src/shared/schemas.ts` (parameter removal from Zod schemas)
-  - `src/core/trajectory-similarity.service.ts` (capping logic removal, new normalization)
-  - `src/core/search-manager.ts` (parameter removal from calls)
-  - `tests/integration/search-manager/*.integration.ts` (DT5 deletion, parameter removal from all calls)
-- **Test coverage gap**: Extreme outliers (120 months) not tested in current data (U10-U13 all "normal")
-  - Recommendation: Add U14 with outlier trajectory for future regression testing
-  - Priority: LOW (not blocking, formula is mathematically correct)
+| ID | Date | Status | Title | Priority | Component | Resolved | Commit |
+|----|------|--------|-------|----------|-----------|----------|--------|
+| #5 | 2025-11-13 | RESOLVED | durationCapMonths parameter has flawed business logic | 🟡 P1 | trajectory-similarity.service | 2025-11-13 | [commit] |
+| #4 | 2025-11-12 | RESOLVED | searchAdhoc returns 0 results - currentContextId filter breaks historical search | 🔴 P0 | cypher/queries/search | 2025-11-12 | [commit] |
+| #3 | 2025-11-12 | RESOLVED | DTW metrics values differ after Phase 3 migration | 🟡 P1 | cypher/queries/search | 2025-11-12 | [commit] |
+| #2 | 2025-11-11 | RESOLVED | DTW metrics calculation issues (4 problems) | 🔴 P0 | trajectory-similarity.service | 2025-11-12 | [commit] |
+| #1 | 2025-11-11 | RESOLVED | Skills penalty when skills excluded | 🔴 P0 | search-query-builder | 2025-11-11 | d1da036 |
 
-### #4: searchAdhoc Returns 0 Results - currentContextId Filter Breaks Historical Search ✅ RESOLVED
-- **Discovered**: 2025-11-12 (AC1-AC6 adhoc integration tests failing - 0 results)
-- **Resolved**: 2025-11-12 (manual debugging session)
+---
+
+## Archive Notes
+
+### #5: durationCapMonths Parameter Has Flawed Business Logic
+- **Root Cause**: Parameter artificially inflated similarity scores by capping outliers (120 months → 36 months)
+- **Solution**: Complete removal of `durationCapMonths` parameter
+- **Impact**: Improved similarity accuracy, simpler code (-10 LOC), honest outlier handling
+- **Tests**: DT1-DT4 integration tests (4/4 passed), DT5 deleted (tested flawed behavior)
+
+### #4: searchAdhoc Returns 0 Results
 - **Root Cause**: `buildMatchedContextBase()` incorrectly filtered by `currentContextId` for ALL search modes
-  - searchAdhoc/searchByTarget should search **ALL contexts** (historical + current)
-  - searchByUser should search **current context only**
-  - Query had universal filter → adhoc couldn't find historical contexts
-- **Solution**: Removed `{contextId: matchedUser.currentContextId}` from `buildMatchedContextBase()`
-  - Before: `MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context {contextId: matchedUser.currentContextId})`
-  - After: `MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context)`
-  - searchByUser still works correctly (compares current states)
-  - searchAdhoc now finds historical contexts (e.g., U2 Junior when current is Middle)
+- **Solution**: Removed `{contextId: matchedUser.currentContextId}` from base query
 - **Impact**: CRITICAL - searchAdhoc/searchByTarget completely broken (0 results for any query)
-- **Tests**: AC1-AC6, UN1-UN4, DT1-DT5 integration tests (12/12 passed after fix)
-- **Key Lesson**: Different search modes have different filtering requirements - understand business logic FIRST
-- **Created Docs**:
-  - `docs/search_modes_business_logic.md` - WHAT each search mode does (when to filter by currentContextId)
-  - `docs/cypher_debugging_guide.md` - HOW to debug Cypher queries (workflow, MCP tools)
-- **См.**: `src/cypher/queries/search.ts:80`, test `adhoc-context-without-dtw.integration.ts`
+- **Created Docs**: `search_modes_business_logic.md`, `cypher_debugging_guide.md`
 
-### #1: Skills Penalty When Skills Excluded ✅ RESOLVED
-- **Discovered**: 2025-11-11 (AC2 integration test)
-- **Resolved**: 2025-11-11 (commit d1da036)
+### #3: DTW Metrics Values Differ After Phase 3 Migration
+- **Root Cause**: Missing `{contextId: matchedUser.currentContextId}` filter → matched ALL user contexts
+- **Solution**: Added filter + fixed U12 duplicate position data + updated test thresholds
+- **Impact**: Critical bug - each user appeared multiple times in results
+
+### #2: DTW Metrics Calculation Issues
+- **Solution**: stabilityScore formula changed, domains added to trajectoryDistance, apply cap before derivatives, fixed U12 data
+- **Tests**: DT1-DT4 integration tests (4 passed, 1 skipped)
+
+### #1: Skills Penalty When Skills Excluded
 - **Solution**: Skills NEVER in WHERE clause, penalty-based scoring with DB queries
-- **См.**: `knowledge/decisions.md#Skills Never in WHERE Clause`, Memory MCP `Skills Scoring Architecture Decision 2025-11-11`
-
-### #3: DTW Metrics Values Differ After Phase 3 Migration ✅ RESOLVED
-- **Discovered**: 2025-11-12 (Phase 3 Raw Cypher migration - integration tests)
-- **Resolved**: 2025-11-12 (via /fix-bug command)
-- **Root Cause**: Missing `{contextId: matchedUser.currentContextId}` filter in `buildMatchedContextBase()` → matched ALL user contexts instead of current only
-- **Solution**:
-  - Added filter: `MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context {contextId: matchedUser.currentContextId})`
-  - Fixed U12 duplicate position data (2 HAS_POSITION relationships caused Cartesian product)
-  - Updated test expectations: U13 threshold 2.6 → 2.9 (allow variance after Raw Cypher migration)
-- **Impact**: Critical bug - each user appeared multiple times in results (once per context)
-- **Tests**: DT1-DT5 integration tests (4 passed | 1 skipped)
-- **См.**: `src/cypher/queries/search.ts:80`, tests `current-context-with-dtw.integration.ts:172,307`
-
-### #2: DTW Metrics Calculation Issues ✅ RESOLVED
-- **Discovered**: 2025-11-11 (implementing DT1-DT5 integration tests)
-- **Resolved**: 2025-11-12 (via /fix-bug command)
-- **Solution**:
-  - **2.1**: stabilityScore formula changed to `userLength / pathLength` (user trajectory is baseline)
-  - **2.2**: Added domains to `trajectoryDistance` via `computeJaccardDistance()` helper (4 components now)
-  - **2.3**: Apply `durationCapMonths` to durations before computing derivatives in `computeTempoSimilarity()`
-  - **2.4**: Fixed U12 test data chronological order + added `company_changed` reasons
-- **Additional fixes**: Enhanced `validatePathLength()` with min path check, added chronological order validation in `calculateDurationMonths()`
-- **Tests**: DT1-DT5 integration tests (4 passed, 1 skipped)
-- **См.**: `src/core/trajectory-similarity.service.ts`, test data `data/trails/users/u12.json`
+- **See**: `knowledge/decisions.md#Skills Never in WHERE Clause`, Memory MCP
 
 *Use `/report-bug` to add new bugs to this registry*

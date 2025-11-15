@@ -1,24 +1,24 @@
 ---
-description: "Добавить production bug в bugs-registry.md с полным описанием и критериями приемки"
-allowed-tools: ["Read", "Edit", "AskUserQuestion", "mcp__memory__*"]
+description: "Создать BUG-XXX.md (PENDING) + запись в bugs-registry.md"
+allowed-tools: ["Read", "Write", "AskUserQuestion", "Bash"]
 argument-hint: "[optional: bug title]"
 ---
 
-# 🐛 Report Bug для WayMates
+# 🐛 Report Bug (New Workflow)
 
 $ARGUMENTS
 
 ## Цель
 
-Зарегистрировать production bug или design flaw в `memory-bank/knowledge/bugs-registry.md` через интерактивный сбор информации.
+Создать МИНИМАЛЬНЫЙ task file (PENDING) + запись в bugs-registry.md для дальнейшей проработки через /plan-bug.
 
-**Key Principle**: DON'T invent details - ask user for everything through `AskUserQuestion`.
+**Key Principle**: Быстрая фиксация проблемы, детальная проработка - позже.
 
 ---
 
 ## Workflow
 
-### Step 1: Gather Basic Info (обязательные поля)
+### Step 1: Gather Minimal Context (обязательные поля)
 
 Use `AskUserQuestion` to gather:
 
@@ -29,7 +29,7 @@ Use `AskUserQuestion` to gather:
 
 **1.2 Component**
 - Single select (user can pick one primary component)
-- Options: search-query-builder, target-query-builder, goals-query-builder, persistence-query-builder, search-manager, goals-manager, story-manager, schemas, integration tests, etc.
+- Options: search-query-builder, target-query-builder, goals-query-builder, persistence-query-builder, search-manager, goals-manager, story-manager, schemas, integration tests, trajectory-similarity, test-infrastructure, etc.
 - Provide "Other" for custom component name
 
 **1.3 Priority**
@@ -41,12 +41,12 @@ Use `AskUserQuestion` to gather:
 
 ---
 
-### Step 2: Standard Sections (всегда спрашиваем последовательно)
+### Step 2: Reproduction Details
 
-**2.1 How to Reproduce**
+**2.1 Steps to Reproduce**
 
 ```
-Question: "How to Reproduce - опиши минимальный пример:"
+Question: "How to Reproduce - минимально достаточный пример (код/шаги):"
 Options (single select):
 ( ) Напишу сам (через Other - пользователь пишет текстом)
 ```
@@ -77,7 +77,7 @@ Options (single select):
 ( ) Напишу сам (через Other)
 ```
 
-User provides structured description:
+User provides:
 - **Expected**: [what should happen]
 - **Actual**: [what actually happens]
 
@@ -89,224 +89,138 @@ Actual: Penalty 0.01 applied (1 excluded skill * default penalty 1.0)
 
 ---
 
-**2.3 Root Cause** (optional, но рекомендуется)
+**2.3 Breadcrumbs (optional, 1-2 sentences)**
 
 ```
-Question: "Root Cause - если известен, опиши:"
+Question: "Breadcrumbs - куда копать, с чего начать (1-2 предложения, опционально):"
 Options (single select):
 ( ) Напишу сам (через Other)
-( ) Пока не знаю (requires investigation)
+( ) Пропустить (проработаю в /plan-bug)
 ```
 
-User provides:
-- Cypher query snippet with comment
-- Code logic explanation
-- Configuration issue description
-
-**Example**:
-```cypher
-// Bug: penalty calculated from excludedSkills length, not skills length
-WITH size(coalesce($excludedSkills, [])) AS numExcluded
-RETURN 1.0 - (numExcluded * $skillPenalty / 100.0) AS score
-// Should use: size(coalesce($skills, []))
-```
-
----
-
-**2.4 Impact**
-
-```
-Question: "Impact - опиши последствия:"
-Options (single select):
-( ) Напишу сам (через Other)
-```
-
-User provides bullet list with ❌ (critical) or ⚠️ (warning):
+User provides brief hint or skips.
 
 **Example**:
 ```
-❌ Scoring mismatch: excluded skills penalize when they shouldn't
-⚠️ Affects adhoc search when excludedSkills provided
-⚠️ Integration test doesn't catch this (uses wrong expected value)
+Cypher query в search-query-builder.ts использует excludedSkills.length вместо skills.length для расчёта penalty. Проверить CASE WHEN логику в scoring секции.
 ```
 
 ---
 
-**2.5 Acceptance Criteria**
+### Step 3: Generate and Save
 
-```
-Question: "Acceptance Criteria - выбери нужные пункты для bug fix:"
-Options (multiSelect):
-[ ] Bug reproduced with test case
-[ ] Root cause identified and documented
-[ ] Fix implemented in affected component
-[ ] Test updated to catch regression
-[ ] All integration tests pass (no regressions)
-[ ] Code reviewed (by reviewer agent or manually)
-[ ] Documentation updated (if logic changed)
-```
+1. **Read** `memory-bank/knowledge/bugs-registry.md` to get next Bug ID:
+   - Parse table, find max ID (BUG-001, BUG-002, etc.)
+   - Next ID = max + 1
+   - Format: `BUG-XXX` (zero-padded 3 digits: BUG-001, BUG-010, BUG-100)
 
----
-
-### Step 3: Optional Sections
-
-```
-Question: "Заполнить дополнительные секции?"
-Options (multiSelect):
-[ ] Fix Ideas (варианты решения с Pros/Cons)
-[ ] References (links to tests, related bugs, Memory MCP entities)
-[ ] Context (как обнаружен, в каком сценарии)
-```
-
-If user selects any → ask follow-up:
-
-**3.1 Fix Ideas** (if selected):
-```
-Question: "Fix Ideas - опиши варианты решения:"
-Options (single select):
-( ) Напишу сам (через Other)
-```
-
-User provides structured options:
-
-**Example**:
-```
-**Option 1**: Use skills.length instead of excludedSkills.length
-- Pros: Correct logic, minimal change
-- Cons: None
-
-**Option 2**: Remove penalty logic entirely
-- Pros: Simpler code
-- Cons: Changes scoring behavior
-```
-
-**3.2 References** (if selected):
-```
-Question: "References - какие ссылки добавить:"
-Options (multiSelect):
-[ ] Test file (укажи путь)
-[ ] Related bug ID
-[ ] Memory MCP entity
-[ ] Git commit / PR
-[ ] Documentation link
-[ ] Other (напишу сам)
-```
-
-**3.3 Context** (if selected):
-```
-Question: "Context - как обнаружен:"
-Options (single select):
-( ) Напишу сам (через Other)
-```
-
-User provides discovery context:
-
-**Example**:
-```
-Discovered during Feature #4 implementation (integration test improvements).
-Reviewer agent flagged AC2 test with hardcoded expected score 0.99.
-Investigation revealed penalty calculation uses wrong array.
-```
-
----
-
-### Step 4: Assembly and Save
-
-1. **Read** `bugs-registry.md` to get next Bug ID (max ID + 1)
-2. **Generate bug entry** based on collected info
-3. **Add to table** in Registry section
-4. **Add detailed section** in Bug Details
-5. **Create Memory MCP entity** (ALWAYS)
-6. **Show summary** to user with Bug ID
-
----
-
-## Template Structure
-
-### Registry Table Entry:
+2. **Create** `tasks/bugs/BUG-XXX.md` with PENDING template:
 
 ```markdown
-| #N | YYYY-MM-DD | component-name | Bug title | Open | 🔴 P0 |
-```
+# [Bug Title from Step 1.1]
 
-### Bug Details Section:
+**Component**: [component from Step 1.2]
 
-```markdown
-### #N: Bug Title
+**Priority**: [priority emoji from Step 1.3]
 
-**Discovered**: YYYY-MM-DD ([context if provided])
+---
 
-**Component**: `path/to/file.ts:lines` or component name
+## Reproduction
 
-**How to Reproduce**:
-[code block or steps from Step 2.1]
+**Steps**:
+[steps from Step 2.1]
 
 **Expected**:
-[description from Step 2.2]
+[expected from Step 2.2]
 
 **Actual**:
-[description from Step 2.2]
+[actual from Step 2.2]
 
-**Root Cause**: [if provided from Step 2.3]
-[explanation + code snippet]
+---
 
-**Impact**:
-[bullet list from Step 2.4]
+## Breadcrumbs
 
-**Fix Ideas**: [if provided from Step 3.1]
-**Option 1**: Description
-- Pros: ...
-- Cons: ...
-
-**Acceptance Criteria**: [from Step 2.5]
-- [ ] Criteria 1
-- [ ] Criteria 2
-
-**Decision**: PENDING
-
-**References**: [if provided from Step 3.2]
-- [links]
+[breadcrumbs from Step 2.3, or empty if skipped]
 ```
 
-### Memory MCP Entity (ALWAYS):
+3. **Add registry entry** to `memory-bank/knowledge/bugs-registry.md`:
+   - Find table section (after `# Bugs Registry`)
+   - Add new row:
 
-```typescript
-mcp__memory__create_entities({
-  entities: [{
-    name: "Bug #N: Bug Title",
-    entityType: "bug",
-    observations: [
-      "Component: [component]",
-      "Priority: [priority]",
-      "Status: Open",
-      "Root cause: [brief if known]",
-      "Impact: [main impact]",
-      "Discovered: YYYY-MM-DD"
-    ]
-  }]
-})
+```markdown
+| BUG-XXX | YYYY-MM-DD | PENDING | [Bug Title] | [Priority] | [Component] | [tasks/bugs/BUG-XXX.md](../../tasks/bugs/BUG-XXX.md) | session-[current] |
+```
+
+**Note**: Session ID = current Claude session (можно взять из env или генерировать timestamp)
+
+4. **Show summary** to user:
+
+```markdown
+✅ Bug BUG-XXX created!
+
+**Status**: PENDING (needs planning)
+**File**: tasks/bugs/BUG-XXX.md
+**Registry**: memory-bank/knowledge/bugs-registry.md
+
+**Next steps**:
+1. Run `/plan-bug BUG-XXX` to analyze and prepare fix plan (PENDING → READY_FOR_WORK)
+2. Run `/fix-bug BUG-XXX` to implement fix (requires READY_FOR_WORK status)
 ```
 
 ---
 
-## Priority Guidelines
+## Template: BUG-XXX.md (PENDING)
 
-- **🔴 P0 (Critical)**: Data corruption, incorrect business logic results, security issue, blocking production
-- **🟡 P1 (Important)**: UX confusion, performance issue, maintainability problem, affects many users
-- **🟢 P2 (Minor)**: Edge case, cosmetic issue, minor inconsistency
+```markdown
+# [Bug Title]
+
+**Component**: [component-name]
+
+**Priority**: [🔴 P0 / 🟡 P1 / 🟢 P2]
+
+---
+
+## Reproduction
+
+**Steps**:
+[user-provided steps]
+
+**Expected**:
+[user-provided expected behavior]
+
+**Actual**:
+[user-provided actual behavior]
+
+---
+
+## Breadcrumbs
+
+[user-provided hint or empty]
+```
+
+---
+
+## Registry Entry Format
+
+Table in `memory-bank/knowledge/bugs-registry.md`:
+
+```markdown
+| ID | Date | Status | Title | Priority | Component | File | Session |
+|----|------|--------|-------|----------|-----------|------|---------|
+| BUG-001 | 2025-11-15 | PENDING | Skills penalty when excluded | 🔴 P0 | search-query-builder | [tasks/bugs/BUG-001.md](../../tasks/bugs/BUG-001.md) | session-abc123 |
+```
 
 ---
 
 ## Important Notes
 
 1. **NEVER invent details** - always ask through `AskUserQuestion`
-2. **Bug ID assignment**: Always max(existing IDs) + 1
+2. **Bug ID assignment**: Always max(existing IDs) + 1, zero-padded 3 digits
 3. **Date format**: YYYY-MM-DD (ISO)
-4. **Status**: Always "Open" при создании
-5. **Code snippets**: Use ```typescript or ```cypher blocks
-6. **Impact bullets**: Start with ❌ (critical) or ⚠️ (warning)
-7. **Memory MCP**: Create entity ALWAYS (for tracking across sessions)
-8. **Decision**: Always "PENDING" initially (approve/reject during fix planning)
+4. **Status**: Always "PENDING" при создании
+5. **Session ID**: timestamp или env variable
+6. **File path**: Relative link from registry: `../../tasks/bugs/BUG-XXX.md`
+7. **Minimal context**: Just reproduction + breadcrumbs, проработка в /plan-bug
 
 ---
 
@@ -332,34 +246,22 @@ Step 2.2: Expected vs Actual?
    Expected: No penalty (skills array empty)
    Actual: Penalty 0.01 applied
 
-Step 2.3: Root Cause?
+Step 2.3: Breadcrumbs?
 → User writes: "Cypher uses excludedSkills.length instead of skills.length"
 
-Step 2.4: Impact?
-→ User writes:
-   ❌ Scoring mismatch
-   ⚠️ Integration test uses wrong expected value
-
-Step 2.5: Acceptance Criteria?
-→ User selects: [Bug reproduced, Fix implemented, Test updated, All tests pass]
-
-Step 3: Additional sections?
-→ User selects: [Fix Ideas, Context]
-
-Step 3.1: Fix Ideas?
-→ User writes: "Use skills.length instead"
-
-Step 3.3: Context?
-→ User writes: "Discovered during Feature #4"
-
-Step 4: Generate Bug #3, add to registry, create Memory MCP entity, show summary
-→ "✅ Bug #3 registered. Use `/fix-bug 3` to start fix workflow."
+Step 3: Generate BUG-001, create task file, add registry entry, show summary
+→ "✅ Bug BUG-001 created. Run /plan-bug BUG-001 to prepare fix plan."
 ```
 
 ---
 
-## Next Steps After Registration
+## Next Steps After Creation
 
-- Use `/fix-bug N` to start fix workflow (loads context, implements fix, runs tests)
-- Or manually implement fix and update bug status to RESOLVED in registry
-- Use `/sync-memory` to archive RESOLVED bugs
+- Use `/plan-bug BUG-XXX` to analyze and prepare detailed fix plan (PENDING → READY_FOR_WORK)
+- Use `/fix-bug BUG-XXX` to implement fix (requires READY_FOR_WORK status)
+
+---
+
+Would you like to:
+1. Create git commit? `git add . && git commit -m "report: Bug BUG-XXX - [title]"`
+2. Run /sync-memory to update Memory Bank?

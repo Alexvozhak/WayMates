@@ -1,18 +1,30 @@
-# fix-bug
+---
+description: "Исправить баг с проверкой статуса + использование task file"
+allowed-tools: ["Read", "Write", "Edit", "Task", "AskUserQuestion", "Bash"]
+argument-hint: "[optional: bug_id]"
+---
 
-Выбрать и исправить баг из bugs-registry.md
+# 🔧 Fix Bug (Implementation)
 
-## Workflow
+$ARGUMENTS
 
-**Ты - Claude Code, главная инстанция orchestrator.**
+## Цель
+
+Исправить баг, используя детальный plan из task file (READY_FOR_WORK).
+
+**Workflow**: Load task file → Load context → Fix → reviewer → qa → tests → Update registry
+
+**Key Principle**: Следуй Fix Plan из task file, не изобретай решение заново.
 
 ---
 
-### 1. Показать список OPEN багов (интерактивно)
+## Workflow
 
-1. Прочитать `memory-bank/knowledge/bugs-registry.md`
-2. Извлечь все баги со статусом **!= RESOLVED**
-3. **Использовать `AskUserQuestion` tool** для интерактивного выбора:
+### Phase 1: Select Bug (Interactive)
+
+1. **Read** `memory-bank/knowledge/bugs-registry.md`
+2. **Parse** all bugs (exclude RESOLVED/DONE if user wants)
+3. **Show interactive selection** using `AskUserQuestion`:
 
 ```typescript
 AskUserQuestion({
@@ -22,178 +34,400 @@ AskUserQuestion({
     multiSelect: false,
     options: [
       {
-        label: "#2 | DTW metrics | P0 🔴",
-        description: "4 sub-issues: stabilityScore low (2.1), shapeSimilarity too high (2.2), durationCap ignored (2.3), excludedCreationReasons filter not applied (2.4)"
+        label: "#BUG-001 | search-query-builder | P0 🔴",
+        description: "Skills penalty applied when excluded. Status: READY_FOR_WORK"
       },
       {
-        label: "#3 | Skills penalty | P0 🔴",
-        description: "Skills penalty calculation incorrect when skillNames is empty array. Expected: penalty=0, Actual: penalty=null"
-      },
-      {
-        label: "#5 | Null pointer | P1 🟡",
-        description: "path-collector.ts throws null pointer exception when trajectory has no PREVIOUS_CONTEXT relationships"
+        label: "#BUG-002 | trajectory-similarity | P1 🟡",
+        description: "DTW metrics calculation. Status: PENDING (needs /plan-bug first!)"
       }
     ]
   }]
 })
 ```
 
-**Format для options:**
-- **label**: `#ID | component-short | Priority emoji` (макс 50 chars для читаемости)
-- **description**: Полное описание проблемы (может быть многострочное для комплексных багов)
+**Format для options**:
+- **label**: `#BUG-XXX | component | Priority emoji` (max 50 chars)
+- **description**: Brief description + Status
 
 ---
 
-### 2. Загрузить контекст по выбранному багу
+### Phase 2: Validate Status
 
-После выбора пользователем номера:
+**CRITICAL**: Check status in registry BEFORE loading task file.
 
-1. **Прочитать полную запись бага** из registry:
-   - ID, Date, Component, Description, Status, Priority
-   - Acceptance Criteria (если есть)
+```
+If status = PENDING:
+  → Show error message:
+    "❌ Bug BUG-XXX is PENDING (not planned yet).
 
-2. **Загрузить связанный контекст** (на твоё усмотрение):
-   - 📄 **Affected files** - компоненты упомянутые в баге
-   - 🧪 **Related tests** - integration tests для компонента
-   - 📜 **Git history** - последние изменения affected files
-   - 🧠 **Memory Bank** - decisions.md, reflections с упоминанием компонента
-   - 🗄️ **Schema context** - если баг связан с Cypher/Neo4j
+    Run /plan-bug BUG-XXX first to:
+    - Analyze Root Cause
+    - Prepare Fix Plan
+    - Define DoD and Regression Prevention
 
-3. **Сообщить пользователю**:
-   ```
-   📋 Bug #3 loaded: Skills penalty calculation incorrect
+    Then run /fix-bug BUG-XXX again."
+  → STOP (do NOT proceed)
 
-   📂 Context loaded:
-   - src/core/search-query-builder.ts (current implementation)
-   - tests/integration/search-manager/skills-excluded.integration.ts
-   - memory-bank/decisions/creative-20250110-skills-scoring.md
+If status = READY_FOR_WORK:
+  → Continue to Phase 3
 
-   🔍 Quick analysis:
-   [твой анализ проблемы]
-
-   Ready to fix. Should I proceed or do you want to give specific instructions?
-   ```
+If status = RESOLVED or DONE:
+  → Show message: "Bug BUG-XXX already resolved. Check registry for details."
+  → STOP
+```
 
 ---
 
-### 3. Исправить баг
+### Phase 3: Load Context
 
-- Пользователь может дать дополнительные инструкции или попросить сразу фиксить
-- Ты исправляешь баг, следуя **стандартному workflow**:
-  - ✅ Call `planner` если нужно (сложные архитектурные изменения)
-  - ✅ Call `cypher-expert` если баг в Cypher queries
-  - ✅ Implement fix
-  - ✅ Call `reviewer` **(обязательно!)**
-  - ✅ Call `qa` **(обязательно!)**
+1. **Read** `tasks/bugs/BUG-XXX.md` (READY_FOR_WORK state with full planning)
 
----
+2. **Parse sections**:
+   - Reproduction (Steps, Expected, Actual)
+   - Context to Load (files/docs to study)
+   - Analysis (Root Cause, Impact)
+   - Fix Plan (Approach, Edge Cases)
+   - Test Plan
+   - General Instructions (DO/DON'T)
+   - DoD
+   - Regression Prevention
 
-### 4. После фикса (автоматически)
-
-**Выполни автоматически без запроса пользователя:**
-
-#### 4.1. Update bugs-registry.md
+3. **Show brief summary**:
 
 ```markdown
-| #3 | 2025-11-11 | search-query-builder | Skills penalty when excluded | RESOLVED | 🔴 P0 | [a3f2b1c](commit-url) |
+📋 Bug BUG-XXX loaded: [Title]
+
+**Component**: [component]
+**Priority**: [priority]
+**Status**: READY_FOR_WORK ✓
+
+📂 Context to Load ([N files/docs]):
+[list files from Context to Load section]
+
+🔍 Root Cause:
+[brief from Analysis section]
+
+🛠️ Fix Approach:
+[brief from Fix Plan section]
+
+Ready to fix. Proceeding to load context files...
 ```
 
-- Изменить статус на `RESOLVED`
-- Если был git commit, добавить ссылку в колонку "Commit"
+4. **Load files** from Context to Load section:
+   - Use Read tool for each file/doc
+   - Load relevant line ranges if specified
+   - Load .claude/ docs if referenced
 
-#### 4.2. Run quality checks
+---
 
-See: [routers/test/workflows.md](../routers/test/workflows.md) → "Mandatory Code Quality Checks"
+### Phase 3.5: Quick Analysis (Show Understanding)
+
+**Before implementing, show analysis**:
+
+```markdown
+📊 Quick Analysis:
+
+**Root Cause**: [1-2 sentences from Analysis section]
+
+**Fix Approach**: [1-2 sentences from Fix Plan]
+
+**Files to Change**:
+- [file1.ts] - [what will be changed]
+- [file2.ts] - [what will be changed]
+
+**Tests to Add/Update**:
+- [test name] - [purpose]
+
+Proceeding with implementation...
+```
+
+**Purpose**: Demonstrate understanding before action, allow user to stop if analysis is wrong.
+
+---
+
+### Phase 4: Implement Fix
+
+**Follow Fix Plan strictly**:
+1. Apply Fix Approach from task file
+2. Follow General Instructions (DO/DON'T)
+3. Handle Edge Cases identified in plan
+4. Add/update tests per Test Plan
+
+**Track Progress**: Mark todos as completed using TodoWrite as you finish steps.
+
+**DO NOT**:
+- Deviate from Fix Plan without justification
+- Skip steps outlined in Implementation section
+- Ignore Edge Cases
+- Skip tests
+
+**If Cypher queries involved**:
+- Call `cypher-expert` agent if query changes needed
+- Provide cypher-expert with Fix Approach context
+
+---
+
+### Phase 5: Quality Gates (MANDATORY)
+
+**5.0 Pre-flight Checks**
+
+Before running tests, verify test infrastructure:
 
 ```bash
-npm run lint
-npx tsc --noEmit
-npm run test:integration  # если применимо к изменённым компонентам
+# Check Neo4j test DB is running (required for integration tests)
+docker ps | grep neo4j-test
 ```
 
-#### 4.3. Report results
-
+If neo4j-test not running:
 ```
-✅ Bug #3 fixed and marked as RESOLVED!
+⚠️ Warning: neo4j-test container not running.
 
-📝 Changes:
-- Updated coalesce logic in search-query-builder.ts:142
-- Added test case for empty skillNames array
-- All integration tests pass (12/12)
+Integration tests will fail. Start it with:
+  docker compose up -d neo4j-test
 
-✅ Quality checks:
-- npm run lint: PASSED ✓
-- tsc --noEmit: PASSED ✓
-- integration tests: PASSED ✓ (12/12)
-
-✅ Updated bugs-registry.md:
-- Status: OPEN → RESOLVED
-- Linked commit: a3f2b1c
-
-You can run /sync-memory at end of session to archive this bug.
+Continue anyway? (y/n)
 ```
 
 ---
 
-## Example Session
+**5.1 Call reviewer Agent**
+
+```
+Automatically call reviewer agent:
+- Provide: changed files, Fix Plan context
+- Check: bugs, edge cases, DRY violations, type compliance
+- Fix: critical issues before proceeding
+```
+
+---
+
+**5.2 Call qa Agent**
+
+```
+Automatically call qa agent:
+- Provide: test changes, DoD from task file
+- Check: test coverage, quality, business logic validation
+- Verify: DoD criteria met
+```
+
+---
+
+**5.3 Run Quality Checks**
+
+```bash
+# MANDATORY - always run
+npm run lint
+npx tsc --noEmit
+
+# If logic changed
+npm run test:unit
+
+# If Cypher/schema changed (check task file Impact section)
+npm run test:integration
+```
+
+**Fix ALL errors** before proceeding.
+
+**Note**: Warnings from pre-existing code are acceptable, but NO NEW errors.
+
+---
+
+### Phase 6: Update Task File
+
+**Add Implementation Notes** to `tasks/bugs/BUG-XXX.md`:
+
+```markdown
+---
+
+## Implementation Notes
+
+**Date**: YYYY-MM-DD
+**Implemented by**: Claude session [session-id]
+
+**Changes**:
+- [List specific changes made]
+- [Files modified with brief description]
+- [Tests added/updated]
+
+**Verification**:
+- reviewer agent: [status - passed/issues fixed]
+- qa agent: [status - passed]
+- Lint: PASSED ✓
+- TypeScript: PASSED ✓
+- Tests: [X/Y passed]
+
+**Commit**: [hash if committed, or "pending commit"]
+
+**DoD Status**:
+[Copy DoD checklist from task file with checkmarks updated]
+```
+
+---
+
+### Phase 7: Update Registry
+
+**Edit** `memory-bank/knowledge/bugs-registry.md`:
+- Find row with BUG-XXX
+- Change status: READY_FOR_WORK → RESOLVED
+
+```markdown
+| BUG-XXX | 2025-11-15 | RESOLVED | [Title] | [Priority] | [Component] | [tasks/bugs/BUG-XXX.md](../../tasks/bugs/BUG-XXX.md) | [session] |
+```
+
+**Optional**: Add commit hash column if committed.
+
+---
+
+### Phase 8: Report Results
+
+```markdown
+✅ Bug BUG-XXX fixed and marked as RESOLVED!
+
+📝 **Changes**:
+- [Summary of changes]
+- [Files modified]
+- [Tests added]
+
+✅ **Quality checks**:
+- reviewer agent: PASSED ✓ ([N issues fixed])
+- qa agent: PASSED ✓
+- npm run lint: PASSED ✓
+- npx tsc --noEmit: PASSED ✓
+- Integration tests: PASSED ✓ ([X/Y])
+
+✅ **Updated**:
+- tasks/bugs/BUG-XXX.md (added Implementation Notes)
+- memory-bank/knowledge/bugs-registry.md (READY_FOR_WORK → RESOLVED)
+
+**Regression Prevention**:
+[Summary from Regression Prevention section]
+
+**Next steps**:
+- Optional: Create git commit
+- Optional: Run /sync-memory to archive resolved bug
+
+---
+
+Would you like to:
+1. Create git commit? `git add . && git commit -m "fix: Bug BUG-XXX - [title]"`
+2. Run /sync-memory to update Memory Bank?
+```
+
+---
+
+## Important Notes
+
+1. **Status check MANDATORY**: MUST be READY_FOR_WORK to proceed
+2. **Follow Fix Plan**: Don't improvise, use planning from /plan-bug
+3. **Load context**: Read ALL files from Context to Load section
+4. **Quality gates**: reviewer + qa are NOT optional
+5. **Tests**: Run integration tests if Cypher/schema changed
+6. **Update both files**: task file (Implementation Notes) + registry (status)
+
+---
+
+## Example Execution
 
 ```
 User: /fix-bug
 
-Assistant: Reading bugs-registry.md...
+Phase 1: Interactive Selection
+→ AskUserQuestion shows list of bugs
+→ User selects: "#BUG-001 | search-query-builder | P0 🔴"
 
-[Uses AskUserQuestion tool with interactive bug selection - creates tabs in UI]
+Phase 2: Validate Status
+→ Read registry, check status
+→ Status = READY_FOR_WORK ✓
 
-User selects: "#3 | Skills penalty | P0 🔴"
+Phase 3: Load Context
+→ Read tasks/bugs/BUG-001.md
+→ Parse sections: Context to Load, Fix Plan, Instructions, DoD
+→ Show summary:
+  "📋 Bug BUG-001: Skills penalty when excluded
+   Root Cause: Cypher uses excludedSkills.length
+   Fix: Change to $skills.length
+   Context: 4 files to load..."
+→ Load files: search-query-builder.ts, AC2 test, cypher-rules.md, decisions.md
 
-Assistant: Loading context for bug #3...
+Phase 4: Implement Fix
+→ Change penalty calculation (use $skills.length)
+→ Update AC2 test expected value (0.99 → 1.0)
+→ Add new test case AC2b (empty skills array)
+→ Follow DO/DON'T instructions
 
-📋 Bug Details:
-- ID: #3
-- Component: search-query-builder.ts
-- Description: Skills penalty calculation incorrect when skills excluded from filters
-- Priority: P0 🔴
-- AC: When skillNames is empty array, penalty should be 0, not null
+Phase 5: Quality Gates
+→ Call reviewer agent
+  - Found: minor code style issue
+  - Fixed: applied suggestion
+→ Call qa agent
+  - Verified: test quality good, DoD met
+→ Run lint + tsc + integration tests
+  - All passed ✓
 
-📂 Loaded context:
-- src/core/search-query-builder.ts (current implementation)
-- tests/integration/search-manager/skills-excluded.integration.ts
-- memory-bank/decisions/creative-20250110-skills-scoring.md
+Phase 6: Update Task File
+→ Edit BUG-001.md (add Implementation Notes section)
 
-🔍 Analysis:
-The bug is in the CASE WHEN clause - it does not handle empty array case correctly.
+Phase 7: Update Registry
+→ Edit bugs-registry.md (READY_FOR_WORK → RESOLVED)
 
-Ready to fix. Should I proceed or do you want to give specific instructions?
-
-User: proceed
-
-Assistant: [fixes the bug following standard workflow with reviewer + qa]
-
-✅ Bug #3 fixed and marked as RESOLVED\!
-
-📝 Changes:
-- Updated coalesce logic in search-query-builder.ts:142
-- Added test case for empty skillNames array
-
-✅ Quality checks:
-- npm run lint: PASSED ✓
-- tsc --noEmit: PASSED ✓
-- integration tests: PASSED ✓ (12/12)
-
-✅ Updated bugs-registry.md:
-- Status: OPEN → RESOLVED
-- Linked commit: a3f2b1c
-
-You can run /sync-memory at end of session to archive this bug.
+Phase 8: Report Results
+→ "✅ Bug BUG-001 fixed!
+   Changes: penalty calculation fixed, 2 tests updated/added
+   Quality: all checks passed
+   Regression: AC2b test prevents future breakage"
 ```
 
 ---
 
-## Notes
+## Error Handling
 
-- **Интерактивный выбор**: ОБЯЗАТЕЛЬНО используй `AskUserQuestion` tool - создает удобные табы в UI для каждого бага
-- **Фильтр**: Показываются только OPEN баги (status \!= RESOLVED)
-- **Контекст**: Загружай на свое усмотрение - affected files, tests, git history, Memory Bank
-- **Workflow**: Обязательные вызовы reviewer + qa после фикса
-- **Quality gates**: Автоматически запускаются lint + tsc + integration tests
-- **Registry update**: Автоматически меняется статус на RESOLVED + добавляется commit link
+**If status = PENDING**:
+```
+❌ Cannot fix BUG-XXX: status is PENDING.
+
+The bug needs planning first. Run:
+  /plan-bug BUG-XXX
+
+This will:
+- Analyze Root Cause and Impact
+- Prepare detailed Fix Plan
+- Define Edge Cases and Test Plan
+- Create DoD and Regression Prevention strategy
+
+After planning completes (status → READY_FOR_WORK), run:
+  /fix-bug BUG-XXX
+```
+
+**If status = RESOLVED**:
+```
+ℹ️ Bug BUG-XXX is already RESOLVED.
+
+Check tasks/bugs/BUG-XXX.md for implementation details.
+```
+
+**If task file missing sections**:
+```
+⚠️ Warning: BUG-XXX.md is missing planning sections.
+
+Expected sections:
+- Context to Load
+- Fix Plan
+- General Instructions
+- DoD
+
+This suggests the bug wasn't planned with /plan-bug.
+
+Options:
+1. Run /plan-bug BUG-XXX to add missing sections
+2. Proceed with minimal context (NOT recommended)
+
+What would you like to do?
+```
+
+---
+
+## Next Steps After Fix
+
+- Optional: Commit changes using standard git workflow
+- Optional: Run /sync-memory at end of session to archive resolved bug
