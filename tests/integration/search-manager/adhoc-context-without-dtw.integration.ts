@@ -2,9 +2,9 @@
  * Adhoc Context Search Integration Tests (AC1-AC12)
  *
  * Tests searchAdhoc() with custom referenceContext (Mode 1)
- * Uses Batch A test data (U1-U9) - trajectories < 3 contexts
- * Uses Batch C test data (U14-U16) - educationLevel tests
- * Uses Batch D test data (U17-U18) - salary tests
+ * Uses Batch A test data (U1-U9) from globalSetup
+ * Uses Batch C test data (U14-U16) from globalSetup - educationLevel tests
+ * Uses Batch D test data (U17-U18) from globalSetup - salary tests
  *
  * Test focus:
  * - Strict matching по полям (AC1)
@@ -15,10 +15,21 @@
  * - salary field return (AC10-AC12)
  */
 
-import { describe, it, expect } from "vitest";
-import { driver } from "./setup-read-only.js";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { createDriver } from "../../../src/neo4j.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
+import type { Driver } from "neo4j-driver";
+
+let driver: Driver;
+
+beforeAll(() => {
+  driver = createDriver(); // Uses U1-U18 from globalSetup
+});
+
+afterAll(async () => {
+  await driver.close();
+});
 
 describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC1: Strict all fields - baseline matching", async () => {

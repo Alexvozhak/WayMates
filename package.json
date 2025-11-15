@@ -14,7 +14,7 @@
     "test:unit": "vitest --run --project unit",
     "test:integration": "npm run test:integration:dev && npm run docker:test:down",
     "test:integration:dev": "npm run test:setup && npm run test:integration:run",
-    "test:integration:run": "vitest --run --project gds-projection-tests --project gds-similarity-tests --project reason-tests",
+    "test:integration:run": "vitest --run --project integration-search-read-only --project integration-search-goals --project integration-story-manager",
     "test:integration:gds": "npm run test:setup && vitest --run --project gds-projection-tests --project gds-similarity-tests && npm run docker:test:down",
     "test:integration:reason": "npm run test:setup && vitest --run --project reason-tests && npm run docker:test:down",
     "test:functional": "npm run test:setup && npm run test:functional:run && npm run docker:test:down",

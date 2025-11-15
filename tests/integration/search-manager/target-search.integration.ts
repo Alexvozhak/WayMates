@@ -2,7 +2,7 @@
  * Target Search Integration Tests (TG1-TG7)
  *
  * Tests searchByTarget() with FieldFilter modes (desired/undesired)
- * Uses Batch A+B test data (U1-U13) - diverse positions/domains/skills
+ * Uses Batch A+B test data (U1-U18) from globalSetup
  *
  * Test focus:
  * - TG1: Desired position (include specific position)
@@ -14,13 +14,24 @@
  * - TG7: Combined filters (position + domains + skills)
  */
 
-import { describe, it, expect } from "vitest";
-import { driver } from "./setup-read-only.js";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { createDriver } from "../../../src/neo4j.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
 import {
   validateAllPaths,
 } from "../../helpers/path-validator.js";
+import type { Driver } from "neo4j-driver";
+
+let driver: Driver;
+
+beforeAll(() => {
+  driver = createDriver(); // Uses U1-U18 from globalSetup
+});
+
+afterAll(async () => {
+  await driver.close();
+});
 
 describe("Target Search (TG1-TG7)", () => {
   it("TG1: Desired position - finds only candidates with specified position", async () => {

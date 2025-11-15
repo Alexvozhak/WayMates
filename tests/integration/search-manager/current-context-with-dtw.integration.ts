@@ -3,7 +3,7 @@
  *
  * Tests searchByUserId() when user has trajectory (≥ 3 contexts)
  * DTW trajectory similarity metrics enabled
- * Uses Batch B test data (U10-U13) - trajectories ≥ 3 contexts
+ * Uses Batch B test data (U10-U13) from globalSetup
  *
  * Test focus:
  * - High similarity detection (DT1)
@@ -12,10 +12,21 @@
  * - Multiple candidates ranking by dtwTotal (DT4)
  */
 
-import { describe, it, expect } from "vitest";
-import { driver } from "./setup-read-only.js";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { createDriver } from "../../../src/neo4j.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
+import type { Driver } from "neo4j-driver";
+
+let driver: Driver;
+
+beforeAll(() => {
+  driver = createDriver(); // Uses U1-U18 from globalSetup
+});
+
+afterAll(async () => {
+  await driver.close();
+});
 
 describe("User Context Search WITH DTW (DT1-DT5)", () => {
   it("DT1: High similarity - U10 (Backend Node.js) finds U11 (Backend Python) with high DTW scores", async () => {

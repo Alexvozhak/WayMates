@@ -7,6 +7,11 @@ export default defineConfig(() => {
       target: "node18",
     },
     test: {
+      // Global setup loads base data (U1-U18) ONCE before all projects.
+      // Read-only projects use this data without setupFiles.
+      // Write projects (goals, story-manager) have isolated setupFiles.
+      globalSetup: './vitest.globalSetup.ts',
+
       testTimeout: 30000,
       hookTimeout: 30000,
       environment: "node",
@@ -44,11 +49,11 @@ export default defineConfig(() => {
             pool: "threads",
             poolOptions: {
               threads: {
-                isolate: false,      // Shared state (U1-U13 loaded once)
+                isolate: false,      // Shared state (U1-U18 from globalSetup)
                 singleThread: false, // Parallel execution ✅
               },
             },
-            setupFiles: ["./tests/integration/search-manager/setup-read-only.ts"],
+            // No setupFiles - uses data from globalSetup
             testTimeout: 30000,
           },
         },

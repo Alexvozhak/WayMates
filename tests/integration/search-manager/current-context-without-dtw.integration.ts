@@ -3,17 +3,28 @@
  *
  * Tests searchByUserId() when user has NO trajectory (single context)
  * Automatic fallback to searchByContext (Mode 1)
- * Uses Batch A test data (U1-U9) - trajectories < 3 contexts
+ * Uses Batch A test data (U1-U9) from globalSetup
  *
  * Test focus:
  * - No trajectory fallback (UN1)
  * - Exclude geo via userId (UN4)
  */
 
-import { describe, it, expect } from "vitest";
-import { driver } from "./setup-read-only.js";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { createDriver } from "../../../src/neo4j.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
+import type { Driver } from "neo4j-driver";
+
+let driver: Driver;
+
+beforeAll(() => {
+  driver = createDriver(); // Uses U1-U18 from globalSetup
+});
+
+afterAll(async () => {
+  await driver.close();
+});
 
 describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
   it("UN1: No trajectory fallback - single context user falls back to searchByContext", async () => {

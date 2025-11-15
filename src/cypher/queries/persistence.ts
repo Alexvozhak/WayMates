@@ -80,7 +80,7 @@ MERGE (ci)-[:IN_COUNTRY]->(co)
 MERGE (context)-[:IN_CITY]->(ci)
 MERGE (context)-[:IN_COUNTRY]->(co)
 
-WITH context, citizenships
+WITH context, citizenships, languages
 OPTIONAL MATCH (prev:Context {contextId: context.previousContextId})
 FOREACH (_ IN CASE WHEN prev IS NOT NULL THEN [1] ELSE [] END |
   MERGE (prev)-[:NEXT_CONTEXT]->(context)

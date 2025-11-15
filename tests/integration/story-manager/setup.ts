@@ -6,6 +6,10 @@
  *
  * NOTE: Each test loads its own data (U1-U13) to avoid data race.
  * Tests in this project use singleThread + isolate to ensure sequential execution.
+ *
+ * IMPORTANT: This project MUST run LAST in test sequence (after read-only tests)
+ * because beforeEach cleanup deletes ALL nodes (including U1-U18 from globalSetup).
+ * Order is enforced by project name in vitest.config.ts projects array.
  */
 
 import { afterAll, beforeAll, beforeEach } from 'vitest';

@@ -10,6 +10,8 @@
 
 WayMates uses **Vitest Projects** to organize tests by type and isolation requirements.
 
+> **💡 Shared Test Data Pattern**: If multiple projects need same base data (e.g., U1-U18), use `vitest.globalSetup.ts` to load once. See `tasks/bugs/BUG-001-race-condition-setup.md` for complete pattern implementation.
+
 ### Projects Configuration
 
 | Project | Include | Parallel | Isolate | singleThread | Timeout | setupFiles |
