@@ -27,7 +27,6 @@
 | FEAT-015 | 2025-11-14 | PENDING | Refactor import_story: tempId mapping + Neo4j UUID generation | 🔴 P0 | Core Manager, Schema | [tasks/features/FEAT-015-tempid-mapping.md](../../tasks/features/FEAT-015-tempid-mapping.md) | session-2025-11-14 |
 | FEAT-016 | 2025-11-14 | PENDING | Add CRUD endpoints for Context/Trail management | 🔴 P0 | Core Manager, Core MCP | [tasks/features/FEAT-016-crud-endpoints.md](../../tasks/features/FEAT-016-crud-endpoints.md) | session-2025-11-14 |
 | FEAT-017 | 2025-11-14 | PENDING | Core-Facade API Contract (DictionariesManager + FEAT-015,016) | 🔴 P0 | Core API, Facade MCP | [tasks/features/FEAT-017-api-contract.md](../../tasks/features/FEAT-017-api-contract.md) | session-2025-11-14 |
-| FEAT-018 | 2025-11-15 | READY_FOR_WORK | Add languages B2+ support to Context | 🟡 P1 | Schema + Search + Persistence | [tasks/features/FEAT-018.md](../../tasks/features/FEAT-018.md) | session-2025-11-15 |
 
 ---
 
@@ -39,6 +38,7 @@
 | FEAT-002 | 2025-11-12 | DONE | Add education level enum to Context | 🔴 P0 | Context schema | 2025-11-15 | ec4073a | [FEAT-002-education-level.md](../../tasks/features/FEAT-002-education-level.md) |
 | FEAT-004 | 2025-11-12 | DONE | Improve integration test quality (MEDIUM priority enhancements) | 🟡 P1 | Integration tests | 2025-11-12 | [commit] |
 | FEAT-009 | 2025-11-13 | DONE | Document test expectations (QA report follow-up) | 🟡 P1 | Integration tests | 2025-11-13 | [commit] |
+| FEAT-018 | 2025-11-15 | DONE | Add languages B2+ support to Context | 🟡 P1 | Schema + Search + Persistence | 2025-11-15 | 7effe23 | [FEAT-018.md](../../tasks/features/FEAT-018.md) |
 
 ---
 
