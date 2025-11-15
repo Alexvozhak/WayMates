@@ -14,6 +14,7 @@
 
 | ID | Date | Status | Title | Priority | Component | File | Session |
 |----|------|--------|-------|----------|-----------|------|---------|
+| FEAT-000 | 2025-11-15 | PENDING | Подготовка структуры тестов для Facade | 🔴 P0 | Test infrastructure | [tasks/features/FEAT-000-test-structure.md](../../tasks/features/FEAT-000-test-structure.md) | session-2025-11-15 |
 | FEAT-003 | 2025-11-12 | PENDING | Import Kaggle synthetic dataset (297 candidates) | 🔴 P0 | Admin CLI | [tasks/features/FEAT-003-kaggle-import.md](../../tasks/features/FEAT-003-kaggle-import.md) | session-2025-11-12 |
 | FEAT-005 | 2025-11-12 | PENDING | Facade NLP Gateway (simple tools + infrastructure) | 🔴 P0 | Facade MCP | [tasks/features/FEAT-005-facade-gateway.md](../../tasks/features/FEAT-005-facade-gateway.md) | session-2025-11-12 |
 | FEAT-006 | 2025-11-12 | PENDING | LangGraph Data Ingestion Workflow | 🔴 P0 | Facade workflows | [tasks/features/FEAT-006-langgraph-workflow.md](../../tasks/features/FEAT-006-langgraph-workflow.md) | session-2025-11-12 |
@@ -27,6 +28,14 @@
 | FEAT-015 | 2025-11-14 | PENDING | Refactor import_story: tempId mapping + Neo4j UUID generation | 🔴 P0 | Core Manager, Schema | [tasks/features/FEAT-015-tempid-mapping.md](../../tasks/features/FEAT-015-tempid-mapping.md) | session-2025-11-14 |
 | FEAT-016 | 2025-11-14 | PENDING | Add CRUD endpoints for Context/Trail management | 🔴 P0 | Core Manager, Core MCP | [tasks/features/FEAT-016-crud-endpoints.md](../../tasks/features/FEAT-016-crud-endpoints.md) | session-2025-11-14 |
 | FEAT-017 | 2025-11-14 | PENDING | Core-Facade API Contract (DictionariesManager + FEAT-015,016) | 🔴 P0 | Core API, Facade MCP | [tasks/features/FEAT-017-api-contract.md](../../tasks/features/FEAT-017-api-contract.md) | session-2025-11-14 |
+| FEAT-019 | 2025-11-15 | PENDING | Facade Architecture Refactoring (orchestrator → separate tools) | 🔴 P0 | Facade MCP | [tasks/features/FEAT-019-facade-refactoring.md](../../tasks/features/FEAT-019-facade-refactoring.md) | session-2025-11-15 |
+| FEAT-020 | 2025-11-15 | PENDING | Session Management (Redis validation, auth middleware) | 🔴 P0 | Facade Auth | [tasks/features/FEAT-020-session-management.md](../../tasks/features/FEAT-020-session-management.md) | session-2025-11-15 |
+| FEAT-021 | 2025-11-15 | PENDING | MCP Tool: get_story | 🔴 P0 | Facade MCP | [tasks/features/FEAT-021-get-story-tool.md](../../tasks/features/FEAT-021-get-story-tool.md) | session-2025-11-15 |
+| FEAT-022 | 2025-11-15 | PENDING | MCP Tool: search_careers | 🔴 P0 | Facade MCP | [tasks/features/FEAT-022-search-careers-tool.md](../../tasks/features/FEAT-022-search-careers-tool.md) | session-2025-11-15 |
+| FEAT-023 | 2025-11-15 | PENDING | MCP Tool: set_goal | 🔴 P0 | Facade MCP | [tasks/features/FEAT-023-set-goal-tool.md](../../tasks/features/FEAT-023-set-goal-tool.md) | session-2025-11-15 |
+| FEAT-024 | 2025-11-15 | PENDING | MCP Tool: update_context | 🟡 P1 | Facade MCP | [tasks/features/FEAT-024-update-context-tool.md](../../tasks/features/FEAT-024-update-context-tool.md) | session-2025-11-15 |
+| FEAT-025 | 2025-11-15 | PENDING | DictionariesManager Core (get/add/find) | 🔴 P0 | Core Manager | [tasks/features/FEAT-025-dictionaries-core.md](../../tasks/features/FEAT-025-dictionaries-core.md) | session-2025-11-15 |
+| FEAT-026 | 2025-11-15 | PENDING | DictionariesManager Moderation (admin endpoints) | 🟡 P1 | Core Manager | [tasks/features/FEAT-026-dictionaries-moderation.md](../../tasks/features/FEAT-026-dictionaries-moderation.md) | session-2025-11-15 |
 
 ---
 
