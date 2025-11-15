@@ -233,6 +233,36 @@ it('should not fail when similarity cutoff excludes all results', async () => {
 
 ---
 
+#### 🔍 Edge Cases Detection Pattern (Auto-Ask)
+
+**When reviewing tests for new fields**, automatically ask:
+
+1. **Empty array vs null**: Does field accept `[]`, `null`, or both? Are they equivalent?
+   - Example: `languages: []` vs `languages: null` - test both if semantics differ
+
+2. **Invalid enum values**: ISO codes, enum validation
+   - Example: `["english", "EN"]` vs `["en"]` - does Zod catch this?
+
+3. **Duplicate array elements**: `[x, x]` behavior
+   - Example: `languages: ["en", "en"]` - deduplicate, reject, or allow?
+
+**Template question for QA agent**:
+```
+Missing edge cases for {field}:
+- Empty array [] vs null - are they equivalent?
+- Invalid values (e.g., ISO code validation)
+- Duplicate elements in array
+```
+
+**Real example (FEAT-018 languages)**:
+- ❌ Missing: `languages: []` test (empty array behavior)
+- ❌ Missing: Invalid ISO codes `["english", "EN"]`
+- ❌ Missing: Duplicates `["en", "en"]`
+- ✅ Present: `languages: null` (backward compatibility)
+```
+
+---
+
 ### 5. Schema/Cypher Changes Risk 🎭
 
 **Critical for WayMates**:

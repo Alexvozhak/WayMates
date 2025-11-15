@@ -51,6 +51,46 @@ RETURN u.name  // ❌ u не в WITH, undefined!
 
 **Почему**: Scope rules Neo4j - переменные за пределами WITH теряются.
 
+### 2.1 WITH Clause Variable Propagation
+
+**Правило**: Every variable used AFTER a WITH must be declared IN that WITH. В цепочке WITH переменные нужно явно передавать.
+
+**✅ Правильно**:
+```cypher
+WITH a, b, c
+MATCH (x)
+WITH a, b, c, x  // ✅ Re-declare all needed variables
+MATCH (y)
+WITH a, b, c, x, y  // ✅ Chain continues
+RETURN a, b, c, x, y
+```
+
+**❌ Неправильно (частая ошибка)**:
+```cypher
+WITH a, b, c
+MATCH (x)
+WITH a, b, x  // ❌ Потеряли c!
+MATCH (y)
+WITH a, b, c, x, y  // ❌ c уже undefined на предыдущем шаге
+RETURN a, b, c  // ❌ c = null
+```
+
+**Проверка**: Trace variable through entire query - if lost in chain → bug
+
+**Пример реального бага (FEAT-018)**:
+```cypher
+// Line 58: Declare languages
+WITH context, user, $ctx.languages AS languages
+
+// Line 66: Lost languages here!
+WITH context, work_domains, skills  // ❌ languages dropped
+
+// Line 91: Try to use languages
+WITH context, citizenships, languages  // ❌ languages = undefined!
+```
+
+**Как избежать**: В каждом WITH явно перечисляй ВСЕ переменные, которые нужны дальше.
+
 ---
 
 ## 3. Null Safety
