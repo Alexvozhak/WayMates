@@ -19,7 +19,7 @@ Production bugs and design flaws discovered in the codebase.
 
 | ID | Date | Status | Title | Priority | Component | File | Session |
 |----|------|--------|-------|----------|-----------|------|---------|
-| BUG-002 | 2025-11-15 | PENDING | 22 integration tests failing after BUG-001 fix (search returns 0 results) | 🔴 P0 | search-query-builder | [tasks/bugs/BUG-002-integration-tests-failing.md](../../tasks/bugs/BUG-002-integration-tests-failing.md) | session-2025-11-15 |
+| BUG-002 | 2025-11-15 | READY_FOR_WORK | 22 integration tests failing after BUG-001 fix (search returns 0 results) | 🔴 P0 | search-query-builder | [tasks/bugs/BUG-002-integration-tests-failing.md](../../tasks/bugs/BUG-002-integration-tests-failing.md) | session-2025-11-15 |
 
 ---
 
