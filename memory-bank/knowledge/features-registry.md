@@ -44,11 +44,11 @@
 - Created `userContextSchemaBase` export for `.omit()`/`.partial()` operations (refined schema breaks these)
 - Updated persistence query to SET salary fields (null-safe)
 - Updated map projection to return salary fields in search results (null values for backward compatibility)
-- Created migration script `002_add_salary_fields.cypher` for existing Context nodes
 - Added test data U17 (exact salary), U18 (range salary) + AC10-AC12 tests
 - Fixed setup-read-only.ts: clear DB if userCount !== 18 (race condition fix)
 - All integration tests passing (46/47, 1 pre-existing TEMPORAL bug)
 - **Scope decision**: Salary fields are DISPLAY ONLY (no filtering/scoring) - LLM in Facade will analyze
+- **Note**: No migration script needed (test DB recreated from scratch, no production data yet)
 
 ---
 
