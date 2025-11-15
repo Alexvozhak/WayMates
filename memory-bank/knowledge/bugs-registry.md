@@ -13,6 +13,7 @@ Production bugs and design flaws discovered in the codebase.
 
 | ID | Date | Component | Issue | Status | Priority | Resolved |
 |----|------|-----------|-------|--------|----------|----------|
+| #6 | 2025-11-15 | Test infrastructure | Race condition в setup-read-only.ts при параллельных тестах | Open | 🟡 P1 | - |
 | #5 | 2025-11-13 | trajectory-similarity.service | durationCapMonths parameter has flawed business logic | RESOLVED | 🟡 P1 | 2025-11-13 |
 | #4 | 2025-11-12 | cypher/queries/search | searchAdhoc returns 0 results - currentContextId filter breaks historical search | RESOLVED | 🔴 P0 | 2025-11-12 |
 | #3 | 2025-11-12 | cypher/queries/search | DTW metrics values differ after Phase 3 migration | RESOLVED | 🟡 P1 | 2025-11-12 |
@@ -21,6 +22,123 @@ Production bugs and design flaws discovered in the codebase.
 ---
 
 ## Bug Details
+
+### #6: Race Condition в setup-read-only.ts при параллельных тестах
+
+**Discovered**: 2025-11-15 (Feature #1 implementation - salary fields)
+
+**Component**:
+- `tests/integration/search-manager/setup-read-only.ts:38-75`
+- `vitest.config.ts` - concurrent projects configuration
+
+**How to Reproduce**:
+1. Run `integration-search-goals` project (loads U1-U13 to shared test DB)
+2. Run `integration-search-read-only` project in parallel (expects U1-U18)
+3. `setup-read-only.ts` checks `userCount=13 > 0` → skips import
+4. Tests fail: U14-U18 missing (AC8-AC11 fail)
+
+**Expected**:
+Каждый test project должен загружать свои данные изолированно или использовать глобальный setup который импортирует данные **один раз** для всех параллельных тестов перед их запуском.
+
+**Actual**:
+- Оба проекта используют одну БД (`bolt://localhost:7689`)
+- Проверка `userCount > 0` не проверяет **какие именно** users загружены
+- Race condition: первый проект загружает свои данные, второй думает что "уже загружено" и пропускает импорт
+- Текущий "фикс" `userCount !== 18` - magic number (хрупкий код)
+
+**Root Cause**:
+```typescript
+// setup-read-only.ts:49-75
+if (userCount !== 18) {  // ❌ MAGIC NUMBER - breaks when U19 added
+  // Clear and reload
+}
+```
+
+Проблемы:
+1. **Shared DB**: Оба проекта используют одну БД без изоляции
+2. **Weak check**: Проверка count вместо проверки конкретных user IDs
+3. **Magic number**: Hardcoded `18` - добавление U19 сломает код
+4. **No global setup**: Нет единого setup для загрузки данных перед всеми тестами
+
+**Impact**:
+⚠️ **Хрупкий код**: Добавление U19 потребует изменения magic number в setup-read-only.ts
+⚠️ **Race condition**: Нестабильные результаты при параллельном запуске (зависит от порядка)
+⚠️ **Tech debt**: Неочевидно почему `18` без комментариев (maintainability)
+⚠️ **Coupling**: setup-read-only.ts знает про данные других тест-проектов
+
+**Fix Ideas**:
+
+**Option 1: Global Setup (Best)**
+```typescript
+// vitest.config.ts
+export default defineConfig({
+  test: {
+    globalSetup: './tests/setup/global-setup.ts',
+    concurrent: true,  // Projects can run in parallel AFTER global setup
+  }
+});
+
+// tests/setup/global-setup.ts
+export async function setup() {
+  // Load U1-U18 ONCE before all projects
+  await clearDB();
+  await loadTestData(['U1', ..., 'U18']);
+}
+```
+- ✅ Pros: Данные загружаются один раз, изоляция проектов
+- ✅ Pros: Нет magic numbers, нет race conditions
+- ❌ Cons: Требует Vitest >= 0.30 (globalSetup)
+
+**Option 2: Check Specific User IDs**
+```typescript
+// setup-read-only.ts
+const EXPECTED_USERS = ['U1', 'U2', ..., 'U18'];
+const expectedUserIds = EXPECTED_USERS.map(key => getUserId(key));
+
+const result = await session.run(
+  'MATCH (u:User) WHERE u.userId IN $userIds RETURN count(u) AS count',
+  { userIds: expectedUserIds }
+);
+
+if (count !== EXPECTED_USERS.length) {
+  clearAndReload(EXPECTED_USERS);
+}
+```
+- ✅ Pros: Проверяет конкретные users, не magic number
+- ✅ Pros: Минимальные изменения в код
+- ⚠️ Cons: Все еще race condition (два проекта могут одновременно clear)
+
+**Option 3: Sequential Projects**
+```typescript
+// vitest.config.ts
+export default defineConfig({
+  test: {
+    concurrent: false,  // Projects run one by one
+  }
+});
+```
+- ✅ Pros: Простейшее решение, нет race conditions
+- ❌ Cons: Медленнее (sequential execution)
+
+**Option 4: Separate Databases**
+- `integration-search-read-only` → `neo4j-test-readonly` (port 7689)
+- `integration-search-goals` → `neo4j-test-goals` (port 7690)
+- ✅ Pros: Полная изоляция
+- ❌ Cons: Требует дополнительный Docker контейнер
+
+**Acceptance Criteria**:
+- [ ] Bug reproduced with test case (parallel run показывает race condition)
+- [ ] Fix implemented (один из вариантов выше)
+- [ ] All tests pass (46/47 baseline сохранен)
+
+**Decision**: PENDING (выбрать Option 1, 2, 3 или 4)
+
+**References**:
+- Related: Feature #1 implementation (commit [pending])
+- File: `tests/integration/search-manager/setup-read-only.ts:49-75`
+- Config: `vitest.config.ts:16` (concurrent: false setting)
+
+---
 
 ### #5: durationCapMonths Parameter Has Flawed Business Logic
 

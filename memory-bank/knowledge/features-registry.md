@@ -36,7 +36,7 @@
 
 | # | Date | Component | Title | Completed | Commit |
 |---|------|-----------|-------|-----------|--------|
-| #1 | 2025-11-12 | Context schema | Add salary range (min/max) to Context | 2025-11-15 | [pending] |
+| #1 | 2025-11-12 | Context schema | Add salary range (min/max) to Context | 2025-11-15 | f0976a5 |
 | #2 | 2025-11-12 | Context schema | Add education level enum to Context | 2025-11-15 | ec4073a |
 
 **Implementation notes (#1)**:
