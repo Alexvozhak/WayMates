@@ -1,503 +1,378 @@
 ---
 description: "Реализовать фичу с проверкой статуса + использование task file (без planner)"
-allowed-tools: ["Read", "Write", "Edit", "Task", "AskUserQuestion", "Bash"]
+allowed-tools: ["Read", "Edit", "Write", "Task", "AskUserQuestion", "Bash", "TodoWrite"]
 argument-hint: "[optional: feature_id]"
 ---
 
-# 🚀 Implement Feature (Implementation)
+# 🚀 Implement Feature (Task-Based Execution)
 
 $ARGUMENTS
 
 ## Цель
 
-Реализовать фичу, используя Type Schema и Implementation Plan из task file (READY_FOR_WORK).
+Реализовать фичу из состояния READY_FOR_WORK в DONE, используя подготовленный план из task file.
 
-**Workflow**: Load task file → Load context → Implement per Type Schema → reviewer → qa → tests → Update registry
-
-**Key Principle**: Type Schema уже спроектирован в /plan-feature, реализуем СТРОГО по нему.
+**Key Principle**: Task file уже содержит Type Schema, Implementation Plan, Test Plan. Planner НЕ нужен.
 
 ---
 
 ## Workflow
 
-### Phase 1: Select Feature (Interactive)
+### Phase 1: Load Feature and Validate
 
 1. **Read** `memory-bank/knowledge/features-registry.md`
-2. **Parse** all features (filter by status if user wants)
-3. **Show interactive selection** using `AskUserQuestion`:
+2. **Find feature** by ID (from $ARGUMENTS or interactive selection)
+3. **Validate status**:
+   - If status = PENDING → "Feature not planned. Run /plan-feature first."
+   - If status = READY_FOR_WORK → continue ✓
+   - If status = IN_PROGRESS → "Feature already in progress. Continue or reset?"
+   - If status = DONE → "Feature completed. Check registry."
+
+4. **Update status** to IN_PROGRESS in registry
+5. **Read task file** `tasks/features/FEAT-XXX.md` (contains all planning artifacts)
+
+---
+
+### Phase 2: Load Context (Interactive Decisions)
+
+**Use ONE AskUserQuestion call** with strategic questions:
 
 ```typescript
 AskUserQuestion({
-  questions: [{
-    question: "Which feature do you want to implement?",
-    header: "Select feature",
-    multiSelect: false,
-    options: [
-      {
-        label: "#FEAT-001 | context-schema | P1 🟡",
-        description: "Add salary range to Context. Status: READY_FOR_WORK"
-      },
-      {
-        label: "#FEAT-002 | context-schema | P1 🟡",
-        description: "Education level property. Status: PENDING (needs /plan-feature first!)"
-      }
-    ]
-  }]
+  questions: [
+    {
+      question: "Загрузить Implementation Plan в TODO list?",
+      header: "TODO setup",
+      multiSelect: false,
+      options: [
+        { label: "Да, создать TODO из плана", description: "Шаги из Implementation Plan станут задачами" },
+        { label: "Нет, работать без TODO", description: "Прямая реализация без отслеживания" }
+      ]
+    },
+    {
+      question: "Какой режим review использовать?",
+      header: "Review mode",
+      multiSelect: false,
+      options: [
+        { label: "Full review", description: "reviewer + qa agents после каждого компонента" },
+        { label: "Final review", description: "reviewer + qa только в конце" },
+        { label: "Skip review", description: "Только lint + tsc (быстрая итерация)" }
+      ]
+    },
+    {
+      question: "Как обрабатывать test failures?",
+      header: "Test strategy",
+      multiSelect: false,
+      options: [
+        { label: "Fix immediately", description: "Исправить сломанные тесты сразу" },
+        { label: "Track and fix later", description: "Записать в TODO, продолжить" },
+        { label: "Skip tests", description: "Только lint + tsc (нет DB)" }
+      ]
+    }
+  ]
 })
 ```
 
-**Format для options**:
-- **label**: `#FEAT-XXX | component | Priority emoji` (max 50 chars)
-- **description**: Brief description + Status
+**Store user preferences** for the session.
 
 ---
 
-### Phase 2: Validate Status
+### Phase 3: Pre-Implementation Context Study
 
-**CRITICAL**: Check status in registry BEFORE loading task file.
+**Read "Context to Study"** from task file and load specified files:
 
-```
-If status = PENDING:
-  → Show error message:
-    "❌ Feature FEAT-XXX is PENDING (not planned yet).
+```typescript
+// From task file Context to Study section:
+// - src/shared/schemas.ts:150-250
+// - src/core/persistence-query-builder.ts (SET pattern)
+// - .claude/routers/cypher/cypher-rules.md
 
-    Run /plan-feature FEAT-XXX first to:
-    - Design Type Schema (via planner agent)
-    - Define Architecture Decisions
-    - Create Implementation Plan
-    - Prepare Test Plan and DoD
-
-    Then run /implement-feature FEAT-XXX again."
-  → STOP (do NOT proceed)
-
-If status = READY_FOR_WORK:
-  → Continue to Phase 3
-
-If status = DONE:
-  → Show message: "Feature FEAT-XXX already implemented. Check registry for details."
-  → STOP
+// Auto-load these files BEFORE starting implementation
+Read({ file_path: "src/shared/schemas.ts", offset: 150, limit: 100 })
+Read({ file_path: "src/core/persistence-query-builder.ts" })
+Read({ file_path: ".claude/routers/cypher/cypher-rules.md" })
 ```
 
+**Show brief summary** of loaded context (1-2 lines per file).
+
 ---
 
-### Phase 3: Load Context
+### Phase 4: Implementation Execution
 
-1. **Read** `tasks/features/FEAT-XXX.md` (READY_FOR_WORK state with full planning)
+**If user chose TODO list** (from Phase 2):
 
-2. **Parse sections**:
-   - User Story (original motivation)
-   - AS IS / TO BE (current vs desired state)
-   - Context to Study (files/docs to review)
-   - Type Schema (from planner agent)
-   - Architecture Decisions (from planner agent)
-   - Implementation Plan (step-by-step)
-   - Test Plan (tests to add)
-   - Insights (task-specific notes)
-   - Guidelines (DO/DON'T)
-   - DoD
-   - Impact Assessment
-   - Edge Cases & Risks
-
-3. **Show brief summary**:
-
-```markdown
-📋 Feature FEAT-XXX loaded: [Title]
-
-**Component**: [component]
-**Priority**: [priority]
-**Status**: READY_FOR_WORK ✓
-
-📂 Context to Study ([N files/docs]):
-[list files from Context to Study section]
-
-📐 Type Schema:
-[brief summary - public API, key types]
-
-🛠️ Implementation Plan:
-[list steps from Implementation Plan section]
-
-📝 Test Plan:
-[count tests to add]
-
-Ready to implement. Proceeding to load context files...
+```typescript
+TodoWrite({
+  todos: [
+    // Convert Implementation Plan steps to todos
+    { content: "[Step 1 from plan]", status: "pending", activeForm: "Working on [step 1]" },
+    { content: "[Step 2 from plan]", status: "pending", activeForm: "Working on [step 2]" },
+    // ... all steps
+    { content: "Run quality checks", status: "pending", activeForm: "Running quality checks" },
+    { content: "Update registry to DONE", status: "pending", activeForm: "Updating registry" }
+  ]
+})
 ```
 
-4. **Load files** from Context to Study section:
-   - Use Read tool for each file/doc
-   - Load relevant line ranges if specified
-   - Load .claude/ docs if referenced
+**Execute Implementation Plan** step by step:
+1. Mark current step as `in_progress` in TODO
+2. Implement according to Type Schema from task file
+3. Follow Guidelines (DO/DON'T) from task file
+4. Mark step as `completed`
+5. Move to next step
 
----
+**Critical decision points** (use AskUserQuestion only for these):
 
-### Phase 3.5: Quick Analysis (Show Understanding)
-
-**Before implementing, show analysis**:
-
-```markdown
-📊 Quick Analysis:
-
-**Type Schema Summary**: [brief - public API signatures]
-
-**Implementation Steps**:
-1. [Step 1 from Implementation Plan]
-2. [Step 2 from Implementation Plan]
-...
-
-**Files to Create/Modify**:
-- [file1.ts] - [what will be changed]
-- [file2.ts] - [what will be changed]
-
-**Tests to Add**:
-- [test name] - [business case]
-
-**Key Guidelines**:
-- DO: [top 2-3 from Guidelines]
-- DON'T: [top 2-3 from Guidelines]
-
-Proceeding with implementation per Type Schema...
+```typescript
+// ONLY if encountering ambiguity not covered in plan
+if (ambiguousImplementationChoice) {
+  AskUserQuestion({
+    questions: [{
+      question: "План не покрывает этот случай. Как поступить?",
+      header: "Edge case",
+      multiSelect: false,
+      options: [
+        { label: "Вариант A", description: "[specific approach A]" },
+        { label: "Вариант B", description: "[specific approach B]" },
+        { label: "Skip for now", description: "Добавить TODO, продолжить" }
+      ]
+    }]
+  })
+}
 ```
 
-**Purpose**: Demonstrate understanding before action, verify Type Schema interpretation is correct.
-
 ---
 
-### Phase 4: Implement Feature
+### Phase 5: Quality Gates (Based on User Preference)
 
-**Follow Type Schema STRICTLY**:
-- Type Schema defines contracts → implement per schema
-- Public API signatures are LOCKED
-- Internal implementation can vary within type constraints
+**If review_mode = "Full review"**:
+```typescript
+// After each major component
+Task({ subagent_type: "reviewer", prompt: "Review [component]" })
+// Fix critical issues
+Task({ subagent_type: "qa", prompt: "Check test coverage for [component]" })
+```
 
-**Follow Implementation Plan step-by-step**:
-1. Execute steps in order specified in plan
-2. Follow Guidelines (DO/DON'T) for each step
-3. Handle Edge Cases identified in plan
-4. Add tests per Test Plan
+**If review_mode = "Final review"**:
+```typescript
+// Only after all implementation done
+Task({ subagent_type: "reviewer", prompt: "Review full implementation" })
+Task({ subagent_type: "qa", prompt: "Check overall test coverage" })
+```
 
-**Track Progress**: Mark todos as completed using TodoWrite as you finish steps.
-
-**DO NOT**:
-- Call planner agent (Type Schema already in task file)
-- Deviate from Type Schema (contracts are locked)
-- Skip steps in Implementation Plan
-- Ignore Edge Cases
-- Skip tests
-
----
-
-**If Cypher queries needed**:
-- Call `cypher-expert` agent for query design
-- Provide cypher-expert with Type Schema context
-- Get tested queries via MCP neo4j-cypher
-- Integrate queries per Type Schema
-
----
-
-**Update Acceptance Criteria** (if present in task file):
-- Check off sub-tasks as you complete them
-- Use Edit tool to update checkboxes in task file
-
----
-
-### Phase 5: Quality Gates (MANDATORY)
-
-**5.0 Pre-flight Checks**
-
-Before running tests, verify test infrastructure:
-
+**Always run** (unless user chose skip):
 ```bash
-# Check Neo4j test DB is running (required for integration tests)
-docker ps | grep neo4j-test
-```
-
-If neo4j-test not running:
-```
-⚠️ Warning: neo4j-test container not running.
-
-Integration tests will fail. Start it with:
-  docker compose up -d neo4j-test
-
-Continue anyway? (y/n)
-```
-
----
-
-**5.1 Call reviewer Agent**
-
-```
-Automatically call reviewer agent:
-- Provide: changed files, Type Schema from task file
-- Check: bugs, edge cases, DRY violations, TYPE COMPLIANCE
-- Verify: implementation matches Type Schema
-- Fix: critical issues before proceeding
-```
-
-**CRITICAL**: reviewer must verify Type Schema compliance!
-
----
-
-**5.2 Call qa Agent**
-
-```
-Automatically call qa agent:
-- Provide: test changes, DoD from task file
-- Check: test coverage, quality, business logic validation
-- Verify: DoD criteria met, Test Plan executed
-```
-
----
-
-**5.3 Run Quality Checks**
-
-```bash
-# MANDATORY - always run
 npm run lint
 npx tsc --noEmit
-
-# If logic changed
-npm run test:unit
-
-# If Cypher/schema changed (check Impact Assessment in task file)
-npm run test:integration
 ```
 
-**Fix ALL errors** before proceeding.
-
-**Note**: Warnings from pre-existing code are acceptable, but NO NEW errors.
+**Handle test failures** based on user preference:
+- "Fix immediately" → Stop and fix
+- "Track and fix later" → Add to TODO, continue
+- "Skip tests" → Don't run tests
 
 ---
 
-### Phase 6: Update Task File
+### Phase 6: Cypher Queries (Conditional)
 
-**Add Implementation Notes** to `tasks/features/FEAT-XXX.md`:
+**ONLY if Implementation Plan mentions Cypher changes**:
 
-```markdown
----
+```typescript
+// Check if task file contains Cypher-related steps
+if (taskFile.includes("Cypher") || taskFile.includes("query")) {
+  AskUserQuestion({
+    questions: [{
+      question: "Обнаружены Cypher-изменения. Вызвать cypher-expert?",
+      header: "Cypher expert",
+      multiSelect: false,
+      options: [
+        { label: "Да, проверить queries", description: "cypher-expert проверит через MCP" },
+        { label: "Нет, queries уже готовы", description: "В task file есть готовые queries" },
+        { label: "Позже при необходимости", description: "Вызову если возникнут проблемы" }
+      ]
+    }]
+  })
 
-## Implementation Notes
-
-**Date**: YYYY-MM-DD
-**Implemented by**: Claude session [session-id]
-
-**Changes**:
-- [List specific changes made]
-- [Files created/modified with brief description]
-- [Tests added]
-
-**Type Schema Compliance**:
-- [Confirmation that implementation follows Type Schema]
-- [Any deviations justified]
-
-**Verification**:
-- reviewer agent: [status - passed/issues fixed]
-- qa agent: [status - passed]
-- Lint: PASSED ✓
-- TypeScript: PASSED ✓
-- Tests: [X/Y passed]
-
-**Commit**: [hash if committed, or "pending commit"]
-
-**DoD Status**:
-[Copy DoD checklist from task file with checkmarks updated]
+  if (userChoice === "yes") {
+    Task({
+      subagent_type: "cypher-expert",
+      prompt: "Validate and optimize queries from Implementation Plan: [queries]"
+    })
+  }
+}
 ```
 
 ---
 
-### Phase 7: Update Registry
+### Phase 7: Completion
 
-**Edit** `memory-bank/knowledge/features-registry.md`:
-- Find row with FEAT-XXX
-- Change status: READY_FOR_WORK → DONE
+1. **Run final quality checks**:
+   ```bash
+   npm run lint
+   npx tsc --noEmit
+   npm run test:integration  # if not skipped
+   ```
 
-```markdown
-| FEAT-XXX | 2025-11-15 | DONE | [Title] | [Priority] | [Component] | [tasks/features/FEAT-XXX.md](../../tasks/features/FEAT-XXX.md) | [session] |
-```
+2. **Update task file** with Implementation Notes:
+   ```markdown
+   ## Implementation Notes
 
-**Optional**: Add commit hash column if committed.
+   - Completed: [date]
+   - Deviations from plan: [if any]
+   - Issues encountered: [list]
+   - Performance notes: [if applicable]
+   ```
+
+3. **Update registry**:
+   - Status: IN_PROGRESS → DONE
+   - Add commit hash (if committed)
+   - Add brief implementation summary
+
+4. **Offer git commit**:
+   ```typescript
+   AskUserQuestion({
+     questions: [{
+       question: "Создать git commit?",
+       header: "Git commit",
+       multiSelect: false,
+       options: [
+         { label: "Да, commit сейчас", description: "git add + commit с message" },
+         { label: "Нет, позже", description: "Оставить изменения unstaged" }
+       ]
+     }]
+   })
+   ```
+
+5. **Show summary**:
+   ```markdown
+   ✅ Feature FEAT-XXX implementation complete!
+
+   **Status**: READY_FOR_WORK → DONE
+   **Review mode**: [user's choice]
+   **Quality gates**: ✓ lint, ✓ tsc, [✓/✗] tests
+   **Commit**: [hash or "not committed"]
+
+   **Next steps**:
+   - Run `/sync-memory` to update Memory Bank
+   - Review implementation notes in task file
+   ```
 
 ---
 
-### Phase 8: Report Results
+## Strategic AskUserQuestion Usage
 
-```markdown
-✅ Feature FEAT-XXX implemented and marked as DONE!
+### When TO Ask (Good Balance)
 
-📝 **Changes**:
-- [Summary of changes]
-- [Files created/modified]
-- [Tests added]
+1. **Initial preferences** (Phase 2) - TODO setup, review mode, test strategy
+2. **Ambiguous edge cases** not covered in plan
+3. **Cypher changes** detection (auto-detect, ask once)
+4. **Final commit** decision
+5. **Unexpected blockers** (missing dependency, API change)
 
-📐 **Type Schema Compliance**:
-- Implementation follows Type Schema from planner ✓
-- Public API matches design ✓
+### When NOT to Ask (Avoid Interruptions)
 
-✅ **Quality checks**:
-- reviewer agent: PASSED ✓ ([N issues fixed])
-- qa agent: PASSED ✓
-- npm run lint: PASSED ✓
-- npx tsc --noEmit: PASSED ✓
-- Integration tests: PASSED ✓ ([X/Y])
-
-✅ **Updated**:
-- tasks/features/FEAT-XXX.md (added Implementation Notes)
-- memory-bank/knowledge/features-registry.md (READY_FOR_WORK → DONE)
-
-**Test Coverage**:
-[Summary from Test Plan execution]
-
-**Next steps**:
-- Optional: Create git commit
-- Optional: Run /sync-memory to archive completed feature
+1. **Steps clearly defined** in Implementation Plan → just execute
+2. **Guidelines present** in task file → follow them
+3. **Type Schema defined** → implement strictly per schema
+4. **Test Plan specified** → create tests per plan
+5. **DoD criteria clear** → check them without asking
+6. **Insights documented** → apply them silently
+7. **Minor decisions** (variable names, file organization) → use best judgment
+8. **Error handling** covered in Edge Cases → implement as specified
 
 ---
 
-Would you like to:
-1. Create git commit? `git add . && git commit -m "feat: Feature FEAT-XXX - [title]"`
-2. Run /sync-memory to update Memory Bank?
-```
+## Important Principles
 
----
-
-## Important Notes
-
-1. **Status check MANDATORY**: MUST be READY_FOR_WORK to proceed
-2. **planner NOT called**: Type Schema already in task file (from /plan-feature)
-3. **Type Schema is contract**: Implement STRICTLY per schema, no deviations
-4. **Follow Implementation Plan**: Step-by-step execution per plan
-5. **Load context**: Read ALL files from Context to Study section
-6. **Quality gates**: reviewer + qa are NOT optional
-7. **Type compliance**: reviewer MUST verify implementation matches Type Schema
-8. **Tests**: Run integration tests if schema/Cypher changed (check Impact Assessment)
-9. **Update both files**: task file (Implementation Notes) + registry (status)
+1. **Trust the plan**: Task file from `/plan-feature` is authoritative
+2. **No planner call**: Type Schema already exists in task file
+3. **Batch questions**: Use ONE AskUserQuestion with multiple questions
+4. **Respect preferences**: Store and apply throughout session
+5. **Progressive disclosure**: Don't ask about Cypher if no Cypher in plan
+6. **Smart defaults**: If user skips question → use sensible default
+7. **Context-aware**: Load "Context to Study" files BEFORE starting
 
 ---
 
 ## Difference from Old /implement-feature
 
-| Aspect | Old implement-feature.md | New implement-feature.md |
-|--------|--------------------------|--------------------------|
-| Planning | Calls planner agent | NO planner (Type Schema in task file) |
-| Status check | None | MANDATORY (PENDING → error) |
-| Context source | Manual gathering | Task file (Context to Study section) |
-| Type Schema | Designed during implementation | Pre-designed in /plan-feature |
-| Implementation | Design + code | Code only (design done) |
+| Aspect | Old (from planner) | New (from task file) |
+|--------|-------------------|---------------------|
+| Source | Call planner for Type Schema | Read from task file |
+| Planning | Generate during implementation | Already in READY_FOR_WORK |
+| Questions | Many ad-hoc questions | Strategic upfront + edge cases |
+| Context | Discover as needed | Pre-loaded from "Context to Study" |
+| Review | Always full | User chooses mode |
+| Tests | Always run | User chooses strategy |
+| TODO | Optional/manual | Automated from Implementation Plan |
 
-**Old**: Design + implement in one step (planner during /implement-feature)
-**New**: Design (/plan-feature) → implement (/implement-feature) - separated phases
+---
+
+## Error Recovery
+
+If implementation gets stuck:
+
+```typescript
+AskUserQuestion({
+  questions: [{
+    question: "Реализация заблокирована. Как proceed?",
+    header: "Blocked",
+    multiSelect: false,
+    options: [
+      { label: "Call planner for help", description: "Получить архитектурную помощь" },
+      { label: "Skip this step", description: "Добавить TODO, продолжить" },
+      { label: "Abort and reset", description: "Вернуть статус READY_FOR_WORK" }
+    ]
+  }]
+})
+```
 
 ---
 
 ## Example Execution
 
 ```
-User: /implement-feature
+User: /implement-feature FEAT-001
 
-Phase 1: Interactive Selection
-→ AskUserQuestion shows list of features
-→ User selects: "#FEAT-001 | context-schema | P1 🟡"
-
-Phase 2: Validate Status
-→ Read registry, check status
+Phase 1: Load and Validate
+→ Read registry, find FEAT-001
 → Status = READY_FOR_WORK ✓
-
-Phase 3: Load Context
+→ Update to IN_PROGRESS
 → Read tasks/features/FEAT-001.md
-→ Parse sections: Context to Study, Type Schema, Impl Plan, Test Plan, Guidelines, DoD
-→ Show summary:
-  "📋 Feature FEAT-001: Add salary range to Context
-   Type Schema: userContextSchema + salaryMin/salaryMax
-   Impl Plan: 6 steps (Schema → Persistence → Map Projection → Tests)
-   Context: 5 files to load..."
-→ Load files: schemas.ts, persistence-query-builder.ts, search.ts, cypher-rules.md, test-data-manager.ts
 
-Phase 4: Implement Feature
-→ Step 1: Update userContextSchema (add salaryMin/salaryMax + Zod validation)
-→ Step 2: Update buildPersistContextQuery (SET salary properties, null-safe)
-→ Step 3: Update buildSearchQuery map projection (return salary fields)
-→ Step 4: Create test data U17 (exact salary), U18 (range salary)
-→ Step 5: Add integration tests AC10, AC11, AC12
-→ Step 6: Run tests
-→ Follow Guidelines (DO: map projection, null safety; DON'T: filtering logic, migration)
+Phase 2: Preferences (ONE AskUserQuestion)
+→ TODO setup? Yes
+→ Review mode? Final review
+→ Test strategy? Fix immediately
 
-Phase 5: Quality Gates
-→ Call reviewer agent
-  - Verified: Type Schema compliance ✓
-  - Found: minor naming inconsistency
-  - Fixed: applied suggestion
-→ Call qa agent
-  - Verified: test quality good, DoD met, Test Plan executed
-→ Run lint + tsc + integration tests
-  - All passed ✓
+Phase 3: Context Study
+→ Auto-load: schemas.ts:150-250, persistence-query-builder.ts, cypher-rules.md
+→ "Loaded 3 context files: schemas, persistence patterns, Cypher conventions"
 
-Phase 6: Update Task File
-→ Edit FEAT-001.md (add Implementation Notes section)
+Phase 4: Implementation
+→ TodoWrite with 5 steps from Implementation Plan
+→ Step 1: Update schema (in_progress) → implement → completed ✓
+→ Step 2: Update persistence (in_progress) → implement → completed ✓
+→ Step 3: Update map projection (in_progress) → implement → completed ✓
+→ Step 4: Create test data (in_progress) → implement → completed ✓
+→ Step 5: Write tests (in_progress) → implement → completed ✓
 
-Phase 7: Update Registry
-→ Edit features-registry.md (READY_FOR_WORK → DONE)
+Phase 5: Quality Gates (Final review mode)
+→ Task(reviewer) → 2 issues found → fixed
+→ Task(qa) → coverage adequate
+→ npm run lint → passed
+→ npx tsc --noEmit → passed
 
-Phase 8: Report Results
-→ "✅ Feature FEAT-001 implemented!
-   Changes: schema extended, persistence/search updated, 3 tests added
-   Type Schema: compliance verified by reviewer ✓
-   Quality: all checks passed"
+Phase 6: Cypher (detected)
+→ Ask: "Call cypher-expert?" → Yes
+→ Task(cypher-expert) → queries validated
+
+Phase 7: Completion
+→ npm run test:integration → passed
+→ Update task file with Implementation Notes
+→ Update registry → DONE
+→ Ask: "Create commit?" → Yes
+→ git commit → hash: abc123
+
+Summary displayed
 ```
-
----
-
-## Error Handling
-
-**If status = PENDING**:
-```
-❌ Cannot implement FEAT-XXX: status is PENDING.
-
-The feature needs planning first. Run:
-  /plan-feature FEAT-XXX
-
-This will:
-- Design Type Schema (via planner agent)
-- Define Architecture Decisions
-- Create step-by-step Implementation Plan
-- Prepare Test Plan and DoD
-
-After planning completes (status → READY_FOR_WORK), run:
-  /implement-feature FEAT-XXX
-```
-
-**If status = DONE**:
-```
-ℹ️ Feature FEAT-XXX is already implemented.
-
-Check tasks/features/FEAT-XXX.md for implementation details.
-```
-
-**If task file missing Type Schema**:
-```
-⚠️ Warning: FEAT-XXX.md is missing Type Schema section.
-
-This is CRITICAL - Type Schema is required for implementation.
-
-The feature wasn't properly planned with /plan-feature.
-
-Options:
-1. Run /plan-feature FEAT-XXX to add Type Schema (RECOMMENDED)
-2. Proceed without Type Schema (DANGEROUS - high risk of bugs)
-
-What would you like to do?
-```
-
-**If Type Schema incomplete**:
-```
-⚠️ Warning: Type Schema in FEAT-XXX.md is incomplete.
-
-Missing:
-- [Public API signatures / Internal state / Component interfaces]
-
-Run /plan-feature FEAT-XXX again to complete Type Schema design.
-```
-
----
-
-## Next Steps After Implementation
-
-- Optional: Commit changes using standard git workflow
-- Optional: Run /sync-memory at end of session to archive completed feature

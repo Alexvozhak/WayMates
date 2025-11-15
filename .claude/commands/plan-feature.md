@@ -34,7 +34,7 @@ $ARGUMENTS
    - If status = READY_FOR_WORK → "Feature already planned. Use /implement-feature to code."
    - If status = DONE → "Feature already implemented. Check registry."
 
-4. **Read** task file `tasks/features/FEAT-XXX.md` (PENDING state with User Story + AS IS + TO BE)
+4. **Read** task file `tasks/features/FEAT-XXX.md` (PENDING state - minimal file)
 
 ---
 
@@ -45,10 +45,8 @@ $ARGUMENTS
 **Prompt for planner**:
 ```
 Feature: [Title from FEAT-XXX.md]
-
-User Story: [from task file]
-AS IS: [from task file]
-TO BE: [from task file]
+Description: [from task file]
+Priority: [from task file]
 
 Task: Design Type Schema and Architecture for this feature.
 
@@ -56,6 +54,8 @@ Required deliverables:
 1. TYPE SCHEMA (public API, internal state, component interfaces)
 2. Architecture Decisions (which components affected, how they interact)
 3. Technology choices (if applicable - libraries, patterns)
+4. Suggested Context to Study (files/docs to read before coding)
+5. Suggested Implementation Plan (step-by-step breakdown)
 
 Focus: Production-ready types for immediate implementation, not exploratory design.
 ```
@@ -64,266 +64,281 @@ Focus: Production-ready types for immediate implementation, not exploratory desi
 - Type Schema (TypeScript interfaces, Zod schemas)
 - Architecture Decisions (component interaction, dataflow)
 - Technology recommendations (if needed)
+- Suggested files to study
+- Suggested implementation steps
 
 **Store output** for inclusion in task file.
 
 ---
 
-### Phase 3: Interactive Planning (gather remaining details)
+### Phase 3: Interactive Planning (Batch Questions)
 
-**Use AskUserQuestion** to gather:
+**Use TWO AskUserQuestion calls** for efficiency:
 
-**3.1 Context to Study**
+#### Batch 1: Core Planning (4 questions)
 
+```typescript
+AskUserQuestion({
+  questions: [
+    {
+      question: "Context to Study - файлы/документы для изучения перед реализацией?",
+      header: "Context",
+      multiSelect: false,
+      options: [
+        {
+          label: "Использовать список от planner",
+          description: "Planner предложил релевантные файлы"
+        },
+        {
+          label: "Дополнить список planner",
+          description: "Добавить свои файлы к предложенным"
+        },
+        {
+          label: "Написать свой список",
+          description: "Полностью заменить рекомендации planner"
+        }
+      ]
+    },
+    {
+      question: "Implementation Plan - порядок шагов реализации?",
+      header: "Impl Plan",
+      multiSelect: false,
+      options: [
+        {
+          label: "Использовать план от planner",
+          description: "Planner предложил шаги реализации"
+        },
+        {
+          label: "Дополнить план planner",
+          description: "Добавить свои шаги к предложенным"
+        },
+        {
+          label: "Написать свой план",
+          description: "Полностью заменить план planner"
+        }
+      ]
+    },
+    {
+      question: "Test Plan - список тестов с бизнес-кейсами?",
+      header: "Test Plan",
+      multiSelect: false,
+      options: [
+        {
+          label: "Минимальный (основные кейсы)",
+          description: "Happy path + 1-2 edge case"
+        },
+        {
+          label: "Расширенный (все edge cases)",
+          description: "Полный набор тестов с граничными случаями"
+        },
+        {
+          label: "Написать свой список",
+          description: "Детальный Test Plan через Other"
+        }
+      ]
+    },
+    {
+      question: "Guidelines - что ДЕЛАТЬ и что НЕ ДЕЛАТЬ при реализации?",
+      header: "Guidelines",
+      multiSelect: false,
+      options: [
+        {
+          label: "Стандартные для типа фичи",
+          description: "Schema/Cypher/Testing conventions"
+        },
+        {
+          label: "Специфичные для задачи",
+          description: "Напишу DO/DON'T через Other"
+        },
+        {
+          label: "Пропустить",
+          description: "Без guidelines"
+        }
+      ]
+    }
+  ]
+})
 ```
-Question: "Какие файлы/документы изучить перед реализацией?"
-Options (single select):
-( ) Напишу сам через Other (список файлов с path:lines, документы в .claude/, memory-bank/)
-( ) Использовать рекомендации planner (если он предоставил список)
-```
 
-User provides list of files/docs to study before coding. Example:
-```
-- src/shared/schemas.ts (lines 150-250 - userContextSchema definition)
-- src/core/persistence-query-builder.ts (SET properties pattern)
-- src/cypher/queries/search.ts (map projection examples)
-- .claude/routers/cypher/cypher-rules.md (null safety, optional field handling)
-- tests/helpers/test-data-manager.ts (test user creation pattern)
+**Process answers**:
+- If "Использовать от planner" → copy from planner output
+- If "Дополнить" → ask for additions via Other
+- If "Написать свой" → ask for full input via Other
+
+---
+
+#### Batch 2: Quality & Risk (3 questions)
+
+```typescript
+AskUserQuestion({
+  questions: [
+    {
+      question: "DoD (Definition of Done) - критерии готовности?",
+      header: "DoD",
+      multiSelect: true,
+      options: [
+        { label: "Schema updated", description: "Схемы обновлены + validation" },
+        { label: "Queries updated", description: "Persistence/Search queries" },
+        { label: "Test data created", description: "Тестовые данные добавлены" },
+        { label: "Tests pass", description: "Unit + integration tests" },
+        { label: "Lint + tsc clean", description: "Качественные проверки" },
+        { label: "reviewer validated", description: "reviewer agent проверил" },
+        { label: "qa validated", description: "qa agent проверил" }
+      ]
+    },
+    {
+      question: "Impact Assessment - что затронуто изменениями?",
+      header: "Impact",
+      multiSelect: true,
+      options: [
+        { label: "Schema change", description: "Изменение Neo4j схемы" },
+        { label: "Breaking change", description: "Несовместимость с API" },
+        { label: "Migration required", description: "Нужен скрипт миграции" },
+        { label: "Core managers", description: "Затронуты core компоненты" },
+        { label: "Facade MCP tools", description: "Затронут Facade слой" },
+        { label: "New dependencies", description: "Новые библиотеки" }
+      ]
+    },
+    {
+      question: "Edge Cases & Risks - граничные случаи и риски?",
+      header: "Edge Cases",
+      multiSelect: false,
+      options: [
+        {
+          label: "Стандартные (null, boundaries)",
+          description: "Типовые edge cases для фичи"
+        },
+        {
+          label: "Написать специфичные",
+          description: "Детальный список через Other"
+        },
+        {
+          label: "Пропустить",
+          description: "Без списка edge cases"
+        }
+      ]
+    }
+  ]
+})
 ```
 
 ---
 
-**3.2 Implementation Plan**
+### Phase 4: Generate Insights (Optional)
 
-```
-Question: "Implementation Plan - что нужно сделать (порядок шагов)?"
-Options (single select):
-( ) Напишу сам через Other (список шагов с порядком выполнения)
-( ) Использовать план от planner (если достаточно детальный)
+**If user selected "Специфичные Guidelines" or "Написать Edge Cases"**:
+
+```typescript
+// Ask for details via Other field in previous questions
+// Or use one more AskUserQuestion if needed
 ```
 
-User provides step-by-step plan. Example:
-```
-1. Schema: Update userContextSchema with salary fields + validation
-2. Persistence: Update buildPersistContextQuery() to SET salary properties (null-safe)
-3. Search: Update buildSearchQuery() map projection to return salary fields
-4. Optional: Add WHERE clause for salary filtering (defer to MVP decision)
-5. Test Data: Create U17 (exact salary), U18 (range salary)
-6. Tests: AC10 (exact), AC11 (range), AC12 (null handling)
-
-Order: Schema → Persistence → Map Projection → Test Data → Tests
-```
+Otherwise, auto-generate based on feature type:
+- Schema change → map projection, null safety, migration checklist
+- Cypher change → canonical names, bounded patterns, PROFILE
+- Testing → business logic vs coverage theater, test quality standards
 
 ---
 
-**3.3 Test Plan**
-
-```
-Question: "Test Plan - список тестов + бизнес-кейс (1 предложение на тест)?"
-Options (single select):
-( ) Напишу сам через Other (название теста + бизнес-кейс)
-```
-
-User provides test list with business case. Example:
-```
-1. AC10 (integration): U17 with salaryExact=100000 → search returns salary in results
-   Business case: Display exact salary when provided
-
-2. AC11 (integration): U18 with salaryMin=80000, salaryMax=120000 → range returned
-   Business case: Display range when both provided
-
-3. AC12 (integration): U1 (no salary) → null values in results
-   Business case: Backward compatibility, null for missing
-
-4. Schema validation (unit): salaryMin > salaryMax → validation error
-   Business case: Prevent invalid data entry
-```
-
----
-
-**3.4 Insights & Guidelines**
-
-```
-Question: "Insights - специфичные инсайты для этой задачи (лаконично, кратко, ёмко)?"
-Options (single select):
-( ) Напишу сам через Other
-( ) Пропустить
-
-Question: "Guidelines - что ДЕЛАТЬ и что НЕ ДЕЛАТЬ при реализации?"
-Options (single select):
-( ) Напишу сам через Other (DO: ..., DON'T: ...)
-( ) Использовать стандартные guidelines (schema change, Cypher rules, testing)
-```
-
-User provides specific insights and guidelines. Example:
-```
-Insights:
-- Naming: Use salaryMin/salaryMax (not salaryFrom/salaryTo) for clarity
-- Null handling: Neo4j returns null for missing properties in map projection → backward compatible
-- Migration: No migration script needed (test DB recreated from scratch)
-- Scope decision: Salary fields are DISPLAY ONLY (no filtering/scoring in MVP) - defer to Facade
-
-Guidelines:
-DO:
-- Use map projection for RETURN: c { .salaryMin, .salaryMax }
-- Add null safety to persistence: SET c.salaryMin = $salaryMin (Neo4j handles nulls)
-- Follow schema validation pattern (Zod refine for min/max check)
-- Create test data U17-U18 in Batch C (special cases)
-
-DON'T:
-- Add salary filtering logic in Cypher (defer to Facade)
-- Create migration script (no production data)
-- Skip validation (min > max is invalid)
-- Forget map projection (common mistake!)
-```
-
----
-
-**3.5 DoD + Impact Assessment**
-
-```
-Question: "DoD - критерии готовности?"
-Options (multiSelect):
-[x] Schema updated with new fields + validation
-[x] Persistence/Search queries updated
-[x] Test data created
-[x] Integration tests pass
-[x] Lint + tsc clean
-[x] reviewer agent validation
-[x] qa agent validation
-
-Question: "Impact Assessment - что затронуто?"
-Options (multiSelect):
-[x] Schema change (добавление полей в Neo4j)
-[x] Breaking change (несовместимость с API)
-[x] Migration required (нужен скрипт миграции)
-[ ] Affected: Core managers
-[ ] Affected: Facade MCP tools
-[ ] New dependencies (какие библиотеки?)
-```
-
-User selects applicable items.
-
----
-
-**3.6 Edge Cases & Risks**
-
-```
-Question: "Edge Cases & Risks - граничные случаи и риски?"
-Options (single select):
-( ) Напишу сам через Other (null values, boundaries, breaking changes, regressions)
-( ) Пропустить (use standard risk assessment)
-```
-
-User provides edge cases and risks. Example:
-```
-Edge Cases:
-- Both salaryMin and salaryMax null → null in results (backward compat)
-- Only salaryMin provided → null salaryMax (partial data OK)
-- salaryMin > salaryMax → validation error (Zod refine catches)
-- Negative values → validation error (Zod .positive())
-
-Risks:
-- Breaking change if schema migration incorrect → test on fresh DB first
-- Forgetting map projection → salary fields not returned (common mistake)
-- Test data overlap with existing U1-U16 → use new U17-U18 (no conflicts)
-```
-
----
-
-### Phase 4: Update Task File
+### Phase 5: Update Task File
 
 **Expand** `tasks/features/FEAT-XXX.md` with gathered information:
 
-Add sections (keeping original User Story + AS IS + TO BE):
-
 ```markdown
+# [Original Title]
+
+**Priority**: [Original Priority]
+
+[Original Description]
+
 ---
 
 ## Context to Study
 
 **Перед реализацией изучить:**
-[files/docs from Step 3.1]
+[files/docs from Phase 3 Batch 1]
 
 ---
 
 ## Type Schema
 
-[from planner agent - Step 2]
+[from planner agent - Phase 2]
 
 ---
 
 ## Architecture Decisions
 
-[from planner agent - Step 2]
+[from planner agent - Phase 2]
 
 ---
 
 ## Implementation Plan
 
-[from Step 3.2]
+[from Phase 3 Batch 1]
 
 ---
 
 ## Test Plan
 
-[from Step 3.3]
+[from Phase 3 Batch 1]
 
 ---
 
 ## Insights
 
-[from Step 3.4, if provided]
+[auto-generated or user-provided]
 
 ---
 
 ## Guidelines
 
 **DO**:
-[from Step 3.4]
+[from Phase 3 Batch 1 or auto-generated]
 
 **DON'T**:
-[from Step 3.4]
+[from Phase 3 Batch 1 or auto-generated]
 
 ---
 
 ## DoD (Definition of Done)
 
-[checklist from Step 3.5]
+[checklist from Phase 3 Batch 2]
 
 ---
 
 ## Impact Assessment
 
-[from Step 3.5]
+[from Phase 3 Batch 2]
 
 ---
 
 ## Edge Cases & Risks
 
-[from Step 3.6, if provided]
+[from Phase 3 Batch 2 or auto-generated]
 ```
 
 ---
 
-### Phase 5: Update Registry
+### Phase 6: Update Registry
 
 **Edit** `memory-bank/knowledge/features-registry.md`:
 - Find row with FEAT-XXX
 - Change status: PENDING → READY_FOR_WORK
+- Update Component column (from planner Architecture Decisions)
 
 ```markdown
-| FEAT-XXX | 2025-11-15 | READY_FOR_WORK | [Title] | [Priority] | [Component] | [tasks/features/FEAT-XXX.md](../../tasks/features/FEAT-XXX.md) | [session] |
+| FEAT-XXX | 2025-11-15 | READY_FOR_WORK | [Title] | [Priority] | [Component from planner] | [tasks/features/FEAT-XXX.md](../../tasks/features/FEAT-XXX.md) | [session] |
 ```
 
 ---
 
-### Phase 6: Show Summary
+### Phase 7: Show Summary
 
 ```markdown
 ✅ Feature FEAT-XXX planning complete!
 
 **Status**: PENDING → READY_FOR_WORK
+**Component**: [from planner]
 **File**: tasks/features/FEAT-XXX.md (expanded with Type Schema, Impl Plan, Test Plan, Guidelines)
 **Registry**: Updated to READY_FOR_WORK
 
@@ -333,10 +348,10 @@ Add sections (keeping original User Story + AS IS + TO BE):
 - Architecture Decisions (from planner agent)
 - Implementation Plan ([N steps])
 - Test Plan ([N tests])
-- Insights (task-specific notes)
+- Insights ([auto-generated or user-provided])
 - Guidelines (DO/DON'T)
 - DoD ([N criteria])
-- Impact Assessment
+- Impact Assessment ([N items])
 - Edge Cases & Risks
 
 **Next step**:
@@ -345,44 +360,48 @@ Run `/implement-feature FEAT-XXX` to code (Type Schema готов, planner не 
 
 ---
 
-### Phase 7: Offer TODO List
+### Phase 8: Offer TODO List (Optional)
 
-**Ask user**: Would you like to load Implementation Plan into TODO list?
-
-Proposed tasks (from Implementation Plan):
-```
-- Step 1 from Implementation Plan
-- Step 2 from Implementation Plan
-- Step 3 from Implementation Plan
-- ...
-- Call cypher-expert (if Cypher queries needed)
-- Call reviewer agent
-- Call qa agent
-- Run lint + tsc
-- Run unit tests
-- Run integration tests
-- Update task file
-- Update registry
-```
-
-If user agrees → call TodoWrite:
 ```typescript
-TodoWrite({
-  todos: [
-    { content: "[Step 1 from Implementation Plan]", status: "pending", activeForm: "[Step 1 in gerund]" },
-    { content: "[Step 2 from Implementation Plan]", status: "pending", activeForm: "[Step 2 in gerund]" },
-    // ... all steps from plan
-    { content: "Call cypher-expert agent (if needed)", status: "pending", activeForm: "Calling cypher-expert" },
-    { content: "Call reviewer agent", status: "pending", activeForm: "Calling reviewer agent" },
-    { content: "Call qa agent", status: "pending", activeForm: "Calling qa agent" },
-    { content: "Run quality checks (lint + tsc)", status: "pending", activeForm: "Running quality checks" },
-    { content: "Run unit tests", status: "pending", activeForm: "Running unit tests" },
-    { content: "Run integration tests", status: "pending", activeForm: "Running integration tests" },
-    { content: "Update task file (Implementation Notes)", status: "pending", activeForm: "Updating task file" },
-    { content: "Update registry (READY_FOR_WORK → DONE)", status: "pending", activeForm: "Updating registry" }
-  ]
+AskUserQuestion({
+  questions: [{
+    question: "Загрузить Implementation Plan в TODO list для отслеживания?",
+    header: "TODO list",
+    multiSelect: false,
+    options: [
+      { label: "Да, создать TODO", description: "Шаги из плана станут задачами" },
+      { label: "Нет, не нужно", description: "Буду использовать позже в /implement-feature" }
+    ]
+  }]
 })
 ```
+
+If user agrees → call TodoWrite with steps from Implementation Plan.
+
+---
+
+## Strategic AskUserQuestion Usage
+
+### Batching Strategy
+
+1. **Batch 1 (Core Planning)**: Context, Impl Plan, Test Plan, Guidelines - тесно связаны, решаются вместе
+2. **Batch 2 (Quality & Risk)**: DoD, Impact, Edge Cases - про качество и риски
+3. **Batch 3 (Optional)**: TODO list preference - финальное решение
+
+**Benefits**:
+- 2-3 calls вместо 6-7
+- Логическая группировка вопросов
+- Пользователь видит полную картину в каждой группе
+- Меньше переключений контекста
+
+### Smart Defaults
+
+- **Context to Study**: Использовать от planner по умолчанию
+- **Implementation Plan**: Использовать от planner по умолчанию
+- **Guidelines**: Auto-generate на основе типа фичи
+- **Edge Cases**: Auto-generate стандартные (null, boundaries)
+- **DoD**: Предвыбрать стандартные критерии
+- **Impact**: Пользователь выбирает applicable items
 
 ---
 
@@ -390,10 +409,11 @@ TodoWrite({
 
 1. **Status validation**: MUST be PENDING to run /plan-feature
 2. **planner agent MANDATORY**: Type Schema - основа реализации
-3. **NO full architecture design**: Это НЕ 10-фазная проработка (старый plan-feature.md), фокус на Implementation Readiness
-4. **Type-First**: planner даёт Type Schema → реализация строго по нему
-5. **File preservation**: Keep original User Story + AS IS + TO BE sections
-6. **Detailed planning**: More detail now = faster implementation later
+3. **Batch questions**: 2-3 calls вместо 6-7 individual questions
+4. **Smart defaults**: Prefer planner recommendations, auto-generate when reasonable
+5. **Type-First**: planner даёт Type Schema → реализация строго по нему
+6. **File preservation**: Keep original Title + Priority + Description
+7. **Detailed planning**: More detail now = faster implementation later
 
 ---
 
@@ -401,15 +421,13 @@ TodoWrite({
 
 | Aspect | Old plan-feature.md | New plan-feature.md |
 |--------|---------------------|---------------------|
-| Goal | Full architecture design (10 phases) | Implementation readiness (Type Schema + Plan) |
-| Output | docs/architecture/*.md (architecture spec) | tasks/features/FEAT-XXX.md (expanded) |
-| Phases | 10 (Problem Analysis, Alternatives, Scenarios, Dataflow, etc.) | 6 (Load, planner, Interactive, Update File, Update Registry, Summary) |
-| planner usage | Optional (Phase 2) | Mandatory (Phase 2, Type Schema required) |
-| Status change | No status change | PENDING → READY_FOR_WORK |
-| Use case | Complex features needing architectural exploration | All features (MVP-ready planning) |
+| Questions | 6-7 individual calls | 2-3 batched calls |
+| Planner usage | Recommendations only | Recommendations + smart defaults |
+| Guidelines | Always ask | Auto-generate or ask |
+| Edge Cases | Always ask | Auto-generate or ask |
+| Context source | Always ask | Prefer planner, allow override |
 
-**Old plan-feature.md**: For architectural exploration (new patterns, complex systems, design decisions)
-**New plan-feature.md**: For implementation planning (Type Schema, step-by-step plan, ready to code)
+**Key improvement**: Fewer interruptions, smarter defaults, better UX.
 
 ---
 
@@ -421,7 +439,7 @@ User: /plan-feature FEAT-001
 Phase 1: Load and Validate
 → Read features-registry.md
 → Found FEAT-001, status = PENDING ✓
-→ Read tasks/features/FEAT-001.md (User Story, AS IS, TO BE)
+→ Read tasks/features/FEAT-001.md (minimal: title, priority, description)
 
 Phase 2: Call planner Agent
 → Task tool with subagent_type=planner
@@ -429,44 +447,34 @@ Phase 2: Call planner Agent
 → planner returns:
   - Type Schema (userContextSchema with salaryMin/salaryMax + Zod validation)
   - Architecture Decisions (persistence, search, map projection)
+  - Suggested Context: schemas.ts, persistence-query-builder.ts, cypher-rules.md
+  - Suggested Plan: 1. Schema, 2. Persistence, 3. Map Projection, 4. Test Data, 5. Tests
 
-Phase 3: Interactive Planning
-→ AskUserQuestion: Context to Study?
-  User: "src/shared/schemas.ts, src/core/persistence-query-builder.ts, ..."
+Phase 3: Interactive Planning (Batch 1 - ONE call)
+→ Context to Study? "Использовать список от planner"
+→ Implementation Plan? "Использовать план от planner"
+→ Test Plan? "Расширенный (все edge cases)"
+→ Guidelines? "Специфичные для задачи" → asks for DO/DON'T via Other
 
-→ AskUserQuestion: Implementation Plan?
-  User: "1. Schema, 2. Persistence, 3. Map Projection, 4. Test Data, 5. Tests"
+Phase 3: Interactive Planning (Batch 2 - ONE call)
+→ DoD? User selects: Schema, Queries, Tests, Lint, reviewer, qa
+→ Impact? User selects: Schema change (no breaking change, no migration)
+→ Edge Cases? "Написать специфичные" → provides list via Other
 
-→ AskUserQuestion: Test Plan?
-  User: "AC10: exact salary, AC11: range, AC12: null, Schema validation"
+Phase 4: Generate Insights
+→ Auto-generate based on schema change pattern
 
-→ AskUserQuestion: Insights?
-  User: "Naming: salaryMin/salaryMax, No migration needed, Display only (no filtering)"
+Phase 5: Update Task File
+→ Edit tasks/features/FEAT-001.md (add 10 sections)
 
-→ AskUserQuestion: Guidelines?
-  User: "DO: map projection, null safety, validation. DON'T: filtering logic, migration, skip validation"
+Phase 6: Update Registry
+→ Edit features-registry.md (PENDING → READY_FOR_WORK, Component: context-schema)
 
-→ AskUserQuestion: DoD?
-  User: Selects all criteria
-
-→ AskUserQuestion: Impact Assessment?
-  User: Schema change, no breaking change, no migration
-
-→ AskUserQuestion: Edge Cases?
-  User: "Both null, partial data, min > max, negative values"
-
-Phase 4: Update Task File
-→ Edit tasks/features/FEAT-001.md (add 10 sections: Context to Study, Type Schema, Architecture, Impl Plan, Test Plan, Insights, Guidelines, DoD, Impact, Edge Cases)
-
-Phase 5: Update Registry
-→ Edit features-registry.md (PENDING → READY_FOR_WORK)
-
-Phase 6: Show Summary
+Phase 7: Show Summary
 → "✅ Feature FEAT-001 planning complete. Run /implement-feature FEAT-001 to code."
 
-Phase 7: Offer TODO List
-→ Ask: "Load Implementation Plan into TODO list?"
-→ If yes → TodoWrite with steps from Implementation Plan + quality gates
+Phase 8: Offer TODO List
+→ Ask: "Load Implementation Plan into TODO list?" → User: "Нет, позже"
 ```
 
 ---
