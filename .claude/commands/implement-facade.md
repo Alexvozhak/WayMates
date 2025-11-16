@@ -201,21 +201,32 @@ Details: **ADR-007**
 
 ### Type-First
 
-```
-Zod schema → infer type → implement → reviewer validates
+**Before create - grep first**:
+```bash
+grep "TypeName" src/{shared,core,facade}/schemas.ts  # exists?
 ```
 
-Перед созданием типа:
-```bash
-grep -r "export type" src/shared/types/
-```
+**Placement**:
+
+| Uses | Location |
+|------|----------|
+| Facade + Core (API contract) | `shared/schemas.ts` |
+| Facade only | `facade/schemas.ts` |
+| Core only | `core/schemas.ts` |
+
+**Examples**:
+
+| Need | Grep result | Action |
+|------|-------------|--------|
+| Story type | `StoryInput` in shared ✅ | Reuse `StoryInput` |
+| userId schema | `userIdSchema` in shared ✅ | Reuse `userIdSchema.optional()` |
+| Result pattern | 0 matches in core ❌ | Create `facade/result.ts` |
 
 **❌ НЕ делай**:
-- Создавать типы без grep (дублирование)
+- Создавать без grep (дублирование)
 - Inline imports: `import {type Foo}` → разделяй отдельно
-- Писать код до type schema
 - Type assertions `as Type` (только Zod parse)
-- `Math.random()` для ID/tokens (только `crypto.randomBytes()`)
+- `Math.random()` для ID (только `crypto.randomBytes()`)
 
 ### Session Management (ADR-003)
 
