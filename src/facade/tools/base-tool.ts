@@ -1,5 +1,7 @@
 import { err, ok } from '../../shared/result.js';
 
+import { FacadeError } from './errors.js';
+
 import type { ErrorResponse, Result, SessionId } from '../../shared/result.js';
 import type { UserId } from '../../shared/schemas.js';
 
@@ -17,34 +19,6 @@ export type CoreRestClient = {
   post<T>(path: string, body: unknown): Promise<T>;
   patch<T>(path: string, body: unknown): Promise<T>;
 };
-
-export class SessionExpiredError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'SessionExpiredError';
-  }
-}
-
-export class SessionInvalidError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'SessionInvalidError';
-  }
-}
-
-export class NormalizationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'NormalizationError';
-  }
-}
-
-export class CoreApiError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'CoreApiError';
-  }
-}
 
 export abstract class BaseTool<TParams, TResult> {
   constructor(
@@ -74,32 +48,8 @@ export abstract class BaseTool<TParams, TResult> {
   protected abstract extractSessionId(params: TParams): SessionId;
 
   private handleError(error: unknown): ErrorResponse {
-    if (error instanceof SessionExpiredError) {
-      return {
-        code: 'session_expired',
-        message: 'Session has expired. Please authenticate again.',
-      };
-    }
-
-    if (error instanceof SessionInvalidError) {
-      return {
-        code: 'session_invalid',
-        message: 'Invalid session ID.',
-      };
-    }
-
-    if (error instanceof NormalizationError) {
-      return {
-        code: 'normalization_failed',
-        message: error.message,
-      };
-    }
-
-    if (error instanceof CoreApiError) {
-      return {
-        code: 'core_api_error',
-        message: error.message,
-      };
+    if (error instanceof FacadeError) {
+      return error.toResponse();
     }
 
     if (error instanceof Error) {

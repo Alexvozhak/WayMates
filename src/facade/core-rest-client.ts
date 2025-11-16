@@ -1,4 +1,4 @@
-import { CoreApiError } from './tools/base-tool.js';
+import { CoreApiError } from './tools/errors.js';
 
 import type { AxiosInstance } from 'axios';
 

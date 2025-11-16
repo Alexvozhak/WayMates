@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { sessionIdSchema } from '../shared/result.js';
 import { userIdSchema } from '../shared/schemas.js';
 
-import { SessionExpiredError } from './tools/base-tool.js';
+import { SessionExpiredError } from './tools/errors.js';
 
 import type { SessionId } from '../shared/result.js';
 import type { UserId } from '../shared/schemas.js';
