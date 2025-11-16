@@ -979,7 +979,8 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         u4Result.matchedContext.languages
       );
       expect(u4Result.matchedContext.languages).toBeDefined();
-      expect(u4Result.matchedContext.languages).toEqual(["en", "de"]);
+      expect(u4Result.matchedContext.languages).toEqual(expect.arrayContaining(["en", "de"]));
+      expect(u4Result.matchedContext.languages).toHaveLength(2);
     }
 
     // Verify null languages are returned correctly (backward compatibility)

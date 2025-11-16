@@ -326,10 +326,10 @@ describe('StoryManager Integration Tests', () => {
 
       const secondContextId = secondContext.contextId;
 
-      // Verify NEXT relationship exists
+      // Verify NEXT_CONTEXT relationship exists
       const nextRelResult = await withReadSession(driver, (tx) =>
         tx.run(
-          `MATCH (prev:Context {contextId: $prevId})-[:NEXT]->(next:Context {contextId: $nextId})
+          `MATCH (prev:Context {contextId: $prevId})-[:NEXT_CONTEXT]->(next:Context {contextId: $nextId})
            RETURN prev, next`,
           { prevId: firstContextId, nextId: secondContextId }
         )
@@ -486,7 +486,7 @@ describe('StoryManager Integration Tests', () => {
           { contextId: u3Context.contextId }
         )
       );
-      expect(u3LanguagesResult.records[0]!.get('count').toNumber()).toBe(0);
+      expect(Number(u3LanguagesResult.records[0]!.get('count'))).toBe(0);
     });
   });
 });
