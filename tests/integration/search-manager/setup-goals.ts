@@ -16,26 +16,27 @@
  */
 
 import { beforeAll, beforeEach, afterAll } from 'vitest';
-import { createDriver, withWriteSession } from '../../../src/neo4j.js';
+import { createDriver } from '../../../src/neo4j.js';
 import { TestDataManager } from '../../helpers/test-data-manager.js';
 import { importStories } from '../../helpers/import-stories.js';
+import { DatabaseFixture } from '../../helpers/database-fixture.js';
 import type { Driver } from 'neo4j-driver';
 
 export let driver: Driver;
 let dataManager: TestDataManager;
+let dbFixture: DatabaseFixture;
 
 beforeAll(async () => {
   console.log('[Goals Setup] Starting setup for Goals tests...');
 
   driver = createDriver();
   dataManager = new TestDataManager();
+  dbFixture = new DatabaseFixture(driver);
 }, 30000);
 
 beforeEach(async () => {
   // Cleanup Goals + Users before each test (full isolation)
-  await withWriteSession(driver, async (tx) => {
-    await tx.run('MATCH (n) WHERE n:Goal OR n:User OR n:Context DETACH DELETE n');
-  });
+  await dbFixture.cleanNodes('Goal', 'User', 'Context');
 
   // Reimport U1-U18 for test isolation (match globalSetup data to avoid breaking read-only tests)
   const stories = dataManager.getUserStories([
