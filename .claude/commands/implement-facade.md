@@ -166,12 +166,14 @@ Read .claude/context/project.md
 
 **КРИТИЧНО**: Архитектура УЖЕ проработана. DON'T redesign, DO implement по диаграммам.
 
-**❌ Топ-5 критичных анти-паттернов**:
+**❌ Топ-7 критичных анти-паттернов**:
 1. Redesign архитектуры (следуй диаграммам)
-2. Реэкспорты `export *` (запрещены ESLint)
-3. Default exports (только named)
-4. Комментарии (код self-explanatory)
-5. Roadmap в процессе (только после TASK)
+2. **Type assertions вместо Zod (runtime safety!)**
+3. **Math.random() для ID/tokens (crypto.randomBytes!)**
+4. Реэкспорты `export *` (запрещены ESLint)
+5. Default exports (только named)
+6. Комментарии (код self-explanatory)
+7. Roadmap в процессе (только после TASK)
 
 ---
 
@@ -212,6 +214,8 @@ grep -r "export type" src/shared/types/
 - Создавать типы без grep (дублирование)
 - Inline imports: `import {type Foo}` → разделяй отдельно
 - Писать код до type schema
+- Type assertions `as Type` (только Zod parse)
+- `Math.random()` для ID/tokens (только `crypto.randomBytes()`)
 
 ### Session Management (ADR-003)
 
