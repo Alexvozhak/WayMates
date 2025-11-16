@@ -28,6 +28,33 @@ afterAll(async () => {
   await driver.close();
 });
 
+/**
+ * Helper: Validate DTW formula (dtwTotal = shapeSimilarity + tempoSimilarity + stabilityScore)
+ */
+function validateDtwFormula(
+  userId: string,
+  result: {
+    dtwMetrics?:
+      | { shapeSimilarity: number; tempoSimilarity: number; stabilityScore: number }
+      | undefined;
+    dtwTotal?: number | null | undefined;
+  },
+) {
+  if (result.dtwMetrics) {
+    const { shapeSimilarity, tempoSimilarity, stabilityScore } = result.dtwMetrics;
+    const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
+    const dtwTotal = result.dtwTotal ?? 0;
+    console.log(`[DTW] ${userId} formula breakdown:`, {
+      shapeSimilarity,
+      tempoSimilarity,
+      stabilityScore,
+      sum: calculatedTotal,
+      dtwTotal,
+    });
+    expect(dtwTotal).toBeCloseTo(calculatedTotal, 2);
+  }
+}
+
 describe("User Context Search WITH DTW (DT1-DT5)", () => {
   it("DT1: High similarity - U10 (Backend Node.js) finds U11 (Backend Python) with high DTW scores", async () => {
     // Arrange
@@ -160,12 +187,8 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     const u12Result = results.find((r) => r.userId === u12.userId);
 
     if (u12Result?.dtwMetrics) {
-      console.log("[DT2] U12 (Frontend) DTW metrics:", {
-        shapeSimilarity: u12Result.dtwMetrics.shapeSimilarity,
-        tempoSimilarity: u12Result.dtwMetrics.tempoSimilarity,
-        stabilityScore: u12Result.dtwMetrics.stabilityScore,
-        dtwTotal: u12Result.dtwTotal,
-      });
+      // Validate DTW formula (shape + tempo + stability = dtwTotal)
+      validateDtwFormula("U12", u12Result);
 
       // Business rule: U10 (Backend) vs U12 (Frontend) = MEDIUM similarity
       // - Different domains (Backend vs Frontend → domains component penalty)
@@ -182,12 +205,8 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     const u13Result = results.find((r) => r.userId === u13.userId);
 
     if (u13Result?.dtwMetrics) {
-      console.log("[DT2] U13 (Data Science) DTW metrics:", {
-        shapeSimilarity: u13Result.dtwMetrics.shapeSimilarity,
-        tempoSimilarity: u13Result.dtwMetrics.tempoSimilarity,
-        stabilityScore: u13Result.dtwMetrics.stabilityScore,
-        dtwTotal: u13Result.dtwTotal,
-      });
+      // Validate DTW formula (shape + tempo + stability = dtwTotal)
+      validateDtwFormula("U13", u13Result);
 
       // Business rule: U10 (Backend) vs U13 (Data Science) = HIGH-MEDIUM similarity
       // - Different domains but similar career pattern (Junior→Middle→Senior)
@@ -355,44 +374,9 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       expect(u12Total).toBeLessThan(2);
 
       // DTW formula validation - Verify dtwTotal = shape + tempo + stability for all results
-      if (u11Result.dtwMetrics) {
-        const { shapeSimilarity, tempoSimilarity, stabilityScore } = u11Result.dtwMetrics;
-        const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
-        console.log("[DT4] U11 DTW formula breakdown:", {
-          shapeSimilarity,
-          tempoSimilarity,
-          stabilityScore,
-          sum: calculatedTotal,
-          dtwTotal: u11Total,
-        });
-        expect(u11Total).toBeCloseTo(calculatedTotal, 2);
-      }
-
-      if (u13Result.dtwMetrics) {
-        const { shapeSimilarity, tempoSimilarity, stabilityScore } = u13Result.dtwMetrics;
-        const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
-        console.log("[DT4] U13 DTW formula breakdown:", {
-          shapeSimilarity,
-          tempoSimilarity,
-          stabilityScore,
-          sum: calculatedTotal,
-          dtwTotal: u13Total,
-        });
-        expect(u13Total).toBeCloseTo(calculatedTotal, 2);
-      }
-
-      if (u12Result.dtwMetrics) {
-        const { shapeSimilarity, tempoSimilarity, stabilityScore } = u12Result.dtwMetrics;
-        const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
-        console.log("[DT4] U12 DTW formula breakdown:", {
-          shapeSimilarity,
-          tempoSimilarity,
-          stabilityScore,
-          sum: calculatedTotal,
-          dtwTotal: u12Total,
-        });
-        expect(u12Total).toBeCloseTo(calculatedTotal, 2);
-      }
+      validateDtwFormula("U11", u11Result);
+      validateDtwFormula("U13", u13Result);
+      validateDtwFormula("U12", u12Result);
     }
   });
 });

@@ -117,6 +117,7 @@ ${buildWithCollect("matchedContext", ["matchedUser"])}
  * @param filterByCurrentContext - If true, filters by currentContextId (searchByUser). If false, searches all contexts (searchAdhoc)
  * @returns Complete Cypher query
  */
+// eslint-disable-next-line complexity, max-lines-per-function -- Cypher query builder with conditional blocks
 export function buildCurrentSearchQuery(
   goalPositions: string[] | null,
   strictFields: ContextField[],
@@ -270,6 +271,7 @@ RETURN matchedUser.userId AS userId,
  * @param params - Target search parameters
  * @returns Complete Cypher query
  */
+// eslint-disable-next-line max-lines-per-function -- Cypher query builder with conditional blocks
 export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): string {
   const { criteria, recencyThresholdMonths, excludedCreationReasons } = params;
 

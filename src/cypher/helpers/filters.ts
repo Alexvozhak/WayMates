@@ -15,11 +15,50 @@ function extractPrefix(contextVar: string): string {
 }
 
 /**
- * Generate strict condition for a single field
+ * Condition generators for each field type
  *
  * IMPORTANT:
  * - Skills are NEVER in strict conditions (penalty-based scoring instead)
  * - Uses canonical variables after aggregation (matchedPosition, matchedDomains, etc.)
+ */
+const STRICT_CONDITION_GENERATORS: Record<
+  ContextField,
+  (prefix: string, searchingVar: string) => string
+> = {
+  position: (prefix, searchingVar) => `${prefix}Position.name = ${searchingVar}.position`,
+
+  domains: (prefix, searchingVar) =>
+    `all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)`,
+
+  skills: () => {
+    throw new Error("Skills cannot be in strict conditions. Use buildSkillsScoring() instead.");
+  },
+
+  industry: (prefix, searchingVar) => `${prefix}Industry.name = ${searchingVar}.industry`,
+
+  countryCode: (prefix, searchingVar) => `${prefix}Country.name = ${searchingVar}.countryCode`,
+
+  cityName: (prefix, searchingVar) => `${prefix}City.name = ${searchingVar}.cityName`,
+
+  companySize: (prefix, searchingVar) =>
+    `${prefix}Context.companySize = ${searchingVar}.companySize`,
+
+  birthYear: (prefix, searchingVar) => `${prefix}Context.birthYear = ${searchingVar}.birthYear`,
+
+  educationLevel: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.educationLevel IS NULL THEN true
+    WHEN ${prefix}Context.educationLevel IS NULL THEN true
+    ELSE ${prefix}Context.educationLevel = ${searchingVar}.educationLevel
+  END`,
+
+  languages: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.languages IS NULL THEN true
+    ELSE all(lang IN ${searchingVar}.languages WHERE lang IN ${prefix}Languages)
+  END`,
+};
+
+/**
+ * Generate strict condition for a single field
  *
  * @param field - Context field to match
  * @param prefix - Canonical variable prefix (e.g., 'matched' from 'matchedContext')
@@ -31,62 +70,11 @@ function generateStrictCondition(
   prefix: string,
   searchingVar: string,
 ): string {
-  switch (field) {
-    case "position": {
-      return `${prefix}Position.name = ${searchingVar}.position`;
-    }
-
-    case "domains": {
-      // All domains must be present
-      return `all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)`;
-    }
-
-    case "skills": {
-      // NEVER strict - handled by penalty scoring
-      throw new Error("Skills cannot be in strict conditions. Use buildSkillsScoring() instead.");
-    }
-
-    case "industry": {
-      return `${prefix}Industry.name = ${searchingVar}.industry`;
-    }
-
-    case "countryCode": {
-      return `${prefix}Country.name = ${searchingVar}.countryCode`;
-    }
-
-    case "cityName": {
-      return `${prefix}City.name = ${searchingVar}.cityName`;
-    }
-
-    case "companySize": {
-      return `${prefix}Context.companySize = ${searchingVar}.companySize`;
-    }
-
-    case "birthYear": {
-      return `${prefix}Context.birthYear = ${searchingVar}.birthYear`;
-    }
-
-    case "educationLevel": {
-      return `CASE
-    WHEN ${searchingVar}.educationLevel IS NULL THEN true
-    WHEN ${prefix}Context.educationLevel IS NULL THEN true
-    ELSE ${prefix}Context.educationLevel = ${searchingVar}.educationLevel
-  END`;
-    }
-
-    case "languages": {
-      // Null wildcard: if searchingVar.languages is null, match everyone
-      // Strict matching: ALL languages must be present (AND logic)
-      return `CASE
-    WHEN ${searchingVar}.languages IS NULL THEN true
-    ELSE all(lang IN ${searchingVar}.languages WHERE lang IN ${prefix}Languages)
-  END`;
-    }
-
-    default: {
-      throw new Error(`Unknown field: ${field}`);
-    }
+  const generator = STRICT_CONDITION_GENERATORS[field];
+  if (!generator) {
+    throw new Error(`Unknown field: ${field}`);
   }
+  return generator(prefix, searchingVar);
 }
 
 /**
