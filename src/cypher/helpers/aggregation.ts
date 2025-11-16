@@ -8,12 +8,10 @@
  * Extract prefix from context variable name
  */
 function extractPrefix(contextVar: string): string {
-  if (!contextVar.endsWith('Context')) {
-    throw new Error(
-      `Invalid contextVar: "${contextVar}". Must end with 'Context'`
-    );
+  if (!contextVar.endsWith("Context")) {
+    throw new Error(`Invalid contextVar: "${contextVar}". Must end with 'Context'`);
   }
-  return contextVar.replace('Context', '');
+  return contextVar.replace("Context", "");
 }
 
 /**
@@ -47,10 +45,7 @@ function extractPrefix(contextVar: string): string {
  * // Returns:
  * // WITH matchedUser, timeSinceMatchedMonths, matchedContext, matchedPosition, ...
  */
-export function buildWithCollect(
-  contextVar: string,
-  preserveVars: string[] = []
-): string {
+export function buildWithCollect(contextVar: string, preserveVars: string[] = []): string {
   const prefix = extractPrefix(contextVar);
 
   const baseVars = [
@@ -61,7 +56,7 @@ export function buildWithCollect(
     `${prefix}Country`,
   ];
 
-  const allVars = [...preserveVars, ...baseVars].join(', ');
+  const allVars = [...preserveVars, ...baseVars].join(", ");
 
   return `
 WITH ${allVars},

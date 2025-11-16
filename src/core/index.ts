@@ -1,13 +1,13 @@
-import { DatabaseContext } from '../database-context.js';
-import { createDriver, verifyConnection } from '../neo4j.js';
+import { DatabaseContext } from "../database-context.js";
+import { createDriver, verifyConnection } from "../neo4j.js";
 
-import { GoalsManager } from './goals-manager.js';
-import { PathCollectorService } from './path-collector.service.js';
-import { startRestServer } from './rest-server.js';
-import { SearchManager } from './search-manager.js';
-import { SelectivityService } from './selectivity.service.js';
-import { StoryManager } from './story-manager.js';
-import { TrajectorySimilarityService } from './trajectory-similarity.service.js';
+import { GoalsManager } from "./goals-manager.js";
+import { PathCollectorService } from "./path-collector.service.js";
+import { startRestServer } from "./rest-server.js";
+import { SearchManager } from "./search-manager.js";
+import { SelectivityService } from "./selectivity.service.js";
+import { StoryManager } from "./story-manager.js";
+import { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
 
 async function main(): Promise<void> {
   const driver = createDriver();
@@ -25,11 +25,11 @@ async function main(): Promise<void> {
     selectivityService,
     trajectorySimilarity,
     pathCollector,
-    goalsManager
+    goalsManager,
   );
 
   const port = Number(process.env.CORE_PORT) || 9000;
-  const host = process.env.CORE_HOST || '0.0.0.0';
+  const host = process.env.CORE_HOST || "0.0.0.0";
 
   await startRestServer(
     {
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
       goalsManager,
     },
     port,
-    host
+    host,
   );
 }
 

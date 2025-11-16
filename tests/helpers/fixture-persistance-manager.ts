@@ -7,7 +7,7 @@ export class FixturePersistenceManager {
   constructor(
     driver: Driver,
     protected persistenceManager: PersistenceManager,
-    protected testDataManager: TestDataManager
+    protected testDataManager: TestDataManager,
   ) {
     const db = new DatabaseContext(driver);
     this.persistenceManager = new PersistenceManager(db);

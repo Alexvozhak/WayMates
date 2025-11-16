@@ -2,6 +2,7 @@ import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import importX from 'eslint-plugin-import-x';
 import unicorn from 'eslint-plugin-unicorn';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
   eslint.configs.recommended,
@@ -222,4 +223,6 @@ export default [
     },
   },
 
+  // Must be last - disables ESLint rules that conflict with Prettier
+  eslintConfigPrettier,
 ];

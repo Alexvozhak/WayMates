@@ -2,14 +2,14 @@
  * Search queries
  */
 
-import { buildOptionalMatchRelationships } from '../helpers/relationships.js';
-import { buildWithCollect } from '../helpers/aggregation.js';
-import { buildContextMapProjection } from '../constants/projections.js';
-import { buildStrictWhereClause, buildExcludedReasonsFilter } from '../helpers/filters.js';
-import { buildSkillsScoring } from '../helpers/scoring.js';
-import { buildMatchPath, buildUnwindPath } from '../helpers/trajectory.js';
+import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
+import { buildWithCollect } from "../helpers/aggregation.js";
+import { buildContextMapProjection } from "../constants/projections.js";
+import { buildStrictWhereClause, buildExcludedReasonsFilter } from "../helpers/filters.js";
+import { buildSkillsScoring } from "../helpers/scoring.js";
+import { buildMatchPath, buildUnwindPath } from "../helpers/trajectory.js";
 
-import type { ContextField, Goal, TargetSearchParams } from '../../shared/schemas.js';
+import type { ContextField, Goal, TargetSearchParams } from "../../shared/schemas.js";
 
 /**
  * Get user's current context with enrichment
@@ -30,11 +30,11 @@ import type { ContextField, Goal, TargetSearchParams } from '../../shared/schema
 export function userCurrentContextQuery(): string {
   return `
 MATCH (searchingUser:User {userId: $userId})-[:HAS_CONTEXT]->(searchingContext:Context {contextId: searchingUser.currentContextId})
-${buildOptionalMatchRelationships('searchingContext')}
+${buildOptionalMatchRelationships("searchingContext")}
 
-${buildWithCollect('searchingContext')}
+${buildWithCollect("searchingContext")}
 
-RETURN ${buildContextMapProjection('searching')} AS context
+RETURN ${buildContextMapProjection("searching")} AS context
   `.trim();
 }
 
@@ -77,15 +77,13 @@ RETURN searchingUser.currentContextId AS currentContextId
  * @returns Cypher fragment
  */
 export function buildMatchedContextBase(filterByCurrentContext: boolean = false): string {
-  const contextFilter = filterByCurrentContext
-    ? '{contextId: matchedUser.currentContextId}'
-    : '';
+  const contextFilter = filterByCurrentContext ? "{contextId: matchedUser.currentContextId}" : "";
 
   return `
 MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context${contextFilter})
-${buildOptionalMatchRelationships('matchedContext')}
+${buildOptionalMatchRelationships("matchedContext")}
 
-${buildWithCollect('matchedContext', ['matchedUser'])}
+${buildWithCollect("matchedContext", ["matchedUser"])}
   `.trim();
 }
 
@@ -128,31 +126,33 @@ export function buildCurrentSearchQuery(
     recencyThresholdMonths?: number;
     limit: number;
   },
-  filterByCurrentContext: boolean = false
+  filterByCurrentContext: boolean = false,
 ): string {
   const hasGoal = Boolean(goalPositions && params.userId);
 
   // WHERE clause: strict fields + userId exclusion + recency
-  const strictWhere = buildStrictWhereClause(strictFields, 'matchedContext', '$referenceContext');
+  const strictWhere = buildStrictWhereClause(strictFields, "matchedContext", "$referenceContext");
 
   const additionalConditions: string[] = [];
   if (params.userId) {
-    additionalConditions.push('matchedUser.userId <> $userId');
+    additionalConditions.push("matchedUser.userId <> $userId");
   }
   if (params.recencyThresholdMonths) {
-    additionalConditions.push('duration.between(datetime(matchedContext.createdAt), datetime()).months <= $recencyThresholdMonths');
+    additionalConditions.push(
+      "duration.between(datetime(matchedContext.createdAt), datetime()).months <= $recencyThresholdMonths",
+    );
   }
 
-  let whereClause = '';
+  let whereClause = "";
   if (strictWhere && additionalConditions.length > 0) {
     // strictWhere already has WHERE, add AND + additional conditions
-    whereClause = `${strictWhere} AND\n  ${additionalConditions.join(' AND\n  ')}`;
+    whereClause = `${strictWhere} AND\n  ${additionalConditions.join(" AND\n  ")}`;
   } else if (strictWhere) {
     // Only strictWhere (already has WHERE)
     whereClause = strictWhere;
   } else if (additionalConditions.length > 0) {
     // No strictWhere, add WHERE + additional conditions
-    whereClause = `WHERE ${additionalConditions.join(' AND\n  ')}`;
+    whereClause = `WHERE ${additionalConditions.join(" AND\n  ")}`;
   }
 
   // Goal filtering CASE statement
@@ -190,17 +190,17 @@ ${whereClause}
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
-${buildExcludedReasonsFilter('matchedContext', [
-  'matchedUser',
-  'matchedContext',
-  'matchedPosition',
-  'matchedDomains',
-  'matchedSkills',
-  'matchedLanguages',
-  'matchedIndustry',
-  'matchedCity',
-  'matchedCountry',
-  'timeSinceMatchedMonths',
+${buildExcludedReasonsFilter("matchedContext", [
+  "matchedUser",
+  "matchedContext",
+  "matchedPosition",
+  "matchedDomains",
+  "matchedSkills",
+  "matchedLanguages",
+  "matchedIndustry",
+  "matchedCity",
+  "matchedCountry",
+  "timeSinceMatchedMonths",
 ])}
 
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
@@ -229,7 +229,7 @@ ORDER BY contextMatchScore DESC, timeSinceMatchedMonths ASC
 LIMIT toInteger($limit)
 
 RETURN matchedUser.userId AS userId,
-       ${buildContextMapProjection('matched')} AS matchedContext,
+       ${buildContextMapProjection("matched")} AS matchedContext,
        timeSinceMatchedMonths,
        contextMatchScore,
        candidateType
@@ -275,74 +275,87 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
   const { criteria, recencyThresholdMonths, excludedCreationReasons } = params;
 
   // Build WHERE conditions for target filtering
-  const conditions: string[] = ['matchedUser.userId <> $userId'];
+  const conditions: string[] = ["matchedUser.userId <> $userId"];
 
   // Position filter (if strict)
-  if ('position' in criteria) {
-    conditions.push(`
+  if ("position" in criteria) {
+    conditions.push(
+      `
     CASE
       WHEN $position IS NULL THEN true
       WHEN $position.mode = 'desired' THEN matchedPosition.name IN $position.values
       WHEN $position.mode = 'undesired' THEN NOT matchedPosition.name IN $position.values
       ELSE true
-    END`.trim());
+    END`.trim(),
+    );
   }
 
   // Country filter (if strict)
-  if ('countryCode' in criteria) {
-    conditions.push(`
+  if ("countryCode" in criteria) {
+    conditions.push(
+      `
     CASE
       WHEN $countries IS NULL THEN true
       WHEN $countries.mode = 'desired' THEN matchedCountry.name IN $countries.values
       WHEN $countries.mode = 'undesired' THEN NOT matchedCountry.name IN $countries.values
       ELSE true
-    END`.trim());
+    END`.trim(),
+    );
   }
 
   // Domains filter (if strict)
-  if ('domains' in criteria) {
-    conditions.push(`
+  if ("domains" in criteria) {
+    conditions.push(
+      `
     CASE
       WHEN $domains IS NULL THEN true
       WHEN $domains.mode = 'desired' THEN ANY(item IN matchedDomains WHERE item IN $domains.values)
       WHEN $domains.mode = 'undesired' THEN NONE(item IN matchedDomains WHERE item IN $domains.values)
       ELSE true
-    END`.trim());
+    END`.trim(),
+    );
   }
 
   // Skills filter (if strict)
-  if ('skills' in criteria) {
-    conditions.push(`
+  if ("skills" in criteria) {
+    conditions.push(
+      `
     CASE
       WHEN $skills IS NULL THEN true
       WHEN $skills.mode = 'desired' THEN ANY(item IN matchedSkills WHERE item IN $skills.values)
       WHEN $skills.mode = 'undesired' THEN NONE(item IN matchedSkills WHERE item IN $skills.values)
       ELSE true
-    END`.trim());
+    END`.trim(),
+    );
   }
 
   // Languages filter (if strict)
-  if ('languages' in criteria) {
-    conditions.push(`
+  if ("languages" in criteria) {
+    conditions.push(
+      `
     CASE
       WHEN $languages IS NULL THEN true
       WHEN $languages.mode = 'desired' THEN ANY(item IN matchedLanguages WHERE item IN $languages.values)
       WHEN $languages.mode = 'undesired' THEN NONE(item IN matchedLanguages WHERE item IN $languages.values)
       ELSE true
-    END`.trim());
+    END`.trim(),
+    );
   }
 
   // Recency filter (if specified)
   if (recencyThresholdMonths) {
-    conditions.push('duration.between(datetime(matchedContext.createdAt), datetime()).months <= $recencyThresholdMonths');
+    conditions.push(
+      "duration.between(datetime(matchedContext.createdAt), datetime()).months <= $recencyThresholdMonths",
+    );
   }
 
-  const whereClause = `WHERE ${conditions.join(' AND\n  ')}`;
+  const whereClause = `WHERE ${conditions.join(" AND\n  ")}`;
 
   // Excluded reasons filter for trajectory
-  const excludedReasonsCheck = excludedCreationReasons.length > 0
-    ? `WHERE NOT ANY(ctx IN trajectory WHERE ANY(reason IN ctx.creationReason WHERE reason IN $excludedCreationReasons))`
-    : '';
+  const excludedReasonsCheck =
+    excludedCreationReasons.length > 0
+      ? `WHERE NOT ANY(ctx IN trajectory WHERE ANY(reason IN ctx.creationReason WHERE reason IN $excludedCreationReasons))`
+      : "";
 
   return `
 ${buildMatchedContextBase(false)}
@@ -352,25 +365,25 @@ ${whereClause}
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
-${buildMatchPath('matchedContext')}
+${buildMatchPath("matchedContext")}
 
-${buildUnwindPath('matchedPathNodes', 'matchedPathContext')}
+${buildUnwindPath("matchedPathNodes", "matchedPathContext")}
 
-${buildOptionalMatchRelationships('matchedPathContext')}
+${buildOptionalMatchRelationships("matchedPathContext")}
 
-${buildWithCollect('matchedPathContext', ['matchedUser', 'matchedContext', 'matchedPosition', 'matchedDomains', 'matchedSkills', 'matchedLanguages', 'matchedIndustry', 'matchedCity', 'matchedCountry', 'timeSinceMatchedMonths'])}
+${buildWithCollect("matchedPathContext", ["matchedUser", "matchedContext", "matchedPosition", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceMatchedMonths"])}
 
 ORDER BY matchedPathContext.createdAt ASC
 
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
-     collect(${buildContextMapProjection('matchedPath')}) AS trajectory
+     collect(${buildContextMapProjection("matchedPath")}) AS trajectory
 ${excludedReasonsCheck}
 
 ORDER BY timeSinceMatchedMonths ASC
 LIMIT toInteger($limit)
 
 RETURN matchedUser.userId AS userId,
-       ${buildContextMapProjection('matched')} AS matchedContext,
+       ${buildContextMapProjection("matched")} AS matchedContext,
        timeSinceMatchedMonths,
        trajectory AS path
   `.trim();

@@ -42,7 +42,18 @@
     "structurizr:screenshot": "scripts/screenshot-structurizr.sh",
     "validate:dsl": "docker compose run --rm structurizr-cli",
     "validate:mermaid": "mermaid-validate validate",
-    "validate:diagrams": "npm run validate:dsl"
+    "validate:diagrams": "npm run validate:dsl",
+    "prepare": "husky",
+    "check": "npm run check:types && npm run check:lint && npm run check:tests",
+    "check:types": "tsc --noEmit",
+    "check:lint": "npm run lint -- --max-warnings 0",
+    "check:tests": "npm run test:integration"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -57,9 +68,13 @@
     "@types/node": "^24.6.2",
     "@vitest/eslint-plugin": "^1.3.16",
     "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-unicorn": "^62.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "mermaid-validate": "^1.3.2",
+    "prettier": "^3.6.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.46.0",

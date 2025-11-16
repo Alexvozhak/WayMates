@@ -18,9 +18,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createDriver } from "../../../src/neo4j.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
-import {
-  validateAllPaths,
-} from "../../helpers/path-validator.js";
+import { validateAllPaths } from "../../helpers/path-validator.js";
 import type { Driver } from "neo4j-driver";
 
 let driver: Driver;
@@ -66,7 +64,7 @@ describe("Target Search (TG1-TG7)", () => {
         userId: r.userId,
         position: r.matchedContext.position,
         domains: r.matchedContext.domains,
-      }))
+      })),
     );
 
     // U5 is the only Middle position user
@@ -81,10 +79,10 @@ describe("Target Search (TG1-TG7)", () => {
 
     // Filter mode logging (desired mode)
     console.log(
-      `[TG1] Filter mode: desired, matched positions: ${results.map((r) => r.matchedContext.position).join(", ")}`
+      `[TG1] Filter mode: desired, matched positions: ${results.map((r) => r.matchedContext.position).join(", ")}`,
     );
     console.log(
-      `[TG1] All results match desired position? ${results.every((r) => r.matchedContext.position === "Middle")}`
+      `[TG1] All results match desired position? ${results.every((r) => r.matchedContext.position === "Middle")}`,
     );
 
     // Path structure validation
@@ -95,13 +93,16 @@ describe("Target Search (TG1-TG7)", () => {
       const now = new Date();
       const matchedDate = new Date(r.matchedContext.createdAt);
       const monthsDiff = Math.floor(
-        (now.getTime() - matchedDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+        (now.getTime() - matchedDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44),
       );
 
       // timeSinceMatchedMonths should be >= 0 (recent or in past)
-      if (r.timeSinceMatchedMonths != null) { // Check for null AND undefined
+      if (r.timeSinceMatchedMonths != null) {
+        // Check for null AND undefined
         expect(r.timeSinceMatchedMonths).toBeGreaterThanOrEqual(0);
-        console.log(`[TG1] Time since matched for ${r.userId.slice(0, 8)}: ${r.timeSinceMatchedMonths} months`);
+        console.log(
+          `[TG1] Time since matched for ${r.userId.slice(0, 8)}: ${r.timeSinceMatchedMonths} months`,
+        );
       }
     });
   });
@@ -133,7 +134,7 @@ describe("Target Search (TG1-TG7)", () => {
     console.log("[TG2] Results count:", results.length);
     console.log(
       "[TG2] Matched positions:",
-      results.map((r) => r.matchedContext.position)
+      results.map((r) => r.matchedContext.position),
     );
 
     // U5 should be in results (Middle position, not Junior)
@@ -157,14 +158,10 @@ describe("Target Search (TG1-TG7)", () => {
 
     // Filter mode logging (undesired mode)
     const uniquePositions = [...new Set(results.map((r) => r.matchedContext.position))];
+    console.log(`[TG2] Filter mode: undesired, excluded position: Junior`);
+    console.log(`[TG2] Found positions: ${uniquePositions.join(", ")}`);
     console.log(
-      `[TG2] Filter mode: undesired, excluded position: Junior`
-    );
-    console.log(
-      `[TG2] Found positions: ${uniquePositions.join(", ")}`
-    );
-    console.log(
-      `[TG2] No results have excluded position? ${!results.some((r) => r.matchedContext.position === "Junior")}`
+      `[TG2] No results have excluded position? ${!results.some((r) => r.matchedContext.position === "Junior")}`,
     );
 
     // Path structure validation
@@ -174,10 +171,13 @@ describe("Target Search (TG1-TG7)", () => {
     const withTrajectory = results.filter((r) => r.path && r.path.length > 1);
     const singleContext = results.filter((r) => !r.path || r.path.length <= 1);
 
-    console.log(`[TG2] Time calculation - ${withTrajectory.length} with trajectory, ${singleContext.length} single context`);
+    console.log(
+      `[TG2] Time calculation - ${withTrajectory.length} with trajectory, ${singleContext.length} single context`,
+    );
 
     results.forEach((r) => {
-      if (r.timeSinceMatchedMonths != null) { // Check for null AND undefined
+      if (r.timeSinceMatchedMonths != null) {
+        // Check for null AND undefined
         expect(r.timeSinceMatchedMonths).toBeGreaterThanOrEqual(0);
       }
     });
@@ -214,19 +214,17 @@ describe("Target Search (TG1-TG7)", () => {
         userId: r.userId,
         position: r.matchedContext.position,
         domains: r.matchedContext.domains,
-      }))
+      })),
     );
 
     // U1, U2, U4, U5, U6, U9, U12 have Frontend domain
     const frontendUsers = ["U1", "U2", "U4", "U5", "U6", "U9", "U12"];
     const frontendUserIds = frontendUsers.map(
-      (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId
+      (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId,
     );
 
     const matchedUserIds = results.map((r) => r.userId);
-    const hasFrontendUsers = frontendUserIds.some((id) =>
-      matchedUserIds.includes(id)
-    );
+    const hasFrontendUsers = frontendUserIds.some((id) => matchedUserIds.includes(id));
     expect(hasFrontendUsers).toBe(true);
 
     // All results should have Frontend in domains
@@ -241,11 +239,9 @@ describe("Target Search (TG1-TG7)", () => {
     expect(results.find((r) => r.userId === u8.userId)).toBeUndefined();
 
     // Filter mode logging (desired domains - ANY match)
+    console.log(`[TG3] Filter mode: desired domains, value: Frontend (ANY match logic)`);
     console.log(
-      `[TG3] Filter mode: desired domains, value: Frontend (ANY match logic)`
-    );
-    console.log(
-      `[TG3] All results contain Frontend? ${results.every((r) => r.matchedContext.domains.includes("Frontend"))}`
+      `[TG3] All results contain Frontend? ${results.every((r) => r.matchedContext.domains.includes("Frontend"))}`,
     );
 
     // Path structure validation
@@ -279,19 +275,17 @@ describe("Target Search (TG1-TG7)", () => {
     console.log("[TG4] Results count:", results.length);
     console.log(
       "[TG4] Matched domains:",
-      results.map((r) => r.matchedContext.domains)
+      results.map((r) => r.matchedContext.domains),
     );
 
     // Backend users (U7, U8, U10, U11) should be in results
     const backendUsers = ["U7", "U8", "U10", "U11"];
     const backendUserIds = backendUsers.map(
-      (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId
+      (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId,
     );
 
     const matchedUserIds = results.map((r) => r.userId);
-    const hasBackendUsers = backendUserIds.some((id) =>
-      matchedUserIds.includes(id)
-    );
+    const hasBackendUsers = backendUserIds.some((id) => matchedUserIds.includes(id));
     expect(hasBackendUsers).toBe(true);
 
     // None of the results should have Frontend in domains
@@ -308,11 +302,9 @@ describe("Target Search (TG1-TG7)", () => {
     expect(results.find((r) => r.userId === u4.userId)).toBeUndefined();
 
     // Filter mode logging (undesired domains - NONE match)
+    console.log(`[TG4] Filter mode: undesired domains, value: Frontend (NONE match logic)`);
     console.log(
-      `[TG4] Filter mode: undesired domains, value: Frontend (NONE match logic)`
-    );
-    console.log(
-      `[TG4] No results contain Frontend? ${!results.some((r) => r.matchedContext.domains.includes("Frontend"))}`
+      `[TG4] No results contain Frontend? ${!results.some((r) => r.matchedContext.domains.includes("Frontend"))}`,
     );
 
     // Path structure validation
@@ -349,19 +341,17 @@ describe("Target Search (TG1-TG7)", () => {
       results.slice(0, 3).map((r) => ({
         userId: r.userId,
         skills: r.matchedContext.skills.slice(0, 3),
-      }))
+      })),
     );
 
     // U8, U11, U13 have python skill
     const pythonUsers = ["U8", "U11", "U13"];
     const pythonUserIds = pythonUsers.map(
-      (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId
+      (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId,
     );
 
     const matchedUserIds = results.map((r) => r.userId);
-    const hasPythonUsers = pythonUserIds.some((id) =>
-      matchedUserIds.includes(id)
-    );
+    const hasPythonUsers = pythonUserIds.some((id) => matchedUserIds.includes(id));
     expect(hasPythonUsers).toBe(true);
 
     // All results should have python in skills
@@ -376,11 +366,9 @@ describe("Target Search (TG1-TG7)", () => {
     expect(results.find((r) => r.userId === u2.userId)).toBeUndefined();
 
     // Filter mode logging (desired skills - ANY match)
+    console.log(`[TG5] Filter mode: desired skills, value: python (ANY match logic)`);
     console.log(
-      `[TG5] Filter mode: desired skills, value: python (ANY match logic)`
-    );
-    console.log(
-      `[TG5] All results contain python? ${results.every((r) => r.matchedContext.skills.includes("python"))}`
+      `[TG5] All results contain python? ${results.every((r) => r.matchedContext.skills.includes("python"))}`,
     );
 
     // Path structure validation
@@ -417,19 +405,17 @@ describe("Target Search (TG1-TG7)", () => {
       results.slice(0, 3).map((r) => ({
         userId: r.userId,
         skills: r.matchedContext.skills.slice(0, 3),
-      }))
+      })),
     );
 
     // Users without python (U1, U2, U4, U5, U6, U7, U9, U10, U12)
     const nonPythonUsers = ["U1", "U2", "U4", "U5", "U6", "U7", "U9", "U10", "U12"];
     const nonPythonUserIds = nonPythonUsers.map(
-      (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId
+      (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId,
     );
 
     const matchedUserIds = results.map((r) => r.userId);
-    const hasNonPythonUsers = nonPythonUserIds.some((id) =>
-      matchedUserIds.includes(id)
-    );
+    const hasNonPythonUsers = nonPythonUserIds.some((id) => matchedUserIds.includes(id));
     expect(hasNonPythonUsers).toBe(true);
 
     // None of the results should have python in skills
@@ -446,11 +432,9 @@ describe("Target Search (TG1-TG7)", () => {
     expect(results.find((r) => r.userId === u13.userId)).toBeUndefined();
 
     // Filter mode logging (undesired skills - NONE match)
+    console.log(`[TG6] Filter mode: undesired skills, value: python (NONE match logic)`);
     console.log(
-      `[TG6] Filter mode: undesired skills, value: python (NONE match logic)`
-    );
-    console.log(
-      `[TG6] No results contain python? ${!results.some((r) => r.matchedContext.skills.includes("python"))}`
+      `[TG6] No results contain python? ${!results.some((r) => r.matchedContext.skills.includes("python"))}`,
     );
 
     // Path structure validation
@@ -497,7 +481,7 @@ describe("Target Search (TG1-TG7)", () => {
         position: r.matchedContext.position,
         domains: r.matchedContext.domains,
         skills: r.matchedContext.skills.slice(0, 2),
-      }))
+      })),
     );
 
     // Expected: U7 (Junior Backend java/spring), U10 (Junior Backend nodejs/javascript)
@@ -529,16 +513,16 @@ describe("Target Search (TG1-TG7)", () => {
 
     // Filter mode logging (combined filters)
     console.log(
-      `[TG7] Filter mode: desired position=Junior + desired domains=Backend + undesired skills=python`
+      `[TG7] Filter mode: desired position=Junior + desired domains=Backend + undesired skills=python`,
     );
     console.log(
-      `[TG7] All match position? ${results.every((r) => r.matchedContext.position === "Junior")}`
+      `[TG7] All match position? ${results.every((r) => r.matchedContext.position === "Junior")}`,
     );
     console.log(
-      `[TG7] All match domains? ${results.every((r) => r.matchedContext.domains.includes("Backend"))}`
+      `[TG7] All match domains? ${results.every((r) => r.matchedContext.domains.includes("Backend"))}`,
     );
     console.log(
-      `[TG7] None match excluded skills? ${!results.some((r) => r.matchedContext.skills.includes("python"))}`
+      `[TG7] None match excluded skills? ${!results.some((r) => r.matchedContext.skills.includes("python"))}`,
     );
 
     // Path structure validation
@@ -574,7 +558,7 @@ describe("Target Search (TG1-TG7)", () => {
       results.map((r) => ({
         userId: r.userId,
         languages: r.matchedContext.languages,
-      }))
+      })),
     );
 
     // Business rule: Desired mode → ANY match (OR logic)
@@ -604,7 +588,7 @@ describe("Target Search (TG1-TG7)", () => {
       `[TG-LANG-1] All results match desired languages (ANY)? ${results.every((r) => {
         const langs = r.matchedContext.languages || [];
         return langs.some((l) => ["en", "fr"].includes(l));
-      })}`
+      })}`,
     );
 
     // Path structure validation
@@ -640,7 +624,7 @@ describe("Target Search (TG1-TG7)", () => {
       results.map((r) => ({
         userId: r.userId,
         languages: r.matchedContext.languages,
-      }))
+      })),
     );
 
     // Business rule: Undesired mode → NONE match (exclude all with "en")
@@ -670,7 +654,7 @@ describe("Target Search (TG1-TG7)", () => {
       `[TG-LANG-2] All results exclude undesired language 'en'? ${results.every((r) => {
         const langs = r.matchedContext.languages || [];
         return !langs.includes("en");
-      })}`
+      })}`,
     );
 
     // Path structure validation

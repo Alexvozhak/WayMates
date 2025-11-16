@@ -1,6 +1,6 @@
-import type { Driver, Record } from 'neo4j-driver';
+import type { Driver, Record } from "neo4j-driver";
 
-const REFERENCE_DATA_LABELS = ['Language', 'Skill', 'SkillCategory', 'Reason'] as const;
+const REFERENCE_DATA_LABELS = ["Language", "Skill", "SkillCategory", "Reason"] as const;
 
 export class DatabaseFixture {
   static getReferenceDataLabels(): readonly string[] {
@@ -31,12 +31,12 @@ export class DatabaseFixture {
 
   async cleanNodes(...labels: string[]): Promise<void> {
     if (labels.length === 0) {
-      throw new Error('cleanNodes requires at least one label');
+      throw new Error("cleanNodes requires at least one label");
     }
 
     const session = this.driver.session();
     try {
-      const whereClause = labels.map((label) => `n:${label}`).join(' OR ');
+      const whereClause = labels.map((label) => `n:${label}`).join(" OR ");
 
       await session.run(`
         MATCH (n)
@@ -64,14 +64,14 @@ export class DatabaseFixture {
 
       const record = result.records[0];
       if (!record) {
-        throw new Error('Failed to query reference data counts');
+        throw new Error("Failed to query reference data counts");
       }
 
       const counts = this.extractReferenceDataCounts(record);
       this.validateReferenceDataCounts(counts);
 
       console.log(
-        `[DatabaseFixture] Reference data verified: ${counts.langCount} Languages, ${counts.skillCount} Skills, ${counts.categoryCount} Categories, ${counts.reasonCount} Reasons`
+        `[DatabaseFixture] Reference data verified: ${counts.langCount} Languages, ${counts.skillCount} Skills, ${counts.categoryCount} Categories, ${counts.reasonCount} Reasons`,
       );
     } finally {
       await session.close();
@@ -81,8 +81,8 @@ export class DatabaseFixture {
   async verifyUserCount(expectedCount: number): Promise<void> {
     const session = this.driver.session();
     try {
-      const result = await session.run('MATCH (u:User) RETURN count(u) AS count');
-      const userCount = Number(result.records[0]?.get('count')) || 0;
+      const result = await session.run("MATCH (u:User) RETURN count(u) AS count");
+      const userCount = Number(result.records[0]?.get("count")) || 0;
 
       if (userCount !== expectedCount) {
         throw new Error(`Expected ${expectedCount} users, found ${userCount}`);
@@ -101,10 +101,10 @@ export class DatabaseFixture {
     reasonCount: number;
   } {
     return {
-      langCount: Number(record.get('langCount')) || 0,
-      skillCount: Number(record.get('skillCount')) || 0,
-      categoryCount: Number(record.get('categoryCount')) || 0,
-      reasonCount: Number(record.get('reasonCount')) || 0,
+      langCount: Number(record.get("langCount")) || 0,
+      skillCount: Number(record.get("skillCount")) || 0,
+      categoryCount: Number(record.get("categoryCount")) || 0,
+      reasonCount: Number(record.get("reasonCount")) || 0,
     };
   }
 
@@ -119,7 +119,7 @@ export class DatabaseFixture {
     if (langCount === 0 || skillCount === 0 || categoryCount === 0 || reasonCount === 0) {
       throw new Error(
         `Reference data missing! Run 'npm run db:test:init' before tests.\n` +
-        `Found: ${langCount} Languages, ${skillCount} Skills, ${categoryCount} Categories, ${reasonCount} Reasons`
+          `Found: ${langCount} Languages, ${skillCount} Skills, ${categoryCount} Categories, ${reasonCount} Reasons`,
       );
     }
   }

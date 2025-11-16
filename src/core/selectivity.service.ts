@@ -12,23 +12,23 @@ const FALLBACK_SELECTIVITY = 1_000_000;
 
 export class SelectivityService {
   private readonly explainPatterns: Record<ContextField, string> = {
-    position: 'MATCH (c:Context {position: $fieldValue})',
-    domains: 'MATCH (c:Context) WHERE ANY(d IN $fieldValue WHERE d IN c.domains)',
-    skills: 'MATCH (c:Context) WHERE ANY(s IN $fieldValue WHERE s IN c.skills)',
-    industry: 'MATCH (c:Context {industry: $fieldValue})',
-    companySize: 'MATCH (c:Context {companySize: $fieldValue})',
-    countryCode: 'MATCH (c:Context {countryCode: $fieldValue})',
-    cityName: 'MATCH (c:Context {cityName: $fieldValue})',
-    birthYear: 'MATCH (c:Context {birthYear: $fieldValue})',
-    educationLevel: 'MATCH (c:Context {educationLevel: $fieldValue})',
-    languages: 'MATCH (c:Context)-[:SPEAKS_FLUENT]->(l:Language) WHERE l.code IN $fieldValue',
+    position: "MATCH (c:Context {position: $fieldValue})",
+    domains: "MATCH (c:Context) WHERE ANY(d IN $fieldValue WHERE d IN c.domains)",
+    skills: "MATCH (c:Context) WHERE ANY(s IN $fieldValue WHERE s IN c.skills)",
+    industry: "MATCH (c:Context {industry: $fieldValue})",
+    companySize: "MATCH (c:Context {companySize: $fieldValue})",
+    countryCode: "MATCH (c:Context {countryCode: $fieldValue})",
+    cityName: "MATCH (c:Context {cityName: $fieldValue})",
+    birthYear: "MATCH (c:Context {birthYear: $fieldValue})",
+    educationLevel: "MATCH (c:Context {educationLevel: $fieldValue})",
+    languages: "MATCH (c:Context)-[:SPEAKS_FLUENT]->(l:Language) WHERE l.code IN $fieldValue",
   };
 
   constructor(private db: DatabaseContext) {}
 
   async rankStrictFields(
     strictFields: ContextField[],
-    userContext: UserContext
+    userContext: UserContext,
   ): Promise<ContextField[]> {
     const results = await this.db.read(async (tx) => {
       const selectivityResults: SelectivityResult[] = [];
@@ -38,11 +38,7 @@ export class SelectivityService {
         if (fieldValue == null) continue;
 
         try {
-          const result = await this.getFieldSelectivity(
-            tx,
-            fieldName,
-            fieldValue
-          );
+          const result = await this.getFieldSelectivity(tx, fieldName, fieldValue);
           selectivityResults.push(result);
         } catch {
           // swallow, continue to next field
@@ -54,9 +50,7 @@ export class SelectivityService {
 
     if (results.length === 0) return strictFields;
 
-    return results
-      .toSorted((a, b) => a.estimatedRows - b.estimatedRows)
-      .map((r) => r.fieldName);
+    return results.toSorted((a, b) => a.estimatedRows - b.estimatedRows).map((r) => r.fieldName);
   }
 
   private getContextFieldValue(context: UserContext, field: ContextField): unknown {
@@ -82,7 +76,7 @@ export class SelectivityService {
   private async getFieldSelectivity(
     tx: ManagedTransaction,
     fieldName: ContextField,
-    fieldValue: unknown
+    fieldValue: unknown,
   ): Promise<SelectivityResult> {
     const pattern = this.buildExplainPattern(fieldName);
     const query = `EXPLAIN ${pattern} RETURN count(c)`;

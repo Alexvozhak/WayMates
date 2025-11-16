@@ -2,27 +2,17 @@ import { z } from "zod";
 
 import { REQUIRED_FIELDS_FOR_CURRENT_CONTEXT } from "../config.js";
 import {
-
   contextFieldSchema,
   contextIdSchema,
   matchedCandidateWithPathSchema,
-
   scoredMatchedCandidateSchema,
   scoredMatchedCandidateWithPathAndDTWSchema,
-
-
-
   trailIdSchema,
-
-
-
   userContextSchemaBase,
   userIdSchema,
-
 } from "../shared/schemas.js";
 
-import type {
-  UserContext} from "../shared/schemas.js";
+import type { UserContext } from "../shared/schemas.js";
 
 // Re-export shared types for core use
 export type {
@@ -56,7 +46,6 @@ export type {
 
 // Re-export schemas for validation
 
-
 // ==========================================
 // === CORE-SPECIFIC CONSTANTS ===
 // ==========================================
@@ -77,10 +66,7 @@ export const CONTEXT_FIELD_NAMES = [
 
 export const skillPenaltySchema = z.object({
   skill: z.string().describe("Skill name"),
-  categoryName: z
-    .string()
-    .nullable()
-    .describe("Category this skill belongs to"),
+  categoryName: z.string().nullable().describe("Category this skill belongs to"),
   weight: z
     .number()
     .min(0)
@@ -90,28 +76,16 @@ export const skillPenaltySchema = z.object({
     .number()
     .min(0)
     .describe("Penalty multiplier (from category or default 1.0)"),
-  penaltyScore: z
-    .number()
-    .describe("Calculated penalty: weight * penaltyMultiplier"),
+  penaltyScore: z.number().describe("Calculated penalty: weight * penaltyMultiplier"),
 });
 
 export type SkillPenalty = z.infer<typeof skillPenaltySchema>;
 
 export const skillsAnalysisSchema = z.object({
-  matchedSkills: z
-    .array(z.string())
-    .describe("Skills that match user requirements"),
-  extraSkills: z
-    .array(z.string())
-    .describe("Skills candidate has but user doesn't need"),
-  totalPenalty: z
-    .number()
-    .min(0)
-    .max(1)
-    .describe("Total penalty normalized to 0-1 (sum / 100)"),
-  penalties: z
-    .array(skillPenaltySchema)
-    .describe("Detailed penalty breakdown per extra skill"),
+  matchedSkills: z.array(z.string()).describe("Skills that match user requirements"),
+  extraSkills: z.array(z.string()).describe("Skills candidate has but user doesn't need"),
+  totalPenalty: z.number().min(0).max(1).describe("Total penalty normalized to 0-1 (sum / 100)"),
+  penalties: z.array(skillPenaltySchema).describe("Detailed penalty breakdown per extra skill"),
 });
 
 export type SkillsAnalysis = z.infer<typeof skillsAnalysisSchema>;
@@ -138,9 +112,7 @@ export const targetOnlySearchResultSchema = z.object({
   searchMode: z.literal("target_only").describe("Reverse search by target"),
 });
 
-export type TargetOnlySearchResult = z.infer<
-  typeof targetOnlySearchResultSchema
->;
+export type TargetOnlySearchResult = z.infer<typeof targetOnlySearchResultSchema>;
 
 // ==========================================
 // === REASONS (for AI recognition) ===
@@ -162,15 +134,17 @@ export type Reason = z.infer<typeof reasonSchema>;
 // === LEGACY SEARCH TYPES (to be removed) ===
 // ==========================================
 
-export const searchContextSchema = userContextSchemaBase.omit({
-  contextId: true,
-  createdAt: true,
-  creationReason: true,
-  previousContextId: true,
-  nextContextId: true,
-  birthYear: true,
-  citizenships: true,
-}).partial();
+export const searchContextSchema = userContextSchemaBase
+  .omit({
+    contextId: true,
+    createdAt: true,
+    creationReason: true,
+    previousContextId: true,
+    nextContextId: true,
+    birthYear: true,
+    citizenships: true,
+  })
+  .partial();
 
 export const flexibleFieldSchema = z.object({
   field: contextFieldSchema,
@@ -179,34 +153,21 @@ export const flexibleFieldSchema = z.object({
 
 const flexibleFieldsSchema = z
   .array(flexibleFieldSchema)
-  .refine(
-    (fields) => fields.reduce((sum, field) => sum + field.weight, 0) === 100,
-    {
-      message: "Total weight of flexible fields must equal 100",
-    }
-  );
+  .refine((fields) => fields.reduce((sum, field) => sum + field.weight, 0) === 100, {
+    message: "Total weight of flexible fields must equal 100",
+  });
 
 export const searchConstraintsSchema = z.object({
   maxTimingDiffMonths: z.number().describe("Relevance within N months"),
-  timingDiffThresholdPercent: z
-    .number()
-    .describe("Percentage threshold for timing filtering"),
-  maxExperienceDiffMonths: z
-    .number()
-    .describe("Maximum experience difference in months"),
+  timingDiffThresholdPercent: z.number().describe("Percentage threshold for timing filtering"),
+  maxExperienceDiffMonths: z.number().describe("Maximum experience difference in months"),
   resultsLimit: z
     .number()
     .min(1)
     .max(20)
     .describe("Results limit for Cypher LIMIT (must be between 1 and 20)"),
-  minExperienceMonths: z
-    .number()
-    .describe("Minimum work experience")
-    .optional(),
-  maxExperienceMonths: z
-    .number()
-    .describe("Maximum work experience")
-    .optional(),
+  minExperienceMonths: z.number().describe("Minimum work experience").optional(),
+  maxExperienceMonths: z.number().describe("Maximum work experience").optional(),
   requiredSkills: z.array(z.string()).default([]).describe("Required skills"),
 });
 
@@ -221,16 +182,14 @@ export type SearchConstraints = z.infer<typeof searchConstraintsSchema>;
 export const currentOnlyReasonParamsSchema = z.object({
   currentPreset: z.string().describe("Preset name for compatibility scoring"),
   currentContext: searchContextSchema.describe(
-    "User's current context (search params, all fields optional)"
+    "User's current context (search params, all fields optional)",
   ),
   currentUserId: userIdSchema.describe("User ID (to exclude from results)"),
   searchPeriodMonths: z
     .number()
     .min(1)
     .max(60)
-    .describe(
-      "Search period in months (forward lookahead, typically 6/12/18/24)"
-    ),
+    .describe("Search period in months (forward lookahead, typically 6/12/18/24)"),
   requiredReasons: z
     .array(z.string())
     .max(10)
@@ -244,25 +203,21 @@ export const currentOnlyReasonParamsSchema = z.object({
     .default([])
     .describe("Excluded reasons (must have NONE, max 10)"),
   searchConstraints: searchConstraintsSchema.describe(
-    "Search constraints (results_limit, timing thresholds)"
+    "Search constraints (results_limit, timing thresholds)",
   ),
 });
 
 export const targetOnlyReasonParamsSchema = z.object({
-  targetPreset: z
-    .string()
-    .describe("Preset name for target compatibility scoring"),
+  targetPreset: z.string().describe("Preset name for target compatibility scoring"),
   targetContext: searchContextSchema.describe(
-    "User's target context (search params, all fields optional)"
+    "User's target context (search params, all fields optional)",
   ),
   currentUserId: userIdSchema.describe("User ID (to exclude from results)"),
   searchPeriodMonths: z
     .number()
     .min(1)
     .max(60)
-    .describe(
-      "Search period in months (backward lookback, typically 6/12/18/24)"
-    ),
+    .describe("Search period in months (backward lookback, typically 6/12/18/24)"),
   requiredReasons: z
     .array(z.string())
     .max(10)
@@ -276,7 +231,7 @@ export const targetOnlyReasonParamsSchema = z.object({
     .default([])
     .describe("Excluded reasons (must have NONE, max 10)"),
   searchConstraints: searchConstraintsSchema.describe(
-    "Search constraints (results_limit, timing thresholds)"
+    "Search constraints (results_limit, timing thresholds)",
   ),
 });
 
@@ -294,12 +249,8 @@ export const deleteTrailParamsSchema = z.object({
   trailId: trailIdSchema,
 });
 
-export type CurrentOnlyReasonParams = z.input<
-  typeof currentOnlyReasonParamsSchema
->;
-export type TargetOnlyReasonParams = z.input<
-  typeof targetOnlyReasonParamsSchema
->;
+export type CurrentOnlyReasonParams = z.input<typeof currentOnlyReasonParamsSchema>;
+export type TargetOnlyReasonParams = z.input<typeof targetOnlyReasonParamsSchema>;
 export type GetUserStoryParams = z.infer<typeof getUserStoryParamsSchema>;
 export type DeleteContextParams = z.infer<typeof deleteContextParamsSchema>;
 export type DeleteTrailParams = z.infer<typeof deleteTrailParamsSchema>;
@@ -309,43 +260,29 @@ export type DeleteTrailParams = z.infer<typeof deleteTrailParamsSchema>;
 // ==========================================
 
 export const reasonCombinationSchema = z.object({
-  combination: z
-    .array(z.string())
-    .describe("Array of reason_ids in this combination"),
-  usersCount: z
-    .number()
-    .describe("Total number of users with this combination"),
+  combination: z.array(z.string()).describe("Array of reason_ids in this combination"),
+  usersCount: z.number().describe("Total number of users with this combination"),
   stats: z.object({
-    avgDurationMonths: z
-      .number()
-      .describe("Average duration to reach future context"),
+    avgDurationMonths: z.number().describe("Average duration to reach future context"),
     medianDurationMonths: z.number().describe("Median duration in months"),
     targetPositions: z
       .array(
         z.object({
           position: z.string(),
           count: z.number(),
-        })
+        }),
       )
       .describe("Array of position frequency objects"),
-    commonSkillsGained: z
-      .array(z.string())
-      .describe("Most common skills gained"),
-    avgCoursesTaken: z
-      .number()
-      .optional()
-      .describe("Average number of courses/trails"),
-    avgInvestmentUsd: z
-      .number()
-      .optional()
-      .describe("Average investment in learning"),
+    commonSkillsGained: z.array(z.string()).describe("Most common skills gained"),
+    avgCoursesTaken: z.number().optional().describe("Average number of courses/trails"),
+    avgInvestmentUsd: z.number().optional().describe("Average investment in learning"),
   }),
   sampleUsers: z
     .array(
       z.object({
         userId: userIdSchema,
         matchScore: z.number(),
-      })
+      }),
     )
     .describe("Sample users with this combination"),
 });
@@ -359,9 +296,7 @@ export const currentOnlyReasonBasedResultSchema = z.object({
 });
 
 export type ReasonCombination = z.infer<typeof reasonCombinationSchema>;
-export type CurrentOnlyReasonBasedResult = z.infer<
-  typeof currentOnlyReasonBasedResultSchema
->;
+export type CurrentOnlyReasonBasedResult = z.infer<typeof currentOnlyReasonBasedResultSchema>;
 
 // ==========================================
 // === PERSISTENCE ===
@@ -381,23 +316,15 @@ export type CurrentOnlyReasonBasedResult = z.infer<
 // === SKILL CATEGORIES ===
 // ==========================================
 
-export const skillCategoryIdSchema = z
-  .string()
-  .min(1)
-  .describe("Skill category ID");
+export const skillCategoryIdSchema = z.string().min(1).describe("Skill category ID");
 
 export const skillCategorySchema = z.object({
   categoryId: skillCategoryIdSchema,
   templateName: z.string().describe("Template this category belongs to"),
   categoryName: z.string().describe("Human-readable category name"),
   weight: z.number().min(0).max(100).describe("Weight for positive scoring"),
-  penaltyMultiplier: z
-    .number()
-    .min(0)
-    .describe("Multiplier for penalty scoring"),
-  isPredefined: z
-    .boolean()
-    .describe("Whether category is from predefined template"),
+  penaltyMultiplier: z.number().min(0).describe("Multiplier for penalty scoring"),
+  isPredefined: z.boolean().describe("Whether category is from predefined template"),
   createdAt: z.string().describe("ISO 8601 datetime"),
 });
 
@@ -424,9 +351,7 @@ export const skillCategoryTemplatesConfigSchema = z.object({
 export const listSkillCategoryTemplatesParamsSchema = z.object({});
 
 export const applySkillCategoryTemplateParamsSchema = z.object({
-  templateName: z
-    .string()
-    .describe("Template name (e.g., 'it_software', 'it_data_science')"),
+  templateName: z.string().describe("Template name (e.g., 'it_software', 'it_data_science')"),
   domainPrefix: z
     .string()
     .optional()
@@ -441,15 +366,9 @@ export const createCustomSkillCategoryParamsSchema = z.object({
   categoryName: z.string().describe("Human-readable category name"),
   description: z.string().describe("Category description"),
   weight: z.number().min(0).max(100).describe("Weight for positive scoring"),
-  penaltyMultiplier: z
-    .number()
-    .min(0)
-    .describe("Multiplier for penalty scoring"),
+  penaltyMultiplier: z.number().min(0).describe("Multiplier for penalty scoring"),
   skills: z.array(z.string()).describe("List of skill names to assign"),
-  templateName: z
-    .string()
-    .optional()
-    .describe("Associate with template (optional)"),
+  templateName: z.string().optional().describe("Associate with template (optional)"),
 });
 
 export const assignSkillToCategoryParamsSchema = z.object({
@@ -458,14 +377,10 @@ export const assignSkillToCategoryParamsSchema = z.object({
 });
 
 export type SkillCategory = z.infer<typeof skillCategorySchema>;
-export type SkillCategoryWithSkills = z.infer<
-  typeof skillCategoryWithSkillsSchema
->;
+export type SkillCategoryWithSkills = z.infer<typeof skillCategoryWithSkillsSchema>;
 export type SkillCategoryTemplate = z.infer<typeof skillCategoryTemplateSchema>;
 export type DomainTemplate = z.infer<typeof domainTemplateSchema>;
-export type SkillCategoryTemplatesConfig = z.infer<
-  typeof skillCategoryTemplatesConfigSchema
->;
+export type SkillCategoryTemplatesConfig = z.infer<typeof skillCategoryTemplatesConfigSchema>;
 
 // ==========================================
 // === PRESET CONFIGS ===
@@ -476,13 +391,10 @@ export const currentPresetConfigSchema = z.object({
     .array(contextFieldSchema)
     .refine(
       (fields) =>
-        REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.every((required) =>
-          fields.includes(required)
-        ),
+        REQUIRED_FIELDS_FOR_CURRENT_CONTEXT.every((required) => fields.includes(required)),
       {
-        message:
-          "Current presets must include position, domains, skills in strictFields",
-      }
+        message: "Current presets must include position, domains, skills in strictFields",
+      },
     ),
   flexibleFields: flexibleFieldsSchema,
 });
@@ -499,4 +411,19 @@ export type QueryConfig =
   | z.infer<typeof currentPresetConfigSchema>
   | z.infer<typeof targetPresetConfigSchema>;
 
-export { adhocSearchParamsSchema, contextFieldSchema, contextIdSchema, newContextReasonSchema, storyInputSchema, targetContextSchema, targetSearchParamsSchema, trailIdSchema, upsertContextResultSchema, upsertStoryResultSchema, upsertTrailResultSchema, userContextSchema, userIdSchema, userSearchParamsSchema } from "../shared/schemas.js";
+export {
+  adhocSearchParamsSchema,
+  contextFieldSchema,
+  contextIdSchema,
+  newContextReasonSchema,
+  storyInputSchema,
+  targetContextSchema,
+  targetSearchParamsSchema,
+  trailIdSchema,
+  upsertContextResultSchema,
+  upsertStoryResultSchema,
+  upsertTrailResultSchema,
+  userContextSchema,
+  userIdSchema,
+  userSearchParamsSchema,
+} from "../shared/schemas.js";

@@ -15,12 +15,12 @@
  * @throws Error if contextVar doesn't end with 'Context'
  */
 function extractPrefix(contextVar: string): string {
-  if (!contextVar.endsWith('Context')) {
+  if (!contextVar.endsWith("Context")) {
     throw new Error(
-      `Invalid contextVar: "${contextVar}". Must end with 'Context' (e.g., 'matchedContext', 'searchingPathContext')`
+      `Invalid contextVar: "${contextVar}". Must end with 'Context' (e.g., 'matchedContext', 'searchingPathContext')`,
     );
   }
-  return contextVar.replace('Context', '');
+  return contextVar.replace("Context", "");
 }
 
 /**

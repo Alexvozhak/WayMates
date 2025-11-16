@@ -1,15 +1,12 @@
 import { buildPathQuery } from "../cypher/queries/paths.js";
 import { type UserContext, userContextSchema } from "../shared/schemas.js";
 
-
 import type { DatabaseContext } from "../database-context.js";
 
 export class PathCollectorService {
   constructor(private db: DatabaseContext) {}
 
-  async collectTrajectories(
-    userIds: string[]
-  ): Promise<Map<string, UserContext[]>> {
+  async collectTrajectories(userIds: string[]): Promise<Map<string, UserContext[]>> {
     if (userIds.length === 0) {
       return new Map();
     }
@@ -26,13 +23,11 @@ export class PathCollectorService {
         const userId = rec.get("userId") as string;
 
         try {
-          const path = rawPath.map((ctx: unknown) =>
-            userContextSchema.parse(ctx)
-          );
+          const path = rawPath.map((ctx: unknown) => userContextSchema.parse(ctx));
           pathsMap.set(userId, path);
         } catch (error) {
           throw new Error(
-            `Failed to parse trajectory for user ${userId}: ${error instanceof Error ? error.message : String(error)}`
+            `Failed to parse trajectory for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       }

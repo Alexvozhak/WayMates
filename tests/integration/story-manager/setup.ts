@@ -12,20 +12,20 @@
  * Order is enforced by project name in vitest.config.ts projects array.
  */
 
-import { afterAll, beforeAll, beforeEach } from 'vitest';
+import { afterAll, beforeAll, beforeEach } from "vitest";
 
-import { createDriver, withWriteSession } from '../../../src/neo4j.js';
+import { createDriver, withWriteSession } from "../../../src/neo4j.js";
 
-import type { Driver } from 'neo4j-driver';
+import type { Driver } from "neo4j-driver";
 
 export let driver: Driver;
 
 beforeAll(() => {
-  console.log('🔧 [Story-Manager Setup] Starting shared setup for story-manager tests...');
+  console.log("🔧 [Story-Manager Setup] Starting shared setup for story-manager tests...");
 
   driver = createDriver();
 
-  console.log('✅ [Story-Manager Setup] Driver created');
+  console.log("✅ [Story-Manager Setup] Driver created");
 }, 30_000); // 30s timeout for setup
 
 beforeEach(async () => {
@@ -41,10 +41,10 @@ beforeEach(async () => {
     `);
   });
 
-  console.log('🧹 [Story-Manager Setup] Database cleaned');
+  console.log("🧹 [Story-Manager Setup] Database cleaned");
 }, 30_000); // 30s timeout for database cleanup
 
 afterAll(async () => {
-  console.log('🧹 [Story-Manager Setup] Cleaning up...');
+  console.log("🧹 [Story-Manager Setup] Cleaning up...");
   await driver.close();
 }, 30_000); // 30s timeout for cleanup

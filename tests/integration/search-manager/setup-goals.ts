@@ -15,19 +15,19 @@
  * - goals-integration.integration.ts (G1-G5)
  */
 
-import { beforeAll, beforeEach, afterAll } from 'vitest';
-import { createDriver } from '../../../src/neo4j.js';
-import { TestDataManager } from '../../helpers/test-data-manager.js';
-import { importStories } from '../../helpers/import-stories.js';
-import { DatabaseFixture } from '../../helpers/database-fixture.js';
-import type { Driver } from 'neo4j-driver';
+import { beforeAll, beforeEach, afterAll } from "vitest";
+import { createDriver } from "../../../src/neo4j.js";
+import { TestDataManager } from "../../helpers/test-data-manager.js";
+import { importStories } from "../../helpers/import-stories.js";
+import { DatabaseFixture } from "../../helpers/database-fixture.js";
+import type { Driver } from "neo4j-driver";
 
 export let driver: Driver;
 let dataManager: TestDataManager;
 let dbFixture: DatabaseFixture;
 
 beforeAll(async () => {
-  console.log('[Goals Setup] Starting setup for Goals tests...');
+  console.log("[Goals Setup] Starting setup for Goals tests...");
 
   driver = createDriver();
   dataManager = new TestDataManager();
@@ -36,21 +36,35 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   // Cleanup Goals + Users before each test (full isolation)
-  await dbFixture.cleanNodes('Goal', 'User', 'Context');
+  await dbFixture.cleanNodes("Goal", "User", "Context");
 
   // Reimport U1-U18 for test isolation (match globalSetup data to avoid breaking read-only tests)
   const stories = dataManager.getUserStories([
-    'U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7', 'U8', 'U9',   // Batch A: Adhoc/Target
-    'U10', 'U11', 'U12', 'U13',                             // Batch B: DTW
-    'U14', 'U15', 'U16',                                    // Batch C: educationLevel
-    'U17', 'U18'                                            // Batch D: salary
+    "U1",
+    "U2",
+    "U3",
+    "U4",
+    "U5",
+    "U6",
+    "U7",
+    "U8",
+    "U9", // Batch A: Adhoc/Target
+    "U10",
+    "U11",
+    "U12",
+    "U13", // Batch B: DTW
+    "U14",
+    "U15",
+    "U16", // Batch C: educationLevel
+    "U17",
+    "U18", // Batch D: salary
   ]);
   await importStories(driver, stories);
 
-  console.log('[Goals Setup] Test data reloaded (U1-U18)');
+  console.log("[Goals Setup] Test data reloaded (U1-U18)");
 }, 30000);
 
 afterAll(async () => {
-  console.log('[Goals Setup] Cleaning up...');
+  console.log("[Goals Setup] Cleaning up...");
   await driver.close();
 }, 30000);

@@ -23,7 +23,7 @@ export class FixtureSearchManager {
       selectivity,
       trajectorySimilarity,
       pathCollector,
-      goalsManager
+      goalsManager,
     );
     this.storyManager = new StoryManager(db);
   }

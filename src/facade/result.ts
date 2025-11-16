@@ -1,19 +1,19 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const sessionIdSchema = z
   .string()
-  .regex(/^sess_[0-9a-f]{32}$/, 'Session ID must be in format sess_<32-char-hex>')
-  .describe('Session ID in format sess_<32-char-hex>');
+  .regex(/^sess_[0-9a-f]{32}$/, "Session ID must be in format sess_<32-char-hex>")
+  .describe("Session ID in format sess_<32-char-hex>");
 
 export type SessionId = z.infer<typeof sessionIdSchema>;
 
 export const errorCodeSchema = z.enum([
-  'session_expired',
-  'session_invalid',
-  'normalization_failed',
-  'core_api_error',
-  'validation_error',
-  'internal_error',
+  "session_expired",
+  "session_invalid",
+  "normalization_failed",
+  "core_api_error",
+  "validation_error",
+  "internal_error",
 ]);
 
 export type ErrorCode = z.infer<typeof errorCodeSchema>;

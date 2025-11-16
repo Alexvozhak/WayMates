@@ -39,10 +39,7 @@
  * buildSkillsScoring('matchedSkills', '$referenceContext.skills')
  * // Adds skillsScore variable to scope
  */
-export function buildSkillsScoring(
-  candidateSkillsVar: string,
-  searchingSkillsVar: string
-): string {
+export function buildSkillsScoring(candidateSkillsVar: string, searchingSkillsVar: string): string {
   return `
 // === SKILLS SCORING WITH CATEGORIES (Bug #2 fix) ===
 // 1. Matched skills (intersection)
@@ -103,7 +100,7 @@ WITH *, (skillsPositiveScore - skillsPenaltyScore) AS skillsScore
 export function buildSimpleFieldScoring(
   candidateField: string,
   searchingField: string,
-  weight: number
+  weight: number,
 ): string {
   return `CASE WHEN ${candidateField} = ${searchingField} THEN ${weight} ELSE 0 END`;
 }
@@ -128,7 +125,7 @@ export function buildSimpleFieldScoring(
 export function buildArrayFieldScoring(
   candidateArrayVar: string,
   searchingArrayVar: string,
-  weight: number
+  weight: number,
 ): string {
   return `
 CASE WHEN size([d IN ${searchingArrayVar} WHERE d IN ${candidateArrayVar}]) > 0

@@ -66,7 +66,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
         tempoSimilarity: r.dtwMetrics?.tempoSimilarity,
         stabilityScore: r.dtwMetrics?.stabilityScore,
         dtwTotal: r.dtwTotal,
-      }))
+      })),
     );
 
     // Business rule: U10 (Backend Node.js) vs U11 (Backend Python) = VERY similar trajectories
@@ -81,8 +81,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     if (u11Result) {
       expect(u11Result.dtwMetrics).toBeDefined();
 
-      const { shapeSimilarity, tempoSimilarity, stabilityScore } =
-        u11Result.dtwMetrics!;
+      const { shapeSimilarity, tempoSimilarity, stabilityScore } = u11Result.dtwMetrics!;
       const { dtwTotal } = u11Result;
 
       console.log("[DT1] U11 DTW metrics:", {
@@ -141,7 +140,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     const u10 = dataManager.getStoryBy("U10");
 
     console.log(
-      "[DT2] Searching from U10 for different domain trajectories (U12 Frontend, U13 Data Science)"
+      "[DT2] Searching from U10 for different domain trajectories (U12 Frontend, U13 Data Science)",
     );
 
     // Act - Search by U10's userId
@@ -212,19 +211,17 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     // U10: Backend Node.js, only career_growth reasons
     const u10 = dataManager.getStoryBy("U10");
 
-    console.log(
-      "[DT3] Searching with excludedCreationReasons: [company_changed]"
-    );
+    console.log("[DT3] Searching with excludedCreationReasons: [company_changed]");
     console.log(
       "[DT3] U10 reasons:",
-      u10.contexts.map((c) => c.creationReason)
+      u10.contexts.map((c) => c.creationReason),
     );
 
     // U12 has company_changed in trajectory (context 1→2 and 3→4)
     const u12 = dataManager.getStoryBy("U12");
     console.log(
       "[DT3] U12 reasons (should be excluded):",
-      u12.contexts.map((c) => c.creationReason)
+      u12.contexts.map((c) => c.creationReason),
     );
 
     // Act - Exclude trajectories with company_changed
@@ -244,7 +241,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
         userId: r.userId,
         position: r.matchedContext.position,
         domains: r.matchedContext.domains,
-      }))
+      })),
     );
 
     expect(results).toBeInstanceOf(Array);
@@ -274,9 +271,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
     const u10 = dataManager.getStoryBy("U10");
 
-    console.log(
-      "[DT4] Searching from U10 to rank multiple candidates by dtwTotal"
-    );
+    console.log("[DT4] Searching from U10 to rank multiple candidates by dtwTotal");
 
     // Act - Search without exclusions to get all candidates
     const results = await searchManager.searchByUser({
@@ -296,7 +291,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
         userId: r.userId,
         dtwTotal: r.dtwTotal,
         contextScore: r.contextMatchScore,
-      }))
+      })),
     );
 
     // Business rule: Expected ranking by dtwTotal
@@ -361,8 +356,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
       // DTW formula validation - Verify dtwTotal = shape + tempo + stability for all results
       if (u11Result.dtwMetrics) {
-        const { shapeSimilarity, tempoSimilarity, stabilityScore } =
-          u11Result.dtwMetrics;
+        const { shapeSimilarity, tempoSimilarity, stabilityScore } = u11Result.dtwMetrics;
         const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
         console.log("[DT4] U11 DTW formula breakdown:", {
           shapeSimilarity,
@@ -375,8 +369,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       }
 
       if (u13Result.dtwMetrics) {
-        const { shapeSimilarity, tempoSimilarity, stabilityScore } =
-          u13Result.dtwMetrics;
+        const { shapeSimilarity, tempoSimilarity, stabilityScore } = u13Result.dtwMetrics;
         const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
         console.log("[DT4] U13 DTW formula breakdown:", {
           shapeSimilarity,
@@ -389,8 +382,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       }
 
       if (u12Result.dtwMetrics) {
-        const { shapeSimilarity, tempoSimilarity, stabilityScore } =
-          u12Result.dtwMetrics;
+        const { shapeSimilarity, tempoSimilarity, stabilityScore } = u12Result.dtwMetrics;
         const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
         console.log("[DT4] U12 DTW formula breakdown:", {
           shapeSimilarity,
@@ -403,5 +395,4 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       }
     }
   });
-
 });

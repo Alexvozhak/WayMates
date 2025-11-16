@@ -1,13 +1,8 @@
-import {
-  deleteGoalQuery,
-  getUserGoalQuery,
-  setGoalQuery,
-} from '../cypher/queries/goals.js';
-import { goalSchema, userIdSchema } from '../shared/schemas.js';
+import { deleteGoalQuery, getUserGoalQuery, setGoalQuery } from "../cypher/queries/goals.js";
+import { goalSchema, userIdSchema } from "../shared/schemas.js";
 
-
-import type { DatabaseContext } from '../database-context.js';
-import type { CreateGoalInput, Goal, UserId } from '../shared/schemas.js';
+import type { DatabaseContext } from "../database-context.js";
+import type { CreateGoalInput, Goal, UserId } from "../shared/schemas.js";
 
 export class GoalsManager {
   constructor(private db: DatabaseContext) {}
@@ -27,7 +22,7 @@ export class GoalsManager {
         throw new Error(`setGoal: no result returned for user=${params.userId}`);
       }
 
-      return userIdSchema.parse(record.get('userId'));
+      return userIdSchema.parse(record.get("userId"));
     });
   }
 
@@ -38,12 +33,12 @@ export class GoalsManager {
       if (!record) {
         return null;
       }
-      const goalData = record.get('goal');
+      const goalData = record.get("goal");
 
       // Deserialize targetCriteria from JSON string
       const goalWithParsedCriteria = {
         ...goalData,
-        targetCriteria: JSON.parse(goalData.targetCriteria)
+        targetCriteria: JSON.parse(goalData.targetCriteria),
       };
 
       return goalSchema.parse(goalWithParsedCriteria);
@@ -59,7 +54,7 @@ export class GoalsManager {
       if (!record) {
         return false;
       }
-      return Boolean(record.get('success'));
+      return Boolean(record.get("success"));
     });
   }
 }

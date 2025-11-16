@@ -2,18 +2,16 @@
  * Filters for WHERE clauses and excluded reasons
  */
 
-import type { ContextField } from '../../shared/schemas.js';
+import type { ContextField } from "../../shared/schemas.js";
 
 /**
  * Extract prefix from context variable name
  */
 function extractPrefix(contextVar: string): string {
-  if (!contextVar.endsWith('Context')) {
-    throw new Error(
-      `Invalid contextVar: "${contextVar}". Must end with 'Context'`
-    );
+  if (!contextVar.endsWith("Context")) {
+    throw new Error(`Invalid contextVar: "${contextVar}". Must end with 'Context'`);
   }
-  return contextVar.replace('Context', '');
+  return contextVar.replace("Context", "");
 }
 
 /**
@@ -31,45 +29,43 @@ function extractPrefix(contextVar: string): string {
 function generateStrictCondition(
   field: ContextField,
   prefix: string,
-  searchingVar: string
+  searchingVar: string,
 ): string {
   switch (field) {
-    case 'position':
+    case "position":
       return `${prefix}Position.name = ${searchingVar}.position`;
 
-    case 'domains':
+    case "domains":
       // All domains must be present
       return `all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)`;
 
-    case 'skills':
+    case "skills":
       // NEVER strict - handled by penalty scoring
-      throw new Error(
-        'Skills cannot be in strict conditions. Use buildSkillsScoring() instead.'
-      );
+      throw new Error("Skills cannot be in strict conditions. Use buildSkillsScoring() instead.");
 
-    case 'industry':
+    case "industry":
       return `${prefix}Industry.name = ${searchingVar}.industry`;
 
-    case 'countryCode':
+    case "countryCode":
       return `${prefix}Country.name = ${searchingVar}.countryCode`;
 
-    case 'cityName':
+    case "cityName":
       return `${prefix}City.name = ${searchingVar}.cityName`;
 
-    case 'companySize':
+    case "companySize":
       return `${prefix}Context.companySize = ${searchingVar}.companySize`;
 
-    case 'birthYear':
+    case "birthYear":
       return `${prefix}Context.birthYear = ${searchingVar}.birthYear`;
 
-    case 'educationLevel':
+    case "educationLevel":
       return `CASE
     WHEN ${searchingVar}.educationLevel IS NULL THEN true
     WHEN ${prefix}Context.educationLevel IS NULL THEN true
     ELSE ${prefix}Context.educationLevel = ${searchingVar}.educationLevel
   END`;
 
-    case 'languages':
+    case "languages":
       // Null wildcard: if searchingVar.languages is null, match everyone
       // Strict matching: ALL languages must be present (AND logic)
       return `CASE
@@ -109,23 +105,23 @@ function generateStrictCondition(
 export function buildStrictWhereClause(
   strictFields: ContextField[],
   candidateVar: string,
-  searchingVar: string
+  searchingVar: string,
 ): string {
   // Extract prefix from candidateVar (e.g., 'matched' from 'matchedContext')
   const prefix = extractPrefix(candidateVar);
 
   // Filter out skills (never strict)
-  const validFields = strictFields.filter((field) => field !== 'skills');
+  const validFields = strictFields.filter((field) => field !== "skills");
 
   if (validFields.length === 0) {
-    return '';
+    return "";
   }
 
   const conditions = validFields
     .map((field) => generateStrictCondition(field, prefix, searchingVar))
     .filter(Boolean);
 
-  return conditions.length > 0 ? `WHERE ${conditions.join(' AND\n  ')}` : '';
+  return conditions.length > 0 ? `WHERE ${conditions.join(" AND\n  ")}` : "";
 }
 
 /**
@@ -157,11 +153,8 @@ export function buildStrictWhereClause(
  * // WITH matchedUser, matchedContext, matchedDomains, passesFilter
  * // WHERE passesFilter = true OR size($excludedCreationReasons) = 0
  */
-export function buildExcludedReasonsFilter(
-  contextVar: string,
-  preserveVars: string[]
-): string {
-  const varsToPreserve = preserveVars.join(', ');
+export function buildExcludedReasonsFilter(contextVar: string, preserveVars: string[]): string {
+  const varsToPreserve = preserveVars.join(", ");
 
   return `
 CALL (${contextVar}) {

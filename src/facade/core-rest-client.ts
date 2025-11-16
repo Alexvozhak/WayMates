@@ -1,7 +1,6 @@
-import { CoreApiError } from './tools/errors.js';
+import { CoreApiError } from "./tools/errors.js";
 
-import type { AxiosInstance } from 'axios';
-
+import type { AxiosInstance } from "axios";
 
 export class CoreRestClient {
   constructor(private httpClient: AxiosInstance) {}
@@ -11,9 +10,7 @@ export class CoreRestClient {
       const { data } = await this.httpClient.get<T>(path);
       return data;
     } catch (error) {
-      throw new CoreApiError(
-        `Core API GET ${path} failed: ${this.getErrorMessage(error)}`
-      );
+      throw new CoreApiError(`Core API GET ${path} failed: ${this.getErrorMessage(error)}`);
     }
   }
 
@@ -22,9 +19,7 @@ export class CoreRestClient {
       const { data } = await this.httpClient.post<T>(path, body);
       return data;
     } catch (error) {
-      throw new CoreApiError(
-        `Core API POST ${path} failed: ${this.getErrorMessage(error)}`
-      );
+      throw new CoreApiError(`Core API POST ${path} failed: ${this.getErrorMessage(error)}`);
     }
   }
 
@@ -33,9 +28,7 @@ export class CoreRestClient {
       const { data } = await this.httpClient.patch<T>(path, body);
       return data;
     } catch (error) {
-      throw new CoreApiError(
-        `Core API PATCH ${path} failed: ${this.getErrorMessage(error)}`
-      );
+      throw new CoreApiError(`Core API PATCH ${path} failed: ${this.getErrorMessage(error)}`);
     }
   }
 

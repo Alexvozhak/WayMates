@@ -6,12 +6,10 @@
  * Extract prefix from context variable name
  */
 function extractPrefix(contextVar: string): string {
-  if (!contextVar.endsWith('Context')) {
-    throw new Error(
-      `Invalid contextVar: "${contextVar}". Must end with 'Context'`
-    );
+  if (!contextVar.endsWith("Context")) {
+    throw new Error(`Invalid contextVar: "${contextVar}". Must end with 'Context'`);
   }
-  return contextVar.replace('Context', '');
+  return contextVar.replace("Context", "");
 }
 
 /**
@@ -68,9 +66,6 @@ WITH *, [node IN nodes(path) | node] AS ${prefix}PathNodes
  * // Returns:
  * // UNWIND matchedPathNodes AS matchedPathContext
  */
-export function buildUnwindPath(
-  pathNodesVar: string,
-  contextVar: string
-): string {
+export function buildUnwindPath(pathNodesVar: string, contextVar: string): string {
   return `UNWIND ${pathNodesVar} AS ${contextVar}`;
 }

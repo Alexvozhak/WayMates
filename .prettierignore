@@ -1,12 +1,21 @@
-# Ignore Cypher files
-*.cypher
+# Build output
+dist/
+node_modules/
 
-# Other common ignores
-node_modules
-dist
-build
+# Generated Cypher files
+src/cypher/queries/*.cypher.ts
+
+# Test data
+data/
+
+# Env files
 .env
 .env.*
+
+# Ignore all JSON except configs
+*.json
+!.prettierrc.json
+!package.json
 
 
 

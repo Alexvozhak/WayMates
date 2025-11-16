@@ -1,11 +1,7 @@
 import { FastMCP } from "fastmcp";
 import { z } from "zod";
 
-import {
-  CreateGoalInputSchema,
-  StoryInputSchema,
-  UserIdSchema,
-} from "../shared/schemas.js";
+import { CreateGoalInputSchema, StoryInputSchema, UserIdSchema } from "../shared/schemas.js";
 
 import {
   AdhocSearchParamsSchema,
@@ -17,19 +13,18 @@ import type { GoalsManager } from "./goals-manager.js";
 import type { SearchManager as NewSearchManager } from "./search-manager.js";
 import type { StoryManager } from "./story-manager.js";
 
-
 type CoreContext = {
   newSearchManager?: NewSearchManager;
   storyManager: StoryManager;
   goalsManager: GoalsManager;
-}
+};
 
 // Helper function to create typed MCP tools (not exported - duplicated in facade)
 function tool<TSchema extends z.ZodTypeAny, TResult>(
   name: string,
   description: string,
   schema: TSchema,
-  handler: (params: z.infer<TSchema>) => Promise<TResult> | TResult
+  handler: (params: z.infer<TSchema>) => Promise<TResult> | TResult,
 ): {
   name: string;
   description: string;
@@ -59,8 +54,8 @@ function registerNewSearchTools(server: FastMCP, context: CoreContext): void {
       "search_adhoc",
       "Ad-hoc search with custom reference context (userId required for Goal filter, NO DTW)",
       AdhocSearchParamsSchema,
-      async (params) => context.newSearchManager!.searchAdhoc(params)
-    )
+      async (params) => context.newSearchManager!.searchAdhoc(params),
+    ),
   );
 
   // Режимы 2+3: User Search (автоматический DTW)
@@ -69,8 +64,8 @@ function registerNewSearchTools(server: FastMCP, context: CoreContext): void {
       "search_by_user",
       "Search from user's context (automatic DTW if trajectory exists, with Goal filter). Returns ScoredMatchedCandidate[] with optional DTW fields.",
       UserSearchParamsSchema,
-      async (params) => context.newSearchManager!.searchByUser(params)
-    )
+      async (params) => context.newSearchManager!.searchByUser(params),
+    ),
   );
 
   // Режим 4: Target-Only Search
@@ -79,8 +74,8 @@ function registerNewSearchTools(server: FastMCP, context: CoreContext): void {
       "search_by_target",
       "Reverse search by target criteria (NO userId, NO reference context, NO DTW, NO Goal filter)",
       TargetSearchParamsSchema,
-      async (params) => context.newSearchManager!.searchByTarget(params)
-    )
+      async (params) => context.newSearchManager!.searchByTarget(params),
+    ),
   );
 }
 
@@ -90,8 +85,8 @@ function registerStoryTools(server: FastMCP, context: CoreContext): void {
       "execute_upsert_story",
       "Save or update user career history",
       StoryInputSchema,
-      async (params) => context.storyManager.upsertStory(params)
-    )
+      async (params) => context.storyManager.upsertStory(params),
+    ),
   );
 
   server.addTool(
@@ -99,8 +94,8 @@ function registerStoryTools(server: FastMCP, context: CoreContext): void {
       "get_user_story",
       "Get user's complete career history (contexts + trails)",
       z.object({ userId: UserIdSchema }),
-      async (params) => context.storyManager.getUserStory(params.userId)
-    )
+      async (params) => context.storyManager.getUserStory(params.userId),
+    ),
   );
 
   server.addTool(
@@ -111,9 +106,8 @@ function registerStoryTools(server: FastMCP, context: CoreContext): void {
         userId: UserIdSchema,
         contextId: z.string(),
       }),
-      async (params) =>
-        context.storyManager.deleteContext(params.userId, params.contextId)
-    )
+      async (params) => context.storyManager.deleteContext(params.userId, params.contextId),
+    ),
   );
 
   server.addTool(
@@ -124,9 +118,8 @@ function registerStoryTools(server: FastMCP, context: CoreContext): void {
         userId: UserIdSchema,
         trailId: z.string(),
       }),
-      async (params) =>
-        context.storyManager.deleteTrail(params.userId, params.trailId)
-    )
+      async (params) => context.storyManager.deleteTrail(params.userId, params.trailId),
+    ),
   );
 }
 
@@ -136,8 +129,8 @@ function registerReasonTools(server: FastMCP, context: CoreContext): void {
       "list_available_reasons",
       "List all available context creation reasons (for AI and admins)",
       z.object({}),
-      async () => context.storyManager.listAvailableReasons()
-    )
+      async () => context.storyManager.listAvailableReasons(),
+    ),
   );
 
   server.addTool(
@@ -157,9 +150,9 @@ function registerReasonTools(server: FastMCP, context: CoreContext): void {
           params.description,
           params.patterns,
           params.examples,
-          params.contextId
-        )
-    )
+          params.contextId,
+        ),
+    ),
   );
 }
 
@@ -170,8 +163,8 @@ function registerGoalTools(server: FastMCP, context: CoreContext): void {
       "set_goal",
       "Set or update career goal (one goal per user)",
       CreateGoalInputSchema,
-      async (params) => context.goalsManager.setGoal(params)
-    )
+      async (params) => context.goalsManager.setGoal(params),
+    ),
   );
 
   server.addTool(
@@ -179,8 +172,8 @@ function registerGoalTools(server: FastMCP, context: CoreContext): void {
       "get_user_goal",
       "Get career goal for a user",
       z.object({ userId: UserIdSchema }),
-      async (params) => context.goalsManager.getUserGoal(params.userId)
-    )
+      async (params) => context.goalsManager.getUserGoal(params.userId),
+    ),
   );
 
   server.addTool(
@@ -190,8 +183,8 @@ function registerGoalTools(server: FastMCP, context: CoreContext): void {
       z.object({
         userId: UserIdSchema,
       }),
-      async (params) => context.goalsManager.deleteGoal(params.userId)
-    )
+      async (params) => context.goalsManager.deleteGoal(params.userId),
+    ),
   );
 }
 

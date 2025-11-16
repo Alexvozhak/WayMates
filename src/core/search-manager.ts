@@ -35,8 +35,7 @@ import type { SelectivityService } from "./selectivity.service.js";
  */
 function computeStrictFields(excludedFields: ContextField[]): ContextField[] {
   return CONTEXT_FIELD_NAMES.filter(
-    (field): field is ContextField =>
-      field !== 'skills' && !excludedFields.includes(field)
+    (field): field is ContextField => field !== "skills" && !excludedFields.includes(field),
   );
 }
 
@@ -46,30 +45,29 @@ export class SearchManager {
     private selectivity: SelectivityService,
     private trajectorySimilarity: TrajectorySimilarityService,
     private pathCollector: PathCollectorService,
-    private goalsManager: GoalsManager
+    private goalsManager: GoalsManager,
   ) {}
 
-  async searchAdhoc(
-    params: AdhocSearchParams
-  ): Promise<ScoredMatchedCandidate[]> {
+  async searchAdhoc(params: AdhocSearchParams): Promise<ScoredMatchedCandidate[]> {
     return this.searchByContext(params, false);
   }
 
-  async searchByUser(
-    params: UserSearchParams
-  ): Promise<ScoredMatchedCandidate[]> {
+  async searchByUser(params: UserSearchParams): Promise<ScoredMatchedCandidate[]> {
     const context = await this.resolveContext(params.userId);
     const hasTrajectory = context.previousContextId !== null;
 
-    return hasTrajectory ? this.executeCoreSearchWithDTW(params, context) : this.searchByContext({
-        ...params,
-        referenceContext: context,
-      }, true);
+    return hasTrajectory
+      ? this.executeCoreSearchWithDTW(params, context)
+      : this.searchByContext(
+          {
+            ...params,
+            referenceContext: context,
+          },
+          true,
+        );
   }
 
-  async searchByTarget(
-    params: TargetSearchParams
-  ): Promise<MatchedCandidateWithPath[]> {
+  async searchByTarget(params: TargetSearchParams): Promise<MatchedCandidateWithPath[]> {
     const query = buildTargetSearchWithPathsQuery(params);
 
     const queryParams = {
@@ -84,14 +82,14 @@ export class SearchManager {
       const result = await tx.run(query, queryParams);
 
       return result.records.map((record) =>
-        matchedCandidateWithPathSchema.parse(record.toObject())
+        matchedCandidateWithPathSchema.parse(record.toObject()),
       );
     });
   }
 
   private async searchByContext(
     params: AdhocSearchParams,
-    filterByCurrentContext = false
+    filterByCurrentContext = false,
   ): Promise<ScoredMatchedCandidate[]> {
     const {
       referenceContext,
@@ -99,7 +97,7 @@ export class SearchManager {
       excludedContextFields,
       excludedCreationReasons,
       recencyThresholdMonths,
-      limit
+      limit,
     } = params;
 
     const strictFields = computeStrictFields(excludedContextFields);
@@ -107,13 +105,14 @@ export class SearchManager {
     const goal = await this.goalsManager.getUserGoal(userId);
 
     // Extract goal positions for Cypher parameter (null if no goal or no position filter)
-    const goalPositions = goal?.targetCriteria.position?.mode === 'desired'
-      ? goal.targetCriteria.position.values
-      : null;
+    const goalPositions =
+      goal?.targetCriteria.position?.mode === "desired"
+        ? goal.targetCriteria.position.values
+        : null;
 
     const rankedStrictFields = await this.selectivity.rankStrictFields(
       strictFields,
-      referenceContext
+      referenceContext,
     );
 
     const query = buildCurrentSearchQuery(
@@ -124,7 +123,7 @@ export class SearchManager {
         limit,
         ...(recencyThresholdMonths !== undefined && { recencyThresholdMonths }),
       },
-      filterByCurrentContext
+      filterByCurrentContext,
     );
 
     const queryParams = {
@@ -139,9 +138,7 @@ export class SearchManager {
     return this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);
 
-      return result.records.map((record) =>
-        scoredMatchedCandidateSchema.parse(record.toObject())
-      );
+      return result.records.map((record) => scoredMatchedCandidateSchema.parse(record.toObject()));
     });
   }
 
@@ -162,20 +159,20 @@ export class SearchManager {
 
   private async executeCoreSearchWithDTW(
     params: UserSearchParams,
-    referenceContext: UserContext
+    referenceContext: UserContext,
   ): Promise<ScoredMatchedCandidate[]> {
     // Step 1: Search candidates (without DTW)
-    const topCandidates = await this.searchByContext({
-      ...params,
-      referenceContext,
-    }, true);
+    const topCandidates = await this.searchByContext(
+      {
+        ...params,
+        referenceContext,
+      },
+      true,
+    );
 
     // Step 2: Collect paths for user + candidates
     const candidateIds = topCandidates.map((c) => c.userId);
-    const pathsMap = await this.pathCollector.collectTrajectories([
-      params.userId,
-      ...candidateIds,
-    ]);
+    const pathsMap = await this.pathCollector.collectTrajectories([params.userId, ...candidateIds]);
 
     const userPath = pathsMap.get(params.userId);
     if (!userPath || userPath.length < 3) {
@@ -186,12 +183,7 @@ export class SearchManager {
     // Step 3: Enrich candidates with DTW metrics (filter out null)
     const enrichedCandidates: ScoredMatchedCandidate[] = [];
     for (const candidate of topCandidates) {
-      const enriched = this.enrichCandidateWithDTW(
-        candidate,
-        userPath,
-        pathsMap,
-        params.userId
-      );
+      const enriched = this.enrichCandidateWithDTW(candidate, userPath, pathsMap, params.userId);
       if (enriched) {
         enrichedCandidates.push(enriched);
       }
@@ -211,7 +203,7 @@ export class SearchManager {
     candidate: ScoredMatchedCandidate,
     userPath: UserContext[],
     pathsMap: Map<string, UserContext[]>,
-    userId: string
+    userId: string,
   ): ScoredMatchedCandidate | null {
     if (candidate.userId === userId) {
       return null;
@@ -223,15 +215,10 @@ export class SearchManager {
       return null;
     }
 
-    const dtwMetrics = this.trajectorySimilarity.computeDTWMetrics(
-      userPath,
-      path
-    );
+    const dtwMetrics = this.trajectorySimilarity.computeDTWMetrics(userPath, path);
 
     const dtwTotal =
-      dtwMetrics.shapeSimilarity +
-      dtwMetrics.tempoSimilarity +
-      dtwMetrics.stabilityScore;
+      dtwMetrics.shapeSimilarity + dtwMetrics.tempoSimilarity + dtwMetrics.stabilityScore;
 
     return {
       ...candidate,
@@ -240,5 +227,4 @@ export class SearchManager {
       dtwTotal,
     };
   }
-
 }

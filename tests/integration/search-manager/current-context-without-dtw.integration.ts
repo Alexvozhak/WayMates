@@ -52,7 +52,16 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
       userId: u4.userId,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: ["birthYear", "countryCode", "cityName", "languages", "domains", "skills", "industry", "companySize"], // Exclude all except position to isolate fallback logic
+      excludedContextFields: [
+        "birthYear",
+        "countryCode",
+        "cityName",
+        "languages",
+        "domains",
+        "skills",
+        "industry",
+        "companySize",
+      ], // Exclude all except position to isolate fallback logic
       excludedCreationReasons: [],
     });
 
@@ -66,7 +75,7 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
         domains: r.matchedContext.domains,
         hasDTW: !!r.dtwMetrics,
         hasPath: !!r.path,
-      }))
+      })),
     );
 
     // Business rule: Single context user → fallback to searchByContext (no DTW)
@@ -103,7 +112,16 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
       userId: u4.userId,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: ["countryCode", "cityName", "birthYear", "languages", "domains", "skills", "industry", "companySize"], // International search (isolate resolveContext logic)
+      excludedContextFields: [
+        "countryCode",
+        "cityName",
+        "birthYear",
+        "languages",
+        "domains",
+        "skills",
+        "industry",
+        "companySize",
+      ], // International search (isolate resolveContext logic)
       excludedCreationReasons: [],
     });
 
@@ -120,14 +138,14 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
     expect(results.find((r) => r.userId === u7.userId)).toBeTruthy();
 
     // Verify geo-diverse search works (U7 is from gb/london, U4 is from us/seattle)
-    const internationalResults = results.filter(
-      (r) => r.matchedContext.countryCode !== "us"
-    );
+    const internationalResults = results.filter((r) => r.matchedContext.countryCode !== "us");
     // Business rule: resolveContext (userId → currentContextId) + geo excluded → find geo-diverse candidates
     // Expected: U7 (Junior gb/london, current context)
     // Threshold: >= 1 (at least U7 should match)
     // If fails: International candidate incorrectly filtered OR resolveContext broke userId resolution
     expect(internationalResults.length).toBeGreaterThanOrEqual(1);
-    console.log(`[UN4] International results count: ${internationalResults.length} (expected >= 1)`);
+    console.log(
+      `[UN4] International results count: ${internationalResults.length} (expected >= 1)`,
+    );
   });
 });

@@ -10,8 +10,8 @@
  * Used in Target Search tests (TG1-TG7) to verify trajectory collection.
  */
 
-import { expect } from 'vitest';
-import type { UserContext } from '../../src/shared/schemas.js';
+import { expect } from "vitest";
+import type { UserContext } from "../../src/shared/schemas.js";
 
 /**
  * Validate path structure and relationships
@@ -76,10 +76,7 @@ export function validatePathStructure(path: UserContext[]): void {
  * const result = await searchManager.searchByTarget({...});
  * validatePathLeadsTo(result.path, result.matchedContext.contextId);
  */
-export function validatePathLeadsTo(
-  path: UserContext[],
-  matchedContextId: string
-): void {
+export function validatePathLeadsTo(path: UserContext[], matchedContextId: string): void {
   if (path.length === 0) {
     return; // No path to validate
   }
@@ -103,7 +100,7 @@ export function validatePathLeadsTo(
  */
 export function validateAllPaths(
   results: Array<{ path?: UserContext[]; matchedContext: { contextId: string } }>,
-  testTag: string
+  testTag: string,
 ): void {
   results.forEach((r) => {
     if (r.path && r.path.length > 0) {

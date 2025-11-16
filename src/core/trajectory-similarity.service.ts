@@ -5,7 +5,7 @@ import type { DTWMetrics, UserContext } from "../shared/schemas.js";
 type StepWithDuration = {
   context: UserContext;
   duration: number;
-}
+};
 
 export class TrajectorySimilarityService {
   /**
@@ -17,10 +17,7 @@ export class TrajectorySimilarityService {
    * - StepWithDuration wrappers created once (not 4 times)
    * - DTW computed once for Shape+Stability (not twice)
    */
-  computeDTWMetrics(
-    userTrajectory: UserContext[],
-    candidateTrajectory: UserContext[]
-  ): DTWMetrics {
+  computeDTWMetrics(userTrajectory: UserContext[], candidateTrajectory: UserContext[]): DTWMetrics {
     // 1. Calculate durations once (used by all 3 metrics)
     const userDurations = this.calculateDurationMonths(userTrajectory);
     const candidateDurations = this.calculateDurationMonths(candidateTrajectory);
@@ -40,22 +37,13 @@ export class TrajectorySimilarityService {
       userSteps,
       candidateSteps,
       (a: StepWithDuration, b: StepWithDuration) =>
-        this.trajectoryDistance(
-          a.context,
-          b.context,
-          a.duration,
-          b.duration
-        )
+        this.trajectoryDistance(a.context, b.context, a.duration, b.duration),
     );
 
     const distance = dtw.getDistance();
     const pathLength = dtw.getPath().length;
 
-    this.validatePathLength(
-      pathLength,
-      userTrajectory.length,
-      candidateTrajectory.length
-    );
+    this.validatePathLength(pathLength, userTrajectory.length, candidateTrajectory.length);
 
     // 4. Compute Shape and Stability from cached DTW result
     const shapeSimilarity = 1 / (1 + distance / pathLength);
@@ -71,7 +59,7 @@ export class TrajectorySimilarityService {
       userDurations,
       candidateDurations,
       userTrajectory.length,
-      candidateTrajectory.length
+      candidateTrajectory.length,
     );
 
     return {
@@ -89,25 +77,19 @@ export class TrajectorySimilarityService {
     userDurations: number[],
     candidateDurations: number[],
     userTrajectoryLength: number,
-    candidateTrajectoryLength: number
+    candidateTrajectoryLength: number,
   ): number {
     const userDeriv = this.derivative(userDurations);
     const candidateDeriv = this.derivative(candidateDurations);
 
-    const dtw = new DynamicTimeWarping(
-      userDeriv,
-      candidateDeriv,
-      (a: number, b: number) => Math.abs(a - b)
+    const dtw = new DynamicTimeWarping(userDeriv, candidateDeriv, (a: number, b: number) =>
+      Math.abs(a - b),
     );
 
     const distance = dtw.getDistance();
     const pathLength = dtw.getPath().length;
 
-    this.validatePathLength(
-      pathLength,
-      userTrajectoryLength,
-      candidateTrajectoryLength
-    );
+    this.validatePathLength(pathLength, userTrajectoryLength, candidateTrajectoryLength);
 
     // Normalize: distance/pathLength = avg derivative difference per step
     // Transform to similarity [0,1]: 1/(1+avg)
@@ -120,25 +102,22 @@ export class TrajectorySimilarityService {
   private validatePathLength(
     pathLength: number,
     userTrajectoryLength: number,
-    candidateTrajectoryLength: number
+    candidateTrajectoryLength: number,
   ): void {
-    const minExpectedPath = Math.max(
-      userTrajectoryLength,
-      candidateTrajectoryLength
-    );
+    const minExpectedPath = Math.max(userTrajectoryLength, candidateTrajectoryLength);
 
     if (pathLength === 0) {
       throw new Error(
         `DTW path length is zero (library bug or identical trajectories). ` +
           `User trajectory: ${userTrajectoryLength} steps, ` +
-          `Candidate trajectory: ${candidateTrajectoryLength} steps.`
+          `Candidate trajectory: ${candidateTrajectoryLength} steps.`,
       );
     }
 
     if (pathLength < minExpectedPath) {
       throw new Error(
         `DTW path length (${pathLength}) is less than max trajectory length (${minExpectedPath}). ` +
-          `This indicates DTW library bug or incorrect distance function.`
+          `This indicates DTW library bug or incorrect distance function.`,
       );
     }
   }
@@ -156,20 +135,16 @@ export class TrajectorySimilarityService {
 
     return trajectory.map((ctx, i) => {
       const created = new Date(ctx.createdAt);
-      const next = trajectory[i + 1]
-        ? new Date(trajectory[i + 1].createdAt)
-        : now;
+      const next = trajectory[i + 1] ? new Date(trajectory[i + 1].createdAt) : now;
 
       if (next.getTime() < created.getTime()) {
         throw new Error(
           `Context ${i + 1} createdAt (${trajectory[i + 1]?.createdAt}) is before ` +
-            `Context ${i} createdAt (${ctx.createdAt}). Contexts must be chronologically ordered.`
+            `Context ${i} createdAt (${ctx.createdAt}). Contexts must be chronologically ordered.`,
         );
       }
 
-      return Math.round(
-        (next.getTime() - created.getTime()) / MILLISECONDS_PER_30_DAY_MONTH
-      );
+      return Math.round((next.getTime() - created.getTime()) / MILLISECONDS_PER_30_DAY_MONTH);
     });
   }
 
@@ -231,7 +206,7 @@ export class TrajectorySimilarityService {
     stepA: UserContext,
     stepB: UserContext,
     durationA: number,
-    durationB: number
+    durationB: number,
   ): number {
     // 1. Position difference (0 = same position, 1 = different)
     const positionDiff = stepA.position === stepB.position ? 0 : 1;
@@ -240,9 +215,7 @@ export class TrajectorySimilarityService {
     // Business logic: Extreme outliers (e.g., 120 months vs 1 month) produce high distance (~0.99)
     // This is CORRECT behavior - outliers should be penalized, not capped (Bug #5 fix)
     const maxDuration = Math.max(durationA, durationB);
-    const durationDiff = maxDuration > 0
-      ? Math.abs(durationA - durationB) / maxDuration
-      : 0; // Both durations zero (identical timestamps) → no difference
+    const durationDiff = maxDuration > 0 ? Math.abs(durationA - durationB) / maxDuration : 0; // Both durations zero (identical timestamps) → no difference
 
     // 3. Domains overlap (Jaccard distance: 1 - similarity)
     const domainsA = new Set(stepA.domains);

@@ -66,7 +66,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         userId: r.userId,
         position: r.matchedContext.position,
         score: r.contextMatchScore,
-      }))
+      })),
     );
 
     // U2 should be in results (same Frontend React as U1)
@@ -105,9 +105,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!; // Junior Frontend React
 
-    console.log(
-      "[AC2] Searching with excludedContextFields: [birthYear, countryCode, cityName]"
-    );
+    console.log("[AC2] Searching with excludedContextFields: [birthYear, countryCode, cityName]");
     console.log("[AC2] Reference:", {
       position: u1Context.position,
       domains: u1Context.domains,
@@ -133,7 +131,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         position: r.matchedContext.position,
         domains: r.matchedContext.domains,
         skills: r.matchedContext.skills,
-      }))
+      })),
     );
 
     // U4 should be in results (Junior Frontend but US/seattle, skills=svelte - all excluded)
@@ -158,11 +156,9 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
       // Score breakdown logging
       const referenceSkills = new Set(u1Context.skills);
-      const extraSkills = u4Result.matchedContext.skills.filter(
-        (s) => !referenceSkills.has(s)
-      );
+      const extraSkills = u4Result.matchedContext.skills.filter((s) => !referenceSkills.has(s));
       const missingSkills = u1Context.skills.filter(
-        (s) => !u4Result.matchedContext.skills.includes(s)
+        (s) => !u4Result.matchedContext.skills.includes(s),
       );
 
       console.log("[AC2] U4 skill penalty breakdown:", {
@@ -202,9 +198,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!; // Junior Frontend React, de/berlin
 
-    console.log(
-      "[AC3] Searching with excludedContextFields: [countryCode, cityName, birthYear]"
-    );
+    console.log("[AC3] Searching with excludedContextFields: [countryCode, cityName, birthYear]");
     console.log("[AC3] Reference:", {
       position: u1Context.position,
       domains: u1Context.domains,
@@ -234,17 +228,13 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(results.find((r) => r.userId === u6.userId)).toBeDefined();
 
     // Verify at least one result is from Germany (since geo excluded, can have de/berlin)
-    const germanResults = results.filter(
-      (r) => r.matchedContext.countryCode === "de"
-    );
+    const germanResults = results.filter((r) => r.matchedContext.countryCode === "de");
     // Business rule: Geo excluded → should find German candidates (U2, U6 de/berlin with Frontend react skills)
     // Expected candidates: U2 (Junior Frontend react de/berlin), U6 (Junior Frontend react de/berlin)
     // Threshold: >= 2 (expect BOTH U2 and U6 to match since they're perfect non-geo matches)
     // If fails: Either U2 or U6 was incorrectly excluded (check Cypher WHERE clause for geo filtering)
     expect(germanResults.length).toBeGreaterThanOrEqual(2);
-    console.log(
-      `[AC3] German results count: ${germanResults.length} (expected >= 2)`
-    );
+    console.log(`[AC3] German results count: ${germanResults.length} (expected >= 2)`);
   });
 
   it("AC4: Only position strict - finds candidates with same position regardless of other fields", async () => {
@@ -256,9 +246,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!; // Junior Frontend React de/berlin
 
-    console.log(
-      "[AC4] Searching with only position strict (all other fields excluded)"
-    );
+    console.log("[AC4] Searching with only position strict (all other fields excluded)");
     console.log("[AC4] Reference:", {
       position: u1Context.position,
       domains: u1Context.domains,
@@ -295,7 +283,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         domains: r.matchedContext.domains,
         skills: r.matchedContext.skills,
         geo: `${r.matchedContext.countryCode}/${r.matchedContext.cityName}`,
-      }))
+      })),
     );
 
     // Business rule: Only position is strict → diverse domains/skills expected
@@ -304,21 +292,17 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u7 = dataManager.getStoryBy("U7"); // Junior Backend Java
 
     // At least one Backend should be in results (domains different from U1 Frontend)
-    const backendResults = results.filter((r) =>
-      r.matchedContext.domains.includes("Backend")
-    );
+    const backendResults = results.filter((r) => r.matchedContext.domains.includes("Backend"));
     // Business rule: Only position strict + all fields excluded → should find diverse domains
     // Expected candidates: U3 (Junior Backend Go), U7 (Junior Backend Java), U8 (Junior Backend Python)
     // Threshold: >= 2 (expect at least 2 of 3 Backend Juniors to match, since domains excluded)
     // If fails: Backend Juniors incorrectly excluded OR position filtering broken
     expect(backendResults.length).toBeGreaterThanOrEqual(2);
-    console.log(
-      `[AC4] Backend results count: ${backendResults.length} (expected >= 2)`
-    );
+    console.log(`[AC4] Backend results count: ${backendResults.length} (expected >= 2)`);
 
     // Verify U3 or U7 is in results (Backend Juniors)
     const hasBackendCandidate = results.some(
-      (r) => r.userId === u3.userId || r.userId === u7.userId
+      (r) => r.userId === u3.userId || r.userId === u7.userId,
     );
     expect(hasBackendCandidate).toBe(true);
   });
@@ -332,16 +316,11 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!; // Junior Frontend React, started_working
 
-    console.log(
-      "[AC5] Searching with excludedCreationReasons: [milestone_achieved]"
-    );
-    console.log(
-      "[AC5] Reference context creationReason:",
-      u1Context.creationReason
-    );
+    console.log("[AC5] Searching with excludedCreationReasons: [milestone_achieved]");
+    console.log("[AC5] Reference context creationReason:", u1Context.creationReason);
     console.log(
       "[AC5] U1 trajectory:",
-      u1.contexts.map((c) => c.creationReason)
+      u1.contexts.map((c) => c.creationReason),
     );
 
     // Act - Exclude users who have milestone_achieved anywhere in their trajectory
@@ -371,7 +350,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         userId: r.userId,
         position: r.matchedContext.position,
         creationReason: r.matchedContext.creationReason,
-      }))
+      })),
     );
 
     // Business rule: Exclude trajectories with ANY milestone_achieved reason
@@ -391,17 +370,14 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         u2Score: u2Result.contextMatchScore,
         u2Reasons: u2.contexts.map((c) => c.creationReason),
         u1Excluded: "U1 filtered out (has milestone_achieved in trajectory)",
-        filterLogic:
-          "excludedCreationReasons works as HARD filter, not score penalty",
+        filterLogic: "excludedCreationReasons works as HARD filter, not score penalty",
       });
     }
 
     // All single-context users (U3-U9) should be in results (only started_working)
     const u3 = dataManager.getStoryBy("U3");
     const u4 = dataManager.getStoryBy("U4");
-    expect(
-      results.find((r) => r.userId === u3.userId || r.userId === u4.userId)
-    ).toBeDefined();
+    expect(results.find((r) => r.userId === u3.userId || r.userId === u4.userId)).toBeDefined();
   });
 
   it("AC6: Recency filter - only finds candidates with recent contexts", async () => {
@@ -435,7 +411,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         userId: r.userId,
         position: r.matchedContext.position,
         createdAt: r.matchedContext.createdAt,
-      }))
+      })),
     );
 
     // Business rule: Recency filter (6 months from 2025-11-10 = cutoff 2025-05-10)
@@ -461,9 +437,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
     results.forEach((r) => {
       const createdAt = new Date(r.matchedContext.createdAt);
-      expect(createdAt.getTime()).toBeGreaterThanOrEqual(
-        sixMonthsAgo.getTime()
-      );
+      expect(createdAt.getTime()).toBeGreaterThanOrEqual(sixMonthsAgo.getTime());
     });
   });
 
@@ -498,7 +472,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       results.map((r) => ({
         userId: r.userId,
         education: r.matchedContext.educationLevel,
-      }))
+      })),
     );
 
     // Business rule: educationLevel strict filter
@@ -557,7 +531,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       results.map((r) => ({
         userId: r.userId,
         education: r.matchedContext.educationLevel,
-      }))
+      })),
     );
 
     // Business rule: educationLevel excluded → ignore education in matching
@@ -566,9 +540,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(results.find((r) => r.userId === u16.userId)).toBeDefined();
 
     // Verify we have multiple education levels in results
-    const educationLevels = new Set(
-      results.map((r) => r.matchedContext.educationLevel)
-    );
+    const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
     expect(educationLevels.size).toBeGreaterThan(1);
   });
 
@@ -585,7 +557,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
     console.log("[AC9] Reference education:", u15Context.educationLevel);
     console.log(
-      "[AC9] Expected: Find candidates with ANY education level (BACHELOR, MASTER, HIGH_SCHOOL, null)"
+      "[AC9] Expected: Find candidates with ANY education level (BACHELOR, MASTER, HIGH_SCHOOL, null)",
     );
 
     // Act
@@ -613,7 +585,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       results.map((r) => ({
         userId: r.userId,
         education: r.matchedContext.educationLevel,
-      }))
+      })),
     );
 
     // Business rule: null educationLevel in reference → wildcard (finds all education levels)
@@ -622,9 +594,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(results.find((r) => r.userId === u14.userId)).toBeDefined();
 
     // Verify we have multiple education levels in results (wildcard behavior)
-    const educationLevels = new Set(
-      results.map((r) => r.matchedContext.educationLevel)
-    );
+    const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
     expect(educationLevels.size).toBeGreaterThan(1);
   });
 
@@ -734,9 +704,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();
 
-    console.log(
-      "[AC12] Searching with U1 (no salary fields) - backward compatibility"
-    );
+    console.log("[AC12] Searching with U1 (no salary fields) - backward compatibility");
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!; // Junior Frontend React, NO salary fields
 
@@ -800,7 +768,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[SC1] Results count:", results.length);
     console.log(
       "[SC1] Results userIds:",
-      results.map((r) => r.userId)
+      results.map((r) => r.userId),
     );
 
     // Business rule: Only candidates with languages containing "en" should match
@@ -844,7 +812,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[SC3] Results count:", results.length);
     console.log(
       "[SC3] Results userIds:",
-      results.map((r) => r.userId)
+      results.map((r) => r.userId),
     );
 
     // Business rule: Only candidates with BOTH "en" AND "de" should match
@@ -880,7 +848,14 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: ["languages", "birthYear", "countryCode", "cityName", "domains", "skills"], // Ignore languages filter
+      excludedContextFields: [
+        "languages",
+        "birthYear",
+        "countryCode",
+        "cityName",
+        "domains",
+        "skills",
+      ], // Ignore languages filter
       excludedCreationReasons: [],
     });
 
@@ -888,7 +863,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[SC2] Results count:", results.length);
     console.log(
       "[SC2] Results userIds:",
-      results.map((r) => r.userId)
+      results.map((r) => r.userId),
     );
 
     // Business rule: When languages is excluded, ALL candidates should match (regardless of languages)
@@ -926,7 +901,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[SC4] Results count:", results.length);
     console.log(
       "[SC4] Results userIds:",
-      results.map((r) => r.userId)
+      results.map((r) => r.userId),
     );
 
     // Business rule: When search languages is null → wildcard (match ALL candidates)
@@ -974,10 +949,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(u4Result).toBeDefined();
 
     if (u4Result) {
-      console.log(
-        "[SC7] U4 languages field:",
-        u4Result.matchedContext.languages
-      );
+      console.log("[SC7] U4 languages field:", u4Result.matchedContext.languages);
       expect(u4Result.matchedContext.languages).toBeDefined();
       expect(u4Result.matchedContext.languages).toEqual(expect.arrayContaining(["en", "de"]));
       expect(u4Result.matchedContext.languages).toHaveLength(2);
@@ -997,10 +969,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1InU3Search = u3Results.find((r) => r.userId === u1.userId);
     expect(u1InU3Search).toBeDefined();
     if (u1InU3Search) {
-      console.log(
-        "[SC7] U1 languages field:",
-        u1InU3Search.matchedContext.languages
-      );
+      console.log("[SC7] U1 languages field:", u1InU3Search.matchedContext.languages);
       expect(u1InU3Search.matchedContext.languages).toEqual(["en"]);
     }
   });

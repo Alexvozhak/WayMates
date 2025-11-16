@@ -1,10 +1,6 @@
 import express from "express";
 
-import {
-  CreateGoalInputSchema,
-  StoryInputSchema,
-  UserIdSchema,
-} from "../shared/schemas.js";
+import { CreateGoalInputSchema, StoryInputSchema, UserIdSchema } from "../shared/schemas.js";
 
 import {
   AdhocSearchParamsSchema,
@@ -21,7 +17,7 @@ type CoreContext = {
   searchManager?: SearchManager;
   storyManager: StoryManager;
   goalsManager: GoalsManager;
-}
+};
 
 const HTTP_STATUS = {
   badRequest: 400,
@@ -46,9 +42,7 @@ export function createRestServer(context: CoreContext): express.Express {
       res.status(HTTP_STATUS.BAD_REQUEST).json({ error: err.message });
       return;
     }
-    res
-      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json({ error: "Internal server error" });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: "Internal server error" });
   });
 
   return app;
@@ -57,7 +51,7 @@ export function createRestServer(context: CoreContext): express.Express {
 export async function startRestServer(
   context: CoreContext,
   port: number,
-  host: string
+  host: string,
 ): Promise<void> {
   const app = createRestServer(context);
 
@@ -75,14 +69,11 @@ function registerSearchRoutes(app: express.Express, context: CoreContext): void 
   }
 
   // Режим 1: Ad-Hoc Search
-  app.post(
-    "/api/search/adhoc",
-    async (req: Request, res: Response) => {
-      const params = AdhocSearchParamsSchema.parse(req.body);
-      const result = await context.searchManager!.searchAdhoc(params);
-      res.json(result);
-    }
-  );
+  app.post("/api/search/adhoc", async (req: Request, res: Response) => {
+    const params = AdhocSearchParamsSchema.parse(req.body);
+    const result = await context.searchManager!.searchAdhoc(params);
+    res.json(result);
+  });
 
   // Режимы 2+3: User Search (автоматический DTW)
   app.post("/api/search/user", async (req: Request, res: Response) => {

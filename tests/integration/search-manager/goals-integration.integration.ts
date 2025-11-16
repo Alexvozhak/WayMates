@@ -248,7 +248,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
         userId: r.userId,
         position: r.matchedContext.position,
         candidateType: r.candidateType,
-      }))
+      })),
     );
 
     // Assert - All candidates have candidateType=null (no goal)
@@ -272,7 +272,10 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     const u5 = dataManager.getStoryBy("U5"); // Has Senior in trajectory
 
     console.log("[G2] U1 goal: Senior position");
-    console.log("[G2] U5 trajectory positions:", u5.contexts.map(c => c.position));
+    console.log(
+      "[G2] U5 trajectory positions:",
+      u5.contexts.map((c) => c.position),
+    );
 
     // Create goal for U1: wants Senior
     await goalsManager.setGoal({
@@ -290,18 +293,21 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // (pathfinders have DIFFERENT positions than user - that's the whole point!)
     const results = await searchManager.searchByUser({
       userId: u1.userId,
-      excludedContextFields: ['position', 'birthYear', 'languages'], // Exclude languages (not relevant to Goals test)
+      excludedContextFields: ["position", "birthYear", "languages"], // Exclude languages (not relevant to Goals test)
       excludedCreationReasons: [],
       recencyThresholdMonths: 24,
       limit: 20,
     });
 
     console.log("[G2] Results count:", results.length);
-    console.log("[G2] All results:", results.map(r => ({
-      userId: r.userId,
-      position: r.matchedContext.position,
-      candidateType: r.candidateType
-    })));
+    console.log(
+      "[G2] All results:",
+      results.map((r) => ({
+        userId: r.userId,
+        position: r.matchedContext.position,
+        candidateType: r.candidateType,
+      })),
+    );
     console.log(
       "[G2] Pathfinders:",
       results
@@ -309,19 +315,24 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
         .map((r) => ({
           userId: r.userId,
           position: r.matchedContext.position,
-        }))
+        })),
     );
 
     // Assert - U5 is marked as pathfinder (achieved Senior)
     // U5 may appear multiple times (different contexts), find Senior context specifically
-    const u5SeniorResult = results.find((r) =>
-      r.userId === u5.userId && r.matchedContext.position === "Senior"
+    const u5SeniorResult = results.find(
+      (r) => r.userId === u5.userId && r.matchedContext.position === "Senior",
     );
-    console.log("[G2] U5 Senior result:", u5SeniorResult ? {
-      userId: u5SeniorResult.userId,
-      position: u5SeniorResult.matchedContext.position,
-      candidateType: u5SeniorResult.candidateType
-    } : "NOT FOUND");
+    console.log(
+      "[G2] U5 Senior result:",
+      u5SeniorResult
+        ? {
+            userId: u5SeniorResult.userId,
+            position: u5SeniorResult.matchedContext.position,
+            candidateType: u5SeniorResult.candidateType,
+          }
+        : "NOT FOUND",
+    );
 
     expect(u5SeniorResult).toBeDefined();
     expect(u5SeniorResult?.candidateType).toBe("pathfinder");
@@ -368,7 +379,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // Act - Search by userId with goal
     const results = await searchManager.searchByUser({
       userId: u1.userId,
-      excludedContextFields: ['languages'], // Exclude languages (not relevant to Goals test)
+      excludedContextFields: ["languages"], // Exclude languages (not relevant to Goals test)
       excludedCreationReasons: [],
       recencyThresholdMonths: 24,
       limit: 20,
@@ -382,7 +393,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
         .map((r) => ({
           userId: r.userId,
           position: r.matchedContext.position,
-        }))
+        })),
     );
 
     // Assert - U2 is marked as waymate (same goal as U1)
@@ -420,7 +431,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // Exclude 'position' and 'birthYear' to allow pathfinder detection
     const results = await searchManager.searchByUser({
       userId: u1.userId,
-      excludedContextFields: ['position', 'birthYear', 'languages'], // Exclude languages (not relevant to Goals test)
+      excludedContextFields: ["position", "birthYear", "languages"], // Exclude languages (not relevant to Goals test)
       excludedCreationReasons: [],
       recencyThresholdMonths: 24,
       limit: 20,
@@ -442,10 +453,13 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       expect(p.contextMatchScore).toBeGreaterThan(0);
     });
 
-    console.log("[G4] Pathfinder scores:", pathfinders.map(p => ({
-      userId: p.userId,
-      score: p.contextMatchScore
-    })));
+    console.log(
+      "[G4] Pathfinder scores:",
+      pathfinders.map((p) => ({
+        userId: p.userId,
+        score: p.contextMatchScore,
+      })),
+    );
 
     console.log("[G4] Pathfinder scoring verified: ✅");
   });
@@ -490,13 +504,17 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
         userId: r.userId,
         candidateType: r.candidateType,
         trajectoryLength: r.path?.length || 0,
-      }))
+      })),
     );
 
     // Assert - candidateType field is present (Goals work with search)
     expect(results.length).toBeGreaterThan(0);
     results.forEach((r) => {
-      expect(r.candidateType === null || r.candidateType === "pathfinder" || r.candidateType === "waymate").toBe(true);
+      expect(
+        r.candidateType === null ||
+          r.candidateType === "pathfinder" ||
+          r.candidateType === "waymate",
+      ).toBe(true);
     });
 
     // Assert - If pathfinders exist, they should be properly detected

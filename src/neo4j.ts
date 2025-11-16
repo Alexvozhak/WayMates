@@ -30,7 +30,7 @@ export async function verifyConnection(driver: Driver): Promise<void> {
  */
 export async function withReadSession<T>(
   driver: Driver,
-  work: (tx: ManagedTransaction) => Promise<T>
+  work: (tx: ManagedTransaction) => Promise<T>,
 ): Promise<T> {
   const session = driver.session();
   try {
@@ -45,7 +45,7 @@ export async function withReadSession<T>(
  */
 export async function withWriteSession<T>(
   driver: Driver,
-  work: (tx: ManagedTransaction) => Promise<T>
+  work: (tx: ManagedTransaction) => Promise<T>,
 ): Promise<T> {
   const session = driver.session();
   try {
@@ -60,9 +60,7 @@ function getCredentials(): Credentials {
 
   const missing = requiredEnvVars.filter((env) => !process.env[env]);
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(", ")}`
-    );
+    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
   }
 
   return {

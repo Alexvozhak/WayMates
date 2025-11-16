@@ -9,8 +9,8 @@
  * Week 2 Day 2 - GDS Module Implementation
  */
 
-import type { Driver } from 'neo4j-driver';
-import { withReadSession } from '../neo4j.js';
+import type { Driver } from "neo4j-driver";
+import { withReadSession } from "../neo4j.js";
 
 /**
  * Duration statistics for a specific creation_reason
@@ -95,7 +95,7 @@ export class ReasonAnalyticsService {
         } AS result
       `);
 
-      return result.records.map((record) => record.get('result') as DurationByReasonResult);
+      return result.records.map((record) => record.get("result") as DurationByReasonResult);
     });
   }
 
@@ -148,7 +148,7 @@ export class ReasonAnalyticsService {
         } AS result
       `);
 
-      return result.records.map((record) => record.get('result') as ReasonTransitionResult);
+      return result.records.map((record) => record.get("result") as ReasonTransitionResult);
     });
   }
 
@@ -188,7 +188,7 @@ export class ReasonAnalyticsService {
         } AS result
       `);
 
-      return result.records.map((record) => record.get('result') as ReasonCooccurrenceResult);
+      return result.records.map((record) => record.get("result") as ReasonCooccurrenceResult);
     });
   }
 }

@@ -1,10 +1,9 @@
-import { err, ok } from '../../shared/result.js';
+import { err, ok } from "../result.js";
 
-import { FacadeError } from './errors.js';
+import { FacadeError } from "./errors.js";
 
-import type { ErrorResponse, Result, SessionId } from '../../shared/result.js';
-import type { UserId } from '../../shared/schemas.js';
-
+import type { UserId } from "../../shared/schemas.js";
+import type { ErrorResponse, Result, SessionId } from "../result.js";
 
 export type SessionMiddleware = {
   validate(sessionId: SessionId): Promise<UserId>;
@@ -24,7 +23,7 @@ export abstract class BaseTool<TParams, TResult> {
   constructor(
     protected session: SessionMiddleware,
     protected normalizer: Normalizer,
-    protected coreClient: CoreRestClient
+    protected coreClient: CoreRestClient,
   ) {}
 
   async execute(params: TParams): Promise<Result<TResult, ErrorResponse>> {
@@ -40,10 +39,7 @@ export abstract class BaseTool<TParams, TResult> {
     }
   }
 
-  protected abstract executeImpl(
-    params: TParams,
-    userId: UserId
-  ): Promise<TResult>;
+  protected abstract executeImpl(params: TParams, userId: UserId): Promise<TResult>;
 
   protected abstract extractSessionId(params: TParams): SessionId;
 
@@ -54,15 +50,15 @@ export abstract class BaseTool<TParams, TResult> {
 
     if (error instanceof Error) {
       return {
-        code: 'internal_error',
-        message: 'An unexpected error occurred.',
+        code: "internal_error",
+        message: "An unexpected error occurred.",
         details: { originalError: error.message },
       };
     }
 
     return {
-      code: 'internal_error',
-      message: 'An unexpected error occurred.',
+      code: "internal_error",
+      message: "An unexpected error occurred.",
     };
   }
 }

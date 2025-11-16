@@ -2,9 +2,9 @@
  * Path collection queries
  */
 
-import { buildOptionalMatchRelationships } from '../helpers/relationships.js';
-import { buildWithCollect } from '../helpers/aggregation.js';
-import { buildContextMapProjection } from '../constants/projections.js';
+import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
+import { buildWithCollect } from "../helpers/aggregation.js";
+import { buildContextMapProjection } from "../constants/projections.js";
 
 /**
  * Build path query for batch trajectory collection
@@ -39,13 +39,13 @@ WHERE start.previousContextId IS NULL
 WITH userId, [node IN nodes(path) | node] AS pathNodes
 UNWIND pathNodes AS searchingPathContext
 
-${buildOptionalMatchRelationships('searchingPathContext')}
+${buildOptionalMatchRelationships("searchingPathContext")}
 
-${buildWithCollect('searchingPathContext', ['userId'])}
+${buildWithCollect("searchingPathContext", ["userId"])}
 
 ORDER BY searchingPathContext.createdAt ASC
 
-WITH userId, collect(${buildContextMapProjection('searchingPath')}) AS path
+WITH userId, collect(${buildContextMapProjection("searchingPath")}) AS path
 RETURN userId, path
   `.trim();
 }

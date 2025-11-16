@@ -1,18 +1,17 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes } from "node:crypto";
 
-import { sessionIdSchema } from '../shared/result.js';
-import { userIdSchema } from '../shared/schemas.js';
+import { userIdSchema } from "../shared/schemas.js";
 
-import { SessionExpiredError } from './tools/errors.js';
+import { sessionIdSchema } from "./result.js";
+import { SessionExpiredError } from "./tools/errors.js";
 
-import type { SessionId } from '../shared/result.js';
-import type { UserId } from '../shared/schemas.js';
-import type { Redis } from 'ioredis';
-
+import type { SessionId } from "./result.js";
+import type { UserId } from "../shared/schemas.js";
+import type { Redis } from "ioredis";
 
 export class SessionMiddleware {
   private static readonly sessionTtlSeconds = 3600;
-  private static readonly sessionKeyPrefix = 'session:';
+  private static readonly sessionKeyPrefix = "session:";
 
   constructor(private redis: Redis) {}
 
@@ -21,9 +20,7 @@ export class SessionMiddleware {
     const userId = await this.redis.get(key);
 
     if (!userId) {
-      throw new SessionExpiredError(
-        `Session ${sessionId} not found or expired`
-      );
+      throw new SessionExpiredError(`Session ${sessionId} not found or expired`);
     }
 
     await this.redis.expire(key, SessionMiddleware.sessionTtlSeconds);
@@ -35,11 +32,7 @@ export class SessionMiddleware {
     const sessionId = this.generateSessionId();
     const key = this.getSessionKey(sessionId);
 
-    await this.redis.setex(
-      key,
-      SessionMiddleware.sessionTtlSeconds,
-      userId
-    );
+    await this.redis.setex(key, SessionMiddleware.sessionTtlSeconds, userId);
 
     return sessionId;
   }
@@ -54,7 +47,7 @@ export class SessionMiddleware {
   }
 
   private generateSessionId(): SessionId {
-    const randomHex = randomBytes(16).toString('hex');
+    const randomHex = randomBytes(16).toString("hex");
     return sessionIdSchema.parse(`sess_${randomHex}`);
   }
 }
