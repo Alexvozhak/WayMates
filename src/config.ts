@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import path from "node:path";
 
 import type { ContextField, SearchConstraints  } from "./core/schemas.js";
 
@@ -9,7 +9,7 @@ export const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
   "skills",
 ];
 
-export const PRESETS_PATH = join(process.cwd(), "config", "presets.json");
+export const PRESETS_PATH = path.join(process.cwd(), "config", "presets.json");
 
 export const DEFAULT_CONSTRAINTS: SearchConstraints = {
   maxTimingDiffMonths: 12,

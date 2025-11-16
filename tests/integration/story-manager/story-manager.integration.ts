@@ -404,7 +404,7 @@ describe("StoryManager Integration Tests", () => {
     });
 
     test("SC6: persists languages field and creates SPEAKS_FLUENT relationships", async () => {
-      const { testData, context } = await upsertSingleContext("U1", 0);
+      const { context } = await upsertSingleContext("U1", 0);
       const contextId = context.contextId;
 
       // Verify languages array is stored on Context node

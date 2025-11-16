@@ -221,7 +221,6 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
   it("G1: No Goal baseline - searchByUser without goal returns candidateType=null", async () => {
     // Arrange
-    const db = new DatabaseContext(driver);
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();

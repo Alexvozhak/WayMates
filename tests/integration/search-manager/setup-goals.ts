@@ -26,7 +26,7 @@ export let driver: Driver;
 let dataManager: TestDataManager;
 let dbFixture: DatabaseFixture;
 
-beforeAll(async () => {
+beforeAll(() => {
   console.log("[Goals Setup] Starting setup for Goals tests...");
 
   driver = createDriver();

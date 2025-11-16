@@ -90,12 +90,6 @@ describe("Target Search (TG1-TG7)", () => {
 
     // Time calculation verification
     results.forEach((r) => {
-      const now = new Date();
-      const matchedDate = new Date(r.matchedContext.createdAt);
-      const monthsDiff = Math.floor(
-        (now.getTime() - matchedDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44),
-      );
-
       // timeSinceMatchedMonths should be >= 0 (recent or in past)
       if (r.timeSinceMatchedMonths != null) {
         // Check for null AND undefined

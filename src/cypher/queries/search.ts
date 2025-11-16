@@ -6,10 +6,9 @@ import { buildContextMapProjection } from "../constants/projections.js";
 import { buildWithCollect } from "../helpers/aggregation.js";
 import { buildExcludedReasonsFilter, buildStrictWhereClause } from "../helpers/filters.js";
 import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
-import { buildSkillsScoring } from "../helpers/scoring.js";
 import { buildMatchPath, buildUnwindPath } from "../helpers/trajectory.js";
 
-import type { ContextField, Goal, TargetSearchParams } from "../../shared/schemas.js";
+import type { ContextField, TargetSearchParams } from "../../shared/schemas.js";
 
 /**
  * Get user's current context with enrichment
