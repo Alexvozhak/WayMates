@@ -9,13 +9,14 @@
  * Week 2 Day 2 - GDS Module Implementation
  */
 
-import type { Driver } from "neo4j-driver";
 import { withReadSession } from "../neo4j.js";
+
+import type { Driver } from "neo4j-driver";
 
 /**
  * Duration statistics for a specific creation_reason
  */
-export interface DurationByReasonResult {
+export type DurationByReasonResult = {
   reason: string;
   avgDuration: number;
   medianDuration: number;
@@ -30,7 +31,7 @@ export interface DurationByReasonResult {
  * Transition pattern: from_reason → current_reason → to_reason
  * with probability P(to_reason | current_reason)
  */
-export interface ReasonTransitionResult {
+export type ReasonTransitionResult = {
   fromReason: string | null;
   currentReason: string;
   toReason: string | null;
@@ -41,7 +42,7 @@ export interface ReasonTransitionResult {
 /**
  * Co-occurrence: reasons that appear together in same context
  */
-export interface ReasonCooccurrenceResult {
+export type ReasonCooccurrenceResult = {
   reason1: string;
   reason2: string;
   cooccurrenceCount: number;

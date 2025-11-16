@@ -1,6 +1,7 @@
-import { join } from "path";
-import { ContextField } from "./core/schemas.js";
-import type { SearchConstraints } from "./core/schemas.js";
+import { join } from "node:path";
+
+import type { ContextField, SearchConstraints  } from "./core/schemas.js";
+
 
 export const REQUIRED_FIELDS_FOR_CURRENT_CONTEXT: ContextField[] = [
   "position",

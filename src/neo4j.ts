@@ -1,4 +1,6 @@
-import neo4j, { Driver, ManagedTransaction } from "neo4j-driver";
+import neo4j from "neo4j-driver";
+
+import type { Driver, ManagedTransaction } from "neo4j-driver";
 
 type Credentials = {
   uri: string;

@@ -83,7 +83,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       // Scoring formula: score = 1.0 - (sum(penalties) / 100.0)
       // Expected score: 1.0 - (0 / 100.0) = 1.0 (perfect match)
       // If fails: Either scoring formula changed OR U2 data changed
-      const expectedScore = 1.0;
+      const expectedScore = 1;
 
       console.log("[AC1] U2 score breakdown:", {
         referenceSkills: u1Context.skills,
@@ -740,7 +740,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
     // Search still works correctly (U2 should match U1 with perfect score)
     if (u2Result) {
-      expect(u2Result.contextMatchScore).toBeCloseTo(1.0, 2);
+      expect(u2Result.contextMatchScore).toBeCloseTo(1, 2);
     }
   });
 

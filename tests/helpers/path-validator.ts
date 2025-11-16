@@ -81,7 +81,7 @@ export function validatePathLeadsTo(path: UserContext[], matchedContextId: strin
     return; // No path to validate
   }
 
-  const lastPathContext = path[path.length - 1];
+  const lastPathContext = path.at(-1);
   expect(lastPathContext.contextId).toBe(matchedContextId);
 }
 
@@ -99,7 +99,7 @@ export function validatePathLeadsTo(path: UserContext[], matchedContextId: strin
  * validateAllPaths(results, 'TG1');
  */
 export function validateAllPaths(
-  results: Array<{ path?: UserContext[]; matchedContext: { contextId: string } }>,
+  results: { path?: UserContext[]; matchedContext: { contextId: string } }[],
   testTag: string,
 ): void {
   results.forEach((r) => {

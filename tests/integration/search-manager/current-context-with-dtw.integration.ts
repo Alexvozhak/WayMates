@@ -174,7 +174,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       expect(u12Result.dtwMetrics.shapeSimilarity).toBeGreaterThan(0.6); // Medium shape
       expect(u12Result.dtwMetrics.shapeSimilarity).toBeLessThan(0.8);
       expect(u12Result.dtwTotal).toBeGreaterThan(1.5); // Fair match
-      expect(u12Result.dtwTotal).toBeLessThan(2.0);
+      expect(u12Result.dtwTotal).toBeLessThan(2);
     }
 
     // U13 (Data Science, stable but different domain) should have MEDIUM scores
@@ -197,7 +197,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       expect(u13Result.dtwMetrics.shapeSimilarity).toBeGreaterThan(0.6); // Similar pattern despite different domains
       expect(u13Result.dtwMetrics.tempoSimilarity).toBeGreaterThan(0.6); // Similar tempo
       expect(u13Result.dtwMetrics.stabilityScore).toBeGreaterThan(0.5); // Moderate stability (domains differ)
-      expect(u13Result.dtwTotal).toBeGreaterThan(2.0); // Good match
+      expect(u13Result.dtwTotal).toBeGreaterThan(2); // Good match
       expect(u13Result.dtwTotal).toBeLessThan(2.9); // Allow variance after Phase 3 Raw Cypher migration
     }
   });
@@ -349,10 +349,10 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       // Thresholds allow ±0.1 variance from expected values (DTW algorithm + Phase 3 Raw Cypher migration)
       // If fails: Check DTW component calculations OR trajectory data changed
       expect(u11Total).toBeGreaterThan(2.55); // Excellent
-      expect(u13Total).toBeGreaterThan(2.0); // High-medium
+      expect(u13Total).toBeGreaterThan(2); // High-medium
       expect(u13Total).toBeLessThan(2.9); // Allow variance after Phase 3 Raw Cypher migration
       expect(u12Total).toBeGreaterThan(1.5); // Medium
-      expect(u12Total).toBeLessThan(2.0);
+      expect(u12Total).toBeLessThan(2);
 
       // DTW formula validation - Verify dtwTotal = shape + tempo + stability for all results
       if (u11Result.dtwMetrics) {

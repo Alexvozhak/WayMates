@@ -223,8 +223,8 @@ describe("Target Search (TG1-TG7)", () => {
       (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId,
     );
 
-    const matchedUserIds = results.map((r) => r.userId);
-    const hasFrontendUsers = frontendUserIds.some((id) => matchedUserIds.includes(id));
+    const matchedUserIds = new Set(results.map((r) => r.userId));
+    const hasFrontendUsers = frontendUserIds.some((id) => matchedUserIds.has(id));
     expect(hasFrontendUsers).toBe(true);
 
     // All results should have Frontend in domains
@@ -284,8 +284,8 @@ describe("Target Search (TG1-TG7)", () => {
       (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId,
     );
 
-    const matchedUserIds = results.map((r) => r.userId);
-    const hasBackendUsers = backendUserIds.some((id) => matchedUserIds.includes(id));
+    const matchedUserIds = new Set(results.map((r) => r.userId));
+    const hasBackendUsers = backendUserIds.some((id) => matchedUserIds.has(id));
     expect(hasBackendUsers).toBe(true);
 
     // None of the results should have Frontend in domains
@@ -350,8 +350,8 @@ describe("Target Search (TG1-TG7)", () => {
       (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId,
     );
 
-    const matchedUserIds = results.map((r) => r.userId);
-    const hasPythonUsers = pythonUserIds.some((id) => matchedUserIds.includes(id));
+    const matchedUserIds = new Set(results.map((r) => r.userId));
+    const hasPythonUsers = pythonUserIds.some((id) => matchedUserIds.has(id));
     expect(hasPythonUsers).toBe(true);
 
     // All results should have python in skills
@@ -414,8 +414,8 @@ describe("Target Search (TG1-TG7)", () => {
       (key) => dataManager.getStoryBy(key as keyof typeof dataManager).userId,
     );
 
-    const matchedUserIds = results.map((r) => r.userId);
-    const hasNonPythonUsers = nonPythonUserIds.some((id) => matchedUserIds.includes(id));
+    const matchedUserIds = new Set(results.map((r) => r.userId));
+    const hasNonPythonUsers = nonPythonUserIds.some((id) => matchedUserIds.has(id));
     expect(hasNonPythonUsers).toBe(true);
 
     // None of the results should have python in skills

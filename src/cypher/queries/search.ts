@@ -2,10 +2,10 @@
  * Search queries
  */
 
-import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
-import { buildWithCollect } from "../helpers/aggregation.js";
 import { buildContextMapProjection } from "../constants/projections.js";
-import { buildStrictWhereClause, buildExcludedReasonsFilter } from "../helpers/filters.js";
+import { buildWithCollect } from "../helpers/aggregation.js";
+import { buildExcludedReasonsFilter, buildStrictWhereClause } from "../helpers/filters.js";
+import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
 import { buildSkillsScoring } from "../helpers/scoring.js";
 import { buildMatchPath, buildUnwindPath } from "../helpers/trajectory.js";
 
@@ -76,7 +76,7 @@ RETURN searchingUser.currentContextId AS currentContextId
  * @param filterByCurrentContext - If true, filters by currentContextId (searchByUser). If false, searches all contexts (searchAdhoc, searchByTarget)
  * @returns Cypher fragment
  */
-export function buildMatchedContextBase(filterByCurrentContext: boolean = false): string {
+export function buildMatchedContextBase(filterByCurrentContext = false): string {
   const contextFilter = filterByCurrentContext ? "{contextId: matchedUser.currentContextId}" : "";
 
   return `
@@ -126,7 +126,7 @@ export function buildCurrentSearchQuery(
     recencyThresholdMonths?: number;
     limit: number;
   },
-  filterByCurrentContext: boolean = false,
+  filterByCurrentContext = false,
 ): string {
   const hasGoal = Boolean(goalPositions && params.userId);
 

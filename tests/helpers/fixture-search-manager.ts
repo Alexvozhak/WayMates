@@ -1,4 +1,4 @@
-import { Driver } from "neo4j-driver";
+import type { Driver } from "neo4j-driver";
 import { DatabaseContext } from "../../src/database-context.js";
 import { GoalsManager } from "../../src/core/goals-manager.js";
 import { PathCollectorService } from "../../src/core/path-collector.service.js";

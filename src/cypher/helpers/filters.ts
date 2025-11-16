@@ -32,49 +32,60 @@ function generateStrictCondition(
   searchingVar: string,
 ): string {
   switch (field) {
-    case "position":
+    case "position": {
       return `${prefix}Position.name = ${searchingVar}.position`;
+    }
 
-    case "domains":
+    case "domains": {
       // All domains must be present
       return `all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)`;
+    }
 
-    case "skills":
+    case "skills": {
       // NEVER strict - handled by penalty scoring
       throw new Error("Skills cannot be in strict conditions. Use buildSkillsScoring() instead.");
+    }
 
-    case "industry":
+    case "industry": {
       return `${prefix}Industry.name = ${searchingVar}.industry`;
+    }
 
-    case "countryCode":
+    case "countryCode": {
       return `${prefix}Country.name = ${searchingVar}.countryCode`;
+    }
 
-    case "cityName":
+    case "cityName": {
       return `${prefix}City.name = ${searchingVar}.cityName`;
+    }
 
-    case "companySize":
+    case "companySize": {
       return `${prefix}Context.companySize = ${searchingVar}.companySize`;
+    }
 
-    case "birthYear":
+    case "birthYear": {
       return `${prefix}Context.birthYear = ${searchingVar}.birthYear`;
+    }
 
-    case "educationLevel":
+    case "educationLevel": {
       return `CASE
     WHEN ${searchingVar}.educationLevel IS NULL THEN true
     WHEN ${prefix}Context.educationLevel IS NULL THEN true
     ELSE ${prefix}Context.educationLevel = ${searchingVar}.educationLevel
   END`;
+    }
 
-    case "languages":
+    case "languages": {
       // Null wildcard: if searchingVar.languages is null, match everyone
       // Strict matching: ALL languages must be present (AND logic)
       return `CASE
     WHEN ${searchingVar}.languages IS NULL THEN true
     ELSE all(lang IN ${searchingVar}.languages WHERE lang IN ${prefix}Languages)
   END`;
+    }
 
-    default:
+    default: {
       throw new Error(`Unknown field: ${field}`);
+    }
   }
 }
 

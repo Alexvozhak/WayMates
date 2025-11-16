@@ -2,9 +2,9 @@
  * Path collection queries
  */
 
-import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
-import { buildWithCollect } from "../helpers/aggregation.js";
 import { buildContextMapProjection } from "../constants/projections.js";
+import { buildWithCollect } from "../helpers/aggregation.js";
+import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
 
 /**
  * Build path query for batch trajectory collection

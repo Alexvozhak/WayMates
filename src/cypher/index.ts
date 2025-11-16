@@ -8,19 +8,19 @@
  */
 
 // Queries
-export { userCurrentContextQuery, userCurrentContextIdQuery } from "./queries/search.js";
-export { setGoalQuery, getUserGoalQuery, deleteGoalQuery } from "./queries/goals.js";
+export { userCurrentContextIdQuery, userCurrentContextQuery } from "./queries/search.js";
+export { deleteGoalQuery, getUserGoalQuery, setGoalQuery } from "./queries/goals.js";
 
 // Helpers (for advanced usage)
 export { buildOptionalMatchRelationships } from "./helpers/relationships.js";
 export { buildWithCollect } from "./helpers/aggregation.js";
 export { buildMatchPath, buildUnwindPath } from "./helpers/trajectory.js";
 export {
-  buildSkillsScoring,
-  buildSimpleFieldScoring,
   buildArrayFieldScoring,
+  buildSimpleFieldScoring,
+  buildSkillsScoring,
 } from "./helpers/scoring.js";
-export { buildStrictWhereClause, buildExcludedReasonsFilter } from "./helpers/filters.js";
+export { buildExcludedReasonsFilter, buildStrictWhereClause } from "./helpers/filters.js";
 
 // Constants
 export { buildContextMapProjection } from "./constants/projections.js";

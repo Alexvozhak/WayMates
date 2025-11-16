@@ -1,5 +1,6 @@
-import type { Driver, ManagedTransaction, Session } from "neo4j-driver";
 import { session as neo4jSession } from "neo4j-driver";
+
+import type { Driver, ManagedTransaction, Session } from "neo4j-driver";
 
 export class DatabaseContext {
   constructor(private driver: Driver) {}
