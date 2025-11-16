@@ -103,3 +103,6 @@ todo-dropbox
 # Kaggle datasets (large CSV files)
 kaggle/
 US Department of Labor/
+
+# Claude Code - Quality tracking (session-scoped)
+.claude/.quality-status

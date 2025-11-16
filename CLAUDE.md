@@ -472,6 +472,25 @@ npm run test:integration             # After Cypher/schema changes
 
 ---
 
+## Quality Status Tracking
+
+**At session start**: Check `.claude/.quality-status`:
+- Missing or outdated commit → offer health check (`npm run lint && npm test`)
+- Present and matches HEAD → show summary (warnings, test status)
+
+**Format** (`.claude/.quality-status`):
+```
+COMMIT=<hash>
+LINT_WARNINGS=<count>
+TESTS_UNIT_PASSED=<passed>/<total>
+TESTS_INTEGRATION_PASSED=<passed>/<total>
+CHECKED_AT=<timestamp>
+```
+
+**Auto-cleanup**: `post-commit` hook deletes file (forces recheck after commit).
+
+---
+
 ## Code Style and Simplicity Rules
 
 **CRITICAL**: This project enforces strict simplicity and readability standards through ESLint.
