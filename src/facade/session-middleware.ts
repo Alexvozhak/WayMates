@@ -1,3 +1,8 @@
+import { randomBytes } from 'node:crypto';
+
+import { sessionIdSchema } from '../shared/result.js';
+import { userIdSchema } from '../shared/schemas.js';
+
 import { SessionExpiredError } from './tools/base-tool.js';
 
 import type { SessionId } from '../shared/result.js';
@@ -23,7 +28,7 @@ export class SessionMiddleware {
 
     await this.redis.expire(key, SessionMiddleware.sessionTtlSeconds);
 
-    return userId as UserId;
+    return userIdSchema.parse(userId);
   }
 
   async create(userId: UserId): Promise<SessionId> {
@@ -49,10 +54,7 @@ export class SessionMiddleware {
   }
 
   private generateSessionId(): SessionId {
-    const randomHex = Array.from({ length: 32 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
-
-    return `sess_${randomHex}` as SessionId;
+    const randomHex = randomBytes(16).toString('hex');
+    return sessionIdSchema.parse(`sess_${randomHex}`);
   }
 }
