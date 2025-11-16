@@ -1,28 +1,44 @@
 import { FastMCP } from 'fastmcp';
-import { z } from 'zod';
 
-import type { FacadeOrchestrator } from './facade-orchestrator.js';
+import { getStoryParamsSchema, GetStoryTool } from './tools/get-story.tool.js';
 
-const nlpQuerySchema = z.object({
-  query: z.string().describe('Natural language query from user'),
-  token: z.string().optional().describe('Authentication token (if returning user)'),
-});
+import type { CoreRestClient } from './core-rest-client.js';
+import type { SessionMiddleware } from './session-middleware.js';
+import type { SimpleNormalizer } from './simple-normalizer.js';
 
-export function createFacadeServer(orchestrator: FacadeOrchestrator): FastMCP {
+
+export type FacadeServerDependencies = {
+  sessionMiddleware: SessionMiddleware;
+  normalizer: SimpleNormalizer;
+  coreClient: CoreRestClient;
+};
+
+export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
   const server = new FastMCP({
     name: 'waymates-facade',
-    version: '1.0.0',
-    instructions: 'WayMates NLP interface. Single endpoint for all career operations.',
+    version: '2.0.0',
+    instructions: 'WayMates MCP Server. Provides 5 tools for career operations.',
   });
 
+  const getStoryTool = new GetStoryTool(
+    deps.sessionMiddleware,
+    deps.normalizer,
+    deps.coreClient
+  );
+
   server.addTool({
-    name: 'process',
-    description: 'Process natural language query (search, story, goal)',
-    parameters: nlpQuerySchema,
+    name: 'get_story',
+    description: 'Get career story (contexts and trails) for a user',
+    parameters: getStoryParamsSchema,
     execute: async (args: unknown) => {
-      const { query, token } = nlpQuerySchema.parse(args);
-      const result = await orchestrator.processQuery(query, token);
-      return JSON.stringify(result, null, 2);
+      const params = getStoryParamsSchema.parse(args);
+      const result = await getStoryTool.execute(params);
+
+      if (result.ok) {
+        return JSON.stringify(result.value, null, 2);
+      }
+
+      throw new Error(`${result.error.code}: ${result.error.message}`);
     },
   });
 

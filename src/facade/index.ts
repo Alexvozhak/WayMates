@@ -1,26 +1,19 @@
 import axios from 'axios';
-import Database from 'better-sqlite3';
 import { Redis } from 'ioredis';
-import { OpenAI } from 'openai';
 
-import { AuthService } from './auth-service.js';
+import { CoreRestClient } from './core-rest-client.js';
 import { createFacadeServer } from './facade-mcp-server.js';
-import { FacadeOrchestrator } from './facade-orchestrator.js';
-import { LLMTranslator } from './llm-translator.js';
-import { RateLimiter } from './rate-limiter.js';
+import { SessionMiddleware } from './session-middleware.js';
+import { SimpleNormalizer } from './simple-normalizer.js';
 
 async function main(): Promise<void> {
-  const db = new Database('./data/facade.db');
   const redis = new Redis({
     host: process.env.REDIS_HOST || 'localhost',
     port: Number(process.env.REDIS_PORT) || 6379,
   });
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
 
   const coreApiUrl = process.env.CORE_API_URL || 'http://localhost:9000/api';
-  const coreClient = axios.create({
+  const httpClient = axios.create({
     baseURL: coreApiUrl,
     timeout: 30_000,
     headers: {
@@ -28,22 +21,19 @@ async function main(): Promise<void> {
     },
   });
 
-  await coreClient.get('/health', {
+  await httpClient.get('/health', {
     baseURL: coreApiUrl.replace('/api', ''),
   });
 
-  const authService = new AuthService(db);
-  const rateLimiter = new RateLimiter(redis);
-  const llmTranslator = new LLMTranslator(openai);
+  const sessionMiddleware = new SessionMiddleware(redis);
+  const normalizer = new SimpleNormalizer();
+  const coreClient = new CoreRestClient(httpClient);
 
-  const orchestrator = new FacadeOrchestrator(
-    authService,
-    llmTranslator,
-    rateLimiter,
-    coreClient
-  );
-
-  const server = createFacadeServer(orchestrator);
+  const server = createFacadeServer({
+    sessionMiddleware,
+    normalizer,
+    coreClient,
+  });
 
   await server.start({
     transportType: 'stdio',
