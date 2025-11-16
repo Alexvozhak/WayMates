@@ -32,18 +32,43 @@ export async function setup() {
   const driver: Driver = createDriver();
 
   try {
-    // Clear existing data
+    // Clear existing data (preserve reference data: Language, Skill, SkillCategory, Reason)
     console.log('[Global Setup] Clearing existing data...');
     const clearSession = driver.session();
     try {
-      await clearSession.run('MATCH (n) DETACH DELETE n');
+      await clearSession.run(`
+        MATCH (n)
+        WHERE NOT n:Language
+          AND NOT n:Skill
+          AND NOT n:SkillCategory
+          AND NOT n:Reason
+        DETACH DELETE n
+      `);
 
-      // Verify cleanup succeeded
-      const countResult = await clearSession.run('MATCH (n) RETURN count(n) AS count');
-      const nodeCount = Number(countResult.records[0]?.get('count')) || 0;
-      if (nodeCount > 0) {
-        throw new Error(`Database cleanup failed: ${nodeCount} nodes remain`);
+      // Verify reference data preserved
+      const refDataResult = await clearSession.run(`
+        MATCH (l:Language)
+        WITH count(l) AS langCount
+        MATCH (s:Skill)
+        WITH langCount, count(s) AS skillCount
+        MATCH (sc:SkillCategory)
+        WITH langCount, skillCount, count(sc) AS categoryCount
+        MATCH (r:Reason)
+        RETURN langCount, skillCount, categoryCount, count(r) AS reasonCount
+      `);
+
+      const record = refDataResult.records[0];
+      const langCount = Number(record?.get('langCount')) || 0;
+      const skillCount = Number(record?.get('skillCount')) || 0;
+      const categoryCount = Number(record?.get('categoryCount')) || 0;
+      const reasonCount = Number(record?.get('reasonCount')) || 0;
+
+      console.log(`[Global Setup] Reference data preserved: ${langCount} Languages, ${skillCount} Skills, ${categoryCount} SkillCategories, ${reasonCount} Reasons`);
+
+      if (langCount === 0 || skillCount === 0 || categoryCount === 0 || reasonCount === 0) {
+        throw new Error('Reference data missing! Run db:test:init before tests.');
       }
+
       console.log('[Global Setup] Database cleaned successfully');
     } finally {
       await clearSession.close();

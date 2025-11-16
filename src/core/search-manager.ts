@@ -52,7 +52,7 @@ export class SearchManager {
   async searchAdhoc(
     params: AdhocSearchParams
   ): Promise<ScoredMatchedCandidate[]> {
-    return this.searchByContext(params);
+    return this.searchByContext(params, false);
   }
 
   async searchByUser(
@@ -64,7 +64,7 @@ export class SearchManager {
     return hasTrajectory ? this.executeCoreSearchWithDTW(params, context) : this.searchByContext({
         ...params,
         referenceContext: context,
-      });
+      }, true);
   }
 
   async searchByTarget(
@@ -90,7 +90,8 @@ export class SearchManager {
   }
 
   private async searchByContext(
-    params: AdhocSearchParams
+    params: AdhocSearchParams,
+    filterByCurrentContext = false
   ): Promise<ScoredMatchedCandidate[]> {
     const {
       referenceContext,
@@ -115,11 +116,16 @@ export class SearchManager {
       referenceContext
     );
 
-    const query = buildCurrentSearchQuery(goalPositions, rankedStrictFields, {
-      userId,
-      recencyThresholdMonths,
-      limit,
-    });
+    const query = buildCurrentSearchQuery(
+      goalPositions,
+      rankedStrictFields,
+      {
+        userId,
+        limit,
+        ...(recencyThresholdMonths !== undefined && { recencyThresholdMonths }),
+      },
+      filterByCurrentContext
+    );
 
     const queryParams = {
       userId,
@@ -162,7 +168,7 @@ export class SearchManager {
     const topCandidates = await this.searchByContext({
       ...params,
       referenceContext,
-    });
+    }, true);
 
     // Step 2: Collect paths for user + candidates
     const candidateIds = topCandidates.map((c) => c.userId);

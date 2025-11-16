@@ -29,9 +29,16 @@ beforeAll(() => {
 }, 30_000); // 30s timeout for setup
 
 beforeEach(async () => {
-  // Clean database before each test (each test loads its own data)
+  // Clean database before each test (preserve reference data: Language, Skill, SkillCategory, Reason)
   await withWriteSession(driver, async (tx) => {
-    await tx.run('MATCH (n) DETACH DELETE n');
+    await tx.run(`
+      MATCH (n)
+      WHERE NOT n:Language
+        AND NOT n:Skill
+        AND NOT n:SkillCategory
+        AND NOT n:Reason
+      DETACH DELETE n
+    `);
   });
 
   console.log('🧹 [Story-Manager Setup] Database cleaned');

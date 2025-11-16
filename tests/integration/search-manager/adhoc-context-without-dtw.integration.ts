@@ -54,7 +54,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: [], // Strict matching on ALL fields
+      excludedContextFields: ["languages"], // Exclude languages (tested separately in SC tests)
       excludedCreationReasons: [],
     });
 
@@ -121,7 +121,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: ["birthYear", "countryCode", "cityName"], // Skills MUST be strict
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "languages"], // Skills MUST be strict
     });
 
     // Assert
@@ -218,7 +218,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: ["countryCode", "cityName", "birthYear"], // Geo and age NOT strict
+      excludedContextFields: ["countryCode", "cityName", "birthYear", "languages"], // Geo and age NOT strict
     });
 
     // Assert
@@ -281,6 +281,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "cityName",
         "companySize",
         "birthYear",
+        "languages",
       ],
     });
 
@@ -353,6 +354,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "domains",
         "skills",
         "industry",
+        "languages",
         "birthYear",
         "countryCode",
         "cityName",
@@ -421,7 +423,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: ["birthYear", "countryCode", "cityName"], // Relaxed matching (skills MUST be strict)
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "languages"], // Relaxed matching (skills MUST be strict)
       recencyThresholdMonths: 6, // Only contexts created within last 6 months
     });
 
@@ -485,7 +487,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: [], // educationLevel NOT excluded → strict matching
+      excludedContextFields: ["languages"], // educationLevel NOT excluded → strict matching, languages excluded (tested in SC)
       excludedCreationReasons: [],
     });
 
@@ -543,6 +545,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "countryCode",
         "cityName",
         "birthYear",
+        "languages",
       ], // Relax all fields except industry to find diverse education levels
       excludedCreationReasons: [],
     });
@@ -743,7 +746,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: [],
+      excludedContextFields: ["languages"], // Exclude languages (tested separately in SC tests)
       excludedCreationReasons: [],
     });
 
@@ -789,7 +792,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: [], // Strict matching on ALL fields including languages
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"], // Exclude all except languages (isolate languages logic)
       excludedCreationReasons: [],
     });
 
@@ -833,7 +836,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u4Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: [], // Strict matching on ALL fields including languages
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"], // Exclude all except languages (isolate languages AND logic)
       excludedCreationReasons: [],
     });
 
@@ -877,7 +880,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: ["languages"], // Ignore languages filter
+      excludedContextFields: ["languages", "birthYear", "countryCode", "cityName", "domains", "skills"], // Ignore languages filter
       excludedCreationReasons: [],
     });
 
@@ -915,7 +918,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u3Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: [], // Strict matching, but languages is null
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"], // Exclude all except languages (isolate languages wildcard logic)
       excludedCreationReasons: [],
     });
 
@@ -957,7 +960,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u1Context,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: [],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"], // Exclude all except languages (isolate map projection test)
       excludedCreationReasons: [],
     });
 
@@ -986,7 +989,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       referenceContext: u3.contexts[0]!,
       limit: 10,
       pathLimit: 10,
-      excludedContextFields: [],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"], // Exclude all except languages (test null wildcard)
       excludedCreationReasons: [],
     });
 

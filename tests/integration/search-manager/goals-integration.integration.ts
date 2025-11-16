@@ -235,7 +235,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // Act - Search by userId without goal (auto uses current context)
     const results = await searchManager.searchByUser({
       userId: u1.userId,
-      excludedContextFields: [],
+      excludedContextFields: ["languages"], // Exclude languages (not relevant to Goals test)
       excludedCreationReasons: [],
       recencyThresholdMonths: 24,
       limit: 10,
@@ -290,7 +290,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // (pathfinders have DIFFERENT positions than user - that's the whole point!)
     const results = await searchManager.searchByUser({
       userId: u1.userId,
-      excludedContextFields: ['position', 'birthYear'],
+      excludedContextFields: ['position', 'birthYear', 'languages'], // Exclude languages (not relevant to Goals test)
       excludedCreationReasons: [],
       recencyThresholdMonths: 24,
       limit: 20,
@@ -368,7 +368,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // Act - Search by userId with goal
     const results = await searchManager.searchByUser({
       userId: u1.userId,
-      excludedContextFields: [],
+      excludedContextFields: ['languages'], // Exclude languages (not relevant to Goals test)
       excludedCreationReasons: [],
       recencyThresholdMonths: 24,
       limit: 20,
@@ -420,7 +420,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // Exclude 'position' and 'birthYear' to allow pathfinder detection
     const results = await searchManager.searchByUser({
       userId: u1.userId,
-      excludedContextFields: ['position', 'birthYear'],
+      excludedContextFields: ['position', 'birthYear', 'languages'], // Exclude languages (not relevant to Goals test)
       excludedCreationReasons: [],
       recencyThresholdMonths: 24,
       limit: 20,

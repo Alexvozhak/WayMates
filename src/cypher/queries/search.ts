@@ -73,11 +73,16 @@ RETURN searchingUser.currentContextId AS currentContextId
  * - matchedPosition, matchedIndustry, matchedCity, matchedCountry
  * - matchedDomains (array), matchedSkills (array)
  *
+ * @param filterByCurrentContext - If true, filters by currentContextId (searchByUser). If false, searches all contexts (searchAdhoc, searchByTarget)
  * @returns Cypher fragment
  */
-export function buildMatchedContextBase(): string {
+export function buildMatchedContextBase(filterByCurrentContext: boolean = false): string {
+  const contextFilter = filterByCurrentContext
+    ? '{contextId: matchedUser.currentContextId}'
+    : '';
+
   return `
-MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context)
+MATCH (matchedUser:User)-[:HAS_CONTEXT]->(matchedContext:Context${contextFilter})
 ${buildOptionalMatchRelationships('matchedContext')}
 
 ${buildWithCollect('matchedContext', ['matchedUser'])}
@@ -112,6 +117,7 @@ ${buildWithCollect('matchedContext', ['matchedUser'])}
  * @param goalPositions - Extracted position values from user's goal (null if no goal)
  * @param strictFields - Fields to match exactly
  * @param params - Query parameters (userId, recencyThresholdMonths, limit)
+ * @param filterByCurrentContext - If true, filters by currentContextId (searchByUser). If false, searches all contexts (searchAdhoc)
  * @returns Complete Cypher query
  */
 export function buildCurrentSearchQuery(
@@ -121,7 +127,8 @@ export function buildCurrentSearchQuery(
     userId?: string;
     recencyThresholdMonths?: number;
     limit: number;
-  }
+  },
+  filterByCurrentContext: boolean = false
 ): string {
   const hasGoal = Boolean(goalPositions && params.userId);
 
@@ -176,7 +183,7 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
     `;
 
   return `
-${buildMatchedContextBase()}
+${buildMatchedContextBase(filterByCurrentContext)}
 
 ${whereClause}
 
@@ -338,7 +345,7 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
     : '';
 
   return `
-${buildMatchedContextBase()}
+${buildMatchedContextBase(false)}
 
 ${whereClause}
 

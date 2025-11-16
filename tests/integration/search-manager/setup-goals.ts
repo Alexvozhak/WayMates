@@ -1,14 +1,15 @@
 /**
  * Setup for Goals CRUD integration tests
  *
- * Reimports U1-U13 BEFORE EACH test for isolation.
+ * Reimports U1-U18 BEFORE EACH test for isolation.
  * Tests in this project run SEQUENTIALLY (singleThread: true).
  *
  * Goals tests modify the database (create/update/delete Goal nodes AND User nodes),
  * so we need fresh data for each test to avoid side effects.
  *
- * This runs AFTER read-only tests (which use U1-U18 from globalSetup),
- * so it's safe to clear and reimport U1-U13 here.
+ * CRITICAL: Must import ALL U1-U18 (not just U1-U13) because this project runs
+ * in parallel with read-only tests (both have groupOrder: 0). If we only import
+ * U1-U13, read-only tests will fail because they expect U14-U18 to exist.
  *
  * Used by:
  * - goals-integration.integration.ts (G1-G5)
@@ -36,14 +37,16 @@ beforeEach(async () => {
     await tx.run('MATCH (n) WHERE n:Goal OR n:User OR n:Context DETACH DELETE n');
   });
 
-  // Reimport U1-U13 for test isolation (G5 needs U10 Middle Backend context)
+  // Reimport U1-U18 for test isolation (match globalSetup data to avoid breaking read-only tests)
   const stories = dataManager.getUserStories([
-    'U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7', 'U8', 'U9',
-    'U10', 'U11', 'U12', 'U13'
+    'U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7', 'U8', 'U9',   // Batch A: Adhoc/Target
+    'U10', 'U11', 'U12', 'U13',                             // Batch B: DTW
+    'U14', 'U15', 'U16',                                    // Batch C: educationLevel
+    'U17', 'U18'                                            // Batch D: salary
   ]);
   await importStories(driver, stories);
 
-  console.log('[Goals Setup] Test data reloaded (U1-U13)');
+  console.log('[Goals Setup] Test data reloaded (U1-U18)');
 }, 30000);
 
 afterAll(async () => {
