@@ -2,19 +2,21 @@ import axios from "axios";
 import { Redis } from "ioredis";
 
 import { CoreRestClient } from "./core-rest-client.js";
+import { loadEnv } from "./env.js";
 import { createFacadeServer } from "./facade-mcp-server.js";
 import { SessionMiddleware } from "./session-middleware.js";
 import { SimpleNormalizer } from "./simple-normalizer.js";
 
 async function main(): Promise<void> {
+  const env = loadEnv();
+
   const redis = new Redis({
-    host: process.env.REDIS_HOST || "localhost",
-    port: Number(process.env.REDIS_PORT) || 6379,
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT,
   });
 
-  const coreApiUrl = process.env.CORE_API_URL || "http://localhost:9000/api";
   const httpClient = axios.create({
-    baseURL: coreApiUrl,
+    baseURL: env.CORE_API_URL,
     timeout: 30_000,
     headers: {
       "Content-Type": "application/json",
@@ -22,7 +24,7 @@ async function main(): Promise<void> {
   });
 
   await httpClient.get("/health", {
-    baseURL: coreApiUrl.replace("/api", ""),
+    baseURL: env.CORE_API_URL.replace("/api", ""),
   });
 
   const sessionMiddleware = new SessionMiddleware(redis);
