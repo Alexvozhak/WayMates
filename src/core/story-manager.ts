@@ -18,7 +18,7 @@ import {
   upsertTrailResultSchema,
 } from "../shared/schemas.js";
 
-import { type Reason, ReasonSchema } from "./schemas.js";
+import { type Reason, reasonSchema } from "./schemas.js";
 
 import type { DatabaseContext } from "../database-context.js";
 import type {
@@ -101,7 +101,7 @@ export class StoryManager {
       const result = await tx.run(LIST_REASONS_QUERY);
       return result.records.map((rec) => {
         const reasonData = rec.get("reason");
-        return ReasonSchema.parse(reasonData);
+        return reasonSchema.parse(reasonData);
       });
     });
   }
@@ -128,7 +128,7 @@ export class StoryManager {
       }
 
       const reasonData = record.get("r");
-      return ReasonSchema.parse(reasonData.properties);
+      return reasonSchema.parse(reasonData.properties);
     });
   }
 

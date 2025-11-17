@@ -2,7 +2,8 @@ import { err, ok } from "../result.js";
 
 import { FacadeError } from "./errors.js";
 
-import type { UserId } from "../../shared/schemas.js";
+import type { UserId } from "../../../shared/schemas.js";
+import type { CoreTRPCClient } from "../../core-client/core-trpc-client.js";
 import type { ErrorResponse, Result, SessionId } from "../result.js";
 
 export type SessionMiddleware = {
@@ -13,17 +14,11 @@ export type Normalizer = {
   normalize(input: string): string | Promise<string>;
 };
 
-export type CoreRestClient = {
-  get<T>(path: string): Promise<T>;
-  post<T>(path: string, body: unknown): Promise<T>;
-  patch<T>(path: string, body: unknown): Promise<T>;
-};
-
 export abstract class BaseTool<TParams, TResult> {
   constructor(
     protected session: SessionMiddleware,
     protected normalizer: Normalizer,
-    protected coreClient: CoreRestClient,
+    protected coreClient: CoreTRPCClient,
   ) {}
 
   async execute(params: TParams): Promise<Result<TResult, ErrorResponse>> {

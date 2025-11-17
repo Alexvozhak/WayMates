@@ -1,9 +1,8 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-import { userIdSchema } from '../shared/schemas.js';
+import { userIdSchema } from "../../shared/schemas.js";
 
-import { sessionIdSchema } from './result.js';
-
+import { sessionIdSchema } from "./result.js";
 
 export const getStoryParamsSchema = z.object({
   userId: userIdSchema.optional(),

@@ -3,14 +3,14 @@ import { FastMCP } from "fastmcp";
 import { getStoryParamsSchema } from "./schemas.js";
 import { GetStoryTool } from "./tools/get-story.tool.js";
 
-import type { CoreRestClient } from "./core-rest-client.js";
 import type { SessionMiddleware } from "./session-middleware.js";
 import type { SimpleNormalizer } from "./simple-normalizer.js";
+import type { CoreTRPCClient } from "../core-client/core-trpc-client.js";
 
 export type FacadeServerDependencies = {
   sessionMiddleware: SessionMiddleware;
   normalizer: SimpleNormalizer;
-  coreClient: CoreRestClient;
+  coreClient: CoreTRPCClient;
 };
 
 export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {

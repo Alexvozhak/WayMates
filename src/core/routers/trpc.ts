@@ -1,0 +1,15 @@
+import { initTRPC } from "@trpc/server";
+
+import type { GoalsManager } from "../goals-manager.js";
+import type { SearchManager } from "../search-manager.js";
+import type { StoryManager } from "../story-manager.js";
+
+export type CoreContext = {
+  searchManager: SearchManager;
+  storyManager: StoryManager;
+  goalsManager: GoalsManager;
+};
+
+export const t = initTRPC.context<CoreContext>().create();
+
+export const publicProcedure = t.procedure;

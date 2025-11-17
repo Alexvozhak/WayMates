@@ -633,6 +633,10 @@ cat data/trails/users/u1.json | jq '.user_id, .contexts[0].context_id'
 4. **Null handling**: Always use `coalesce()` for array fields in Cypher
 5. **Type duplication**: Check existing types before creating new ones
 6. **Mock reliance**: Schema/Cypher changes require integration tests with real DB
+7. **YAGNI (You Aren't Gonna Need It)**: Don't add wrapper objects, metadata fields, or flags "just in case"
+   - Client can compute `totalCount` from `array.length`
+   - Client knows which endpoint it called, no need for `searchMode: "path"` in response
+   - Add complexity only when there's proven need (pagination, caching metadata, etc.)
 
 ---
 

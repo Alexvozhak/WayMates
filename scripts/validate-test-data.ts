@@ -33,11 +33,7 @@ interface ValidationResult {
  * Validate single file against StoryInputSchema
  */
 async function validateFile(userFileName: string): Promise<ValidationResult> {
-  const filePath = path.join(
-    process.cwd(),
-    "data/trails/users",
-    `${userFileName}.json`
-  );
+  const filePath = path.join(process.cwd(), "data/trails/users", `${userFileName}.json`);
 
   try {
     // Read file
@@ -70,9 +66,7 @@ async function validateFile(userFileName: string): Promise<ValidationResult> {
     return {
       fileName: userFileName,
       valid: false,
-      errors: [
-        error instanceof Error ? error.message : "Unknown error",
-      ],
+      errors: [error instanceof Error ? error.message : "Unknown error"],
     };
   }
 }
@@ -100,14 +94,10 @@ function checkWarnings(data: StoryInput): string[] {
   const contextIds = new Set(data.contexts.map((c) => c.contextId));
   data.trails.forEach((trail, idx) => {
     if (!contextIds.has(trail.fromContextId)) {
-      warnings.push(
-        `Trail ${idx}: fromContextId references non-existent context`
-      );
+      warnings.push(`Trail ${idx}: fromContextId references non-existent context`);
     }
     if (trail.toContextId && !contextIds.has(trail.toContextId)) {
-      warnings.push(
-        `Trail ${idx}: toContextId references non-existent context`
-      );
+      warnings.push(`Trail ${idx}: toContextId references non-existent context`);
     }
   });
 
@@ -152,9 +142,7 @@ function printResults(results: ValidationResult[]): void {
   }
 
   console.log("\n" + "=".repeat(60));
-  console.log(
-    `Summary: ${valid.length}/${results.length} files valid`
-  );
+  console.log(`Summary: ${valid.length}/${results.length} files valid`);
   console.log("=".repeat(60) + "\n");
 
   // Exit with error code if any invalid
@@ -188,9 +176,7 @@ async function main() {
 
   console.log(`Validating ${fileNames.length} file(s)...`);
 
-  const results = await Promise.all(
-    fileNames.map((name) => validateFile(name))
-  );
+  const results = await Promise.all(fileNames.map((name) => validateFile(name)));
 
   printResults(results);
 }

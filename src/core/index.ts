@@ -3,11 +3,11 @@ import { createDriver, verifyConnection } from "../neo4j.js";
 
 import { GoalsManager } from "./goals-manager.js";
 import { PathCollectorService } from "./path-collector.service.js";
-import { startRestServer } from "./rest-server.js";
 import { SearchManager } from "./search-manager.js";
 import { SelectivityService } from "./selectivity.service.js";
 import { StoryManager } from "./story-manager.js";
 import { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
+import { startTRPCServer } from "./trpc-server.js";
 
 async function main(): Promise<void> {
   const driver = createDriver();
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   const port = Number(process.env.CORE_PORT) || 9000;
   const host = process.env.CORE_HOST || "0.0.0.0";
 
-  await startRestServer(
+  await startTRPCServer(
     {
       searchManager,
       storyManager,

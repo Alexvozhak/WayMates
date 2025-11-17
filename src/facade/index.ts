@@ -1,11 +1,10 @@
-import axios from "axios";
 import { Redis } from "ioredis";
 
-import { CoreRestClient } from "./core-rest-client.js";
+import { CoreTRPCClient } from "./core-client/core-trpc-client.js";
 import { loadEnv } from "./env.js";
-import { createFacadeServer } from "./facade-mcp-server.js";
-import { SessionMiddleware } from "./session-middleware.js";
-import { SimpleNormalizer } from "./simple-normalizer.js";
+import { createFacadeServer } from "./mcp-server/facade-mcp-server.js";
+import { SessionMiddleware } from "./mcp-server/session-middleware.js";
+import { SimpleNormalizer } from "./mcp-server/simple-normalizer.js";
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -15,21 +14,9 @@ async function main(): Promise<void> {
     port: env.REDIS_PORT,
   });
 
-  const httpClient = axios.create({
-    baseURL: env.CORE_API_URL,
-    timeout: 30_000,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  await httpClient.get("/health", {
-    baseURL: env.CORE_API_URL.replace("/api", ""),
-  });
-
   const sessionMiddleware = new SessionMiddleware(redis);
   const normalizer = new SimpleNormalizer();
-  const coreClient = new CoreRestClient(httpClient);
+  const coreClient = new CoreTRPCClient(env.CORE_API_URL);
 
   const server = createFacadeServer({
     sessionMiddleware,
