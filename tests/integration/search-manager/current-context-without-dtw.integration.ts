@@ -5,33 +5,14 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createDriver } from "../../../src/neo4j.js";
-import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
+import {
+  FixtureSearchManager,
+  createUserSearchParams,
+} from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
 import type { Driver } from "neo4j-driver";
-import type { UserSearchParams } from "../../../src/shared/schemas.js";
 
 let driver: Driver;
-
-const createUserSearchParams = (
-  userId: string,
-  overrides?: Partial<UserSearchParams>,
-): UserSearchParams => ({
-  userId,
-  limit: 10,
-  pathLimit: 10,
-  excludedContextFields: [
-    "birthYear",
-    "countryCode",
-    "cityName",
-    "languages",
-    "domains",
-    "skills",
-    "industry",
-    "companySize",
-  ],
-  excludedCreationReasons: [],
-  ...overrides,
-});
 
 beforeAll(() => {
   driver = createDriver();
@@ -62,7 +43,20 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
 
     expect(u4Context.previousContextId).toBeUndefined();
 
-    const results = await searchManager.searchByUser(createUserSearchParams(u4.userId));
+    const results = await searchManager.searchByUser(
+      createUserSearchParams(u4.userId, {
+        excludedContextFields: [
+          "birthYear",
+          "countryCode",
+          "cityName",
+          "languages",
+          "domains",
+          "skills",
+          "industry",
+          "companySize",
+        ],
+      }),
+    );
 
     console.log("[UN1] Results count:", results.length);
     console.log(

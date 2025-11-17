@@ -7,24 +7,13 @@
 
 import { describe, it, expect } from "vitest";
 import { driver } from "./setup-goals.js";
-import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
+import {
+  FixtureSearchManager,
+  createUserSearchParams,
+} from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
 import { GoalsManager } from "../../../src/core/goals-manager.js";
 import { DatabaseContext } from "../../../src/database-context.js";
-import type { UserSearchParams } from "../../../src/shared/schemas.js";
-
-const createUserSearchParams = (
-  userId: string,
-  overrides?: Partial<UserSearchParams>,
-): UserSearchParams => ({
-  userId,
-  limit: 20,
-  pathLimit: 10,
-  excludedContextFields: ["languages"],
-  excludedCreationReasons: [],
-  recencyThresholdMonths: 24,
-  ...overrides,
-});
 
 describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   // Business rule: setGoal creates goal and returns userId
@@ -215,7 +204,10 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     console.log("[G1] Searching without goal for U1");
 
     const results = await searchManager.searchByUser(
-      createUserSearchParams(u1.userId, { limit: 10 }),
+      createUserSearchParams(u1.userId, {
+        excludedContextFields: ["languages"],
+        recencyThresholdMonths: 24,
+      }),
     );
 
     console.log("[G1] Results count:", results.length);
@@ -268,6 +260,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     const searchParams = createUserSearchParams(u1.userId, {
       excludedContextFields: ["position", "birthYear", "languages"],
+      recencyThresholdMonths: 24,
     });
     const results = await searchManager.searchByUser(searchParams);
 
@@ -346,7 +339,12 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       },
     });
 
-    const results = await searchManager.searchByUser(createUserSearchParams(u1.userId));
+    const results = await searchManager.searchByUser(
+      createUserSearchParams(u1.userId, {
+        excludedContextFields: ["languages"],
+        recencyThresholdMonths: 24,
+      }),
+    );
 
     console.log("[G3] Results count:", results.length);
     console.log(
@@ -391,6 +389,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     const searchParams = createUserSearchParams(u1.userId, {
       excludedContextFields: ["position", "birthYear", "languages"],
+      recencyThresholdMonths: 24,
     });
     const results = await searchManager.searchByUser(searchParams);
 

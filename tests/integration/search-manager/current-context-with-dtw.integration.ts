@@ -5,10 +5,12 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createDriver } from "../../../src/neo4j.js";
-import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
+import {
+  FixtureSearchManager,
+  createUserSearchParams,
+} from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
 import type { Driver } from "neo4j-driver";
-import type { ContextField, UserSearchParams } from "../../../src/shared/schemas.js";
 
 let driver: Driver;
 
@@ -18,23 +20,6 @@ beforeAll(() => {
 
 afterAll(async () => {
   await driver.close();
-});
-
-const createUserSearchParams = (
-  userId: string,
-  overrides?: Partial<{
-    limit: number;
-    pathLimit: number;
-    excludedContextFields: ContextField[];
-    excludedCreationReasons: string[];
-  }>,
-): UserSearchParams => ({
-  userId,
-  limit: 10,
-  pathLimit: 10,
-  excludedContextFields: ["birthYear", "countryCode", "cityName"] as ContextField[],
-  excludedCreationReasons: [],
-  ...overrides,
 });
 
 function validateDtwFormula(
@@ -80,7 +65,11 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       domains: u10.contexts.map((c) => c.domains),
     });
 
-    const results = await searchManager.searchByUser(createUserSearchParams(u10.userId));
+    const results = await searchManager.searchByUser(
+      createUserSearchParams(u10.userId, {
+        excludedContextFields: ["birthYear", "countryCode", "cityName"],
+      }),
+    );
 
     console.log("[DT1] Results count:", results.length);
     console.log(
@@ -153,7 +142,11 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       "[DT2] Searching from U10 for different domain trajectories (U12 Frontend, U13 Data Science)",
     );
 
-    const results = await searchManager.searchByUser(createUserSearchParams(u10.userId));
+    const results = await searchManager.searchByUser(
+      createUserSearchParams(u10.userId, {
+        excludedContextFields: ["birthYear", "countryCode", "cityName"],
+      }),
+    );
     console.log("[DT2] Results count:", results.length);
 
     const u12 = dataManager.getStoryBy("U12");
@@ -205,6 +198,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
     const results = await searchManager.searchByUser(
       createUserSearchParams(u10.userId, {
+        excludedContextFields: ["birthYear", "countryCode", "cityName"],
         excludedCreationReasons: ["company_changed"],
       }),
     );
@@ -248,7 +242,11 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
     console.log("[DT4] Searching from U10 to rank multiple candidates by dtwTotal");
 
-    const results = await searchManager.searchByUser(createUserSearchParams(u10.userId));
+    const results = await searchManager.searchByUser(
+      createUserSearchParams(u10.userId, {
+        excludedContextFields: ["birthYear", "countryCode", "cityName"],
+      }),
+    );
 
     console.log("[DT4] Results count:", results.length);
     console.log(
