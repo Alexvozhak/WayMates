@@ -1,13 +1,6 @@
 /**
- * User Context Search Integration Tests WITHOUT DTW (UN1-UN4)
- *
- * Tests searchByUserId() when user has NO trajectory (single context)
- * Automatic fallback to searchByContext (Mode 1)
- * Uses Batch A test data (U1-U9) from globalSetup
- *
- * Test focus:
- * - No trajectory fallback (UN1)
- * - Exclude geo via userId (UN4)
+ * searchByUser WITHOUT DTW (single context users)
+ * Business rule: Automatic fallback to searchByContext when no trajectory exists
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -15,11 +8,33 @@ import { createDriver } from "../../../src/neo4j.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
 import type { Driver } from "neo4j-driver";
+import type { UserSearchParams } from "../../../src/shared/schemas.js";
 
 let driver: Driver;
 
+const createUserSearchParams = (
+  userId: string,
+  overrides?: Partial<UserSearchParams>,
+): UserSearchParams => ({
+  userId,
+  limit: 10,
+  pathLimit: 10,
+  excludedContextFields: [
+    "birthYear",
+    "countryCode",
+    "cityName",
+    "languages",
+    "domains",
+    "skills",
+    "industry",
+    "companySize",
+  ],
+  excludedCreationReasons: [],
+  ...overrides,
+});
+
 beforeAll(() => {
-  driver = createDriver(); // Uses U1-U18 from globalSetup
+  driver = createDriver();
 });
 
 afterAll(async () => {
@@ -27,13 +42,13 @@ afterAll(async () => {
 });
 
 describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
+  // Business rule: Single context user → fallback to searchByContext (no DTW)
+  // Expected: Find users with matching CURRENT context position
   it("UN1: No trajectory fallback - single context user falls back to searchByContext", async () => {
-    // Arrange
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();
 
-    // U4 has only 1 context (Junior Frontend Svelte, us/seattle)
     const u4 = dataManager.getStoryBy("U4");
     const u4Context = u4.contexts[0]!;
 
@@ -42,30 +57,13 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
       position: u4Context.position,
       domains: u4Context.domains,
       skills: u4Context.skills,
-      previousContextId: u4Context.previousContextId, // Should be null
+      previousContextId: u4Context.previousContextId,
     });
 
-    expect(u4Context.previousContextId).toBeUndefined(); // Verify U4 has no trajectory
+    expect(u4Context.previousContextId).toBeUndefined();
 
-    // Act - Search by userId (should auto-fallback to searchByContext)
-    const results = await searchManager.searchByUser({
-      userId: u4.userId,
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [
-        "birthYear",
-        "countryCode",
-        "cityName",
-        "languages",
-        "domains",
-        "skills",
-        "industry",
-        "companySize",
-      ], // Exclude all except position to isolate fallback logic
-      excludedCreationReasons: [],
-    });
+    const results = await searchManager.searchByUser(createUserSearchParams(u4.userId));
 
-    // Assert
     console.log("[UN1] Results count:", results.length);
     console.log(
       "[UN1] Top results:",
@@ -78,24 +76,21 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
       })),
     );
 
-    // Business rule: Single context user → fallback to searchByContext (no DTW)
-    // U7 should be in results (Junior Frontend, only Junior as current context, similar to U4)
-    // Note: U1/U2/U6 current context is Middle (not Junior), so they won't match
+    // U7 should match (Junior current context, similar to U4)
+    // U1/U2/U6 current context is Middle (not Junior), so they won't match
     const u7 = dataManager.getStoryBy("U7");
-
     const hasU7 = results.some((r) => r.userId === u7.userId);
 
-    expect(hasU7).toBe(true); // U7 should match (Junior current context)
+    expect(hasU7).toBe(true);
   });
 
+  // Business rule: resolveContext (userId → currentContextId) + geo excluded → find geo-diverse candidates
+  // Expected: U7 (Junior gb/london, current context matches U4)
   it("UN4: Exclude geo via userId - resolveContext works correctly", async () => {
-    // Arrange
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();
 
-    // U4 has single context (Junior Frontend Svelte, us/seattle)
-    // We'll exclude geo to find international candidates
     const u4 = dataManager.getStoryBy("U4");
     const u4Context = u4.contexts[0]!;
 
@@ -107,42 +102,33 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
       geo: `${u4Context.countryCode}/${u4Context.cityName}`,
     });
 
-    // Act - Search by userId with geo excluded (same as AC3 but via userId)
-    const results = await searchManager.searchByUser({
-      userId: u4.userId,
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [
-        "countryCode",
-        "cityName",
-        "birthYear",
-        "languages",
-        "domains",
-        "skills",
-        "industry",
-        "companySize",
-      ], // International search (isolate resolveContext logic)
-      excludedCreationReasons: [],
-    });
+    const results = await searchManager.searchByUser(
+      createUserSearchParams(u4.userId, {
+        excludedContextFields: [
+          "countryCode",
+          "cityName",
+          "birthYear",
+          "languages",
+          "domains",
+          "skills",
+          "industry",
+          "companySize",
+        ],
+      }),
+    );
 
-    // Assert
     console.log("[UN4] Results count:", results.length);
     console.log("[UN4] Countries found:", [
       ...new Set(results.map((r) => r.matchedContext.countryCode)),
     ]);
 
-    // Business rule: resolveContext (userId → currentContextId) + geo excluded
     // U7 should be in results (Junior, current context matches U4)
-    // Note: U1/U2/U6 current context is Middle (not Junior), so they won't match
+    // U1/U2/U6 current context is Middle (not Junior), so they won't match
     const u7 = dataManager.getStoryBy("U7");
     expect(results.find((r) => r.userId === u7.userId)).toBeTruthy();
 
-    // Verify geo-diverse search works (U7 is from gb/london, U4 is from us/seattle)
+    // U7 is from gb/london, U4 is from us/seattle
     const internationalResults = results.filter((r) => r.matchedContext.countryCode !== "us");
-    // Business rule: resolveContext (userId → currentContextId) + geo excluded → find geo-diverse candidates
-    // Expected: U7 (Junior gb/london, current context)
-    // Threshold: >= 1 (at least U7 should match)
-    // If fails: International candidate incorrectly filtered OR resolveContext broke userId resolution
     expect(internationalResults.length).toBeGreaterThanOrEqual(1);
     console.log(
       `[UN4] International results count: ${internationalResults.length} (expected >= 1)`,

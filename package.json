@@ -4,10 +4,10 @@
   "scripts": {
     "pretest": "npm run build:cypher",
     "generate:user-keys": "tsx scripts/gen-user-keys.ts",
-    "start": "npm run docker:prod:up && npm run db:prod:init && npm run build:cypher && tsx src/app.ts",
+    "start": "npm run docker:prod:up && npm run db:prod:init && npm run build:cypher && tsx src/core/index.ts",
     "build": "npm run build:cypher && tsc",
     "build:cypher": "npx tsx scripts/build-cypher.ts",
-    "dev": "npm run build:cypher && tsx src/app.ts",
+    "dev": "npm run build:cypher && tsx src/core/index.ts",
     "lint": "eslint src/core src/facade src/shared",
     "lint:fix": "eslint src/core src/facade src/shared --fix",
     "test:all": "npm run build:cypher && npm run test:unit && npm run test:setup && npm run test:integration:run && npm run test:functional:run && npm run docker:test:down",

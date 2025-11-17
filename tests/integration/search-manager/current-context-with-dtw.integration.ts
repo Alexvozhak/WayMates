@@ -1,15 +1,6 @@
 /**
- * User Context Search Integration Tests WITH DTW (DT1-DT5)
- *
- * Tests searchByUserId() when user has trajectory (≥ 3 contexts)
- * DTW trajectory similarity metrics enabled
- * Uses Batch B test data (U10-U13) from globalSetup
- *
- * Test focus:
- * - High similarity detection (DT1)
- * - Low similarity detection (DT2)
- * - excludedCreationReasons in paths (DT3)
- * - Multiple candidates ranking by dtwTotal (DT4)
+ * searchByUser WITH DTW (trajectory ≥ 3 contexts)
+ * Test data: U10-U13 from globalSetup
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -17,6 +8,7 @@ import { createDriver } from "../../../src/neo4j.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
 import type { Driver } from "neo4j-driver";
+import type { ContextField, UserSearchParams } from "../../../src/shared/schemas.js";
 
 let driver: Driver;
 
@@ -28,9 +20,23 @@ afterAll(async () => {
   await driver.close();
 });
 
-/**
- * Helper: Validate DTW formula (dtwTotal = shapeSimilarity + tempoSimilarity + stabilityScore)
- */
+const createUserSearchParams = (
+  userId: string,
+  overrides?: Partial<{
+    limit: number;
+    pathLimit: number;
+    excludedContextFields: ContextField[];
+    excludedCreationReasons: string[];
+  }>,
+): UserSearchParams => ({
+  userId,
+  limit: 10,
+  pathLimit: 10,
+  excludedContextFields: ["birthYear", "countryCode", "cityName"] as ContextField[],
+  excludedCreationReasons: [],
+  ...overrides,
+});
+
 function validateDtwFormula(
   userId: string,
   result: {
@@ -56,13 +62,15 @@ function validateDtwFormula(
 }
 
 describe("User Context Search WITH DTW (DT1-DT5)", () => {
+  /**
+   * Business rule: U10 (Backend Node.js) vs U11 (Backend Python) = VERY similar
+   * Both: Backend domain, 3 contexts (Junior→Middle→Senior), identical durations, stable growth
+   * Expected DTW: shapeSimilarity ~0.9, tempoSimilarity ~0.85, stabilityScore ~0.8, total ~2.55
+   */
   it("DT1: High similarity - U10 (Backend Node.js) finds U11 (Backend Python) with high DTW scores", async () => {
-    // Arrange
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();
-
-    // U10: Backend Node.js, 3 contexts, stable growth
     const u10 = dataManager.getStoryBy("U10");
 
     console.log("[DT1] Searching from U10 (Backend Node.js, 3 contexts)");
@@ -72,16 +80,8 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       domains: u10.contexts.map((c) => c.domains),
     });
 
-    // Act - Search by U10's userId
-    const results = await searchManager.searchByUser({
-      userId: u10.userId,
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: ["birthYear", "countryCode", "cityName"],
-      excludedCreationReasons: [],
-    });
+    const results = await searchManager.searchByUser(createUserSearchParams(u10.userId));
 
-    // Assert
     console.log("[DT1] Results count:", results.length);
     console.log(
       "[DT1] Results with DTW:",
@@ -96,11 +96,6 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       })),
     );
 
-    // Business rule: U10 (Backend Node.js) vs U11 (Backend Python) = VERY similar trajectories
-    // - Both Backend (Node.js vs Python)
-    // - Both 3 contexts Junior→Middle→Senior
-    // - Similar trajectory patterns
-    // - Both stable growth (position_changed only)
     const u11 = dataManager.getStoryBy("U11");
     const u11Result = results.find((r) => r.userId === u11.userId);
     expect(u11Result).toBeDefined();
@@ -118,25 +113,11 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
         dtwTotal,
       });
 
-      // DTW formula thresholds documentation:
-      // U10 vs U11 trajectories:
-      //   - Both: Junior→Middle→Senior (3 contexts, same progression pattern)
-      //   - Both: Backend domain (Node.js vs Python - only tech stack differs)
-      //   - Both: Identical durations (1 year each: 2022-01→2023-01→2025-01)
-      //   - Both: position_changed reasons only (stable growth)
-      // Expected DTW component breakdown:
-      //   - shapeSimilarity ~ 0.9 (identical Junior→Middle→Senior pattern)
-      //   - tempoSimilarity ~ 0.85 (same durations: 1yr, 1yr, 2yr)
-      //   - stabilityScore ~ 0.8 (both stable: ratio userLength/pathLength ~ 1.0)
-      //   - dtwTotal = 0.9 + 0.85 + 0.8 = 2.55 (excellent match)
-      // Thresholds set BELOW expected values to allow ±0.05 variance from DTW algorithm
-      // If fails: Check DTW calculation logic in Cypher OR trajectory data changed
-      expect(shapeSimilarity).toBeGreaterThan(0.85); // Very high shape similarity
-      expect(tempoSimilarity).toBeGreaterThan(0.8); // High tempo similarity
-      expect(stabilityScore).toBeGreaterThan(0.75); // Stable (userLength/pathLength formula)
-      expect(dtwTotal).toBeGreaterThan(2.55); // Excellent match (> 2.4)
+      expect(shapeSimilarity).toBeGreaterThan(0.85);
+      expect(tempoSimilarity).toBeGreaterThan(0.8);
+      expect(stabilityScore).toBeGreaterThan(0.75);
+      expect(dtwTotal).toBeGreaterThan(2.55);
 
-      // DTW formula validation - Range checks
       expect(shapeSimilarity).toBeGreaterThanOrEqual(0);
       expect(shapeSimilarity).toBeLessThanOrEqual(1);
       expect(tempoSimilarity).toBeGreaterThanOrEqual(0);
@@ -144,7 +125,6 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       expect(stabilityScore).toBeGreaterThanOrEqual(0);
       expect(stabilityScore).toBeLessThanOrEqual(1);
 
-      // DTW formula validation - Component sum (shapeSimilarity formula is 1 - normalized_distance)
       const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
       console.log("[DT1] DTW formula breakdown:", {
         shapeSimilarity,
@@ -152,82 +132,63 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
         stabilityScore,
         sum: calculatedTotal,
         dtwTotal,
-        matches: Math.abs(calculatedTotal - dtwTotal) < 0.01,
+        matches: Math.abs(calculatedTotal - dtwTotal!) < 0.01,
       });
-      expect(dtwTotal).toBeCloseTo(calculatedTotal, 2); // dtwTotal = shape + tempo + stability
+      expect(dtwTotal).toBeCloseTo(calculatedTotal, 2);
     }
   });
 
+  /**
+   * Business rule: Different domains reduce DTW similarity despite similar career patterns
+   * U10 (Backend) vs U12 (Frontend): shapeSimilarity 0.6-0.8, total 1.5-2.0 (medium)
+   * U10 (Backend) vs U13 (Data Science): shapeSimilarity 0.6+, total 2.0-2.9 (high-medium)
+   */
   it("DT2: Medium similarity - U10 finds U12 (Frontend) and U13 (Data Science) with medium DTW scores", async () => {
-    // Arrange
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();
-
     const u10 = dataManager.getStoryBy("U10");
 
     console.log(
       "[DT2] Searching from U10 for different domain trajectories (U12 Frontend, U13 Data Science)",
     );
 
-    // Act - Search by U10's userId
-    const results = await searchManager.searchByUser({
-      userId: u10.userId,
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: ["birthYear", "countryCode", "cityName"],
-      excludedCreationReasons: [],
-    });
-
-    // Assert
+    const results = await searchManager.searchByUser(createUserSearchParams(u10.userId));
     console.log("[DT2] Results count:", results.length);
 
-    // U12 (Frontend, 4 contexts) should have MEDIUM scores (different domains but similar pattern)
     const u12 = dataManager.getStoryBy("U12");
     const u12Result = results.find((r) => r.userId === u12.userId);
 
     if (u12Result?.dtwMetrics) {
-      // Validate DTW formula (shape + tempo + stability = dtwTotal)
       validateDtwFormula("U12", u12Result);
-
-      // Business rule: U10 (Backend) vs U12 (Frontend) = MEDIUM similarity
-      // - Different domains (Backend vs Frontend → domains component penalty)
-      // - Similar trajectory pattern (Junior→Middle→Senior→Senior)
-      // - 4 components in distance: domains reduce shapeSimilarity
-      expect(u12Result.dtwMetrics.shapeSimilarity).toBeGreaterThan(0.6); // Medium shape
+      expect(u12Result.dtwMetrics.shapeSimilarity).toBeGreaterThan(0.6);
       expect(u12Result.dtwMetrics.shapeSimilarity).toBeLessThan(0.8);
-      expect(u12Result.dtwTotal).toBeGreaterThan(1.5); // Fair match
+      expect(u12Result.dtwTotal).toBeGreaterThan(1.5);
       expect(u12Result.dtwTotal).toBeLessThan(2);
     }
 
-    // U13 (Data Science, stable but different domain) should have MEDIUM scores
     const u13 = dataManager.getStoryBy("U13");
     const u13Result = results.find((r) => r.userId === u13.userId);
 
     if (u13Result?.dtwMetrics) {
-      // Validate DTW formula (shape + tempo + stability = dtwTotal)
       validateDtwFormula("U13", u13Result);
-
-      // Business rule: U10 (Backend) vs U13 (Data Science) = HIGH-MEDIUM similarity
-      // - Different domains but similar career pattern (Junior→Middle→Senior)
-      // - Similar trajectory structure (3 contexts)
-      // - Both stable growth patterns
-      // Note: After Bug #2.2 fix (domains in distance), different domains → lower stability
-      expect(u13Result.dtwMetrics.shapeSimilarity).toBeGreaterThan(0.6); // Similar pattern despite different domains
-      expect(u13Result.dtwMetrics.tempoSimilarity).toBeGreaterThan(0.6); // Similar tempo
-      expect(u13Result.dtwMetrics.stabilityScore).toBeGreaterThan(0.5); // Moderate stability (domains differ)
-      expect(u13Result.dtwTotal).toBeGreaterThan(2); // Good match
-      expect(u13Result.dtwTotal).toBeLessThan(2.9); // Allow variance after Phase 3 Raw Cypher migration
+      expect(u13Result.dtwMetrics.shapeSimilarity).toBeGreaterThan(0.6);
+      expect(u13Result.dtwMetrics.tempoSimilarity).toBeGreaterThan(0.6);
+      expect(u13Result.dtwMetrics.stabilityScore).toBeGreaterThan(0.5);
+      expect(u13Result.dtwTotal).toBeGreaterThan(2);
+      expect(u13Result.dtwTotal).toBeLessThan(2.9);
     }
   });
 
+  /**
+   * Business rule: excludedCreationReasons filters out trajectories containing excluded reasons
+   * U12 has "company_changed" in trajectory → excluded
+   * U11, U13 have only "position_changed" → included
+   */
   it("DT3: Excluded creation reasons - filters out users with company_changed in trajectory", async () => {
-    // Arrange
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();
-
-    // U10: Backend Node.js, only career_growth reasons
     const u10 = dataManager.getStoryBy("U10");
 
     console.log("[DT3] Searching with excludedCreationReasons: [company_changed]");
@@ -236,23 +197,18 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       u10.contexts.map((c) => c.creationReason),
     );
 
-    // U12 has company_changed in trajectory (context 1→2 and 3→4)
     const u12 = dataManager.getStoryBy("U12");
     console.log(
       "[DT3] U12 reasons (should be excluded):",
       u12.contexts.map((c) => c.creationReason),
     );
 
-    // Act - Exclude trajectories with company_changed
-    const results = await searchManager.searchByUser({
-      userId: u10.userId,
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: ["birthYear", "countryCode", "cityName"],
-      excludedCreationReasons: ["company_changed"], // Filter out U12
-    });
+    const results = await searchManager.searchByUser(
+      createUserSearchParams(u10.userId, {
+        excludedCreationReasons: ["company_changed"],
+      }),
+    );
 
-    // Assert
     console.log("[DT3] Results count:", results.length);
     console.log(
       "[DT3] Results:",
@@ -265,43 +221,35 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
     expect(results).toBeInstanceOf(Array);
 
-    // U12 should NOT be in results (has company_changed)
     const u12Result = results.find((r) => r.userId === u12.userId);
     expect(u12Result).toBeUndefined();
 
-    // U11 and U13 should be in results (both use only career_growth)
     const u11 = dataManager.getStoryBy("U11");
     const u13 = dataManager.getStoryBy("U13");
-
     const hasU11 = results.some((r) => r.userId === u11.userId);
     const hasU13 = results.some((r) => r.userId === u13.userId);
 
     console.log("[DT3] U11 in results:", hasU11);
     console.log("[DT3] U13 in results:", hasU13);
 
-    expect(hasU11 || hasU13).toBe(true); // At least one should be found
+    expect(hasU11 || hasU13).toBe(true);
   });
 
+  /**
+   * Business rule: Results ranked by dtwTotal (shape + tempo + stability)
+   * Expected ranking: U11 (~2.55) > U13 (~2.0-2.6) > U12 (~1.5-2.0)
+   * Validates DTW formula correctness for all results
+   */
   it("DT4: Multiple candidates ranking - correctly orders by dtwTotal score", async () => {
-    // Arrange
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new TestDataManager();
-
     const u10 = dataManager.getStoryBy("U10");
 
     console.log("[DT4] Searching from U10 to rank multiple candidates by dtwTotal");
 
-    // Act - Search without exclusions to get all candidates
-    const results = await searchManager.searchByUser({
-      userId: u10.userId,
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: ["birthYear", "countryCode", "cityName"],
-      excludedCreationReasons: [], // No exclusions - rank all
-    });
+    const results = await searchManager.searchByUser(createUserSearchParams(u10.userId));
 
-    // Assert
     console.log("[DT4] Results count:", results.length);
     console.log(
       "[DT4] All results with ranking:",
@@ -313,11 +261,6 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       })),
     );
 
-    // Business rule: Expected ranking by dtwTotal
-    // 1. U11: dtwTotal > 2.55 (high similarity Backend Python)
-    // 2. U13: dtwTotal ~ 2.0-2.6 (high-medium similarity Data Science)
-    // 3. U12: dtwTotal ~ 1.5-2.0 (medium similarity Frontend)
-
     const u11 = dataManager.getStoryBy("U11");
     const u12 = dataManager.getStoryBy("U12");
     const u13 = dataManager.getStoryBy("U13");
@@ -326,7 +269,6 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     const u12Result = results.find((r) => r.userId === u12.userId);
     const u13Result = results.find((r) => r.userId === u13.userId);
 
-    // All three should be found
     expect(u11Result).toBeDefined();
     expect(u12Result).toBeDefined();
     expect(u13Result).toBeDefined();
@@ -338,42 +280,15 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
       console.log("[DT4] DTW totals:", { u11Total, u12Total, u13Total });
 
-      // Verify correct ranking: U11 > U13 > U12
-      expect(u11Total).toBeGreaterThan(u13Total); // U11 highest
-      expect(u13Total).toBeGreaterThan(u12Total); // U13 high-medium
-      // U12 medium
+      expect(u11Total).toBeGreaterThan(u13Total);
+      expect(u13Total).toBeGreaterThan(u12Total);
 
-      // DTW formula thresholds documentation for ranking:
-      // U10 (Backend Node.js): Junior→Middle→Senior (3 contexts, 2022→2023→2025)
-      //
-      // Expected ranking by similarity to U10:
-      // 1️⃣ U11 (Backend Python): Junior→Middle→Senior (3 contexts, same dates)
-      //    - shapeSimilarity ~ 0.9 (identical progression pattern)
-      //    - tempoSimilarity ~ 0.85 (same durations)
-      //    - stabilityScore ~ 0.8 (both stable)
-      //    - dtwTotal ~ 2.55 (excellent match)
-      //
-      // 2️⃣ U13 (Data Science): Junior→Middle→Senior (3 contexts, same dates)
-      //    - shapeSimilarity ~ 0.75-0.85 (same pattern, different domain)
-      //    - tempoSimilarity ~ 0.8 (same durations)
-      //    - stabilityScore ~ 0.8 (stable)
-      //    - dtwTotal ~ 2.0-2.6 (high-medium match)
-      //
-      // 3️⃣ U12 (Frontend): Junior→Middle→Senior→Senior (4 contexts, company_changed)
-      //    - shapeSimilarity ~ 0.5-0.7 (similar but 4 contexts vs 3)
-      //    - tempoSimilarity ~ 0.5-0.7 (different durations: 1yr, 1.5yr, 0.5yr)
-      //    - stabilityScore ~ 0.5-0.6 (less stable: 4 contexts, company changes)
-      //    - dtwTotal ~ 1.5-2.0 (medium match)
-      //
-      // Thresholds allow ±0.1 variance from expected values (DTW algorithm + Phase 3 Raw Cypher migration)
-      // If fails: Check DTW component calculations OR trajectory data changed
-      expect(u11Total).toBeGreaterThan(2.55); // Excellent
-      expect(u13Total).toBeGreaterThan(2); // High-medium
-      expect(u13Total).toBeLessThan(2.9); // Allow variance after Phase 3 Raw Cypher migration
-      expect(u12Total).toBeGreaterThan(1.5); // Medium
+      expect(u11Total).toBeGreaterThan(2.55);
+      expect(u13Total).toBeGreaterThan(2);
+      expect(u13Total).toBeLessThan(2.9);
+      expect(u12Total).toBeGreaterThan(1.5);
       expect(u12Total).toBeLessThan(2);
 
-      // DTW formula validation - Verify dtwTotal = shape + tempo + stability for all results
       validateDtwFormula("U11", u11Result);
       validateDtwFormula("U13", u13Result);
       validateDtwFormula("U12", u12Result);
