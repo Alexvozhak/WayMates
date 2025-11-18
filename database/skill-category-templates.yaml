@@ -1,6 +1,6 @@
 templates:
   # === IT SOFTWARE DEVELOPMENT ===
-  it_software:
+  itSoftware:
     description: "Software development and web engineering"
     categories:
       - categoryName: "Programming Languages"
@@ -75,7 +75,7 @@ templates:
           - "Confluence"
 
   # === IT DATA SCIENCE ===
-  it_data_science:
+  itDataScience:
     description: "Data science, ML, AI"
     categories:
       - categoryName: "Programming Languages"
@@ -130,7 +130,7 @@ templates:
           - "Optimization"
 
   # === IT DEVOPS ===
-  it_devops:
+  itDevops:
     description: "DevOps, SRE, Infrastructure"
     categories:
       - categoryName: "Infrastructure & Cloud"
@@ -184,7 +184,7 @@ templates:
           - "Salt"
 
   # === TEMPLATES FOR FUTURE ===
-  # healthcare_general:
+  # healthcareGeneral:
   #   description: "General healthcare and medical"
   #   categories:
   #     - categoryName: "Clinical Skills"
@@ -212,7 +212,7 @@ templates:
   #         - "Cerner"
   #         - "Meditech"
 
-  # finance_trading:
+  # financeTrading:
   #   description: "Financial trading and analysis"
   #   categories:
   #     - categoryName: "Trading Platforms"

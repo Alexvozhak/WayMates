@@ -20,7 +20,7 @@ fi
 
 # Source environment variables
 source ".env.$ENV"
-export ENV NEO4J_PORT NEO4J_USER NEO4J_PASSWORD
+export ENV NEO4J_URI NEO4J_USER NEO4J_PASSWORD
 
 # Run import
 npx tsx database/import-skill-categories.ts

@@ -351,7 +351,7 @@ export const skillCategoryTemplatesConfigSchema = z.object({
 export const listSkillCategoryTemplatesParamsSchema = z.object({});
 
 export const applySkillCategoryTemplateParamsSchema = z.object({
-  templateName: z.string().describe("Template name (e.g., 'it_software', 'it_data_science')"),
+  templateName: z.string().describe("Template name (e.g., 'itSoftware', 'itDataScience')"),
   domainPrefix: z
     .string()
     .optional()
