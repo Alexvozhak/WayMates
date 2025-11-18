@@ -153,6 +153,27 @@ describe("StoryManager Integration Tests", () => {
       expect(skillNames).toEqual(expect.arrayContaining(expectedSkills));
     });
 
+    // Business rule: Skills categorized during import must use BELONGS_TO relationship with valid weight/penalty.
+    // If relationship uses wrong name (IN_CATEGORY), or properties (penalty_multiplier vs penaltyMultiplier),
+    // search scoring will fail to apply category-specific weights and use default values instead.
+    it("categorized skills use BELONGS_TO with camelCase properties", async () => {
+      const categoryCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (s:Skill)-[:BELONGS_TO]->(sc:SkillCategory)
+           RETURN s.canonicalName, sc.weight, sc.penaltyMultiplier
+           LIMIT 1`,
+        ),
+      );
+
+      expect(categoryCheck.records.length).toBeGreaterThan(0);
+
+      const weight = categoryCheck.records[0]!.get("sc.weight");
+      const penalty = categoryCheck.records[0]!.get("sc.penaltyMultiplier");
+
+      expect(weight).toBeTruthy();
+      expect(penalty).toBeTruthy();
+    });
+
     it("creates work domain relationships", async () => {
       const { context } = await upsertSingleContext("U6", 0);
       const contextId = context.contextId;
@@ -399,14 +420,14 @@ describe("StoryManager Integration Tests", () => {
       const languagesResult = await withReadSession(driver, (tx) =>
         tx.run(
           `MATCH (c:Context {contextId: $contextId})-[:SPEAKS_FLUENT]->(l:Language)
-           RETURN l.code AS code, l.name AS name
+           RETURN l.code AS code, l.canonicalName AS canonicalName
            ORDER BY l.code`,
           { contextId },
         ),
       );
       expect(languagesResult.records).toHaveLength(1);
       expect(languagesResult.records[0]!.get("code")).toBe("en");
-      expect(languagesResult.records[0]!.get("name")).toBe("English");
+      expect(languagesResult.records[0]!.get("canonicalName")).toBe("English");
 
       const u4 = testDataManager.getStoryBy("U4");
       const u4Context = u4.contexts[0];
