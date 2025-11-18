@@ -57,25 +57,30 @@ WITH context, user,
      $ctx.citizenships AS citizenships,
      $ctx.languages AS languages
 
-MERGE (p:Position {name: position})
+MERGE (p:Position {canonicalName: position})
+ON CREATE SET p.verified = false, p.createdAt = timestamp(), p.createdBy = "user"
 MERGE (context)-[:HAS_POSITION]->(p)
 
-MERGE (i:Industry {name: industry})
+MERGE (i:Industry {canonicalName: industry})
+ON CREATE SET i.verified = false, i.createdAt = timestamp(), i.createdBy = "user"
 MERGE (context)-[:IN_INDUSTRY]->(i)
 
 WITH context, work_domains, skills, countryCode, cityName, citizenships, languages
 UNWIND work_domains AS wdName
-  MERGE (wd:WorkDomain {name: wdName})
+  MERGE (wd:WorkDomain {canonicalName: wdName})
+  ON CREATE SET wd.verified = false, wd.createdAt = timestamp(), wd.createdBy = "user"
   MERGE (context)-[:IN_WORK_DOMAIN]->(wd)
 
 WITH context, skills, countryCode, cityName, citizenships, languages
 UNWIND skills AS skillName
-  MERGE (s:Skill {name: skillName})
+  MERGE (s:Skill {canonicalName: skillName})
+  ON CREATE SET s.verified = false, s.createdAt = timestamp(), s.createdBy = "user"
   MERGE (context)-[:USES_SKILL]->(s)
 
 WITH context, countryCode, cityName, citizenships, languages
 MERGE (co:Country {name: countryCode})
-MERGE (ci:City {name: cityName})
+MERGE (ci:City {canonicalName: cityName})
+ON CREATE SET ci.verified = false, ci.createdAt = timestamp(), ci.createdBy = "user"
 MERGE (ci)-[:IN_COUNTRY]->(co)
 MERGE (context)-[:IN_CITY]->(ci)
 MERGE (context)-[:IN_COUNTRY]->(co)
@@ -136,7 +141,8 @@ SET t.skill = $trail.skill,
     t.course_link = $trail.course_link,
     t.user_feedback = $trail.user_feedback
 
-MERGE (pl:Platform {name: $trail.platform})
+MERGE (pl:Platform {canonicalName: $trail.platform})
+ON CREATE SET pl.verified = false, pl.createdAt = timestamp(), pl.createdBy = "user"
 MERGE (spn:SkillPlatformNode {skill: $trail.skill, platform: $trail.platform})
 MERGE (spn)-[:ON_PLATFORM]->(pl)
 MERGE (t)-[:DEVELOPS]->(spn)

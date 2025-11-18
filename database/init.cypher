@@ -3,23 +3,23 @@
 // Constraints
 CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.userId IS UNIQUE;
 CREATE CONSTRAINT context_id_unique IF NOT EXISTS FOR (c:Context) REQUIRE c.contextId IS UNIQUE;
-CREATE CONSTRAINT position_name_unique IF NOT EXISTS FOR (p:Position) REQUIRE p.name IS UNIQUE;
-CREATE CONSTRAINT industry_name_unique IF NOT EXISTS FOR (i:Industry) REQUIRE i.name IS UNIQUE;
-CREATE CONSTRAINT work_domain_name_unique IF NOT EXISTS FOR (wd:WorkDomain) REQUIRE wd.name IS UNIQUE;
-CREATE CONSTRAINT skill_name_unique IF NOT EXISTS FOR (s:Skill) REQUIRE s.name IS UNIQUE;
 CREATE CONSTRAINT skill_category_id_unique IF NOT EXISTS FOR (sc:SkillCategory) REQUIRE sc.categoryId IS UNIQUE;
 CREATE CONSTRAINT country_name_unique IF NOT EXISTS FOR (ct:Country) REQUIRE ct.name IS UNIQUE;
-CREATE CONSTRAINT city_name_unique IF NOT EXISTS FOR (ci:City) REQUIRE ci.name IS UNIQUE;
 CREATE CONSTRAINT trail_id_unique IF NOT EXISTS FOR (t:Trail) REQUIRE t.trailId IS UNIQUE;
-CREATE CONSTRAINT platform_name_unique IF NOT EXISTS FOR (p:Platform) REQUIRE p.name IS UNIQUE;
 CREATE CONSTRAINT reason_id_unique IF NOT EXISTS FOR (r:Reason) REQUIRE r.reasonId IS UNIQUE;
 CREATE CONSTRAINT goal_user_id_unique IF NOT EXISTS FOR (g:Goal) REQUIRE g.userId IS UNIQUE;
+
+// Dictionary constraints (canonicalName for normalization)
+CREATE CONSTRAINT position_canonical_name_unique IF NOT EXISTS FOR (p:Position) REQUIRE p.canonicalName IS UNIQUE;
+CREATE CONSTRAINT industry_canonical_name_unique IF NOT EXISTS FOR (i:Industry) REQUIRE i.canonicalName IS UNIQUE;
+CREATE CONSTRAINT work_domain_canonical_name_unique IF NOT EXISTS FOR (wd:WorkDomain) REQUIRE wd.canonicalName IS UNIQUE;
+CREATE CONSTRAINT skill_canonical_name_unique IF NOT EXISTS FOR (s:Skill) REQUIRE s.canonicalName IS UNIQUE;
+CREATE CONSTRAINT city_canonical_name_unique IF NOT EXISTS FOR (ci:City) REQUIRE ci.canonicalName IS UNIQUE;
+CREATE CONSTRAINT platform_canonical_name_unique IF NOT EXISTS FOR (p:Platform) REQUIRE p.canonicalName IS UNIQUE;
 CREATE CONSTRAINT language_code_unique IF NOT EXISTS FOR (l:Language) REQUIRE l.code IS UNIQUE;
 
 // Indexes for filters
-CREATE INDEX skill_name IF NOT EXISTS FOR (s:Skill) ON (s.name);
 CREATE INDEX skill_platform_composite IF NOT EXISTS FOR (spn:SkillPlatformNode) ON (spn.skill, spn.platform);
-CREATE INDEX language_code IF NOT EXISTS FOR (l:Language) ON (l.code);
 
 // Context field indexes for fast search
 CREATE INDEX context_position IF NOT EXISTS FOR (c:Context) ON (c.position);

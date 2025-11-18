@@ -600,3 +600,38 @@ export const pathBatchResultSchema = z.object({
 });
 
 export type PathBatchResult = z.infer<typeof pathBatchResultSchema>;
+
+// ==========================================
+// === DICTIONARIES ===
+// ==========================================
+
+/**
+ * Dictionary types for normalization
+ */
+export const dictionaryTypeSchema = z.enum([
+  "skill",
+  "position",
+  "domain",
+  "city",
+  "industry",
+  "platform",
+  "language",
+]);
+
+export type DictionaryType = z.infer<typeof dictionaryTypeSchema>;
+
+/**
+ * Dictionaries containing verified canonical terms
+ * Used by LLM for normalization (user input → canonical name)
+ */
+export const dictionariesSchema = z.object({
+  skills: z.array(z.string()).describe("Verified skill names (e.g., Python, JavaScript)"),
+  positions: z.array(z.string()).describe("Verified position titles (e.g., Junior Developer)"),
+  domains: z.array(z.string()).describe("Verified work domains (e.g., Backend, Frontend)"),
+  cities: z.array(z.string()).describe("Verified city names (e.g., Moscow, London)"),
+  industries: z.array(z.string()).describe("Verified industries (e.g., Fintech, Healthcare)"),
+  platforms: z.array(z.string()).describe("Verified platforms (e.g., Coursera, Udemy)"),
+  languages: z.array(z.string()).describe("Verified languages (e.g., English, Russian)"),
+});
+
+export type Dictionaries = z.infer<typeof dictionariesSchema>;
