@@ -3,7 +3,6 @@
 // Constraints
 CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.userId IS UNIQUE;
 CREATE CONSTRAINT context_id_unique IF NOT EXISTS FOR (c:Context) REQUIRE c.contextId IS UNIQUE;
-CREATE CONSTRAINT skill_category_id_unique IF NOT EXISTS FOR (sc:SkillCategory) REQUIRE sc.categoryId IS UNIQUE;
 CREATE CONSTRAINT country_name_unique IF NOT EXISTS FOR (ct:Country) REQUIRE ct.name IS UNIQUE;
 CREATE CONSTRAINT trail_id_unique IF NOT EXISTS FOR (t:Trail) REQUIRE t.trailId IS UNIQUE;
 CREATE CONSTRAINT reason_id_unique IF NOT EXISTS FOR (r:Reason) REQUIRE r.reasonId IS UNIQUE;

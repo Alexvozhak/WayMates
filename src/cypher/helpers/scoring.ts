@@ -1,22 +1,32 @@
+import { SCORING_CONFIG } from "../../config/scoring.js";
+
 /**
  * Scoring helpers for context matching
  *
- * CRITICAL: Skills scoring preserves Bug #2 fix (penalty-based scoring)
- * Copy-pasted from snippets-extractor.ts:37-81 without modifications
+ * ADR-009: Skills Complexity-Based Scoring
+ *
+ * Migration from categories (weight/penalty) to complexity (0-100):
+ *   weight = complexity × SCORING_CONFIG.complexityToWeight
+ *   penalty = complexity × SCORING_CONFIG.complexityToWeight × SCORING_CONFIG.weightToPenalty
  */
 
 /**
- * Skills penalty-based scoring (Bug #2 fix - DO NOT MODIFY)
+ * Skills complexity-based scoring (ADR-009)
  *
  * Calculates score based on:
- * - Matched skills (intersection): positive weight from SkillCategory
- * - Extra skills (candidate has but we don't need): penalty from SkillCategory
+ * - Matched skills (intersection): positive weight from Skill.complexity
+ * - Extra skills (candidate has but we don't need): penalty from Skill.complexity
  * - Final score: (sum of weights) - (sum of penalties)
  *
- * Uses CALL subqueries to fetch weights/penalties from database
+ * Uses CALL subqueries to fetch complexity from database
  *
- * IMPORTANT: This is copy-pasted from OLD code (snippets-extractor.ts:37-81)
- * to preserve Bug #2 fix. Any changes risk regression!
+ * Formula (config/scoring.ts):
+ *   weight = complexity × weightMultiplier (default 0.2)
+ *   penalty = complexity × penaltyMultiplier (default 0.05)
+ *
+ * Examples:
+ *   "c++" (complexity=95): weight=19, penalty=4.75
+ *   "python" (complexity=60): weight=12, penalty=3
  *
  * Prerequisites (must exist in scope):
  * - {candidateSkillsVar}: array of candidate's skill names
@@ -25,8 +35,8 @@
  * Output variables added to scope:
  * - matchedSkills: intersection of skills
  * - extraSkills: skills candidate has but searching user doesn't need
- * - matchedSkillsWithWeights: array of {skill, weight} from categories
- * - extraSkillsWithPenalty: array of {skill, penalty} from categories
+ * - matchedSkillsWithWeights: array of {skill, weight} from complexity
+ * - extraSkillsWithPenalty: array of {skill, penalty} from complexity
  * - skillsPositiveScore: sum of matched skill weights
  * - skillsPenaltyScore: sum of extra skill penalties
  * - skillsScore: final score (positive - penalty)
@@ -40,33 +50,36 @@
  * // Adds skillsScore variable to scope
  */
 export function buildSkillsScoring(candidateSkillsVar: string, searchingSkillsVar: string): string {
+  const weightMultiplier = SCORING_CONFIG.weightMultiplier;
+  const penaltyMultiplier = SCORING_CONFIG.penaltyMultiplier;
+
   return `
-// === SKILLS SCORING WITH CATEGORIES (Bug #2 fix) ===
+// === SKILLS SCORING WITH COMPLEXITY (ADR-009) ===
 // 1. Matched skills (intersection)
 WITH *, [skill IN ${searchingSkillsVar} WHERE skill IN ${candidateSkillsVar}] AS matchedSkills
 
 // 2. Extra skills (candidate has but we don't need)
 WITH *, [skill IN ${candidateSkillsVar} WHERE NOT skill IN ${searchingSkillsVar}] AS extraSkills
 
-// 3. Get weights from categories for matched skills
+// 3. Get weights from complexity for matched skills
 CALL {
   WITH matchedSkills
   UNWIND matchedSkills AS matchedSkill
-  OPTIONAL MATCH (s:Skill {canonicalName: matchedSkill})-[:BELONGS_TO]->(sc:SkillCategory)
+  OPTIONAL MATCH (s:Skill {canonicalName: matchedSkill})
   RETURN collect({
     skill: matchedSkill,
-    weight: coalesce(sc.weight, 5.0)
+    weight: coalesce(s.complexity * ${weightMultiplier}, 5.0)
   }) AS matchedSkillsWithWeights
 }
 
-// 4. Get penalties from categories for extra skills
+// 4. Get penalties from complexity for extra skills
 CALL {
   WITH extraSkills
   UNWIND extraSkills AS extraSkill
-  OPTIONAL MATCH (s:Skill {canonicalName: extraSkill})-[:BELONGS_TO]->(sc:SkillCategory)
+  OPTIONAL MATCH (s:Skill {canonicalName: extraSkill})
   RETURN collect({
     skill: extraSkill,
-    penalty: coalesce(sc.penaltyMultiplier, 1.0)
+    penalty: coalesce(s.complexity * ${penaltyMultiplier}, 1.0)
   }) AS extraSkillsWithPenalty
 }
 

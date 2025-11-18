@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Import skill categories from YAML into Neo4j
+# Import skills with complexity from YAML into Neo4j
 # Usage: scripts/import-skills.sh <env>
+# Migrated to complexity-based scoring (ADR-009)
 
 set -e
 
@@ -23,4 +24,4 @@ source ".env.$ENV"
 export ENV NEO4J_URI NEO4J_USER NEO4J_PASSWORD
 
 # Run import
-npx tsx database/import-skill-categories.ts
+npx tsx database/import-skills.ts

@@ -153,25 +153,20 @@ describe("StoryManager Integration Tests", () => {
       expect(skillNames).toEqual(expect.arrayContaining(expectedSkills));
     });
 
-    // Business rule: Skills categorized during import must use BELONGS_TO relationship with valid weight/penalty.
-    // If relationship uses wrong name (IN_CATEGORY), or properties (penalty_multiplier vs penaltyMultiplier),
-    // search scoring will fail to apply category-specific weights and use default values instead.
-    it("categorized skills use BELONGS_TO with camelCase properties", async () => {
-      const categoryCheck = await withReadSession(driver, (tx) =>
+    // Business rule: Skills imported from YAML must have complexity property (ADR-009).
+    // Import script validates range 0-100 via Zod before writing to DB.
+    it("imported skills have complexity property", async () => {
+      const skillCheck = await withReadSession(driver, (tx) =>
         tx.run(
-          `MATCH (s:Skill)-[:BELONGS_TO]->(sc:SkillCategory)
-           RETURN s.canonicalName, sc.weight, sc.penaltyMultiplier
-           LIMIT 1`,
+          `MATCH (s:Skill)
+           WHERE s.complexity IS NOT NULL
+           RETURN count(s) AS count`,
         ),
       );
 
-      expect(categoryCheck.records.length).toBeGreaterThan(0);
+      const count = Number(skillCheck.records[0]!.get("count"));
 
-      const weight = categoryCheck.records[0]!.get("sc.weight");
-      const penalty = categoryCheck.records[0]!.get("sc.penaltyMultiplier");
-
-      expect(weight).toBeTruthy();
-      expect(penalty).toBeTruthy();
+      expect(count).toBeGreaterThan(80);
     });
 
     it("creates work domain relationships", async () => {
