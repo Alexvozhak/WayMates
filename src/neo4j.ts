@@ -77,7 +77,9 @@ function getCredentials(uriOverride?: string): Credentials {
   const password = process.env.NEO4J_PASSWORD;
 
   if (!uri || !user || !password) {
-    throw new Error("Missing required environment variables: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD");
+    throw new Error(
+      "Missing required environment variables: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD",
+    );
   }
 
   return { uri, user, password };

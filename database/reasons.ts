@@ -1,4 +1,4 @@
-import reasonsData from './reasons.json' with { type: "json" };
+import reasonsData from "./reasons.json" with { type: "json" };
 
 const reasonIds = Object.keys(reasonsData) as [string, ...string[]];
 
