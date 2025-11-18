@@ -15,7 +15,7 @@ import { DatabaseContext } from "../../../src/database-context.js";
 import { withReadSession } from "../../../src/neo4j.js";
 import { storyInputSchema } from "../../../src/shared/schemas.js";
 import { type UserKey, TestDataManager } from "../../helpers/test-data-manager.js";
-import { driver } from "../../helpers/story-manager-driver.js";
+import { driver } from "../../helpers/drivers/story-manager-driver.js";
 
 import type { StoryInput } from "../../../src/shared/schemas.js";
 

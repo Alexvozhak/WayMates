@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { driver } from "../../helpers/shared-driver.js";
+import { driver } from "../../helpers/drivers/shared-driver.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
 import { validateAllPaths } from "../../helpers/path-validator.js";

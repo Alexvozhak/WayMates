@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { driver } from "../../helpers/shared-driver.js";
+import { driver } from "../../helpers/drivers/shared-driver.js";
 import {
   FixtureSearchManager,
   createUserSearchParams,

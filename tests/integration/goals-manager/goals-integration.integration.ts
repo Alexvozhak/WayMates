@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { driver } from "../../helpers/goals-driver.js";
+import { driver } from "../../helpers/drivers/goals-driver.js";
 import {
   FixtureSearchManager,
   createUserSearchParams,

@@ -1,27 +1,27 @@
 import { defineConfig } from "vitest/config";
 import { loadEnv } from "vite";
 
+// Test timeout constants
+const UNIT_TEST_TIMEOUT = 10_000; // 10s for unit tests
+const INTEGRATION_TEST_TIMEOUT = 30_000; // 30s for integration tests
+const INTEGRATION_HOOK_TIMEOUT = 30_000; // 30s for setup/teardown hooks
+
 export default defineConfig(() => {
   return {
     esbuild: {
       target: "node18",
     },
     test: {
-      // Global setup loads base data (U1-U18) ONCE before all projects.
-      // Read-only projects use this data without setupFiles.
-      // Write projects (goals, story-manager) have isolated setupFiles.
       globalSetup: "./vitest.globalSetup.ts",
-
-      testTimeout: 30000,
-      hookTimeout: 30000,
+      testTimeout: INTEGRATION_TEST_TIMEOUT,
+      hookTimeout: INTEGRATION_HOOK_TIMEOUT,
       environment: "node",
 
-      // Projects run SEQUENTIALLY (avoid data race between projects)
+      // Projects run SEQUENTIALLY to avoid data race
       sequence: {
-        concurrent: false, // Projects use different datasets, must not run in parallel
+        concurrent: false,
       },
 
-      // Projects для разных типов тестов с разной изоляцией
       projects: [
         {
           test: {
@@ -33,10 +33,10 @@ export default defineConfig(() => {
                 isolate: false,
               },
             },
-            testTimeout: 10000,
+            testTimeout: UNIT_TEST_TIMEOUT,
           },
         },
-        // SearchManager integration tests (read-only, parallel)
+        // Read-only search tests (parallel execution, shared globalSetup data)
         {
           test: {
             name: "integration-search-read-only",
@@ -49,31 +49,31 @@ export default defineConfig(() => {
             pool: "threads",
             poolOptions: {
               threads: {
-                isolate: false, // Shared state (U1-U18 from globalSetup)
-                singleThread: false, // Parallel execution ✅
+                isolate: false, // Shared state from globalSetup
+                singleThread: false, // Parallel execution
               },
             },
-            setupFiles: ["./tests/helpers/shared-driver.ts"],
-            testTimeout: 30000,
+            setupFiles: ["./tests/helpers/drivers/shared-driver.ts"],
+            testTimeout: INTEGRATION_TEST_TIMEOUT,
           },
         },
-        // SearchManager Goals integration tests (write, sequential)
+        // Goals CRUD tests (sequential, isolated data reload per test)
         {
           test: {
-            name: "integration-search-goals",
-            include: ["tests/integration/search-manager/goals-integration.integration.ts"],
+            name: "integration-goals",
+            include: ["tests/integration/goals-manager/goals-integration.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
                 isolate: true,
-                singleThread: true, // Sequential execution ⚠️
+                singleThread: true, // Write operations require sequential execution
               },
             },
-            setupFiles: ["./tests/helpers/goals-driver.ts"],
-            testTimeout: 30000,
+            setupFiles: ["./tests/helpers/drivers/goals-driver.ts"],
+            testTimeout: INTEGRATION_TEST_TIMEOUT,
           },
         },
-        // StoryManager integration tests (write, sequential)
+        // Story persistence tests (sequential, runs LAST to avoid cleanup conflicts)
         {
           test: {
             name: "integration-story-manager",
@@ -82,98 +82,15 @@ export default defineConfig(() => {
             poolOptions: {
               threads: {
                 isolate: true,
-                singleThread: true, // Sequential execution ⚠️
+                singleThread: true, // Write operations require sequential execution
               },
             },
-            setupFiles: ["./tests/helpers/story-manager-driver.ts"],
-            testTimeout: 30000,
-            hookTimeout: 30000,
+            setupFiles: ["./tests/helpers/drivers/story-manager-driver.ts"],
+            testTimeout: INTEGRATION_TEST_TIMEOUT,
+            hookTimeout: INTEGRATION_HOOK_TIMEOUT,
             env: loadEnv("test", process.cwd(), ""),
           },
         },
-        // DISABLED: Old GDS tests (to be refactored)
-        // {
-        //   test: {
-        //     name: "gds-projection-tests",
-        //     include: ["tests/integration/gds/services/projection.test.ts"],
-        //     pool: "threads",
-        //     poolOptions: {
-        //       threads: {
-        //         isolate: true,
-        //         singleThread: true,
-        //       },
-        //     },
-        //     testTimeout: 30000,
-        //     env: loadEnv("test", process.cwd(), ""),
-        //   },
-        // },
-        // {
-        //   test: {
-        //     name: "gds-similarity-tests",
-        //     include: ["tests/integration/gds/services/similarity.test.ts"],
-        //     pool: "threads",
-        //     poolOptions: {
-        //       threads: {
-        //         isolate: true,
-        //         singleThread: false,
-        //       },
-        //     },
-        //     setupFiles: ["./tests/integration/gds/setup.ts"],
-        //     testTimeout: 120000,
-        //     env: loadEnv("test", process.cwd(), ""),
-        //   },
-        // },
-        // {
-        //   test: {
-        //     name: "reason-tests",
-        //     include: ["tests/integration/reason-based/**/*.test.ts"],
-        //     pool: "threads",
-        //     poolOptions: {
-        //       threads: {
-        //         isolate: true,
-        //         singleThread: true,
-        //       },
-        //     },
-        //     setupFiles: ["./tests/integration/reason-based/setup.ts"],
-        //     testTimeout: 45000,
-        //     env: loadEnv("test", process.cwd(), ""),
-        //   },
-        // },
-        // {
-        //   test: {
-        //     name: "gds-pathfinding-tests",
-        //     include: [
-        //       "tests/integration/gds/services/pathfinding.test.ts",
-        //       "tests/integration/gds/services/reason-analytics.test.ts"
-        //     ],
-        //     pool: "threads",
-        //     poolOptions: {
-        //       threads: {
-        //         isolate: true,
-        //         singleThread: false,
-        //       },
-        //     },
-        //     setupFiles: ["./tests/integration/gds/setup-pathfinding.ts"],
-        //     testTimeout: 60000,
-        //     env: loadEnv("test", process.cwd(), ""),
-        //   },
-        // },
-        // {
-        //   test: {
-        //     name: "functional",
-        //     include: ["tests/functional/**/*.test.ts"],
-        //     pool: "threads", // Используем threads для единой БД, но с изоляцией
-        //     poolOptions: {
-        //       threads: {
-        //         isolate: true, // Изоляция глобального состояния
-        //         singleThread: true, // Отключаем параллельное выполнение тестов
-        //       },
-        //     },
-        //     // setupFiles: ["./tests/helpers/database-setup.ts"],
-        //     testTimeout: 60000, // Максимальное время для e2e сценариев
-        //     env: loadEnv("test", process.cwd(), ""),
-        //   },
-        // },
       ],
     },
   };
