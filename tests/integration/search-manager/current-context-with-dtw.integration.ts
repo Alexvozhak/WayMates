@@ -3,24 +3,13 @@
  * Test data: U10-U13 from globalSetup
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createDriver } from "../../../src/neo4j.js";
+import { describe, it, expect } from "vitest";
+import { driver } from "../../helpers/shared-driver.js";
 import {
   FixtureSearchManager,
   createUserSearchParams,
 } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
-import type { Driver } from "neo4j-driver";
-
-let driver: Driver;
-
-beforeAll(() => {
-  driver = createDriver(); // Uses U1-U18 from globalSetup
-});
-
-afterAll(async () => {
-  await driver.close();
-});
 
 function validateDtwFormula(
   userId: string,

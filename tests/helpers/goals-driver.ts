@@ -16,10 +16,10 @@
  */
 
 import { beforeAll, beforeEach, afterAll } from "vitest";
-import { createDriver } from "../../../src/neo4j.js";
-import { TestDataManager } from "../../helpers/test-data-manager.js";
-import { importStories } from "../../helpers/import-stories.js";
-import { DatabaseFixture } from "../../helpers/database-fixture.js";
+import { createDriver } from "../../src/neo4j.js";
+import { TestDataManager } from "./test-data-manager.js";
+import { importStories } from "./import-stories.js";
+import { DatabaseFixture } from "./database-fixture.js";
 import type { Driver } from "neo4j-driver";
 
 export let driver: Driver;

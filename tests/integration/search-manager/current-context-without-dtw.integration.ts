@@ -3,24 +3,13 @@
  * Business rule: Automatic fallback to searchByContext when no trajectory exists
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createDriver } from "../../../src/neo4j.js";
+import { describe, it, expect } from "vitest";
+import { driver } from "../../helpers/shared-driver.js";
 import {
   FixtureSearchManager,
   createUserSearchParams,
 } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
-import type { Driver } from "neo4j-driver";
-
-let driver: Driver;
-
-beforeAll(() => {
-  driver = createDriver();
-});
-
-afterAll(async () => {
-  await driver.close();
-});
 
 describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
   // Business rule: Single context user → fallback to searchByContext (no DTW)

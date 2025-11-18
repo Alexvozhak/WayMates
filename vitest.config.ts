@@ -10,7 +10,7 @@ export default defineConfig(() => {
       // Global setup loads base data (U1-U18) ONCE before all projects.
       // Read-only projects use this data without setupFiles.
       // Write projects (goals, story-manager) have isolated setupFiles.
-      globalSetup: './vitest.globalSetup.ts',
+      globalSetup: "./vitest.globalSetup.ts",
 
       testTimeout: 30000,
       hookTimeout: 30000,
@@ -44,16 +44,16 @@ export default defineConfig(() => {
               "tests/integration/search-manager/adhoc-context-without-dtw.integration.ts",
               "tests/integration/search-manager/target-search.integration.ts",
               "tests/integration/search-manager/current-context-without-dtw.integration.ts",
-              "tests/integration/search-manager/current-context-with-dtw.integration.ts"
+              "tests/integration/search-manager/current-context-with-dtw.integration.ts",
             ],
             pool: "threads",
             poolOptions: {
               threads: {
-                isolate: false,      // Shared state (U1-U18 from globalSetup)
+                isolate: false, // Shared state (U1-U18 from globalSetup)
                 singleThread: false, // Parallel execution ✅
               },
             },
-            // No setupFiles - uses data from globalSetup
+            setupFiles: ["./tests/helpers/shared-driver.ts"],
             testTimeout: 30000,
           },
         },
@@ -66,10 +66,10 @@ export default defineConfig(() => {
             poolOptions: {
               threads: {
                 isolate: true,
-                singleThread: true,  // Sequential execution ⚠️
+                singleThread: true, // Sequential execution ⚠️
               },
             },
-            setupFiles: ["./tests/integration/search-manager/setup-goals.ts"],
+            setupFiles: ["./tests/helpers/goals-driver.ts"],
             testTimeout: 30000,
           },
         },
@@ -82,10 +82,10 @@ export default defineConfig(() => {
             poolOptions: {
               threads: {
                 isolate: true,
-                singleThread: true,  // Sequential execution ⚠️
+                singleThread: true, // Sequential execution ⚠️
               },
             },
-            setupFiles: ["./tests/integration/story-manager/setup.ts"],
+            setupFiles: ["./tests/helpers/story-manager-driver.ts"],
             testTimeout: 30000,
             hookTimeout: 30000,
             env: loadEnv("test", process.cwd(), ""),

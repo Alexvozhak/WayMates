@@ -14,22 +14,11 @@
  * - TG7: Combined filters (position + domains + skills)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createDriver } from "../../../src/neo4j.js";
+import { describe, it, expect } from "vitest";
+import { driver } from "../../helpers/shared-driver.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { TestDataManager } from "../../helpers/test-data-manager.js";
 import { validateAllPaths } from "../../helpers/path-validator.js";
-import type { Driver } from "neo4j-driver";
-
-let driver: Driver;
-
-beforeAll(() => {
-  driver = createDriver(); // Uses U1-U18 from globalSetup
-});
-
-afterAll(async () => {
-  await driver.close();
-});
 
 describe("Target Search (TG1-TG7)", () => {
   // Business rule: Desired position filter matches ONLY candidates with exact position.
