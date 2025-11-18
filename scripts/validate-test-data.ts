@@ -1,187 +1,118 @@
 #!/usr/bin/env tsx
 
-import { readFile } from "fs/promises";
-import path from "path";
-import { StoryInputSchema } from "../src/shared/schemas.js";
+import { readdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+import { storyInputSchema } from "../src/shared/schemas.js";
+
 import type { StoryInput } from "../src/shared/schemas.js";
 
+const TEST_DATA_DIR = "data/trails/users";
+const USER_FILE_PATTERN = /^u\d+\.json$/;
+
 /**
- * Validation script for migrated test data
+ * Validates test data files (data/trails/users/*.json) against StoryInputSchema
  *
- * Validates test data files against StoryInputSchema (Zod)
- * Ensures:
- * 1. UUID v7 format for all IDs
- * 2. camelCase property names
- * 3. No deprecated fields (work_type, team_size)
- * 4. Valid ISO 8601 dates
- * 5. All required fields present
+ * Checks:
+ * - UUID v7 format for all IDs
+ * - camelCase property names
+ * - Valid ISO 8601 dates
+ * - Required fields present
  *
  * Usage:
- *   npm run validate:test-data u1  # Validate single file
- *   npm run validate:test-data all # Validate all U1-U9
+ *   npm run validate:test-data       # All files (auto-discovered)
+ *   npm run validate:test-data u1    # Single file
  */
+async function main(): Promise<void> {
+  const arg = process.argv[2] || "all";
+  const fileNames = arg === "all" ? getAllTestFiles() : [arg];
 
-interface ValidationResult {
-  fileName: string;
-  valid: boolean;
-  errors?: string[];
-  warnings?: string[];
-  data?: StoryInput;
-}
+  console.log(`\nValidating ${fileNames.length} files...`);
 
-/**
- * Validate single file against StoryInputSchema
- */
-async function validateFile(userFileName: string): Promise<ValidationResult> {
-  const filePath = path.join(process.cwd(), "data/trails/users", `${userFileName}.json`);
+  const results = await Promise.all(fileNames.map((fileName) => validateSingleFile(fileName)));
 
-  try {
-    // Read file
-    const rawData = await readFile(filePath, "utf-8");
-    const jsonData = JSON.parse(rawData);
+  const valid = results.filter((r) => r === "valid").length;
+  const invalid = results.filter((r) => r === "invalid").length;
 
-    // Validate against Zod schema
-    const result = StoryInputSchema.safeParse(jsonData);
+  console.log(
+    `\n${valid === fileNames.length ? "✅" : "❌"} ${valid}/${fileNames.length} files valid\n`,
+  );
 
-    if (result.success) {
-      return {
-        fileName: userFileName,
-        valid: true,
-        data: result.data,
-        warnings: checkWarnings(result.data),
-      };
-    } else {
-      const errors = result.error.errors.map((err) => {
-        const path = err.path.join(".");
-        return `${path}: ${err.message}`;
-      });
-
-      return {
-        fileName: userFileName,
-        valid: false,
-        errors,
-      };
-    }
-  } catch (error) {
-    return {
-      fileName: userFileName,
-      valid: false,
-      errors: [error instanceof Error ? error.message : "Unknown error"],
-    };
+  if (invalid > 0) {
+    process.exit(1);
   }
 }
 
-/**
- * Check for warnings (non-critical issues)
- */
-function checkWarnings(data: StoryInput): string[] {
-  const warnings: string[] = [];
+await main();
 
-  // Check for potential issues
-  data.contexts.forEach((ctx, idx) => {
-    // Warn if context has no skills
+function checkEmptyFieldsInContexts(contexts: StoryInput["contexts"]): string[] {
+  return contexts.flatMap((ctx, idx) => {
+    const warnings: string[] = [];
     if (ctx.skills.length === 0) {
       warnings.push(`Context ${idx} has empty skills array`);
     }
-
-    // Warn if context has no domains
     if (ctx.domains.length === 0) {
       warnings.push(`Context ${idx} has empty domains array`);
     }
+    return warnings;
   });
+}
 
-  // Check trails reference valid contexts
-  const contextIds = new Set(data.contexts.map((c) => c.contextId));
-  data.trails.forEach((trail, idx) => {
-    if (!contextIds.has(trail.fromContextId)) {
+function checkTrailReferences(
+  trails: StoryInput["trails"],
+  validContextIds: Set<string>,
+): string[] {
+  return trails.flatMap((trail, idx) => {
+    const warnings: string[] = [];
+    if (!validContextIds.has(trail.fromContextId)) {
       warnings.push(`Trail ${idx}: fromContextId references non-existent context`);
     }
-    if (trail.toContextId && !contextIds.has(trail.toContextId)) {
+    if (trail.toContextId && !validContextIds.has(trail.toContextId)) {
       warnings.push(`Trail ${idx}: toContextId references non-existent context`);
     }
+    return warnings;
   });
-
-  return warnings;
 }
 
-/**
- * Print validation results
- */
-function printResults(results: ValidationResult[]): void {
-  const valid = results.filter((r) => r.valid);
-  const invalid = results.filter((r) => !r.valid);
+function checkWarnings(data: StoryInput): string[] {
+  const contextIds = new Set(data.contexts.map((c) => c.contextId));
+  const contextWarnings = checkEmptyFieldsInContexts(data.contexts);
+  const trailWarnings = checkTrailReferences(data.trails, contextIds);
+  return [...contextWarnings, ...trailWarnings];
+}
 
-  console.log("\n" + "=".repeat(60));
-  console.log("VALIDATION RESULTS");
-  console.log("=".repeat(60));
+async function validateFile(fileName: string): Promise<void> {
+  const filePath = path.join(process.cwd(), TEST_DATA_DIR, `${fileName}.json`);
+  const rawData = await readFile(filePath, "utf8");
+  const jsonData = JSON.parse(rawData);
 
-  if (valid.length > 0) {
-    console.log(`\n✅ Valid files (${valid.length}):`);
-    valid.forEach((r) => {
-      console.log(`  ${r.fileName}.json`);
-      if (r.data) {
-        console.log(`    - User ID: ${r.data.userId}`);
-        console.log(`    - Contexts: ${r.data.contexts.length}`);
-        console.log(`    - Trails: ${r.data.trails.length}`);
-      }
-      if (r.warnings && r.warnings.length > 0) {
-        console.log(`    ⚠️  Warnings:`);
-        r.warnings.forEach((w) => console.log(`      - ${w}`));
-      }
-    });
-  }
+  const data = storyInputSchema.parse(jsonData);
+  const warnings = checkWarnings(data);
 
-  if (invalid.length > 0) {
-    console.log(`\n❌ Invalid files (${invalid.length}):`);
-    invalid.forEach((r) => {
-      console.log(`  ${r.fileName}.json`);
-      if (r.errors) {
-        r.errors.forEach((e) => console.log(`    - ${e}`));
-      }
-    });
-  }
+  console.log(`✅ ${fileName}.json`);
+  console.log(`    - User ID: ${data.userId}`);
+  console.log(`    - Contexts: ${data.contexts.length}`);
+  console.log(`    - Trails: ${data.trails.length}`);
 
-  console.log("\n" + "=".repeat(60));
-  console.log(`Summary: ${valid.length}/${results.length} files valid`);
-  console.log("=".repeat(60) + "\n");
-
-  // Exit with error code if any invalid
-  if (invalid.length > 0) {
-    process.exit(1);
+  if (warnings.length > 0) {
+    console.log(`    ⚠️  Warnings:`);
+    warnings.forEach((w) => console.log(`      - ${w}`));
   }
 }
 
-/**
- * CLI entry point
- */
-async function main() {
-  const arg = process.argv[2];
-
-  if (!arg) {
-    console.error("Usage: npm run validate:test-data <u1|u2|...|u9|all>");
-    process.exit(1);
-  }
-
-  let fileNames: string[];
-
-  if (arg === "all") {
-    fileNames = Array.from({ length: 9 }, (_, i) => `u${i + 1}`);
-  } else if (arg.match(/^u[1-9]$/)) {
-    fileNames = [arg];
-  } else {
-    console.error(`Invalid argument: ${arg}`);
-    console.error("Usage: npm run validate:test-data <u1|u2|...|u9|all>");
-    process.exit(1);
-  }
-
-  console.log(`Validating ${fileNames.length} file(s)...`);
-
-  const results = await Promise.all(fileNames.map((name) => validateFile(name)));
-
-  printResults(results);
+function getAllTestFiles(): string[] {
+  return readdirSync(TEST_DATA_DIR)
+    .filter((file) => USER_FILE_PATTERN.test(file))
+    .map((file) => file.replace(".json", ""));
 }
 
-main().catch((error) => {
-  console.error("Validation failed:", error);
-  process.exit(1);
-});
+async function validateSingleFile(fileName: string): Promise<"valid" | "invalid"> {
+  try {
+    await validateFile(fileName);
+    return "valid";
+  } catch (error) {
+    console.log(`❌ ${fileName}.json: ${(error as Error).message}`);
+    return "invalid";
+  }
+}

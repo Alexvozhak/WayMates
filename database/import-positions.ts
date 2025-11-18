@@ -1,6 +1,7 @@
-import neo4j, { type Driver } from "neo4j-driver";
-
+import { withNeo4jDriver } from "./import-helpers.js";
 import positionsData from "./positions.json" with { type: "json" };
+
+import type { Driver } from "neo4j-driver";
 
 export async function importPositions(driver: Driver): Promise<void> {
   const positions = Object.entries(positionsData);
@@ -15,7 +16,7 @@ export async function importPositions(driver: Driver): Promise<void> {
       `
       MERGE (p:Position {canonicalName: $canonicalName})
       SET p.verified = true,
-          p.createdAt = datetime().epochMillis,
+          p.createdAt = timestamp(),
           p.createdBy = "system"
     `,
       { canonicalName },
@@ -26,30 +27,6 @@ export async function importPositions(driver: Driver): Promise<void> {
   console.log(`Total imported: ${positions.length} positions`);
 }
 
-async function main(): Promise<void> {
-  const env = process.env.ENV || "prod";
-  const port = process.env.NEO4J_PORT || "7687";
-  const uri = `bolt://localhost:${port}`;
-  const user = process.env.NEO4J_USER || "neo4j";
-  const password = process.env.NEO4J_PASSWORD || "password";
-
-  console.log(`Connecting to Neo4j (${env}): ${uri}`);
-
-  const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
-
-  try {
-    await driver.verifyConnectivity();
-    console.log("✅ Connected to Neo4j");
-
-    await importPositions(driver);
-  } catch (error) {
-    console.error("❌ Error during import:", error);
-    throw error;
-  } finally {
-    await driver.close();
-  }
-}
-
 if (import.meta.url === `file://${process.argv[1]}`) {
-  await main();
+  await withNeo4jDriver(importPositions);
 }

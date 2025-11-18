@@ -1,113 +1,97 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import YAML from 'yaml';
-import neo4j, { Driver } from 'neo4j-driver';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import YAML from "yaml";
 
-interface SkillCategoryTemplate {
-  category_name: string;
+import { withNeo4jDriver } from "./import-helpers.js";
+
+import type { Driver } from "neo4j-driver";
+
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
+
+type SkillCategoryTemplate = {
+  categoryName: string;
   weight: number;
-  penalty_multiplier: number;
+  penaltyMultiplier: number;
   skills: string[];
-}
+};
 
-interface DomainTemplate {
+type DomainTemplate = {
   description: string;
   categories: SkillCategoryTemplate[];
-}
+};
 
-interface TemplatesConfig {
+type TemplatesConfig = {
   templates: Record<string, DomainTemplate>;
-}
+};
 
-/**
- * Import skill categories from YAML template into Neo4j
- * @param driver Neo4j driver instance
- */
 export async function importSkillCategoriesFromYAML(driver: Driver): Promise<void> {
-  const yamlPath = path.join(__dirname, 'skill-category-templates.yaml');
-  const yamlContent = fs.readFileSync(yamlPath, 'utf-8');
+  const yamlPath = path.join(dirname, "skill-category-templates.yaml");
+  const yamlContent = fs.readFileSync(yamlPath, "utf8");
   const data: TemplatesConfig = YAML.parse(yamlContent);
 
-  console.log('Starting skill categories import from YAML...');
+  console.log("Starting skill categories import from YAML...");
 
   for (const [templateName, template] of Object.entries(data.templates)) {
     console.log(`\nImporting template: ${templateName}`);
     console.log(`Description: ${template.description}`);
 
     for (const category of template.categories) {
-      const categoryId = `${templateName}_${category.category_name.toLowerCase().replace(/\s+/g, '_')}`;
-
-      console.log(`  Creating category: ${category.category_name} (${categoryId})`);
-
-      // Create SkillCategory node
-      await driver.executeQuery(`
-        MERGE (sc:SkillCategory {category_id: $categoryId})
-        SET sc.template_name = $templateName,
-            sc.category_name = $categoryName,
-            sc.weight = $weight,
-            sc.penalty_multiplier = $penaltyMultiplier,
-            sc.is_predefined = true,
-            sc.created_at = datetime()
-      `, {
-        categoryId,
-        templateName,
-        categoryName: category.category_name,
-        weight: category.weight,
-        penaltyMultiplier: category.penalty_multiplier
-      });
-
-      // Assign skills to category
-      for (const skillName of category.skills) {
-        await driver.executeQuery(`
-          MERGE (s:Skill {name: $skillName})
-          WITH s
-          MATCH (sc:SkillCategory {category_id: $categoryId})
-          MERGE (s)-[:BELONGS_TO]->(sc)
-        `, { skillName, categoryId });
-      }
-
-      console.log(`    Assigned ${category.skills.length} skills`);
+      await importCategory(driver, templateName, category);
     }
   }
 
-  console.log('\n✅ Skill categories import completed!');
+  console.log("\n✅ Skill categories import completed!");
 }
 
-/**
- * Standalone execution for CLI
- */
-async function main() {
-  const env = process.env.ENV || 'prod';
-  const port = process.env.NEO4J_PORT || '7687';
-  const uri = `bolt://localhost:${port}`;
-  const user = process.env.NEO4J_USER || 'neo4j';
-  const password = process.env.NEO4J_PASSWORD || 'password';
+async function importCategory(
+  driver: Driver,
+  templateName: string,
+  category: SkillCategoryTemplate,
+): Promise<void> {
+  const categoryId = `${templateName}_${category.categoryName.toLowerCase().replaceAll(/\s+/g, "_")}`;
 
-  console.log(`Connecting to Neo4j (${env}): ${uri}`);
+  console.log(`  Creating category: ${category.categoryName} (${categoryId})`);
 
-  const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
+  await driver.executeQuery(
+    `
+    MERGE (sc:SkillCategory {categoryId: $categoryId})
+    SET sc.templateName = $templateName,
+        sc.categoryName = $categoryName,
+        sc.weight = $weight,
+        sc.penaltyMultiplier = $penaltyMultiplier,
+        sc.isPredefined = true,
+        sc.createdAt = timestamp()
+  `,
+    {
+      categoryId,
+      templateName,
+      categoryName: category.categoryName,
+      weight: category.weight,
+      penaltyMultiplier: category.penaltyMultiplier,
+    },
+  );
 
-  try {
-    // Test connection
-    await driver.verifyConnectivity();
-    console.log('✅ Connected to Neo4j');
-
-    // Import categories
-    await importSkillCategoriesFromYAML(driver);
-
-  } catch (error) {
-    console.error('❌ Error during import:', error);
-    process.exit(1);
-  } finally {
-    await driver.close();
+  for (const skillName of category.skills) {
+    await driver.executeQuery(
+      `
+      MERGE (s:Skill {canonicalName: $skillName})
+      ON CREATE SET s.verified = true,
+                    s.createdAt = timestamp(),
+                    s.createdBy = "system"
+      WITH s
+      MATCH (sc:SkillCategory {categoryId: $categoryId})
+      MERGE (s)-[:BELONGS_TO]->(sc)
+    `,
+      { skillName, categoryId },
+    );
   }
+
+  console.log(`    Assigned ${category.skills.length} skills`);
 }
 
-// Run if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  await withNeo4jDriver(importSkillCategoriesFromYAML);
 }

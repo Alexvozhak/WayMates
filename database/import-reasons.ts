@@ -1,60 +1,32 @@
-import reasonsData from './reasons.json' with { type: "json" };
-import neo4j, { type Driver } from 'neo4j-driver';
+import { withNeo4jDriver } from "./import-helpers.js";
+import reasonsData from "./reasons.json" with { type: "json" };
 
-/**
- * Import context creation reasons from JSON into Neo4j
- * @param driver Neo4j driver instance
- */
+import type { Driver } from "neo4j-driver";
+
 export async function importReasons(driver: Driver): Promise<void> {
   const reasons = Object.entries(reasonsData);
 
-  console.log('Starting reasons import...');
+  console.log("Starting reasons import...");
   console.log(`Found ${reasons.length} reasons to import\n`);
 
   for (const [reasonId, description] of reasons) {
     console.log(`Importing reason: ${reasonId}`);
     console.log(`  Description: ${description}`);
 
-    await driver.executeQuery(`
-      MERGE (r:Reason {reason_id: $reasonId})
+    await driver.executeQuery(
+      `
+      MERGE (r:Reason {reasonId: $reasonId})
       SET r.description = $description,
-          r.created_at = datetime()
-    `, { reasonId, description });
+          r.createdAt = timestamp()
+    `,
+      { reasonId, description },
+    );
   }
 
-  console.log('\n✅ Reasons import completed!');
+  console.log("\n✅ Reasons import completed!");
   console.log(`Total imported: ${reasons.length} reasons`);
 }
 
-/**
- * Standalone execution for CLI
- */
-async function main() {
-  const env = process.env.ENV || 'prod';
-  const port = process.env.NEO4J_PORT || '7687';
-  const uri = `bolt://localhost:${port}`;
-  const user = process.env.NEO4J_USER || 'neo4j';
-  const password = process.env.NEO4J_PASSWORD || 'password';
-
-  console.log(`Connecting to Neo4j (${env}): ${uri}`);
-
-  const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
-
-  try {
-    await driver.verifyConnectivity();
-    console.log('✅ Connected to Neo4j');
-
-    await importReasons(driver);
-
-  } catch (error) {
-    console.error('❌ Error during import:', error);
-    process.exit(1);
-  } finally {
-    await driver.close();
-  }
-}
-
-// Run if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  await withNeo4jDriver(importReasons);
 }

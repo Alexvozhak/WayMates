@@ -179,7 +179,7 @@ export class TrajectorySimilarityService {
    */
   private computeJaccardDistance(setA: Set<string>, setB: Set<string>): number {
     let intersection = 0;
-    // eslint-disable-next-line unicorn/no-array-for-each -- Set.forEach() avoids --downlevelIteration flag
+
     setA.forEach((item) => {
       if (setB.has(item)) {
         intersection++;

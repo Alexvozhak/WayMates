@@ -3,9 +3,9 @@ templates:
   it_software:
     description: "Software development and web engineering"
     categories:
-      - category_name: "Programming Languages"
+      - categoryName: "Programming Languages"
         weight: 20.0
-        penalty_multiplier: 5.0
+        penaltyMultiplier: 5.0
         skills:
           - "C++"
           - "Python"
@@ -20,9 +20,9 @@ templates:
           - "Swift"
           - "Kotlin"
 
-      - category_name: "Frameworks"
+      - categoryName: "Frameworks"
         weight: 15.0
-        penalty_multiplier: 2.0
+        penaltyMultiplier: 2.0
         skills:
           - "React"
           - "Vue"
@@ -35,9 +35,9 @@ templates:
           - "Spring"
           - "Rails"
 
-      - category_name: "Data Systems"
+      - categoryName: "Data Systems"
         weight: 10.0
-        penalty_multiplier: 2.0
+        penaltyMultiplier: 2.0
         skills:
           - "PostgreSQL"
           - "MySQL"
@@ -48,9 +48,9 @@ templates:
           - "RabbitMQ"
           - "Cassandra"
 
-      - category_name: "Infrastructure"
+      - categoryName: "Infrastructure"
         weight: 10.0
-        penalty_multiplier: 1.5
+        penaltyMultiplier: 1.5
         skills:
           - "Docker"
           - "Kubernetes"
@@ -62,9 +62,9 @@ templates:
           - "Jenkins"
           - "GitLab CI"
 
-      - category_name: "Dev Tools"
+      - categoryName: "Dev Tools"
         weight: 5.0
-        penalty_multiplier: 0.5
+        penaltyMultiplier: 0.5
         skills:
           - "Git"
           - "VS Code"
@@ -78,18 +78,18 @@ templates:
   it_data_science:
     description: "Data science, ML, AI"
     categories:
-      - category_name: "Programming Languages"
+      - categoryName: "Programming Languages"
         weight: 25.0
-        penalty_multiplier: 7.0
+        penaltyMultiplier: 7.0
         skills:
           - "Python"
           - "R"
           - "Julia"
           - "Scala"
 
-      - category_name: "ML Frameworks"
+      - categoryName: "ML Frameworks"
         weight: 20.0
-        penalty_multiplier: 5.0
+        penaltyMultiplier: 5.0
         skills:
           - "TensorFlow"
           - "PyTorch"
@@ -98,9 +98,9 @@ templates:
           - "XGBoost"
           - "Hugging Face"
 
-      - category_name: "Data Tools"
+      - categoryName: "Data Tools"
         weight: 15.0
-        penalty_multiplier: 3.0
+        penaltyMultiplier: 3.0
         skills:
           - "Pandas"
           - "NumPy"
@@ -109,9 +109,9 @@ templates:
           - "Airflow"
           - "dbt"
 
-      - category_name: "Visualization"
+      - categoryName: "Visualization"
         weight: 10.0
-        penalty_multiplier: 1.0
+        penaltyMultiplier: 1.0
         skills:
           - "Matplotlib"
           - "Seaborn"
@@ -119,9 +119,9 @@ templates:
           - "Tableau"
           - "PowerBI"
 
-      - category_name: "Math & Stats"
+      - categoryName: "Math & Stats"
         weight: 20.0
-        penalty_multiplier: 10.0
+        penaltyMultiplier: 10.0
         skills:
           - "Statistics"
           - "Linear Algebra"
@@ -133,9 +133,9 @@ templates:
   it_devops:
     description: "DevOps, SRE, Infrastructure"
     categories:
-      - category_name: "Infrastructure & Cloud"
+      - categoryName: "Infrastructure & Cloud"
         weight: 30.0
-        penalty_multiplier: 10.0
+        penaltyMultiplier: 10.0
         skills:
           - "Docker"
           - "Kubernetes"
@@ -145,9 +145,9 @@ templates:
           - "Terraform"
           - "CloudFormation"
 
-      - category_name: "CI/CD"
+      - categoryName: "CI/CD"
         weight: 20.0
-        penalty_multiplier: 5.0
+        penaltyMultiplier: 5.0
         skills:
           - "Jenkins"
           - "GitLab CI"
@@ -155,9 +155,9 @@ templates:
           - "CircleCI"
           - "ArgoCD"
 
-      - category_name: "Monitoring & Observability"
+      - categoryName: "Monitoring & Observability"
         weight: 15.0
-        penalty_multiplier: 3.0
+        penaltyMultiplier: 3.0
         skills:
           - "Prometheus"
           - "Grafana"
@@ -165,18 +165,18 @@ templates:
           - "Datadog"
           - "New Relic"
 
-      - category_name: "Scripting"
+      - categoryName: "Scripting"
         weight: 15.0
-        penalty_multiplier: 3.0
+        penaltyMultiplier: 3.0
         skills:
           - "Bash"
           - "Python"
           - "Go"
           - "PowerShell"
 
-      - category_name: "Configuration Management"
+      - categoryName: "Configuration Management"
         weight: 10.0
-        penalty_multiplier: 2.0
+        penaltyMultiplier: 2.0
         skills:
           - "Ansible"
           - "Puppet"
@@ -187,26 +187,26 @@ templates:
   # healthcare_general:
   #   description: "General healthcare and medical"
   #   categories:
-  #     - category_name: "Clinical Skills"
+  #     - categoryName: "Clinical Skills"
   #       weight: 30.0
-  #       penalty_multiplier: 10.0
+  #       penaltyMultiplier: 10.0
   #       skills:
   #         - "Patient Care"
   #         - "Physical Examination"
   #         - "Diagnosis"
   #
-  #     - category_name: "Diagnostic Tools"
+  #     - categoryName: "Diagnostic Tools"
   #       weight: 20.0
-  #       penalty_multiplier: 5.0
+  #       penaltyMultiplier: 5.0
   #       skills:
   #         - "ECG"
   #         - "Ultrasound"
   #         - "MRI"
   #         - "CT Scan"
   #
-  #     - category_name: "Medical Software"
+  #     - categoryName: "Medical Software"
   #       weight: 15.0
-  #       penalty_multiplier: 2.0
+  #       penaltyMultiplier: 2.0
   #       skills:
   #         - "Epic"
   #         - "Cerner"
@@ -215,26 +215,26 @@ templates:
   # finance_trading:
   #   description: "Financial trading and analysis"
   #   categories:
-  #     - category_name: "Trading Platforms"
+  #     - categoryName: "Trading Platforms"
   #       weight: 25.0
-  #       penalty_multiplier: 7.0
+  #       penaltyMultiplier: 7.0
   #       skills:
   #         - "Bloomberg Terminal"
   #         - "Thomson Reuters Eikon"
   #         - "MetaTrader"
   #
-  #     - category_name: "Financial Instruments"
+  #     - categoryName: "Financial Instruments"
   #       weight: 30.0
-  #       penalty_multiplier: 10.0
+  #       penaltyMultiplier: 10.0
   #       skills:
   #         - "Derivatives"
   #         - "Options"
   #         - "Futures"
   #         - "Forex"
   #
-  #     - category_name: "Analysis Tools"
+  #     - categoryName: "Analysis Tools"
   #       weight: 20.0
-  #       penalty_multiplier: 5.0
+  #       penaltyMultiplier: 5.0
   #       skills:
   #         - "Excel VBA"
   #         - "MATLAB"

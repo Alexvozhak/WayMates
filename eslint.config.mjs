@@ -203,6 +203,7 @@ export default [
       'unicorn/prevent-abbreviations': 'off', // Разрешить сокращения
       'unicorn/no-null': 'off', // Для Neo4j драйвера null нужен
       'unicorn/no-array-reduce': 'warn', // Warn вместо error
+      'unicorn/no-array-for-each': 'off', // forEach читабельнее для side effects
       'unicorn/no-await-expression-member': 'off', // Разрешить (await foo()).bar
       'unicorn/numeric-separators-style': 'warn', // Warn для небольших чисел (3600, 5000), но рекомендуем для больших (1_000_000)
     },
@@ -216,7 +217,6 @@ export default [
       '@typescript-eslint/no-non-null-assertion': 'off', // В тестах ! безопасен (если null → тест упадёт)
       'max-lines-per-function': 'off', // Разрешить длинные test describe блоки
       'import-x/no-default-export': 'off', // Для vitest.config.ts нужен default export
-      'unicorn/no-array-for-each': 'off', // В тестах forEach читабельнее для assertions
       '@typescript-eslint/naming-convention': 'off', // В тестах разрешить любые имена (U1, U2, AC1, etc.)
       'import-x/order': 'off', // В тестах не требовать строгий порядок импортов
       'unicorn/numeric-separators-style': 'off', // В тестах числа типа 70000 читабельны без разделителей
