@@ -1,102 +1,59 @@
 /**
  * Path structure validator for integration tests
  *
- * Validates career trajectory paths returned by search queries:
+ * Validates career trajectory paths in Target Search results:
  * - Chronological order (createdAt ascending)
  * - No gaps in PREVIOUS_CONTEXT relationships
- * - First context has no previous (career start)
- * - Path leads to expected matched context
- *
- * Used in Target Search tests (TG1-TG7) to verify trajectory collection.
+ * - Path leads to matched context
  */
 
 import { expect } from "vitest";
 import type { UserContext } from "../../src/shared/schemas.js";
 
-/**
- * Validate path structure and relationships
- *
- * Checks:
- * - First context has previousContextId = null (career start)
- * - Chronological order: createdAt ascending
- * - No gaps: each context's previousContextId points to previous context
- *
- * @param path - Career trajectory (chronologically ordered contexts)
- * @throws Vitest assertion error if validation fails
- *
- * @example
- * const result = await searchManager.searchByTarget({...});
- * validatePathStructure(result.path);
- */
-export function validatePathStructure(path: UserContext[]): void {
+function validatePathStructure(path: UserContext[]): void {
   if (path.length === 0) {
-    return; // Empty path is valid (single context, no trajectory)
+    return;
   }
 
-  // First context has no previous (career start)
-  expect(path[0].previousContextId).toBeNull();
+  expect(path[0]!.previousContextId).toBeNull();
 
-  // Single context - only first check needed
   if (path.length === 1) {
-    return; // No chronology/gaps to check
+    return;
   }
 
-  // Chronological order (convert ISO strings to timestamps for comparison)
+  // Chronological order
   for (let i = 0; i < path.length - 1; i++) {
-    const current = path[i];
-    const next = path[i + 1];
+    const current = path[i]!;
+    const next = path[i + 1]!;
     const currentTime = new Date(current.createdAt).getTime();
     const nextTime = new Date(next.createdAt).getTime();
 
-    // Validate timestamps are valid (not NaN from Invalid Date)
     expect(currentTime).not.toBeNaN();
     expect(nextTime).not.toBeNaN();
-
     expect(currentTime).toBeLessThanOrEqual(nextTime);
   }
 
   // No gaps in PREVIOUS_CONTEXT relationships
   for (let i = 1; i < path.length; i++) {
-    const current = path[i];
-    const previous = path[i - 1];
+    const current = path[i]!;
+    const previous = path[i - 1]!;
     expect(current.previousContextId).toBe(previous.contextId);
   }
 }
 
-/**
- * Validate that path leads to expected matched context
- *
- * Checks that last node in path equals matched context (path endpoint).
- *
- * @param path - Career trajectory
- * @param matchedContextId - Expected contextId at path end
- * @throws Vitest assertion error if path doesn't lead to matched context
- *
- * @example
- * const result = await searchManager.searchByTarget({...});
- * validatePathLeadsTo(result.path, result.matchedContext.contextId);
- */
-export function validatePathLeadsTo(path: UserContext[], matchedContextId: string): void {
+function validatePathLeadsTo(path: UserContext[], matchedContextId: string): void {
   if (path.length === 0) {
-    return; // No path to validate
+    return;
   }
 
-  const lastPathContext = path.at(-1);
+  const lastPathContext = path.at(-1)!;
   expect(lastPathContext.contextId).toBe(matchedContextId);
 }
 
 /**
- * Validate all paths in search results with logging
+ * Validate all paths in search results
  *
- * Convenience function to validate path structure and endpoints for all results.
- * Logs count of validated paths for debugging.
- *
- * @param results - Search results to validate
- * @param testTag - Tag for console logging (e.g., "TG1", "DT4")
- *
- * @example
- * const results = await searchManager.searchByTarget({...});
- * validateAllPaths(results, 'TG1');
+ * Checks path structure and endpoints for all results with paths.
  */
 export function validateAllPaths(
   results: { path?: UserContext[]; matchedContext: { contextId: string } }[],

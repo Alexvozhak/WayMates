@@ -9,7 +9,7 @@ const INTEGRATION_HOOK_TIMEOUT = 30_000; // 30s for setup/teardown hooks
 export default defineConfig(() => {
   return {
     esbuild: {
-      target: "node18",
+      target: "node20",
     },
     test: {
       globalSetup: "./vitest.globalSetup.ts",
