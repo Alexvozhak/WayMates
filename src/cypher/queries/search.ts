@@ -165,7 +165,7 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
      CASE
        // Pathfinder: candidate achieved user's desired position
        WHEN $goalPositions IS NOT NULL
-            AND matchedPosition.name IN $goalPositions
+            AND matchedPosition.canonicalName IN $goalPositions
        THEN 'pathfinder'
        // Waymate: candidate's goal contains at least one of user's desired positions (string matching)
        WHEN $goalPositions IS NOT NULL
@@ -208,7 +208,7 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
 
 CALL (extraSkills) {
   UNWIND extraSkills AS extraSkill
-  OPTIONAL MATCH (skill:Skill {name: extraSkill})-[:BELONGS_TO]->(sc:SkillCategory)
+  OPTIONAL MATCH (skill:Skill {canonicalName: extraSkill})-[:BELONGS_TO]->(sc:SkillCategory)
   RETURN collect({
     skill: extraSkill,
     penalty: coalesce(sc.penaltyMultiplier, 1.0)
@@ -284,8 +284,8 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
       `
     CASE
       WHEN $position IS NULL THEN true
-      WHEN $position.mode = 'desired' THEN matchedPosition.name IN $position.values
-      WHEN $position.mode = 'undesired' THEN NOT matchedPosition.name IN $position.values
+      WHEN $position.mode = 'desired' THEN matchedPosition.canonicalName IN $position.values
+      WHEN $position.mode = 'undesired' THEN NOT matchedPosition.canonicalName IN $position.values
       ELSE true
     END`.trim(),
     );

@@ -110,13 +110,13 @@ describe("StoryManager Integration Tests", () => {
       const positionCheck = await withReadSession(driver, (tx) =>
         tx.run(
           `MATCH (c:Context {contextId: $contextId})-[:HAS_POSITION]->(p:Position)
-           RETURN p.name`,
+           RETURN p.canonicalName`,
           { contextId },
         ),
       );
 
       expect(positionCheck.records).toHaveLength(1);
-      expect(positionCheck.records[0]!.get("p.name")).toBe(context.position);
+      expect(positionCheck.records[0]!.get("p.canonicalName")).toBe(context.position);
     });
 
     it("creates industry relationship", async () => {
@@ -126,13 +126,13 @@ describe("StoryManager Integration Tests", () => {
       const industryCheck = await withReadSession(driver, (tx) =>
         tx.run(
           `MATCH (c:Context {contextId: $contextId})-[:IN_INDUSTRY]->(i:Industry)
-           RETURN i.name`,
+           RETURN i.canonicalName`,
           { contextId },
         ),
       );
 
       expect(industryCheck.records).toHaveLength(1);
-      expect(industryCheck.records[0]!.get("i.name")).toBe(context.industry);
+      expect(industryCheck.records[0]!.get("i.canonicalName")).toBe(context.industry);
     });
 
     it("creates graph relationships for skills", async () => {
@@ -142,12 +142,12 @@ describe("StoryManager Integration Tests", () => {
       const skillsCheck = await withReadSession(driver, (tx) =>
         tx.run(
           `MATCH (c:Context {contextId: $contextId})-[:USES_SKILL]->(s:Skill)
-           RETURN s.name ORDER BY s.name`,
+           RETURN s.canonicalName ORDER BY s.canonicalName`,
           { contextId },
         ),
       );
 
-      const skillNames = skillsCheck.records.map((r) => r.get("s.name"));
+      const skillNames = skillsCheck.records.map((r) => r.get("s.canonicalName"));
       const expectedSkills = context.skills;
 
       expect(skillNames).toEqual(expect.arrayContaining(expectedSkills));
@@ -160,12 +160,12 @@ describe("StoryManager Integration Tests", () => {
       const domainsCheck = await withReadSession(driver, (tx) =>
         tx.run(
           `MATCH (c:Context {contextId: $contextId})-[:IN_WORK_DOMAIN]->(wd:WorkDomain)
-           RETURN wd.name ORDER BY wd.name`,
+           RETURN wd.canonicalName ORDER BY wd.canonicalName`,
           { contextId },
         ),
       );
 
-      const domainNames = domainsCheck.records.map((r) => r.get("wd.name"));
+      const domainNames = domainsCheck.records.map((r) => r.get("wd.canonicalName"));
       expect(domainNames).toEqual(expect.arrayContaining(context.domains));
     });
 
@@ -176,13 +176,13 @@ describe("StoryManager Integration Tests", () => {
       const locationCheck = await withReadSession(driver, (tx) =>
         tx.run(
           `MATCH (c:Context {contextId: $contextId})-[:IN_CITY]->(city:City)-[:IN_COUNTRY]->(country:Country)
-           RETURN city.name, country.name`,
+           RETURN city.canonicalName, country.name`,
           { contextId },
         ),
       );
 
       expect(locationCheck.records).toHaveLength(1);
-      expect(locationCheck.records[0]!.get("city.name")).toBe(context.cityName);
+      expect(locationCheck.records[0]!.get("city.canonicalName")).toBe(context.cityName);
       expect(locationCheck.records[0]!.get("country.name")).toBe(context.countryCode);
     });
 
@@ -273,12 +273,12 @@ describe("StoryManager Integration Tests", () => {
         tx.run(
           `MATCH (c:Context)-[:USES_SKILL]->(s:Skill)
            WHERE c.contextId = $contextId
-           RETURN s.name ORDER BY s.name`,
+           RETURN s.canonicalName ORDER BY s.canonicalName`,
           { contextId },
         ),
       );
 
-      const skillNames = result.records.map((r) => r.get("s.name"));
+      const skillNames = result.records.map((r) => r.get("s.canonicalName"));
       expect(skillNames).toEqual(expect.arrayContaining(secondContext.skills));
     });
   });

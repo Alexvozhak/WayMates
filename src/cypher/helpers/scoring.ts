@@ -52,7 +52,7 @@ WITH *, [skill IN ${candidateSkillsVar} WHERE NOT skill IN ${searchingSkillsVar}
 CALL {
   WITH matchedSkills
   UNWIND matchedSkills AS matchedSkill
-  OPTIONAL MATCH (s:Skill {name: matchedSkill})-[:BELONGS_TO]->(sc:SkillCategory)
+  OPTIONAL MATCH (s:Skill {canonicalName: matchedSkill})-[:BELONGS_TO]->(sc:SkillCategory)
   RETURN collect({
     skill: matchedSkill,
     weight: coalesce(sc.weight, 5.0)
@@ -63,10 +63,10 @@ CALL {
 CALL {
   WITH extraSkills
   UNWIND extraSkills AS extraSkill
-  OPTIONAL MATCH (s:Skill {name: extraSkill})-[:BELONGS_TO]->(sc:SkillCategory)
+  OPTIONAL MATCH (s:Skill {canonicalName: extraSkill})-[:BELONGS_TO]->(sc:SkillCategory)
   RETURN collect({
     skill: extraSkill,
-    penalty: coalesce(sc.penalty_multiplier, 1.0)
+    penalty: coalesce(sc.penaltyMultiplier, 1.0)
   }) AS extraSkillsWithPenalty
 }
 

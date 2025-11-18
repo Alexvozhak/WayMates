@@ -180,8 +180,8 @@ CALL {
   MATCH (user:User {userId: $userId})-[:HAS_CONTEXT]->(context:Context)
   OPTIONAL MATCH (context)-[:HAS_POSITION]->(p:Position)
   OPTIONAL MATCH (context)-[:IN_WORK_DOMAIN]->(wd:WorkDomain)
-  OPTIONAL MATCH (context)-[:USES_SKILL]->(s:Skill)-[:IN_CATEGORY]->(sc:SkillCategory)
-  WITH context, p.name AS position, collect(DISTINCT wd.name) AS domains, collect(DISTINCT {name: s.name, category: sc.name}) AS rawSkills
+  OPTIONAL MATCH (context)-[:USES_SKILL]->(s:Skill)-[:BELONGS_TO]->(sc:SkillCategory)
+  WITH context, p.canonicalName AS position, collect(DISTINCT wd.canonicalName) AS domains, collect(DISTINCT {name: s.canonicalName, category: sc.categoryName}) AS rawSkills
   RETURN collect({ context: context, position: position, domains: domains, rawSkills: rawSkills }) AS contexts
 }
 CALL {

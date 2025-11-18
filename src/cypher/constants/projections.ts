@@ -26,7 +26,7 @@
  * WITH matchedContext, matchedPosition, matchedDomains, matchedSkills, ...
  * RETURN matchedContext {
  *   .contextId,
- *   position: matchedPosition.name,
+ *   position: matchedPosition.canonicalName,
  *   domains: matchedDomains,
  *   skills: matchedSkills,
  *   ...
@@ -37,7 +37,7 @@
  * WITH searchingPathContext, searchingPathPosition, searchingPathDomains, ...
  * RETURN collect(searchingPathContext {
  *   .contextId,
- *   position: searchingPathPosition.name,
+ *   position: searchingPathPosition.canonicalName,
  *   domains: searchingPathDomains,
  *   ...
  * }) AS trajectory
@@ -57,12 +57,12 @@ ${prefix}Context {
   .salaryExact,
   .salaryMin,
   .salaryMax,
-  position: ${prefix}Position.name,
+  position: ${prefix}Position.canonicalName,
   domains: ${prefix}Domains,
   skills: ${prefix}Skills,
-  industry: ${prefix}Industry.name,
+  industry: ${prefix}Industry.canonicalName,
   countryCode: ${prefix}Country.name,
-  cityName: ${prefix}City.name,
+  cityName: ${prefix}City.canonicalName,
   languages: ${prefix}Languages
 }
   `.trim();

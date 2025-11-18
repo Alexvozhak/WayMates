@@ -18,8 +18,8 @@ function extractPrefix(contextVar: string): string {
  * Build WITH clause with collect aggregation for domains/skills
  *
  * Aggregates:
- * - collect(DISTINCT {prefix}WorkDomain.name) AS {prefix}Domains
- * - collect(DISTINCT {prefix}Skill.name) AS {prefix}Skills
+ * - collect(DISTINCT {prefix}WorkDomain.canonicalName) AS {prefix}Domains
+ * - collect(DISTINCT {prefix}Skill.canonicalName) AS {prefix}Skills
  *
  * Preserves:
  * - contextVar
@@ -37,8 +37,8 @@ function extractPrefix(contextVar: string): string {
  * buildWithCollect('matchedContext')
  * // Returns:
  * // WITH matchedContext, matchedPosition, matchedIndustry, matchedCity, matchedCountry,
- * //      collect(DISTINCT matchedWorkDomain.name) AS matchedDomains,
- * //      collect(DISTINCT matchedSkill.name) AS matchedSkills
+ * //      collect(DISTINCT matchedWorkDomain.canonicalName) AS matchedDomains,
+ * //      collect(DISTINCT matchedSkill.canonicalName) AS matchedSkills
  *
  * @example
  * buildWithCollect('matchedContext', ['matchedUser', 'timeSinceMatchedMonths'])
@@ -60,8 +60,8 @@ export function buildWithCollect(contextVar: string, preserveVars: string[] = []
 
   return `
 WITH ${allVars},
-     collect(DISTINCT ${prefix}WorkDomain.name) AS ${prefix}Domains,
-     collect(DISTINCT ${prefix}Skill.name) AS ${prefix}Skills,
+     collect(DISTINCT ${prefix}WorkDomain.canonicalName) AS ${prefix}Domains,
+     collect(DISTINCT ${prefix}Skill.canonicalName) AS ${prefix}Skills,
      collect(DISTINCT ${prefix}Language.code) AS ${prefix}Languages
   `.trim();
 }

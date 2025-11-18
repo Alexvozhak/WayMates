@@ -1,4 +1,4 @@
-import DynamicTimeWarping from "dynamic-time-warping-ts";
+import DynamicTimeWarping from "dynamic-time-warping";
 
 import type { DTWMetrics, UserContext } from "../shared/schemas.js";
 
@@ -135,11 +135,12 @@ export class TrajectorySimilarityService {
 
     return trajectory.map((ctx, i) => {
       const created = new Date(ctx.createdAt);
-      const next = trajectory[i + 1] ? new Date(trajectory[i + 1].createdAt) : now;
+      const nextCtx = trajectory[i + 1];
+      const next = nextCtx ? new Date(nextCtx.createdAt) : now;
 
       if (next.getTime() < created.getTime()) {
         throw new Error(
-          `Context ${i + 1} createdAt (${trajectory[i + 1]?.createdAt}) is before ` +
+          `Context ${i + 1} createdAt (${nextCtx?.createdAt}) is before ` +
             `Context ${i} createdAt (${ctx.createdAt}). Contexts must be chronologically ordered.`,
         );
       }

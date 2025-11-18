@@ -25,7 +25,7 @@ const STRICT_CONDITION_GENERATORS: Record<
   ContextField,
   (prefix: string, searchingVar: string) => string
 > = {
-  position: (prefix, searchingVar) => `${prefix}Position.name = ${searchingVar}.position`,
+  position: (prefix, searchingVar) => `${prefix}Position.canonicalName = ${searchingVar}.position`,
 
   domains: (prefix, searchingVar) =>
     `all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)`,
@@ -34,11 +34,11 @@ const STRICT_CONDITION_GENERATORS: Record<
     throw new Error("Skills cannot be in strict conditions. Use buildSkillsScoring() instead.");
   },
 
-  industry: (prefix, searchingVar) => `${prefix}Industry.name = ${searchingVar}.industry`,
+  industry: (prefix, searchingVar) => `${prefix}Industry.canonicalName = ${searchingVar}.industry`,
 
   countryCode: (prefix, searchingVar) => `${prefix}Country.name = ${searchingVar}.countryCode`,
 
-  cityName: (prefix, searchingVar) => `${prefix}City.name = ${searchingVar}.cityName`,
+  cityName: (prefix, searchingVar) => `${prefix}City.canonicalName = ${searchingVar}.cityName`,
 
   companySize: (prefix, searchingVar) =>
     `${prefix}Context.companySize = ${searchingVar}.companySize`,
@@ -92,13 +92,13 @@ function generateStrictCondition(
  * @example
  * buildStrictWhereClause(['position', 'domains'], 'matchedContext', '$referenceContext')
  * // Returns:
- * // WHERE matchedPosition.name = $referenceContext.position AND
+ * // WHERE matchedPosition.canonicalName = $referenceContext.position AND
  * //       all(d IN $referenceContext.domains WHERE d IN matchedDomains)
  *
  * @example
  * buildStrictWhereClause(['position', 'skills'], 'matchedContext', '$referenceContext')
  * // Returns:
- * // WHERE matchedPosition.name = $referenceContext.position
+ * // WHERE matchedPosition.canonicalName = $referenceContext.position
  * // (skills filtered out automatically)
  */
 export function buildStrictWhereClause(
