@@ -474,14 +474,14 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     );
 
     // Business Rule: educationLevel excluded → finds candidates with DIFFERENT education levels
-    //
-    // ⚠️ ADR-011 BUG: Skills are in excludedContextFields, but penalty STILL applies!
-    // Expected behavior (after INFRA-002.1): penalty = 0 when skills excluded
-    // Current behavior: candidates ranked by skills penalty → ORDER BY affected
-    // Workaround: Check diversity instead of specific users (U14/U16 may not be in TOP-10)
+    // ADR-011: Skills excluded → penalty = 0 (all candidates ranked equally by skills)
     const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
     expect(educationLevels.size).toBeGreaterThanOrEqual(2); // At least 2 different levels
     expect(results.length).toBeGreaterThanOrEqual(5); // Meaningful result set (default limit=10)
+
+    // ADR-011: Verify penalty=0 when skills excluded (all candidates have contextMatchScore=0)
+    const allScoresZero = results.every((r) => r.contextMatchScore === 0);
+    expect(allScoresZero).toBe(true);
   });
 
   // Business rule: null educationLevel in reference → wildcard behavior
@@ -502,10 +502,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       "[AC9] Expected: Find candidates with ANY education level (BACHELOR, MASTER, HIGH_SCHOOL, null)",
     );
 
-    // NOTE: This test is AFFECTED by ADR-011 bug (excluded skills still penalized)
-    // U14 gets penalty for [react] when matched against U15 [python] → score=0 → pushed down in ORDER BY
-    // Workaround: limit=50 increases chance U14 is included (fragile, but better than removing assertion)
-    // After INFRA-002.1 fix: Remove limit=50, penalty=0 when skills excluded → test will be stable
+    // ADR-011: Skills excluded → penalty=0 (U14 with [react] has same score as U15 with [python])
     const params = createAdhocSearchParams(u15.userId, u15Context, {
       excludedContextFields: [
         "position",
@@ -516,7 +513,6 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "cityName",
         "birthYear",
       ],
-      limit: 50, // WORKAROUND for ADR-011 bug (see comment above)
     });
     const results = await searchManager.searchAdhoc(params);
 
@@ -531,10 +527,14 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
     // null educationLevel → wildcard (matches all education levels)
     expect(results.find((r) => r.userId === u2.userId)).toBeDefined();
-    expect(results.find((r) => r.userId === u14.userId)).toBeDefined(); // Fragile due to ADR-011 bug, but verifies business logic
+    expect(results.find((r) => r.userId === u14.userId)).toBeDefined();
 
     const educationLevels = new Set(results.map((r) => r.matchedContext.educationLevel));
     expect(educationLevels.size).toBeGreaterThan(1);
+
+    // ADR-011: Verify penalty=0 when skills excluded
+    const allScoresZero = results.every((r) => r.contextMatchScore === 0);
+    expect(allScoresZero).toBe(true);
   });
 
   // Business rule: Salary fields are DISPLAY ONLY (not used for filtering/scoring)
@@ -604,6 +604,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "birthYear",
         "educationLevel",
       ],
+      limit: 20, // ADR-011: skills excluded → contextMatchScore=0 for all → order by recency only
     });
     const results = await searchManager.searchAdhoc(params);
 

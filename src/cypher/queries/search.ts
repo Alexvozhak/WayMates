@@ -126,10 +126,12 @@ export function buildCurrentSearchQuery(
     userId?: string;
     recencyThresholdMonths?: number;
     limit: number;
+    excludedContextFields: ContextField[];
   },
   filterByCurrentContext = false,
 ): string {
   const hasGoal = Boolean(goalPositions && params.userId);
+  const skipSkillsPenalty = params.excludedContextFields.includes("skills");
 
   // WHERE clause: strict fields + userId exclusion + recency
   const strictWhere = buildStrictWhereClause(strictFields, "matchedContext", "$referenceContext");
@@ -205,7 +207,10 @@ ${buildExcludedReasonsFilter("matchedContext", [
 ])}
 
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
-     [skill IN $referenceContext.skills WHERE skill IN matchedSkills] AS matchedSkillsIntersection,
+     ${
+       skipSkillsPenalty
+         ? "0.0 AS contextMatchScore"
+         : `[skill IN $referenceContext.skills WHERE skill IN matchedSkills] AS matchedSkillsIntersection,
      [skill IN matchedSkills WHERE NOT skill IN $referenceContext.skills] AS extraSkills
 
 // Calculate matched skills weights
@@ -242,7 +247,8 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
      CASE
        WHEN (skillsPositiveScore - skillsPenaltyScore) < 0 THEN 0.0
        ELSE (skillsPositiveScore - skillsPenaltyScore)
-     END AS contextMatchScore
+     END AS contextMatchScore`
+     }
 
 ${goalFilterClause}
 
