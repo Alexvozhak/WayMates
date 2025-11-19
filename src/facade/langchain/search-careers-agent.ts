@@ -3,7 +3,6 @@
  * Handles career path search requests using LangChain v1.0 createAgent API
  */
 
-
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { createAgent, tool } from "langchain";
 import { z } from "zod";
@@ -13,8 +12,11 @@ import { sessionIdSchema } from "../mcp-server/result.js";
 
 import type { UserContext } from "../../shared/schemas.js";
 import type { CoreTRPCClient } from "../core-client/core-trpc-client.js";
-import type { SessionMiddleware } from "../mcp-server/session-middleware.js";
-import type { DynamicStructuredTool } from "@langchain/core/tools";
+
+// Use the interface from BaseTool, not the concrete class
+type SessionMiddleware = {
+  validate(sessionId: string): Promise<string>;
+};
 
 // Input schema for search_careers
 export const searchCareersParamsSchema = z.object({
@@ -27,9 +29,9 @@ export type SearchCareersParams = z.infer<typeof searchCareersParamsSchema>;
 
 /**
  * Create extract context tool
- * Returns a DynamicStructuredTool for createAgent
+ * Returns a tool for createAgent
  */
-function createExtractContextTool(): DynamicStructuredTool {
+function createExtractContextTool(): ReturnType<typeof tool> {
   return tool(
     (input: { text: string; isTarget: boolean }): string => {
       console.log("🔧 Extracting context from:", input.text);
@@ -70,12 +72,12 @@ function createExtractContextTool(): DynamicStructuredTool {
 
 /**
  * Create search careers tool
- * Returns a DynamicStructuredTool for createAgent
+ * Returns a tool for createAgent
  */
 function createSearchCareersTool(
   sessionMiddleware: SessionMiddleware,
   coreClient: CoreTRPCClient,
-): DynamicStructuredTool {
+): ReturnType<typeof tool> {
   return tool(
     async (input: { currentContext: string; sessionId: string }) => {
       // Parse and validate context using Zod
