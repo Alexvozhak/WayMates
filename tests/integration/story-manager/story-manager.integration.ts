@@ -12,12 +12,20 @@ import { describe, expect, it } from "vitest";
 
 import { StoryManager } from "../../../src/core/story-manager.js";
 import { DatabaseContext } from "../../../src/database-context.js";
-import { withReadSession } from "../../../src/neo4j.js";
+import { withReadSession, withWriteSession } from "../../../src/neo4j.js";
 import { storyInputSchema } from "../../../src/shared/schemas.js";
 import { type UserKey, TestDataManager } from "../../helpers/test-data-manager.js";
 import { driver } from "../../helpers/drivers/story-manager-driver.js";
 
 import type { StoryInput } from "../../../src/shared/schemas.js";
+
+/**
+ * Helper: Create StoryManager instance
+ */
+function createStoryManager(): StoryManager {
+  const db = new DatabaseContext(driver);
+  return new StoryManager(db);
+}
 
 describe("StoryManager Integration Tests", () => {
   const testDataManager = new TestDataManager();
@@ -38,8 +46,7 @@ describe("StoryManager Integration Tests", () => {
       trails: [], // No trails for single context
     };
 
-    const db = new DatabaseContext(driver);
-    const storyManager = new StoryManager(db);
+    const storyManager = createStoryManager();
 
     await storyManager.upsertStory(storyInput);
 
@@ -243,8 +250,7 @@ describe("StoryManager Integration Tests", () => {
         trails: [],
       };
 
-      const db = new DatabaseContext(driver);
-      const storyManager = new StoryManager(db);
+      const storyManager = createStoryManager();
       await storyManager.upsertStory(storyInput);
 
       const result = await withReadSession(driver, (tx) =>
@@ -281,8 +287,7 @@ describe("StoryManager Integration Tests", () => {
         trails: [],
       };
 
-      const db = new DatabaseContext(driver);
-      const storyManager = new StoryManager(db);
+      const storyManager = createStoryManager();
       await storyManager.upsertStory(storyInput);
 
       const result = await withReadSession(driver, (tx) =>
@@ -320,8 +325,7 @@ describe("StoryManager Integration Tests", () => {
         trails: [],
       };
 
-      const db = new DatabaseContext(driver);
-      const storyManager = new StoryManager(db);
+      const storyManager = createStoryManager();
       await storyManager.upsertStory(storyInput);
 
       const secondContextId = secondContext.contextId;
@@ -348,6 +352,201 @@ describe("StoryManager Integration Tests", () => {
         }),
       );
       expect(nextResult.records[0]!.get("c.previousContextId")).toBe(firstContextId);
+    });
+  });
+
+  describe("UPDATE: updateContext", () => {
+    // Business rule: Only current context (nextContextId IS NULL) can be updated.
+    // Ownership is implicit - user can only update their own current context.
+    // Cypher MATCH: (user:User {userId})-[:HAS_CONTEXT]->(c:Context) WHERE c.nextContextId IS NULL
+    it("updates user's own current context successfully", async () => {
+      const { testData } = await upsertSingleContext("U1", 0);
+
+      const storyManager = createStoryManager();
+
+      const result = await storyManager.updateContext({
+        userId: testData.userId,
+        updates: { position: "Updated Position" },
+      });
+
+      expect(result.position).toBe("Updated Position");
+      expect(result.contextId).toBe(testData.contexts[0]!.contextId);
+    });
+
+    // Business rule: Only current context (nextContextId IS NULL) is updated, not historical contexts.
+    // Cypher query: WHERE c.nextContextId IS NULL
+    it("updates only current context, not previous contexts in temporal chain", async () => {
+      const testData = testDataManager.getStoryBy("U9");
+      const firstContext = testData.contexts[0]!;
+      const secondContext = testData.contexts[1]!;
+
+      await upsertSingleContext("U9", 0);
+      const ctx1Id = firstContext.contextId;
+      const ctx1OriginalPosition = firstContext.position;
+
+      const secondContextWithLink = {
+        ...secondContext,
+        previousContextId: ctx1Id,
+      };
+
+      const storyInput: StoryInput = {
+        userId: testData.userId,
+        contexts: [secondContextWithLink],
+        trails: [],
+      };
+
+      const storyManager = createStoryManager();
+      await storyManager.upsertStory(storyInput);
+
+      const ctx2Id = secondContext.contextId;
+
+      await storyManager.updateContext({
+        userId: testData.userId,
+        updates: { position: "Staff Engineer" },
+      });
+
+      const ctx2Result = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (c:Context {contextId: $id}) RETURN c.position", { id: ctx2Id }),
+      );
+      expect(ctx2Result.records[0]!.get("c.position")).toBe("Staff Engineer");
+
+      const ctx1Result = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (c:Context {contextId: $id}) RETURN c.position", { id: ctx1Id }),
+      );
+      expect(ctx1Result.records[0]!.get("c.position")).toBe(ctx1OriginalPosition);
+    });
+
+    // Business rule: Partial update - only specified fields are updated, others remain unchanged.
+    // Cypher: SET c += $updates (merge syntax preserves untouched fields)
+    it("performs partial update - only specified fields change", async () => {
+      const { testData, context } = await upsertSingleContext("U1", 0);
+      const originalContext = context;
+
+      const storyManager = createStoryManager();
+
+      await storyManager.updateContext({
+        userId: testData.userId,
+        updates: {
+          position: "Tech Lead",
+          skills: ["TypeScript", "Leadership"],
+        },
+      });
+
+      const result = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (c:Context {contextId: $id}) RETURN c", {
+          id: originalContext.contextId,
+        }),
+      );
+
+      const props = result.records[0]!.get("c").properties;
+
+      expect(props.position).toBe("Tech Lead");
+      expect(props.skills).toEqual(["TypeScript", "Leadership"]);
+
+      expect(props.industry).toBe(originalContext.industry);
+      expect(props.domains).toEqual(originalContext.domains);
+      expect(props.countryCode).toBe(originalContext.countryCode);
+      expect(props.cityName).toBe(originalContext.cityName);
+      expect(props.birthYear).toBe(originalContext.birthYear);
+      expect(props.companySize).toBe(originalContext.companySize);
+      expect(props.citizenships).toEqual(originalContext.citizenships);
+      expect(props.educationLevel).toBe(originalContext.educationLevel);
+      expect(props.salaryExact).toBe(originalContext.salaryExact);
+      expect(props.salaryMin).toBe(originalContext.salaryMin);
+      expect(props.salaryMax).toBe(originalContext.salaryMax);
+      expect(props.languages).toEqual(originalContext.languages);
+      expect(props.creationReason).toEqual(originalContext.creationReason);
+    });
+
+    // Business rule: UPDATE_CONTEXT_QUERY map projection must return ALL fields from schema.
+    // This validates schema-Cypher contract: adding fields to updateContextInputSchema requires updating Cypher.
+    it("returns all updatable fields from Cypher map projection", async () => {
+      const { testData } = await upsertSingleContext("U1", 0);
+
+      const storyManager = createStoryManager();
+
+      const result = await storyManager.updateContext({
+        userId: testData.userId,
+        updates: { position: "Test Position" },
+      });
+
+      const requiredFields = [
+        "contextId",
+        "previousContextId",
+        "nextContextId",
+        "createdAt",
+        "creationReason",
+        "position",
+        "domains",
+        "skills",
+        "industry",
+        "companySize",
+        "countryCode",
+        "cityName",
+        "citizenships",
+        "birthYear",
+        "educationLevel",
+        "salaryExact",
+        "salaryMin",
+        "salaryMax",
+        "languages",
+      ];
+
+      for (const field of requiredFields) {
+        expect(result).toHaveProperty(field);
+      }
+    });
+
+    // Edge case: User without contexts should return clear error.
+    // Cypher returns 0 records when no HAS_CONTEXT relationship exists.
+    it("returns error when user has no contexts", async () => {
+      const orphanUserId = "usr_019a6ea7-0000-7000-0000-000000000000";
+
+      await withWriteSession(driver, (tx) =>
+        tx.run("MERGE (u:User {userId: $userId})", { userId: orphanUserId }),
+      );
+
+      const storyManager = createStoryManager();
+
+      const promise = storyManager.updateContext({
+        userId: orphanUserId,
+        updates: { position: "Any" },
+      });
+
+      await expect(promise).rejects.toThrow(
+        `Current context not found for user ${orphanUserId} or user has no contexts`,
+      );
+    });
+
+    // Business rule: updatedAt timestamp is automatically set on update (audit trail).
+    // Cypher: SET c.updatedAt = timestamp()
+    it("updatedAt increases with each update", async () => {
+      const { testData, context } = await upsertSingleContext("U1", 0);
+      const contextId = context.contextId;
+
+      const storyManager = createStoryManager();
+
+      await storyManager.updateContext({
+        userId: testData.userId,
+        updates: { position: "Position 1" },
+      });
+
+      const result1 = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (c:Context {contextId: $id}) RETURN c.updatedAt", { id: contextId }),
+      );
+      const updatedAt1 = result1.records[0]!.get("c.updatedAt");
+
+      await storyManager.updateContext({
+        userId: testData.userId,
+        updates: { position: "Position 2" },
+      });
+
+      const result2 = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (c:Context {contextId: $id}) RETURN c.updatedAt", { id: contextId }),
+      );
+      const updatedAt2 = result2.records[0]!.get("c.updatedAt");
+
+      expect(updatedAt2).toBeGreaterThan(updatedAt1);
     });
   });
 
@@ -382,8 +581,7 @@ describe("StoryManager Integration Tests", () => {
         trails: [],
       };
 
-      const db = new DatabaseContext(driver);
-      const storyManager = new StoryManager(db);
+      const storyManager = createStoryManager();
       await storyManager.upsertStory(storyInput);
 
       const afterResult = await withReadSession(driver, (tx) =>
@@ -436,8 +634,7 @@ describe("StoryManager Integration Tests", () => {
         trails: [],
       };
 
-      const db = new DatabaseContext(driver);
-      const storyManager = new StoryManager(db);
+      const storyManager = createStoryManager();
       await storyManager.upsertStory(u4StoryInput);
 
       const u4LanguagesResult = await withReadSession(driver, (tx) =>
