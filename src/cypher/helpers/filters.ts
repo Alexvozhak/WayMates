@@ -31,7 +31,7 @@ const STRICT_CONDITION_GENERATORS: Record<
     `all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)`,
 
   skills: () => {
-    throw new Error("Skills cannot be in strict conditions. Use buildSkillsScoring() instead.");
+    throw new Error("Skills cannot be in strict conditions. Use penalty-based scoring instead.");
   },
 
   industry: (prefix, searchingVar) => `${prefix}Industry.canonicalName = ${searchingVar}.industry`,

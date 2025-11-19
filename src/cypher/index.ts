@@ -15,11 +15,6 @@ export { deleteGoalQuery, getUserGoalQuery, setGoalQuery } from "./queries/goals
 export { buildOptionalMatchRelationships } from "./helpers/relationships.js";
 export { buildWithCollect } from "./helpers/aggregation.js";
 export { buildMatchPath, buildUnwindPath } from "./helpers/trajectory.js";
-export {
-  buildArrayFieldScoring,
-  buildSimpleFieldScoring,
-  buildSkillsScoring,
-} from "./helpers/scoring.js";
 export { buildExcludedReasonsFilter, buildStrictWhereClause } from "./helpers/filters.js";
 
 // Constants
