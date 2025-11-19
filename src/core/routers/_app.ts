@@ -1,3 +1,4 @@
+import { contextRouter } from "./context.router.js";
 import { dictionariesRouter } from "./dictionaries.router.js";
 import { goalRouter } from "./goal.router.js";
 import { searchRouter } from "./search.router.js";
@@ -9,6 +10,7 @@ export const appRouter = t.router({
   story: storyRouter,
   goal: goalRouter,
   dictionaries: dictionariesRouter,
+  context: contextRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -410,12 +410,31 @@ export const createGoalInputSchema = z.object({
   targetContext: targetContextSchema.describe("Target search criteria"),
 });
 
+export const updateContextInputSchema = userContextSchemaBase
+  .omit({
+    contextId: true,
+    previousContextId: true,
+    nextContextId: true,
+    createdAt: true,
+  })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided for update",
+  });
+
+export const updateContextParamsSchema = z.object({
+  userId: userIdSchema,
+  updates: updateContextInputSchema,
+});
+
 export type StoryInput = z.infer<typeof storyInputSchema>;
 export type UpsertContextResult = z.infer<typeof upsertContextResultSchema>;
 export type UpsertTrailResult = z.infer<typeof upsertTrailResultSchema>;
 export type UpsertStoryResult = z.infer<typeof upsertStoryResultSchema>;
 export type Goal = z.infer<typeof goalSchema>;
 export type CreateGoalInput = z.infer<typeof createGoalInputSchema>;
+export type UpdateContextInput = z.infer<typeof updateContextInputSchema>;
+export type UpdateContextParams = z.infer<typeof updateContextParamsSchema>;
 
 // ==========================================
 // === SEARCH CANDIDATE TYPES (композиция) ===

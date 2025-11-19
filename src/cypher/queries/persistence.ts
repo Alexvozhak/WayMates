@@ -206,6 +206,46 @@ DETACH DELETE context
 RETURN { success: deletedCount > 0 } AS result;`;
 
 /**
+ * Update current context (partial update with ownership check)
+ *
+ * Parameters:
+ * - $userId: User ID (string) - for ownership validation
+ * - $updates: Partial context updates (object with mutable fields only)
+ *
+ * Returns:
+ * - result: Updated UserContext object
+ *
+ * Security: MATCH enforces ownership - returns 0 records if context not owned by user
+ * Current context: nextContextId IS NULL (last in temporal chain)
+ */
+export const UPDATE_CONTEXT_QUERY = `
+MATCH (user:User {userId: $userId})-[:HAS_CONTEXT]->(c:Context)
+WHERE c.nextContextId IS NULL
+SET c += $updates, c.updatedAt = timestamp()
+RETURN c {
+  .contextId,
+  .previousContextId,
+  .nextContextId,
+  .createdAt,
+  .creationReason,
+  .position,
+  .domains,
+  .skills,
+  .industry,
+  .companySize,
+  .countryCode,
+  .cityName,
+  .citizenships,
+  .birthYear,
+  .educationLevel,
+  .salaryExact,
+  .salaryMin,
+  .salaryMax,
+  .languages
+} AS result
+`;
+
+/**
  * Delete trail by ID
  *
  * Parameters:

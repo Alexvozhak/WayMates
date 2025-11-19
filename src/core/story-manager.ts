@@ -6,6 +6,7 @@ import {
   DELETE_TRAIL_QUERY,
   GET_USER_STORY_QUERY,
   LIST_REASONS_QUERY,
+  UPDATE_CONTEXT_QUERY,
   UPSERT_CONTEXTS_QUERY,
   UPSERT_TRAILS_QUERY,
 } from "../cypher/queries/persistence.js";
@@ -13,9 +14,11 @@ import {
   contextIdSchema,
   storyInputSchema,
   trailIdSchema,
+  updateContextParamsSchema,
   upsertContextResultSchema,
   upsertStoryResultSchema,
   upsertTrailResultSchema,
+  userContextSchema,
 } from "../shared/schemas.js";
 
 import { type Reason, reasonSchema } from "./schemas.js";
@@ -26,6 +29,7 @@ import type {
   StoryInput,
   Trail,
   TrailId,
+  UpdateContextParams,
   UpsertContextResult,
   UpsertStoryResult,
   UpsertTrailResult,
@@ -94,6 +98,26 @@ export class StoryManager {
     if (!success) {
       throw new Error(`Failed to delete trail ${trailId}`);
     }
+  }
+
+  async updateContext(params: UpdateContextParams): Promise<UserContext> {
+    updateContextParamsSchema.parse(params);
+
+    return this.db.write(async (tx) => {
+      const result = await tx.run(UPDATE_CONTEXT_QUERY, {
+        userId: params.userId,
+        updates: params.updates,
+      });
+
+      const record = result.records[0];
+      if (!record) {
+        throw new Error(
+          `Current context not found for user ${params.userId} or user has no contexts`,
+        );
+      }
+
+      return userContextSchema.parse(record.get("result"));
+    });
   }
 
   async listAvailableReasons(): Promise<Reason[]> {
