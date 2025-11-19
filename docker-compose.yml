@@ -101,6 +101,46 @@ services:
       timeout: 3s
       retries: 5
 
+  postgres-prod:
+    image: postgres:16-alpine
+    container_name: waymates-postgres-prod
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: waymates_facade
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./database/facade-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: waymates-postgres-test
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: waymates_facade_test
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./database/facade-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: "no"
+
   # Optional: Core REST API (if running in Docker instead of local tsx)
   # core:
   #   build:
@@ -135,4 +175,8 @@ volumes:
   neo4j_prod_data:
     driver: local
   neo4j_test_data:
+    driver: local
+  postgres_prod_data:
+    driver: local
+  postgres_test_data:
     driver: local

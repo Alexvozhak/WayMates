@@ -12,6 +12,7 @@ import type { Redis } from "ioredis";
 export class SessionMiddleware {
   private static readonly sessionTtlSeconds = 3600;
   private static readonly sessionKeyPrefix = "session:";
+  private static readonly threadKeyPrefix = "thread:";
 
   constructor(private redis: Redis) {}
 
@@ -39,11 +40,33 @@ export class SessionMiddleware {
 
   async revoke(sessionId: SessionId): Promise<void> {
     const key = this.getSessionKey(sessionId);
-    await this.redis.del(key);
+    const threadKey = this.getThreadKey(sessionId);
+    await this.redis.del(key, threadKey);
+  }
+
+  /**
+   * Get or create thread_id for LangGraph checkpointing
+   * Each session has one thread_id that persists across the session lifetime
+   */
+  async getThreadId(sessionId: SessionId): Promise<string> {
+    const threadKey = this.getThreadKey(sessionId);
+    let threadId = await this.redis.get(threadKey);
+
+    if (!threadId) {
+      // Generate new thread_id for this session
+      threadId = `thread_${randomBytes(16).toString("hex")}`;
+      await this.redis.setex(threadKey, SessionMiddleware.sessionTtlSeconds, threadId);
+    }
+
+    return threadId;
   }
 
   private getSessionKey(sessionId: SessionId): string {
     return `${SessionMiddleware.sessionKeyPrefix}${sessionId}`;
+  }
+
+  private getThreadKey(sessionId: SessionId): string {
+    return `${SessionMiddleware.threadKeyPrefix}${sessionId}`;
   }
 
   private generateSessionId(): SessionId {
