@@ -74,15 +74,17 @@
 
 ---
 
-### 🤖 LangGraph (AI Workflow)
-**Роутер**: [langgraph/router.md](langgraph/router.md)
+### 🤖 LangChain v1.0 (Agent Framework)
+**Роутер**: [langchain/router.md](langchain/router.md)
 
 **Когда загружать**:
-- Проектируешь LangGraph workflow
-- Пишешь/дебажишь LangGraph nodes
-- Работаешь с interrupt/resume patterns
-- Настраиваешь checkpointers (Redis/SQLite/Memory)
-- Настраиваешь state management (State Annotation, reducers)
-- Дебажишь workflow execution
+- Создаешь агентов через `createAgent` API
+- Мигрируешь с LangGraph на createAgent
+- Настраиваешь Gemini провайдер
+- Добавляешь tools, middleware, persistence
+- Реализуешь human-in-the-loop workflows
+- Работаешь с PostgresSaver для checkpoints
+- Управляешь state через stateSchema
+- Настраиваешь parallel tool execution
 
-**После работы**: `/reflect langgraph`
+**После работы**: `/reflect langchain`

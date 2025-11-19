@@ -82,6 +82,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@langchain/google-genai": "^1.0.3",
     "@trpc/client": "^11.7.1",
     "@trpc/server": "^11.7.1",
     "@types/better-sqlite3": "^7.6.13",
@@ -92,6 +93,7 @@
     "express": "^5.1.0",
     "fastmcp": "^3.19.0",
     "ioredis": "^5.8.2",
+    "langchain": "^1.0.6",
     "neo4j-driver": "^6.0.0",
     "openai": "^6.7.0",
     "uuid": "^11.0.5",
