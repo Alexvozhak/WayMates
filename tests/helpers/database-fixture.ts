@@ -1,6 +1,6 @@
 import type { Driver, Record } from "neo4j-driver";
 
-const REFERENCE_DATA_LABELS = ["Language", "Skill", "SkillCategory", "Reason"] as const;
+const REFERENCE_DATA_LABELS = ["Language", "Skill", "Reason"] as const;
 
 export class DatabaseFixture {
   static getReferenceDataLabels(): readonly string[] {
@@ -20,7 +20,6 @@ export class DatabaseFixture {
         MATCH (n)
         WHERE NOT n:Language
           AND NOT n:Skill
-          AND NOT n:SkillCategory
           AND NOT n:Reason
         DETACH DELETE n
       `);
@@ -56,10 +55,8 @@ export class DatabaseFixture {
         WITH count(l) AS langCount
         MATCH (s:Skill)
         WITH langCount, count(s) AS skillCount
-        MATCH (sc:SkillCategory)
-        WITH langCount, skillCount, count(sc) AS categoryCount
         MATCH (r:Reason)
-        RETURN langCount, skillCount, categoryCount, count(r) AS reasonCount
+        RETURN langCount, skillCount, count(r) AS reasonCount
       `);
 
       const record = result.records[0];
@@ -71,7 +68,7 @@ export class DatabaseFixture {
       this.validateReferenceDataCounts(counts);
 
       console.log(
-        `[DatabaseFixture] Reference data verified: ${counts.langCount} Languages, ${counts.skillCount} Skills, ${counts.categoryCount} Categories, ${counts.reasonCount} Reasons`,
+        `[DatabaseFixture] Reference data verified: ${counts.langCount} Languages, ${counts.skillCount} Skills, ${counts.reasonCount} Reasons`,
       );
     } finally {
       await session.close();
@@ -97,13 +94,11 @@ export class DatabaseFixture {
   private extractReferenceDataCounts(record: Record): {
     langCount: number;
     skillCount: number;
-    categoryCount: number;
     reasonCount: number;
   } {
     return {
       langCount: Number(record.get("langCount")) || 0,
       skillCount: Number(record.get("skillCount")) || 0,
-      categoryCount: Number(record.get("categoryCount")) || 0,
       reasonCount: Number(record.get("reasonCount")) || 0,
     };
   }
@@ -111,15 +106,14 @@ export class DatabaseFixture {
   private validateReferenceDataCounts(counts: {
     langCount: number;
     skillCount: number;
-    categoryCount: number;
     reasonCount: number;
   }): void {
-    const { langCount, skillCount, categoryCount, reasonCount } = counts;
+    const { langCount, skillCount, reasonCount } = counts;
 
-    if (langCount === 0 || skillCount === 0 || categoryCount === 0 || reasonCount === 0) {
+    if (langCount === 0 || skillCount === 0 || reasonCount === 0) {
       throw new Error(
         `Reference data missing! Run 'npm run db:test:init' before tests.\n` +
-          `Found: ${langCount} Languages, ${skillCount} Skills, ${categoryCount} Categories, ${reasonCount} Reasons`,
+          `Found: ${langCount} Languages, ${skillCount} Skills, ${reasonCount} Reasons`,
       );
     }
   }

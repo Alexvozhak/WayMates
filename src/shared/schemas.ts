@@ -448,8 +448,7 @@ export const contextScoringFieldsSchema = z.object({
   contextMatchScore: z
     .number()
     .min(0)
-    .max(1)
-    .describe("Context match score (0-1, computed as 1.0 - skills_penalty in Cypher)"),
+    .describe("Context match score (raw: matched weights - extra penalties, >= 0)"),
   candidateType: z
     .enum(["pathfinder", "waymate"])
     .nullable()
@@ -620,12 +619,43 @@ export const dictionaryTypeSchema = z.enum([
 
 export type DictionaryType = z.infer<typeof dictionaryTypeSchema>;
 
+export const skillDictionaryItemSchema = z.object({
+  canonicalName: z.string(),
+  complexity: z.number().int().min(0).max(100),
+});
+
+export type SkillDictionaryItem = z.infer<typeof skillDictionaryItemSchema>;
+
+const addSkillInputSchema = z.object({
+  type: z.literal("skill"),
+  canonicalName: z.string().min(1),
+  complexity: z.number().int().min(0).max(100),
+  verified: z.boolean(),
+  createdBy: z.string().min(1),
+});
+
+const addOtherTermInputSchema = z.object({
+  type: z.enum(["position", "domain", "city", "industry", "platform", "language"]),
+  canonicalName: z.string().min(1),
+  verified: z.boolean(),
+  createdBy: z.string().min(1),
+});
+
+export const addTermInputSchema = z.discriminatedUnion("type", [
+  addSkillInputSchema,
+  addOtherTermInputSchema,
+]);
+
+export type AddTermInput = z.infer<typeof addTermInputSchema>;
+
 /**
  * Dictionaries containing verified canonical terms
  * Used by LLM for normalization (user input → canonical name)
  */
 export const dictionariesSchema = z.object({
-  skills: z.array(z.string()).describe("Verified skill names (e.g., Python, JavaScript)"),
+  skills: z
+    .array(skillDictionaryItemSchema)
+    .describe("Verified skills with complexity (e.g., {canonicalName: 'rust', complexity: 88})"),
   positions: z.array(z.string()).describe("Verified position titles (e.g., Junior Developer)"),
   domains: z.array(z.string()).describe("Verified work domains (e.g., Backend, Frontend)"),
   cities: z.array(z.string()).describe("Verified city names (e.g., Moscow, London)"),

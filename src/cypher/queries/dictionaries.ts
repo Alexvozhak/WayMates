@@ -2,19 +2,19 @@ import type { DictionaryType } from "../../shared/schemas.js";
 
 export function getVerifiedDictionariesQuery(): string {
   return `
-MATCH (s:Skill {verified: true})
-WITH collect(s.canonicalName) AS skills
-MATCH (p:Position {verified: true})
+OPTIONAL MATCH (s:Skill {verified: true})
+WITH collect({canonicalName: s.canonicalName, complexity: s.complexity}) AS skills
+OPTIONAL MATCH (p:Position {verified: true})
 WITH skills, collect(p.canonicalName) AS positions
-MATCH (d:WorkDomain {verified: true})
+OPTIONAL MATCH (d:WorkDomain {verified: true})
 WITH skills, positions, collect(d.canonicalName) AS domains
-MATCH (c:City {verified: true})
+OPTIONAL MATCH (c:City {verified: true})
 WITH skills, positions, domains, collect(c.canonicalName) AS cities
-MATCH (i:Industry {verified: true})
+OPTIONAL MATCH (i:Industry {verified: true})
 WITH skills, positions, domains, cities, collect(i.canonicalName) AS industries
-MATCH (pl:Platform {verified: true})
+OPTIONAL MATCH (pl:Platform {verified: true})
 WITH skills, positions, domains, cities, industries, collect(pl.canonicalName) AS platforms
-MATCH (l:Language {verified: true})
+OPTIONAL MATCH (l:Language {verified: true})
 WITH skills, positions, domains, cities, industries, platforms, collect(l.canonicalName) AS languages
 RETURN {
   skills: skills,
@@ -30,13 +30,14 @@ RETURN {
 
 export function addTermQuery(type: DictionaryType): string {
   const label = getLabelForType(type);
+  const complexitySet = type === "skill" ? ",\n  t.complexity = $complexity" : "";
 
   return `
 MERGE (t:${label} {canonicalName: $canonicalName})
 ON CREATE SET
   t.verified = $verified,
   t.createdAt = $createdAt,
-  t.createdBy = $createdBy
+  t.createdBy = $createdBy${complexitySet}
 RETURN t.canonicalName AS canonicalName
   `.trim();
 }

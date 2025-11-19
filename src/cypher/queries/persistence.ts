@@ -74,7 +74,7 @@ UNWIND work_domains AS wdName
 WITH context, skills, countryCode, cityName, citizenships, languages
 UNWIND skills AS skillName
   MERGE (s:Skill {canonicalName: skillName})
-  ON CREATE SET s.verified = false, s.createdAt = timestamp(), s.createdBy = "user"
+  ON CREATE SET s.verified = false, s.createdAt = timestamp(), s.createdBy = "user", s.complexity = null
   MERGE (context)-[:USES_SKILL]->(s)
 
 WITH context, countryCode, cityName, citizenships, languages

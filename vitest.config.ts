@@ -73,6 +73,22 @@ export default defineConfig(() => {
             testTimeout: INTEGRATION_TEST_TIMEOUT,
           },
         },
+        // Dictionaries tests (sequential, write operations)
+        {
+          test: {
+            name: "integration-dictionaries",
+            include: ["tests/integration/dictionaries-manager/dictionaries.integration.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: true,
+                singleThread: true,
+              },
+            },
+            testTimeout: INTEGRATION_TEST_TIMEOUT,
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
         // Story persistence tests (sequential, runs LAST to avoid cleanup conflicts)
         {
           test: {

@@ -2,7 +2,7 @@ import { addTermQuery, getVerifiedDictionariesQuery } from "../cypher/queries/di
 import { dictionariesSchema } from "../shared/schemas.js";
 
 import type { DatabaseContext } from "../database-context.js";
-import type { Dictionaries, DictionaryType } from "../shared/schemas.js";
+import type { AddTermInput, Dictionaries } from "../shared/schemas.js";
 import type { ManagedTransaction } from "neo4j-driver";
 
 export class DictionariesManager {
@@ -12,20 +12,16 @@ export class DictionariesManager {
     return this.db.read((tx) => this.fetchDictionaries(tx));
   }
 
-  async addTerm(
-    type: DictionaryType,
-    canonicalName: string,
-    verified: boolean,
-    createdBy: string,
-  ): Promise<void> {
+  async addTerm(input: AddTermInput): Promise<void> {
     const createdAt = new Date().toISOString();
 
     await this.db.write(async (tx) => {
-      await tx.run(addTermQuery(type), {
-        canonicalName,
-        verified,
+      await tx.run(addTermQuery(input.type), {
+        canonicalName: input.canonicalName,
+        verified: input.verified,
         createdAt,
-        createdBy,
+        createdBy: input.createdBy,
+        complexity: input.type === "skill" ? input.complexity : null,
       });
     });
   }

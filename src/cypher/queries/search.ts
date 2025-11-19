@@ -2,6 +2,7 @@
  * Search queries
  */
 
+import { SCORING_CONFIG } from "../../config/scoring.js";
 import { buildContextMapProjection } from "../constants/projections.js";
 import { buildWithCollect } from "../helpers/aggregation.js";
 import { buildExcludedReasonsFilter, buildStrictWhereClause } from "../helpers/filters.js";
@@ -204,24 +205,44 @@ ${buildExcludedReasonsFilter("matchedContext", [
 ])}
 
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+     [skill IN $referenceContext.skills WHERE skill IN matchedSkills] AS matchedSkillsIntersection,
      [skill IN matchedSkills WHERE NOT skill IN $referenceContext.skills] AS extraSkills
 
-CALL (extraSkills) {
+// Calculate matched skills weights
+CALL {
+  WITH matchedSkillsIntersection
+  UNWIND matchedSkillsIntersection AS matchedSkill
+  OPTIONAL MATCH (s:Skill {canonicalName: matchedSkill, verified: true})
+  RETURN collect({
+    skill: matchedSkill,
+    weight: coalesce(s.complexity * ${SCORING_CONFIG.weightMultiplier}, 5.0)
+  }) AS matchedSkillsWithWeights
+}
+
+// Calculate extra skills penalties
+CALL {
+  WITH extraSkills
   UNWIND extraSkills AS extraSkill
-  OPTIONAL MATCH (skill:Skill {canonicalName: extraSkill})-[:BELONGS_TO]->(sc:SkillCategory)
+  OPTIONAL MATCH (s:Skill {canonicalName: extraSkill, verified: true})
   RETURN collect({
     skill: extraSkill,
-    penalty: coalesce(sc.penaltyMultiplier, 1.0)
+    penalty: coalesce(s.complexity * ${SCORING_CONFIG.penaltyMultiplier}, 1.0)
   }) AS extraSkillsWithPenalty
 }
 
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+     reduce(positiveScore = 0.0, matched IN matchedSkillsWithWeights |
+       positiveScore + matched.weight
+     ) AS skillsPositiveScore,
      reduce(penaltyScore = 0.0, extra IN extraSkillsWithPenalty |
        penaltyScore + extra.penalty
      ) AS skillsPenaltyScore
 
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
-     (1.0 - (skillsPenaltyScore / 100.0)) AS contextMatchScore
+     CASE
+       WHEN (skillsPositiveScore - skillsPenaltyScore) < 0 THEN 0.0
+       ELSE (skillsPositiveScore - skillsPenaltyScore)
+     END AS contextMatchScore
 
 ${goalFilterClause}
 

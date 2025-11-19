@@ -1,6 +1,7 @@
 import { DatabaseContext } from "../database-context.js";
 import { createDriver, verifyConnection } from "../neo4j.js";
 
+import { DictionariesManager } from "./dictionaries-manager.js";
 import { GoalsManager } from "./goals-manager.js";
 import { PathCollectorService } from "./path-collector.service.js";
 import { SearchManager } from "./search-manager.js";
@@ -20,6 +21,7 @@ async function main(): Promise<void> {
   const pathCollector = new PathCollectorService(db);
   const storyManager = new StoryManager(db);
   const goalsManager = new GoalsManager(db);
+  const dictionariesManager = new DictionariesManager(db);
   const searchManager = new SearchManager(
     db,
     selectivityService,
@@ -36,6 +38,7 @@ async function main(): Promise<void> {
       searchManager,
       storyManager,
       goalsManager,
+      dictionariesManager,
     },
     port,
     host,
