@@ -33,6 +33,24 @@
 
 ---
 
+## Neo4j Property Testing Pattern
+
+**When testing optional Neo4j properties**, always cover both cases:
+
+```typescript
+// Test 1: Property present
+await manager.update({ feedback: "Great experience" });
+expect(result.feedback).toBe("Great experience");
+
+// Test 2: Property absent (Neo4j returns null)
+await manager.update({ position: "New" }); // no feedback field
+expect(result.feedback).toBeNull(); // or .toBeUndefined() with .nullish()
+```
+
+**Why**: Neo4j returns `null` for absent properties, not `undefined`. Missing this case causes `ZodError: Expected string, received null`.
+
+---
+
 ## Test Failure Analysis Process
 
 When tests fail, follow these 5 steps:
