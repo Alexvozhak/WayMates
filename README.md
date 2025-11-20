@@ -12,6 +12,18 @@
 
 См. **[QUICKSTART.md](./QUICKSTART.md)** для полной инструкции по запуску.
 
+### First-time clone
+
+⚠️ **Important**: This repo uses Git Submodule for Cypher queries (private repo).
+
+```bash
+# Clone with submodules
+git clone --recurse-submodules git@github.com:YOUR_USERNAME/waymates.git
+
+# OR if already cloned without submodules:
+git submodule update --init --recursive
+```
+
 ### TL;DR
 
 ```bash
@@ -84,25 +96,56 @@ src/
 ├── core/           # Core REST API (Express)
 ├── facade/         # Facade MCP Server (FastMCP)
 ├── shared/         # Shared Zod schemas
+├── cypher/         # 🔒 Git Submodule (waymates-cypher-private)
+│   ├── index.ts    # Public interface (query builders only)
+│   ├── queries/    # Complete Cypher query builders
+│   ├── helpers/    # Query building blocks (filters, aggregation, etc.)
+│   └── constants/  # Projections, scoring config
 └── database/       # Migrations
 
 docs/
 ├── mvp_final/      # Final architecture docs
-└── architecture/   # C4 diagrams
+└── architecture/   # C4 diagrams + ADRs
 
 tests/
 ├── unit/           # Unit tests (no DB)
 └── integration/    # Integration tests (Neo4j)
 ```
 
+**Note**: `src/cypher/` is a private Git submodule containing Neo4j Cypher queries and business logic.
+
 ---
 
 ## 🔧 Development
+
+### Code Quality
 
 ```bash
 npm run lint        # ESLint
 npm run lint:fix    # ESLint auto-fix
 npx tsc --noEmit    # TypeScript check
+```
+
+### Working with Submodules
+
+```bash
+# After git pull (if submodule reference updated)
+git pull
+git submodule update --init --recursive
+
+# To make changes in src/cypher/
+cd src/cypher
+git checkout main
+# ... make changes ...
+git add .
+git commit -m "feat: update query"
+git push origin main
+
+# Return to main repo and update reference
+cd ../..
+git add src/cypher
+git commit -m "chore: update cypher submodule"
+git push
 ```
 
 ---

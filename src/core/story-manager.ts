@@ -9,7 +9,7 @@ import {
   UPDATE_CONTEXT_QUERY,
   UPSERT_CONTEXTS_QUERY,
   UPSERT_TRAILS_QUERY,
-} from "../cypher/queries/persistence.js";
+} from "../cypher/index.js";
 import {
   contextIdSchema,
   storyInputSchema,

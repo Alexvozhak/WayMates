@@ -1,4 +1,4 @@
-import { buildPathQuery } from "../cypher/queries/paths.js";
+import { buildPathQuery } from "../cypher/index.js";
 import { type UserContext, userContextSchema } from "../shared/schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";

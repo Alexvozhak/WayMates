@@ -1,4 +1,4 @@
-import { addTermQuery, getVerifiedDictionariesQuery } from "../cypher/queries/dictionaries.js";
+import { addTermQuery, getVerifiedDictionariesQuery } from "../cypher/index.js";
 import { dictionariesSchema } from "../shared/schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";

@@ -2,7 +2,7 @@ import {
   buildCurrentSearchQuery,
   buildTargetSearchWithPathsQuery,
   userCurrentContextQuery,
-} from "../cypher/queries/search.js";
+} from "../cypher/index.js";
 import {
   CONTEXT_FIELD_NAMES,
   matchedCandidateWithPathSchema,
