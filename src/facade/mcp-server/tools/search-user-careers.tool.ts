@@ -2,27 +2,30 @@ import { BaseTool } from "./base-tool.js";
 
 import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
 import type { SessionId } from "../result.js";
-import type { SearchCareersParams } from "../schemas.js";
+import type { SearchUserCareersParams } from "../schemas.js";
 
 /**
- * Search careers tool with structured input
- * LibreChat LLM extracts structured UserContext from text
- * Facade validates session and calls Core API
+ * User search careers tool (Mode 2)
+ * Core API fetches user's current context from DB automatically
+ * No need for LibreChat to provide referenceContext
  */
-export class SearchCareersTool extends BaseTool<SearchCareersParams, ScoredMatchedCandidate[]> {
-  protected extractSessionId(params: SearchCareersParams): SessionId {
+export class SearchUserCareersTool extends BaseTool<
+  SearchUserCareersParams,
+  ScoredMatchedCandidate[]
+> {
+  protected extractSessionId(params: SearchUserCareersParams): SessionId {
     return params.sessionId;
   }
 
   protected async executeImpl(
-    params: SearchCareersParams,
+    params: SearchUserCareersParams,
     userId: UserId,
   ): Promise<ScoredMatchedCandidate[]> {
     // userId extracted from sessionId by BaseTool
     // Remove sessionId before passing to Core API
     const { sessionId: _, ...coreParams } = params;
 
-    const result = await this.coreClient.client.search.adhoc.query({
+    const result = await this.coreClient.client.search.byUser.query({
       userId,
       ...coreParams,
     });

@@ -3,15 +3,13 @@ import { FastMCP } from "fastmcp";
 import {
   getStoryParamsSchema,
   searchCareersParamsSchema,
+  searchUserCareersParamsSchema,
   setGoalParamsSchema,
   updateContextToolParamsSchema,
 } from "./schemas.js";
 import { GetStoryTool } from "./tools/get-story.tool.js";
-import {
-  searchCareersNLPParamsSchema,
-  SearchCareersNLPTool,
-} from "./tools/search-careers-nlp.tool.js";
 import { SearchCareersTool } from "./tools/search-careers.tool.js";
+import { SearchUserCareersTool } from "./tools/search-user-careers.tool.js";
 import { SetGoalTool } from "./tools/set-goal.tool.js";
 import { UpdateContextTool } from "./tools/update-context.tool.js";
 
@@ -28,7 +26,7 @@ export type FacadeServerDependencies = {
 type ToolInstances = {
   getStory: GetStoryTool;
   searchCareers: SearchCareersTool;
-  searchCareersNLP: SearchCareersNLPTool;
+  searchUserCareers: SearchUserCareersTool;
   setGoal: SetGoalTool;
   updateContext: UpdateContextTool;
 };
@@ -37,7 +35,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
   return {
     getStory: new GetStoryTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     searchCareers: new SearchCareersTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
-    searchCareersNLP: new SearchCareersNLPTool(
+    searchUserCareers: new SearchUserCareersTool(
       deps.sessionMiddleware,
       deps.normalizer,
       deps.coreClient,
@@ -63,10 +61,11 @@ function registerGetStoryTool(server: FastMCP, tool: GetStoryTool): void {
   });
 }
 
-function registerSearchTool(server: FastMCP, tool: SearchCareersTool): void {
+function registerSearchCareersTool(server: FastMCP, tool: SearchCareersTool): void {
   server.addTool({
     name: "search_careers",
-    description: "Search for career transition paths based on reference context",
+    description:
+      "Search for career transition paths with custom context. LibreChat LLM extracts structured context from user text.",
     parameters: searchCareersParamsSchema,
     execute: async (args: unknown) => {
       const params = searchCareersParamsSchema.parse(args);
@@ -79,14 +78,14 @@ function registerSearchTool(server: FastMCP, tool: SearchCareersTool): void {
   });
 }
 
-function registerSearchNLPTool(server: FastMCP, tool: SearchCareersNLPTool): void {
+function registerSearchUserCareersTool(server: FastMCP, tool: SearchUserCareersTool): void {
   server.addTool({
-    name: "search_careers_nlp",
+    name: "search_user_careers",
     description:
-      "Search for career paths using natural language description (AI-powered context extraction)",
-    parameters: searchCareersNLPParamsSchema,
+      "Search for career paths based on user's current context (fetched from DB automatically). No need to provide referenceContext.",
+    parameters: searchUserCareersParamsSchema,
     execute: async (args: unknown) => {
-      const params = searchCareersNLPParamsSchema.parse(args);
+      const params = searchUserCareersParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -128,8 +127,8 @@ function registerGoalAndUpdateTools(server: FastMCP, tools: ToolInstances): void
 
 function registerTools(server: FastMCP, tools: ToolInstances): void {
   registerGetStoryTool(server, tools.getStory);
-  registerSearchTool(server, tools.searchCareers);
-  registerSearchNLPTool(server, tools.searchCareersNLP);
+  registerSearchCareersTool(server, tools.searchCareers);
+  registerSearchUserCareersTool(server, tools.searchUserCareers);
   registerGoalAndUpdateTools(server, tools);
 }
 
@@ -138,7 +137,7 @@ export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
     name: "waymates-facade",
     version: "2.1.0",
     instructions:
-      "WayMates MCP Server. Provides 6 tools for career operations including NLP-based search.",
+      "WayMates MCP Server. Provides 5 tools for career operations: get_story, search_careers (adhoc with custom context), search_user_careers (based on user's current context from DB), set_goal, update_context. LibreChat LLM handles text-to-JSON extraction.",
   });
 
   const tools = createToolInstances(deps);

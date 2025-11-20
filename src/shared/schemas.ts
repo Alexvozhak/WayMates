@@ -291,10 +291,11 @@ export type ContextField = z.infer<typeof contextFieldSchema>;
 // Extract field names from Zod schema to avoid duplication
 export const CONTEXT_FIELD_NAMES = contextFieldSchema.options;
 /**
- * Base schema for user/adhoc search parameters (shared fields)
- * Internal only - not exported
+ * Raw base schema for user/adhoc search parameters (shared fields)
+ * WITHOUT pathLimit validation - for extending in derived schemas (Facade)
+ * Exported for Facade to compose its own schemas
  */
-const userSearchParamsBaseSchema = z.object({
+export const userSearchParamsRawSchema = z.object({
   userId: userIdSchema.describe("User ID (resolves context from DB)"),
   excludedContextFields: z
     .array(contextFieldSchema)
@@ -331,10 +332,10 @@ const userSearchParamsBaseSchema = z.object({
 });
 
 /**
- * User search parameters (Mode 2: search by user's current context)
- * Flat structure with inverse field filtering logic
+ * Validated base schema WITH pathLimit <= limit check
+ * Exported for reuse in Facade (replace userId with sessionId)
  */
-export const userSearchParamsSchema = userSearchParamsBaseSchema.refine(
+export const userSearchParamsBaseSchema = userSearchParamsRawSchema.refine(
   (data) => data.pathLimit <= data.limit,
   {
     message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
@@ -342,13 +343,19 @@ export const userSearchParamsSchema = userSearchParamsBaseSchema.refine(
   },
 );
 
+/**
+ * User search parameters (Mode 2: search by user's current context)
+ * Flat structure with inverse field filtering logic
+ */
+export const userSearchParamsSchema = userSearchParamsBaseSchema;
+
 export type UserSearchParams = z.infer<typeof userSearchParamsSchema>;
 
 /**
  * Ad-hoc search parameters with custom reference context (Mode 1)
  * Extends UserSearchParams with explicit referenceContext
  */
-export const adhocSearchParamsSchema = userSearchParamsBaseSchema
+export const adhocSearchParamsSchema = userSearchParamsRawSchema
   .extend({
     referenceContext: userContextSchema.describe(
       "Custom reference context (extracted from user text)",
