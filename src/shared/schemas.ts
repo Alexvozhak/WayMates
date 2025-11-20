@@ -399,14 +399,34 @@ export const storyInputSchema = z.object({
   trails: z.array(trailSchema).min(0),
 });
 
+export const upsertContextInputSchema = z.object({
+  userId: userIdSchema,
+  context: userContextSchema,
+});
+
 export const upsertContextResultSchema = z.object({
   success: z.boolean(),
   contextIds: z.array(contextIdSchema),
 });
 
+export const upsertSingleContextResultSchema = z.object({
+  success: z.boolean(),
+  contextId: contextIdSchema,
+});
+
+export const upsertTrailInputSchema = z.object({
+  userId: userIdSchema,
+  trail: trailSchema,
+});
+
 export const upsertTrailResultSchema = z.object({
   success: z.boolean(),
   trailIds: z.array(trailIdSchema),
+});
+
+export const upsertSingleTrailResultSchema = z.object({
+  success: z.boolean(),
+  trailId: trailIdSchema,
 });
 
 export const upsertStoryResultSchema = z.object({
@@ -446,8 +466,12 @@ export const updateContextParamsSchema = z.object({
 });
 
 export type StoryInput = z.infer<typeof storyInputSchema>;
+export type UpsertContextInput = z.infer<typeof upsertContextInputSchema>;
 export type UpsertContextResult = z.infer<typeof upsertContextResultSchema>;
+export type UpsertSingleContextResult = z.infer<typeof upsertSingleContextResultSchema>;
+export type UpsertTrailInput = z.infer<typeof upsertTrailInputSchema>;
 export type UpsertTrailResult = z.infer<typeof upsertTrailResultSchema>;
+export type UpsertSingleTrailResult = z.infer<typeof upsertSingleTrailResultSchema>;
 export type UpsertStoryResult = z.infer<typeof upsertStoryResultSchema>;
 export type Goal = z.infer<typeof goalSchema>;
 export type CreateGoalInput = z.infer<typeof createGoalInputSchema>;

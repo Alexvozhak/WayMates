@@ -15,8 +15,12 @@ import {
   storyInputSchema,
   trailIdSchema,
   updateContextParamsSchema,
+  upsertContextInputSchema,
   upsertContextResultSchema,
+  upsertSingleContextResultSchema,
+  upsertSingleTrailResultSchema,
   upsertStoryResultSchema,
+  upsertTrailInputSchema,
   upsertTrailResultSchema,
   userContextSchema,
 } from "../shared/schemas.js";
@@ -28,8 +32,12 @@ import type {
   Trail,
   TrailId,
   UpdateContextParams,
+  UpsertContextInput,
   UpsertContextResult,
+  UpsertSingleContextResult,
+  UpsertSingleTrailResult,
   UpsertStoryResult,
+  UpsertTrailInput,
   UpsertTrailResult,
   UserContext,
 } from "../shared/schemas.js";
@@ -115,6 +123,57 @@ export class StoryManager {
       }
 
       return userContextSchema.parse(record.get("result"));
+    });
+  }
+
+  async upsertContext(params: UpsertContextInput): Promise<UpsertSingleContextResult> {
+    upsertContextInputSchema.parse(params);
+
+    const contextWithId = Object.assign({}, params.context, {
+      contextId: params.context.contextId || this.generateContextId(),
+    });
+
+    return this.db.write(async (tx) => {
+      const result = await tx.run(UPSERT_CONTEXTS_QUERY, {
+        userId: params.userId,
+        ctx: contextWithId,
+      });
+
+      const record = result.records[0];
+      if (!record) {
+        throw new Error(`upsertContext: no result returned for user=${params.userId}`);
+      }
+
+      const contextId = contextIdSchema.parse(record.get("contextId"));
+      return upsertSingleContextResultSchema.parse({
+        success: true,
+        contextId: contextId,
+      });
+    });
+  }
+
+  async upsertTrail(params: UpsertTrailInput): Promise<UpsertSingleTrailResult> {
+    upsertTrailInputSchema.parse(params);
+
+    const trailId = this.generateTrailId();
+
+    return this.db.write(async (tx) => {
+      const result = await tx.run(UPSERT_TRAILS_QUERY, {
+        userId: params.userId,
+        trailId: trailId,
+        trail: params.trail,
+      });
+
+      const record = result.records[0];
+      if (!record) {
+        throw new Error(`upsertTrail: no result returned for user=${params.userId}`);
+      }
+
+      const resultTrailId = trailIdSchema.parse(record.get("trailId"));
+      return upsertSingleTrailResultSchema.parse({
+        success: true,
+        trailId: resultTrailId,
+      });
     });
   }
 

@@ -14,7 +14,7 @@ export class GetStoryTool extends BaseTool<GetStoryParams, StoryInput> {
     // If provided, user can request any userId (own or other user's profile)
     const targetUserId = params.targetUserId || userId;
 
-    const result = await this.coreClient.client.story.getByUser.query({ userId: targetUserId });
+    const result = await this.coreClient.client.story.getStory.query({ userId: targetUserId });
 
     return {
       userId: targetUserId,
