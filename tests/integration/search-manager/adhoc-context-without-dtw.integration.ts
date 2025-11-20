@@ -18,7 +18,7 @@
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/shared-driver.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
-import { TestDataManager } from "../../helpers/test-data-manager.js";
+import { UserStories } from "../../helpers/user-stories.js";
 import type { AdhocSearchParams, ContextField, UserContext } from "../../../src/shared/schemas.js";
 
 /**
@@ -56,7 +56,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC1: Strict all fields - baseline matching", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
@@ -109,7 +109,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC2: Exclude skills - finds candidates with different skills", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
@@ -186,7 +186,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC3: Exclude geo - international search finds candidates from different countries", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
@@ -224,7 +224,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC4: Only position strict - finds candidates with same position regardless of other fields", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
@@ -282,7 +282,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC5: Excluded creation reasons - filters out users with specific reasons in trajectory", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
@@ -345,7 +345,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC6: Recency filter - only finds candidates with recent contexts", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
@@ -398,7 +398,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC7: educationLevel strict filter - finds only matching education level", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
@@ -437,7 +437,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC8: educationLevel excluded filter - finds candidates with different education levels", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[AC8] Searching with educationLevel excluded from matching");
     const u1 = dataManager.getStoryBy("U1");
@@ -489,7 +489,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC9: null educationLevel wildcard - finds candidates with any education level", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[AC9] Searching with null educationLevel (wildcard behavior)");
     const u15 = dataManager.getStoryBy("U15");
@@ -542,7 +542,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC10: Salary exact value returned - search results include salaryExact field", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[AC10] Searching for U17 with salaryExact field");
     const u1 = dataManager.getStoryBy("U1");
@@ -586,7 +586,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC11: Salary range returned - search results include salaryMin/salaryMax fields", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[AC11] Searching for U18 with salaryMin/salaryMax fields");
     const u1 = dataManager.getStoryBy("U1");
@@ -631,7 +631,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("AC12: Backward compatibility - users without salary fields work correctly", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[AC12] Searching with U1 (no salary fields) - backward compatibility");
     const u1 = dataManager.getStoryBy("U1");
@@ -665,7 +665,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("SC1: Strict languages matching (single language)", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[SC1] Searching for candidates with languages: ['en']");
     const u1 = dataManager.getStoryBy("U1");
@@ -701,7 +701,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("SC3: Strict languages matching (multiple AND)", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[SC3] Searching for candidates with languages: ['en', 'de']");
     const u4 = dataManager.getStoryBy("U4");
@@ -737,7 +737,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("SC2: Languages excluded (inverse logic)", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[SC2] Searching with excludedContextFields: ['languages']");
     const u1 = dataManager.getStoryBy("U1");
@@ -776,7 +776,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("SC4: Null wildcard (backward compatibility)", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[SC4] Searching with languages: null (wildcard)");
     const u3 = dataManager.getStoryBy("U3");
@@ -812,7 +812,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
   it("SC7: Map projection returns languages array", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[SC7] Verify map projection returns languages field");
     const u1 = dataManager.getStoryBy("U1");

@@ -16,18 +16,20 @@
  * - integration-story-manager (cleans everything, runs last)
  */
 
-import { loadEnv } from 'vite';
-import { createDriver } from './src/neo4j.js';
-import { TestDataManager } from './tests/helpers/test-data-manager.js';
-import { importStories } from './tests/helpers/import-stories.js';
-import { DatabaseFixture } from './tests/helpers/database-fixture.js';
-import type { Driver } from 'neo4j-driver';
+import { loadEnv } from "vite";
 
-export async function setup() {
-  console.log('[Global Setup] Starting global setup for integration tests...');
+import { createDriver } from "./src/core/neo4j.js";
+import { DatabaseFixture } from "./tests/helpers/database-fixture.js";
+import { importStories } from "./tests/helpers/import-stories.js";
+import { UserStories } from "./tests/helpers/user-stories.js";
+
+import type { Driver } from "neo4j-driver";
+
+export async function setup(): Promise<void> {
+  console.log("[Global Setup] Starting global setup for integration tests...");
 
   // Load .env.test into process.env
-  const env = loadEnv('test', process.cwd(), '');
+  const env = loadEnv("test", process.cwd(), "");
   Object.assign(process.env, env);
 
   const driver: Driver = createDriver();
@@ -35,33 +37,47 @@ export async function setup() {
 
   try {
     // Clear existing data (preserve reference data: Language, Skill, SkillCategory, Reason)
-    console.log('[Global Setup] Clearing existing data...');
+    console.log("[Global Setup] Clearing existing data...");
     await dbFixture.cleanTestData();
-    console.log('[Global Setup] Database cleaned successfully');
+    console.log("[Global Setup] Database cleaned successfully");
 
     // Verify reference data exists
     await dbFixture.verifyReferenceData();
 
     // Load all base test data (U1-U18)
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const stories = dataManager.getUserStories([
-      'U1', 'U2', 'U3', 'U4', 'U5', 'U6', 'U7', 'U8', 'U9',  // Batch A: Adhoc/Target
-      'U10', 'U11', 'U12', 'U13',                             // Batch B: DTW
-      'U14', 'U15', 'U16',                                    // Batch C: educationLevel
-      'U17', 'U18'                                            // Batch D: salary
+      "U1",
+      "U2",
+      "U3",
+      "U4",
+      "U5",
+      "U6",
+      "U7",
+      "U8",
+      "U9", // Batch A: Adhoc/Target
+      "U10",
+      "U11",
+      "U12",
+      "U13", // Batch B: DTW
+      "U14",
+      "U15",
+      "U16", // Batch C: educationLevel
+      "U17",
+      "U18", // Batch D: salary
     ]);
 
     await importStories(driver, stories);
-    console.log('[Global Setup] Base data loaded successfully (U1-U18)');
+    console.log("[Global Setup] Base data loaded successfully (U1-U18)");
 
     await dbFixture.verifyUserCount(stories.length);
   } finally {
     await driver.close();
   }
 
-  console.log('[Global Setup] Global setup complete ✓');
+  console.log("[Global Setup] Global setup complete ✓");
 }
 
-export async function teardown() {
-  console.log('[Global Teardown] No teardown needed (DB cleaned in globalSetup)');
+export function teardown(): void {
+  console.log("[Global Teardown] No teardown needed (DB cleaned in globalSetup)");
 }

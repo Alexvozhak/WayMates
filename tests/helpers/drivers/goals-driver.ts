@@ -16,21 +16,21 @@
  */
 
 import { beforeAll, beforeEach, afterAll } from "vitest";
-import { createDriver } from "../../../src/neo4j.js";
-import { TestDataManager } from "../test-data-manager.js";
+import { createDriver } from "../../../src/core/neo4j.js";
+import { UserStories } from "../user-stories.js";
 import { importStories } from "../import-stories.js";
 import { DatabaseFixture } from "../database-fixture.js";
 import type { Driver } from "neo4j-driver";
 
 export let driver: Driver;
-let dataManager: TestDataManager;
+let dataManager: UserStories;
 let dbFixture: DatabaseFixture;
 
 beforeAll(() => {
   console.log("[Goals Setup] Starting setup for Goals tests...");
 
   driver = createDriver();
-  dataManager = new TestDataManager();
+  dataManager = new UserStories();
   dbFixture = new DatabaseFixture(driver);
 }, 30000);
 

@@ -11,16 +11,16 @@ import {
   FixtureSearchManager,
   createUserSearchParams,
 } from "../../helpers/fixture-search-manager.js";
-import { TestDataManager } from "../../helpers/test-data-manager.js";
+import { UserStories } from "../../helpers/user-stories.js";
 import { GoalsManager } from "../../../src/core/goals-manager.js";
-import { DatabaseContext } from "../../../src/database-context.js";
+import { DatabaseContext } from "../../../src/core/database-context.js";
 
 describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   // Business rule: setGoal creates goal and returns userId
   it("GM1: Create goal - setGoal creates goal with targetCriteria", async () => {
     const db = new DatabaseContext(driver);
     const goalsManager = new GoalsManager(db);
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u3 = dataManager.getStoryBy("U3");
 
@@ -64,7 +64,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   it("GM2: Read goals - getUserGoal returns goal or null", async () => {
     const db = new DatabaseContext(driver);
     const goalsManager = new GoalsManager(db);
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u3 = dataManager.getStoryBy("U3");
 
@@ -94,7 +94,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   it("GM3: Update goal - setGoal upserts goal preserving createdAt", async () => {
     const db = new DatabaseContext(driver);
     const goalsManager = new GoalsManager(db);
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u3 = dataManager.getStoryBy("U3");
 
@@ -157,7 +157,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   it("GM4: Delete goal - deleteGoal removes goal and returns success status", async () => {
     const db = new DatabaseContext(driver);
     const goalsManager = new GoalsManager(db);
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u3 = dataManager.getStoryBy("U3");
 
@@ -197,7 +197,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   it("G1: No Goal baseline - searchByUser without goal returns candidateType=null", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
 
@@ -237,7 +237,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     const goalsManager = new GoalsManager(db);
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u5 = dataManager.getStoryBy("U5");
@@ -312,7 +312,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     const goalsManager = new GoalsManager(db);
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u2 = dataManager.getStoryBy("U2");
@@ -371,7 +371,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     const goalsManager = new GoalsManager(db);
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
 
@@ -426,7 +426,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     const goalsManager = new GoalsManager(db);
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u10 = dataManager.getStoryBy("U10");
 

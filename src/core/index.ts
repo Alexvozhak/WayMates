@@ -1,8 +1,7 @@
-import { DatabaseContext } from "../database-context.js";
-import { createDriver, verifyConnection } from "../neo4j.js";
-
+import { DatabaseContext } from "./database-context.js";
 import { DictionariesManager } from "./dictionaries-manager.js";
 import { GoalsManager } from "./goals-manager.js";
+import { createDriver, verifyConnection } from "./neo4j.js";
 import { PathCollectorService } from "./path-collector.service.js";
 import { SearchManager } from "./search-manager.js";
 import { SelectivityService } from "./selectivity.service.js";
@@ -33,7 +32,7 @@ async function main(): Promise<void> {
   const port = Number(process.env.CORE_PORT) || 9000;
   const host = process.env.CORE_HOST || "0.0.0.0";
 
-  await startTRPCServer(
+  startTRPCServer(
     {
       searchManager,
       storyManager,

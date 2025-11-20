@@ -11,10 +11,10 @@
 import { describe, expect, it } from "vitest";
 
 import { StoryManager } from "../../../src/core/story-manager.js";
-import { DatabaseContext } from "../../../src/database-context.js";
-import { withReadSession, withWriteSession } from "../../../src/neo4j.js";
+import { DatabaseContext } from "../../../src/core/database-context.js";
+import { withReadSession, withWriteSession } from "../../../src/core/neo4j.js";
 import { storyInputSchema } from "../../../src/shared/schemas.js";
-import { type UserKey, TestDataManager } from "../../helpers/test-data-manager.js";
+import { type UserKey, UserStories } from "../../helpers/user-stories.js";
 import { driver } from "../../helpers/drivers/story-manager-driver.js";
 
 import type { StoryInput } from "../../../src/shared/schemas.js";
@@ -28,7 +28,7 @@ function createStoryManager(): StoryManager {
 }
 
 describe("StoryManager Integration Tests", () => {
-  const testDataManager = new TestDataManager();
+  const testDataManager = new UserStories();
 
   /**
    * Helper: Upsert single context

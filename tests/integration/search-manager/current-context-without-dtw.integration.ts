@@ -9,7 +9,7 @@ import {
   FixtureSearchManager,
   createUserSearchParams,
 } from "../../helpers/fixture-search-manager.js";
-import { TestDataManager } from "../../helpers/test-data-manager.js";
+import { UserStories } from "../../helpers/user-stories.js";
 
 describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
   // Business rule: Single context user → fallback to searchByContext (no DTW)
@@ -17,7 +17,7 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
   it("UN1: No trajectory fallback - single context user falls back to searchByContext", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u4 = dataManager.getStoryBy("U4");
     const u4Context = u4.contexts[0]!;
@@ -72,7 +72,7 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
   it("UN4: Exclude geo via userId - resolveContext works correctly", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     const u4 = dataManager.getStoryBy("U4");
     const u4Context = u4.contexts[0]!;

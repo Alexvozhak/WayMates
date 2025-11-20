@@ -1,1 +1,1 @@
-export type { AppRouter } from "../core/routers/_app.js";
+export type { AppRouter } from "../core/routers/app.router.js";

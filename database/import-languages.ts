@@ -1,4 +1,4 @@
-import { withDriver } from "../src/neo4j.js";
+import { withDriver } from "../src/core/neo4j.js";
 
 import languagesData from "./languages.json" with { type: "json" };
 

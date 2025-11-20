@@ -1,11 +1,11 @@
 import { v7 as uuidv7 } from "uuid";
 
 import {
-  CREATE_REASON_QUERY,
+  // CREATE_REASON_QUERY,
   DELETE_CONTEXT_QUERY,
   DELETE_TRAIL_QUERY,
   GET_USER_STORY_QUERY,
-  LIST_REASONS_QUERY,
+  //  LIST_REASONS_QUERY,
   UPDATE_CONTEXT_QUERY,
   UPSERT_CONTEXTS_QUERY,
   UPSERT_TRAILS_QUERY,
@@ -21,9 +21,7 @@ import {
   userContextSchema,
 } from "../shared/schemas.js";
 
-import { type Reason, reasonSchema } from "./schemas.js";
-
-import type { DatabaseContext } from "../database-context.js";
+import type { DatabaseContext } from "./database-context.js";
 import type {
   ContextId,
   StoryInput,
@@ -117,42 +115,6 @@ export class StoryManager {
       }
 
       return userContextSchema.parse(record.get("result"));
-    });
-  }
-
-  async listAvailableReasons(): Promise<Reason[]> {
-    return this.db.read(async (tx) => {
-      const result = await tx.run(LIST_REASONS_QUERY);
-      return result.records.map((rec) => {
-        const reasonData = rec.get("reason");
-        return reasonSchema.parse(reasonData);
-      });
-    });
-  }
-
-  async createNewReason(
-    reasonId: string,
-    description: string,
-    patterns: string[],
-    examples: string[],
-    contextId: string,
-  ): Promise<Reason> {
-    return this.db.write(async (tx) => {
-      const result = await tx.run(CREATE_REASON_QUERY, {
-        reasonId,
-        description,
-        patterns,
-        examples,
-        contextId,
-      });
-
-      const record = result.records[0];
-      if (!record) {
-        throw new Error(`createNewReason: no result returned for reason_id ${reasonId}`);
-      }
-
-      const reasonData = record.get("r");
-      return reasonSchema.parse(reasonData.properties);
     });
   }
 

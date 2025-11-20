@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { z } from "zod";
 
-import { withDriver } from "../src/neo4j.js";
+import { withDriver } from "../src/core/neo4j.js";
 
 import type { Driver } from "neo4j-driver";
 

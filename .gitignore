@@ -1,8 +1,6 @@
 # Dependencies
 node_modules/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Production builds
 dist/
@@ -17,9 +15,6 @@ generated/queries.generated.ts
 .env.development.local
 .env.test.local
 .env.production.local
-.env.integration
-.env.functional
-.env.projecthub
 
 # IDE files
 .vscode/*
@@ -78,31 +73,12 @@ temp/
 
 # Debug files
 debug.js
-test-*.ts
-test-*.js
 
 # Build output
 dist/
 
 # Environment files with credentials
 .env.prod
-.env.integration
-.env.functional
-.env.focalboard
-.env.vikunja
-.env.plane
-.env.planka
-
-# Kanban board data
-focalboard-data/
-vikunja-data/
-plane-data/
-planka-data/
-todo-dropbox
-
-# Kaggle datasets (large CSV files)
-kaggle/
-US Department of Labor/
 
 # Claude Code - Quality tracking (session-scoped)
 .claude/.quality-status

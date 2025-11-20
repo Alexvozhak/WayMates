@@ -4,27 +4,26 @@ import {
   userCurrentContextQuery,
 } from "../cypher/queries/search.js";
 import {
-  type MatchedCandidateWithPath,
-  type ScoredMatchedCandidate,
-  type UserContext,
+  CONTEXT_FIELD_NAMES,
   matchedCandidateWithPathSchema,
   scoredMatchedCandidateSchema,
   userContextSchema,
 } from "../shared/schemas.js";
 
-import { CONTEXT_FIELD_NAMES } from "./schemas.js";
-
+import type { DatabaseContext } from "./database-context.js";
 import type { GoalsManager } from "./goals-manager.js";
 import type { PathCollectorService } from "./path-collector.service.js";
+import type { SelectivityService } from "./selectivity.service.js";
+import type { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
 import type {
   AdhocSearchParams,
   ContextField,
+  MatchedCandidateWithPath,
+  ScoredMatchedCandidate,
   TargetSearchParams,
+  UserContext,
   UserSearchParams,
-} from "./schemas.js";
-import type { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
-import type { DatabaseContext } from "../database-context.js";
-import type { SelectivityService } from "./selectivity.service.js";
+} from "../shared/schemas.js";
 
 /**
  * Compute strict fields for WHERE clause

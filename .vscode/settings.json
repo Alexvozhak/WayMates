@@ -10,6 +10,5 @@
   "files.trimTrailingWhitespace": true,
   "editor.rulers": [
     100
-  ],
-  "chatgpt.openOnStartup": false
+  ]
 }

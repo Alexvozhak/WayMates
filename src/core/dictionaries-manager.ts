@@ -1,7 +1,7 @@
 import { addTermQuery, getVerifiedDictionariesQuery } from "../cypher/queries/dictionaries.js";
 import { dictionariesSchema } from "../shared/schemas.js";
 
-import type { DatabaseContext } from "../database-context.js";
+import type { DatabaseContext } from "./database-context.js";
 import type { AddTermInput, Dictionaries } from "../shared/schemas.js";
 import type { ManagedTransaction } from "neo4j-driver";
 

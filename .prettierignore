@@ -2,12 +2,6 @@
 dist/
 node_modules/
 
-# Generated Cypher files
-src/cypher/queries/*.cypher.ts
-
-# Test data
-data/
-
 # Env files
 .env
 .env.*
@@ -16,7 +10,3 @@ data/
 *.json
 !.prettierrc.json
 !package.json
-
-
-
-

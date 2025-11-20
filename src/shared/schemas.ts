@@ -279,6 +279,19 @@ export const contextFieldSchema = z.enum(
 
 export type ContextField = z.infer<typeof contextFieldSchema>;
 
+// ЗАЧЕМ ОБА
+export const CONTEXT_FIELD_NAMES = [
+  "position",
+  "domains",
+  "skills",
+  "industry",
+  "countryCode",
+  "cityName",
+  "companySize",
+  "birthYear",
+  "educationLevel",
+  "languages",
+] as const satisfies readonly (keyof UserContext)[];
 /**
  * Base schema for user/adhoc search parameters (shared fields)
  * Internal only - not exported

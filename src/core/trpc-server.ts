@@ -1,6 +1,6 @@
 import { createHTTPServer } from "@trpc/server/adapters/standalone";
 
-import { appRouter } from "./routers/_app.js";
+import { appRouter } from "./routers/app.router.js";
 
 import type { CoreContext } from "./routers/trpc.js";
 

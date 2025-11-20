@@ -1,7 +1,7 @@
 import { deleteGoalQuery, getUserGoalQuery, setGoalQuery } from "../cypher/queries/goals.js";
 import { goalSchema, userIdSchema } from "../shared/schemas.js";
 
-import type { DatabaseContext } from "../database-context.js";
+import type { DatabaseContext } from "./database-context.js";
 import type { CreateGoalInput, Goal, UserId } from "../shared/schemas.js";
 
 export class GoalsManager {

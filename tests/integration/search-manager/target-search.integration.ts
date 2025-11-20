@@ -17,7 +17,7 @@
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/shared-driver.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
-import { TestDataManager } from "../../helpers/test-data-manager.js";
+import { UserStories } from "../../helpers/user-stories.js";
 import { validateAllPaths } from "../../helpers/path-validator.js";
 
 describe("Target Search (TG1-TG7)", () => {
@@ -26,7 +26,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG1: Desired position - finds only candidates with specified position", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
     console.log("[TG1] Searching for position: Middle (desired mode)");
@@ -69,7 +69,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG2: Undesired position - excludes candidates with specified position", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
     console.log("[TG2] Excluding position: Junior (undesired mode)");
@@ -113,7 +113,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG3: Desired domains - finds candidates with ANY matching domain", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
     console.log("[TG3] Searching for domains: Frontend (desired mode)");
@@ -163,7 +163,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG4: Undesired domains - excludes candidates with ANY matching domain", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
     console.log("[TG4] Excluding domains: Frontend (undesired mode)");
@@ -211,7 +211,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG5: Desired skills - finds candidates with ANY matching skill", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
     console.log("[TG5] Searching for skills: python (desired mode)");
@@ -260,7 +260,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG6: Undesired skills - excludes candidates with ANY matching skill", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
     console.log("[TG6] Excluding skills: python (undesired mode)");
@@ -311,7 +311,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG7: Combined filters - position + domains + skills", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
     console.log("[TG7] Combined: Junior + Backend + NOT python");
@@ -376,7 +376,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG-LANG-1: Desired languages - finds candidates with ANY specified language (OR logic)", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[TG-LANG-1] Searching for languages: ['en', 'fr'] (desired mode, OR logic)");
     const u3 = dataManager.getStoryBy("U3");
@@ -427,7 +427,7 @@ describe("Target Search (TG1-TG7)", () => {
   it("TG-LANG-2: Undesired languages - excludes candidates with ANY specified language (NONE logic)", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
 
     console.log("[TG-LANG-2] Searching for undesired languages: ['en'] (exclude ALL with 'en')");
     const u3 = dataManager.getStoryBy("U3");

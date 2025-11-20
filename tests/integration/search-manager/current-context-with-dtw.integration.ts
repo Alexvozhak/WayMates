@@ -9,7 +9,7 @@ import {
   FixtureSearchManager,
   createUserSearchParams,
 } from "../../helpers/fixture-search-manager.js";
-import { TestDataManager } from "../../helpers/test-data-manager.js";
+import { UserStories } from "../../helpers/user-stories.js";
 
 function validateDtwFormula(
   userId: string,
@@ -44,7 +44,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
   it("DT1: High similarity - U10 (Backend Node.js) finds U11 (Backend Python) with high DTW scores", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u10 = dataManager.getStoryBy("U10");
 
     console.log("[DT1] Searching from U10 (Backend Node.js, 3 contexts)");
@@ -124,7 +124,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
   it("DT2: Medium similarity - U10 finds U12 (Frontend) and U13 (Data Science) with medium DTW scores", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u10 = dataManager.getStoryBy("U10");
 
     console.log(
@@ -170,7 +170,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
   it("DT3: Excluded creation reasons - filters out users with company_changed in trajectory", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u10 = dataManager.getStoryBy("U10");
 
     console.log("[DT3] Searching with excludedCreationReasons: [company_changed]");
@@ -226,7 +226,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
   it("DT4: Multiple candidates ranking - correctly orders by dtwTotal score", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
-    const dataManager = new TestDataManager();
+    const dataManager = new UserStories();
     const u10 = dataManager.getStoryBy("U10");
 
     console.log("[DT4] Searching from U10 to rank multiple candidates by dtwTotal");

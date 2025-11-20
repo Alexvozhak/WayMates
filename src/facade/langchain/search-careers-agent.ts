@@ -32,6 +32,7 @@ export type SearchCareersParams = z.infer<typeof searchCareersParamsSchema>;
  * Returns a tool for createAgent
  */
 function createExtractContextTool(): ReturnType<typeof tool> {
+  // @ts-expect-error: LangChain types not fully compatible with exactOptionalPropertyTypes
   return tool(
     (input: { text: string; isTarget: boolean }): string => {
       console.log("🔧 Extracting context from:", input.text);
@@ -78,6 +79,7 @@ function createSearchCareersTool(
   sessionMiddleware: SessionMiddleware,
   coreClient: CoreTRPCClient,
 ): ReturnType<typeof tool> {
+  // @ts-expect-error: LangChain types not fully compatible with exactOptionalPropertyTypes
   return tool(
     async (input: { currentContext: string; sessionId: string }) => {
       // Parse and validate context using Zod
