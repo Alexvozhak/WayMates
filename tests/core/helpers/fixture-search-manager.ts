@@ -1,12 +1,12 @@
 import type { Driver } from "neo4j-driver";
-import { DatabaseContext } from "../../src/core/database-context.js";
-import { GoalsManager } from "../../src/core/goals-manager.js";
-import { PathCollectorService } from "../../src/core/path-collector.service.js";
-import { SearchManager } from "../../src/core/search-manager.js";
-import { SelectivityService } from "../../src/core/selectivity.service.js";
-import { StoryManager } from "../../src/core/story-manager.js";
-import { TrajectorySimilarityService } from "../../src/core/trajectory-similarity.service.js";
-import type { UserSearchParams } from "../../src/shared/schemas.js";
+import { DatabaseContext } from "../../../src/core/database-context.js";
+import { GoalsManager } from "../../../src/core/goals-manager.js";
+import { PathCollectorService } from "../../../src/core/path-collector.service.js";
+import { SearchManager } from "../../../src/core/search-manager.js";
+import { SelectivityService } from "../../../src/core/selectivity.service.js";
+import { StoryManager } from "../../../src/core/story-manager.js";
+import { TrajectorySimilarityService } from "../../../src/core/trajectory-similarity.service.js";
+import type { UserSearchParams } from "../../../src/shared/schemas.js";
 
 export class FixtureSearchManager {
   private searchManager: SearchManager;

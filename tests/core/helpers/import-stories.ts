@@ -1,7 +1,7 @@
 import type { Driver } from "neo4j-driver";
-import { DatabaseContext } from "../../src/core/database-context.js";
-import { StoryManager } from "../../src/core/story-manager.js";
-import type { StoryInput } from "../../src/shared/schemas.js";
+import { DatabaseContext } from "../../../src/core/database-context.js";
+import { StoryManager } from "../../../src/core/story-manager.js";
+import type { StoryInput } from "../../../src/shared/schemas.js";
 
 /**
  * Import multiple stories into the database

@@ -10,8 +10,8 @@ npx lint-staged || exit 1
 echo "🔎 Running TypeScript type check..."
 npx tsc --noEmit || exit 1
 
-# 3. Integration tests (only if src/core changed)
-if git diff --cached --name-only | grep -q "^src/core/"; then
+# 3. Integration tests (only if src/core or tests/core changed)
+if git diff --cached --name-only | grep -qE "^(src/core/|tests/core/)"; then
   echo "📦 Core changes detected, running integration tests..."
   npm run test:integration || exit 1
 else

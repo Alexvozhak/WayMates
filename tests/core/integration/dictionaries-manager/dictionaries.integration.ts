@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
-import { DatabaseContext } from "../../../src/core/database-context.js";
-import { DictionariesManager } from "../../../src/core/dictionaries-manager.js";
-import { createDriver } from "../../../src/core/neo4j.js";
+import { DatabaseContext } from "../../../../src/core/database-context.js";
+import { DictionariesManager } from "../../../../src/core/dictionaries-manager.js";
+import { createDriver } from "../../../../src/core/neo4j.js";
 
 import type { Driver } from "neo4j-driver";
 

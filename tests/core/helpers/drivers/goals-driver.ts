@@ -16,7 +16,7 @@
  */
 
 import { beforeAll, beforeEach, afterAll } from "vitest";
-import { createDriver } from "../../../src/core/neo4j.js";
+import { createDriver } from "../../../../src/core/neo4j.js";
 import { UserStories } from "../user-stories.js";
 import { importStories } from "../import-stories.js";
 import { DatabaseFixture } from "../database-fixture.js";

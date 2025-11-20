@@ -12,8 +12,8 @@ import {
   createUserSearchParams,
 } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
-import { GoalsManager } from "../../../src/core/goals-manager.js";
-import { DatabaseContext } from "../../../src/core/database-context.js";
+import { GoalsManager } from "../../../../src/core/goals-manager.js";
+import { DatabaseContext } from "../../../../src/core/database-context.js";
 
 describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   // Business rule: setGoal creates goal and returns userId

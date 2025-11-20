@@ -12,7 +12,6 @@ export default defineConfig(() => {
       target: "node20",
     },
     test: {
-      globalSetup: "./vitest.globalSetup.ts",
       testTimeout: INTEGRATION_TEST_TIMEOUT,
       hookTimeout: INTEGRATION_HOOK_TIMEOUT,
       environment: "node",
@@ -26,7 +25,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "unit",
-            include: ["tests/unit/**/*.spec.ts"],
+            include: ["tests/core/unit/**/*.spec.ts", "tests/facade/unit/**/*.spec.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -34,6 +33,7 @@ export default defineConfig(() => {
               },
             },
             testTimeout: UNIT_TEST_TIMEOUT,
+            // Unit tests don't use globalSetup (no database needed)
           },
         },
         // Read-only search tests (parallel execution, shared globalSetup data)
@@ -41,10 +41,10 @@ export default defineConfig(() => {
           test: {
             name: "integration-search-read-only",
             include: [
-              "tests/integration/search-manager/adhoc-context-without-dtw.integration.ts",
-              "tests/integration/search-manager/target-search.integration.ts",
-              "tests/integration/search-manager/current-context-without-dtw.integration.ts",
-              "tests/integration/search-manager/current-context-with-dtw.integration.ts",
+              "tests/core/integration/search-manager/adhoc-context-without-dtw.integration.ts",
+              "tests/core/integration/search-manager/target-search.integration.ts",
+              "tests/core/integration/search-manager/current-context-without-dtw.integration.ts",
+              "tests/core/integration/search-manager/current-context-with-dtw.integration.ts",
             ],
             pool: "threads",
             poolOptions: {
@@ -53,7 +53,8 @@ export default defineConfig(() => {
                 singleThread: false, // Parallel execution
               },
             },
-            setupFiles: ["./tests/helpers/drivers/shared-driver.ts"],
+            setupFiles: ["./tests/core/helpers/drivers/shared-driver.ts"],
+            globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
           },
         },
@@ -61,7 +62,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "integration-goals",
-            include: ["tests/integration/goals-manager/goals-integration.integration.ts"],
+            include: ["tests/core/integration/goals-manager/goals-integration.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -69,7 +70,8 @@ export default defineConfig(() => {
                 singleThread: true, // Write operations require sequential execution
               },
             },
-            setupFiles: ["./tests/helpers/drivers/goals-driver.ts"],
+            setupFiles: ["./tests/core/helpers/drivers/goals-driver.ts"],
+            globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
           },
         },
@@ -77,7 +79,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "integration-dictionaries",
-            include: ["tests/integration/dictionaries-manager/dictionaries.integration.ts"],
+            include: ["tests/core/integration/dictionaries-manager/dictionaries.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -85,6 +87,7 @@ export default defineConfig(() => {
                 singleThread: true,
               },
             },
+            globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
             env: loadEnv("test", process.cwd(), ""),
           },
@@ -93,7 +96,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "integration-story-manager",
-            include: ["tests/integration/story-manager/story-manager.integration.ts"],
+            include: ["tests/core/integration/story-manager/story-manager.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -101,7 +104,26 @@ export default defineConfig(() => {
                 singleThread: true, // Write operations require sequential execution
               },
             },
-            setupFiles: ["./tests/helpers/drivers/story-manager-driver.ts"],
+            setupFiles: ["./tests/core/helpers/drivers/story-manager-driver.ts"],
+            globalSetup: "./vitest.globalSetup.ts",
+            testTimeout: INTEGRATION_TEST_TIMEOUT,
+            hookTimeout: INTEGRATION_HOOK_TIMEOUT,
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
+        // Facade integration tests (sequential, MCP server + Core TRPC)
+        {
+          test: {
+            name: "integration-facade",
+            include: ["tests/facade/integration/**/*.integration.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: true,
+                singleThread: true, // MCP server needs sequential execution
+              },
+            },
+            globalSetup: "./vitest.globalSetup.ts", // Reuse core DB setup
             testTimeout: INTEGRATION_TEST_TIMEOUT,
             hookTimeout: INTEGRATION_HOOK_TIMEOUT,
             env: loadEnv("test", process.cwd(), ""),

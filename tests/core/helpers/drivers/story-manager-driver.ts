@@ -14,7 +14,7 @@
 
 import { afterAll, beforeAll, beforeEach } from "vitest";
 
-import { createDriver, withWriteSession } from "../../../src/core/neo4j.js";
+import { createDriver, withWriteSession } from "../../../../src/core/neo4j.js";
 
 import type { Driver } from "neo4j-driver";
 

@@ -2,16 +2,16 @@
  * User Stories Loader
  *
  * Loads test user stories from JSON fixtures.
- * Maps user keys (U1-U18) to fixture files (tests/fixtures/U1.json - U18.json).
+ * Maps user keys (U1-U18) to fixture files (tests/core/fixtures/U1.json - U18.json).
  * Files are validated with Zod storyInputSchema on load.
  */
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { storyInputSchema } from "../../src/shared/schemas.js";
+import { storyInputSchema } from "../../../src/shared/schemas.js";
 
-import type { StoryInput } from "../../src/shared/schemas.js";
+import type { StoryInput } from "../../../src/shared/schemas.js";
 
 export type UserKey =
   | "U1"
@@ -38,7 +38,7 @@ export class UserStories {
   private readonly cache = new Map<UserKey, StoryInput>();
 
   constructor() {
-    this.dataDir = path.join(process.cwd(), "tests", "fixtures");
+    this.dataDir = path.join(process.cwd(), "tests", "core", "fixtures");
   }
 
   getUserStories(keys: UserKey[]): StoryInput[] {

@@ -8,7 +8,7 @@
  */
 
 import { expect } from "vitest";
-import type { UserContext } from "../../src/shared/schemas.js";
+import type { UserContext } from "../../../src/shared/schemas.js";
 
 function validatePathStructure(path: UserContext[]): void {
   if (path.length === 0) {

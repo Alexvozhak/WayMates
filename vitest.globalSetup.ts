@@ -20,9 +20,9 @@
 import { loadEnv } from "vite";
 
 import { createDriver } from "./src/core/neo4j.js";
-import { DatabaseFixture } from "./tests/helpers/database-fixture.js";
-import { importStories } from "./tests/helpers/import-stories.js";
-import { UserStories } from "./tests/helpers/user-stories.js";
+import { DatabaseFixture } from "./tests/core/helpers/database-fixture.js";
+import { importStories } from "./tests/core/helpers/import-stories.js";
+import { UserStories } from "./tests/core/helpers/user-stories.js";
 
 import type { Driver } from "neo4j-driver";
 

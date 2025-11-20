@@ -19,7 +19,11 @@ import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/shared-driver.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
-import type { AdhocSearchParams, ContextField, UserContext } from "../../../src/shared/schemas.js";
+import type {
+  AdhocSearchParams,
+  ContextField,
+  UserContext,
+} from "../../../../src/shared/schemas.js";
 
 /**
  * Creates default searchAdhoc parameters with ability to override

@@ -18,7 +18,7 @@
  */
 
 import { beforeAll, afterAll } from "vitest";
-import { createDriver } from "../../../src/core/neo4j.js";
+import { createDriver } from "../../../../src/core/neo4j.js";
 import type { Driver } from "neo4j-driver";
 
 export let driver: Driver;
