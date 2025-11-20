@@ -11,8 +11,9 @@
  * - Batch D (U17-U18): salary tests
  *
  * Projects using this data:
- * - integration-search-read-only (uses all U1-U18)
- * - integration-search-goals (uses U1-U13, adds Goal nodes)
+ * - integration-search-read-only (uses all U1-U18, parallel)
+ * - integration-goals (uses U1-U13, adds Goal nodes)
+ * - integration-dictionaries (uses reference data for verification)
  * - integration-story-manager (cleans everything, runs last)
  */
 
