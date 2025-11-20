@@ -637,6 +637,7 @@ cat data/trails/users/u1.json | jq '.user_id, .contexts[0].context_id'
    - Client can compute `totalCount` from `array.length`
    - Client knows which endpoint it called, no need for `searchMode: "path"` in response
    - Add complexity only when there's proven need (pagination, caching metadata, etc.)
+8. **Zod nullish for Neo4j**: Use `.nullish()` for optional Neo4j properties (Neo4j returns `null`, not `undefined`)
 
 ---
 

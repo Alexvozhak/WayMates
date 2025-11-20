@@ -136,6 +136,21 @@ MATCH path = (start)-[*0..5]->(end)  // ✅ максимум 5 hops
 
 ---
 
+### Q8: Zod validation fails - "Expected string, received null"
+**Правило**: Use `.nullish()` for optional Neo4j properties (Neo4j returns `null`, not `undefined`)
+
+**❌ Ошибка**:
+```typescript
+feedback: z.string().max(200).nullable().optional()  // ❌ redundant
+```
+
+**✅ Правильно**:
+```typescript
+feedback: z.string().max(200).nullish()  // ✅ accepts both null and undefined
+```
+
+---
+
 ## Описания документов
 
 ### cypher-rules.md (280+ строк)
