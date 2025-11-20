@@ -163,6 +163,15 @@ const userContextSchemaBase = z.object({
     .nullable()
     .optional()
     .describe("Languages with B2+ proficiency (if present → work-ready level)"),
+
+  // User feedback/reflection on this career transition
+  feedback: z
+    .string()
+    .max(200)
+    .nullish()
+    .describe(
+      "Personal reflection on this transition: emotions, insights, lessons learned (max 200 chars)",
+    ),
 });
 
 // Schema with salary validation
@@ -279,19 +288,8 @@ export const contextFieldSchema = z.enum(
 
 export type ContextField = z.infer<typeof contextFieldSchema>;
 
-// ЗАЧЕМ ОБА
-export const CONTEXT_FIELD_NAMES = [
-  "position",
-  "domains",
-  "skills",
-  "industry",
-  "countryCode",
-  "cityName",
-  "companySize",
-  "birthYear",
-  "educationLevel",
-  "languages",
-] as const satisfies readonly (keyof UserContext)[];
+// Extract field names from Zod schema to avoid duplication
+export const CONTEXT_FIELD_NAMES = contextFieldSchema.options;
 /**
  * Base schema for user/adhoc search parameters (shared fields)
  * Internal only - not exported
@@ -684,6 +682,13 @@ export type AddTermInput = z.infer<typeof addTermInputSchema>;
  * Dictionaries containing verified canonical terms
  * Used by LLM for normalization (user input → canonical name)
  */
+export const reasonDictionaryItemSchema = z.object({
+  reasonId: z.string(),
+  description: z.string(),
+});
+
+export type ReasonDictionaryItem = z.infer<typeof reasonDictionaryItemSchema>;
+
 export const dictionariesSchema = z.object({
   skills: z
     .array(skillDictionaryItemSchema)
@@ -694,6 +699,11 @@ export const dictionariesSchema = z.object({
   industries: z.array(z.string()).describe("Verified industries (e.g., Fintech, Healthcare)"),
   platforms: z.array(z.string()).describe("Verified platforms (e.g., Coursera, Udemy)"),
   languages: z.array(z.string()).describe("Verified languages (e.g., English, Russian)"),
+  reasons: z
+    .array(reasonDictionaryItemSchema)
+    .describe(
+      "Context transition reasons (e.g., {reasonId: 'position_changed', description: 'Job title changed'})",
+    ),
 });
 
 export type Dictionaries = z.infer<typeof dictionariesSchema>;

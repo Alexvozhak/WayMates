@@ -42,7 +42,8 @@ SET context.createdAt = $ctx.createdAt,
     context.languages = $ctx.languages,
     context.creationReason = $ctx.creationReason,
     context.previousContextId = $ctx.previousContextId,
-    context.nextContextId = $ctx.nextContextId
+    context.nextContextId = $ctx.nextContextId,
+    context.feedback = $ctx.feedback
 
 MERGE (user)-[:HAS_CONTEXT]->(context)
 SET user.currentContextId = context.contextId
@@ -241,7 +242,8 @@ RETURN c {
   .salaryExact,
   .salaryMin,
   .salaryMax,
-  .languages
+  .languages,
+  .feedback
 } AS result
 `;
 

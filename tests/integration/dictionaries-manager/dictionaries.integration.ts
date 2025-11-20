@@ -54,6 +54,7 @@ describe("Dictionaries Integration", () => {
     expect(dictionaries).toHaveProperty("industries");
     expect(dictionaries).toHaveProperty("platforms");
     expect(dictionaries).toHaveProperty("languages");
+    expect(dictionaries).toHaveProperty("reasons");
 
     // Business Rule: Skills and languages must be imported from yaml/json seed data
     expect(dictionaries.skills.length).toBeGreaterThan(80); // ~85 from yaml minimum
@@ -199,5 +200,97 @@ describe("Dictionaries Integration", () => {
     expect(unverifiedSkill).toBeUndefined(); // Should NOT be returned
     expect(verifiedSkill).toBeDefined(); // Should be returned
     expect(verifiedSkill?.complexity).toBe(60);
+  });
+
+  // Business Logic: Verify that reasons from reasons.json are loaded correctly
+  // Reasons are predefined transition types, not user-added dictionary terms
+  it("D7: getVerifiedDictionaries returns all reasons with correct structure", async () => {
+    const dictionaries = await dictionariesManager.getVerifiedDictionaries();
+
+    // Business Rule: reasons.json contains 15 predefined reasons
+    expect(dictionaries.reasons.length).toBe(15);
+
+    // Business Rule: Reasons structure is {reasonId, description}
+    const sampleReason = dictionaries.reasons[0];
+    expect(sampleReason).toBeDefined();
+    expect(sampleReason?.reasonId).toBeDefined();
+    expect(sampleReason?.description).toBeDefined();
+    expect(typeof sampleReason?.reasonId).toBe("string");
+    expect(typeof sampleReason?.description).toBe("string");
+
+    // Business Rule: Specific reason values from reasons.json must match
+    const reasonsMap = new Map(dictionaries.reasons.map((r) => [r.reasonId, r.description]));
+
+    // Verify critical business reasons exist with correct descriptions
+    expect(reasonsMap.get("position_changed")).toBe(
+      "Job title, seniority level, or role responsibilities changed",
+    );
+    expect(reasonsMap.get("started_working")).toBe("Began professional career or first job");
+    expect(reasonsMap.get("skill_learning")).toBe(
+      "Acquired new technical skills or certifications",
+    );
+    expect(reasonsMap.get("goals_change")).toBe("Career goals or priorities changed");
+  });
+
+  // Business Logic: Reasons are used for filtering in search (excludedCreationReasons)
+  // LLM needs all reasons for normalization when user specifies exclusion criteria
+  it("D8: reasons contain all expected transition types for search filtering", async () => {
+    const dictionaries = await dictionariesManager.getVerifiedDictionaries();
+
+    const reasonIds = dictionaries.reasons.map((r) => r.reasonId);
+
+    // Business Rule: All critical transition types must exist for search filtering
+    const criticalReasons = [
+      "position_changed",
+      "location_changed",
+      "company_changed",
+      "industry_changed",
+      "domain_changed",
+      "work_format_changed",
+      "started_working",
+      "stopped_working",
+      "skill_learning",
+      "education_completed",
+      "goals_change",
+      "constraints_update",
+      "milestone_achieved",
+      "system_recommendation",
+      "other",
+    ];
+
+    criticalReasons.forEach((reasonId) => {
+      expect(reasonIds).toContain(reasonId);
+    });
+  });
+
+  // Business Logic: Reasons are immutable (predefined from reasons.json)
+  // Unlike skills/positions, reasons cannot be added via addTerm
+  it("D9: reasons are read-only and match reasons.json exactly", async () => {
+    const dictionaries = await dictionariesManager.getVerifiedDictionaries();
+
+    // Business Rule: Exactly 15 reasons as defined in reasons.json
+    expect(dictionaries.reasons).toHaveLength(15);
+
+    // Business Rule: Order doesn't matter, but all keys from reasons.json must exist
+    const expectedReasonIds = [
+      "position_changed",
+      "location_changed",
+      "company_changed",
+      "industry_changed",
+      "domain_changed",
+      "work_format_changed",
+      "started_working",
+      "stopped_working",
+      "skill_learning",
+      "education_completed",
+      "goals_change",
+      "constraints_update",
+      "milestone_achieved",
+      "system_recommendation",
+      "other",
+    ];
+
+    const actualReasonIds = dictionaries.reasons.map((r) => r.reasonId).toSorted();
+    expect(actualReasonIds).toEqual(expectedReasonIds.toSorted());
   });
 });

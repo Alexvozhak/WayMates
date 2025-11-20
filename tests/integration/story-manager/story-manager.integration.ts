@@ -490,6 +490,7 @@ describe("StoryManager Integration Tests", () => {
         "salaryMin",
         "salaryMax",
         "languages",
+        "feedback",
       ];
 
       for (const field of requiredFields) {
@@ -516,6 +517,30 @@ describe("StoryManager Integration Tests", () => {
       await expect(promise).rejects.toThrow(
         `Current context not found for user ${orphanUserId} or user has no contexts`,
       );
+    });
+
+    // Business rule: feedback field stores user's personal reflection (max 200 chars).
+    // Use case: User adds emotional context to career transition.
+    it("persists and retrieves feedback field", async () => {
+      const { testData } = await upsertSingleContext("U1", 0);
+
+      const storyManager = createStoryManager();
+
+      const feedbackText = "Great learning experience, but challenging work-life balance";
+
+      const result = await storyManager.updateContext({
+        userId: testData.userId,
+        updates: { feedback: feedbackText },
+      });
+
+      expect(result.feedback).toBe(feedbackText);
+
+      const dbResult = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (c:Context {contextId: $id}) RETURN c.feedback", {
+          id: testData.contexts[0]!.contextId,
+        }),
+      );
+      expect(dbResult.records[0]!.get("c.feedback")).toBe(feedbackText);
     });
 
     // Business rule: updatedAt timestamp is automatically set on update (audit trail).

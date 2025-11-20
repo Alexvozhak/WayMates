@@ -16,6 +16,9 @@ OPTIONAL MATCH (pl:Platform {verified: true})
 WITH skills, positions, domains, cities, industries, collect(pl.canonicalName) AS platforms
 OPTIONAL MATCH (l:Language {verified: true})
 WITH skills, positions, domains, cities, industries, platforms, collect(l.canonicalName) AS languages
+OPTIONAL MATCH (r:Reason)
+WITH skills, positions, domains, cities, industries, platforms, languages,
+     collect({reasonId: r.reasonId, description: r.description}) AS reasons
 RETURN {
   skills: skills,
   positions: positions,
@@ -23,7 +26,8 @@ RETURN {
   cities: cities,
   industries: industries,
   platforms: platforms,
-  languages: languages
+  languages: languages,
+  reasons: reasons
 } AS dictionaries
   `.trim();
 }
