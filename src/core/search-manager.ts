@@ -1,4 +1,3 @@
-// SearchManager - main search orchestration
 import {
   buildCurrentSearchQuery,
   buildTargetSearchWithPathsQuery,
