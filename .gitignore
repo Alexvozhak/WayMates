@@ -79,6 +79,3 @@ dist/
 
 # Environment files with credentials
 .env.prod
-
-# Claude Code - Quality tracking (session-scoped)
-.claude/.quality-status
