@@ -210,26 +210,16 @@ describe("Dictionaries Integration", () => {
     // Business Rule: reasons.json contains 15 predefined reasons
     expect(dictionaries.reasons.length).toBe(15);
 
-    // Business Rule: Reasons structure is {reasonId, description}
+    // Business Rule: Reasons are returned as reasonId strings
     const sampleReason = dictionaries.reasons[0];
     expect(sampleReason).toBeDefined();
-    expect(sampleReason?.reasonId).toBeDefined();
-    expect(sampleReason?.description).toBeDefined();
-    expect(typeof sampleReason?.reasonId).toBe("string");
-    expect(typeof sampleReason?.description).toBe("string");
+    expect(typeof sampleReason).toBe("string");
 
-    // Business Rule: Specific reason values from reasons.json must match
-    const reasonsMap = new Map(dictionaries.reasons.map((r) => [r.reasonId, r.description]));
-
-    // Verify critical business reasons exist with correct descriptions
-    expect(reasonsMap.get("position_changed")).toBe(
-      "Job title, seniority level, or role responsibilities changed",
-    );
-    expect(reasonsMap.get("started_working")).toBe("Began professional career or first job");
-    expect(reasonsMap.get("skill_learning")).toBe(
-      "Acquired new technical skills or certifications",
-    );
-    expect(reasonsMap.get("goals_change")).toBe("Career goals or priorities changed");
+    // Business Rule: Specific reason IDs from reasons.json must exist
+    expect(dictionaries.reasons).toContain("position_changed");
+    expect(dictionaries.reasons).toContain("started_working");
+    expect(dictionaries.reasons).toContain("skill_learning");
+    expect(dictionaries.reasons).toContain("goals_change");
   });
 
   // Business Logic: Reasons are used for filtering in search (excludedCreationReasons)
@@ -237,7 +227,7 @@ describe("Dictionaries Integration", () => {
   it("D8: reasons contain all expected transition types for search filtering", async () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    const reasonIds = dictionaries.reasons.map((r) => r.reasonId);
+    const reasonIds = dictionaries.reasons;
 
     // Business Rule: All critical transition types must exist for search filtering
     const criticalReasons = [
@@ -290,7 +280,7 @@ describe("Dictionaries Integration", () => {
       "other",
     ];
 
-    const actualReasonIds = dictionaries.reasons.map((r) => r.reasonId).toSorted();
+    const actualReasonIds = dictionaries.reasons.toSorted();
     expect(actualReasonIds).toEqual(expectedReasonIds.toSorted());
   });
 });

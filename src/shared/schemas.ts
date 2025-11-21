@@ -687,19 +687,23 @@ export const skillDictionaryItemSchema = z.object({
 
 export type SkillDictionaryItem = z.infer<typeof skillDictionaryItemSchema>;
 
-const addSkillInputSchema = z.object({
-  type: z.literal("skill"),
+/**
+ * Base fields shared by all dictionary term inputs
+ * Used for DRY in addTermInputSchema discriminated union
+ */
+const termInputBaseSchema = z.object({
   canonicalName: z.string().min(1),
-  complexity: z.number().int().min(0).max(100),
   verified: z.boolean(),
   createdBy: z.string().min(1),
 });
 
-const addOtherTermInputSchema = z.object({
+const addSkillInputSchema = termInputBaseSchema.extend({
+  type: z.literal("skill"),
+  complexity: z.number().int().min(0).max(100),
+});
+
+const addOtherTermInputSchema = termInputBaseSchema.extend({
   type: z.enum(["position", "domain", "city", "industry", "platform", "language"]),
-  canonicalName: z.string().min(1),
-  verified: z.boolean(),
-  createdBy: z.string().min(1),
 });
 
 export const addTermInputSchema = z.discriminatedUnion("type", [
@@ -713,28 +717,15 @@ export type AddTermInput = z.infer<typeof addTermInputSchema>;
  * Dictionaries containing verified canonical terms
  * Used by LLM for normalization (user input → canonical name)
  */
-export const reasonDictionaryItemSchema = z.object({
-  reasonId: z.string(),
-  description: z.string(),
-});
-
-export type ReasonDictionaryItem = z.infer<typeof reasonDictionaryItemSchema>;
-
 export const dictionariesSchema = z.object({
-  skills: z
-    .array(skillDictionaryItemSchema)
-    .describe("Verified skills with complexity (e.g., {canonicalName: 'rust', complexity: 88})"),
-  positions: z.array(z.string()).describe("Verified position titles (e.g., Junior Developer)"),
-  domains: z.array(z.string()).describe("Verified work domains (e.g., Backend, Frontend)"),
-  cities: z.array(z.string()).describe("Verified city names (e.g., Moscow, London)"),
-  industries: z.array(z.string()).describe("Verified industries (e.g., Fintech, Healthcare)"),
-  platforms: z.array(z.string()).describe("Verified platforms (e.g., Coursera, Udemy)"),
-  languages: z.array(z.string()).describe("Verified languages (e.g., English, Russian)"),
-  reasons: z
-    .array(reasonDictionaryItemSchema)
-    .describe(
-      "Context transition reasons (e.g., {reasonId: 'position_changed', description: 'Job title changed'})",
-    ),
+  skills: z.array(skillDictionaryItemSchema),
+  positions: z.array(z.string()),
+  domains: z.array(z.string()),
+  cities: z.array(z.string()),
+  industries: z.array(z.string()),
+  platforms: z.array(z.string()),
+  languages: z.array(z.string()),
+  reasons: z.array(z.string()),
 });
 
 export type Dictionaries = z.infer<typeof dictionariesSchema>;
