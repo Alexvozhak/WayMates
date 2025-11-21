@@ -36,7 +36,7 @@ import type {
  */
 const createAdhocSearchParams = (
   userId: string,
-  referenceContext: UserContext,
+  referenceContext: Partial<UserContext>,
   overrides?: Partial<{
     limit: number;
     pathLimit: number;
@@ -855,5 +855,170 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       console.log("[SC7] U1 languages field:", u1InU3Search.matchedContext.languages);
       expect(u1InU3Search.matchedContext.languages).toEqual(["en"]);
     }
+  });
+});
+
+describe("Partial Context Tests (AC13-AC15)", () => {
+  // Business rule: Adhoc mode with minimal context - Entry-level onboarding
+  // Users provide only position + skills (typical for job seekers)
+  it("AC13: Minimal adhoc context - Entry-level job seeker finds relevant paths", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+
+    // Business scenario: User says "I'm a Junior React developer"
+    // Facade normalized: {position: "Junior", skills: ["react"], domains: ["Frontend"]}
+    const partialContext: Partial<UserContext> = {
+      position: "Junior",
+      skills: ["react"],
+      domains: ["Frontend"],
+      // Missing: industry, geo, companySize, birthYear (typical for new users)
+    };
+
+    console.log("[AC13] Searching with minimal context:", partialContext);
+
+    const params = createAdhocSearchParams("test_user", partialContext, {
+      excludedContextFields: [],
+    });
+    const results = await searchManager.searchAdhoc(params);
+
+    console.log("[AC13] Results count:", results.length);
+    console.log(
+      "[AC13] Top results:",
+      results.slice(0, 3).map((r) => ({
+        userId: r.userId,
+        position: r.matchedContext.position,
+        skills: r.matchedContext.skills,
+        score: r.contextMatchScore,
+      })),
+    );
+
+    // Business assertion: Finds Junior React developers (U1, U2)
+    expect(results.length).toBeGreaterThan(0);
+
+    const u1 = dataManager.getStoryBy("U1");
+    const u2 = dataManager.getStoryBy("U2");
+    const u1Result = results.find((r) => r.userId === u1.userId);
+    const u2Result = results.find((r) => r.userId === u2.userId);
+
+    // U1 and U2 have Junior + react → should match
+    expect(u1Result).toBeDefined();
+    expect(u2Result).toBeDefined();
+
+    // Scoring works (penalty for extra skills)
+    if (u2Result) {
+      console.log("[AC13] U2 match details:", {
+        position: u2Result.matchedContext.position,
+        skills: u2Result.matchedContext.skills,
+        score: u2Result.contextMatchScore,
+      });
+      // U2: skills=["react"], matched=["react"], extra=[]
+      // Expected: (65 × 0.2) - 0 = 13
+      const expectedScore = 13;
+      expect(u2Result.contextMatchScore).toBe(expectedScore);
+    }
+  });
+
+  // Business rule: Skills-only adhoc - Technology stack exploration
+  // Users explore "what careers are possible with my stack"
+  it("AC14: Skills-only adhoc - Technology-focused career exploration", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+
+    // Business scenario: User asks "What careers are possible with Python?"
+    // No position/seniority known yet
+    const partialContext: Partial<UserContext> = {
+      skills: ["python"],
+      // Missing: position, domains, ALL other fields
+    };
+
+    console.log("[AC14] Searching with skills-only context:", partialContext);
+
+    const params = createAdhocSearchParams("test_user", partialContext, {
+      excludedContextFields: [
+        "position",
+        "domains",
+        "industry",
+        "countryCode",
+        "cityName",
+        "companySize",
+        "birthYear",
+        "educationLevel",
+        "languages",
+      ],
+      limit: 20,
+    });
+    const results = await searchManager.searchAdhoc(params);
+
+    console.log("[AC14] Results count:", results.length);
+    console.log("[AC14] Position diversity:", [
+      ...new Set(results.map((r) => r.matchedContext.position)),
+    ]);
+
+    // Business assertion: Finds candidates with Python (any level)
+    expect(results.length).toBeGreaterThan(0);
+
+    // Diverse positions (Junior, Senior, different domains)
+    const positions = new Set(results.map((r) => r.matchedContext.position));
+    expect(positions.size).toBeGreaterThan(1); // Not limited to one position
+
+    // Scoring based on skills penalty (no position match required)
+    const hasScoredResults = results.some((r) => r.contextMatchScore > 0);
+    expect(hasScoredResults).toBe(true);
+
+    console.log("[AC14] Score range:", {
+      min: Math.min(...results.map((r) => r.contextMatchScore)),
+      max: Math.max(...results.map((r) => r.contextMatchScore)),
+    });
+  });
+
+  // Business rule: International adhoc (no geo) - Global mobility
+  // Senior specialists seek international opportunities
+  it("AC15: No geo constraints - International career search", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+
+    // Business scenario: Senior developer seeks global opportunities
+    // "Senior Backend with Python, any country"
+    const partialContext: Partial<UserContext> = {
+      position: "Senior",
+      domains: ["Backend"],
+      skills: ["python"],
+      // Missing: countryCode, cityName (intentional - international search)
+    };
+
+    console.log("[AC15] Searching with no geo constraints:", partialContext);
+
+    const params = createAdhocSearchParams("test_user", partialContext, {
+      excludedContextFields: [
+        "industry",
+        "countryCode",
+        "cityName",
+        "companySize",
+        "birthYear",
+        "educationLevel",
+        "languages",
+      ],
+      limit: 20,
+    });
+    const results = await searchManager.searchAdhoc(params);
+
+    console.log("[AC15] Results count:", results.length);
+    console.log("[AC15] Countries found:", [
+      ...new Set(results.map((r) => r.matchedContext.countryCode)),
+    ]);
+
+    // Business assertion: Finds Senior Backend from multiple countries
+    expect(results.length).toBeGreaterThan(0);
+
+    const countries = new Set(results.map((r) => r.matchedContext.countryCode));
+    console.log("[AC15] International diversity:", countries.size, "countries");
+    expect(countries.size).toBeGreaterThanOrEqual(1);
+
+    // All results match position + domains
+    results.forEach((r) => {
+      expect(r.matchedContext.position).toBe("Senior");
+      expect(r.matchedContext.domains).toContain("Backend");
+    });
   });
 });

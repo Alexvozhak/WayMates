@@ -174,6 +174,10 @@ const userContextSchemaBase = z.object({
     ),
 });
 
+export const adhocUserContextSchema = userContextSchemaBase.partial();
+
+export type AdhocUserContext = z.infer<typeof adhocUserContextSchema>;
+
 // Schema with salary validation
 export const userContextSchema = userContextSchemaBase.refine(
   (data) => {
@@ -351,15 +355,9 @@ export const userSearchParamsSchema = userSearchParamsBaseSchema;
 
 export type UserSearchParams = z.infer<typeof userSearchParamsSchema>;
 
-/**
- * Ad-hoc search parameters with custom reference context (Mode 1)
- * Extends UserSearchParams with explicit referenceContext
- */
 export const adhocSearchParamsSchema = userSearchParamsRawSchema
   .extend({
-    referenceContext: userContextSchema.describe(
-      "Custom reference context (extracted from user text)",
-    ),
+    referenceContext: adhocUserContextSchema,
   })
   .refine((data) => data.pathLimit <= data.limit, {
     message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
@@ -699,7 +697,7 @@ const termInputBaseSchema = z.object({
 
 const addSkillInputSchema = termInputBaseSchema.extend({
   type: z.literal("skill"),
-  complexity: z.number().int().min(0).max(100),
+  complexity: z.number().int().min(0).max(100).nullish(),
 });
 
 const addOtherTermInputSchema = termInputBaseSchema.extend({

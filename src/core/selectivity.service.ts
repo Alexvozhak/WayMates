@@ -1,5 +1,5 @@
 import type { DatabaseContext } from "./database-context.js";
-import type { ContextField, UserContext } from "../shared/schemas.js";
+import type { AdhocUserContext, ContextField } from "../shared/schemas.js";
 import type { ManagedTransaction, Plan } from "neo4j-driver";
 
 type SelectivityResult = {
@@ -27,7 +27,7 @@ export class SelectivityService {
 
   async rankStrictFields(
     strictFields: ContextField[],
-    userContext: UserContext,
+    userContext: AdhocUserContext,
   ): Promise<ContextField[]> {
     const results = await this.db.read(async (tx) => {
       const selectivityResults: SelectivityResult[] = [];
@@ -52,7 +52,7 @@ export class SelectivityService {
     return results.toSorted((a, b) => a.estimatedRows - b.estimatedRows).map((r) => r.fieldName);
   }
 
-  private getContextFieldValue(context: UserContext, field: ContextField): unknown {
+  private getContextFieldValue(context: AdhocUserContext, field: ContextField): unknown {
     const fieldMap: Record<ContextField, unknown> = {
       position: context.position,
       domains: context.domains,
