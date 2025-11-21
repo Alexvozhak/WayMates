@@ -1,7 +1,6 @@
 import { BaseTool } from "./base-tool.js";
 
 import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
-import type { SessionId } from "../result.js";
 import type { SearchUserCareersParams } from "../schemas.js";
 
 /**
@@ -13,10 +12,6 @@ export class SearchUserCareersTool extends BaseTool<
   SearchUserCareersParams,
   ScoredMatchedCandidate[]
 > {
-  protected extractSessionId(params: SearchUserCareersParams): SessionId {
-    return params.sessionId;
-  }
-
   protected async executeImpl(
     params: SearchUserCareersParams,
     userId: UserId,

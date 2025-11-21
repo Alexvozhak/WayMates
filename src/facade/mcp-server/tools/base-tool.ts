@@ -14,7 +14,9 @@ export type Normalizer = {
   normalize(input: string): string | Promise<string>;
 };
 
-export abstract class BaseTool<TParams, TResult> {
+export type WithSessionId = { sessionId: SessionId };
+
+export abstract class BaseTool<TParams extends WithSessionId, TResult> {
   constructor(
     protected session: SessionMiddleware,
     protected normalizer: Normalizer,
@@ -23,11 +25,8 @@ export abstract class BaseTool<TParams, TResult> {
 
   async execute(params: TParams): Promise<Result<TResult, ErrorResponse>> {
     try {
-      const sessionId = this.extractSessionId(params);
-      const userId = await this.session.validate(sessionId);
-
+      const userId = await this.session.validate(params.sessionId);
       const result = await this.executeImpl(params, userId);
-
       return ok(result);
     } catch (error) {
       return err(this.handleError(error));
@@ -35,8 +34,6 @@ export abstract class BaseTool<TParams, TResult> {
   }
 
   protected abstract executeImpl(params: TParams, userId: UserId): Promise<TResult>;
-
-  protected abstract extractSessionId(params: TParams): SessionId;
 
   private handleError(error: unknown): ErrorResponse {
     if (error instanceof FacadeError) {

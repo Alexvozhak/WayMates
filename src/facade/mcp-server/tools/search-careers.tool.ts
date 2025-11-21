@@ -1,7 +1,6 @@
 import { BaseTool } from "./base-tool.js";
 
 import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
-import type { SessionId } from "../result.js";
 import type { SearchCareersParams } from "../schemas.js";
 
 /**
@@ -10,10 +9,6 @@ import type { SearchCareersParams } from "../schemas.js";
  * Facade validates session and calls Core API
  */
 export class SearchCareersTool extends BaseTool<SearchCareersParams, ScoredMatchedCandidate[]> {
-  protected extractSessionId(params: SearchCareersParams): SessionId {
-    return params.sessionId;
-  }
-
   protected async executeImpl(
     params: SearchCareersParams,
     userId: UserId,

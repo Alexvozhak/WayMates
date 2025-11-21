@@ -1,14 +1,9 @@
 import { BaseTool } from "./base-tool.js";
 
 import type { UpsertSingleContextResult, UserId } from "../../../shared/schemas.js";
-import type { SessionId } from "../result.js";
 import type { UpsertContextParams } from "../schemas.js";
 
 export class UpsertContextTool extends BaseTool<UpsertContextParams, UpsertSingleContextResult> {
-  protected extractSessionId(params: UpsertContextParams): SessionId {
-    return params.sessionId;
-  }
-
   protected async executeImpl(
     params: UpsertContextParams,
     userId: UserId,
