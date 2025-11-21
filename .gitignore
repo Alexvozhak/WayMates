@@ -81,4 +81,4 @@ dist/
 .env.prod
 
 # Dropbox sync folders
-todo-dropbox/
+todo-dropbox
