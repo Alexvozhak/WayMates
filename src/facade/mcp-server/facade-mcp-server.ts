@@ -3,10 +3,10 @@ import { FastMCP } from "fastmcp";
 import {
   deleteContextParamsSchema,
   deleteGoalParamsSchema,
+  facadeAdhocSearchParamsSchema,
   getGoalParamsSchema,
   getStoryParamsSchema,
   searchByTargetParamsSchema,
-  searchCareersParamsSchema,
   searchUserCareersParamsSchema,
   setGoalParamsSchema,
   updateContextToolParamsSchema,
@@ -24,12 +24,12 @@ import { UpdateContextTool } from "./tools/update-context.tool.js";
 import { UpsertContextTool } from "./tools/upsert-context.tool.js";
 
 import type { SessionMiddleware } from "./session-middleware.js";
-import type { SimpleNormalizer } from "./simple-normalizer.js";
+import type { Normalizer } from "./tools/base-tool.js";
 import type { CoreTRPCClient } from "../core-client/core-trpc-client.js";
 
 export type FacadeServerDependencies = {
   sessionMiddleware: SessionMiddleware;
-  normalizer: SimpleNormalizer;
+  normalizer: Normalizer;
   coreClient: CoreTRPCClient;
 };
 
@@ -90,9 +90,9 @@ function registerSearchCareersTool(server: FastMCP, tool: SearchCareersTool): vo
     name: "search_careers",
     description:
       "Search for career transition paths with custom context. LibreChat LLM extracts structured context from user text.",
-    parameters: searchCareersParamsSchema,
+    parameters: facadeAdhocSearchParamsSchema,
     execute: async (args: unknown) => {
-      const params = searchCareersParamsSchema.parse(args);
+      const params = facadeAdhocSearchParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);

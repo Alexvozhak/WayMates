@@ -4,7 +4,9 @@ import { CoreTRPCClient } from "./core-client/core-trpc-client.js";
 import { loadEnv } from "./env.js";
 import { createFacadeServer } from "./mcp-server/facade-mcp-server.js";
 import { SessionMiddleware } from "./mcp-server/session-middleware.js";
-import { SimpleNormalizer } from "./mcp-server/simple-normalizer.js";
+import { DictionariesCache } from "./services/dictionaries-cache.js";
+import { FacadeNormalizer } from "./services/facade-normalizer.js";
+import { LLMFuzzyMatcher } from "./services/llm-fuzzy-matcher.js";
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -14,9 +16,12 @@ async function main(): Promise<void> {
     port: env.REDIS_PORT,
   });
 
-  const sessionMiddleware = new SessionMiddleware(redis);
-  const normalizer = new SimpleNormalizer();
   const coreClient = new CoreTRPCClient(env.CORE_API_URL);
+  const sessionMiddleware = new SessionMiddleware(redis);
+
+  const cache = new DictionariesCache(redis, coreClient);
+  const llm = new LLMFuzzyMatcher(env.GOOGLE_API_KEY);
+  const normalizer = new FacadeNormalizer(cache, coreClient, llm);
 
   const server = createFacadeServer({
     sessionMiddleware,

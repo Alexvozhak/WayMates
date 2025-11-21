@@ -11,6 +11,7 @@ const envSchema = z.object({
   REDIS_HOST: z.string().min(1, "REDIS_HOST is required"),
   REDIS_PORT: z.coerce.number().int().positive("REDIS_PORT must be a positive integer"),
   CORE_API_URL: z.string().url("CORE_API_URL must be a valid URL"),
+  DICT_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
   // PostgreSQL configuration
   POSTGRES_HOST: z.string().min(1, "POSTGRES_HOST is required"),
   POSTGRES_PORT: z.coerce.number().int().positive("POSTGRES_PORT must be a positive integer"),

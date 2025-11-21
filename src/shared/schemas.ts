@@ -678,36 +678,27 @@ export const dictionaryTypeSchema = z.enum([
 
 export type DictionaryType = z.infer<typeof dictionaryTypeSchema>;
 
-export const skillDictionaryItemSchema = z.object({
-  canonicalName: z.string(),
-  complexity: z.number().int().min(0).max(100),
-});
+const simpleDictionaryTypes = [
+  "position",
+  "domain",
+  "city",
+  "industry",
+  "platform",
+  "language",
+  "skill",
+] as const;
 
-export type SkillDictionaryItem = z.infer<typeof skillDictionaryItemSchema>;
+export type SimpleDictionaryType = (typeof simpleDictionaryTypes)[number];
 
-/**
- * Base fields shared by all dictionary term inputs
- * Used for DRY in addTermInputSchema discriminated union
- */
-const termInputBaseSchema = z.object({
+export const simpleDictionaryTypeSchema = z.enum(simpleDictionaryTypes);
+
+export const addTermInputSchema = z.object({
+  type: simpleDictionaryTypeSchema,
   canonicalName: z.string().min(1),
+  complexity: z.number().int().min(0).max(100).nullish(),
   verified: z.boolean(),
   createdBy: z.string().min(1),
 });
-
-const addSkillInputSchema = termInputBaseSchema.extend({
-  type: z.literal("skill"),
-  complexity: z.number().int().min(0).max(100).nullish(),
-});
-
-const addOtherTermInputSchema = termInputBaseSchema.extend({
-  type: z.enum(["position", "domain", "city", "industry", "platform", "language"]),
-});
-
-export const addTermInputSchema = z.discriminatedUnion("type", [
-  addSkillInputSchema,
-  addOtherTermInputSchema,
-]);
 
 export type AddTermInput = z.infer<typeof addTermInputSchema>;
 
@@ -716,7 +707,7 @@ export type AddTermInput = z.infer<typeof addTermInputSchema>;
  * Used by LLM for normalization (user input → canonical name)
  */
 export const dictionariesSchema = z.object({
-  skills: z.array(skillDictionaryItemSchema),
+  skills: z.array(z.string()),
   positions: z.array(z.string()),
   domains: z.array(z.string()),
   cities: z.array(z.string()),

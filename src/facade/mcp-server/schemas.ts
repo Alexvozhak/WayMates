@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 import {
+  adhocUserContextSchema,
   contextIdSchema,
   targetContextSchema,
   updateContextInputSchema,
   upsertContextInputSchema,
-  userContextSchema,
   userIdSchema,
   userSearchParamsRawSchema,
 } from "../../shared/schemas.js";
@@ -19,17 +19,10 @@ export const getStoryParamsSchema = z.object({
 
 export type GetStoryParams = z.infer<typeof getStoryParamsSchema>;
 
-/**
- * Facade MCP tool parameters: Core raw schemas WITHOUT userId + sessionId
- * userId extracted automatically from sessionId by BaseTool
- * Validation (pathLimit <= limit) inherited from Core raw schema
- */
-export const searchCareersParamsSchema = userSearchParamsRawSchema
+export const facadeAdhocSearchParamsSchema = userSearchParamsRawSchema
   .omit({ userId: true })
   .extend({
-    referenceContext: userContextSchema.describe(
-      "Custom reference context (extracted from user text)",
-    ),
+    referenceContext: adhocUserContextSchema,
     sessionId: sessionIdSchema,
   })
   .refine((data) => data.pathLimit <= data.limit, {
@@ -37,7 +30,7 @@ export const searchCareersParamsSchema = userSearchParamsRawSchema
     path: ["pathLimit"],
   });
 
-export type SearchCareersParams = z.infer<typeof searchCareersParamsSchema>;
+export type FacadeAdhocSearchParams = z.infer<typeof facadeAdhocSearchParamsSchema>;
 
 export const searchUserCareersParamsSchema = userSearchParamsRawSchema
   .omit({ userId: true })

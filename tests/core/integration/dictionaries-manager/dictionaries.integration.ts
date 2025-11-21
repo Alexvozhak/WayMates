@@ -21,24 +21,21 @@ describe("Dictionaries Integration", () => {
     await driver.close();
   });
 
-  // Business Logic: Verify that skills.yaml (85 skills) is imported with correct complexity values
+  // Business Logic: Verify that skills.yaml (85 skills) is imported
   // This validates the entire seed data pipeline: yaml → import-skills.ts → Neo4j → getVerifiedDictionaries
-  it("D1: getVerifiedDictionaries returns skills with complexity from yaml", async () => {
+  it("D1: getVerifiedDictionaries returns skills from yaml", async () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
     // Business Rule: skills.yaml contains 85 skills (as of ADR-009)
     // Test runs AFTER other integration tests, so DB may have additional skills from fixtures
     expect(dictionaries.skills.length).toBeGreaterThanOrEqual(85);
 
-    // Business Rule: Specific complexity values from skills.yaml must match
-    const skillsByName = new Map(dictionaries.skills.map((s) => [s.canonicalName, s.complexity]));
-
-    // Verify sample of complexity values from different categories in skills.yaml
-    expect(skillsByName.get("rust")).toBe(88); // Programming language
-    expect(skillsByName.get("python")).toBe(60); // Programming language
-    expect(skillsByName.get("typescript")).toBe(55); // Programming language
-    expect(skillsByName.get("django")).toBe(70); // Web framework
-    expect(skillsByName.get("kubernetes")).toBe(85); // Infrastructure
+    // Business Rule: Specific skills from skills.yaml must be present
+    expect(dictionaries.skills).toContain("rust"); // Programming language
+    expect(dictionaries.skills).toContain("python"); // Programming language
+    expect(dictionaries.skills).toContain("typescript"); // Programming language
+    expect(dictionaries.skills).toContain("django"); // Web framework
+    expect(dictionaries.skills).toContain("kubernetes"); // Infrastructure
   });
 
   // Business Logic: Verify all dictionary types structure and that seed data is loaded
@@ -60,54 +57,44 @@ describe("Dictionaries Integration", () => {
     expect(dictionaries.skills.length).toBeGreaterThan(80); // ~85 from yaml minimum
     expect(dictionaries.languages.length).toBeGreaterThan(0); // from languages.json
 
-    // Business Rule: Skills return structure is {canonicalName, complexity}
+    // Business Rule: All dictionary types return string[] (canonical names only)
     const sampleSkill = dictionaries.skills[0];
     expect(sampleSkill).toBeDefined();
-    expect(sampleSkill?.canonicalName).toBeDefined();
-    expect(sampleSkill?.complexity).toBeDefined();
-    expect(typeof sampleSkill?.canonicalName).toBe("string");
-    expect(typeof sampleSkill?.complexity).toBe("number");
+    expect(typeof sampleSkill).toBe("string");
 
-    // Business Rule: Other types return string[] (canonical names only)
     if (dictionaries.languages.length > 0) {
       expect(typeof dictionaries.languages[0]).toBe("string");
     }
   });
 
-  // Business Logic: addTerm creates new skill with complexity
-  // Discriminated union API requires complexity for type="skill"
-  it("D3: addTerm creates new skill with correct complexity", async () => {
+  // Business Logic: addTerm creates new skill
+  it("D3: addTerm creates new skill", async () => {
     const newSkillName = `test-skill-${Date.now()}`;
-    const expectedComplexity = 75;
 
     await dictionariesManager.addTerm({
       type: "skill",
       canonicalName: newSkillName,
-      complexity: expectedComplexity,
+      complexity: 75,
       verified: true,
       createdBy: "test-user",
     });
 
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
-    const addedSkill = dictionaries.skills.find((s) => s.canonicalName === newSkillName);
 
-    // Business Rule: Newly added skill must exist with correct complexity
-    expect(addedSkill).toBeDefined();
-    expect(addedSkill?.complexity).toBe(expectedComplexity);
+    // Business Rule: Newly added skill must exist
+    expect(dictionaries.skills).toContain(newSkillName);
   });
 
   // Business Logic: MERGE idempotency - ON CREATE SET should preserve FIRST values
   // When same canonicalName is added twice, database should keep first creation data
   it("D4: addTerm is idempotent - MERGE preserves first creation", async () => {
     const skillName = `idempotent-skill-${Date.now()}`;
-    const firstComplexity = 60;
-    const secondComplexity = 80;
 
-    // First call: creates node with complexity=60, verified=true, createdBy=user1
+    // First call: creates node with verified=true, createdBy=user1
     await dictionariesManager.addTerm({
       type: "skill",
       canonicalName: skillName,
-      complexity: firstComplexity,
+      complexity: 60,
       verified: true,
       createdBy: "user1",
     });
@@ -116,22 +103,20 @@ describe("Dictionaries Integration", () => {
     await dictionariesManager.addTerm({
       type: "skill",
       canonicalName: skillName,
-      complexity: secondComplexity,
+      complexity: 80,
       verified: false,
       createdBy: "user2",
     });
 
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
-    const skill = dictionaries.skills.find((s) => s.canonicalName === skillName);
 
     // Business Rule: MERGE with ON CREATE SET keeps FIRST values
-    // Second call should NOT update existing node
-    expect(skill).toBeDefined();
-    expect(skill?.complexity).toBe(firstComplexity); // NOT secondComplexity
+    // Second call should NOT update existing node, so skill appears (verified=true from first call)
+    expect(dictionaries.skills).toContain(skillName);
   });
 
-  // Business Logic: addTerm supports all dictionary types (position, domain, city, etc.)
-  // Each type creates corresponding label node (Position, WorkDomain, City, etc.)
+  // Business Logic: addTerm supports all dictionary types (position, domain, city, skill, etc.)
+  // Each type creates corresponding label node (Position, WorkDomain, City, Skill, etc.)
   it("D5: addTerm supports all dictionary types", async () => {
     const timestamp = Date.now();
 
@@ -191,15 +176,9 @@ describe("Dictionaries Integration", () => {
 
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    const unverifiedSkill = dictionaries.skills.find(
-      (s) => s.canonicalName === unverifiedSkillName,
-    );
-    const verifiedSkill = dictionaries.skills.find((s) => s.canonicalName === verifiedSkillName);
-
     // Business Rule: Only verified terms should appear in dictionaries
-    expect(unverifiedSkill).toBeUndefined(); // Should NOT be returned
-    expect(verifiedSkill).toBeDefined(); // Should be returned
-    expect(verifiedSkill?.complexity).toBe(60);
+    expect(dictionaries.skills).not.toContain(unverifiedSkillName); // Should NOT be returned
+    expect(dictionaries.skills).toContain(verifiedSkillName); // Should be returned
   });
 
   // Business Logic: Verify that reasons from reasons.json are loaded correctly

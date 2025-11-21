@@ -1,8 +1,3 @@
-/**
- * PostgreSQL Connection Singleton for Facade
- * Manages connection pool and checkpointer for LangGraph
- */
-
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import pg from "pg";
 
@@ -10,17 +5,14 @@ import { config } from "../env.js";
 
 import type { QueryResult, QueryResultRow } from "pg";
 
-/**
- * Singleton class to manage PostgreSQL connection and checkpointer
- */
-class PostgresConnection {
-  private static instance: PostgresConnection;
+class PostgresService {
+  private static instance: PostgresService;
 
-  static getInstance(): PostgresConnection {
-    if (!PostgresConnection.instance) {
-      PostgresConnection.instance = new PostgresConnection();
+  static getInstance(): PostgresService {
+    if (!PostgresService.instance) {
+      PostgresService.instance = new PostgresService();
     }
-    return PostgresConnection.instance;
+    return PostgresService.instance;
   }
 
   private pool: pg.Pool | null = null;
@@ -28,13 +20,9 @@ class PostgresConnection {
   private isSetupDone = false;
 
   private constructor() {
-    // Private constructor for singleton pattern
+    // Singleton pattern
   }
 
-  /**
-   * Initialize connection pool and checkpointer
-   * Must be called once at application startup
-   */
   async initialize(): Promise<void> {
     if (this.pool) {
       console.log("PostgreSQL connection already initialized");
@@ -82,9 +70,6 @@ class PostgresConnection {
     }
   }
 
-  /**
-   * Get the PostgresSaver checkpointer instance
-   */
   getCheckpointer(): PostgresSaver {
     if (!this.checkpointer) {
       throw new Error("PostgreSQL connection not initialized. Call initialize() first.");
@@ -92,9 +77,6 @@ class PostgresConnection {
     return this.checkpointer;
   }
 
-  /**
-   * Get the connection pool for direct queries
-   */
   getPool(): pg.Pool {
     if (!this.pool) {
       throw new Error("PostgreSQL connection not initialized. Call initialize() first.");
@@ -102,9 +84,6 @@ class PostgresConnection {
     return this.pool;
   }
 
-  /**
-   * Execute a query directly
-   */
   async query<T extends QueryResultRow = QueryResultRow>(
     text: string,
     params?: unknown[],
@@ -113,9 +92,6 @@ class PostgresConnection {
     return pool.query<T>(text, params);
   }
 
-  /**
-   * Close all connections
-   */
   async close(): Promise<void> {
     if (this.pool) {
       await this.pool.end();
@@ -126,5 +102,4 @@ class PostgresConnection {
   }
 }
 
-// Export singleton instance
-export const postgresConnection = PostgresConnection.getInstance();
+export const postgresService = PostgresService.getInstance();

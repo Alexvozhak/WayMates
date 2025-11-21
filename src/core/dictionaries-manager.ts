@@ -1,4 +1,8 @@
-import { addTermQuery, getVerifiedDictionariesQuery } from "../cypher/index.js";
+import {
+  addSimpleTermQuery,
+  addSkillQuery,
+  getVerifiedDictionariesQuery,
+} from "../cypher/index.js";
 import { dictionariesSchema } from "../shared/schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";
@@ -16,13 +20,24 @@ export class DictionariesManager {
     const createdAt = new Date().toISOString();
 
     await this.db.write(async (tx) => {
-      await tx.run(addTermQuery(input.type), {
-        canonicalName: input.canonicalName,
-        verified: input.verified,
-        createdAt,
-        createdBy: input.createdBy,
-        complexity: input.type === "skill" ? input.complexity : null,
-      });
+      const query = input.type === "skill" ? addSkillQuery() : addSimpleTermQuery(input.type);
+      const params =
+        input.type === "skill"
+          ? {
+              canonicalName: input.canonicalName,
+              verified: input.verified,
+              createdAt,
+              createdBy: input.createdBy,
+              complexity: input.complexity ?? null,
+            }
+          : {
+              canonicalName: input.canonicalName,
+              verified: input.verified,
+              createdAt,
+              createdBy: input.createdBy,
+            };
+
+      await tx.run(query, params);
     });
   }
 

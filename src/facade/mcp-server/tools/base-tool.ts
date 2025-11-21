@@ -2,7 +2,7 @@ import { err, ok } from "../result.js";
 
 import { FacadeError } from "./errors.js";
 
-import type { UserId } from "../../../shared/schemas.js";
+import type { AdhocUserContext, TargetContext, UserId } from "../../../shared/schemas.js";
 import type { CoreTRPCClient } from "../../core-client/core-trpc-client.js";
 import type { ErrorResponse, Result, SessionId } from "../result.js";
 
@@ -11,7 +11,8 @@ export type SessionMiddleware = {
 };
 
 export type Normalizer = {
-  normalize(input: string): string | Promise<string>;
+  normalizeUserContext(context: AdhocUserContext, userId: UserId): Promise<AdhocUserContext>;
+  normalizeTargetContext(context: TargetContext, userId: UserId): Promise<TargetContext>;
 };
 
 export type WithSessionId = { sessionId: SessionId };

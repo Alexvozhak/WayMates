@@ -1,3 +1,5 @@
+import { upsertContextInputSchema } from "../../../shared/schemas.js";
+
 import { BaseTool } from "./base-tool.js";
 
 import type { UpsertSingleContextResult, UserId } from "../../../shared/schemas.js";
@@ -8,13 +10,10 @@ export class UpsertContextTool extends BaseTool<UpsertContextParams, UpsertSingl
     params: UpsertContextParams,
     userId: UserId,
   ): Promise<UpsertSingleContextResult> {
-    // userId extracted from sessionId by BaseTool
-    // Remove sessionId before passing to Core API
-    const { sessionId: _, ...contextData } = params;
+    const normalizedPartial = await this.normalizer.normalizeUserContext(params.context, userId);
 
-    return this.coreClient.client.context.upsertContext.mutate({
-      userId,
-      ...contextData,
-    });
+    const validated = upsertContextInputSchema.parse({ userId, context: normalizedPartial });
+
+    return this.coreClient.client.context.upsertContext.mutate(validated);
   }
 }
