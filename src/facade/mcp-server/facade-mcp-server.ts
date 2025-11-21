@@ -1,10 +1,8 @@
 import { FastMCP } from "fastmcp";
 
 import {
-  addDictionaryTermParamsSchema,
   deleteContextParamsSchema,
   deleteGoalParamsSchema,
-  getDictionariesParamsSchema,
   getGoalParamsSchema,
   getStoryParamsSchema,
   searchByTargetParamsSchema,
@@ -14,10 +12,8 @@ import {
   updateContextToolParamsSchema,
   upsertContextParamsSchema,
 } from "./schemas.js";
-import { AddDictionaryTermTool } from "./tools/add-dictionary-term.tool.js";
 import { DeleteContextTool } from "./tools/delete-context.tool.js";
 import { DeleteGoalTool } from "./tools/delete-goal.tool.js";
-import { GetDictionariesTool } from "./tools/get-dictionaries.tool.js";
 import { GetGoalTool } from "./tools/get-goal.tool.js";
 import { GetStoryTool } from "./tools/get-story.tool.js";
 import { SearchByTargetTool } from "./tools/search-by-target.tool.js";
@@ -46,10 +42,8 @@ type ToolInstances = {
   getGoal: GetGoalTool;
   deleteGoal: DeleteGoalTool;
   searchByTarget: SearchByTargetTool;
-  getDictionaries: GetDictionariesTool;
   deleteContext: DeleteContextTool;
   upsertContext: UpsertContextTool;
-  addDictionaryTerm: AddDictionaryTermTool;
 };
 
 function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
@@ -70,18 +64,8 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
       deps.normalizer,
       deps.coreClient,
     ),
-    getDictionaries: new GetDictionariesTool(
-      deps.sessionMiddleware,
-      deps.normalizer,
-      deps.coreClient,
-    ),
     deleteContext: new DeleteContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     upsertContext: new UpsertContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
-    addDictionaryTerm: new AddDictionaryTermTool(
-      deps.sessionMiddleware,
-      deps.normalizer,
-      deps.coreClient,
-    ),
   };
 }
 
@@ -240,36 +224,6 @@ function registerSearchByTargetTool(server: FastMCP, tool: SearchByTargetTool): 
   });
 }
 
-function registerDictionariesTools(server: FastMCP, tools: ToolInstances): void {
-  server.addTool({
-    name: "get_dictionaries",
-    description: "Get verified dictionary terms (positions, skills, domains, etc.) for validation",
-    parameters: getDictionariesParamsSchema,
-    execute: async (args: unknown) => {
-      const params = getDictionariesParamsSchema.parse(args);
-      const result = await tools.getDictionaries.execute(params);
-      if (result.ok) {
-        return JSON.stringify(result.value, null, 2);
-      }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
-    },
-  });
-
-  server.addTool({
-    name: "add_dictionary_term",
-    description: "Add a new term to dictionaries (verified or unverified)",
-    parameters: addDictionaryTermParamsSchema,
-    execute: async (args: unknown) => {
-      const params = addDictionaryTermParamsSchema.parse(args);
-      const result = await tools.addDictionaryTerm.execute(params);
-      if (result.ok) {
-        return JSON.stringify({ success: true }, null, 2);
-      }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
-    },
-  });
-}
-
 function registerTools(server: FastMCP, tools: ToolInstances): void {
   registerGetStoryTool(server, tools.getStory);
   registerSearchCareersTool(server, tools.searchCareers);
@@ -277,7 +231,6 @@ function registerTools(server: FastMCP, tools: ToolInstances): void {
   registerSearchByTargetTool(server, tools.searchByTarget);
   registerGoalTools(server, tools);
   registerContextTools(server, tools);
-  registerDictionariesTools(server, tools);
 }
 
 export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
@@ -285,12 +238,11 @@ export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
     name: "waymates-facade",
     version: "3.0.0",
     instructions:
-      "WayMates MCP Server. Provides 12 tools for career operations: " +
+      "WayMates MCP Server. Provides 10 tools for career operations: " +
       "Story (get_story), " +
       "Search (search_careers, search_user_careers, search_by_target), " +
       "Goals (set_goal, get_goal, delete_goal), " +
-      "Contexts (update_context, upsert_context, delete_context), " +
-      "Dictionaries (get_dictionaries, add_dictionary_term). " +
+      "Contexts (update_context, upsert_context, delete_context). " +
       "LibreChat LLM handles text-to-JSON extraction.",
   });
 

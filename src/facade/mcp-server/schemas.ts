@@ -86,12 +86,6 @@ export const searchByTargetParamsSchema = z.object({
 
 export type SearchByTargetParams = z.infer<typeof searchByTargetParamsSchema>;
 
-export const getDictionariesParamsSchema = z.object({
-  sessionId: sessionIdSchema,
-});
-
-export type GetDictionariesParams = z.infer<typeof getDictionariesParamsSchema>;
-
 export const deleteContextParamsSchema = z.object({
   contextId: contextIdSchema,
   sessionId: sessionIdSchema,
@@ -104,22 +98,3 @@ export const upsertContextParamsSchema = upsertContextInputSchema.omit({ userId:
 });
 
 export type UpsertContextParams = z.infer<typeof upsertContextParamsSchema>;
-
-export const addDictionaryTermParamsSchema = z.object({
-  term: z.discriminatedUnion("type", [
-    z.object({
-      type: z.literal("skill"),
-      canonicalName: z.string().min(1).trim(),
-      complexity: z.number().int().min(0).max(100),
-      verified: z.boolean(),
-    }),
-    z.object({
-      type: z.enum(["position", "domain", "city", "industry", "platform", "language"]),
-      canonicalName: z.string().min(1).trim(),
-      verified: z.boolean(),
-    }),
-  ]),
-  sessionId: sessionIdSchema,
-});
-
-export type AddDictionaryTermParams = z.infer<typeof addDictionaryTermParamsSchema>;
