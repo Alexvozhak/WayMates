@@ -17,7 +17,7 @@ export class LLMFuzzyMatcher {
 
   constructor(apiKey: string) {
     this.model = new ChatGoogleGenerativeAI({
-      model: "models/gemini-1.5-flash",
+      model: "models/gemini-2.5-flash",
       temperature: 0,
       apiKey,
     });

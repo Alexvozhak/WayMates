@@ -111,21 +111,21 @@ export default defineConfig(() => {
             env: loadEnv("test", process.cwd(), ""),
           },
         },
-        // Facade integration tests (sequential, MCP server + Core TRPC)
+        // Facade integration tests (sequential, Redis + LLM state conflicts)
         {
           test: {
-            name: "integration-facade",
+            name: "facade-integration",
             include: ["tests/facade/integration/**/*.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
-                isolate: true,
-                singleThread: true, // MCP server needs sequential execution
+                isolate: false, // Shared state from setupFiles (CoreClient, LLMMatcher)
+                singleThread: true, // Redis + LLM state requires sequential execution
               },
             },
-            globalSetup: "./vitest.globalSetup.ts", // Reuse core DB setup
-            testTimeout: INTEGRATION_TEST_TIMEOUT,
-            hookTimeout: INTEGRATION_HOOK_TIMEOUT,
+            setupFiles: ["./tests/facade/helpers/test-setup.ts"],
+            testTimeout: 60_000, // LLM calls + TrueLens evaluation slow
+            hookTimeout: 30_000,
             env: loadEnv("test", process.cwd(), ""),
           },
         },
