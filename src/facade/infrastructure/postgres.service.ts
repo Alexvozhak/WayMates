@@ -35,7 +35,7 @@ class PostgresService {
       port: config.POSTGRES_PORT,
       user: config.POSTGRES_USER,
       password: config.POSTGRES_PASSWORD,
-      database: config.POSTGRES_DATABASE,
+      database: config.POSTGRES_DB,
       max: 20, // Maximum number of clients in the pool
       idleTimeoutMillis: 30_000, // Close idle clients after 30 seconds
       connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established

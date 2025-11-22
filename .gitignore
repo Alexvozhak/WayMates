@@ -82,3 +82,6 @@ dist/
 
 # Dropbox sync folders
 todo-dropbox
+
+# Structurizr cache/index
+docs/architecture/.structurizr/

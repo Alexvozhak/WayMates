@@ -20,6 +20,36 @@ WayMates is a career transition analysis platform built on Neo4j graph database.
 
 ---
 
+## Infrastructure
+
+### Quick Start
+
+**Production environment:**
+```bash
+npm run docker:prod:up    # Start neo4j, redis, postgres (prod profile)
+```
+
+**Test environment:**
+```bash
+npm run test:setup        # Neo4j only + init schema
+npm run test:facade:setup # All test services (neo4j, redis, postgres, core)
+```
+
+**Tools (Structurizr):**
+```bash
+docker compose --profile tools up structurizr -d
+```
+
+### Docker Compose Profiles
+
+- **prod** - Production services (neo4j-prod, redis-prod, postgres-prod)
+- **test** - Test services (neo4j-test, redis-test, postgres-test, core-test)
+- **tools** - Development tools (structurizr, structurizr-cli)
+
+**Полная документация**: [.claude/routers/infrastructure/router.md](.claude/routers/infrastructure/router.md)
+
+---
+
 ## Architecture Patterns
 
 ### Module Isolation

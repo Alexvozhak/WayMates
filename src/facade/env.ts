@@ -17,7 +17,7 @@ const envSchema = z.object({
   POSTGRES_PORT: z.coerce.number().int().positive("POSTGRES_PORT must be a positive integer"),
   POSTGRES_USER: z.string().min(1, "POSTGRES_USER is required"),
   POSTGRES_PASSWORD: z.string().min(1, "POSTGRES_PASSWORD is required"),
-  POSTGRES_DATABASE: z.string().min(1, "POSTGRES_DATABASE is required"),
+  POSTGRES_DB: z.string().min(1, "POSTGRES_DB is required"),
   // Google Gemini API key for LangChain
   GOOGLE_API_KEY: z.string().min(1, "GOOGLE_API_KEY is required for LangChain agents"),
 });

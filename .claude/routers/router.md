@@ -88,3 +88,18 @@
 - Настраиваешь parallel tool execution
 
 **После работы**: `/reflect langchain`
+
+---
+
+### 🐳 Infrastructure (Docker & Services)
+**Роутер**: [infrastructure/router.md](infrastructure/router.md)
+
+**Когда загружать**:
+- Настройка Docker Compose окружений
+- Проблемы с поднятием контейнеров
+- Вопросы про profiles (prod, test, tools)
+- Работа с зависимостями сервисов (depends_on, healthchecks)
+- Конфигурация env переменных
+- Траблшутинг инфраструктуры
+
+**После работы**: `/reflect infrastructure`
