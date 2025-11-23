@@ -4,6 +4,7 @@ import { GetGoalTool } from "../../../../src/facade/mcp-server/tools/get-goal.to
 import { SetGoalTool } from "../../../../src/facade/mcp-server/tools/set-goal.tool.js";
 import { FacadeTestContext } from "../../helpers/test-context.js";
 import { cleanupSession, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { SessionMiddleware } from "../../../../src/facade/mcp-server/session-middleware.js";
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
@@ -15,7 +16,12 @@ describe("GetGoalTool Integration Tests", () => {
   let setTool: SetGoalTool;
   let testSessionId: SessionId;
   let session: SessionMiddleware;
+
+  const userStories = new UserStories();
+  // Abstract user ID (not from fixtures) - tests cold start flow with fresh user
   const testUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c111";
+  // U2 from fixtures - has contexts but no goal
+  const userWithoutGoal: UserId = userStories.getStoryBy("U2").userId;
 
   beforeEach(async () => {
     const ctx = FacadeTestContext.getInstance();
@@ -61,8 +67,7 @@ describe("GetGoalTool Integration Tests", () => {
   // Business rule: User without goal (cold start or deleted goal) returns null gracefully (not error).
   // UI can prompt "Set your career goal to get personalized recommendations" vs confusing error.
   it("GG2: No goal exists - returns null for users without saved goals", async () => {
-    const newUserId: UserId = "usr_no_goal_000000000000000000000000";
-    const newSession = await session.create(newUserId);
+    const newSession = await session.create(userWithoutGoal);
 
     const params: GetGoalParams = {
       sessionId: newSession,

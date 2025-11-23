@@ -24,16 +24,16 @@ describe("Dictionaries Integration", () => {
   it("D1: getVerifiedDictionaries returns skills", async () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    console.log("[D1] Skills count:", dictionaries.skills.length);
-    console.log("[D1] Sample skills:", dictionaries.skills.slice(0, 3));
+    console.log("[D1] Skills count:", dictionaries.skill.length);
+    console.log("[D1] Sample skills:", dictionaries.skill.slice(0, 3));
 
-    expect(dictionaries.skills.length).toBeGreaterThan(0);
+    expect(dictionaries.skill.length).toBeGreaterThan(0);
 
-    dictionaries.skills.forEach((skill) => {
+    dictionaries.skill.forEach((skill) => {
       expect(typeof skill).toBe("string");
     });
 
-    expect(dictionaries.skills).toContain("rust");
+    expect(dictionaries.skill).toContain("rust");
 
     console.log("[D1] Skills verified: ✅");
   });
@@ -41,15 +41,15 @@ describe("Dictionaries Integration", () => {
   it("D2: getVerifiedDictionaries returns all dictionary types", async () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    console.log("[D2] Positions count:", dictionaries.positions.length);
-    console.log("[D2] Domains count:", dictionaries.domains.length);
-    console.log("[D2] Cities count:", dictionaries.cities.length);
-    console.log("[D2] Industries count:", dictionaries.industries.length);
-    console.log("[D2] Platforms count:", dictionaries.platforms.length);
-    console.log("[D2] Languages count:", dictionaries.languages.length);
+    console.log("[D2] Positions count:", dictionaries.position.length);
+    console.log("[D2] Domains count:", dictionaries.domain.length);
+    console.log("[D2] Cities count:", dictionaries.city.length);
+    console.log("[D2] Industries count:", dictionaries.industry.length);
+    console.log("[D2] Platforms count:", dictionaries.platform.length);
+    console.log("[D2] Languages count:", dictionaries.language.length);
 
-    expect(dictionaries.positions.length).toBeGreaterThan(0);
-    expect(dictionaries.domains.length).toBeGreaterThan(0);
+    expect(dictionaries.position.length).toBeGreaterThan(0);
+    expect(dictionaries.domain.length).toBeGreaterThan(0);
 
     console.log("[D2] All dictionary types present: ✅");
   });
@@ -69,7 +69,7 @@ describe("Dictionaries Integration", () => {
 
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    expect(dictionaries.skills).toContain(newSkillName);
+    expect(dictionaries.skill).toContain(newSkillName);
 
     console.log("[D3] Skill added successfully: ✅");
   });
@@ -93,7 +93,7 @@ describe("Dictionaries Integration", () => {
     });
 
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
-    const matchCount = dictionaries.skills.filter((s) => s === skillName).length;
+    const matchCount = dictionaries.skill.filter((s) => s === skillName).length;
 
     expect(matchCount).toBe(1);
 
@@ -136,11 +136,11 @@ describe("Dictionaries Integration", () => {
 
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    expect(dictionaries.positions.includes(`test-position-${timestamp}`)).toBe(true);
-    expect(dictionaries.domains.includes(`test-domain-${timestamp}`)).toBe(true);
-    expect(dictionaries.cities.includes(`test-city-${timestamp}`)).toBe(true);
-    expect(dictionaries.industries.includes(`test-industry-${timestamp}`)).toBe(true);
-    expect(dictionaries.platforms.includes(`test-platform-${timestamp}`)).toBe(true);
+    expect(dictionaries.position.includes(`test-position-${timestamp}`)).toBe(true);
+    expect(dictionaries.domain.includes(`test-domain-${timestamp}`)).toBe(true);
+    expect(dictionaries.city.includes(`test-city-${timestamp}`)).toBe(true);
+    expect(dictionaries.industry.includes(`test-industry-${timestamp}`)).toBe(true);
+    expect(dictionaries.platform.includes(`test-platform-${timestamp}`)).toBe(true);
 
     console.log("[D5] All dictionary types support addTerm: ✅");
   });

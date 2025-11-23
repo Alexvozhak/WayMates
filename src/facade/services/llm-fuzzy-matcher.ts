@@ -1,4 +1,5 @@
-import { HumanMessage } from "@langchain/core/messages";
+import { StructuredOutputParser } from "@langchain/core/output_parsers";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 
@@ -10,31 +11,26 @@ const fuzzyMatchResultSchema = z.object({
   reasoning: z.string(),
 });
 
-type FuzzyMatchResult = z.infer<typeof fuzzyMatchResultSchema>;
-
 export class LLMFuzzyMatcher {
   private readonly model: ChatGoogleGenerativeAI;
+  private readonly parser: StructuredOutputParser<typeof fuzzyMatchResultSchema>;
+  private readonly prompt: ChatPromptTemplate;
 
   constructor(apiKey: string) {
     this.model = new ChatGoogleGenerativeAI({
-      model: "models/gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       temperature: 0,
       apiKey,
     });
-  }
 
-  async fuzzyMatch(
-    type: SimpleDictionaryType,
-    value: string,
-    dict: Map<string, string>,
-  ): Promise<string | null> {
-    const dictEntries = [...dict.values()].map((name) => `"${name}"`).join(", ");
+    this.parser = StructuredOutputParser.fromZodSchema(fuzzyMatchResultSchema);
 
-    const prompt = `You are a term normalization assistant for career data.
+    this.prompt =
+      ChatPromptTemplate.fromTemplate(`You are a term normalization assistant for career data.
 
-Dictionary (${type}): ${dictEntries}
+Dictionary ({type}): {dictEntries}
 
-Task: Find the canonical name for "${value}" from the dictionary above.
+Task: Find the canonical name for "{value}" from the dictionary above.
 Rules:
 - Handle typos (e.g., "Pyton" → "python")
 - Handle translation (e.g., "питон" → "python")
@@ -42,38 +38,37 @@ Rules:
 - If no good match (similarity < 0.7), return null
 - NO hallucinations - only use provided dictionary
 
-Output format:
-{
-  "canonical": "python" | null,
-  "confidence": "high" | "medium" | "low",
-  "reasoning": "Typo correction"
-}`;
+{formatInstructions}
 
-    const response = await this.model.invoke([new HumanMessage(prompt)]);
+Output ONLY valid JSON, no markdown.`);
+  }
 
-    if (typeof response.content !== "string") {
-      throw new TypeError("LLM returned non-string content");
+  async fuzzyMatch(
+    type: SimpleDictionaryType,
+    value: string,
+    dict: Map<string, string>,
+  ): Promise<string | null> {
+    if (dict.size === 0) {
+      throw new TypeError(
+        `Cannot fuzzy match ${type}:"${value}" with empty dictionary. ` +
+          `This indicates missing dictionary data or incorrect dictionary type.`,
+      );
     }
 
-    let parsed: FuzzyMatchResult;
-    try {
-      const jsonData = JSON.parse(response.content);
-      parsed = fuzzyMatchResultSchema.parse(jsonData);
-    } catch (error) {
-      throw new TypeError(`LLM returned invalid JSON: ${response.content.slice(0, 200)}`, {
-        cause: error,
-      });
-    }
+    const dictEntries = [...dict.values()].map((name) => `"${name}"`).join(", ");
+    const chain = this.prompt.pipe(this.model).pipe(this.parser);
 
-    if (!parsed.canonical) {
+    const result = await chain.invoke({
+      type,
+      dictEntries,
+      value,
+      formatInstructions: this.parser.getFormatInstructions(),
+    });
+
+    if (!result.canonical) {
       return null;
     }
 
-    const canonicalValue = dict.get(parsed.canonical.toLowerCase());
-    if (!canonicalValue) {
-      return null;
-    }
-
-    return canonicalValue;
+    return dict.get(result.canonical.toLowerCase()) ?? null;
   }
 }

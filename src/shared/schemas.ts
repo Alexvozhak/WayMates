@@ -664,31 +664,39 @@ export type PathBatchResult = z.infer<typeof pathBatchResultSchema>;
 // ==========================================
 
 /**
- * Dictionary types for normalization
+ * Dictionaries containing verified canonical terms
+ * Used by LLM for normalization (user input → canonical name)
+ * Keys use singular form matching SimpleDictionaryType
  */
-export const dictionaryTypeSchema = z.enum([
-  "skill",
-  "position",
-  "domain",
-  "city",
-  "industry",
-  "platform",
-  "language",
-]);
+export const dictionariesSchema = z.object({
+  skill: z.array(z.string()),
+  position: z.array(z.string()),
+  domain: z.array(z.string()),
+  city: z.array(z.string()),
+  industry: z.array(z.string()),
+  platform: z.array(z.string()),
+  language: z.array(z.string()),
+  reasons: z.array(z.string()),
+});
 
-export type DictionaryType = z.infer<typeof dictionaryTypeSchema>;
+export type Dictionaries = z.infer<typeof dictionariesSchema>;
 
+// All dictionary keys (for cache, getVerifiedDictionaries)
+export type DictionaryType = keyof Dictionaries;
+
+// User-extensible dictionaries (excluding reasons - different node schema)
+export type SimpleDictionaryType = Exclude<DictionaryType, "reasons">;
+
+// Runtime enum for addTerm + validation
 const simpleDictionaryTypes = [
+  "skill",
   "position",
   "domain",
   "city",
   "industry",
   "platform",
   "language",
-  "skill",
-] as const;
-
-export type SimpleDictionaryType = (typeof simpleDictionaryTypes)[number];
+] as const satisfies readonly SimpleDictionaryType[];
 
 export const simpleDictionaryTypeSchema = z.enum(simpleDictionaryTypes);
 
@@ -701,20 +709,3 @@ export const addTermInputSchema = z.object({
 });
 
 export type AddTermInput = z.infer<typeof addTermInputSchema>;
-
-/**
- * Dictionaries containing verified canonical terms
- * Used by LLM for normalization (user input → canonical name)
- */
-export const dictionariesSchema = z.object({
-  skills: z.array(z.string()),
-  positions: z.array(z.string()),
-  domains: z.array(z.string()),
-  cities: z.array(z.string()),
-  industries: z.array(z.string()),
-  platforms: z.array(z.string()),
-  languages: z.array(z.string()),
-  reasons: z.array(z.string()),
-});
-
-export type Dictionaries = z.infer<typeof dictionariesSchema>;

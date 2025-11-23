@@ -55,13 +55,13 @@ export class DictionariesManager {
 
   private emptyDictionaries(): Dictionaries {
     return {
-      skills: [],
-      positions: [],
-      domains: [],
-      cities: [],
-      industries: [],
-      platforms: [],
-      languages: [],
+      skill: [],
+      position: [],
+      domain: [],
+      city: [],
+      industry: [],
+      platform: [],
+      language: [],
       reasons: [],
     };
   }

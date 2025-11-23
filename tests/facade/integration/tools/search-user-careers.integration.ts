@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SearchUserCareersTool } from "../../../../src/facade/mcp-server/tools/search-user-careers.tool.js";
 import { FacadeTestContext } from "../../helpers/test-context.js";
 import { cleanupSession, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { SessionMiddleware } from "../../../../src/facade/mcp-server/session-middleware.js";
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
@@ -13,7 +14,10 @@ describe("SearchUserCareersTool Integration Tests", () => {
   let tool: SearchUserCareersTool;
   let testSessionId: SessionId;
   let session: SessionMiddleware;
-  const testUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c111";
+
+  const userStories = new UserStories();
+  // U1 from fixtures - has contexts for search testing
+  const testUserId: UserId = userStories.getStoryBy("U1").userId;
 
   beforeEach(async () => {
     const ctx = FacadeTestContext.getInstance();
@@ -70,7 +74,8 @@ describe("SearchUserCareersTool Integration Tests", () => {
   // Business rule: Users with empty profiles (cold start) should get empty results gracefully (not errors).
   // Guides user to fill profile ("Add contexts to see career matches") vs cryptic error.
   it("SUC3: Empty profile handling - returns empty array for users without contexts", async () => {
-    const emptyUserId: UserId = "usr_empty_profile_000000000000000000";
+    // Abstract user ID (not from fixtures) - tests cold start with empty profile
+    const emptyUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c999";
     const emptySession = await session.create(emptyUserId);
 
     const params: SearchUserCareersParams = {
@@ -108,7 +113,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
     }
   });
 
-  // Business rule: Creation reason filtering enables "organic growth only" queries (exclude job_loss, career_change).
+  // Business rule: Creation reason filtering enables "organic growth only" queries (exclude career breaks).
   // User asks: "show me people who naturally progressed, not forced transitions from layoffs".
   it("SUC5: Creation reason filtering - respects excludedCreationReasons parameter", async () => {
     const params: SearchUserCareersParams = {
@@ -116,7 +121,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
       limit: 10,
       pathLimit: 5,
       excludedContextFields: [],
-      excludedCreationReasons: ["job_loss"],
+      excludedCreationReasons: ["stopped_working"], // Career break/layoff (valid from reasons.json)
     };
 
     const result = await tool.execute(params);

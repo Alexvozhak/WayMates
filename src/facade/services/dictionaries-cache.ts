@@ -25,15 +25,14 @@ export class DictionariesCache {
     }
 
     const coreData = await this.coreClient.client.dictionaries.getVerified.query();
-    const pluralKey = `${type}s`;
-    const rawItems = this.getDictionaryItems(coreData, pluralKey);
+    const rawItems = coreData[type];
 
     if (!Array.isArray(rawItems)) {
-      throw new TypeError(`Invalid dictionaries response: ${pluralKey} is not an array`);
+      throw new TypeError(`Invalid dictionaries response: ${type} is not an array`);
     }
 
     if (!this.isStringArray(rawItems)) {
-      throw new TypeError(`Invalid dictionaries response: ${pluralKey} should contain strings`);
+      throw new TypeError(`Invalid dictionaries response: ${type} should contain strings`);
     }
 
     const dict = new Map(rawItems.map((name) => [name.toLowerCase(), name]));
@@ -53,10 +52,6 @@ export class DictionariesCache {
     if (keys.length > 0) {
       await this.redis.del(keys);
     }
-  }
-
-  private getDictionaryItems(data: Record<string, unknown>, key: string): unknown {
-    return data[key];
   }
 
   private isStringArray(items: unknown[]): items is string[] {

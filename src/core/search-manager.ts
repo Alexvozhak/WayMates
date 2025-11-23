@@ -53,6 +53,12 @@ export class SearchManager {
 
   async searchByUser(params: UserSearchParams): Promise<ScoredMatchedCandidate[]> {
     const context = await this.resolveContext(params.userId);
+
+    // Cold start user - return empty results gracefully
+    if (!context) {
+      return [];
+    }
+
     const hasTrajectory = context.previousContextId !== null;
 
     return hasTrajectory
@@ -142,7 +148,7 @@ export class SearchManager {
     });
   }
 
-  private async resolveContext(userId: string): Promise<UserContext> {
+  private async resolveContext(userId: string): Promise<UserContext | null> {
     const query = userCurrentContextQuery();
 
     return this.db.read(async (tx) => {
@@ -150,7 +156,7 @@ export class SearchManager {
 
       const record = result.records[0];
       if (!record) {
-        throw new Error(`resolveContext: user ${userId} not found`);
+        return null; // Cold start user - no context yet (normal case)
       }
 
       return userContextSchema.parse(record.get("context"));

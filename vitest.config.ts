@@ -15,6 +15,7 @@ export default defineConfig(() => {
       testTimeout: INTEGRATION_TEST_TIMEOUT,
       hookTimeout: INTEGRATION_HOOK_TIMEOUT,
       environment: "node",
+      reporters: ["verbose"], // Показывает детальное время каждого теста
 
       // Projects run SEQUENTIALLY to avoid data race
       sequence: {

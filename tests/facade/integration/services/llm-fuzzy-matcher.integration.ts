@@ -25,7 +25,7 @@ describe("LLM Fuzzy Matcher Integration Tests", () => {
     const type: SimpleDictionaryType = "skill";
     const typo = "Pyton";
 
-    const result = await ctx.llmMatcher.fuzzyMatch(type, typo, skillDict);
+    const result = await ctx.llmMatcherMock.fuzzyMatch(type, typo, skillDict);
 
     expect(result).toBe("Python");
   });
@@ -36,7 +36,7 @@ describe("LLM Fuzzy Matcher Integration Tests", () => {
     const type: SimpleDictionaryType = "skill";
     const cyrillic = "питон";
 
-    const result = await ctx.llmMatcher.fuzzyMatch(type, cyrillic, skillDict);
+    const result = await ctx.llmMatcherMock.fuzzyMatch(type, cyrillic, skillDict);
 
     expect(result).toBe("Python");
   });
@@ -47,7 +47,7 @@ describe("LLM Fuzzy Matcher Integration Tests", () => {
     const type: SimpleDictionaryType = "skill";
     const uppercase = "REACT";
 
-    const result = await ctx.llmMatcher.fuzzyMatch(type, uppercase, skillDict);
+    const result = await ctx.llmMatcherMock.fuzzyMatch(type, uppercase, skillDict);
 
     expect(result).toBe("React");
   });
@@ -58,7 +58,7 @@ describe("LLM Fuzzy Matcher Integration Tests", () => {
     const type: SimpleDictionaryType = "skill";
     const unknown = "QuantumComputing";
 
-    const result = await ctx.llmMatcher.fuzzyMatch(type, unknown, skillDict);
+    const result = await ctx.llmMatcherMock.fuzzyMatch(type, unknown, skillDict);
 
     expect(result).toBeNull();
   });
@@ -69,17 +69,18 @@ describe("LLM Fuzzy Matcher Integration Tests", () => {
     const type: SimpleDictionaryType = "skill";
     const dissimilar = "cooking";
 
-    const result = await ctx.llmMatcher.fuzzyMatch(type, dissimilar, skillDict);
+    const result = await ctx.llmMatcherMock.fuzzyMatch(type, dissimilar, skillDict);
 
     expect(result).toBeNull();
   });
 
-  // Business rule: LLM may return malformed JSON during rate-limiting or service degradation.
-  // System must fail gracefully (throw TypeError) rather than silently corrupt data.
-  it("LFM6: Invalid JSON handling - throws TypeError on broken JSON", async () => {
+  // Business rule: Empty dictionary indicates programming error (cache failure, wrong dict type).
+  // System must fail-fast (throw TypeError) to prevent silent data corruption.
+  // NOTE: Uses real LLMFuzzyMatcher instance (no API call - guard clause executes first)
+  it("LFM6: Empty dictionary guard - throws TypeError on programming error", async () => {
     const type: SimpleDictionaryType = "skill";
     const emptyDict = new Map<string, string>();
 
-    await expect(ctx.llmMatcher.fuzzyMatch(type, "test", emptyDict)).rejects.toThrow(TypeError);
+    await expect(ctx.llmMatcherReal.fuzzyMatch(type, "test", emptyDict)).rejects.toThrow(TypeError);
   });
 });

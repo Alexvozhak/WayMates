@@ -28,14 +28,14 @@ describe("Dictionaries Integration", () => {
 
     // Business Rule: skills.yaml contains 85 skills (as of ADR-009)
     // Test runs AFTER other integration tests, so DB may have additional skills from fixtures
-    expect(dictionaries.skills.length).toBeGreaterThanOrEqual(85);
+    expect(dictionaries.skill.length).toBeGreaterThanOrEqual(85);
 
     // Business Rule: Specific skills from skills.yaml must be present
-    expect(dictionaries.skills).toContain("rust"); // Programming language
-    expect(dictionaries.skills).toContain("python"); // Programming language
-    expect(dictionaries.skills).toContain("typescript"); // Programming language
-    expect(dictionaries.skills).toContain("django"); // Web framework
-    expect(dictionaries.skills).toContain("kubernetes"); // Infrastructure
+    expect(dictionaries.skill).toContain("rust"); // Programming language
+    expect(dictionaries.skill).toContain("python"); // Programming language
+    expect(dictionaries.skill).toContain("typescript"); // Programming language
+    expect(dictionaries.skill).toContain("django"); // Web framework
+    expect(dictionaries.skill).toContain("kubernetes"); // Infrastructure
   });
 
   // Business Logic: Verify all dictionary types structure and that seed data is loaded
@@ -44,26 +44,26 @@ describe("Dictionaries Integration", () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
     // Business Rule: All dictionary type keys must exist (even if empty arrays)
-    expect(dictionaries).toHaveProperty("skills");
-    expect(dictionaries).toHaveProperty("positions");
-    expect(dictionaries).toHaveProperty("domains");
-    expect(dictionaries).toHaveProperty("cities");
-    expect(dictionaries).toHaveProperty("industries");
-    expect(dictionaries).toHaveProperty("platforms");
-    expect(dictionaries).toHaveProperty("languages");
+    expect(dictionaries).toHaveProperty("skill");
+    expect(dictionaries).toHaveProperty("position");
+    expect(dictionaries).toHaveProperty("domain");
+    expect(dictionaries).toHaveProperty("city");
+    expect(dictionaries).toHaveProperty("industry");
+    expect(dictionaries).toHaveProperty("platform");
+    expect(dictionaries).toHaveProperty("language");
     expect(dictionaries).toHaveProperty("reasons");
 
     // Business Rule: Skills and languages must be imported from yaml/json seed data
-    expect(dictionaries.skills.length).toBeGreaterThan(80); // ~85 from yaml minimum
-    expect(dictionaries.languages.length).toBeGreaterThan(0); // from languages.json
+    expect(dictionaries.skill.length).toBeGreaterThan(80); // ~85 from yaml minimum
+    expect(dictionaries.language.length).toBeGreaterThan(0); // from languages.json
 
     // Business Rule: All dictionary types return string[] (canonical names only)
-    const sampleSkill = dictionaries.skills[0];
+    const sampleSkill = dictionaries.skill[0];
     expect(sampleSkill).toBeDefined();
     expect(typeof sampleSkill).toBe("string");
 
-    if (dictionaries.languages.length > 0) {
-      expect(typeof dictionaries.languages[0]).toBe("string");
+    if (dictionaries.language.length > 0) {
+      expect(typeof dictionaries.language[0]).toBe("string");
     }
   });
 
@@ -82,7 +82,7 @@ describe("Dictionaries Integration", () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
     // Business Rule: Newly added skill must exist
-    expect(dictionaries.skills).toContain(newSkillName);
+    expect(dictionaries.skill).toContain(newSkillName);
   });
 
   // Business Logic: MERGE idempotency - ON CREATE SET should preserve FIRST values
@@ -112,7 +112,7 @@ describe("Dictionaries Integration", () => {
 
     // Business Rule: MERGE with ON CREATE SET keeps FIRST values
     // Second call should NOT update existing node, so skill appears (verified=true from first call)
-    expect(dictionaries.skills).toContain(skillName);
+    expect(dictionaries.skill).toContain(skillName);
   });
 
   // Business Logic: addTerm supports all dictionary types (position, domain, city, skill, etc.)
@@ -144,9 +144,9 @@ describe("Dictionaries Integration", () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
     // Business Rule: Each term must be retrievable after creation
-    expect(dictionaries.positions.includes(`test-position-${timestamp}`)).toBe(true);
-    expect(dictionaries.domains.includes(`test-domain-${timestamp}`)).toBe(true);
-    expect(dictionaries.cities.includes(`test-city-${timestamp}`)).toBe(true);
+    expect(dictionaries.position.includes(`test-position-${timestamp}`)).toBe(true);
+    expect(dictionaries.domain.includes(`test-domain-${timestamp}`)).toBe(true);
+    expect(dictionaries.city.includes(`test-city-${timestamp}`)).toBe(true);
   });
 
   // Business Logic: Only verified=true terms should be returned by getVerifiedDictionaries
@@ -177,8 +177,8 @@ describe("Dictionaries Integration", () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
     // Business Rule: Only verified terms should appear in dictionaries
-    expect(dictionaries.skills).not.toContain(unverifiedSkillName); // Should NOT be returned
-    expect(dictionaries.skills).toContain(verifiedSkillName); // Should be returned
+    expect(dictionaries.skill).not.toContain(unverifiedSkillName); // Should NOT be returned
+    expect(dictionaries.skill).toContain(verifiedSkillName); // Should be returned
   });
 
   // Business Logic: Verify that reasons from reasons.json are loaded correctly

@@ -38,6 +38,7 @@ describe("DictionariesCache Integration Tests", () => {
     const result = await ctx.cache.getSimple(type);
 
     expect(result.size).toBeGreaterThan(0);
+    console.log("[DC2] Available positions:", [...result.keys()]);
     const hasJunior = result.has("junior");
     expect(hasJunior).toBe(true);
 

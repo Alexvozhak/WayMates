@@ -6,6 +6,7 @@ import { FacadeNormalizer } from "../../../src/facade/services/facade-normalizer
 import { LLMFuzzyMatcher } from "../../../src/facade/services/llm-fuzzy-matcher.js";
 
 import { getTestEnv } from "./test-env.js";
+import { createMockLLMFuzzyMatcher } from "./llm-mock.js";
 
 export class FacadeTestContext {
   private static instance: FacadeTestContext | null = null;
@@ -19,7 +20,9 @@ export class FacadeTestContext {
 
     console.log("[Facade Setup] Creating base clients...");
     const coreClient = new CoreTRPCClient(testEnv.CORE_API_URL);
-    const llmMatcher = new LLMFuzzyMatcher(testEnv.GOOGLE_API_KEY);
+
+    const llmMatcherMock = createMockLLMFuzzyMatcher();
+    const llmMatcherReal = new LLMFuzzyMatcher(testEnv.GOOGLE_API_KEY);
 
     console.log("[Facade Setup] Creating Redis singleton...");
     const redis = new Redis({
@@ -29,11 +32,12 @@ export class FacadeTestContext {
 
     console.log("[Facade Setup] Creating cache and normalizer singletons...");
     const cache = new DictionariesCache(redis, coreClient);
-    const normalizer = new FacadeNormalizer(cache, coreClient, llmMatcher);
+    const normalizer = new FacadeNormalizer(cache, coreClient, llmMatcherMock);
 
     FacadeTestContext.instance = new FacadeTestContext(
       coreClient,
-      llmMatcher,
+      llmMatcherMock,
+      llmMatcherReal,
       redis,
       cache,
       normalizer,
@@ -50,20 +54,23 @@ export class FacadeTestContext {
   }
 
   public readonly coreClient: CoreTRPCClient;
-  public readonly llmMatcher: LLMFuzzyMatcher;
+  public readonly llmMatcherMock: LLMFuzzyMatcher;
+  public readonly llmMatcherReal: LLMFuzzyMatcher;
   public readonly redis: Redis;
   public readonly cache: DictionariesCache;
   public readonly normalizer: FacadeNormalizer;
 
   private constructor(
     coreClient: CoreTRPCClient,
-    llmMatcher: LLMFuzzyMatcher,
+    llmMatcherMock: LLMFuzzyMatcher,
+    llmMatcherReal: LLMFuzzyMatcher,
     redis: Redis,
     cache: DictionariesCache,
     normalizer: FacadeNormalizer,
   ) {
     this.coreClient = coreClient;
-    this.llmMatcher = llmMatcher;
+    this.llmMatcherMock = llmMatcherMock;
+    this.llmMatcherReal = llmMatcherReal;
     this.redis = redis;
     this.cache = cache;
     this.normalizer = normalizer;
