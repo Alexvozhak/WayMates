@@ -36,6 +36,7 @@
 ├── providers.md            # Настройка Gemini/OpenAI/Anthropic
 ├── tools-patterns.md       # Паттерны создания tools
 ├── persistence.md          # PostgresSaver и checkpointing
+├── opik.md                 # Opik observability для debugging
 ├── troubleshooting.md      # Частые проблемы и решения
 └── examples/
     ├── simple-agent.ts     # Базовый пример
@@ -209,6 +210,10 @@ LangGraph (встроенный движок)
 ### Для persistence
 
 → См. [`persistence.md`](persistence.md)
+
+### Для Opik observability
+
+→ См. [`opik.md`](opik.md)
 
 ---
 

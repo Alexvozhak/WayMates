@@ -36,6 +36,7 @@ Read .claude/context/project.md           # Архитектурные патт�
 
 # 2. План реализации
 Read docs/architecture/facade/cold-start-implementation-plan.md
+Read .claude/routers/langchain/opik.md    # Opik observability patterns
 
 # 3. Существующие паттерны
 Read src/facade/mcp-server/tools/search-careers.tool.ts  # Пример BaseTool
@@ -56,6 +57,34 @@ grep -r "export const.*Schema" src/facade/mcp-server/schemas.ts
 - Если нет тестов → Сессия 3
 
 ## 📋 Сессия 1: CollectorAgent
+
+### Шаг 1.0: Opik Setup (20 мин)
+
+**См.**: `.claude/routers/langchain/opik.md` для полного руководства
+
+```bash
+# 1. Clone и запустить Opik (Docker-based)
+git clone https://github.com/comet-ml/opik.git
+cd opik && ./opik.sh
+# Wait for: "Opik is running on http://localhost:5173"
+
+# 2. Установить клиенты
+cd /home/alex/projects/WayMatesRemote
+npm install opik opik-gemini
+
+# 3. .env конфигурация
+echo 'OPIK_URL_OVERRIDE="http://localhost:5173/api"' >> .env
+
+# 4. Verify setup
+curl http://localhost:5173/api/health  # Should return 200 OK
+open http://localhost:5173              # Открой UI
+```
+
+**Checklist**:
+- [ ] Opik UI доступен на http://localhost:5173
+- [ ] npm пакеты установлены (opik, opik-gemini)
+- [ ] .env содержит OPIK_URL_OVERRIDE
+- [ ] Health check проходит
 
 ### Шаг 1.1: Проверь типы
 
@@ -84,23 +113,31 @@ async getThreadId(sessionId: SessionId): Promise<string> {
 
 **Файл**: `src/facade/langchain/collector-agent.ts`
 
-**Структура**:
+**Структура с Opik integration**:
 
 ```typescript
 import { createAgent, tool } from "langchain";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { trackGemini } from "opik-gemini";
 import { z } from "zod";
 
 // Tools
 const extractContextsTool = tool(...);
 const askClarificationTool = tool(...);
 
-// Agent
-export const collectorAgent = createAgent({
-  model: new ChatGoogleGenerativeAI({
-    model: "models/gemini-1.5-flash", // ← С префиксом!
+// Wrap модель для Opik tracing
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const trackedModel = trackGemini(
+  genAI.getGenerativeModel({
+    model: "models/gemini-2.0-flash", // ← С префиксом!
     temperature: 0.3,
   }),
+  { traceMetadata: { tags: ["cold-start", "facade"] } }
+);
+
+// Agent
+export const collectorAgent = createAgent({
+  model: trackedModel,  // ← Используй wrapped модель
   tools: [extractContextsTool, askClarificationTool],
   checkpointer: postgresService.getCheckpointer(),
   stateSchema: z.object({...}),
@@ -215,8 +252,10 @@ npx tsc --noEmit    # 0 errors обязательно
 
 **Сессия 1**:
 
+- [ ] Opik UI доступен на http://localhost:5173
 - [ ] SessionMiddleware.getThreadId() работает
 - [ ] CollectorAgent парсит текст и MD
+- [ ] Opik traces видны с tags ["cold-start", "facade"]
 - [ ] Batch вопросы (НЕ one-by-one)
 - [ ] 0 ESLint errors
 
