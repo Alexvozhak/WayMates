@@ -91,3 +91,13 @@ export const upsertContextParamsSchema = upsertContextInputSchema.omit({ userId:
 });
 
 export type UpsertContextParams = z.infer<typeof upsertContextParamsSchema>;
+
+export const coldStartParamsSchema = z.object({
+  message: z
+    .string()
+    .min(50)
+    .describe("User message with career history (resume, markdown, or text)"),
+  sessionId: sessionIdSchema,
+});
+
+export type ColdStartParams = z.infer<typeof coldStartParamsSchema>;

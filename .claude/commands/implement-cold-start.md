@@ -29,14 +29,19 @@ model: sonnet
 ## 📚 Загрузи контекст (в этом порядке)
 
 ```bash
-# 1. Конфигурация и правила
+# 1. План и архитектурные решения
+Read docs/architecture/facade/cold-start-implementation-plan.md      # 5-session план, adaptive strategies, 2-tier normalization
+
+# 2. Архитектура LangChain v1.0 (DRY - без дублирования!)
+Read docs/architecture/facade/langchain/README.md                    # Навигация по документации
+Read docs/architecture/facade/langchain/architecture-principles.md   # 4 принципа (Atomic, Stateless, Orchestrator, Graduated)
+Read docs/architecture/facade/langchain/tools-composition-matrix.md  # Матрица code reuse (70-85%)
+Read docs/architecture/facade/langchain/agents/cold-start-agent.md   # Спецификация агента + workflow
+
+# 3. Конфигурация и правила
 Read tsconfig.json                        # TypeScript конфигурация (ESM, Node 20)
 Read eslint.config.mjs                    # ВСЕ правила кода
 Read .claude/context/project.md           # Архитектурные паттерны
-
-# 2. План реализации
-Read docs/architecture/facade/cold-start-implementation-plan.md
-Read .claude/routers/langchain/opik.md    # Opik observability patterns
 
 # 3. Существующие паттерны
 Read src/facade/mcp-server/tools/search-careers.tool.ts  # Пример BaseTool
@@ -57,34 +62,6 @@ grep -r "export const.*Schema" src/facade/mcp-server/schemas.ts
 - Если нет тестов → Сессия 3
 
 ## 📋 Сессия 1: CollectorAgent
-
-### Шаг 1.0: Opik Setup (20 мин)
-
-**См.**: `.claude/routers/langchain/opik.md` для полного руководства
-
-```bash
-# 1. Clone и запустить Opik (Docker-based)
-git clone https://github.com/comet-ml/opik.git
-cd opik && ./opik.sh
-# Wait for: "Opik is running on http://localhost:5173"
-
-# 2. Установить клиенты
-cd /home/alex/projects/WayMatesRemote
-npm install opik opik-gemini
-
-# 3. .env конфигурация
-echo 'OPIK_URL_OVERRIDE="http://localhost:5173/api"' >> .env
-
-# 4. Verify setup
-curl http://localhost:5173/api/health  # Should return 200 OK
-open http://localhost:5173              # Открой UI
-```
-
-**Checklist**:
-- [ ] Opik UI доступен на http://localhost:5173
-- [ ] npm пакеты установлены (opik, opik-gemini)
-- [ ] .env содержит OPIK_URL_OVERRIDE
-- [ ] Health check проходит
 
 ### Шаг 1.1: Проверь типы
 
@@ -113,35 +90,50 @@ async getThreadId(sessionId: SessionId): Promise<string> {
 
 **Файл**: `src/facade/langchain/collector-agent.ts`
 
-**Структура с Opik integration**:
+**Спецификация**: См. [cold-start-agent.md](../docs/architecture/facade/langchain/agents/cold-start-agent.md)
+**Shared Tools**: См. [shared-tools/](../docs/architecture/facade/langchain/shared-tools/) для system prompts, schemas, edge cases
+
+**Структура агента**:
 
 ```typescript
 import { createAgent, tool } from "langchain";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { trackGemini } from "opik-gemini";
 import { z } from "zod";
 
-// Tools
-const extractContextsTool = tool(...);
-const askClarificationTool = tool(...);
+// Tools (6 shared + 1 agent-specific)
+// См. спецификации в docs/architecture/facade/langchain/shared-tools/
+const extractSingleContextTool = tool(...);  // Spec: extract-single-context.md
+const extractSingleTrailTool = tool(...);    // Spec: extract-single-trail.md
+const linkContextsWithTrailTool = tool(...); // Spec: link-contexts-with-trail.md
+const normalizeContextTool = tool(...);      // Spec: normalize-context.md
+const askClarificationTool = tool(...);      // Spec: ask-clarification.md
+const confirmDataTool = tool(...);           // Spec: confirm-data.md
 
-// Wrap модель для Opik tracing
+// Agent-specific orchestrator (см. cold-start-agent.md#agent-specific-1)
+const extractFullHistoryTool = tool(...);
+
+// Инициализация модели
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-const trackedModel = trackGemini(
-  genAI.getGenerativeModel({
-    model: "models/gemini-2.0-flash", // ← С префиксом!
-    temperature: 0.3,
-  }),
-  { traceMetadata: { tags: ["cold-start", "facade"] } }
-);
+const model = genAI.getGenerativeModel({
+  model: "models/gemini-2.0-flash", // ← С префиксом!
+  temperature: 0.3,
+});
 
-// Agent
+// Agent (см. cold-start-agent.md#agent-configuration)
 export const collectorAgent = createAgent({
-  model: trackedModel,  // ← Используй wrapped модель
-  tools: [extractContextsTool, askClarificationTool],
+  model,
+  tools: [
+    extractFullHistoryTool,         // Agent-specific
+    extractSingleContextTool,       // Shared
+    extractSingleTrailTool,         // Shared
+    linkContextsWithTrailTool,      // Shared
+    normalizeContextTool,           // Shared
+    askClarificationTool,           // Shared
+    confirmDataTool                 // Shared
+  ],
   checkpointer: postgresService.getCheckpointer(),
-  stateSchema: z.object({...}),
-  systemPrompt: `...BATCH questions, NOT one-by-one...`,
+  stateSchema: z.object({...}),    // См. cold-start-agent.md#state-schema
+  systemPrompt: `...`,             // См. cold-start-agent.md#system-prompt
 });
 
 // Export function (max 60 lines!)
@@ -252,10 +244,8 @@ npx tsc --noEmit    # 0 errors обязательно
 
 **Сессия 1**:
 
-- [ ] Opik UI доступен на http://localhost:5173
 - [ ] SessionMiddleware.getThreadId() работает
 - [ ] CollectorAgent парсит текст и MD
-- [ ] Opik traces видны с tags ["cold-start", "facade"]
 - [ ] Batch вопросы (НЕ one-by-one)
 - [ ] 0 ESLint errors
 

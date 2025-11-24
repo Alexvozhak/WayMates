@@ -1,3 +1,5 @@
+import { ZodError } from "zod";
+
 import { err, ok } from "../result.js";
 
 import { FacadeError } from "./errors.js";
@@ -39,6 +41,14 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
   private handleError(error: unknown): ErrorResponse {
     if (error instanceof FacadeError) {
       return error.toResponse();
+    }
+
+    if (error instanceof ZodError) {
+      return {
+        code: "validation_error",
+        message: "Validation failed",
+        details: { errors: error.errors },
+      };
     }
 
     if (error instanceof Error) {
