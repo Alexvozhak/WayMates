@@ -158,8 +158,8 @@ import { type Foo, Bar } from "...";
 3. ❓ **Проверяет бизнес-правило?** → **KEEP тест**
 
    ```typescript
-   // ✅ ХОРОШО - бизнес-требование TrueLens
-   expect(result.groundedness).toBeGreaterThan(0.7);
+   // ✅ ХОРОШО - бизнес-требование LLM quality
+   expect(result.similarity).toBeGreaterThan(0.7);
    ```
 
 4. ❓ **Упадёт при регрессии бизнес-логики?** → **KEEP тест**

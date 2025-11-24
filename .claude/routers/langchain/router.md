@@ -36,7 +36,6 @@
 ├── providers.md            # Настройка Gemini/OpenAI/Anthropic
 ├── tools-patterns.md       # Паттерны создания tools
 ├── persistence.md          # PostgresSaver и checkpointing
-├── opik.md                 # Opik observability для debugging
 ├── troubleshooting.md      # Частые проблемы и решения
 └── examples/
     ├── simple-agent.ts     # Базовый пример
@@ -211,10 +210,6 @@ LangGraph (встроенный движок)
 
 → См. [`persistence.md`](persistence.md)
 
-### Для Opik observability
-
-→ См. [`opik.md`](opik.md)
-
 ---
 
 ## 🔍 Проверенные факты
@@ -227,6 +222,9 @@ LangGraph (встроенный движок)
 | Параллельные tools работают           | ✅ Проверено     | gemini-agent.poc.ts |
 | Gemini модели нужен префикс "models/" | ✅ КРИТИЧНО      | API тесты           |
 | createAgent построен на LangGraph     | ✅ Факт          | Документация        |
+| Shared atomic tools pattern работает  | ✅ Production    | WayMates cold_start (70-85% reuse) |
+| Command API для state transitions     | ✅ Recommended   | Deterministic workflow |
+| Batch questions (НЕ one-by-one)       | ✅ Best Practice | UX improvement      |
 
 ---
 
@@ -252,14 +250,36 @@ npm list langchain
 
 ### 3. Структурируй tools правильно
 
-```typescript
-// ✅ Хорошо - атомарные tools
-const searchTool = tool(...);
-const saveTool = tool(...);
+**Принцип**: Atomic Tool = ONE Entity Operation
 
-// ❌ Плохо - монолитный tool
-const doEverythingTool = tool(...);
+```typescript
+// ✅ Хорошо - атомарные tools (работают с ONE entity)
+const extractSingleContext = tool(...); // ONE context
+const extractSingleTrail = tool(...);   // ONE trail
+const linkContextsWithTrail = tool(...); // TWO contexts → ONE link
+
+// ❌ Плохо - монолитный tool (работает с MANY)
+const extractFullHistory = tool(...); // MANY contexts + MANY trails
+
+// 💡 Композиция: Agent-specific tools могут композировать shared tools
+const processCareerHistory = tool(async ({ text }) => {
+  // Композируем atomic tools
+  const contexts = await Promise.all(
+    sections.map(s => extractSingleContext({ text: s }))
+  );
+  const trails = await Promise.all(
+    pairs.map(([from, to]) => linkContextsWithTrail({ from, to, text }))
+  );
+  return { contexts, trails };
+});
 ```
+
+**Преимущества**:
+- Максимальная переиспользуемость (один tool → много agents)
+- Простота тестирования (один tool = один тест)
+- Предсказуемость (четкие входы/выходы)
+
+**См. также**: [Architecture Principles](../../docs/architecture/facade/langchain/architecture-principles.md)
 
 ### 4. Добавляй логирование
 
@@ -273,6 +293,91 @@ const myTool = tool(
   },
   { ... }
 );
+```
+
+### 5. Tool-driven transitions через Command API
+
+**Принцип**: Tools управляют state transitions, НЕ LLM
+
+```typescript
+// ✅ Правильно - tool явно обновляет state
+const extractDataTool = tool(
+  async ({ text }) => {
+    const data = await parseData(text);
+
+    return new Command({
+      update: {
+        extractedData: data,
+        status: "awaiting_confirmation" // Явный transition
+      }
+    });
+  },
+  { name: "extract_data", ... }
+);
+
+// ❌ Неправильно - LLM сам выбирает status (недетерминированно)
+const extractDataTool = tool(
+  async ({ text }) => {
+    return await parseData(text); // Как LLM узнает что делать дальше?
+  },
+  { name: "extract_data", ... }
+);
+```
+
+**Преимущества**:
+- Deterministic workflow (предсказуемые transitions)
+- Testable (можно тестировать state changes)
+- Production-ready (надежное поведение)
+
+**State schema** ОБЯЗАТЕЛЬНО должен включать `messages` field:
+
+```typescript
+const stateSchema = z.object({
+  messages: MessagesZodState.shape.messages, // MANDATORY!
+  status: z.enum(["collecting", "confirming", "complete"]).optional(),
+  // ... other custom fields
+});
+```
+
+### 6. Batch patterns для user interactions
+
+**Принцип**: ВСЕГДА batch operations, NEVER one-by-one
+
+```typescript
+// ✅ Правильно - batch вопросов
+const askClarification = tool(
+  async ({ questions }: { questions: string[] }) => {
+    return new Command({
+      update: {
+        status: "awaiting_clarification",
+        message: formatBatchQuestions(questions) // ONE message
+      }
+    });
+  },
+  {
+    schema: z.object({
+      questions: z.array(z.string()).min(1).max(5) // 1-5 questions
+    })
+  }
+);
+
+// ❌ Неправильно - one-by-one (плохой UX!)
+// Agent calls:
+await askClarification({ question: "Q1" }); // User answers
+await askClarification({ question: "Q2" }); // User answers again
+await askClarification({ question: "Q3" }); // User answers third time
+// → BAD! User has to respond 3 times!
+```
+
+**System prompt должен содержать**:
+
+```typescript
+systemPrompt: `CRITICAL: Ask ALL questions in ONE batch, NOT one-by-one.
+
+When you need clarification:
+1. Collect ALL missing information needs
+2. Formulate ALL questions
+3. Call tool ONCE with full array`
 ```
 
 ---
@@ -300,6 +405,7 @@ const myTool = tool(
 
 ## 📚 Дополнительные материалы
 
+- **[WayMates LangChain Architecture](../../docs/architecture/facade/langchain/)** - Production архитектура с shared atomic tools (cold_start workflow, 70-85% code reuse)
 - [Наши эксперименты](../../docs/architecture/workflows/facade/langgraph/)
 - [ADR-014: Миграция на LangChain v1.0](../../docs/architecture/decisions/ADR-014-langchain-v1-migration.md)
 - [Официальная документация](https://js.langchain.com/docs)
