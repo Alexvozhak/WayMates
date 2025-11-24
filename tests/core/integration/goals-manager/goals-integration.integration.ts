@@ -26,8 +26,8 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     console.log("[GM1] Creating goal for U3");
     console.log("[GM1] Target criteria:", {
-      position: { mode: "desired", values: ["Middle"] },
-      domains: { mode: "desired", values: ["Backend"] },
+      position: { mode: "desired", values: ["middle"] },
+      domains: { mode: "desired", values: ["backend"] },
     });
 
     const userId = await goalsManager.setGoal({
@@ -35,11 +35,11 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Middle"],
+          values: ["middle"],
         },
         domains: {
           mode: "desired",
-          values: ["Backend"],
+          values: ["backend"],
         },
       },
     });
@@ -52,11 +52,11 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     expect(goal?.userId).toBe(u3.userId);
     expect(goal?.targetCriteria.position).toEqual({
       mode: "desired",
-      values: ["Middle"],
+      values: ["middle"],
     });
     expect(goal?.targetCriteria.domains).toEqual({
       mode: "desired",
-      values: ["Backend"],
+      values: ["backend"],
     });
   });
 
@@ -73,7 +73,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Senior"],
+          values: ["senior"],
         },
       },
     });
@@ -86,7 +86,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     expect(existingGoal?.userId).toBe(u3.userId);
     expect(existingGoal?.targetCriteria.position).toEqual({
       mode: "desired",
-      values: ["Senior"],
+      values: ["senior"],
     });
   });
 
@@ -105,7 +105,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Middle"],
+          values: ["middle"],
         },
       },
     });
@@ -125,11 +125,11 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Senior"],
+          values: ["senior"],
         },
         domains: {
           mode: "desired",
-          values: ["Backend"],
+          values: ["backend"],
         },
       },
     });
@@ -141,11 +141,11 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     expect(goal2?.targetCriteria.position).toEqual({
       mode: "desired",
-      values: ["Senior"],
+      values: ["senior"],
     });
     expect(goal2?.targetCriteria.domains).toEqual({
       mode: "desired",
-      values: ["Backend"],
+      values: ["backend"],
     });
 
     expect(goal2?.createdAt).toBe(createdAt1);
@@ -253,7 +253,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Senior"],
+          values: ["senior"],
         },
       },
     });
@@ -286,7 +286,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // Assert - U5 is marked as pathfinder (achieved Senior)
     // U5 may appear multiple times (different contexts), find Senior context specifically
     const u5SeniorResult = results.find(
-      (r) => r.userId === u5.userId && r.matchedContext.position === "Senior",
+      (r) => r.userId === u5.userId && r.matchedContext.position === "senior",
     );
     console.log(
       "[G2] U5 Senior result:",
@@ -301,7 +301,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     expect(u5SeniorResult).toBeDefined();
     expect(u5SeniorResult?.candidateType).toBe("pathfinder");
-    expect(u5SeniorResult?.matchedContext.position).toBe("Senior");
+    expect(u5SeniorResult?.matchedContext.position).toBe("senior");
 
     console.log("[G2] U5 marked as pathfinder: ✅");
   });
@@ -324,7 +324,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Senior"],
+          values: ["senior"],
         },
       },
     });
@@ -334,7 +334,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Senior"],
+          values: ["senior"],
         },
       },
     });
@@ -382,7 +382,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Senior"],
+          values: ["senior"],
         },
       },
     });
@@ -438,7 +438,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Senior"],
+          values: ["senior"],
         },
       },
     });
@@ -475,7 +475,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     if (pathfinders.length > 0) {
       console.log("[G5] Found pathfinders:", pathfinders.length);
       pathfinders.forEach((p) => {
-        expect(p.matchedContext.position).toBe("Senior");
+        expect(p.matchedContext.position).toBe("senior");
       });
     }
 

@@ -43,7 +43,7 @@ describe("GetGoalTool Integration Tests", () => {
     const setParams: SetGoalParams = {
       sessionId: testSessionId,
       targetContext: {
-        position: { mode: "desired", values: ["Senior"] },
+        position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python"] },
       },
     };
@@ -60,7 +60,7 @@ describe("GetGoalTool Integration Tests", () => {
     if (result.ok && result.value) {
       expect(result.value.targetCriteria).toBeDefined();
       expect(result.value.targetCriteria.position?.mode).toBe("desired");
-      expect(result.value.targetCriteria.position?.values).toContain("Senior");
+      expect(result.value.targetCriteria.position?.values).toContain("senior");
     }
   });
 

@@ -13,11 +13,16 @@ export class UpdateContextTool extends BaseTool<UpdateContextToolParams, UserCon
     const updateInput = updateContextInputSchema.parse(params.updates);
     const normalizedPartial = await this.normalizer.normalizeUserContext(updateInput, userId);
 
-    const validated = updateContextInputSchema.parse(normalizedPartial);
+    // Merge normalized fields with original updates (normalizer only returns normalized fields)
+    const fullUpdates = { ...updateInput, ...normalizedPartial };
 
-    return this.coreClient.client.context.update.mutate({
+    const validated = updateContextInputSchema.parse(fullUpdates);
+
+    const result = await this.coreClient.client.context.update.mutate({
       userId,
       updates: validated,
     });
+
+    return result;
   }
 }

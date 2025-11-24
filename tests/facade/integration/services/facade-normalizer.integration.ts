@@ -22,7 +22,7 @@ describe("Facade Normalizer Integration Tests", () => {
 
     const result = await ctx.normalizer.normalizeUserContext(context, "usr_test_01");
 
-    expect(result.position).toBe("Junior");
+    expect(result.position).toBe("junior");
     expect(result.skills).toContain("python");
     expect(result.skills).toContain("react");
   });
@@ -49,7 +49,7 @@ describe("Facade Normalizer Integration Tests", () => {
 
     const result = await ctx.normalizer.normalizeUserContext(context, "usr_test_03");
 
-    expect(result.skills).toEqual([unknownSkill]);
+    expect(result.skills).toEqual([unknownSkill.toLowerCase()]);
   });
 
   // Business rule: New skills created with complexity=null (requires admin verification for scoring).
@@ -62,8 +62,8 @@ describe("Facade Normalizer Integration Tests", () => {
 
     const result = await ctx.normalizer.normalizeUserContext(context, "usr_test_04");
 
-    // Verify normalizer returns the new skill
-    expect(result.skills).toEqual([newSkill]);
+    // Verify normalizer returns the new skill in canonical lowercase format
+    expect(result.skills).toEqual([newSkill.toLowerCase()]);
 
     // Note: New skills created with verified=false (pending admin review)
     // getVerified() filters by verified=true, so unverified skills won't appear
@@ -88,7 +88,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Each field (position, skills, domains, industry, cityName) normalized independently.
   it("FN6: Full UserContext - all fields normalized correctly", async () => {
     const context: AdhocUserContext = {
-      position: "Senior",
+      position: "senior",
       skills: ["Python"],
       domains: ["Backend"],
       industry: "Fintech",
@@ -97,11 +97,11 @@ describe("Facade Normalizer Integration Tests", () => {
 
     const result = await ctx.normalizer.normalizeUserContext(context, "usr_test_06");
 
-    expect(result.position).toBe("Senior");
+    expect(result.position).toBe("senior");
     expect(result.skills).toEqual(["python"]);
-    expect(result.domains).toEqual(["Backend"]);
-    expect(result.industry).toBe("Fintech");
-    expect(result.cityName).toBe("Berlin");
+    expect(result.domains).toEqual(["backend"]);
+    expect(result.industry).toBe("fintech");
+    expect(result.cityName).toBe("berlin");
   });
 
   // Business rule: TargetContext preserves FieldFilter mode (desired/undesired) while normalizing values.
@@ -115,7 +115,7 @@ describe("Facade Normalizer Integration Tests", () => {
     const result = await ctx.normalizer.normalizeTargetContext(context, "usr_test_07");
 
     expect(result.position?.mode).toBe("desired");
-    expect(result.position?.values).toEqual(["Senior"]);
+    expect(result.position?.values).toEqual(["senior"]);
     expect(result.skills?.mode).toBe("undesired");
     expect(result.skills?.values).toContain("python");
     expect(result.skills?.values).toContain("react");

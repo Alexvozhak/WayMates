@@ -12,7 +12,10 @@ export class UpsertContextTool extends BaseTool<UpsertContextParams, UpsertSingl
   ): Promise<UpsertSingleContextResult> {
     const normalizedPartial = await this.normalizer.normalizeUserContext(params.context, userId);
 
-    const validated = upsertContextInputSchema.parse({ userId, context: normalizedPartial });
+    // Merge normalized fields with original context (normalizer only returns normalized fields)
+    const fullContext = { ...params.context, ...normalizedPartial };
+
+    const validated = upsertContextInputSchema.parse({ userId, context: fullContext });
 
     return this.coreClient.client.context.upsertContext.mutate(validated);
   }

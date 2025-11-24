@@ -7,11 +7,11 @@
       "creationReason": [
         "started_working"
       ],
-      "position": "Junior",
+      "position": "junior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Frontend"
+        "frontend"
       ],
       "skills": [
         "react"
@@ -22,7 +22,8 @@
       "educationLevel": "MASTER",
       "citizenships": [
         "de"
-      ]
+      ],
+      "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d73"
     },
     {
       "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d73",
@@ -30,11 +31,11 @@
       "creationReason": [
         "milestone_achieved"
       ],
-      "position": "Middle",
+      "position": "middle",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Frontend"
+        "frontend"
       ],
       "skills": [
         "react"

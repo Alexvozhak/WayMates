@@ -9,7 +9,10 @@ import type { UserKey } from "../../core/helpers/user-stories.js";
 beforeAll(async () => {
   console.log("[Facade Setup] Starting facade test infrastructure...");
 
-  FacadeTestContext.initialize();
+  const ctx = FacadeTestContext.initialize();
+
+  console.log("[Facade Setup] Invalidating cache to ensure fresh dictionary data...");
+  await ctx.cache.invalidate();
 
   console.log("[Facade Setup] Loading fixtures via Core tRPC...");
   const storiesToLoad: UserKey[] = ["U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9"];
@@ -33,11 +36,17 @@ async function loadFixturesViaTRPC(storiesToLoad: UserKey[]): Promise<void> {
 
     console.log(`[Facade Setup] Loading ${userKey} via tRPC...`);
 
-    await ctx.coreClient.client.story.upsertStory.mutate({
-      userId: story.userId,
-      contexts: story.contexts,
-      trails: story.trails,
-    });
+    try {
+      await ctx.coreClient.client.story.upsertStory.mutate({
+        userId: story.userId,
+        contexts: story.contexts,
+        trails: story.trails,
+      });
+      console.log(`[Facade Setup] ${userKey} loaded successfully`);
+    } catch (error) {
+      console.error(`[Facade Setup] FAILED to load ${userKey}:`, error);
+      throw error;
+    }
   }
 
   console.log(`[Facade Setup] Loaded ${storiesToLoad.length} user stories ✓`);

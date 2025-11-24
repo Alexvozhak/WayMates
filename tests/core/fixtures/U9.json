@@ -3,15 +3,17 @@
   "contexts": [
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-caabf925763b",
+      "previousContextId": null,
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-cc83f8f90e1c",
       "createdAt": "2019-06-01T00:00:00Z",
       "creationReason": [
         "started_working"
       ],
-      "position": "Junior",
+      "position": "junior",
       "industry": "tech",
       "companySize": "small",
       "domains": [
-        "Frontend"
+        "frontend"
       ],
       "skills": [
         "javascript",
@@ -27,16 +29,18 @@
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-cc83f8f90e1c",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-caabf925763b",
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-d0bac10f7e5d",
       "createdAt": "2020-09-01T00:00:00Z",
       "creationReason": [
         "position_changed",
         "skill_learning"
       ],
-      "position": "Middle",
+      "position": "middle",
       "industry": "tech",
       "companySize": "small",
       "domains": [
-        "Frontend"
+        "frontend"
       ],
       "skills": [
         "javascript",
@@ -53,17 +57,19 @@
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-d0bac10f7e5d",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-cc83f8f90e1c",
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-d771b6fe0251",
       "createdAt": "2022-03-01T00:00:00Z",
       "creationReason": [
         "skill_learning",
         "domain_changed"
       ],
-      "position": "Senior",
+      "position": "senior",
       "industry": "tech",
       "companySize": "medium",
       "domains": [
-        "Frontend",
-        "Backend"
+        "frontend",
+        "backend"
       ],
       "skills": [
         "javascript",
@@ -82,17 +88,19 @@
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-d771b6fe0251",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-d0bac10f7e5d",
+      "nextContextId": null,
       "createdAt": "2024-01-01T00:00:00Z",
       "creationReason": [
         "position_changed",
         "company_changed"
       ],
-      "position": "Engineering Manager",
+      "position": "engineering manager",
       "industry": "tech",
       "companySize": "large",
       "domains": [
         "Management",
-        "Backend"
+        "backend"
       ],
       "skills": [
         "javascript",

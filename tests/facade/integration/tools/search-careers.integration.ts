@@ -31,7 +31,7 @@ describe("SearchCareersTool Integration Tests", () => {
     const params: FacadeAdhocSearchParams = {
       sessionId: testSessionId,
       referenceContext: {
-        position: "Junior",
+        position: "junior",
         skills: ["React"],
         domains: ["Frontend"],
       },
@@ -56,7 +56,7 @@ describe("SearchCareersTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_invalid123";
     const params: FacadeAdhocSearchParams = {
       sessionId: invalidSession,
-      referenceContext: { position: "Junior" },
+      referenceContext: { position: "junior" },
       limit: 10,
       pathLimit: 5,
       excludedContextFields: [],
@@ -122,7 +122,7 @@ describe("SearchCareersTool Integration Tests", () => {
     const params: FacadeAdhocSearchParams = {
       sessionId: testSessionId,
       referenceContext: {
-        position: "Junior",
+        position: "junior",
       },
       limit: 10,
       pathLimit: 5,

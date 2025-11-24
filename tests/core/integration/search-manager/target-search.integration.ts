@@ -36,7 +36,7 @@ describe("Target Search (TG1-TG7)", () => {
       criteria: {
         position: {
           mode: "desired",
-          values: ["Middle"],
+          values: ["middle"],
         },
       },
       excludedCreationReasons: [],
@@ -58,7 +58,7 @@ describe("Target Search (TG1-TG7)", () => {
     expect(hasU5).toBe(true);
 
     results.forEach((r) => {
-      expect(r.matchedContext.position).toBe("Middle");
+      expect(r.matchedContext.position).toBe("middle");
     });
 
     validateAllPaths(results, "TG1");
@@ -79,7 +79,7 @@ describe("Target Search (TG1-TG7)", () => {
       criteria: {
         position: {
           mode: "undesired",
-          values: ["Junior"],
+          values: ["junior"],
         },
       },
       excludedCreationReasons: [],
@@ -97,7 +97,7 @@ describe("Target Search (TG1-TG7)", () => {
     expect(hasU5).toBe(true);
 
     results.forEach((r) => {
-      expect(r.matchedContext.position).not.toBe("Junior");
+      expect(r.matchedContext.position).not.toBe("junior");
     });
 
     const u4 = dataManager.getStoryBy("U4");
@@ -123,7 +123,7 @@ describe("Target Search (TG1-TG7)", () => {
       criteria: {
         domains: {
           mode: "desired",
-          values: ["Frontend"],
+          values: ["frontend"],
         },
       },
       excludedCreationReasons: [],
@@ -148,7 +148,7 @@ describe("Target Search (TG1-TG7)", () => {
     expect(hasFrontendUsers).toBe(true);
 
     results.forEach((r) => {
-      expect(r.matchedContext.domains).toContain("Frontend");
+      expect(r.matchedContext.domains).toContain("frontend");
     });
 
     const u7 = dataManager.getStoryBy("U7");
@@ -173,7 +173,7 @@ describe("Target Search (TG1-TG7)", () => {
       criteria: {
         domains: {
           mode: "undesired",
-          values: ["Frontend"],
+          values: ["frontend"],
         },
       },
       excludedCreationReasons: [],
@@ -194,7 +194,7 @@ describe("Target Search (TG1-TG7)", () => {
     expect(hasBackendUsers).toBe(true);
 
     results.forEach((r) => {
-      expect(r.matchedContext.domains).not.toContain("Frontend");
+      expect(r.matchedContext.domains).not.toContain("frontend");
     });
 
     const u1 = dataManager.getStoryBy("U1");
@@ -321,11 +321,11 @@ describe("Target Search (TG1-TG7)", () => {
       criteria: {
         position: {
           mode: "desired",
-          values: ["Junior"],
+          values: ["junior"],
         },
         domains: {
           mode: "desired",
-          values: ["Backend"],
+          values: ["backend"],
         },
         skills: {
           mode: "undesired",
@@ -356,8 +356,8 @@ describe("Target Search (TG1-TG7)", () => {
     expect(hasU7 || hasU10).toBe(true);
 
     results.forEach((r) => {
-      expect(r.matchedContext.position).toBe("Junior");
-      expect(r.matchedContext.domains).toContain("Backend");
+      expect(r.matchedContext.position).toBe("junior");
+      expect(r.matchedContext.domains).toContain("backend");
       expect(r.matchedContext.skills).not.toContain("python");
     });
 

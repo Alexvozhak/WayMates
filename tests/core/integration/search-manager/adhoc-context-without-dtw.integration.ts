@@ -173,8 +173,8 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       // tolerance = 1 decimal place due to scoring implementation details
       expect(u4Result.contextMatchScore).toBeCloseTo(expectedScore, 1);
 
-      expect(u4Result.matchedContext.position).toBe("Junior");
-      expect(u4Result.matchedContext.domains).toContain("Frontend");
+      expect(u4Result.matchedContext.position).toBe("junior");
+      expect(u4Result.matchedContext.domains).toContain("frontend");
       expect(u4Result.matchedContext.skills).toEqual(["svelte"]);
       expect(u4Result.matchedContext.countryCode).toBe("us");
     }
@@ -271,7 +271,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u3 = dataManager.getStoryBy("U3");
     const u7 = dataManager.getStoryBy("U7");
 
-    const backendResults = results.filter((r) => r.matchedContext.domains.includes("Backend"));
+    const backendResults = results.filter((r) => r.matchedContext.domains.includes("backend"));
     expect(backendResults.length).toBeGreaterThanOrEqual(2);
     console.log(`[AC4] Backend results count: ${backendResults.length} (expected >= 2)`);
 
@@ -867,11 +867,11 @@ describe("Partial Context Tests (AC13-AC15)", () => {
     const dataManager = new UserStories();
 
     // Business scenario: User says "I'm a Junior React developer"
-    // Facade normalized: {position: "Junior", skills: ["react"], domains: ["Frontend"]}
+    // Facade normalized: {position: "junior", skills: ["react"], domains: ["frontend"]}
     const partialContext: Partial<UserContext> = {
-      position: "Junior",
+      position: "junior",
       skills: ["react"],
-      domains: ["Frontend"],
+      domains: ["frontend"],
       // Missing: industry, geo, companySize, birthYear (typical for new users)
     };
 
@@ -981,8 +981,8 @@ describe("Partial Context Tests (AC13-AC15)", () => {
     // Business scenario: Senior developer seeks global opportunities
     // "Senior Backend with Python, any country"
     const partialContext: Partial<UserContext> = {
-      position: "Senior",
-      domains: ["Backend"],
+      position: "senior",
+      domains: ["backend"],
       skills: ["python"],
       // Missing: countryCode, cityName (intentional - international search)
     };
@@ -1017,8 +1017,8 @@ describe("Partial Context Tests (AC13-AC15)", () => {
 
     // All results match position + domains
     results.forEach((r) => {
-      expect(r.matchedContext.position).toBe("Senior");
-      expect(r.matchedContext.domains).toContain("Backend");
+      expect(r.matchedContext.position).toBe("senior");
+      expect(r.matchedContext.domains).toContain("backend");
     });
   });
 });

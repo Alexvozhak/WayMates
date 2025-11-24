@@ -4,15 +4,16 @@
   "contexts": [
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-ddb8079671cb",
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-e28941c36a88",
       "createdAt": "2022-01-01T00:00:00Z",
       "creationReason": [
         "started_working"
       ],
-      "position": "Junior",
+      "position": "junior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Backend"
+        "backend"
       ],
       "skills": [
         "javascript",
@@ -30,15 +31,16 @@
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-e28941c36a88",
       "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-ddb8079671cb",
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-e73f1763720d",
       "createdAt": "2023-01-01T00:00:00Z",
       "creationReason": [
         "position_changed"
       ],
-      "position": "Middle",
+      "position": "middle",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Backend"
+        "backend"
       ],
       "skills": [
         "javascript",
@@ -63,12 +65,12 @@
       "creationReason": [
         "position_changed"
       ],
-      "position": "Senior",
+      "position": "senior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Backend",
-        "DevOps"
+        "backend",
+        "devops"
       ],
       "skills": [
         "javascript",

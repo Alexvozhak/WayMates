@@ -31,7 +31,7 @@ describe("SetGoalTool Integration Tests", () => {
     const params: SetGoalParams = {
       sessionId: testSessionId,
       targetContext: {
-        position: { mode: "desired", values: ["Senior"] },
+        position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python", "React"] },
         domains: { mode: "desired", values: ["Backend"] },
       },
@@ -53,7 +53,7 @@ describe("SetGoalTool Integration Tests", () => {
     const params: SetGoalParams = {
       sessionId: invalidSession,
       targetContext: {
-        position: { mode: "desired", values: ["Senior"] },
+        position: { mode: "desired", values: ["senior"] },
       },
     };
 
@@ -89,7 +89,7 @@ describe("SetGoalTool Integration Tests", () => {
     const firstGoal: SetGoalParams = {
       sessionId: testSessionId,
       targetContext: {
-        position: { mode: "desired", values: ["Junior"] },
+        position: { mode: "desired", values: ["junior"] },
       },
     };
 
@@ -99,7 +99,7 @@ describe("SetGoalTool Integration Tests", () => {
     const secondGoal: SetGoalParams = {
       sessionId: testSessionId,
       targetContext: {
-        position: { mode: "desired", values: ["Senior"] },
+        position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python"] },
       },
     };

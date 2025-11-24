@@ -8,11 +8,11 @@
       "creationReason": [
         "started_working"
       ],
-      "position": "Junior",
+      "position": "junior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Backend"
+        "backend"
       ],
       "skills": [
         "python",
@@ -25,7 +25,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-f10e241448a4"
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-f10e241448a4",
@@ -34,11 +35,11 @@
       "creationReason": [
         "position_changed"
       ],
-      "position": "Middle",
+      "position": "middle",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Backend"
+        "backend"
       ],
       "skills": [
         "python",
@@ -54,7 +55,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-f6fb4b034c5b"
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-f6fb4b034c5b",
@@ -63,12 +65,12 @@
       "creationReason": [
         "position_changed"
       ],
-      "position": "Senior",
+      "position": "senior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Backend",
-        "DevOps"
+        "backend",
+        "devops"
       ],
       "skills": [
         "python",

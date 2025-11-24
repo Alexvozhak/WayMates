@@ -8,11 +8,11 @@
       "creationReason": [
         "started_working"
       ],
-      "position": "Junior",
+      "position": "junior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Frontend"
+        "frontend"
       ],
       "skills": [
         "html",
@@ -25,7 +25,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078",
@@ -35,11 +36,11 @@
         "position_changed",
         "company_changed"
       ],
-      "position": "Middle",
+      "position": "middle",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Frontend"
+        "frontend"
       ],
       "skills": [
         "html",
@@ -55,7 +56,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a",
@@ -64,11 +66,11 @@
       "creationReason": [
         "position_changed"
       ],
-      "position": "Senior",
+      "position": "senior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Frontend"
+        "frontend"
       ],
       "skills": [
         "html",
@@ -87,7 +89,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81",
@@ -97,13 +100,13 @@
         "position_changed",
         "company_changed"
       ],
-      "position": "Senior",
+      "position": "senior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Backend",
-        "DevOps",
-        "Frontend"
+        "backend",
+        "devops",
+        "frontend"
       ],
       "skills": [
         "html",

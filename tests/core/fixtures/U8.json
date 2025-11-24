@@ -3,15 +3,17 @@
   "contexts": [
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-b565ba2f2fb0",
+      "previousContextId": null,
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-badf138904c0",
       "createdAt": "2020-01-01T00:00:00Z",
       "creationReason": [
         "started_working"
       ],
-      "position": "Junior",
+      "position": "junior",
       "industry": "IT",
       "companySize": "startup",
       "domains": [
-        "Backend"
+        "backend"
       ],
       "skills": [
         "python",
@@ -27,15 +29,17 @@
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-badf138904c0",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-b565ba2f2fb0",
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-bfdc78c3b1b2",
       "createdAt": "2021-01-01T00:00:00Z",
       "creationReason": [
         "skill_learning"
       ],
-      "position": "Middle",
+      "position": "middle",
       "industry": "IT",
       "companySize": "startup",
       "domains": [
-        "Backend"
+        "backend"
       ],
       "skills": [
         "python",
@@ -52,16 +56,18 @@
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-bfdc78c3b1b2",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-badf138904c0",
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-c384e8c836e4",
       "createdAt": "2022-07-01T00:00:00Z",
       "creationReason": [
         "milestone_achieved",
         "company_changed"
       ],
-      "position": "Senior",
+      "position": "senior",
       "industry": "IT",
       "companySize": "medium",
       "domains": [
-        "Backend",
+        "backend",
         "DevOps"
       ],
       "skills": [
@@ -80,15 +86,17 @@
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-c384e8c836e4",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-bfdc78c3b1b2",
+      "nextContextId": null,
       "createdAt": "2024-07-01T00:00:00Z",
       "creationReason": [
         "position_changed"
       ],
-      "position": "TechLead",
+      "position": "tech lead",
       "industry": "IT",
       "companySize": "large",
       "domains": [
-        "Backend",
+        "backend",
         "DevOps",
         "Architecture"
       ],

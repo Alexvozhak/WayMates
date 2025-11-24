@@ -3,15 +3,17 @@
   "contexts": [
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-a1464c2a27b3",
+      "previousContextId": null,
+      "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-a77e63d34a4b",
       "createdAt": "2024-06-01T00:00:00Z",
       "creationReason": [
         "started_working"
       ],
-      "position": "Junior",
+      "position": "junior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Frontend"
+        "frontend"
       ],
       "skills": [
         "react"
@@ -26,17 +28,19 @@
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-a77e63d34a4b",
+      "previousContextId": "ctx_019a6ea7-18c0-743c-ade8-a1464c2a27b3",
+      "nextContextId": null,
       "createdAt": "2025-11-09T00:00:00Z",
       "creationReason": [
         "position_changed",
         "domain_changed"
       ],
-      "position": "Middle",
+      "position": "middle",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Frontend",
-        "Backend"
+        "frontend",
+        "backend"
       ],
       "skills": [
         "react",

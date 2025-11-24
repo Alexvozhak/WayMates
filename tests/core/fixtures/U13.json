@@ -8,11 +8,11 @@
       "creationReason": [
         "started_working"
       ],
-      "position": "Junior",
+      "position": "junior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Data Science"
+        "data science"
       ],
       "skills": [
         "python",
@@ -25,7 +25,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-d86cefe91b07"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-d86cefe91b07",
@@ -34,12 +35,12 @@
       "creationReason": [
         "position_changed"
       ],
-      "position": "Middle",
+      "position": "middle",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Data Science",
-        "Machine Learning"
+        "data science",
+        "machine learning"
       ],
       "skills": [
         "python",
@@ -55,7 +56,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-df04ddd77920"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-df04ddd77920",
@@ -64,13 +66,13 @@
       "creationReason": [
         "position_changed"
       ],
-      "position": "Senior",
+      "position": "senior",
       "industry": "tech",
       "companySize": "startup",
       "domains": [
-        "Backend",
-        "DevOps",
-        "Machine Learning"
+        "backend",
+        "devops",
+        "machine learning"
       ],
       "skills": [
         "python",

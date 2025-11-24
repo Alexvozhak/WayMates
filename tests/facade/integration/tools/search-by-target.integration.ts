@@ -31,7 +31,7 @@ describe("SearchByTargetTool Integration Tests", () => {
     const params: SearchByTargetParams = {
       sessionId: testSessionId,
       targetContext: {
-        position: { mode: "desired", values: ["Senior"] },
+        position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python", "React"] },
       },
       limit: 20,
@@ -52,7 +52,7 @@ describe("SearchByTargetTool Integration Tests", () => {
     const params: SearchByTargetParams = {
       sessionId: invalidSession,
       targetContext: {
-        position: { mode: "desired", values: ["Senior"] },
+        position: { mode: "desired", values: ["senior"] },
       },
       limit: 20,
     };
