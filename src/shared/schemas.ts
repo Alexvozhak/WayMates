@@ -174,7 +174,11 @@ const userContextSchemaBase = z.object({
     ),
 });
 
-export const adhocUserContextSchema = userContextSchemaBase.partial();
+export const adhocUserContextSchema = userContextSchemaBase
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided for search",
+  });
 
 export type AdhocUserContext = z.infer<typeof adhocUserContextSchema>;
 
@@ -391,11 +395,47 @@ export type TargetSearchParams = z.infer<typeof targetSearchParamsSchema>;
 // === STORY & GOAL OPERATIONS ===
 // ==========================================
 
-export const storyInputSchema = z.object({
-  userId: userIdSchema,
-  contexts: z.array(userContextSchema).min(1),
-  trails: z.array(trailSchema).min(0),
-});
+export const storyInputSchema = z
+  .object({
+    userId: userIdSchema,
+    contexts: z.array(userContextSchema).min(1),
+    trails: z.array(trailSchema).min(0),
+  })
+  .superRefine((data, ctx) => {
+    if (data.contexts.length === 1) {
+      return;
+    }
+
+    const contextIds = new Set(data.contexts.map((c) => c.contextId));
+
+    // Rule 1: Exactly one current context (nextContextId = null)
+    const currentCount = data.contexts.filter((c) => !c.nextContextId).length;
+    if (currentCount !== 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contexts"],
+        message: `Expected exactly 1 current context (nextContextId=null), found ${currentCount}`,
+      });
+    }
+
+    // Rule 2: All references must exist (no dangling pointers)
+    for (const context of data.contexts) {
+      if (context.previousContextId && !contextIds.has(context.previousContextId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["contexts"],
+          message: `Context ${context.contextId} references non-existent previousContextId: ${context.previousContextId}`,
+        });
+      }
+      if (context.nextContextId && !contextIds.has(context.nextContextId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["contexts"],
+          message: `Context ${context.contextId} references non-existent nextContextId: ${context.nextContextId}`,
+        });
+      }
+    }
+  });
 
 export const upsertContextInputSchema = z.object({
   userId: userIdSchema,

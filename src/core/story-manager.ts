@@ -62,7 +62,8 @@ export class StoryManager {
       const result = await tx.run(GET_USER_STORY_QUERY, { userId: userId });
       const record = result.records[0];
       if (!record) {
-        throw new Error(`getUserStory: no record returned for user ${userId}`);
+        // Return empty story for new users (cold-start flow)
+        return { userId, contexts: [], trails: [] };
       }
       return storyInputSchema.parse(record.get("result"));
     });
@@ -76,11 +77,10 @@ export class StoryManager {
       });
       const record = result.records[0];
       if (!record) {
-        throw new Error(
-          `deleteContext: no result returned for user=${userId}, context=${contextId}`,
-        );
+        // Idempotent: context not found = already deleted = success
+        return true;
       }
-      return Boolean(record.get("result"));
+      return Boolean(record.get("result").success);
     });
 
     if (!success) {

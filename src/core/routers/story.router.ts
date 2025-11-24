@@ -31,6 +31,10 @@ export const storyRouter = t.router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      return ctx.storyManager.getUserStory(input.userId);
+      const story = await ctx.storyManager.getUserStory(input.userId);
+      return {
+        contexts: story.contexts,
+        trails: story.trails,
+      };
     }),
 });

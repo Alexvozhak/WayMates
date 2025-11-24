@@ -40,9 +40,16 @@ describe("StoryManager Integration Tests", () => {
       throw new Error(`Context ${contextIndex} not found for ${String(userKey)}`);
     }
 
+    // When loading single context, it must be current (nextContextId = null)
+    // Otherwise updateContext tests will fail (they require current context)
+    const currentContext = {
+      ...context,
+      nextContextId: null,
+    };
+
     const storyInput: StoryInput = {
       userId: testData.userId,
-      contexts: [context],
+      contexts: [currentContext],
       trails: [], // No trails for single context
     };
 
@@ -50,7 +57,7 @@ describe("StoryManager Integration Tests", () => {
 
     await storyManager.upsertStory(storyInput);
 
-    return { testData, context };
+    return { testData, context: currentContext };
   }
 
   describe("CREATE: Basic Context Persistence", () => {
@@ -387,6 +394,7 @@ describe("StoryManager Integration Tests", () => {
       const secondContextWithLink = {
         ...secondContext,
         previousContextId: ctx1Id,
+        nextContextId: null, // Make it current context
       };
 
       const storyInput: StoryInput = {

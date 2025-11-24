@@ -83,15 +83,17 @@ export class FacadeNormalizer {
       return fuzzy;
     }
 
+    const canonical = value.toLowerCase();
+
     await this.coreClient.client.dictionaries.addTerm.mutate({
       type,
-      canonicalName: value,
+      canonicalName: canonical,
       complexity: type === "skill" ? null : undefined,
       verified: false,
       createdBy: userId,
     });
 
-    return value;
+    return canonical;
   }
 
   private async normalizeTerms(
