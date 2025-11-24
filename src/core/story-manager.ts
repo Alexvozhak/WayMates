@@ -6,7 +6,6 @@ import {
   DELETE_TRAIL_QUERY,
   GET_USER_STORY_QUERY,
   //  LIST_REASONS_QUERY,
-  UPDATE_CONTEXT_QUERY,
   UPSERT_CONTEXTS_QUERY,
   UPSERT_TRAILS_QUERY,
 } from "../cypher/index.js";
@@ -22,7 +21,6 @@ import {
   upsertStoryResultSchema,
   upsertTrailInputSchema,
   upsertTrailResultSchema,
-  userContextSchema,
 } from "../shared/schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";
@@ -109,21 +107,40 @@ export class StoryManager {
   async updateContext(params: UpdateContextParams): Promise<UserContext> {
     updateContextParamsSchema.parse(params);
 
-    return this.db.write(async (tx) => {
-      const result = await tx.run(UPDATE_CONTEXT_QUERY, {
-        userId: params.userId,
-        updates: params.updates,
-      });
+    let story: StoryInput;
+    try {
+      story = await this.getUserStory(params.userId);
+    } catch {
+      // getUserStory throws Zod validation error for users without contexts
+      // Convert to business-friendly error message
+      throw new Error(
+        `Current context not found for user ${params.userId} or user has no contexts`,
+      );
+    }
 
-      const record = result.records[0];
-      if (!record) {
-        throw new Error(
-          `Current context not found for user ${params.userId} or user has no contexts`,
-        );
-      }
+    const currentContext = story.contexts.find((ctx) => ctx.nextContextId === null);
 
-      return userContextSchema.parse(record.get("result"));
+    if (!currentContext) {
+      throw new Error(
+        `Current context not found for user ${params.userId} or user has no contexts`,
+      );
+    }
+
+    const definedUpdates = Object.fromEntries(
+      Object.entries(params.updates).filter(([_, value]) => value !== undefined),
+    );
+
+    const updatedContext: UserContext = {
+      ...currentContext,
+      ...definedUpdates,
+    };
+
+    await this.upsertContext({
+      userId: params.userId,
+      context: updatedContext,
     });
+
+    return updatedContext;
   }
 
   async upsertContext(params: UpsertContextInput): Promise<UpsertSingleContextResult> {

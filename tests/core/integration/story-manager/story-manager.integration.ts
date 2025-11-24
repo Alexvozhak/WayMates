@@ -567,7 +567,7 @@ describe("StoryManager Integration Tests", () => {
       const result1 = await withReadSession(driver, (tx) =>
         tx.run("MATCH (c:Context {contextId: $id}) RETURN c.updatedAt", { id: contextId }),
       );
-      const updatedAt1 = result1.records[0]!.get("c.updatedAt");
+      const updatedAt1 = Number(result1.records[0]!.get("c.updatedAt"));
 
       await storyManager.updateContext({
         userId: testData.userId,
@@ -577,7 +577,7 @@ describe("StoryManager Integration Tests", () => {
       const result2 = await withReadSession(driver, (tx) =>
         tx.run("MATCH (c:Context {contextId: $id}) RETURN c.updatedAt", { id: contextId }),
       );
-      const updatedAt2 = result2.records[0]!.get("c.updatedAt");
+      const updatedAt2 = Number(result2.records[0]!.get("c.updatedAt"));
 
       expect(updatedAt2).toBeGreaterThan(updatedAt1);
     });
