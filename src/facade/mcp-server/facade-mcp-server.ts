@@ -1,6 +1,7 @@
 import { FastMCP } from "fastmcp";
 
 import {
+  coldStartParamsSchema,
   deleteContextParamsSchema,
   deleteGoalParamsSchema,
   facadeAdhocSearchParamsSchema,
@@ -12,6 +13,7 @@ import {
   updateContextToolParamsSchema,
   upsertContextParamsSchema,
 } from "./schemas.js";
+import { ColdStartTool } from "./tools/cold-start.tool.js";
 import { DeleteContextTool } from "./tools/delete-context.tool.js";
 import { DeleteGoalTool } from "./tools/delete-goal.tool.js";
 import { GetGoalTool } from "./tools/get-goal.tool.js";
@@ -34,6 +36,7 @@ export type FacadeServerDependencies = {
 };
 
 type ToolInstances = {
+  coldStart: ColdStartTool;
   getStory: GetStoryTool;
   searchCareers: SearchCareersTool;
   searchUserCareers: SearchUserCareersTool;
@@ -48,6 +51,7 @@ type ToolInstances = {
 
 function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
   return {
+    coldStart: new ColdStartTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     getStory: new GetStoryTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     searchCareers: new SearchCareersTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     searchUserCareers: new SearchUserCareersTool(
@@ -67,6 +71,23 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     deleteContext: new DeleteContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     upsertContext: new UpsertContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
   };
+}
+
+function registerColdStartTool(server: FastMCP, tool: ColdStartTool): void {
+  server.addTool({
+    name: "cold_start",
+    description:
+      "Import full career history via multi-turn conversation. Agent extracts contexts and trails from markdown/text resume. Returns status: collecting/awaiting_clarification/awaiting_confirmation/complete.",
+    parameters: coldStartParamsSchema,
+    execute: async (args: unknown) => {
+      const params = coldStartParamsSchema.parse(args);
+      const result = await tool.execute(params);
+      if (result.ok) {
+        return JSON.stringify(result.value, null, 2);
+      }
+      throw new Error(`${result.error.code}: ${result.error.message}`);
+    },
+  });
 }
 
 function registerGetStoryTool(server: FastMCP, tool: GetStoryTool): void {
@@ -225,6 +246,7 @@ function registerSearchByTargetTool(server: FastMCP, tool: SearchByTargetTool): 
 }
 
 function registerTools(server: FastMCP, tools: ToolInstances): void {
+  registerColdStartTool(server, tools.coldStart);
   registerGetStoryTool(server, tools.getStory);
   registerSearchCareersTool(server, tools.searchCareers);
   registerSearchUserCareersTool(server, tools.searchUserCareers);
@@ -238,7 +260,8 @@ export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
     name: "waymates-facade",
     version: "3.0.0",
     instructions:
-      "WayMates MCP Server. Provides 10 tools for career operations: " +
+      "WayMates MCP Server. Provides 11 tools for career operations: " +
+      "Cold Start (cold_start), " +
       "Story (get_story), " +
       "Search (search_careers, search_user_careers, search_by_target), " +
       "Goals (set_goal, get_goal, delete_goal), " +
