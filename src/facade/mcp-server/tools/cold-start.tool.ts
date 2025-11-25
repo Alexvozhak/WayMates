@@ -1,4 +1,3 @@
-import { userContextSchema } from "../../../shared/schemas.js";
 import { collectContexts } from "../../langchain/career-collector-agent.js";
 
 import { BaseTool } from "./base-tool.js";
@@ -30,7 +29,7 @@ export class ColdStartTool extends BaseTool<ColdStartParams, ColdStartResult> {
 
     console.log(`ColdStartTool: Starting collection for userId=${userId}, threadId=${threadId}`);
 
-    // Call CareerCollectorAgent
+    // Call CareerCollectorAgent (uses MCP Normalizer directly)
     const result: CollectorResult = await collectContexts(params.message, threadId, {
       normalizer: this.normalizer,
       userId,
@@ -85,18 +84,12 @@ export class ColdStartTool extends BaseTool<ColdStartParams, ColdStartResult> {
     }
 
     console.log(`ColdStartTool: Saving ${result.contexts.length} contexts to Neo4j`);
-
-    // Validate contexts (FacadeNormalizer already created unverified terms)
-    const validatedContexts = result.contexts.map((ctx) => {
-      return userContextSchema.parse(ctx);
-    });
-
     console.log(`ColdStartTool: Saving story to Neo4j via Core API`);
 
-    // Save to Neo4j via Core API
+    // Save to Neo4j via Core API (contexts already validated in buildCollectorResult)
     const upsertResult = await this.coreClient.client.story.upsertStory.mutate({
       userId,
-      contexts: validatedContexts,
+      contexts: result.contexts,
       trails: result.trails || [],
     });
 

@@ -72,23 +72,27 @@ export const languageCodeSchema = z
 export type LanguageCode = z.infer<typeof languageCodeSchema>;
 
 export const scheduleSchema = z.object({
-  sessionsPerWeek: z.number().describe("Sessions per week"),
-  hoursPerSession: z.number().describe("Hours per session"),
+  sessionsPerWeek: z.number().describe("Sessions per week").optional(),
+  hoursPerSession: z.number().describe("Hours per session").optional(),
 });
 
 export const trailSchema = z.object({
+  // REQUIRED minimum (для валидного trail)
   skill: z.string().describe("Skill being developed"),
   platform: z.string().describe("Learning platform used"),
   fromContextId: contextIdSchema,
   toContextId: z
     .union([contextIdSchema, z.null().describe("null for ongoing trails")])
     .describe("Target context ID - string for completed, null for ongoing"),
-  totalDurationWeeks: z.number().describe("Total duration in weeks"),
-  schedule: scheduleSchema,
-  costUsd: z.number().describe("Cost in USD"),
-  ratingCourse: z.number().min(1).max(5).describe("Course rating 1-5"),
-  ratingPlatform: z.number().min(1).max(5).describe("Platform rating 1-5"),
-  ratingSchedule: z.number().min(1).max(5).describe("Schedule rating 1-5"),
+
+  // OPTIONAL metrics (не всегда известны при extraction)
+  totalDurationWeeks: z.number().describe("Total duration in weeks").optional(),
+  schedule: scheduleSchema.optional(),
+  costUsd: z.number().describe("Cost in USD").optional(),
+  ratingCourse: z.number().min(1).max(5).describe("Course rating 1-5").optional(),
+  ratingPlatform: z.number().min(1).max(5).describe("Platform rating 1-5").optional(),
+  ratingSchedule: z.number().min(1).max(5).describe("Schedule rating 1-5").optional(),
+
   courseName: z.string().describe("Course name").optional(),
   courseLink: z.string().describe("Course URL").optional(),
   userFeedback: z.string().describe("User feedback").optional(),
@@ -207,6 +211,11 @@ export const userContextSchema = userContextSchemaBase.refine(
     path: ["salaryExact"],
   },
 );
+
+// Partial schema for clarification workflow (without refine - validation happens on merge)
+export const userContextSchemaPartial = userContextSchemaBase.partial();
+
+export type UserContextPartial = z.infer<typeof userContextSchemaPartial>;
 
 // Export base for internal use (.omit(), .partial())
 export { userContextSchemaBase };
