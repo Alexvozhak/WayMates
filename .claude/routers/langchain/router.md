@@ -1,440 +1,181 @@
-п# LangChain v1.0 Router
+# LangChain v1.0 Router
 
-**Версия**: 1.0
-**Дата создания**: 2025-11-19
-**Статус**: Активный
-**Проверено на**: langchain@1.0.6, Gemini 2.0 Flash
+**Назначение**: Entry point для LangChain v1.0 документации. Навигация по concepts, patterns, reference.
+
+**Версия**: 1.0 | **Статус**: Production | **Обновлено**: 2025-11-26
 
 ---
 
-## 🎯 Когда использовать этот роутер
+## 🎯 Когда использовать
 
 **Используй ЭТОТ роутер когда**:
-
-- Работаешь с LangChain v1.0+ (НЕ v0.x!)
-- Создаешь агентов через `createAgent` API
-- Мигрируешь с LangGraph на createAgent
-- Настраиваешь Gemini/OpenAI/Anthropic провайдеры
-- Добавляешь tools, middleware, persistence
-- Реализуешь human-in-the-loop workflows
+- Создаешь agents через `createAgent` API (LangChain v1.0+)
+- Реализуешь human-in-the-loop workflows с interrupts
+- Настраиваешь multi-round dialogs с state persistence
+- Мигрируешь с LangGraph prebuilts на createAgent
 
 **НЕ используй если**:
-
-- Работаешь с прямым LangGraph (см. `.claude/routers/langgraph/`)
-- Используешь старый createReactAgent (deprecated)
-- Версия LangChain < 1.0
+- Работаешь с прямым StateGraph API → см. LangGraph docs
+- Используешь LangChain v0.x → см. migration guides
+- Ищешь общие LLM patterns → см. main LangChain docs
 
 ---
 
-## 📚 Структура роутера
+## 📂 Структура документации
 
 ```
 .claude/routers/langchain/
-├── router.md               # Этот файл - точка входа
-├── quickstart.md           # Быстрый старт за 5 минут
-├── migration-guide.md      # Миграция с v0.x или LangGraph
-├── providers.md            # Настройка Gemini/OpenAI/Anthropic
-├── tools-patterns.md       # Паттерны создания tools
-├── persistence.md          # PostgresSaver и checkpointing
-├── troubleshooting.md      # Частые проблемы и решения
-└── examples/
-    ├── simple-agent.ts     # Базовый пример
-    ├── waymates-agent.ts   # Пример с Core API
-    └── complex-workflow.ts # add_experience workflow
+├── glossary.md                    # ⭐ Критичные правила + термины (START HERE)
+├── router.md                      # Этот файл - navigation
+├── concepts/                      # Короткие заметки (30-50 строк)
+│   ├── agents.md                  # createAgent API
+│   ├── tools.md                   # tool() factory
+│   ├── structured-output.md       # withStructuredOutput
+│   ├── state-management.md        # Custom state schema
+│   ├── middleware.md              # humanInTheLoopMiddleware
+│   ├── checkpointers.md           # PostgresSaver setup
+│   ├── routing.md                 # ⭐ ДЕТАЛЬНО: Explicit vs Implicit vs Hybrid (150 строк)
+│   ├── human-in-loop.md           # ⭐ ДЕТАЛЬНО: Interrupts + multi-round (150 строк)
+│   └── atomic-tools.md            # Atomic tools pattern
+├── patterns/                      # Проверенные паттерны
+│   ├── error-handling.md          # Error handling patterns
+│   └── testing.md                 # Testing strategies
+└── reference/                     # Troubleshooting
+    └── gotchas.md                 # Критичные ошибки с решениями
 ```
 
 ---
 
-## ⚡ Quick Start (2 минуты)
+## 🗺️ Navigation Map
 
-### 1. Установка
+### Я новичок в LangChain v1.0
 
-```bash
-# Минимальный набор
-npm install langchain@latest @langchain/google-genai
+**Path**: Quick Start → Foundation → Advanced
 
-# Для persistence (опционально)
-npm install @langchain/langgraph @langchain/langgraph-checkpoint-postgres
-```
-
-### 2. Настройка .env
-
-```bash
-# ВАЖНО: Для Gemini используй префикс "models/"!
-GOOGLE_API_KEY=AIzaSy...  # Получить: https://makersuite.google.com/app/apikey
-
-# Альтернативы
-OPENAI_API_KEY=sk-...     # OpenAI
-ANTHROPIC_API_KEY=sk-ant-... # Claude
-```
-
-### 3. Минимальный пример
-
-```typescript
-import { createAgent, tool } from "langchain";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { z } from "zod";
-
-// ⚠️ КРИТИЧНО: Модели Gemini ВСЕГДА с префиксом "models/"
-const model = new ChatGoogleGenerativeAI({
-  model: "models/gemini-2.0-flash", // ✅ Правильно
-  // model: "gemini-2.0-flash",      // ❌ НЕ БУДЕТ РАБОТАТЬ!
-  temperature: 0.7,
-});
-
-// Создаем tool
-const calculatorTool = tool(
-  async ({ a, b, operation }) => {
-    console.log(`🔧 Calling: ${operation}(${a}, ${b})`);
-    switch (operation) {
-      case "add":
-        return a + b;
-      case "multiply":
-        return a * b;
-      default:
-        throw new Error(`Unknown operation`);
-    }
-  },
-  {
-    name: "calculator",
-    description: "Math operations",
-    schema: z.object({
-      a: z.number(),
-      b: z.number(),
-      operation: z.enum(["add", "multiply"]),
-    }),
-  },
-);
-
-// Создаем агента
-const agent = createAgent({
-  model,
-  tools: [calculatorTool],
-  systemPrompt: "You are a helpful assistant.",
-});
-
-// Используем
-const result = await agent.invoke({
-  messages: [{ role: "user", content: "What is 42 times 17?" }],
-});
-console.log(result.messages.at(-1).content);
-```
+1. **START**: [glossary.md](./glossary.md) - прочитай критичные правила (10 мин)
+2. [concepts/agents.md](./concepts/agents.md) - createAgent basics
+3. [concepts/tools.md](./concepts/tools.md) - создание tools
+4. [concepts/routing.md](./concepts/routing.md) - ⭐ ДЕТАЛЬНО: как agent выбирает tools
+5. [Production Example](../../../src/facade/langchain/career-collector-agent.ts) - полный agent
 
 ---
 
-## 🚨 КРИТИЧЕСКИ ВАЖНО
+### Я реализую human-in-the-loop workflow
 
-### Модели Gemini - ВСЕГДА с префиксом
+**Path**: Interrupts → State → Patterns
 
-```typescript
-// ✅ ПРАВИЛЬНО - с префиксом "models/"
-model: "models/gemini-2.0-flash";
-model: "models/gemini-2.5-flash";
-model: "models/gemini-2.5-pro";
+1. [concepts/human-in-loop.md](./concepts/human-in-loop.md) - ⭐ ДЕТАЛЬНО: full interrupt workflow
+2. [concepts/middleware.md](./concepts/middleware.md) - humanInTheLoopMiddleware setup
+3. [concepts/checkpointers.md](./concepts/checkpointers.md) - PostgresSaver ОБЯЗАТЕЛЕН
+4. [concepts/state-management.md](./concepts/state-management.md) - custom state schema
+5. [patterns/error-handling.md](./patterns/error-handling.md) - max rounds protection
 
-// ❌ НЕПРАВИЛЬНО - без префикса (404 ошибка!)
-model: "gemini-2.0-flash";
-model: "gemini-1.5-flash";
-model: "gemini-pro";
-```
-
-### Импорты - из правильных пакетов
-
-```typescript
-// ✅ ПРАВИЛЬНО - v1.0
-import { createAgent, tool } from "langchain";
-
-// ❌ НЕПРАВИЛЬНО - старые версии
-import { createReactAgent } from "@langchain/langgraph/prebuilts";
-```
-
-### PostgresSaver - официальный пакет
-
-```typescript
-// ✅ ПРАВИЛЬНО - официальный пакет существует
-import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
-
-// ❌ НЕТ для JavaScript (только Python!)
-import { RedisSaver } from "@langchain/langgraph-checkpoint-redis"; // НЕ СУЩЕСТВУЕТ
-```
+**Gotcha**: [glossary.md#checkpointer-required](./glossary.md#checkpointer-required) - без checkpointer interrupts НЕ РАБОТАЮТ!
 
 ---
 
-## 🏗️ Архитектура LangChain v1.0
+### Я проектирую multi-step workflow
 
-### Что изменилось в v1.0
+**Path**: Routing → Tools → Patterns
 
-```
-До v1.0:
-LangChain (базовый фреймворк)
-    ↓
-LangGraph (отдельная библиотека для workflows)
+1. [concepts/routing.md](./concepts/routing.md) - ⭐ ДЕТАЛЬНО: Hybrid routing (goto + LLM)
+2. [concepts/atomic-tools.md](./concepts/atomic-tools.md) - ONE tool = ONE operation
+3. [concepts/tools.md](./concepts/tools.md) - Command API для routing
+4. [patterns/error-handling.md](./patterns/error-handling.md) - explicit goto для errors
 
-После v1.0:
-createAgent (простой API)
-    ↓ построен на
-LangGraph (встроенный движок)
-```
-
-**Ключевое**: createAgent теперь построен ПОВЕРХ LangGraph, а не заменяет его!
-
-### Новые возможности
-
-1. **Middleware система** - lifecycle hooks
-2. **Human-in-the-loop** - встроенные interrupts
-3. **Persistence** - автоматический checkpointing
-4. **Parallel tools** - агент сам решает порядок
-5. **State management** - через stateSchema
+**Key Pattern**: [glossary.md#hybrid-routing](./glossary.md#hybrid-routing) - deterministic goto + LLM intent
 
 ---
 
-## 📋 Пошаговые инструкции
+### Я извлекаю structured data из user input
 
-### Для простого агента
+**Path**: Extraction → Validation → Tools
 
-→ См. [`quickstart.md`](quickstart.md)
-
-### Для миграции с LangGraph
-
-→ См. [`migration-guide.md`](migration-guide.md)
-
-### Для настройки провайдеров
-
-→ См. [`providers.md`](providers.md)
-
-### Для создания tools
-
-→ См. [`tools-patterns.md`](tools-patterns.md)
-
-### Для persistence
-
-→ См. [`persistence.md`](persistence.md)
+1. [concepts/structured-output.md](./concepts/structured-output.md) - withStructuredOutput
+2. [concepts/tools.md](./concepts/tools.md) - Zod schema validation
+3. [concepts/routing.md](./concepts/routing.md) - explicit goto на validation failure
+4. [Production Example: extractSingleContextTool](../../../src/facade/langchain/shared-tools/index.ts)
 
 ---
 
-## 🔍 Проверенные факты
+### У меня проблема / ошибка
 
-| Утверждение                           | Статус           | Источник            |
-| ------------------------------------- | ---------------- | ------------------- |
-| createAgent доступен в langchain@1.0+ | ✅ Проверено     | Наши тесты          |
-| PostgresSaver официальный для JS      | ✅ Подтверждено  | NPM пакет           |
-| RedisSaver НЕ существует для JS       | ✅ Только Python | GitHub поиск        |
-| Параллельные tools работают           | ✅ Проверено     | gemini-agent.poc.ts |
-| Gemini модели нужен префикс "models/" | ✅ КРИТИЧНО      | API тесты           |
-| createAgent построен на LangGraph     | ✅ Факт          | Документация        |
-| Shared atomic tools pattern работает  | ✅ Production    | WayMates cold_start (70-85% reuse) |
-| Command API для state transitions     | ✅ Recommended   | Deterministic workflow |
-| Batch questions (НЕ one-by-one)       | ✅ Best Practice | UX improvement      |
+**Path**: Gotchas → Glossary → Troubleshooting
 
----
+1. [reference/gotchas.md](./reference/gotchas.md) - 🔴 критичные ошибки с решениями
+2. [glossary.md](./glossary.md) - критичные правила (Gemini prefix, checkpointer, etc)
+3. Check production example: [career-collector-agent.ts](../../../src/facade/langchain/career-collector-agent.ts)
 
-## 💡 Best Practices
-
-### 1. Всегда проверяй версию
-
-```bash
-npm list langchain
-# Должно быть: langchain@1.x.x (НЕ 0.x.x!)
-```
-
-### 2. Используй правильную модель для задачи
-
-| Модель                    | Скорость | Умность | Цена        | Когда использовать        |
-| ------------------------- | -------- | ------- | ----------- | ------------------------- |
-| `models/gemini-2.0-flash` | ⚡⚡⚡   | 🧠🧠    | Бесплатно   | Разработка, простые tools |
-| `models/gemini-2.5-flash` | ⚡⚡⚡   | 🧠🧠+   | Бесплатно   | Продакшн, быстрый отклик  |
-| `models/gemini-2.5-pro`   | ⚡       | 🧠🧠🧠  | Бесплатно\* | Сложная логика, reasoning |
-| `gpt-4o-mini`             | ⚡⚡     | 🧠🧠+   | $           | Если нужна стабильность   |
-
-\*Бесплатно с лимитами
-
-### 3. Структурируй tools правильно
-
-**Принцип**: Atomic Tool = ONE Entity Operation
-
-```typescript
-// ✅ Хорошо - атомарные tools (работают с ONE entity)
-const extractSingleContext = tool(...); // ONE context
-const extractSingleTrail = tool(...);   // ONE trail
-const linkContextsWithTrail = tool(...); // TWO contexts → ONE link
-
-// ❌ Плохо - монолитный tool (работает с MANY)
-const extractFullHistory = tool(...); // MANY contexts + MANY trails
-
-// 💡 Композиция: Agent-specific tools могут композировать shared tools
-const processCareerHistory = tool(async ({ text }) => {
-  // Композируем atomic tools
-  const contexts = await Promise.all(
-    sections.map(s => extractSingleContext({ text: s }))
-  );
-  const trails = await Promise.all(
-    pairs.map(([from, to]) => linkContextsWithTrail({ from, to, text }))
-  );
-  return { contexts, trails };
-});
-```
-
-**Преимущества**:
-- Максимальная переиспользуемость (один tool → много agents)
-- Простота тестирования (один tool = один тест)
-- Предсказуемость (четкие входы/выходы)
-
-**См. также**: [Architecture Principles](../../docs/architecture/facade/langchain/architecture-principles.md)
-
-### 4. Добавляй логирование
-
-```typescript
-const myTool = tool(
-  async (params) => {
-    console.log(`🔧 Tool called: ${JSON.stringify(params)}`);
-    const result = await doWork(params);
-    console.log(`✅ Tool result: ${JSON.stringify(result)}`);
-    return result;
-  },
-  { ... }
-);
-```
-
-### 5. Tool-driven transitions через Command API
-
-**Принцип**: Tools управляют state transitions, НЕ LLM
-
-```typescript
-// ✅ Правильно - tool явно обновляет state
-const extractDataTool = tool(
-  async ({ text }) => {
-    const data = await parseData(text);
-
-    return new Command({
-      update: {
-        extractedData: data,
-        status: "awaiting_confirmation" // Явный transition
-      }
-    });
-  },
-  { name: "extract_data", ... }
-);
-
-// ❌ Неправильно - LLM сам выбирает status (недетерминированно)
-const extractDataTool = tool(
-  async ({ text }) => {
-    return await parseData(text); // Как LLM узнает что делать дальше?
-  },
-  { name: "extract_data", ... }
-);
-```
-
-**Преимущества**:
-- Deterministic workflow (предсказуемые transitions)
-- Testable (можно тестировать state changes)
-- Production-ready (надежное поведение)
-
-**State schema** ОБЯЗАТЕЛЬНО должен включать `messages` field:
-
-```typescript
-const stateSchema = z.object({
-  messages: MessagesZodState.shape.messages, // MANDATORY!
-  status: z.enum(["collecting", "confirming", "complete"]).optional(),
-  // ... other custom fields
-});
-```
-
-### 6. Batch patterns для user interactions
-
-**Принцип**: ВСЕГДА batch operations, NEVER one-by-one
-
-```typescript
-// ✅ Правильно - batch вопросов
-const askClarification = tool(
-  async ({ questions }: { questions: string[] }) => {
-    return new Command({
-      update: {
-        status: "awaiting_clarification",
-        message: formatBatchQuestions(questions) // ONE message
-      }
-    });
-  },
-  {
-    schema: z.object({
-      questions: z.array(z.string()).min(1).max(5) // 1-5 questions
-    })
-  }
-);
-
-// ❌ Неправильно - one-by-one (плохой UX!)
-// Agent calls:
-await askClarification({ question: "Q1" }); // User answers
-await askClarification({ question: "Q2" }); // User answers again
-await askClarification({ question: "Q3" }); // User answers third time
-// → BAD! User has to respond 3 times!
-```
-
-**System prompt должен содержать**:
-
-```typescript
-systemPrompt: `CRITICAL: Ask ALL questions in ONE batch, NOT one-by-one.
-
-When you need clarification:
-1. Collect ALL missing information needs
-2. Formulate ALL questions
-3. Call tool ONCE with full array`
-```
+**Top Gotchas**:
+- [Gemini prefix обязателен](./reference/gotchas.md#gemini-prefix)
+- [Checkpointer для interrupts](./reference/gotchas.md#checkpointer-required)
+- [thread_id для persistence](./reference/gotchas.md#thread-id-persistence)
+- [Command для state updates](./reference/gotchas.md#command-for-updates)
 
 ---
 
-## 🐛 Частые проблемы
+### Я пишу tests для agent
 
-### "Model not found" с Gemini
+**Path**: Testing → Patterns
 
-**Проблема**: 404 ошибка при вызове Gemini
-**Решение**: Добавь префикс "models/" к имени модели
-
-### "createAgent is not a function"
-
-**Проблема**: Импорт не работает
-**Решение**: Обнови до langchain@1.0+
-
-### "API key not valid"
-
-**Проблема**: Ключ не работает
-**Решение**: Проверь что ключ из правильного проекта в Google Cloud
-
-Полный список → [`troubleshooting.md`](troubleshooting.md)
+1. [patterns/testing.md](./patterns/testing.md) - unit tests + integration tests
+2. [concepts/atomic-tools.md](./concepts/atomic-tools.md) - testable tools pattern
+3. [patterns/error-handling.md](./patterns/error-handling.md) - test error paths
 
 ---
 
-## 📚 Дополнительные материалы
+## ⚡ Quick Reference
 
-- **[WayMates LangChain Architecture](../../docs/architecture/facade/langchain/)** - Production архитектура с shared atomic tools (cold_start workflow, 70-85% code reuse)
-- [Наши эксперименты](../../docs/architecture/workflows/facade/langgraph/)
-- [ADR-014: Миграция на LangChain v1.0](../../docs/architecture/decisions/ADR-014-langchain-v1-migration.md)
-- [Официальная документация](https://js.langchain.com/docs)
-- [Примеры кода](examples/)
+### Критичные правила (MUST READ)
 
----
-
-## 🔄 Workflow для работы с LangChain
-
-```mermaid
-graph LR
-    A[Начало] --> B{Версия 1.0+?}
-    B -->|Нет| C[npm install langchain@latest]
-    B -->|Да| D[Выбрать провайдера]
-    D --> E{Какой?}
-    E -->|Gemini| F[models/gemini-2.0-flash]
-    E -->|OpenAI| G[gpt-4o-mini]
-    E -->|Anthropic| H[claude-3-haiku]
-    F --> I[createAgent]
-    G --> I
-    H --> I
-    I --> J[Добавить tools]
-    J --> K[Тестировать]
-    K --> L{Работает?}
-    L -->|Нет| M[troubleshooting.md]
-    L -->|Да| N[Готово!]
-```
+| Правило | Где | Почему |
+|---------|-----|--------|
+| Gemini prefix `"models/"` | [glossary#gemini-prefix](./glossary.md#gemini-prefix) | API требует |
+| Checkpointer для interrupts | [glossary#checkpointer-required](./glossary.md#checkpointer-required) | Interrupts НЕ РАБОТАЮТ без него |
+| thread_id для persistence | [glossary#thread-id-persistence](./glossary.md#thread-id-persistence) | State теряется без него |
+| Command для state updates | [glossary#command-for-updates](./glossary.md#command-for-updates) | Обычный return НЕ обновит state |
+| messages field в schema | [glossary#messages-field-required](./glossary.md#messages-field-required) | Agent НЕ РАБОТАЕТ без него |
 
 ---
 
-**Последнее обновление**: 2025-11-19
-**Проверено на**: WayMates project, Gemini 2.0 Flash
+### Термины (Quick Lookup)
+
+- `createAgent` → [glossary#createagent](./glossary.md#createagent)
+- `tool()` → [glossary#tool](./glossary.md#tool)
+- `Command` → [glossary#command](./glossary.md#command)
+- `interrupt()` → [glossary#interrupt](./glossary.md#interrupt)
+- `humanInTheLoopMiddleware` → [glossary#humanintheloopmiddleware](./glossary.md#humanintheloopmiddleware)
+- `PostgresSaver` → [glossary#postgressaver](./glossary.md#postgressaver)
+- `MessagesZodState` → [glossary#messageszodstate](./glossary.md#messageszodstate)
+- `withStructuredOutput` → [glossary#withstructuredoutput](./glossary.md#withstructuredoutput)
+
+---
+
+### Паттерны (Quick Lookup)
+
+- **Atomic Tools** → [glossary#atomic-tools-pattern](./glossary.md#atomic-tools-pattern)
+- **Hybrid Routing** → [glossary#hybrid-routing](./glossary.md#hybrid-routing)
+- **Multi-Round Clarification** → [glossary#multi-round-clarification](./glossary.md#multi-round-clarification)
+
+---
+
+## 🔗 External Resources
+
+- **Official LangChain v1 Docs**: https://docs.langchain.com/oss/javascript/releases/langchain-v1
+- **LangGraph Docs**: https://docs.langchain.com/oss/javascript/langgraph
+- **Production Example**: [career-collector-agent.ts](../../../src/facade/langchain/career-collector-agent.ts)
+- **Shared Tools**: [shared-tools/index.ts](../../../src/facade/langchain/shared-tools/index.ts)
+
+---
+
+## 📊 Stats
+
+**Coverage**: ~2,200 lines (was ~1,950 lines)
+**Files**: 13 files (was 5 files)
+**Duplication**: Eliminated via glossary + cross-references
+**Production-validated**: All patterns used in WayMates career-collector-agent
+
+---
+
+**Last Updated**: 2025-11-26
+**Maintained By**: Claude + Human (via `/sync-memory`)

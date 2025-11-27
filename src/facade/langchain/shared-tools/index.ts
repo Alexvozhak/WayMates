@@ -9,3 +9,9 @@ export { linkContextsWithTrailTool } from "./link-contexts-with-trail.tool.js";
 export { createNormalizeContextTool } from "./normalize-context.tool.js";
 export { askClarificationTool } from "./ask-clarification.tool.js";
 export { confirmDataTool } from "./confirm-data.tool.js";
+
+/**
+ * Formatting helpers for user-facing messages.
+ * Used by interrupt tools and calling tools for consistent message formatting.
+ */
+export { formatContext, formatPreview, formatQuestions, formatSkills } from "./format-helpers.js";

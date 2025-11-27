@@ -1,7 +1,7 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { Command, MessagesZodState } from "@langchain/langgraph";
-import { createAgent, tool } from "langchain";
+import { Command, END, MessagesZodState } from "@langchain/langgraph";
+import { createAgent, humanInTheLoopMiddleware, tool } from "langchain";
 import { z } from "zod";
 
 import { trailSchema, userContextSchema, userContextSchemaPartial } from "../../shared/schemas.js";
@@ -10,8 +10,10 @@ import { postgresService } from "../infrastructure/postgres.service.js";
 
 import {
   askClarificationTool,
-  confirmDataTool,
+  confirmDataTool as confirmCareerDataTool,
   extractSingleContextTool,
+  formatPreview,
+  formatQuestions,
 } from "./shared-tools/index.js";
 
 import type {
@@ -21,12 +23,14 @@ import type {
   UserContextPartial,
   UserId,
 } from "../../shared/schemas.js";
+import type { CoreTRPCClient } from "../core-client/core-trpc-client.js";
 
 export type CollectorStatus =
   | "collecting"
   | "awaiting_clarification"
   | "awaiting_confirmation"
-  | "complete";
+  | "complete"
+  | "failed";
 
 export type CollectorResult = {
   status: CollectorStatus;
@@ -35,10 +39,6 @@ export type CollectorResult = {
   trails?: Trail[];
 };
 
-/**
- * MCP Normalizer interface (works with partial AdhocUserContext).
- * Used by Career Collector with explicit UserContext → AdhocUserContext conversion.
- */
 export type Normalizer = {
   normalizeUserContext(context: AdhocUserContext, userId: UserId): Promise<AdhocUserContext>;
 };
@@ -46,19 +46,9 @@ export type Normalizer = {
 export type CareerCollectorDeps = {
   normalizer: Normalizer;
   userId: UserId;
+  coreClient: CoreTRPCClient;
 };
 
-/**
- * User intent schema for confirmation response classification (confirm/correction).
- * Used inline in handleConfirmationIntent (not a shared tool).
- */
-const userIntentSchema = z.object({
-  action: z.enum(["confirm", "correction"]).describe("User's intended action"),
-});
-
-/**
- * Maps Zod validation error field paths to user-friendly clarification questions.
- */
 const FIELD_TO_QUESTION: Record<string, string> = {
   position: "What was your job title?",
   skills: "What technologies/skills did you use? (list them)",
@@ -69,10 +59,6 @@ const FIELD_TO_QUESTION: Record<string, string> = {
   companySize: "What was the company size? (startup/small/medium/large/enterprise)",
 };
 
-/**
- * Builds user-friendly clarification questions from Zod validation errors.
- * Max 5 questions per batch (as per specification).
- */
 function buildClarificationQuestions(error: z.ZodError): string[] {
   const questions: string[] = [];
   const seen = new Set<string>();
@@ -80,17 +66,14 @@ function buildClarificationQuestions(error: z.ZodError): string[] {
   for (const err of error.errors) {
     const field = err.path.join(".");
 
-    // Avoid duplicate questions for the same field
     if (seen.has(field)) {
       continue;
     }
     seen.add(field);
 
-    // Map field to question or use generic
     const question = FIELD_TO_QUESTION[field] || `Please provide: ${field}`;
     questions.push(question);
 
-    // Max 5 questions per batch
     if (questions.length >= 5) {
       break;
     }
@@ -99,22 +82,15 @@ function buildClarificationQuestions(error: z.ZodError): string[] {
   return questions;
 }
 
-/**
- * Merges partial contexts during clarification workflow.
- * New partial takes precedence, preserving original contextId.
- * Note: extractSingleContextTool filters out undefined values, so simple spread is safe.
- */
 function mergePartialWithAnswers(
   existingPartial: UserContextPartial,
   newPartial: UserContextPartial,
 ): UserContextPartial {
-  // Preserve original contextId (must exist in at least one partial)
   const contextId = existingPartial.contextId ?? newPartial.contextId;
   if (!contextId) {
     throw new Error("Cannot merge partials without contextId");
   }
 
-  // Simple spread - newPartial doesn't contain undefined (filtered in extractSingleContextTool)
   return {
     ...existingPartial,
     ...newPartial,
@@ -122,168 +98,11 @@ function mergePartialWithAnswers(
   };
 }
 
-/**
- * DRY Helper: Validates partial context, normalizes if valid, or asks clarification if invalid.
- * Used in all workflow paths (initial extraction, clarification answers, user corrections).
- */
-async function validateNormalizeConfirm(
-  partial: UserContextPartial,
-  deps: CareerCollectorDeps,
-): Promise<Command> {
-  const validation = userContextSchema.safeParse(partial);
-
-  if (!validation.success) {
-    const questions = buildClarificationQuestions(validation.error);
-    const clarificationCommand = await askClarificationTool.invoke({ questions });
-    return new Command({
-      update: {
-        ...clarificationCommand.update,
-        partialContext: partial,
-      },
-    });
-  }
-
-  const normalized = await normalizeValidatedContext(validation.data, deps.normalizer, deps.userId);
-  return confirmDataTool.invoke({ contexts: [normalized], trails: [] });
-}
-
-/**
- * Handles user correction after confirmation preview.
- * Parses correction, merges with existing context, re-validates and confirms.
- */
-async function handleUserCorrection(
-  text: string,
-  existingContexts: UserContext[] | undefined,
-  deps: CareerCollectorDeps,
-): Promise<Command> {
-  const correctionPartial = await extractSingleContextTool.invoke({ text });
-  if (!correctionPartial) {
-    return new Command({
-      update: {
-        status: "awaiting_clarification",
-        message: "Could not parse correction. Please provide corrections clearly.",
-      },
-    });
-  }
-
-  if (!existingContexts || existingContexts.length === 0) {
-    return new Command({
-      update: {
-        status: "awaiting_clarification",
-        message: "No existing context found for correction. Please start over.",
-      },
-    });
-  }
-
-  // MVP: Only first context is corrected (multi-position correction = P2)
-  // TypeScript can't infer non-empty after length check - use assertion
-  const merged = mergePartialWithAnswers(existingContexts[0]!, correctionPartial);
-  return await validateNormalizeConfirm(merged, deps);
-}
-
-/**
- * Handles clarification answers by merging with partial context.
- * Re-validates and either asks more questions or shows confirmation.
- */
-async function handleClarificationAnswers(
-  text: string,
-  partialContext: UserContextPartial,
-  deps: CareerCollectorDeps,
-): Promise<Command> {
-  console.log("📝 Processing clarification answers");
-
-  const newPartial = await extractSingleContextTool.invoke({ text });
-  if (!newPartial) {
-    return new Command({
-      update: {
-        status: "awaiting_clarification",
-        message: "Could not understand your answers. Please try again.",
-        partialContext,
-      },
-    });
-  }
-
-  const merged = mergePartialWithAnswers(partialContext, newPartial);
-  return await validateNormalizeConfirm(merged, deps);
-}
-
-/**
- * Handles user intent after showing confirmation preview.
- * Parses intent (confirm/correction) using LLM structured output inline.
- */
-async function handleConfirmationIntent(
-  text: string,
-  existingContexts: UserContext[] | undefined,
-  deps: CareerCollectorDeps,
-): Promise<Command> {
-  console.log("🔍 Parsing user intent via LLM");
-
-  // Inline LLM structured output (not a shared tool - used only here)
-  const model = new ChatGoogleGenerativeAI({
-    model: config.LANGCHAIN_MODEL_NAME,
-    temperature: config.LANGCHAIN_TEMP_INTENT,
-  }).withStructuredOutput(userIntentSchema);
-
-  const prompt = `Classify confirmation response: "${text}"
-
-Options:
-- "confirm": yes/да/ok/correct/good
-- "correction": changes/but/fix/wrong
-
-Default: "correction"`;
-
-  try {
-    const intent = await model.invoke([{ role: "user", content: prompt }]);
-    console.log(`📊 Intent: ${intent.action}`);
-
-    // User confirmed - complete workflow
-    if (intent.action === "confirm") {
-      console.log("✅ User confirmed data");
-      return new Command({ update: { status: "complete" } });
-    }
-
-    // User wants corrections
-    console.log("🔄 User provided correction");
-    return await handleUserCorrection(text, existingContexts, deps);
-  } catch (error) {
-    console.error("❌ LLM intent parsing failed:", error);
-    // Fallback: treat as correction to preserve user input
-    console.log("🔄 Fallback: treating as correction");
-    return await handleUserCorrection(text, existingContexts, deps);
-  }
-}
-
-/**
- * Handles initial extraction from user's career history text.
- * Validates and either asks clarification questions or shows confirmation.
- */
-async function handleInitialExtraction(text: string, deps: CareerCollectorDeps): Promise<Command> {
-  console.log("🆕 Initial extraction");
-
-  const extractedPartial = await extractSingleContextTool.invoke({ text });
-  if (!extractedPartial) {
-    return new Command({
-      update: {
-        status: "awaiting_clarification",
-        message: "No career positions found. Please describe your work experience.",
-      },
-    });
-  }
-
-  return await validateNormalizeConfirm(extractedPartial, deps);
-}
-
-/**
- * Normalizes validated UserContext using MCP Normalizer.
- * Converts UserContext → AdhocUserContext → normalize → merge back.
- * Falls back to original data if normalization fails (graceful degradation).
- */
 async function normalizeValidatedContext(
   validatedContext: UserContext,
   normalizer: Normalizer,
   userId: UserId,
 ): Promise<UserContext> {
-  // Convert UserContext → AdhocUserContext для MCP Normalizer
   const adhocContext: AdhocUserContext = {
     position: validatedContext.position,
     skills: validatedContext.skills,
@@ -293,10 +112,8 @@ async function normalizeValidatedContext(
   };
 
   try {
-    // Normalize using MCP Normalizer (exact → fuzzy → create unverified)
     const normalizedAdhoc = await normalizer.normalizeUserContext(adhocContext, userId);
 
-    // Merge normalized fields back into validated UserContext (only defined values)
     return {
       ...validatedContext,
       ...(normalizedAdhoc.position != null && { position: normalizedAdhoc.position }),
@@ -307,60 +124,169 @@ async function normalizeValidatedContext(
     };
   } catch (error) {
     console.error("❌ Normalization failed, using original data:", error);
-    // Graceful degradation: Continue with unnormalized data
-    // Data will be saved as-is, search may be less optimal but functional
     return validatedContext;
   }
 }
 
-/**
- * Orchestrator tool для извлечения полной карьерной истории (MANY contexts + MANY trails).
- * Композирует atomic tools: extract → validate → ask → merge → normalize → confirm.
- *
- * Current MVP scope: SINGLE position extraction (multi-position = P2).
- */
+// Formatting helpers imported from shared-tools (see imports above)
+
+function handleMaxRoundsExceeded(maxRounds: number): Command {
+  console.log(`❌ Max clarification rounds (${maxRounds}) exceeded`);
+  return new Command({
+    update: {
+      status: "failed" as const,
+      message:
+        "Could not collect valid data after multiple attempts. Please try again with more complete information.",
+    },
+    goto: END,
+  });
+}
+
+function handleValidationFailed(
+  merged: UserContextPartial,
+  round: number,
+  error: z.ZodError,
+): Command {
+  const questions = buildClarificationQuestions(error);
+  console.log(`📝 Validation failed, asking ${questions.length} questions (round ${round})`);
+
+  return new Command({
+    update: {
+      partialContext: merged,
+      clarificationRound: round,
+      status: "awaiting_clarification" as const,
+      message: formatQuestions(questions),
+    },
+    goto: "ask_clarification",
+  });
+}
+
+async function handleValidationSuccess(
+  validated: UserContext,
+  deps: CareerCollectorDeps,
+): Promise<Command> {
+  console.log("✅ Validation passed, normalizing context");
+  const normalized = await normalizeValidatedContext(validated, deps.normalizer, deps.userId);
+
+  return new Command({
+    update: {
+      contexts: [normalized],
+      clarificationRound: 0,
+      status: "awaiting_confirmation" as const,
+      message: formatPreview([normalized], []),
+    },
+    goto: "confirm_career_data",
+  });
+}
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- Return type is inferred from tool() factory
-function createExtractCareerDataTool(deps: CareerCollectorDeps) {
+function createExtractUserContextTool(deps: CareerCollectorDeps) {
   return tool(
-    async ({ text }: { text: string }, config: { state: AgentState }) => {
-      // ✅ Read state from config (injected by LangGraph runtime)
-      const state = config.state;
-      const { partialContext, contexts: existingContexts, status: currentStatus } = state;
+    async ({ text }: { text: string }, toolConfig: { state: AgentState }) => {
+      const { partialContext, clarificationRound = 0 } = toolConfig.state;
+      console.log(`🔧 extract_user_context: ${text.length} chars, round=${clarificationRound}`);
 
-      console.log(`🔧 extract_career_data: ${text.length} chars, status=${currentStatus}`);
-      try {
-        // Handle confirmation response
-        if (currentStatus === "awaiting_confirmation") {
-          return await handleConfirmationIntent(text, existingContexts, deps);
-        }
-        // Clarification answers (merge with partial)
-        if (partialContext) {
-          return await handleClarificationAnswers(text, partialContext, deps);
-        }
-        // Initial extraction
-        return await handleInitialExtraction(text, deps);
-      } catch (error) {
-        console.error("❌ Orchestration failed:", error);
+      const newPartial = await extractSingleContextTool.invoke({ text });
+      if (!newPartial) {
         return new Command({
           update: {
-            status: "awaiting_clarification",
-            message: "Failed to process career data. Please try rephrasing.",
+            status: "awaiting_clarification" as const,
+            message: "Could not parse career data. Please describe your work experience.",
           },
+          goto: "ask_clarification",
         });
       }
+
+      const merged = partialContext
+        ? mergePartialWithAnswers(partialContext, newPartial)
+        : newPartial;
+      const validation = userContextSchema.safeParse(merged);
+
+      if (!validation.success) {
+        const round = clarificationRound + 1;
+        const maxRounds = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
+        if (round > maxRounds) return handleMaxRoundsExceeded(maxRounds);
+        return handleValidationFailed(merged, round, validation.error);
+      }
+
+      return handleValidationSuccess(validation.data, deps);
     },
     {
-      name: "extract_career_data",
+      name: "extract_user_context",
       description:
-        "Orchestrator для извлечения полной карьерной истории (contexts + trails). " +
-        "Композирует atomic tools: extract → validate → ask clarification → merge → normalize → confirm. " +
-        "Handles: initial extraction, clarification, confirmation, corrections. " +
-        "Tool reads state internally (partialContext, contexts, status) via config.state. " +
-        "Returns Command with status update.",
+        "Extract and validate career context from user text. " +
+        "Parses text, validates with Zod, normalizes terms. " +
+        "Returns Command with deterministic goto routing.",
       schema: z.object({
-        text: z.string().describe("User message with career history, answers, or corrections"),
+        text: z.string().describe("User message with career data or answers"),
       }),
+    },
+  );
+}
+
+// Tools imported from shared-tools (see imports above)
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- Return type is inferred from tool() factory
+function createSaveCareerDataTool(deps: { coreClient: CoreTRPCClient }) {
+  return tool(
+    async (_params: Record<string, never>, toolConfig: { state: AgentState }) => {
+      const { contexts, trails, userId } = toolConfig.state;
+
+      console.log(`🔧 save_career_data called`);
+
+      if (!contexts || contexts.length === 0) {
+        console.error("❌ No contexts to save");
+        return new Command({
+          update: {
+            status: "failed" as const,
+            message: "No career data to save. Please provide your work experience first.",
+          },
+          goto: END,
+        });
+      }
+
+      if (!userId) {
+        console.error("❌ No userId in state");
+        return new Command({
+          update: {
+            status: "failed" as const,
+            message: "Internal error: User ID not found.",
+          },
+          goto: END,
+        });
+      }
+
+      // ✅ SAVE ЗДЕСЬ (NOT in ColdStartTool!)
+      console.log(`💾 Saving ${contexts.length} contexts to Neo4j via Core API`);
+      const upsertResult = await deps.coreClient.client.story.upsertStory.mutate({
+        userId,
+        contexts,
+        trails: trails || [],
+      });
+
+      const contextsCount = upsertResult.contexts.contextIds.length;
+      const trailsCount = upsertResult.trails.trailIds.length;
+
+      // ✅ Human-friendly message (LibreChat LLM will show to user)
+      const positionText = `${contextsCount} position${contextsCount > 1 ? "s" : ""}`;
+      const transitionText =
+        trailsCount > 0 ? ` and ${trailsCount} transition${trailsCount > 1 ? "s" : ""}` : "";
+
+      return new Command({
+        update: {
+          status: "complete" as const,
+          message: `✅ Successfully imported ${positionText}${transitionText}. Your career history has been saved!`,
+        },
+        goto: END,
+      });
+    },
+    {
+      name: "save_career_data",
+      description:
+        "Save confirmed career data to Neo4j database via Core API. " +
+        "Reads contexts/trails/userId from state (NO parameters). " +
+        "Returns Command with goto END.",
+      schema: z.object({}),
     },
   );
 }
@@ -372,14 +298,100 @@ const model = new ChatGoogleGenerativeAI({
 
 const stateSchema = z.object({
   messages: MessagesZodState.shape.messages,
-  contexts: z.array(userContextSchema).optional(), // ✅ С salary refine validation!
+  partialContext: userContextSchemaPartial.optional(),
+  contexts: z.array(userContextSchema).optional(),
   trails: z.array(trailSchema).optional(),
   status: z
-    .enum(["collecting", "awaiting_clarification", "awaiting_confirmation", "complete"])
+    .enum(["collecting", "awaiting_clarification", "awaiting_confirmation", "complete", "failed"])
     .optional(),
   message: z.string().optional(),
-  partialContext: userContextSchemaPartial.optional(), // Preserves partial extracted data during clarification
+  clarificationRound: z.number().default(0),
+  userId: z.string().optional(),
 });
+
+type AgentState = z.infer<typeof stateSchema>;
+
+const SYSTEM_PROMPT = `You are a career history extraction assistant.
+
+WORKFLOW (Hybrid Routing):
+1. User provides career text → call extract_user_context
+2. Tool routes via goto:
+   - Validation failed → ask_clarification (deterministic)
+   - Validation success → confirm_career_data (deterministic)
+3. After interrupt resume → YOU decide next step (see below)
+
+YOUR ROLE: Interpret user intent + follow tool routing
+
+═══════════════════════════════════════════════════
+CANCEL DETECTION (AT ANY POINT)
+═══════════════════════════════════════════════════
+
+If user says "cancel"/"stop"/"quit"/"abort"/"отмена":
+1. Respond: "Workflow cancelled. Your data was not saved."
+2. DO NOT call any tools
+3. Stop workflow
+
+Examples:
+- User: "cancel" → YOU: "Workflow cancelled."
+- User: "stop this" → YOU: "Workflow cancelled."
+- User: "отмена" → YOU: "Workflow cancelled."
+
+═══════════════════════════════════════════════════
+AFTER CLARIFICATION (status="awaiting_clarification")
+═══════════════════════════════════════════════════
+
+User response → interpret intent:
+
+1. CANCEL intent:
+   - Keywords: "cancel", "stop", "quit", "abort"
+   - Action: Cancel workflow (see above)
+
+2. ANSWERS intent:
+   - User provides answers to questions
+   - Action: Call extract_user_context with their answers
+
+Examples:
+- User: "Python, React, Tech startup" → Call extract_user_context
+- User: "cancel this" → Cancel workflow
+
+═══════════════════════════════════════════════════
+AFTER CONFIRMATION (status="awaiting_confirmation")
+═══════════════════════════════════════════════════
+
+User response → interpret intent:
+
+1. CONFIRM intent:
+   - Keywords: "yes", "да", "ok", "correct", "good", "looks good", "👍"
+   - Action: Call save_career_data
+
+2. CORRECTION intent:
+   - User provides changes: "change X to Y", "update position", etc.
+   - Action: Call extract_user_context with correction text
+
+3. CANCEL intent:
+   - Keywords: "cancel", "stop"
+   - Action: Cancel workflow (see above)
+
+Examples:
+- User: "yes" → Call save_career_data
+- User: "looks good" → Call save_career_data
+- User: "change position to Senior Engineer" → Call extract_user_context
+- User: "cancel" → Cancel workflow
+
+═══════════════════════════════════════════════════
+IMPORTANT RULES
+═══════════════════════════════════════════════════
+
+1. ALWAYS follow tool goto routing (deterministic business logic)
+2. Interpret user intent through natural language (cancel, confirm, correct)
+3. When in doubt about intent:
+   - Clarification context → treat as answers
+   - Confirmation context → treat as correction (safe default)
+4. DO NOT generate your own questions - tools handle that
+5. DO NOT parse/validate data yourself - tools handle that
+
+Your job: Relay messages to tools + interpret user intent + display results.
+`;
 
 export function createCareerCollectorAgent(
   deps: CareerCollectorDeps,
@@ -387,71 +399,42 @@ export function createCareerCollectorAgent(
   return createAgent({
     model,
     tools: [
-      // ✅ ТОЛЬКО orchestrator tool (agent видит ТОЛЬКО его!)
-      // Atomic tools композируются ВНУТРИ extractCareerDataTool
-      createExtractCareerDataTool(deps),
+      createExtractUserContextTool(deps),
+      askClarificationTool,
+      confirmCareerDataTool,
+      createSaveCareerDataTool({ coreClient: deps.coreClient }),
+    ],
+    middleware: [
+      humanInTheLoopMiddleware({
+        // eslint-disable-next-line @typescript-eslint/naming-convention -- LangGraph API requires tool names with underscores
+        interruptOn: { ask_clarification: true, confirm_career_data: true },
+      }),
     ],
     checkpointer: postgresService.getCheckpointer(),
     stateSchema,
-    systemPrompt: `You are a career history extraction assistant.
-
-CRITICAL RULES:
-
-1. **ALWAYS call extract_career_data tool with ONLY user message**:
-   extract_career_data({ text: user_message })
-
-   The tool reads state internally (partialContext, contexts, status) via LangGraph runtime.
-   You DON'T pass state fields - just relay user messages!
-
-2. **Your role**: Message relay + Response display
-   - Relay user messages to extract_career_data tool
-   - Show tool responses to user (questions, previews, completion)
-   - DO NOT parse or validate data yourself - tool handles ALL logic
-
-3. **Handle tool responses**:
-   - awaiting_clarification: Show questions to user, wait for answers
-   - awaiting_confirmation: Show preview to user, wait for confirmation or corrections
-   - complete: Done! (ColdStartTool will save to Neo4j automatically)
-
-4. **Batch Clarification**: Tool asks ALL questions in ONE batch (max 5)
-   - You only relay questions to user and collect answers
-   - Do NOT generate your own questions
-
-5. **Workflow example**:
-   - User: "I worked as Software Engineer in Berlin"
-   - You: Call extract_career_data({ text: "I worked as Software Engineer in Berlin" })
-   - Tool: status="awaiting_clarification", message="Please answer these questions:\n1. What was your job title?\n..."
-   - You: Show questions to user
-   - User: "Senior Software Engineer, TypeScript, React, ..."
-   - You: Call extract_career_data({ text: "Senior Software Engineer, TypeScript, React, ..." })
-   - Tool: status="awaiting_confirmation", message="**Extracted Career Data:**\n..."
-   - You: Show preview to user
-   - User: "yes"
-   - You: Call extract_career_data({ text: "yes" })
-   - Tool: status="complete"
-   - You: Confirm completion
-
-ALWAYS trust extract_career_data tool flow. Do NOT try to extract data yourself.`,
+    systemPrompt: SYSTEM_PROMPT,
   });
 }
 
-type AgentState = z.infer<typeof stateSchema>;
-
-async function getExistingState(
+function getExistingState(
   agent: ReturnType<typeof createAgent>,
   threadId: string,
-): Promise<AgentState | null> {
+): AgentState | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- LangGraph API requires thread_id
-    const state = await agent.getState({ configurable: { thread_id: threadId } });
+    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API requires thread_id */
+    const state = agent.getState({ configurable: { thread_id: threadId } });
+    /* eslint-enable @typescript-eslint/naming-convention */
     return state as unknown as AgentState;
   } catch {
     return null;
   }
 }
 
-function createInitialState(existingState: AgentState | null, message: string): AgentState {
-  // New thread or no existing state
+function createInitialState(
+  existingState: AgentState | null,
+  message: string,
+  userId: UserId,
+): AgentState {
   if (!existingState) {
     console.log(`Creating new thread state`);
     return {
@@ -461,12 +444,13 @@ function createInitialState(existingState: AgentState | null, message: string): 
       status: undefined,
       message: undefined,
       partialContext: undefined,
+      clarificationRound: 0,
+      userId,
     };
   }
 
-  // Thread already complete - start fresh
-  if (existingState.status === "complete") {
-    console.log(`Thread already complete, starting new import`);
+  if (existingState.status === "complete" || existingState.status === "failed") {
+    console.log(`Thread finished (status=${existingState.status}), starting new import`);
     return {
       messages: [new HumanMessage(message)],
       contexts: undefined,
@@ -474,10 +458,11 @@ function createInitialState(existingState: AgentState | null, message: string): 
       status: undefined,
       message: undefined,
       partialContext: undefined,
+      clarificationRound: 0,
+      userId,
     };
   }
 
-  // Continue existing thread
   console.log(`Continuing existing thread, status: ${existingState.status}`);
   return {
     messages: [...(existingState.messages || []), new HumanMessage(message)],
@@ -486,6 +471,8 @@ function createInitialState(existingState: AgentState | null, message: string): 
     status: existingState.status,
     message: existingState.message,
     partialContext: existingState.partialContext,
+    clarificationRound: existingState.clarificationRound ?? 0,
+    userId: existingState.userId ?? userId,
   };
 }
 
@@ -496,7 +483,7 @@ function buildCollectorResult(state: AgentState): CollectorResult {
   };
 
   if (state.contexts !== undefined) {
-    result.contexts = state.contexts; // Already validated by state schema
+    result.contexts = state.contexts;
   }
   if (state.trails !== undefined) {
     result.trails = state.trails;
@@ -513,8 +500,8 @@ export async function collectContexts(
   console.log(`CollectorAgent invoked with threadId: ${threadId}`);
 
   const agent = createCareerCollectorAgent(deps);
-  const existingState = await getExistingState(agent, threadId);
-  const initialState = createInitialState(existingState, message);
+  const existingState = getExistingState(agent, threadId);
+  const initialState = createInitialState(existingState, message, deps.userId);
 
   const result = await agent.invoke(
     initialState,
