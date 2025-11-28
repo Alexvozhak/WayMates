@@ -101,3 +101,9 @@ export const coldStartParamsSchema = z.object({
 });
 
 export type ColdStartParams = z.infer<typeof coldStartParamsSchema>;
+
+export const resetColdStartParamsSchema = z.object({
+  sessionId: sessionIdSchema,
+});
+
+export type ResetColdStartParams = z.infer<typeof resetColdStartParamsSchema>;

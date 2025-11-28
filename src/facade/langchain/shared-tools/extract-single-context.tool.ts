@@ -1,25 +1,22 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { tool } from "langchain";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
-import { userContextSchemaBase } from "../../../shared/schemas.js";
-import { config } from "../../env.js";
+import { contextExtractionModel } from "./extraction-models.js";
 
 import type { UserContext } from "../../../shared/schemas.js";
-
-// Model with structured output using STRICT schema
-// LLM will try to fill all fields, may not succeed (validation in coordinator)
-const extractionModel = new ChatGoogleGenerativeAI({
-  model: config.LANGCHAIN_MODEL_NAME,
-  temperature: config.LANGCHAIN_TEMP_EXTRACTION,
-}).withStructuredOutput(userContextSchemaBase);
 
 /**
  * Extract ONE career context from text using STRICT UserContext schema.
  * LLM attempts to fill all required fields, but may return incomplete data.
  * Returns Partial<UserContext> - validation happens in orchestrator (extractCareerDataTool).
  * Atomic tool following ONE entity operation principle.
+ *
+ * NOTE: This tool is NOT used by cold-start agent (which calls extraction models directly
+ * via processEntityBatchTool for efficiency). It exists for future agents:
+ * - add_context agent (TBD Session 2)
+ * - contextUpdaterAgent (TBD Session 4)
+ * DO NOT DELETE - required for post-MVP agent reuse.
  */
 export const extractSingleContextTool = tool(
   async ({ text }: { text: string }): Promise<Partial<UserContext> | null> => {
@@ -39,7 +36,7 @@ Text:
 ${text}`;
 
     try {
-      const extracted = await extractionModel.invoke([{ role: "user", content: prompt }]);
+      const extracted = await contextExtractionModel.invoke([{ role: "user", content: prompt }]);
 
       if (!extracted) {
         return null;

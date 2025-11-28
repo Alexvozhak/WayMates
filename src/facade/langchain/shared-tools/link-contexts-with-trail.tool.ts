@@ -3,6 +3,7 @@ import { tool } from "langchain";
 import { z } from "zod";
 
 import { trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
+import { config } from "../../env.js";
 
 import type { Trail, UserContext } from "../../../shared/schemas.js";
 
@@ -14,8 +15,8 @@ const linkTrailSchema = trailSchema.omit({
 
 // Model with structured output for guaranteed JSON
 const extractionModel = new ChatGoogleGenerativeAI({
-  model: "models/gemini-2.0-flash",
-  temperature: 0.2,
+  model: config.LANGCHAIN_MODEL_NAME,
+  temperature: config.LANGCHAIN_TEMP_EXTRACTION,
 }).withStructuredOutput(linkTrailSchema);
 
 /**

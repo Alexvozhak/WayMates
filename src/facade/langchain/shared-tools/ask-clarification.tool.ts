@@ -3,26 +3,20 @@ import { z } from "zod";
 
 /**
  * Ask batch of clarifying questions to the user.
- * CRITICAL: Ask ALL questions in ONE batch, NOT one-by-one!
  *
  * NOTE: This tool is used with humanInTheLoopMiddleware - it interrupts BEFORE execution.
- * The tool body NEVER executes. Calling code must format message using formatQuestions
- * helper and set it in state BEFORE calling this tool.
+ * The tool body NEVER executes. Called via goto from processEntityBatchTool.
+ * Data (missingFields, currentEntityContext) is already in state - no parameters needed.
  */
 export const askClarificationTool = tool(
   () => {
     // This body NEVER executes due to humanInTheLoopMiddleware interrupt.
-    // Calling code handles message formatting and state update.
+    // State already contains missingFields for LibreChat to format.
   },
   {
     name: "ask_clarification",
-    description: "Ask batch of clarifying questions (NOT one-by-one!)",
-    schema: z.object({
-      questions: z
-        .array(z.string())
-        .min(1)
-        .max(5)
-        .describe("Array of questions to ask (1-5 questions, ask ALL at once)"),
-    }),
+    description:
+      "Ask clarifying questions for missing fields. Called via goto - no parameters needed, data is in state.",
+    schema: z.object({}),
   },
 );

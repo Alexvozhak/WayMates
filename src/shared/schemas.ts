@@ -77,7 +77,7 @@ export const scheduleSchema = z.object({
 });
 
 export const trailSchema = z.object({
-  // REQUIRED minimum (для валидного trail)
+  trailId: trailIdSchema.describe("Trail ID in format trl_<UUID>"),
   skill: z.string().describe("Skill being developed"),
   platform: z.string().describe("Learning platform used"),
   fromContextId: contextIdSchema,

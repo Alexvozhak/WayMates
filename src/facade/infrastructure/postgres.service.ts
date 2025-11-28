@@ -57,10 +57,11 @@ class PostgresService {
       schema: "facade", // Use facade schema for checkpoint tables
     });
 
-    // Setup checkpoint tables (only needs to be done once)
+    // Setup checkpoint tables and cold_start_completions (only needs to be done once)
     if (!this.isSetupDone) {
       try {
         await this.checkpointer.setup();
+        await this.setupColdStartTable();
         this.isSetupDone = true;
         console.log("✅ LangGraph checkpoint tables initialized");
       } catch (error) {
@@ -99,6 +100,44 @@ class PostgresService {
       this.checkpointer = null;
       console.log("PostgreSQL connections closed");
     }
+  }
+
+  async setupColdStartTable(): Promise<void> {
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS facade.cold_start_completions (
+        user_id TEXT PRIMARY KEY,
+        completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+  }
+
+  async isColdStartCompleted(userId: string): Promise<boolean> {
+    const result = await this.query<{ exists: boolean }>(
+      "SELECT EXISTS(SELECT 1 FROM facade.cold_start_completions WHERE user_id = $1) as exists",
+      [userId],
+    );
+    return result.rows[0]?.exists ?? false;
+  }
+
+  async markColdStartCompleted(userId: string): Promise<void> {
+    await this.query(
+      `INSERT INTO facade.cold_start_completions (user_id) VALUES ($1)
+       ON CONFLICT (user_id) DO UPDATE SET completed_at = NOW()`,
+      [userId],
+    );
+  }
+
+  async resetColdStartStatus(userId: string): Promise<boolean> {
+    const result = await this.query(
+      "DELETE FROM facade.cold_start_completions WHERE user_id = $1",
+      [userId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async deleteCheckpoint(threadId: string): Promise<void> {
+    const checkpointer = this.getCheckpointer();
+    await checkpointer.deleteThread(threadId);
   }
 }
 
