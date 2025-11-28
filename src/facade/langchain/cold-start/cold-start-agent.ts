@@ -8,13 +8,15 @@ import { postgresService } from "../../infrastructure/postgres.service.js";
 import { InvalidStateError } from "../../mcp-server/tools/errors.js";
 import { askClarificationTool } from "../shared-tools/ask-clarification.tool.js";
 
+import { SYSTEM_PROMPT } from "./prompts.js";
 import { confirmContextTool } from "./tools/confirm-context.tool.js";
+import { confirmFinalTool } from "./tools/confirm-final.tool.js";
 import { confirmPlanTool } from "./tools/confirm-plan.tool.js";
 import { editContextTool } from "./tools/edit-context.tool.js";
 import { editTrailTool } from "./tools/edit-trail.tool.js";
 import { planCareerHistoryTool } from "./tools/plan-career-history.tool.js";
 import { processEntityBatchTool } from "./tools/process-entity-batch.tool.js";
-import { coldStartPhaseSchema, coldStartStateSchema } from "./types.js";
+import { coldStartStateSchema, PHASE } from "./types.js";
 
 import type { ColdStartResponse, ColdStartState } from "./types.js";
 import type { UserId } from "../../../shared/schemas.js";
@@ -23,151 +25,6 @@ const model = new ChatGoogleGenerativeAI({
   model: config.LANGCHAIN_MODEL_NAME,
   temperature: config.LANGCHAIN_TEMP_AGENT,
 });
-
-const SYSTEM_PROMPT = `You are a career history collection assistant for cold start onboarding.
-
-═══════════════════════════════════════════════════
-5-PHASE WORKFLOW
-═══════════════════════════════════════════════════
-
-PHASE 1: STORY GATHERING (phase="story_gathering")
-- Listen to user's career story
-- Ask follow-up questions if needed
-- When user says "готово"/"done"/"that's all" → call plan_career_history
-
-PHASE 2: PLANNING (phase="planning" → "awaiting_plan_confirmation")
-- plan_career_history analyzes messages and builds queue
-- Shows timeline for user confirmation
-- User confirms → advance to collection
-
-PHASE 3: SEQUENTIAL COLLECTION (phase="sequential_collection")
-- For each context in queue:
-  - Call process_entity_batch with contextIndex
-  - If validation fails → ask_clarification (automatic)
-  - If success → confirm_context (automatic)
-  - User confirms → advance to next context
-- When all contexts done → final preview
-
-PHASE 4: FINAL PREVIEW (phase="awaiting_final_confirmation")
-- Show ALL collected data for final confirmation
-- User confirms → saved
-
-PHASE 5: SAVED (phase="saved")
-- Return collected data to MCP handler
-- Handler saves to database
-
-═══════════════════════════════════════════════════
-CANCEL DETECTION (AT ANY POINT)
-═══════════════════════════════════════════════════
-
-If user says "cancel"/"stop"/"quit"/"abort"/"отмена":
-1. Respond: "Workflow cancelled. Your data was not saved."
-2. DO NOT call any tools
-3. Stop workflow
-
-═══════════════════════════════════════════════════
-AFTER PLAN CONFIRMATION (phase="awaiting_plan_confirmation")
-═══════════════════════════════════════════════════
-
-User response → interpret intent:
-
-1. CONFIRM: "yes", "да", "correct", "looks good"
-   → Call process_entity_batch({ contextIndex: 0 })
-
-2. CORRECTION: "add X", "remove Y", "change order"
-   → Call plan_career_history again (re-plan with corrections in messages)
-
-3. CANCEL: "cancel", "stop"
-   → Cancel workflow
-
-═══════════════════════════════════════════════════
-AFTER CLARIFICATION (phase="awaiting_clarification")
-═══════════════════════════════════════════════════
-
-User provides answers to questions.
-→ Call process_entity_batch with same contextIndex (re-extract with answers)
-
-═══════════════════════════════════════════════════
-AFTER CONTEXT CONFIRMATION (phase="awaiting_context_confirmation")
-═══════════════════════════════════════════════════
-
-User response → interpret intent:
-
-1. CONFIRM: "yes", "да", "ok"
-   → Check progress.current vs progress.total from last response:
-     - If current < total: Call process_entity_batch({ contextIndex: current })
-     - If current == total (all done): Show final preview
-
-2. MINOR CORRECTION: "add skill X", "change position to Y"
-   → Call edit_context({ contextId, corrections }) or edit_trail({ trailId, corrections })
-
-3. MAJOR CORRECTION: "that's wrong position", "re-extract"
-   → Call process_entity_batch with same contextIndex
-
-4. CANCEL: "cancel", "stop"
-   → Cancel workflow
-
-═══════════════════════════════════════════════════
-AFTER FINAL CONFIRMATION (phase="awaiting_final_confirmation")
-═══════════════════════════════════════════════════
-
-User response → interpret intent:
-
-1. CONFIRM: "yes", "да", "save", "сохранить"
-   → Return phase="saved" (MCP handler will save)
-
-2. CORRECTION: "change X"
-   → Navigate back to specific context or use edit_context/edit_trail
-
-3. CANCEL: "cancel", "stop"
-   → Cancel workflow
-
-═══════════════════════════════════════════════════
-FORMATTING RULES
-═══════════════════════════════════════════════════
-
-When showing plan (awaiting_plan_confirmation):
-"Your career timeline:
-1. [preview] (no transitions before)
-2. [preview] ← [trail previews]
-3. [preview] ← [trail previews]
-
-Is this correct?"
-
-When showing context (awaiting_context_confirmation):
-"Context #[current] of [total]:
-• Position: [position]
-• Company: [company]
-• Period: [dates]
-• Skills: [skills]
-
-Related transitions:
-• [trail info]
-
-Is this correct?"
-
-When showing final preview (awaiting_final_confirmation):
-"Final preview of your career history:
-
-[count] positions:
-1. [position] at [company] ([dates])
-   Skills: [skills]
-   ← [transition info]
-
-Save this?"
-
-═══════════════════════════════════════════════════
-IMPORTANT RULES
-═══════════════════════════════════════════════════
-
-1. ALWAYS follow tool goto routing (deterministic business logic)
-2. Interpret user intent through natural language
-3. When in doubt:
-   - Clarification context → treat as answers
-   - Confirmation context → ask for clarification
-4. DO NOT parse/validate data yourself - tools handle that
-5. Use progress.current from response to track sequential collection
-`;
 
 export function createColdStartAgent(): ReturnType<typeof createAgent> {
   return createAgent({
@@ -179,6 +36,7 @@ export function createColdStartAgent(): ReturnType<typeof createAgent> {
       editTrailTool,
       confirmPlanTool,
       confirmContextTool,
+      confirmFinalTool,
       askClarificationTool,
     ],
     middleware: [
@@ -187,6 +45,7 @@ export function createColdStartAgent(): ReturnType<typeof createAgent> {
         interruptOn: {
           confirm_plan: true,
           confirm_context: true,
+          confirm_final: true,
           ask_clarification: true,
         },
         /* eslint-enable @typescript-eslint/naming-convention */
@@ -232,11 +91,7 @@ function getExistingState(
 }
 
 function shouldResetState(existingState: ColdStartState): boolean {
-  const terminalPhases: readonly string[] = [
-    coldStartPhaseSchema.Values.saved,
-    coldStartPhaseSchema.Values.already_saved,
-    coldStartPhaseSchema.Values.failed,
-  ];
+  const terminalPhases: readonly string[] = [PHASE.saved, PHASE.already_saved, PHASE.failed];
   return terminalPhases.includes(existingState.phase);
 }
 
@@ -266,17 +121,13 @@ function buildPlanConfirmationResponse(state: ColdStartState): ColdStartResponse
 }
 
 function buildClarificationResponse(state: ColdStartState): ColdStartResponse {
-  const { missingFields, currentEntityContext } = state;
+  const { missingFields } = state;
   if (missingFields.length === 0) {
     throw new InvalidStateError("awaiting_clarification", "missingFields is empty");
-  }
-  if (!currentEntityContext) {
-    throw new InvalidStateError("awaiting_clarification", "currentEntityContext is missing");
   }
   return {
     phase: "awaiting_clarification",
     missingFields,
-    currentEntityContext,
   };
 }
 

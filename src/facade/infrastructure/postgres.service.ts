@@ -2,6 +2,7 @@ import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import pg from "pg";
 
 import { config } from "../env.js";
+import { PostgresConnectionError } from "../mcp-server/tools/errors.js";
 
 import type { QueryResult, QueryResultRow } from "pg";
 
@@ -48,8 +49,7 @@ class PostgresService {
       client.release();
       console.log("✅ PostgreSQL connection established");
     } catch (error) {
-      console.error("❌ PostgreSQL connection failed:", error);
-      throw error;
+      throw new PostgresConnectionError(error);
     }
 
     // Initialize PostgresSaver for checkpointing

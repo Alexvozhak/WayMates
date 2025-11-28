@@ -7,11 +7,11 @@ import { z } from "zod";
 import { trailSchema } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { extractableTrailSchema } from "../../shared-tools/extraction-models.js";
-import { coldStartPhaseSchema } from "../types.js";
+import { trailCorrectionPrompt } from "../prompts.js";
+import { PHASE } from "../types.js";
 
 import type { Trail } from "../../../../shared/schemas.js";
 import type { ColdStartState } from "../types.js";
-import type { BaseMessage } from "@langchain/core/messages";
 
 const editTrailInputSchema = z.object({
   trailId: z.string().describe("Trail ID to edit (trl_<UUID>)"),
@@ -29,33 +29,6 @@ const trailCorrectionModel = new ChatGoogleGenerativeAI({
   .withStructuredOutput(extractableTrailSchema)
   .withRetry({ stopAfterAttempt: 2 });
 
-function buildCorrectionPrompt(
-  original: Trail,
-  corrections: string,
-  messages: BaseMessage[],
-): string {
-  const messagesText = messages.map((m) => `${m.type}: ${m.content}`).join("\n");
-
-  return `Apply corrections to the following learning trail.
-
-ORIGINAL TRAIL:
-${JSON.stringify(original, null, 2)}
-
-USER CORRECTIONS:
-${corrections}
-
-CONVERSATION HISTORY (for additional context):
-${messagesText}
-
-═══════════════════════════════════════════════════
-TASK: Return the COMPLETE corrected trail object
-═══════════════════════════════════════════════════
-
-Apply the user's corrections while preserving all other fields.
-Return the full trail with corrections applied.
-DO NOT return partial data - include ALL fields from the original.`;
-}
-
 function findTrail(trails: Trail[], trailId: string): Trail | undefined {
   return trails.find((t) => t.trailId === trailId);
 }
@@ -65,43 +38,43 @@ function replaceTrail(trails: Trail[], updated: Trail): Trail[] {
 }
 
 export const editTrailTool = tool(
-  async ({ trailId, corrections }: EditTrailInput, toolConfig: { state: ColdStartState }) => {
-    const { collectedTrails, messages } = toolConfig.state;
+  async ({ trailId, corrections }: EditTrailInput, { state }: { state: ColdStartState }) => {
+    const { collectedTrails, messages } = state;
 
-    const original = findTrail(collectedTrails, trailId);
-    if (!original) {
+    const existingTrail = findTrail(collectedTrails, trailId);
+    if (!existingTrail) {
       console.error(`❌ edit_trail: trail ${trailId} not found`);
       return new Command({
-        update: { phase: coldStartPhaseSchema.Values.failed },
+        update: { phase: PHASE.failed },
       });
     }
 
     console.log(`🔧 edit_trail: applying corrections to ${trailId}`);
 
-    const prompt = buildCorrectionPrompt(original, corrections, messages);
+    const prompt = trailCorrectionPrompt(existingTrail, corrections, messages);
     const extracted = await trailCorrectionModel.invoke([new HumanMessage(prompt)]);
 
     const correctedTrail: Trail = {
       ...extracted,
-      trailId: original.trailId,
-      fromContextId: original.fromContextId,
-      toContextId: original.toContextId,
+      trailId: existingTrail.trailId,
+      fromContextId: existingTrail.fromContextId,
+      toContextId: existingTrail.toContextId,
     };
 
-    const validation = trailSchema.safeParse(correctedTrail);
-    if (!validation.success) {
-      console.error(`❌ edit_trail: validation failed`, validation.error.flatten());
+    const parseResult = trailSchema.safeParse(correctedTrail);
+    if (!parseResult.success) {
+      console.error(`❌ edit_trail: validation failed`, parseResult.error.flatten());
       return new Command({
-        update: { phase: coldStartPhaseSchema.Values.failed },
+        update: { phase: PHASE.failed },
       });
     }
 
-    const updatedTrails = replaceTrail(collectedTrails, validation.data);
+    const updatedTrails = replaceTrail(collectedTrails, parseResult.data);
 
     return new Command({
       update: {
         collectedTrails: updatedTrails,
-        phase: coldStartPhaseSchema.Values.awaiting_context_confirmation,
+        phase: PHASE.awaiting_context_confirmation,
       },
       goto: "confirm_context",
     });

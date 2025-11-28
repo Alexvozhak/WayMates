@@ -14,6 +14,8 @@ export const errorCodeSchema = z.enum([
   "core_api_error",
   "validation_error",
   "internal_error",
+  "postgres_connection_failed",
+  "postgres_query_failed",
 ]);
 
 export type ErrorCode = z.infer<typeof errorCodeSchema>;

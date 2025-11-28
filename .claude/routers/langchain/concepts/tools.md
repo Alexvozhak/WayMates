@@ -28,13 +28,61 @@ const searchTool = tool(
 
 ---
 
+## Сигнатура tool function
+
+**Второй параметр** - это `config` объект, который LangChain передаёт при вызове tool.
+
+```typescript
+// Источник: node_modules/langchain/dist/agents/nodes/ToolNode.js:164-170
+// ToolNode вызывает tool.invoke так:
+await tool.invoke(toolCall, {
+  ...config,
+  toolCallId: toolCall.id,
+  state: config.configurable?.__pregel_scratchpad?.currentTaskInput,  // ← state агента!
+});
+```
+
+**Правильная типизация:**
+
+```typescript
+// Вариант 1: Partial типизация только нужных полей
+const myTool = tool(
+  async (input, config: { state: MyAgentState }) => {
+    const { messages, userId } = config.state;
+    // ...
+  },
+  { name: "my_tool", schema: z.object({...}) }
+);
+
+// Вариант 2: С деструктуризацией
+const myTool = tool(
+  async (input, { state }: { state: MyAgentState }) => {
+    const { messages } = state;
+    // ...
+  },
+  { name: "my_tool", schema: z.object({...}) }
+);
+
+// Вариант 3: Без state (если не нужен)
+const myTool = tool(
+  async ({ query }) => {
+    return `Results for: ${query}`;
+  },
+  { name: "my_tool", schema: z.object({ query: z.string() }) }
+);
+```
+
+**Важно**: Имя параметра `config` (не `toolConfig`) - это convention из LangChain.
+
+---
+
 ## С Command для routing
 
 ```typescript
 import { Command } from "@langchain/langgraph";
 
 const extractData = tool(
-  async ({ text }, toolConfig: { state: AgentState }) => {
+  async ({ text }, { state }: { state: AgentState }) => {
     const validation = schema.safeParse(data);
 
     if (!validation.success) {
@@ -71,9 +119,10 @@ type AgentState = {
   messages: BaseMessage[];
 };
 
+// Рекомендуемый способ - деструктуризация
 const getUserInfo = tool(
-  async (_, toolConfig: { state: AgentState }) => {
-    const { userId } = toolConfig.state;
+  async (_, { state }: { state: AgentState }) => {
+    const { userId } = state;
     return { userId };
   },
   {

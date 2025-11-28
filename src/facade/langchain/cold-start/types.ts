@@ -28,6 +28,9 @@ export const coldStartPhaseSchema = z.enum([
 
 export type ColdStartPhase = z.infer<typeof coldStartPhaseSchema>;
 
+/** Alias for coldStartPhaseSchema.Values for shorter access: PHASE.failed */
+export const PHASE = coldStartPhaseSchema.Values;
+
 /**
  * Base schema for context agenda (what LLM returns during planning).
  * Used by planCareerHistoryTool's structured output.
@@ -122,7 +125,6 @@ export type ColdStartState = z.infer<typeof coldStartStateSchema>;
 export const entityBatchResultClarificationSchema = z.object({
   phase: z.literal("awaiting_clarification"),
   missingFields: z.array(missingFieldSchema),
-  currentEntityContext: currentEntityContextSchema,
 });
 
 export const entityBatchResultConfirmationSchema = z.object({
@@ -131,15 +133,6 @@ export const entityBatchResultConfirmationSchema = z.object({
   relatedTrails: z.array(trailSchema),
   progress: collectionProgressSchema,
 });
-
-export const entityBatchResultSchema = z.discriminatedUnion("phase", [
-  entityBatchResultClarificationSchema,
-  entityBatchResultConfirmationSchema,
-]);
-
-export type EntityBatchResultClarification = z.infer<typeof entityBatchResultClarificationSchema>;
-export type EntityBatchResultConfirmation = z.infer<typeof entityBatchResultConfirmationSchema>;
-export type EntityBatchResult = z.infer<typeof entityBatchResultSchema>;
 
 /**
  * Result of planCareerHistoryTool execution.
