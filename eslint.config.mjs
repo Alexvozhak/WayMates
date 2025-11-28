@@ -172,6 +172,15 @@ export default [
         },
       ],
       '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-deprecated': 'error', // Запретить deprecated API
+      '@typescript-eslint/consistent-type-assertions': [
+        'error',
+        {
+          assertionStyle: 'never', // Запретить as касты - использовать type guards или Zod
+        },
+      ],
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error', // Удалять ненужные assertions
+      '@typescript-eslint/await-thenable': 'error', // await только на Promise (ловит "левые await")
 
       'max-depth': ['error', 2],
       complexity: ['error', { max: 8 }],

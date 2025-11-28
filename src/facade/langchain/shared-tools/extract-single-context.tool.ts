@@ -1,3 +1,4 @@
+import { HumanMessage } from "@langchain/core/messages";
 import { tool } from "langchain";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -24,34 +25,44 @@ export const extractSingleContextTool = tool(
 
     const prompt = `Extract ONE career position from the following text.
 
-Extract ALL available information:
-- REQUIRED: position title, skills (array), industry, company size, location (cityName + countryCode), domains (array)
-- OPTIONAL: education level, salary info, languages, feedback
-- SYSTEM (extract if present): createdAt (ISO date), creationReason (array)
+TEXT:
+${text}
 
-If multiple positions are present, extract only the FIRST one.
-Return null if no career position information is found.
+═══════════════════════════════════════════════════
+REQUIRED FIELDS:
+═══════════════════════════════════════════════════
+- position: Job title
+- domains: Work areas (min 1)
+- skills: Technical/professional skills (min 1)
+- industry: Company's industry
+- companySize: Approximate size (startup, 50-200, 1000+)
+- countryCode: ISO 3166-1 alpha-2 code
+- cityName: City name
+- citizenships: Citizenship codes
+- birthYear: Year of birth
+- creationReason: Why job started (started_working, changed_company, got_promoted, etc.)
 
-Text:
-${text}`;
+═══════════════════════════════════════════════════
+OPTIONAL FIELDS:
+═══════════════════════════════════════════════════
+- educationLevel, salaryExact/salaryMin/salaryMax, languages, feedback
+
+If multiple positions present, extract FIRST one only.
+Return null if no career position found.`;
 
     try {
-      const extracted = await contextExtractionModel.invoke([{ role: "user", content: prompt }]);
+      const extracted = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
 
       if (!extracted) {
         return null;
       }
 
-      // Filter out undefined values (LLM may return { field: undefined } for fields it couldn't extract)
-      // This prevents undefined from overwriting existing data during merge operations
-      const cleanExtracted = Object.fromEntries(
-        Object.entries(extracted).filter(([_, value]) => value !== undefined),
-      ) as Partial<UserContext>;
-
-      // Generate contextId for extracted partial context
+      // Generate contextId for extracted context
+      // withStructuredOutput guarantees typed ExtractableContext
       return {
-        ...cleanExtracted,
+        ...extracted,
         contextId: `ctx_${uuidv7()}`,
+        createdAt: new Date().toISOString(),
       };
     } catch (error) {
       console.error("Failed to extract single context:", error);

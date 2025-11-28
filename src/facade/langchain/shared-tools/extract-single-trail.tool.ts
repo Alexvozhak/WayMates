@@ -1,3 +1,4 @@
+import { HumanMessage } from "@langchain/core/messages";
 import { tool } from "langchain";
 import { z } from "zod";
 
@@ -23,19 +24,28 @@ export const extractSingleTrailTool = tool(
     console.log(`🔧 extract_single_trail called with ${text.length} chars`);
 
     const prompt = `Extract ONE career transition (trail) from the following text.
-Focus on extracting: main skill being developed, learning platform used, course name, duration in weeks, cost in USD, and ratings.
 
-A trail represents the journey BETWEEN two positions - what led someone from one role to the next.
-Look for: courses taken, certifications earned, skills developed, platforms used (Coursera, Udemy, etc).
+TEXT:
+${text}
 
-If multiple transitions are present, extract only the FIRST one.
-Return null if no transition information is found.
+═══════════════════════════════════════════════════
+REQUIRED FIELDS:
+═══════════════════════════════════════════════════
+- skill: Main skill being developed (e.g., "React", "Python")
+- platform: Learning platform (e.g., "Coursera", "Udemy", "bootcamp", "self-study")
 
-Text:
-${text}`;
+═══════════════════════════════════════════════════
+OPTIONAL FIELDS:
+═══════════════════════════════════════════════════
+- totalDurationWeeks, schedule, costUsd, courseName, courseLink
+- ratingCourse/ratingPlatform/ratingSchedule (1-5), userFeedback
+
+A trail represents learning/transition between career positions.
+If multiple transitions present, extract FIRST one only.
+Return null if no transition found.`;
 
     try {
-      const extracted = await trailExtractionModel.invoke([{ role: "user", content: prompt }]);
+      const extracted = await trailExtractionModel.invoke([new HumanMessage(prompt)]);
 
       if (!extracted) {
         return null;

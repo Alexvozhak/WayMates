@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { config } from "../env.js";
 
 import type { SimpleDictionaryType } from "../../shared/schemas.js";
@@ -19,8 +21,8 @@ export class DictionariesCache {
     const cached = await this.redis.get(key);
 
     if (cached) {
-      type CachedEntry = [string, string];
-      const entries = JSON.parse(cached) as CachedEntry[];
+      const cachedEntriesSchema = z.array(z.tuple([z.string(), z.string()]));
+      const entries = cachedEntriesSchema.parse(JSON.parse(cached));
       return new Map(entries);
     }
 

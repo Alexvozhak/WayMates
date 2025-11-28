@@ -1,7 +1,12 @@
 import { MessagesZodState } from "@langchain/langgraph";
 import { z } from "zod";
 
-import { contextIdSchema, trailSchema, userContextSchema } from "../../../shared/schemas.js";
+import {
+  contextIdSchema,
+  trailSchema,
+  userContextSchema,
+  userIdSchema,
+} from "../../../shared/schemas.js";
 
 /**
  * 8 phases for cold_start multi-context workflow.
@@ -16,23 +21,32 @@ export const coldStartPhaseSchema = z.enum([
   "awaiting_clarification",
   "awaiting_context_confirmation",
   "awaiting_final_confirmation",
-  "complete",
-  "already_completed",
+  "saved",
+  "already_saved",
   "failed",
 ]);
 
 export type ColdStartPhase = z.infer<typeof coldStartPhaseSchema>;
 
 /**
- * Queue item with context ID generated upfront (in planning phase).
- * Solves forward references: previousContextId, nextContextId, trail linking.
+ * Base schema for context agenda (what LLM returns during planning).
+ * Used by planCareerHistoryTool's structured output.
  */
-export const contextAgendaSchema = z.object({
-  contextId: contextIdSchema.describe("UUID v7 generated in planning phase"),
+export const contextAgendaBaseSchema = z.object({
   preview: z.string().describe("Human-readable preview: 'Junior Backend в Яндексе 2020-2022'"),
   incomingTrails: z
     .array(z.string())
     .describe("Array of trail preview strings: ['Coursera React course 2022']"),
+});
+
+export type ContextAgendaBase = z.infer<typeof contextAgendaBaseSchema>;
+
+/**
+ * Queue item with context ID generated upfront (in planning phase).
+ * Extends base schema with server-generated contextId.
+ */
+export const contextAgendaSchema = contextAgendaBaseSchema.extend({
+  contextId: contextIdSchema.describe("UUID v7 generated in planning phase"),
 });
 
 export type ContextAgenda = z.infer<typeof contextAgendaSchema>;
@@ -86,17 +100,17 @@ export const coldStartStateSchema = z.object({
 
   phase: coldStartPhaseSchema.default("story_gathering"),
 
-  queue: z.array(contextAgendaSchema).optional(),
+  queue: z.array(contextAgendaSchema).default([]),
 
   collectedContexts: z.array(userContextSchema).default([]),
   collectedTrails: z.array(trailSchema).default([]),
 
-  missingFields: z.array(missingFieldSchema).optional(),
+  missingFields: z.array(missingFieldSchema).default([]),
   clarificationRound: z.number().default(0),
 
   currentEntityContext: currentEntityContextSchema.optional(),
 
-  userId: z.string().optional(),
+  userId: z.string(),
 });
 
 export type ColdStartState = z.infer<typeof coldStartStateSchema>;
@@ -109,14 +123,12 @@ export const entityBatchResultClarificationSchema = z.object({
   phase: z.literal("awaiting_clarification"),
   missingFields: z.array(missingFieldSchema),
   currentEntityContext: currentEntityContextSchema,
-  clarificationRound: z.number(),
 });
 
 export const entityBatchResultConfirmationSchema = z.object({
   phase: z.literal("awaiting_context_confirmation"),
   entity: userContextSchema,
   relatedTrails: z.array(trailSchema),
-  currentEntityContext: currentEntityContextSchema,
   progress: collectionProgressSchema,
 });
 
@@ -157,26 +169,38 @@ export const finalPreviewSchema = z.object({
 export type FinalPreview = z.infer<typeof finalPreviewSchema>;
 
 /**
- * Complete result after successful save.
+ * Collected story data (contexts + trails + userId).
+ * Matches StoryInput structure from shared/schemas.
  */
-export const completeResultSchema = z.object({
-  phase: z.literal("complete"),
-  collectedContexts: z.array(userContextSchema),
-  collectedTrails: z.array(trailSchema),
+export const collectedStorySchema = z.object({
+  userId: userIdSchema,
+  contexts: z.array(userContextSchema),
+  trails: z.array(trailSchema),
 });
 
-export type CompleteResult = z.infer<typeof completeResultSchema>;
+export type CollectedStory = z.infer<typeof collectedStorySchema>;
 
 /**
- * Already completed result (idempotency protection).
+ * Saved result after successful collection.
+ * MCP handler calls Core upsertStory.
  */
-export const alreadyCompletedResultSchema = z.object({
-  phase: z.literal("already_completed"),
+export const savedResultSchema = z
+  .object({
+    phase: z.literal("saved"),
+  })
+  .merge(collectedStorySchema);
+
+export type SavedResult = z.infer<typeof savedResultSchema>;
+
+/**
+ * Already saved result (idempotency protection).
+ */
+export const alreadySavedResultSchema = z.object({
+  phase: z.literal("already_saved"),
   message: z.string(),
-  completedAt: z.string().optional(),
 });
 
-export type AlreadyCompletedResult = z.infer<typeof alreadyCompletedResultSchema>;
+export type AlreadySavedResult = z.infer<typeof alreadySavedResultSchema>;
 
 /**
  * Cold Start facade response - discriminated union by phase.
@@ -191,8 +215,8 @@ export const coldStartResponseSchema = z.discriminatedUnion("phase", [
   entityBatchResultClarificationSchema,
   entityBatchResultConfirmationSchema,
   finalPreviewSchema,
-  completeResultSchema,
-  alreadyCompletedResultSchema,
+  savedResultSchema,
+  alreadySavedResultSchema,
   z.object({
     phase: z.literal("failed"),
     message: z.string(),

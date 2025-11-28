@@ -26,6 +26,7 @@ const envSchema = z.object({
   LANGCHAIN_TEMP_INTENT: z.coerce.number().min(0).max(1).default(0.1),
   LANGCHAIN_TEMP_AGENT: z.coerce.number().min(0).max(1).default(0.3),
   LANGCHAIN_MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().positive().default(3),
+  LANGCHAIN_MAX_QUESTIONS_PER_BATCH: z.coerce.number().int().positive().default(5),
 });
 /* eslint-enable @typescript-eslint/naming-convention */
 

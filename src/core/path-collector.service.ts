@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { buildPathQuery } from "../cypher/index.js";
 import { type UserContext, userContextSchema } from "../shared/schemas.js";
 
@@ -20,7 +22,7 @@ export class PathCollectorService {
 
       for (const rec of result.records) {
         const rawPath = rec.get("path");
-        const userId = rec.get("userId") as string;
+        const userId = z.string().parse(rec.get("userId"));
 
         try {
           const path = rawPath.map((ctx: unknown) => userContextSchema.parse(ctx));

@@ -1,3 +1,4 @@
+import { HumanMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { tool } from "langchain";
 import { z } from "zod";
@@ -86,7 +87,7 @@ export const linkContextsWithTrailTool = tool(
     const prompt = buildTransitionPrompt(fromContext, toContext, text);
 
     try {
-      const extracted = await extractionModel.invoke([{ role: "user", content: prompt }]);
+      const extracted = await extractionModel.invoke([new HumanMessage(prompt)]);
 
       if (!extracted) {
         return null;

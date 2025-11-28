@@ -43,3 +43,11 @@ export class NormalizationError extends FacadeError {
 export class CoreApiError extends FacadeError {
   readonly errorCode = "core_api_error";
 }
+
+export class InvalidStateError extends FacadeError {
+  readonly errorCode = "internal_error";
+
+  constructor(phase: string, reason: string) {
+    super(`Invalid state in phase ${phase}: ${reason}`);
+  }
+}

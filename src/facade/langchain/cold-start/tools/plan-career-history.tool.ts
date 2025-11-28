@@ -1,3 +1,4 @@
+import { HumanMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { Command, END } from "@langchain/langgraph";
 import { tool } from "langchain";
@@ -5,23 +6,16 @@ import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
 import { config } from "../../../env.js";
-import { contextAgendaSchema } from "../types.js";
+import { coldStartPhaseSchema, contextAgendaBaseSchema } from "../types.js";
 
-import type { ColdStartState, ContextAgenda } from "../types.js";
+import type { ColdStartState, ContextAgenda, ContextAgendaBase } from "../types.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 const planOutputSchema = z.object({
-  contexts: z.array(
-    z.object({
-      preview: z.string().describe("Short preview: 'Junior Backend в Яндексе 2020-2022'"),
-      incomingTrails: z
-        .array(z.string())
-        .describe("Trail previews leading TO this context: ['Coursera React 2022']"),
-    }),
-  ),
+  contexts: z.array(contextAgendaBaseSchema),
 });
 
-type PlanOutput = z.infer<typeof planOutputSchema>;
+type PlanOutput = { contexts: ContextAgendaBase[] };
 
 const planningModel = new ChatGoogleGenerativeAI({
   model: config.LANGCHAIN_MODEL_NAME,
@@ -29,24 +23,38 @@ const planningModel = new ChatGoogleGenerativeAI({
 }).withStructuredOutput(planOutputSchema);
 
 function buildPlanningPrompt(messages: BaseMessage[]): string {
-  const messagesText = messages.map((m) => `${m.getType()}: ${m.content}`).join("\n");
+  const messagesText = messages.map((m) => `${m.type}: ${m.content}`).join("\n");
 
-  return `Analyze the career history from the conversation and identify ALL career positions (contexts) in CHRONOLOGICAL order (oldest first).
-
-For each position, identify:
-1. A short preview string: "Position at Company YYYY-YYYY, key skills"
-2. Incoming trails: learning activities/transitions that LED TO this position (from the previous one)
-
-RULES:
-- Order positions chronologically (oldest first)
-- First position has NO incoming trails
-- Trails describe HOW the person transitioned (courses, certifications, promotions)
-- Each trail preview should be short: "Coursera React course 2022"
+  return `Analyze career history and create a collection plan.
 
 CONVERSATION:
 ${messagesText}
 
-Return the structured list of career contexts with their incoming trails.`;
+═══════════════════════════════════════════════════
+YOUR TASK: Identify all career positions in CHRONOLOGICAL order (oldest → newest)
+═══════════════════════════════════════════════════
+
+For each position, return:
+1. preview: Short label - "Role at Company YYYY-YYYY" (e.g., "Junior Developer at Yandex 2018-2020")
+2. incomingTrails: Learning activities that LED TO this position (from the previous one)
+
+═══════════════════════════════════════════════════
+RULES:
+═══════════════════════════════════════════════════
+- First position has EMPTY incomingTrails array (no prior context to transition from)
+- Trails describe HOW the person transitioned: courses, certifications, bootcamps, self-study
+- Trail preview format: "Platform Course Name YYYY" (e.g., "Coursera Machine Learning 2019")
+- Include promotions and internal moves as separate positions if significantly different
+- Education → first job counts as first position (no incoming trail needed)
+
+═══════════════════════════════════════════════════
+EXAMPLE OUTPUT:
+═══════════════════════════════════════════════════
+contexts: [
+  { preview: "Intern at Startup 2017-2018", incomingTrails: [] },
+  { preview: "Junior Python Dev at Yandex 2018-2020", incomingTrails: ["CS50 Harvard course 2017"] },
+  { preview: "Senior Backend at Google 2020-2023", incomingTrails: ["System Design course 2020", "Go Lang bootcamp 2020"] }
+]`;
 }
 
 function generateContextIds(planOutput: PlanOutput): ContextAgenda[] {
@@ -57,35 +65,27 @@ function generateContextIds(planOutput: PlanOutput): ContextAgenda[] {
   }));
 }
 
-function validateQueue(queue: ContextAgenda[]): void {
-  for (const item of queue) {
-    contextAgendaSchema.parse(item);
-  }
-}
-
 export const planCareerHistoryTool = tool(
-  async (_params: Record<string, never>, toolConfig: { state: ColdStartState }) => {
+  async (_, toolConfig: { state: ColdStartState }) => {
     const { messages } = toolConfig.state;
     console.log(`🔧 plan_career_history: analyzing ${messages.length} messages`);
 
     const prompt = buildPlanningPrompt(messages);
-    const planOutput = await planningModel.invoke([{ role: "user", content: prompt }]);
+    const planOutput = await planningModel.invoke([new HumanMessage(prompt)]);
 
     if (!planOutput || planOutput.contexts.length === 0) {
       return new Command({
-        update: { phase: "failed" as const },
+        update: { phase: coldStartPhaseSchema.Values.failed },
         goto: END,
       });
     }
 
     const queue = generateContextIds(planOutput);
-    validateQueue(queue);
-
     console.log(`📋 Plan created: ${queue.length} contexts`);
 
     return new Command({
       update: {
-        phase: "awaiting_plan_confirmation" as const,
+        phase: coldStartPhaseSchema.Values.awaiting_plan_confirmation,
         queue,
       },
       goto: "confirm_plan",

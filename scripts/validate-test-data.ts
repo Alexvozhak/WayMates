@@ -65,7 +65,7 @@ function checkTrailReferences(
 ): string[] {
   return trails.flatMap((trail, idx) => {
     const warnings: string[] = [];
-    if (!validContextIds.has(trail.fromContextId)) {
+    if (trail.fromContextId && !validContextIds.has(trail.fromContextId)) {
       warnings.push(`Trail ${idx}: fromContextId references non-existent context`);
     }
     if (trail.toContextId && !validContextIds.has(trail.toContextId)) {
@@ -112,7 +112,8 @@ async function validateSingleFile(fileName: string): Promise<"valid" | "invalid"
     await validateFile(fileName);
     return "valid";
   } catch (error) {
-    console.log(`❌ ${fileName}.json: ${(error as Error).message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`❌ ${fileName}.json: ${message}`);
     return "invalid";
   }
 }

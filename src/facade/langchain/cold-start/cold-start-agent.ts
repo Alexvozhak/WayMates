@@ -1,17 +1,20 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { createAgent, humanInTheLoopMiddleware } from "langchain";
+import { z } from "zod";
 
 import { config } from "../../env.js";
 import { postgresService } from "../../infrastructure/postgres.service.js";
+import { InvalidStateError } from "../../mcp-server/tools/errors.js";
 import { askClarificationTool } from "../shared-tools/ask-clarification.tool.js";
 
 import { confirmContextTool } from "./tools/confirm-context.tool.js";
 import { confirmPlanTool } from "./tools/confirm-plan.tool.js";
-import { editEntityTool } from "./tools/edit-entity.tool.js";
+import { editContextTool } from "./tools/edit-context.tool.js";
+import { editTrailTool } from "./tools/edit-trail.tool.js";
 import { planCareerHistoryTool } from "./tools/plan-career-history.tool.js";
 import { processEntityBatchTool } from "./tools/process-entity-batch.tool.js";
-import { coldStartStateSchema } from "./types.js";
+import { coldStartPhaseSchema, coldStartStateSchema } from "./types.js";
 
 import type { ColdStartResponse, ColdStartState } from "./types.js";
 import type { UserId } from "../../../shared/schemas.js";
@@ -47,9 +50,9 @@ PHASE 3: SEQUENTIAL COLLECTION (phase="sequential_collection")
 
 PHASE 4: FINAL PREVIEW (phase="awaiting_final_confirmation")
 - Show ALL collected data for final confirmation
-- User confirms → complete
+- User confirms → saved
 
-PHASE 5: COMPLETE (phase="complete")
+PHASE 5: SAVED (phase="saved")
 - Return collected data to MCP handler
 - Handler saves to database
 
@@ -96,7 +99,7 @@ User response → interpret intent:
      - If current == total (all done): Show final preview
 
 2. MINOR CORRECTION: "add skill X", "change position to Y"
-   → Call edit_entity({ entityType, entityId, field, newValue })
+   → Call edit_context({ contextId, corrections }) or edit_trail({ trailId, corrections })
 
 3. MAJOR CORRECTION: "that's wrong position", "re-extract"
    → Call process_entity_batch with same contextIndex
@@ -111,10 +114,10 @@ AFTER FINAL CONFIRMATION (phase="awaiting_final_confirmation")
 User response → interpret intent:
 
 1. CONFIRM: "yes", "да", "save", "сохранить"
-   → Return phase="complete" (MCP handler will save)
+   → Return phase="saved" (MCP handler will save)
 
 2. CORRECTION: "change X"
-   → Navigate back to specific context or use edit_entity
+   → Navigate back to specific context or use edit_context/edit_trail
 
 3. CANCEL: "cancel", "stop"
    → Cancel workflow
@@ -172,7 +175,8 @@ export function createColdStartAgent(): ReturnType<typeof createAgent> {
     tools: [
       planCareerHistoryTool,
       processEntityBatchTool,
-      editEntityTool,
+      editContextTool,
+      editTrailTool,
       confirmPlanTool,
       confirmContextTool,
       askClarificationTool,
@@ -194,46 +198,59 @@ export function createColdStartAgent(): ReturnType<typeof createAgent> {
   });
 }
 
-async function getExistingState(
+const stateSnapshotSchema = z.object({
+  values: z.record(z.unknown()).optional(),
+});
+
+function getExistingState(
   agent: ReturnType<typeof createAgent>,
   threadId: string,
-): Promise<ColdStartState | null> {
-  try {
-    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API requires thread_id */
-    const state = await agent.getState({ configurable: { thread_id: threadId } });
-    /* eslint-enable @typescript-eslint/naming-convention */
-    const parsed = coldStartStateSchema.safeParse(state);
-    return parsed.success ? parsed.data : null;
-  } catch {
+): ColdStartState | null {
+  /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API requires thread_id */
+  const rawSnapshot = agent.getState({
+    configurable: { thread_id: threadId },
+  });
+  /* eslint-enable @typescript-eslint/naming-convention */
+
+  const snapshotParsed = stateSnapshotSchema.safeParse(rawSnapshot);
+  if (!snapshotParsed.success || !snapshotParsed.data.values) {
     return null;
   }
+
+  const values = snapshotParsed.data.values;
+  if (Object.keys(values).length === 0) {
+    return null;
+  }
+
+  const parsed = coldStartStateSchema.safeParse(values);
+  if (!parsed.success) {
+    const errorDetails = JSON.stringify(parsed.error.flatten());
+    throw new Error(`Invalid cold start state schema: ${errorDetails}`);
+  }
+
+  return parsed.data;
 }
 
 function shouldResetState(existingState: ColdStartState): boolean {
-  const terminalPhases = ["complete", "already_completed", "failed"];
+  const terminalPhases: readonly string[] = [
+    coldStartPhaseSchema.Values.saved,
+    coldStartPhaseSchema.Values.already_saved,
+    coldStartPhaseSchema.Values.failed,
+  ];
   return terminalPhases.includes(existingState.phase);
 }
 
 function createInitialState(message: string, userId: UserId): ColdStartState {
-  return {
+  return coldStartStateSchema.parse({
     messages: [new HumanMessage(message)],
-    phase: "story_gathering",
-    collectedContexts: [],
-    collectedTrails: [],
-    clarificationRound: 0,
     userId,
-  };
+  });
 }
 
-function continueExistingState(
-  existingState: ColdStartState,
-  message: string,
-  userId: UserId,
-): ColdStartState {
+function continueExistingState(existingState: ColdStartState, message: string): ColdStartState {
   return {
     ...existingState,
     messages: [...existingState.messages, new HumanMessage(message)],
-    userId: existingState.userId ?? userId,
   };
 }
 
@@ -241,35 +258,44 @@ function buildStoryGatheringResponse(): ColdStartResponse {
   return { phase: "story_gathering", message: "Tell me about your career history." };
 }
 
-function buildPlanConfirmationResponse(state: ColdStartState): ColdStartResponse | null {
-  if (!state.queue) return null;
+function buildPlanConfirmationResponse(state: ColdStartState): ColdStartResponse {
+  if (state.queue.length === 0) {
+    throw new InvalidStateError("awaiting_plan_confirmation", "queue is empty");
+  }
   return { phase: "awaiting_plan_confirmation", queue: state.queue };
 }
 
-function buildClarificationResponse(state: ColdStartState): ColdStartResponse | null {
-  const { missingFields, currentEntityContext, clarificationRound } = state;
-  if (!missingFields || !currentEntityContext) return null;
+function buildClarificationResponse(state: ColdStartState): ColdStartResponse {
+  const { missingFields, currentEntityContext } = state;
+  if (missingFields.length === 0) {
+    throw new InvalidStateError("awaiting_clarification", "missingFields is empty");
+  }
+  if (!currentEntityContext) {
+    throw new InvalidStateError("awaiting_clarification", "currentEntityContext is missing");
+  }
   return {
     phase: "awaiting_clarification",
     missingFields,
     currentEntityContext,
-    clarificationRound,
   };
 }
 
-function buildContextConfirmationResponse(state: ColdStartState): ColdStartResponse | null {
+function buildContextConfirmationResponse(state: ColdStartState): ColdStartResponse {
   const { collectedContexts, collectedTrails, currentEntityContext, queue } = state;
-  if (!currentEntityContext) return null;
+  if (!currentEntityContext) {
+    throw new InvalidStateError("awaiting_context_confirmation", "currentEntityContext is missing");
+  }
 
   const currentContext = collectedContexts.at(-1);
-  if (!currentContext) return null;
+  if (!currentContext) {
+    throw new InvalidStateError("awaiting_context_confirmation", "no collected contexts");
+  }
 
   return {
     phase: "awaiting_context_confirmation",
     entity: currentContext,
     relatedTrails: collectedTrails.filter((t) => t.toContextId === currentContext.contextId),
-    currentEntityContext,
-    progress: { current: currentEntityContext.contextIndex + 1, total: queue?.length ?? 0 },
+    progress: { current: currentEntityContext.contextIndex + 1, total: queue.length },
   };
 }
 
@@ -282,15 +308,16 @@ function buildFinalConfirmationResponse(state: ColdStartState): ColdStartRespons
   };
 }
 
-function buildCompleteResponse(state: ColdStartState): ColdStartResponse {
+function buildSavedResponse(state: ColdStartState): ColdStartResponse {
   return {
-    phase: "complete",
-    collectedContexts: state.collectedContexts,
-    collectedTrails: state.collectedTrails,
+    phase: "saved",
+    userId: state.userId,
+    contexts: state.collectedContexts,
+    trails: state.collectedTrails,
   };
 }
 
-type ResponseBuilder = (state: ColdStartState) => ColdStartResponse | null;
+type ResponseBuilder = (state: ColdStartState) => ColdStartResponse;
 
 const responseBuilders: Record<string, ResponseBuilder> = {
   /* eslint-disable @typescript-eslint/naming-convention -- Phase names use snake_case */
@@ -299,35 +326,28 @@ const responseBuilders: Record<string, ResponseBuilder> = {
   awaiting_clarification: (s) => buildClarificationResponse(s),
   awaiting_context_confirmation: (s) => buildContextConfirmationResponse(s),
   awaiting_final_confirmation: (s) => buildFinalConfirmationResponse(s),
-  complete: (s) => buildCompleteResponse(s),
-  already_completed: () => ({
-    phase: "already_completed",
-    message: "Cold start already completed.",
+  saved: (s) => buildSavedResponse(s),
+  already_saved: () => ({
+    phase: "already_saved",
+    message: "Cold start already saved.",
   }),
+  failed: () => buildFailedResponse(),
   /* eslint-enable @typescript-eslint/naming-convention */
 };
 
 function buildResponse(state: ColdStartState): ColdStartResponse {
   const builder = responseBuilders[state.phase];
-  return builder?.(state) ?? buildFailedResponse();
+  if (!builder) {
+    throw new InvalidStateError(state.phase, "unknown phase");
+  }
+  return builder(state);
 }
 
 function buildFailedResponse(): ColdStartResponse {
   return { phase: "failed", message: "Workflow failed. Please try again." };
 }
 
-function prepareState(
-  existingState: ColdStartState | null,
-  message: string,
-  userId: UserId,
-): ColdStartState {
-  if (!existingState || shouldResetState(existingState)) {
-    return createInitialState(message, userId);
-  }
-  return continueExistingState(existingState, message, userId);
-}
-
-export async function collectContexts(
+export async function runColdStartWorkflow(
   message: string,
   threadId: string,
   userId: UserId,
@@ -335,8 +355,12 @@ export async function collectContexts(
   console.log(`ColdStartAgent invoked with threadId: ${threadId}`);
 
   const agent = createColdStartAgent();
-  const existingState = await getExistingState(agent, threadId);
-  const initialState = prepareState(existingState, message, userId);
+  const existingState = getExistingState(agent, threadId);
+
+  const shouldStartFresh = !existingState || shouldResetState(existingState);
+  const initialState = shouldStartFresh
+    ? createInitialState(message, userId)
+    : continueExistingState(existingState, message);
 
   const result = await agent.invoke(
     initialState,

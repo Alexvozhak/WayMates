@@ -80,7 +80,9 @@ export const trailSchema = z.object({
   trailId: trailIdSchema.describe("Trail ID in format trl_<UUID>"),
   skill: z.string().describe("Skill being developed"),
   platform: z.string().describe("Learning platform used"),
-  fromContextId: contextIdSchema,
+  fromContextId: z
+    .union([contextIdSchema, z.null().describe("null for trails leading to first context")])
+    .describe("Source context ID - string for transition between contexts, null for first context"),
   toContextId: z
     .union([contextIdSchema, z.null().describe("null for ongoing trails")])
     .describe("Target context ID - string for completed, null for ongoing"),
@@ -636,63 +638,6 @@ export type ScoredMatchedCandidateWithPathAndDTW = z.infer<
  */
 export const candidateMatchedSchema = candidateCoreSchema;
 export type CandidateMatched = CandidateCore;
-
-/**
- * @deprecated Use matchedCandidateWithPathSchema instead.
- * Note: field renamed from 'trajectory' to 'path'
- */
-export const candidateWithPathSchema = candidateCoreSchema.extend({
-  trajectory: z
-    .array(userContextSchema)
-    .describe("Full career path from started_working to matched_context"),
-});
-export type CandidateWithPath = z.infer<typeof candidateWithPathSchema>;
-
-/**
- * @deprecated Internal type, will be removed. Use ScoredMatchedCandidate instead.
- */
-export const candidatePreDTWSchema = candidateCoreSchema
-  .omit({
-    timeSinceMatchedMonths: true,
-  })
-  .extend({
-    skillsPenalty: z.number().min(0).max(1).describe("Penalty for extra skills (0-1, normalized)"),
-    candidateType: z
-      .enum(["pathfinder", "waymate"])
-      .nullable()
-      .describe("Pathfinder = reached goal, Waymate = same goal, null = regular"),
-  });
-export type CandidatePreDTW = z.infer<typeof candidatePreDTWSchema>;
-
-/**
- * @deprecated Use scoredMatchedCandidateSchema instead.
- * Note: total_score removed, use explicit sorting formula
- */
-export const candidateBasicSchema = candidateCoreSchema.extend({
-  skillsPenalty: z.number().min(0).max(1).describe("Penalty for extra skills (0-1, normalized)"),
-  totalScore: z.number().describe("Combined score for ranking"),
-  candidateType: z
-    .enum(["pathfinder", "waymate"])
-    .nullable()
-    .describe("Pathfinder = reached goal, Waymate = same goal, null = regular"),
-});
-export type CandidateBasic = z.infer<typeof candidateBasicSchema>;
-
-/**
- * @deprecated Use scoredMatchedCandidateWithPathAndDTWSchema instead.
- * Note: field renamed from 'trajectory' to 'path', total_score removed
- */
-export const candidateWithDTWSchema = candidateWithPathSchema.extend({
-  skillsPenalty: z.number().min(0).max(1).describe("Penalty for extra skills (0-1, normalized)"),
-  totalScore: z.number().describe("dtw_total + (1.0 - skills_penalty) for sorting"),
-  candidateType: z
-    .enum(["pathfinder", "waymate"])
-    .nullable()
-    .describe("Pathfinder = reached goal, Waymate = same goal, null = regular"),
-  dtwMetrics: dtwMetricsSchema,
-  dtwTotal: z.number().min(0).max(3).describe("Sum of shape + tempo + stability (0-3)"),
-});
-export type CandidateWithDTW = z.infer<typeof candidateWithDTWSchema>;
 
 // ==========================================
 // === PATH COLLECTION TYPES ===
