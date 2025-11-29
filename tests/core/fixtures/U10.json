@@ -92,5 +92,28 @@
       ]
     }
   ],
-  "trails": []
+  "trails": [
+    {
+      "trailId": "trl_019a6ea7-18c0-743c-ade8-f00000000001",
+      "skill": "typescript",
+      "platform": "udemy",
+      "fromContextId": "ctx_019a6ea7-18c0-743c-ade8-ddb8079671cb",
+      "toContextId": "ctx_019a6ea7-18c0-743c-ade8-e28941c36a88",
+      "totalDurationWeeks": 8,
+      "courseName": "TypeScript Fundamentals",
+      "ratingCourse": 4,
+      "ratingPlatform": 5
+    },
+    {
+      "trailId": "trl_019a6ea7-18c0-743c-ade8-f00000000002",
+      "skill": "system-design",
+      "platform": "coursera",
+      "fromContextId": "ctx_019a6ea7-18c0-743c-ade8-e28941c36a88",
+      "toContextId": "ctx_019a6ea7-18c0-743c-ade8-e73f1763720d",
+      "totalDurationWeeks": 12,
+      "courseName": "System Design Patterns",
+      "ratingCourse": 5,
+      "ratingPlatform": 4
+    }
+  ]
 }

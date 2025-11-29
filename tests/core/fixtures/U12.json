@@ -132,5 +132,39 @@
       ]
     }
   ],
-  "trails": []
+  "trails": [
+    {
+      "trailId": "trl_019a6ea7-18c1-75bc-9276-f00000000001",
+      "skill": "react",
+      "platform": "youtube",
+      "fromContextId": "ctx_019a6ea7-18c1-75bc-9276-c25b5134c1cc",
+      "toContextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078",
+      "totalDurationWeeks": 4,
+      "courseName": "React Complete Guide",
+      "ratingCourse": 4,
+      "ratingPlatform": 3
+    },
+    {
+      "trailId": "trl_019a6ea7-18c1-75bc-9276-f00000000002",
+      "skill": "nextjs",
+      "platform": "udemy",
+      "fromContextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078",
+      "toContextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a",
+      "totalDurationWeeks": 6,
+      "courseName": "Next.js Mastery",
+      "ratingCourse": 5,
+      "ratingPlatform": 5
+    },
+    {
+      "trailId": "trl_019a6ea7-18c1-75bc-9276-f00000000003",
+      "skill": "architecture",
+      "platform": "coursera",
+      "fromContextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a",
+      "toContextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81",
+      "totalDurationWeeks": 10,
+      "courseName": "Software Architecture Fundamentals",
+      "ratingCourse": 5,
+      "ratingPlatform": 4
+    }
+  ]
 }
