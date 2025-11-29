@@ -36,7 +36,8 @@
 │   ├── checkpointers.md           # PostgresSaver setup
 │   ├── routing.md                 # ⭐ ДЕТАЛЬНО: Explicit vs Implicit vs Hybrid (150 строк)
 │   ├── human-in-loop.md           # ⭐ ДЕТАЛЬНО: Interrupts + multi-round (150 строк)
-│   └── atomic-tools.md            # Atomic tools pattern
+│   ├── atomic-tools.md            # Atomic tools pattern
+│   └── mcp-adapters.md            # ⭐ @langchain/mcp-adapters — MCP интеграция
 ├── patterns/                      # Проверенные паттерны
 │   ├── error-handling.md          # Error handling patterns
 │   └── testing.md                 # Testing strategies
@@ -124,6 +125,22 @@
 
 ---
 
+### Я подключаю agent к MCP серверу
+
+**Path**: MCP Adapters → Integration
+
+1. [concepts/mcp-adapters.md](./concepts/mcp-adapters.md) - ⭐ @langchain/mcp-adapters полный гайд
+2. [concepts/agents.md](./concepts/agents.md) - createAgent для использования tools
+3. [ADR-006](../../../docs/facade/decisions/ADR-006.md) - E2E testing с MCP
+
+**Key Points**:
+- `MultiServerMCPClient` для подключения к MCP серверам
+- `getTools()` возвращает LangChain-совместимые tools
+- Работает напрямую с `createAgent` (LangChain v1 API)
+- **Не требует LangGraph/StateGraph** — чистый LangChain v1
+
+---
+
 ## ⚡ Quick Reference
 
 ### Критичные правила (MUST READ)
@@ -148,6 +165,7 @@
 - `PostgresSaver` → [glossary#postgressaver](./glossary.md#postgressaver)
 - `MessagesZodState` → [glossary#messageszodstate](./glossary.md#messageszodstate)
 - `withStructuredOutput` → [glossary#withstructuredoutput](./glossary.md#withstructuredoutput)
+- `MultiServerMCPClient` → [concepts/mcp-adapters.md](./concepts/mcp-adapters.md)
 
 ---
 
@@ -170,12 +188,12 @@
 
 ## 📊 Stats
 
-**Coverage**: ~2,200 lines (was ~1,950 lines)
-**Files**: 13 files (was 5 files)
+**Coverage**: ~2,400 lines
+**Files**: 14 files (+mcp-adapters.md)
 **Duplication**: Eliminated via glossary + cross-references
 **Production-validated**: All patterns used in WayMates career-collector-agent
 
 ---
 
-**Last Updated**: 2025-11-26
+**Last Updated**: 2025-11-29
 **Maintained By**: Claude + Human (via `/sync-memory`)

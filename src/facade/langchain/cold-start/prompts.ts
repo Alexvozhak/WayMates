@@ -193,16 +193,25 @@ CONVERSATION:
 ${text}
 
 ═══════════════════════════════════════════════════
+FORMAT RULES (STRICT):
+═══════════════════════════════════════════════════
+- All terms: lowercase-kebab-case (e.g., "machine-learning", "data-science")
+- cityName: lowercase (e.g., "berlin", "san-francisco")
+- countryCode/citizenships: lowercase ISO 3166-1 alpha-2 (e.g., "de", "ru")
+- languages: lowercase ISO 639-1 (e.g., "en", "de")
+- DO NOT invent data - extract ONLY what is explicitly mentioned
+
+═══════════════════════════════════════════════════
 REQUIRED FIELDS (must extract):
 ═══════════════════════════════════════════════════
-- position: Job title (e.g., "Backend Engineer", "Product Manager")
-- domains: Work areas (e.g., ["Fintech", "B2B SaaS"]) - min 1
-- skills: Technical/professional skills (e.g., ["TypeScript", "Python", "Leadership"]) - min 1
-- industry: Company's industry (e.g., "Technology", "Banking", "E-commerce")
+- position: Job level (e.g., "junior", "middle", "senior", "lead")
+- domains: Work areas (e.g., ["frontend", "backend", "devops"]) - min 1
+- skills: Technical skills explicitly mentioned (e.g., ["react", "typescript"]) - min 1
+- industry: Company's industry (e.g., "tech", "fintech", "e-commerce")
 - companySize: Approximate size (e.g., "startup", "50-200", "1000+")
-- countryCode: ISO 3166-1 alpha-2 code (e.g., "US", "DE", "RU")
-- cityName: City name (e.g., "Berlin", "San Francisco")
-- citizenships: Citizenship codes (e.g., ["RU", "DE"])
+- countryCode: ISO 3166-1 alpha-2 lowercase (e.g., "us", "de", "ru")
+- cityName: City name lowercase (e.g., "berlin", "moscow")
+- citizenships: Citizenship codes lowercase (e.g., ["ru", "de"])
 - birthYear: Year of birth (e.g., 1990)
 - creationReason: Why this job started. Choose from:
   started_working, got_promoted, changed_position, changed_company,
@@ -210,18 +219,18 @@ REQUIRED FIELDS (must extract):
   education_upgrade, career_restart, management_transition, tech_shift
 
 ═══════════════════════════════════════════════════
-OPTIONAL FIELDS (include if mentioned):
+OPTIONAL FIELDS (include ONLY if explicitly mentioned):
 ═══════════════════════════════════════════════════
 - educationLevel: NONE, HIGH_SCHOOL, ASSOCIATE, BACHELOR, MASTER, DOCTORATE, PROFESSIONAL
 - salaryExact: Exact annual salary in USD (OR use salaryMin/salaryMax for range)
 - salaryMin/salaryMax: Salary range bounds in USD
-- languages: ISO 639-1 codes for B2+ proficiency languages (e.g., ["en", "de"])
+- languages: ISO 639-1 lowercase for B2+ proficiency (e.g., ["en", "de"])
 - feedback: Personal reflection on this transition (max 200 chars)
 
 EXTRACTION RULES:
-- If data not in conversation, make reasonable inference from context
+- Extract ONLY explicitly mentioned information - do NOT infer or guess
 - For first job, use creationReason: ["started_working"]
-- Skills should be specific technologies or competencies, not generic`;
+- If skill/domain not explicitly stated, do NOT add it`;
 }
 
 export function trailExtractionPrompt(messages: BaseMessage[], trailPreview: string): string {
@@ -232,18 +241,24 @@ CONVERSATION:
 ${text}
 
 ═══════════════════════════════════════════════════
-REQUIRED FIELDS (must extract):
+FORMAT RULES (STRICT):
 ═══════════════════════════════════════════════════
-- skill: The main skill being developed (e.g., "React", "Python", "Machine Learning")
-- platform: Where learning happened (e.g., "Coursera", "Udemy", "self-study", "bootcamp")
+- All terms: lowercase-kebab-case (e.g., "machine-learning", "system-design")
+- DO NOT invent data - extract ONLY what is explicitly mentioned
 
 ═══════════════════════════════════════════════════
-OPTIONAL FIELDS (include if mentioned):
+REQUIRED FIELDS (must extract):
+═══════════════════════════════════════════════════
+- skill: The main skill being developed (e.g., "react", "python", "machine-learning")
+- platform: Where learning happened (e.g., "coursera", "udemy", "self-study", "bootcamp")
+
+═══════════════════════════════════════════════════
+OPTIONAL FIELDS (include ONLY if explicitly mentioned):
 ═══════════════════════════════════════════════════
 - totalDurationWeeks: Learning duration in weeks
 - schedule: { sessionsPerWeek: number, hoursPerSession: number }
 - costUsd: Total cost in USD
-- courseName: Specific course title
+- courseName: Specific course title (lowercase-kebab-case)
 - courseLink: URL to the course
 - ratingCourse: User's rating of the course (1-5)
 - ratingPlatform: User's rating of the platform (1-5)
@@ -251,6 +266,7 @@ OPTIONAL FIELDS (include if mentioned):
 - userFeedback: Personal notes about the learning experience
 
 EXTRACTION RULES:
+- Extract ONLY explicitly mentioned information - do NOT infer or guess
 - Trail describes learning/transition activities between career positions
 - Focus on the specific learning activity mentioned in the preview`;
 }
