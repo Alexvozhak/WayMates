@@ -116,7 +116,10 @@ export default defineConfig(() => {
         {
           test: {
             name: "facade-integration",
-            include: ["tests/facade/integration/**/*.integration.ts"],
+            include: [
+              "tests/facade/integration/**/*.integration.ts",
+              "tests/facade/cold-start/**/*.integration.ts",
+            ],
             pool: "threads",
             poolOptions: {
               threads: {
