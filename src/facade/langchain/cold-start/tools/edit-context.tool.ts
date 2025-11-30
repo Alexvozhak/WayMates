@@ -1,6 +1,6 @@
-import { HumanMessage } from "@langchain/core/messages";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HumanMessage, ToolMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
+import { ChatOpenAI } from "@langchain/openai";
 import { tool } from "langchain";
 import { z } from "zod";
 
@@ -12,6 +12,7 @@ import { PHASE } from "../types.js";
 
 import type { UserContext } from "../../../../shared/schemas.js";
 import type { ColdStartState } from "../types.js";
+import type { ToolRuntime } from "@langchain/core/tools";
 
 const editContextInputSchema = z.object({
   contextId: z.string().describe("Context ID to edit (ctx_<UUID>)"),
@@ -22,9 +23,13 @@ const editContextInputSchema = z.object({
 
 type EditContextInput = z.infer<typeof editContextInputSchema>;
 
-const contextCorrectionModel = new ChatGoogleGenerativeAI({
-  model: config.LANGCHAIN_MODEL_NAME,
+const contextCorrectionModel = new ChatOpenAI({
+  modelName: "openai/gpt-4o-mini",
+  apiKey: process.env.OPENROUTER_API_KEY,
   temperature: config.LANGCHAIN_TEMP_EXTRACTION,
+  configuration: {
+    baseURL: "https://openrouter.ai/api/v1",
+  },
 })
   .withStructuredOutput(extractableContextSchema)
   .withRetry({ stopAfterAttempt: 2 });
@@ -38,18 +43,26 @@ function replaceContext(contexts: UserContext[], updated: UserContext): UserCont
 }
 
 export const editContextTool = tool(
-  async ({ contextId, corrections }: EditContextInput, { state }: { state: ColdStartState }) => {
+  async ({ contextId, corrections }: EditContextInput, runtime: ToolRuntime<ColdStartState>) => {
+    const { state, toolCallId } = runtime;
     const { collectedContexts, messages } = state;
 
     const existingContext = findContext(collectedContexts, contextId);
     if (!existingContext) {
-      console.error(`❌ edit_context: context ${contextId} not found`);
       return new Command({
-        update: { phase: PHASE.failed },
+        update: {
+          phase: PHASE.failed,
+          /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+          messages: [
+            new ToolMessage({
+              content: `Context ${contextId} not found`,
+              tool_call_id: toolCallId,
+            }),
+          ],
+          /* eslint-enable @typescript-eslint/naming-convention */
+        },
       });
     }
-
-    console.log(`🔧 edit_context: applying corrections to ${contextId}`);
 
     const prompt = contextCorrectionPrompt(existingContext, corrections, messages);
     const extracted = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
@@ -64,9 +77,18 @@ export const editContextTool = tool(
 
     const parseResult = userContextSchema.safeParse(correctedContext);
     if (!parseResult.success) {
-      console.error(`❌ edit_context: validation failed`, parseResult.error.flatten());
       return new Command({
-        update: { phase: PHASE.failed },
+        update: {
+          phase: PHASE.failed,
+          /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+          messages: [
+            new ToolMessage({
+              content: "Context validation failed after correction",
+              tool_call_id: toolCallId,
+            }),
+          ],
+          /* eslint-enable @typescript-eslint/naming-convention */
+        },
       });
     }
 
@@ -76,8 +98,15 @@ export const editContextTool = tool(
       update: {
         collectedContexts: updatedContexts,
         phase: PHASE.awaiting_context_confirmation,
+        /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+        messages: [
+          new ToolMessage({
+            content: `Context ${contextId} updated. Now call confirm_context to get user approval.`,
+            tool_call_id: toolCallId,
+          }),
+        ],
+        /* eslint-enable @typescript-eslint/naming-convention */
       },
-      goto: "confirm_context",
     });
   },
   {

@@ -47,17 +47,27 @@
 
 ---
 
+## ⚠️ КРИТИЧНО: goto НЕ работает с createAgent
+
+**`Command({ goto })` игнорируется в `createAgent` API!**
+
+Используй **LLM Routing** через ToolMessage + tool descriptions вместо goto.
+
+→ [gotchas.md#15](./reference/gotchas.md#15-goto-не-работает-с-createagent)
+
+---
+
 ## 🗺️ Navigation Map
 
 ### Я новичок в LangChain v1.0
 
 **Path**: Quick Start → Foundation → Advanced
 
-1. **START**: [glossary.md](./glossary.md) - прочитай критичные правила (10 мин)
-2. [concepts/agents.md](./concepts/agents.md) - createAgent basics
-3. [concepts/tools.md](./concepts/tools.md) - создание tools
-4. [concepts/routing.md](./concepts/routing.md) - ⭐ ДЕТАЛЬНО: как agent выбирает tools
-5. [Production Example](../../../src/facade/langchain/career-collector-agent.ts) - полный agent
+1. **START**: [gotchas.md](./reference/gotchas.md) - прочитай критичные ошибки (5 мин)
+2. [glossary.md](./glossary.md) - API reference
+3. [concepts/tools.md](./concepts/tools.md) - создание tools с ToolRuntime
+4. [concepts/routing.md](./concepts/routing.md) - ⭐ LLM Routing через ToolMessage
+5. [concepts/human-in-loop.md](./concepts/human-in-loop.md) - Agent-driven decisions
 
 ---
 
@@ -79,12 +89,12 @@
 
 **Path**: Routing → Tools → Patterns
 
-1. [concepts/routing.md](./concepts/routing.md) - ⭐ ДЕТАЛЬНО: Hybrid routing (goto + LLM)
+1. [concepts/routing.md](./concepts/routing.md) - ⭐ LLM Routing через ToolMessage
 2. [concepts/atomic-tools.md](./concepts/atomic-tools.md) - ONE tool = ONE operation
-3. [concepts/tools.md](./concepts/tools.md) - Command API для routing
-4. [patterns/error-handling.md](./patterns/error-handling.md) - explicit goto для errors
+3. [concepts/tools.md](./concepts/tools.md) - ToolRuntime + Command API
+4. [gotchas.md#13](./reference/gotchas.md#13-command-без-toolmessage--undefined-error) - ToolMessage обязателен
 
-**Key Pattern**: [glossary.md#hybrid-routing](./glossary.md#hybrid-routing) - deterministic goto + LLM intent
+**Key Pattern**: [glossary.md#llm-routing](./glossary.md#llm-routing-вместо-goto) - ToolMessage + description направляют LLM
 
 ---
 
@@ -93,9 +103,9 @@
 **Path**: Extraction → Validation → Tools
 
 1. [concepts/structured-output.md](./concepts/structured-output.md) - withStructuredOutput
-2. [concepts/tools.md](./concepts/tools.md) - Zod schema validation
-3. [concepts/routing.md](./concepts/routing.md) - explicit goto на validation failure
-4. [Production Example: extractSingleContextTool](../../../src/facade/langchain/shared-tools/index.ts)
+2. [concepts/tools.md](./concepts/tools.md) - Zod schema validation + ToolRuntime
+3. [concepts/routing.md](./concepts/routing.md) - ToolMessage на validation failure
+4. [gotchas.md#14](./reference/gotchas.md#14-openai-structured-output-требует-nullable) - OpenAI требует `.nullable()`
 
 ---
 
@@ -108,10 +118,11 @@
 3. Check production example: [career-collector-agent.ts](../../../src/facade/langchain/career-collector-agent.ts)
 
 **Top Gotchas**:
-- [Gemini prefix обязателен](./reference/gotchas.md#gemini-prefix)
+- [#13 ToolMessage обязателен](./reference/gotchas.md#13-command-без-toolmessage--undefined-error)
+- [#15 goto НЕ работает с createAgent](./reference/gotchas.md#15-goto-не-работает-с-createagent)
+- [#14 OpenAI требует .nullable()](./reference/gotchas.md#14-openai-structured-output-требует-nullable)
 - [Checkpointer для interrupts](./reference/gotchas.md#checkpointer-required)
 - [thread_id для persistence](./reference/gotchas.md#thread-id-persistence)
-- [Command для state updates](./reference/gotchas.md#command-for-updates)
 
 ---
 
@@ -145,13 +156,13 @@
 
 ### Критичные правила (MUST READ)
 
-| Правило | Где | Почему |
-|---------|-----|--------|
-| Gemini prefix `"models/"` | [glossary#gemini-prefix](./glossary.md#gemini-prefix) | API требует |
-| Checkpointer для interrupts | [glossary#checkpointer-required](./glossary.md#checkpointer-required) | Interrupts НЕ РАБОТАЮТ без него |
-| thread_id для persistence | [glossary#thread-id-persistence](./glossary.md#thread-id-persistence) | State теряется без него |
-| Command для state updates | [glossary#command-for-updates](./glossary.md#command-for-updates) | Обычный return НЕ обновит state |
-| messages field в schema | [glossary#messages-field-required](./glossary.md#messages-field-required) | Agent НЕ РАБОТАЕТ без него |
+| Правило | Gotcha | Почему |
+|---------|--------|--------|
+| goto НЕ работает с createAgent | [#15](./reference/gotchas.md#15-goto-не-работает-с-createagent) | Используй LLM Routing |
+| ToolMessage обязателен | [#13](./reference/gotchas.md#13-command-без-toolmessage--undefined-error) | Agent падает без него |
+| OpenAI требует .nullable() | [#14](./reference/gotchas.md#14-openai-structured-output-требует-nullable) | Zod validation fails |
+| Checkpointer для interrupts | [#2](./reference/gotchas.md#checkpointer-required) | Interrupts НЕ РАБОТАЮТ без него |
+| thread_id для persistence | [#3](./reference/gotchas.md#thread-id-persistence) | State теряется без него |
 
 ---
 
@@ -171,9 +182,9 @@
 
 ### Паттерны (Quick Lookup)
 
-- **Atomic Tools** → [glossary#atomic-tools-pattern](./glossary.md#atomic-tools-pattern)
-- **Hybrid Routing** → [glossary#hybrid-routing](./glossary.md#hybrid-routing)
-- **Multi-Round Clarification** → [glossary#multi-round-clarification](./glossary.md#multi-round-clarification)
+- **Agent-Driven Decision** → [glossary.md](./glossary.md#agent-driven-decision-recommended) — Agent парсит NLP
+- **LLM Routing** → [glossary.md](./glossary.md#llm-routing-вместо-goto) — ToolMessage направляет LLM
+- **Multi-Round Clarification** → [glossary.md](./glossary.md#multi-round-clarification)
 
 ---
 
@@ -188,12 +199,11 @@
 
 ## 📊 Stats
 
-**Coverage**: ~2,400 lines
-**Files**: 14 files (+mcp-adapters.md)
-**Duplication**: Eliminated via glossary + cross-references
-**Production-validated**: All patterns used in WayMates career-collector-agent
+**Coverage**: ~1,200 lines (сокращено с ~2,400)
+**Files**: 14 files
+**Key change**: `goto` не работает с `createAgent` → LLM Routing
 
 ---
 
-**Last Updated**: 2025-11-29
+**Last Updated**: 2025-11-30
 **Maintained By**: Claude + Human (via `/sync-memory`)

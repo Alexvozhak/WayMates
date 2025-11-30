@@ -139,6 +139,33 @@ class PostgresService {
     const checkpointer = this.getCheckpointer();
     await checkpointer.deleteThread(threadId);
   }
+
+  async getCheckpointState(threadId: string): Promise<Record<string, unknown> | null> {
+    const checkpointer = this.getCheckpointer();
+    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API requires thread_id */
+    const tuple = await checkpointer.getTuple({ configurable: { thread_id: threadId } });
+    /* eslint-enable @typescript-eslint/naming-convention */
+
+    if (!tuple || !tuple.checkpoint || !tuple.checkpoint.channel_values) {
+      return null;
+    }
+
+    return tuple.checkpoint.channel_values;
+  }
+
+  async hasPendingInterrupt(threadId: string): Promise<boolean> {
+    const checkpointer = this.getCheckpointer();
+    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API requires thread_id */
+    const tuple = await checkpointer.getTuple({ configurable: { thread_id: threadId } });
+    /* eslint-enable @typescript-eslint/naming-convention */
+
+    if (!tuple || !tuple.pendingWrites) {
+      return false;
+    }
+
+    // pendingWrites содержит interrupt если есть pending tool calls
+    return tuple.pendingWrites.length > 0;
+  }
 }
 
 export const postgresService = PostgresService.getInstance();

@@ -1,5 +1,5 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenAI } from "@langchain/openai";
 import { tool } from "langchain";
 import { z } from "zod";
 
@@ -15,9 +15,13 @@ const linkTrailSchema = trailSchema.omit({
 });
 
 // Model with structured output for guaranteed JSON
-const extractionModel = new ChatGoogleGenerativeAI({
-  model: config.LANGCHAIN_MODEL_NAME,
+const extractionModel = new ChatOpenAI({
+  modelName: "openai/gpt-4o-mini",
+  apiKey: process.env.OPENROUTER_API_KEY,
   temperature: config.LANGCHAIN_TEMP_EXTRACTION,
+  configuration: {
+    baseURL: "https://openrouter.ai/api/v1",
+  },
 }).withStructuredOutput(linkTrailSchema);
 
 /**

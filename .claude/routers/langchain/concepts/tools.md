@@ -28,102 +28,37 @@ const searchTool = tool(
 
 ---
 
-## Сигнатура tool function
+## С доступом к State (ToolRuntime)
 
-**Второй параметр** - это `config` объект, который LangChain передаёт при вызове tool.
-
-```typescript
-// Источник: node_modules/langchain/dist/agents/nodes/ToolNode.js:164-170
-// ToolNode вызывает tool.invoke так:
-await tool.invoke(toolCall, {
-  ...config,
-  toolCallId: toolCall.id,
-  state: config.configurable?.__pregel_scratchpad?.currentTaskInput,  // ← state агента!
-});
-```
-
-**Правильная типизация:**
+**Рекомендуемый способ** — использовать `ToolRuntime<State>`:
 
 ```typescript
-// Вариант 1: Partial типизация только нужных полей
-const myTool = tool(
-  async (input, config: { state: MyAgentState }) => {
-    const { messages, userId } = config.state;
-    // ...
-  },
-  { name: "my_tool", schema: z.object({...}) }
-);
-
-// Вариант 2: С деструктуризацией
-const myTool = tool(
-  async (input, { state }: { state: MyAgentState }) => {
-    const { messages } = state;
-    // ...
-  },
-  { name: "my_tool", schema: z.object({...}) }
-);
-
-// Вариант 3: Без state (если не нужен)
-const myTool = tool(
-  async ({ query }) => {
-    return `Results for: ${query}`;
-  },
-  { name: "my_tool", schema: z.object({ query: z.string() }) }
-);
-```
-
-**Важно**: Имя параметра `config` (не `toolConfig`) - это convention из LangChain.
-
----
-
-## С Command для routing
-
-```typescript
+import { tool } from "langchain";
 import { Command } from "@langchain/langgraph";
+import { ToolMessage } from "@langchain/core/messages";
+import type { ToolRuntime } from "@langchain/core/tools";
 
-const extractData = tool(
-  async ({ text }, { state }: { state: AgentState }) => {
-    const validation = schema.safeParse(data);
-
-    if (!validation.success) {
-      return new Command({
-        update: { partial: data },
-        goto: "ask_clarification"
-      });
-    }
-
-    return new Command({
-      update: { data: validation.data },
-      goto: "confirm_data"
-    });
-  },
-  {
-    name: "extract_data",
-    description: "Extract and validate data",
-    schema: z.object({
-      text: z.string().describe("Text to extract from")
-    })
-  }
-);
-```
-
-**См**: [concepts/routing.md](./routing.md) - Explicit routing через goto.
-
----
-
-## Доступ к state
-
-```typescript
-type AgentState = {
+type MyState = {
   userId: string;
+  phase: string;
   messages: BaseMessage[];
 };
 
-// Рекомендуемый способ - деструктуризация
 const getUserInfo = tool(
-  async (_, { state }: { state: AgentState }) => {
-    const { userId } = state;
-    return { userId };
+  async (_, runtime: ToolRuntime<MyState>) => {
+    // ToolRuntime даёт типизированный доступ к state и toolCallId
+    const { state, toolCallId } = runtime;
+    const { userId, phase } = state;
+
+    return new Command({
+      update: {
+        // ToolMessage ОБЯЗАТЕЛЕН для корректной работы agent
+        messages: [new ToolMessage({
+          content: `Got user info for ${userId}`,
+          tool_call_id: toolCallId
+        })]
+      }
+    });
   },
   {
     name: "get_user_info",
@@ -133,6 +68,45 @@ const getUserInfo = tool(
 );
 ```
 
+**Почему ToolRuntime?**
+- Типизированный `state` — без type assertions
+- `toolCallId` — нужен для ToolMessage (обязателен!)
+- Чище чем `config.configurable?.__pregel_scratchpad?.currentTaskInput`
+
+---
+
+## С ToolMessage и Routing
+
+```typescript
+const processData = tool(
+  async ({ text }, runtime: ToolRuntime<MyState>) => {
+    const { state, toolCallId } = runtime;
+    const validation = schema.safeParse(text);
+
+    // ToolMessage направляет LLM на следующий tool
+    return new Command({
+      update: {
+        phase: validation.success ? "awaiting_confirmation" : "awaiting_clarification",
+        partial: validation.success ? null : text,
+        messages: [new ToolMessage({
+          content: validation.success
+            ? "Data extracted. Now call confirm_data."
+            : "Validation failed. Now call ask_clarification.",
+          tool_call_id: toolCallId
+        })]
+      }
+    });
+  },
+  {
+    name: "process_data",
+    description: "Process data. After this, call confirm_data or ask_clarification.",
+    schema: z.object({ text: z.string() })
+  }
+);
+```
+
+**⚠️ ВАЖНО**: `goto` НЕ работает с `createAgent`! Используй ToolMessage + description.
+
 ---
 
 ## Atomic Tool Pattern
@@ -141,13 +115,13 @@ const getUserInfo = tool(
 
 ```typescript
 // ✅ ПРАВИЛЬНО - atomic tools
-const extractUserContext = tool(...);  // Только extraction + validation
-const askClarification = tool(...);    // Только вопросы
-const confirmCareerData = tool(...);   // Только confirmation
-const saveCareerData = tool(...);      // Только save to DB
+const extractContext = tool(...);     // Только extraction
+const askClarification = tool(...);   // Только вопросы
+const confirmContext = tool(...);     // Только confirmation
+const saveData = tool(...);           // Только save
 
 // ❌ НЕПРАВИЛЬНО - orchestrator tool
-const processCareerData = tool(async () => {
+const processAll = tool(async () => {
   const data = await extract();
   if (!isValid(data)) {
     await askQuestions();  // Agent не видит этот шаг!
@@ -156,12 +130,26 @@ const processCareerData = tool(async () => {
 });
 ```
 
-**См**: [patterns/atomic-tools.md](../patterns/atomic-tools.md) - Полный паттерн.
+**Преимущества**:
+- Agent видит каждый шаг workflow
+- Легко unit-test каждый tool
+- Переиспользование tools
+
+---
+
+## Checklist
+
+- [ ] ✅ Используешь `ToolRuntime<State>` для доступа к state и toolCallId
+- [ ] ✅ ToolMessage в каждом Command.update.messages
+- [ ] ✅ Tool description указывает следующие шаги
+- [ ] ✅ Atomic tools (один tool = одна операция)
+- [ ] ✅ Не используешь `goto` с `createAgent`
 
 ---
 
 ## См. также
 
-- [glossary.md#tool](../glossary.md#tool) - API reference
-- [concepts/routing.md](./routing.md) - Command + goto routing
-- [patterns/atomic-tools.md](../patterns/atomic-tools.md) - Atomic tools pattern
+- [glossary.md#tool](../glossary.md#tool) — API reference
+- [routing.md](./routing.md) — LLM Routing через ToolMessage
+- [gotchas.md#13](../reference/gotchas.md#13-command-без-toolmessage--undefined-error) — ToolMessage обязателен
+- [gotchas.md#15](../reference/gotchas.md#15-goto-не-работает-с-createagent) — goto не работает

@@ -1,6 +1,6 @@
-import { HumanMessage } from "@langchain/core/messages";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HumanMessage, ToolMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
+import { ChatOpenAI } from "@langchain/openai";
 import { tool } from "langchain";
 import { z } from "zod";
 
@@ -12,6 +12,7 @@ import { PHASE } from "../types.js";
 
 import type { Trail } from "../../../../shared/schemas.js";
 import type { ColdStartState } from "../types.js";
+import type { ToolRuntime } from "@langchain/core/tools";
 
 const editTrailInputSchema = z.object({
   trailId: z.string().describe("Trail ID to edit (trl_<UUID>)"),
@@ -22,9 +23,13 @@ const editTrailInputSchema = z.object({
 
 type EditTrailInput = z.infer<typeof editTrailInputSchema>;
 
-const trailCorrectionModel = new ChatGoogleGenerativeAI({
-  model: config.LANGCHAIN_MODEL_NAME,
+const trailCorrectionModel = new ChatOpenAI({
+  modelName: "openai/gpt-4o-mini",
+  apiKey: process.env.OPENROUTER_API_KEY,
   temperature: config.LANGCHAIN_TEMP_EXTRACTION,
+  configuration: {
+    baseURL: "https://openrouter.ai/api/v1",
+  },
 })
   .withStructuredOutput(extractableTrailSchema)
   .withRetry({ stopAfterAttempt: 2 });
@@ -38,18 +43,22 @@ function replaceTrail(trails: Trail[], updated: Trail): Trail[] {
 }
 
 export const editTrailTool = tool(
-  async ({ trailId, corrections }: EditTrailInput, { state }: { state: ColdStartState }) => {
+  async ({ trailId, corrections }: EditTrailInput, runtime: ToolRuntime<ColdStartState>) => {
+    const { state, toolCallId } = runtime;
     const { collectedTrails, messages } = state;
 
     const existingTrail = findTrail(collectedTrails, trailId);
     if (!existingTrail) {
-      console.error(`❌ edit_trail: trail ${trailId} not found`);
       return new Command({
-        update: { phase: PHASE.failed },
+        update: {
+          phase: PHASE.failed,
+          messages: [
+            // eslint-disable-next-line @typescript-eslint/naming-convention -- LangChain API
+            new ToolMessage({ content: `Trail ${trailId} not found`, tool_call_id: toolCallId }),
+          ],
+        },
       });
     }
-
-    console.log(`🔧 edit_trail: applying corrections to ${trailId}`);
 
     const prompt = trailCorrectionPrompt(existingTrail, corrections, messages);
     const extracted = await trailCorrectionModel.invoke([new HumanMessage(prompt)]);
@@ -63,9 +72,18 @@ export const editTrailTool = tool(
 
     const parseResult = trailSchema.safeParse(correctedTrail);
     if (!parseResult.success) {
-      console.error(`❌ edit_trail: validation failed`, parseResult.error.flatten());
       return new Command({
-        update: { phase: PHASE.failed },
+        update: {
+          phase: PHASE.failed,
+          /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+          messages: [
+            new ToolMessage({
+              content: "Trail validation failed after correction",
+              tool_call_id: toolCallId,
+            }),
+          ],
+          /* eslint-enable @typescript-eslint/naming-convention */
+        },
       });
     }
 
@@ -75,8 +93,15 @@ export const editTrailTool = tool(
       update: {
         collectedTrails: updatedTrails,
         phase: PHASE.awaiting_context_confirmation,
+        /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+        messages: [
+          new ToolMessage({
+            content: `Trail ${trailId} updated. Now call confirm_context to get user approval.`,
+            tool_call_id: toolCallId,
+          }),
+        ],
+        /* eslint-enable @typescript-eslint/naming-convention */
       },
-      goto: "confirm_context",
     });
   },
   {

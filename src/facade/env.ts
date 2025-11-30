@@ -18,10 +18,12 @@ const envSchema = z.object({
   POSTGRES_USER: z.string().min(1, "POSTGRES_USER is required"),
   POSTGRES_PASSWORD: z.string().min(1, "POSTGRES_PASSWORD is required"),
   POSTGRES_DB: z.string().min(1, "POSTGRES_DB is required"),
-  // Google Gemini API key for LangChain
+  // LLM API keys
   GOOGLE_API_KEY: z.string().min(1, "GOOGLE_API_KEY is required for LangChain agents"),
+  OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required for OpenRouter models"),
   // LangChain model configuration
   LANGCHAIN_MODEL_NAME: z.string().default("models/gemini-2.0-flash"),
+  LANGCHAIN_OPENROUTER_MODEL: z.string().default("openai/gpt-4o-mini"),
   LANGCHAIN_TEMP_EXTRACTION: z.coerce.number().min(0).max(1).default(0.2),
   LANGCHAIN_TEMP_INTENT: z.coerce.number().min(0).max(1).default(0.1),
   LANGCHAIN_TEMP_AGENT: z.coerce.number().min(0).max(1).default(0.3),

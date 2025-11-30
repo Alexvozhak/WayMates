@@ -187,48 +187,72 @@ const extractCareerData = tool(async ({ text }) => {
   return confirm(partial); // Agent НЕ ВИДИТ!
 });
 
-// ✅ ПРАВИЛЬНО - atomic tools
-const extractUserContext = tool(async ({ text }) => {
-  const validation = await validateData(text);
-  return new Command({
-    goto: validation.success ? "confirm_career_data" : "ask_clarification"
-  });
-});
+// ✅ ПРАВИЛЬНО - atomic tools + ToolMessage направляет LLM
+const extractUserContext = tool(
+  async ({ text }, runtime: ToolRuntime<MyState>) => {
+    const validation = await validateData(text);
+    return new Command({
+      update: {
+        phase: validation.success ? "awaiting_confirmation" : "awaiting_clarification",
+        messages: [new ToolMessage({
+          content: validation.success
+            ? "Data extracted. Now call confirm_data."
+            : "Validation failed. Now call ask_clarification.",
+          tool_call_id: runtime.toolCallId
+        })]
+      }
+    });
+  },
+  { name: "extract_user_context", description: "Extract data. After this, call confirm_data or ask_clarification." }
+);
 
 const askClarification = tool(...); // Отдельный tool
 const confirmCareerData = tool(...); // Отдельный tool
 ```
 
-**Quick Fix**: ONE tool = ONE operation. Agent должен видеть каждый шаг.
+**Quick Fix**: ONE tool = ONE operation + ToolMessage направляет LLM на следующий tool.
 
 **Детали**: [concepts/atomic-tools.md](../concepts/atomic-tools.md)
 
 ---
 
-### #10: Implicit Routing для Business Logic
+### #10: Полагаться только на System Prompt для Routing
 
 ```typescript
-// ❌ НЕПРАВИЛЬНО - LLM решает через prompt
+// ❌ НЕПРАВИЛЬНО - LLM может проигнорировать system prompt
 systemPrompt: `If validationSuccess=false, call ask_clarification`;
 
 const myTool = tool(async () => {
   return new Command({
     update: { validationSuccess: false }
-    // NO goto - agent сам выбирает!
+    // Надеемся что LLM прочитает system prompt
   });
 });
 
-// ✅ ПРАВИЛЬНО - explicit goto
-const myTool = tool(async () => {
-  const validation = await validateData(text);
-  return new Command({
-    update: { partial: validation.partial },
-    goto: validation.success ? "confirm_career_data" : "ask_clarification"
-  });
-});
+// ✅ ПРАВИЛЬНО - ToolMessage + description явно направляют LLM
+const myTool = tool(
+  async (_, runtime: ToolRuntime<MyState>) => {
+    const validation = await validateData(text);
+    return new Command({
+      update: {
+        partial: validation.partial,
+        messages: [new ToolMessage({
+          content: validation.success
+            ? "Validation OK. MUST call confirm_data NOW."
+            : "Validation FAILED. MUST call ask_clarification NOW.",
+          tool_call_id: runtime.toolCallId
+        })]
+      }
+    });
+  },
+  {
+    name: "my_tool",
+    description: "Validate data. After this, call confirm_data or ask_clarification based on result."
+  }
+);
 ```
 
-**Quick Fix**: Business logic → explicit `goto`. User intent → implicit (LLM).
+**Quick Fix**: Используй ToolMessage + tool description для направления LLM, не только system prompt.
 
 **Детали**: [concepts/routing.md](../concepts/routing.md)
 
@@ -291,6 +315,102 @@ async function nodeA(state: State) {
 
 ---
 
+### #13: Command без ToolMessage → undefined error
+
+```typescript
+import { ToolMessage } from "@langchain/core/messages";
+import type { ToolRuntime } from "@langchain/core/tools";
+import type { MyState } from "./types.js";
+
+// ❌ НЕПРАВИЛЬНО - agent делает лишний LLM call и падает
+const myTool = tool(async (_, config) => {
+  return new Command({
+    update: { phase: "completed", data: result }
+  });
+});
+
+// ✅ ПРАВИЛЬНО - используем ToolRuntime<State> и ToolMessage class
+const myTool = tool(
+  async (_, runtime: ToolRuntime<MyState>) => {
+    const { state, toolCallId } = runtime;
+
+    return new Command({
+      update: {
+        phase: "completed",
+        data: result,
+        // eslint-disable-next-line @typescript-eslint/naming-convention -- LangChain API
+        messages: [new ToolMessage({ content: "Operation completed", tool_call_id: toolCallId })],
+      }
+    });
+  },
+  { name: "my_tool", description: "...", schema: z.object({}) }
+);
+```
+
+**Проблема**: Без ToolMessage agent не знает что tool завершился и делает ещё один LLM вызов. Gemini может вернуть undefined response → `Cannot read properties of undefined (reading 'message')`.
+
+**Quick Fix**:
+1. Используй `ToolRuntime<State>` вместо `config` — даёт типизированный `state` и `toolCallId`
+2. Используй `new ToolMessage({ content, tool_call_id: toolCallId })` — самодокументирующийся тип
+3. Добавь `eslint-disable` для snake_case `tool_call_id` (LangChain API требует snake_case)
+
+**Source**: LangChain v1 docs: https://docs.langchain.com/oss/javascript/langchain/short-term-memory
+
+---
+
+### #14: OpenAI Structured Output требует .nullable()
+
+```typescript
+// ❌ НЕПРАВИЛЬНО - OpenAI возвращает null для optional полей
+const schema = z.object({
+  name: z.string(),
+  age: z.number().optional()  // OpenAI может вернуть null!
+});
+
+// ✅ ПРАВИЛЬНО - используй .nullable().optional()
+const schema = z.object({
+  name: z.string(),
+  age: z.number().nullable().optional()
+});
+```
+
+**Проблема**: OpenAI Structured Output API возвращает `null` для отсутствующих полей, а не `undefined`. Zod `.optional()` принимает только `undefined`.
+
+**Quick Fix**: Для всех optional полей используй `.nullable().optional()`.
+
+**Source**: OpenAI Structured Outputs spec + проверено в cold-start agent.
+
+---
+
+### #15: goto НЕ работает с createAgent
+
+```typescript
+// ❌ НЕ РАБОТАЕТ - goto игнорируется в createAgent!
+return new Command({
+  update: { phase: "next" },
+  goto: "confirm_data"  // ИГНОРИРУЕТСЯ
+});
+
+// ✅ ПРАВИЛЬНО - LLM routing через tool descriptions
+const processTool = tool(
+  async () => { ... },
+  {
+    name: "process_data",
+    description: "Process data. After this, MUST call confirm_data."
+  }
+);
+```
+
+**Проблема**: `createAgent` использует упрощённый граф без explicit routing. Все `goto` в Command игнорируются.
+
+**Quick Fix**: Направляй LLM через tool descriptions и system prompt вместо goto.
+
+**Альтернатива**: Используй `StateGraph` API напрямую для explicit routing.
+
+**Проверено**: `poc/goto-in-createagent.ts`, `poc/hybrid-interrupt.ts`
+
+---
+
 ## 📋 Pre-Launch Checklist
 
 - [ ] ✅ Gemini models с префиксом `"models/"`
@@ -298,13 +418,16 @@ async function nodeA(state: State) {
 - [ ] ✅ thread_id используется для persistence
 - [ ] ✅ Messages field в custom stateSchema
 - [ ] ✅ Command для обновления state в tools
+- [ ] ✅ ToolMessage с tool_call_id в Command.update.messages
 - [ ] ✅ PostgresSaver cleanup настроен (pg_cron)
 - [ ] ✅ systemPrompt вместо prompt
 - [ ] ✅ Imports из правильных пакетов (`"langchain"`)
 - [ ] ✅ Atomic tools вместо orchestrator (agent видит каждый шаг)
-- [ ] ✅ Explicit routing через goto для business logic
+- [ ] ✅ LLM routing через tool descriptions (goto не работает с createAgent!)
 - [ ] ✅ Consistent interrupt order (если используешь `interrupt()`)
 - [ ] ✅ No bare try-catch around interrupts
+- [ ] ✅ `.nullable().optional()` для optional полей (OpenAI compatibility)
+- [ ] ✅ HITLResponse format для resume: `{ decisions: [{ type: "approve" }] }`
 
 ---
 

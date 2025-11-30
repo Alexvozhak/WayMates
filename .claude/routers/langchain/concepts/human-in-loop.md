@@ -6,174 +6,189 @@
 
 ---
 
-## Два способа interrupts
+## Три способа interrupts
 
-### 1. humanInTheLoopMiddleware (Recommended для createAgent)
+### 1. ✅ Agent-driven Decision (Recommended для Chat UI)
 
-**Принцип**: Native middleware прерывает execution **ДО** выполнения tool.
+**Принцип**: Tool использует `interrupt()` для паузы, Agent (LLM) сам парсит user response и решает какую tool вызвать.
 
-**Setup**:
-```typescript
-import { createAgent, humanInTheLoopMiddleware } from "langchain";
-import { postgresService } from "./infrastructure/postgres.service.js";
-
-const agent = createAgent({
-  model: "models/gemini-2.0-flash",
-  tools: [askClarification, confirmCareerData, saveCareerData],
-  middleware: [
-    humanInTheLoopMiddleware({
-      interruptOn: {
-        ask_clarification: true,    // Interrupt на этом tool
-        confirm_career_data: true   // Interrupt на этом tool
-      }
-    })
-  ],
-  checkpointer: postgresService.getCheckpointer(), // ОБЯЗАТЕЛЬНО!
-  systemPrompt: "..."
-});
-```
-
-**Как работает**:
-1. Tool вызывается (например, `ask_clarification`)
-2. Middleware **прерывает** execution ДО выполнения tool
-3. Agent returns с `__interrupt__` field
-4. User отвечает
-5. Resume через `Command({ resume })`
-
-**См**: [Interrupt Workflow](#interrupt-workflow)
-
----
-
-### 2. interrupt() Function (Functional API)
-
-**Принцип**: Явный вызов `interrupt()` внутри node/tool.
+**Когда использовать**:
+- ✅ Chat UI (LibreChat, Telegram text) — user отвечает естественным языком
+- ✅ Когда user responses непредсказуемы ("да", "ок", "норм", "погнали")
+- ✅ Когда нужна гибкость в интерпретации intent
 
 **Setup**:
 ```typescript
 import { interrupt } from "@langchain/langgraph";
-import { entrypoint } from "@langchain/langgraph";
+import { createAgent, tool } from "langchain";
+import { Command, MemorySaver } from "@langchain/langgraph";
 
-const reviewNode = entrypoint(async (state) => {
-  // Пауза для human review
-  const approved = interrupt("Do you approve this action?");
-  // После resume: approved = значение из Command({ resume })
-  return { approved };
-});
-```
+// Tool ПОКАЗЫВАЕТ данные и ставит на паузу (НЕ парсит!)
+const showPlanTool = tool(
+  async ({ plan }, runtime) => {
+    // interrupt() для ПАУЗЫ
+    const userMessage = interrupt({
+      type: "confirmation",
+      message: "Подтвердите план:",
+      plan,
+    });
 
-**Когда использовать**:
-- ✅ Functional API (task, entrypoint)
-- ❌ createAgent API - используй middleware
-
----
-
-## Interrupt Workflow
-
-### Step 1: Setup (Checkpointer + Thread ID)
-
-```typescript
-// Создаем checkpointer
-const checkpointer = postgresService.getCheckpointer();
-
-// Создаем agent с middleware
-const agent = createAgent({
-  model: "models/gemini-2.0-flash",
-  tools: [askClarification, confirmCareerData],
-  middleware: [
-    humanInTheLoopMiddleware({
-      interruptOn: {
-        ask_clarification: true,
-        confirm_career_data: true
-      }
-    })
-  ],
-  checkpointer // ОБЯЗАТЕЛЬНО!
-});
-```
-
-**Правило**: Без checkpointer interrupts НЕ РАБОТАЮТ ([см. glossary](../glossary.md#checkpointer-required)).
-
----
-
-### Step 2: Trigger Interrupt
-
-```typescript
-const config = {
-  configurable: {
-    thread_id: "session-123" // Один ID для всей сессии
-  }
-};
-
-// Первый вызов - триггерит interrupt
-const result = await agent.invoke(
-  {
-    messages: [{ role: "user", content: "I worked as Senior Engineer" }]
+    // Tool НЕ парсит! Просто передаёт в state
+    return new Command({
+      update: {
+        phase: "awaiting_decision",
+        userResponse: String(userMessage),
+        messages: [new ToolMessage({
+          content: `Пользователь ответил: "${userMessage}"`,
+          tool_call_id: runtime.toolCallId
+        })],
+      },
+    });
   },
+  { name: "show_plan", ... }
+);
+
+// Отдельные tools для действий
+const confirmPlanTool = tool(...);   // Вызывается Agent'ом при approve
+const cancelWorkflowTool = tool(...); // Вызывается Agent'ом при reject
+const editPlanTool = tool(...);       // Вызывается Agent'ом при edit
+
+const agent = createAgent({
+  model: "gpt-4o-mini",
+  tools: [showPlanTool, confirmPlanTool, cancelWorkflowTool, editPlanTool],
+  checkpointer: new MemorySaver(),
+  // NO middleware!
+  systemPrompt: SYSTEM_PROMPT_WITH_INTENT_PARSING,
+});
+```
+
+**System Prompt для intent parsing**:
+```typescript
+const SYSTEM_PROMPT = `
+═══════════════════════════════════════════════════════════════
+ПОСЛЕ ПОКАЗА ДАННЫХ (phase="awaiting_decision")
+═══════════════════════════════════════════════════════════════
+
+Прочитай userResponse и определи намерение пользователя:
+
+A. APPROVE intent (согласие):
+   - Слова: "да", "yes", "ok", "подтверждаю", "согласен", "верно"
+   - Действие: вызови confirm_plan
+
+B. REJECT intent (отказ):
+   - Слова: "нет", "no", "отмена", "cancel", "стоп"
+   - Действие: вызови cancel_workflow
+
+C. EDIT intent (изменение):
+   - Слова: "измени", "edit", "поправь", содержит конкретные изменения
+   - Действие: вызови edit_plan
+
+ТЫ (LLM) анализируешь естественный язык и решаешь какую tool вызвать!
+`;
+```
+
+**Resume**:
+```typescript
+// При resume просто передаём user message
+const result = await agent.invoke(
+  new Command({ resume: "да, подтверждаю" }),  // Просто строка!
   config
 );
 ```
 
-**Внутри**:
-1. Agent вызывает `extract_user_context`
-2. Tool routes через `goto: "ask_clarification"`
-3. Middleware видит `ask_clarification` в `interruptOn`
-4. Middleware **прерывает** execution ДО выполнения tool
-5. State сохраняется в checkpointer (thread_id)
+**Как работает**:
+1. Tool вызывает `interrupt()` → показывает данные → ПАУЗА
+2. User отвечает ("да, подтверждаю")
+3. Resume: `Command({ resume: "да, подтверждаю" })`
+4. Tool получает message → кладёт в `state.userResponse`
+5. Agent видит `userResponse` → **сам парсит NLP** → вызывает `confirm_plan`
+
+**POC**: [`poc/agent-decides-after-interrupt.ts`](../../../../poc/agent-decides-after-interrupt.ts)
+
+**Production**: → [ADR-009](../../../../docs/facade/decisions/ADR-009-hitl-decision-transport.md)
 
 ---
 
-### Step 3: Check Interrupt
+### 2. humanInTheLoopMiddleware (Для structured UI)
 
+**Принцип**: Middleware прерывает execution ДО выполнения tool. Требует explicit decision.
+
+**Когда использовать**:
+- ✅ Web UI с кнопками [Approve] [Edit] [Reject]
+- ✅ Telegram с inline keyboard
+- ✅ Когда UI гарантирует structured response
+
+**Setup**:
 ```typescript
-// Проверяем, был ли interrupt
-if (result.__interrupt__) {
-  const interrupts = result.__interrupt__;
-  console.log(interrupts);
-  // [{ value: { status: "awaiting_clarification", message: "Questions..." } }]
+import { createAgent, humanInTheLoopMiddleware } from "langchain";
 
-  // Показываем user вопросы
-  const message = interrupts[0].value.message;
-  console.log(message);
-}
+const agent = createAgent({
+  model: "gpt-4o-mini",
+  tools: [confirmPlan, editPlan, cancelWorkflow],
+  middleware: [
+    humanInTheLoopMiddleware({
+      interruptOn: {
+        confirm_plan: true,
+        edit_plan: true,
+      }
+    })
+  ],
+  checkpointer: postgresService.getCheckpointer(),
+});
 ```
 
-**Структура `__interrupt__`**:
+**Resume** (требует explicit decision):
 ```typescript
-type Interrupt = {
-  __interrupt__: Array<{
-    value: any;      // Payload из interrupt() или state
-    when: "during";  // Когда прервано
-  }>;
+// Middleware требует structured HITLResponse
+await agent.invoke(
+  new Command({
+    resume: { decisions: [{ type: "approve" }] }  // explicit!
+  }),
+  config
+);
+```
+
+**Проблема**: Для Chat UI нужно парсить NLP → decision где-то (backend regex или MCP client).
+
+---
+
+### 3. interrupt() в Functional API
+
+**Принцип**: Явный вызов `interrupt()` внутри node (не tool).
+
+**Когда использовать**:
+- ✅ StateGraph с custom nodes
+- ✅ Functional API (task, entrypoint)
+
+**Setup**:
+```typescript
+import { interrupt } from "@langchain/langgraph";
+import { StateGraph } from "@langchain/langgraph";
+
+const reviewNode = async (state) => {
+  const approved = interrupt("Do you approve?");
+  // approved = значение из Command({ resume })
+  return { approved };
 };
 ```
 
 ---
 
-### Step 4: Resume with User Input
+## Сравнение подходов
 
-```typescript
-import { Command } from "@langchain/langgraph";
+| Аспект | Agent-driven | Middleware | Functional |
+|--------|-------------|------------|------------|
+| Парсинг NLP | Agent (LLM) | External code (regex) | Node code |
+| Resume format | `resume: "да"` | `resume: { decisions }` | `resume: any` |
+| Гибкость | ✅ Высокая | ❌ Структурированный | ✅ Высокая |
+| Chat UI | ✅ Идеально | ⚠️ Нужен парсер | ✅ Работает |
+| Button UI | ⚠️ Избыточно | ✅ Идеально | ✅ Работает |
+| Complexity | ✅ Простой | ⚠️ Сложнее | ⚠️ Сложнее |
 
-// User отвечает на вопросы
-const userAnswers = "Python, React, 3 years";
-
-// Resume с user input
-const resumeResult = await agent.invoke(
-  new Command({
-    resume: {
-      role: "user",
-      content: userAnswers
-    }
-  }),
-  config // ТОТ ЖЕ thread_id!
-);
-```
-
-**Внутри**:
-1. Checkpointer восстанавливает state из thread_id
-2. Agent продолжает с места прерывания
-3. LLM интерпретирует user intent через system prompt
-4. Agent вызывает следующий tool (например, `extract_user_context`)
+**Рекомендация**:
+- Chat UI (LibreChat, Telegram text) → **Agent-driven**
+- Web UI с кнопками → **Middleware**
+- Custom StateGraph → **Functional**
 
 ---
 
@@ -181,164 +196,71 @@ const resumeResult = await agent.invoke(
 
 **Принцип**: Iterative data collection с накоплением state + max rounds protection.
 
-**Production Example**: [career-collector-agent.ts:182-209](../../../../src/facade/langchain/career-collector-agent.ts#L182)
-
 ### State Schema
 
 ```typescript
-import { z } from "zod";
-import { MessagesZodState } from "@langchain/langgraph";
-
 const stateSchema = z.object({
   messages: MessagesZodState.shape.messages,
-  partialContext: userContextSchemaPartial.optional(), // Накопленные данные
-  contexts: z.array(userContextSchema).optional(),     // Валидированные данные
-  status: z.enum([
+  partialContext: userContextSchemaPartial.optional(),
+  contexts: z.array(userContextSchema).optional(),
+  phase: z.enum([
     "collecting",
-    "awaiting_clarification",  // После interrupt
-    "awaiting_confirmation",   // После interrupt
+    "awaiting_confirmation",
     "complete",
     "failed"
   ]).optional(),
-  message: z.string().optional(),              // Message для user
-  clarificationRound: z.number().default(0)    // Counter для max rounds
+  userResponse: z.string().optional(),        // Для Agent-driven
+  clarificationRound: z.number().default(0),
+});
+```
+
+### Flow
+
+```typescript
+// Round 1: Partial data
+const extractTool = tool(async ({ text }, runtime) => {
+  const { partialContext, clarificationRound = 0 } = runtime.state;
+
+  const newPartial = await extractData(text);
+  const merged = { ...partialContext, ...newPartial };
+
+  const validation = schema.safeParse(merged);
+
+  if (!validation.success) {
+    const round = clarificationRound + 1;
+
+    // Max rounds protection
+    if (round > MAX_ROUNDS) {
+      return new Command({
+        update: { phase: "failed" },
+      });
+    }
+
+    return new Command({
+      update: {
+        partialContext: merged,
+        clarificationRound: round,
+        phase: "awaiting_clarification",
+      },
+    });
+  }
+
+  return new Command({
+    update: {
+      contexts: [validation.data],
+      phase: "awaiting_confirmation",
+    },
+  });
 });
 ```
 
 ---
 
-### Round 1: Initial Parse
-
-```typescript
-// User: "I worked as Senior Engineer at Google"
-
-const extractUserContext = tool(
-  async ({ text }, toolConfig: { state: AgentState }) => {
-    const { clarificationRound = 0 } = toolConfig.state;
-
-    // Parse user input
-    const newPartial = await extractSingleContextTool.invoke({ text });
-
-    // Validate
-    const validation = userContextSchema.safeParse(newPartial);
-
-    if (!validation.success) {
-      const round = clarificationRound + 1;
-      const questions = buildClarificationQuestions(validation.error);
-
-      // Increment round counter + goto interrupt
-      return new Command({
-        update: {
-          partialContext: newPartial,          // Сохраняем parsed data
-          clarificationRound: round,           // Increment counter
-          status: "awaiting_clarification",
-          message: formatQuestions(questions)  // Questions для user
-        },
-        goto: "ask_clarification"              // Trigger interrupt
-      });
-    }
-
-    // Success path...
-  }
-);
-```
-
-**Результат**:
-```typescript
-{
-  __interrupt__: [{
-    value: {
-      status: "awaiting_clarification",
-      message: "What technologies/skills did you use?\nWhich city were you working in?"
-    }
-  }],
-  partialContext: { position: "Senior Engineer", company: "Google" },
-  clarificationRound: 1
-}
-```
-
----
-
-### Round 2: Merge Answers
-
-```typescript
-// User: "Python, React, San Francisco"
-
-const extractUserContext = tool(
-  async ({ text }, toolConfig: { state: AgentState }) => {
-    const { partialContext, clarificationRound = 0 } = toolConfig.state;
-
-    // Parse new answers
-    const newPartial = await extractSingleContextTool.invoke({ text });
-
-    // Merge with existing data
-    const merged = mergePartialWithAnswers(partialContext, newPartial);
-    // merged = {
-    //   position: "Senior Engineer",
-    //   company: "Google",
-    //   skills: ["Python", "React"],
-    //   cityName: "San Francisco"
-    // }
-
-    // Validate merged data
-    const validation = userContextSchema.safeParse(merged);
-
-    if (!validation.success) {
-      const round = clarificationRound + 1;
-      const maxRounds = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
-
-      // Max rounds protection
-      if (round > maxRounds) {
-        return new Command({
-          update: {
-            status: "failed",
-            message: "Could not collect valid data after multiple attempts."
-          },
-          goto: END
-        });
-      }
-
-      // Another round of clarification
-      const questions = buildClarificationQuestions(validation.error);
-      return new Command({
-        update: {
-          partialContext: merged,              // Updated partial data
-          clarificationRound: round,           // Increment counter
-          status: "awaiting_clarification",
-          message: formatQuestions(questions)
-        },
-        goto: "ask_clarification"
-      });
-    }
-
-    // Success - all data collected
-    return new Command({
-      update: {
-        contexts: [validation.data],
-        clarificationRound: 0,                 // Reset counter
-        status: "awaiting_confirmation"
-      },
-      goto: "confirm_career_data"
-    });
-  }
-);
-```
-
-**Ключевые моменты**:
-1. ✅ `partialContext` накапливает данные через rounds
-2. ✅ `clarificationRound` отслеживает количество попыток
-3. ✅ Max rounds protection предотвращает бесконечные циклы
-4. ✅ После success → reset counter для следующего workflow
-
----
-
 ## Cancel Detection
 
-**Принцип**: User может отменить workflow в ЛЮБОЙ момент через natural language.
+**Принцип**: User может отменить workflow через natural language.
 
-**Реализация**: Через system prompt + LLM intent parsing (implicit routing).
-
-**Production Example**: [career-collector-agent.ts:311-390](../../../../src/facade/langchain/career-collector-agent.ts#L311)
+**Реализация**: Через system prompt + LLM intent parsing.
 
 ```typescript
 const SYSTEM_PROMPT = `
@@ -346,56 +268,11 @@ const SYSTEM_PROMPT = `
 CANCEL DETECTION (AT ANY POINT)
 ═══════════════════════════════════════════════════
 
-If user says "cancel"/"stop"/"quit"/"abort"/"отмена":
-1. Respond: "Workflow cancelled. Your data was not saved."
+If user says "cancel"/"stop"/"отмена":
+1. Respond: "Workflow cancelled."
 2. DO NOT call any tools
 3. Stop workflow
-
-Examples:
-- User: "cancel" → YOU: "Workflow cancelled."
-- User: "stop this" → YOU: "Workflow cancelled."
-- User: "отмена" → YOU: "Workflow cancelled."
-
-═══════════════════════════════════════════════════
-AFTER CLARIFICATION (status="awaiting_clarification")
-═══════════════════════════════════════════════════
-
-User response → interpret intent:
-
-1. CANCEL intent:
-   - Keywords: "cancel", "stop", "quit", "abort"
-   - Action: Cancel workflow (see above)
-
-2. ANSWERS intent:
-   - User provides answers to questions
-   - Action: Call extract_user_context with their answers
 `;
-```
-
-**Как работает**:
-1. User говорит "cancel"
-2. LLM парсит intent через system prompt
-3. LLM НЕ вызывает tools
-4. LLM отвечает напрямую: "Workflow cancelled"
-5. Workflow останавливается
-
-**Альтернатива** (через tool):
-```typescript
-const cancelWorkflow = tool(
-  async () => {
-    return new Command({
-      update: { status: "cancelled" },
-      goto: END
-    });
-  },
-  {
-    name: "cancel_workflow",
-    description: "Cancel current workflow. User wants to stop."
-  }
-);
-
-// В system prompt:
-// If user says "cancel" → Call cancel_workflow
 ```
 
 ---
@@ -404,91 +281,58 @@ const cancelWorkflow = tool(
 
 ### ❌ Consistent Interrupt Order
 
-**Проблема**: Interrupts должны вызываться в одинаковом порядке каждый раз.
-
 ```typescript
 // ❌ НЕПРАВИЛЬНО - порядок меняется
-async function nodeA(state: State) {
-  const name = interrupt("What's your name?");
-
-  // Conditionally skip interrupt
+async function nodeA(state) {
+  const name = interrupt("Name?");
   if (state.needsAge) {
-    const age = interrupt("What's your age?"); // Порядок меняется!
+    const age = interrupt("Age?"); // Порядок меняется!
   }
-
-  const city = interrupt("What's your city?");
+  const city = interrupt("City?");
 }
 
 // ✅ ПРАВИЛЬНО - порядок всегда одинаковый
-async function nodeA(state: State) {
-  const name = interrupt("What's your name?");
-  const age = interrupt("What's your age?");
-  const city = interrupt("What's your city?");
+async function nodeA(state) {
+  const name = interrupt("Name?");
+  const age = interrupt("Age?");
+  const city = interrupt("City?");
 }
 ```
-
-**Причина**: LangGraph матчит resume values по strict index order.
-
----
 
 ### ❌ Non-Idempotent Operations Before Interrupt
 
-**Проблема**: Node re-executes при resume. Операции должны быть idempotent.
-
 ```typescript
-// ❌ НЕПРАВИЛЬНО - добавляет дубликаты при resume
-async function nodeA(state: State) {
-  await db.appendToHistory(state.userId, "approval_requested");
-
-  const approved = interrupt("Approve this change?");
-
-  return { approved };
+// ❌ НЕПРАВИЛЬНО - дубликаты при resume
+async function nodeA(state) {
+  await db.append("requested");  // Дублируется!
+  const approved = interrupt("Approve?");
 }
 
 // ✅ ПРАВИЛЬНО - idempotent check
-async function nodeA(state: State) {
-  // Check если уже добавили
-  const exists = await db.checkHistoryExists(state.userId, "approval_requested");
-  if (!exists) {
-    await db.appendToHistory(state.userId, "approval_requested");
+async function nodeA(state) {
+  if (!(await db.exists("requested"))) {
+    await db.append("requested");
   }
-
-  const approved = interrupt("Approve this change?");
-
-  return { approved };
+  const approved = interrupt("Approve?");
 }
 ```
 
-**Причина**: Node re-runs from beginning при resume.
-
----
-
 ### ❌ Try-Catch Around Interrupt
 
-**Проблема**: Try-catch ловит interrupt exception.
-
 ```typescript
-// ❌ НЕПРАВИЛЬНО - interrupt не доходит до runtime
-async function nodeA(state: State) {
-  try {
-    const name = interrupt("What's your name?");
-  } catch (err) {
-    console.error(err); // Ловит interrupt exception!
-  }
-  return state;
+// ❌ НЕПРАВИЛЬНО
+try {
+  const name = interrupt("Name?");
+} catch (err) {
+  console.error(err); // Ловит interrupt!
 }
 
-// ✅ ПРАВИЛЬНО - re-throw interrupt
-async function nodeA(state: State) {
-  try {
-    const name = interrupt("What's your name?");
-  } catch (err) {
-    if (err.name === "Interrupt") {
-      throw err; // Re-throw interrupt!
-    }
-    console.error(err);
-  }
-  return state;
+// ✅ ПРАВИЛЬНО
+try {
+  const name = interrupt("Name?");
+} catch (err) {
+  if (err.name === "Interrupt") throw err;
+  console.error(err);
 }
 ```
 
@@ -496,20 +340,33 @@ async function nodeA(state: State) {
 
 ## Checklist
 
-- [ ] ✅ Checkpointer подключен ([см. glossary](../glossary.md#checkpointer-required))
-- [ ] ✅ thread_id используется для всей сессии
-- [ ] ✅ interruptOn указывает правильные tool names
-- [ ] ✅ State schema содержит status + round counter
-- [ ] ✅ Max rounds protection реализован
-- [ ] ✅ Cancel detection через system prompt
-- [ ] ✅ Resume использует Command({ resume })
-- [ ] ✅ Consistent interrupt order
-- [ ] ✅ Idempotent operations before interrupt
-- [ ] ✅ No bare try-catch around interrupt()
+**Agent-driven (Chat UI)**:
+- [ ] Tool использует `interrupt()` для паузы
+- [ ] Tool кладёт `userResponse` в state (НЕ парсит!)
+- [ ] System prompt содержит intent parsing секцию
+- [ ] Отдельные tools для approve/edit/reject
+- [ ] Checkpointer подключен
+- [ ] Resume: `Command({ resume: userMessage })`
 
-**См. также**:
-- [glossary.md#humanintheloopmiddleware](../glossary.md#humanintheloopmiddleware) - Middleware API
-- [glossary.md#interrupt](../glossary.md#interrupt) - interrupt() function
-- [concepts/routing.md](#) - Hybrid routing с interrupts
-- [concepts/checkpointers.md](#) - Setup PostgresSaver
-- [Production Example](../../../../src/facade/langchain/career-collector-agent.ts) - Полный multi-round workflow
+**Middleware (Button UI)**:
+- [ ] `humanInTheLoopMiddleware` с `interruptOn`
+- [ ] Checkpointer подключен
+- [ ] Resume: `Command({ resume: { decisions } })`
+- [ ] External parser для Chat UI (если нужен)
+
+**Общее**:
+- [ ] thread_id для всей сессии
+- [ ] Max rounds protection
+- [ ] Cancel detection в system prompt
+- [ ] Consistent interrupt order
+- [ ] Idempotent operations
+- [ ] No bare try-catch
+
+---
+
+## См. также
+
+- [ADR-009](../../../../docs/facade/decisions/ADR-009-hitl-decision-transport.md) — Production решение
+- [POC](../../../../poc/agent-decides-after-interrupt.ts) — Agent-driven пример
+- [glossary.md](../glossary.md#interrupt) — interrupt() API
+- [checkpointers.md](./checkpointers.md) — Setup PostgresSaver

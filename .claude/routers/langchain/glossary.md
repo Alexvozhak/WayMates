@@ -1,483 +1,249 @@
 # LangChain v1.0 - Glossary
 
-**Назначение**: Канонический источник для критичных правил и терминов. Все другие файлы ссылаются сюда.
+**Назначение**: Термины и API reference. Критичные правила → [gotchas.md](./reference/gotchas.md).
 
 ---
 
-## 🔴 Критичные правила
+## 🔴 Критичные правила (Quick Links)
 
-### <a id="gemini-prefix"></a>Gemini Model Names
-
-**ОБЯЗАТЕЛЬНО**: Gemini API требует prefix `"models/"` для всех моделей.
-
-```typescript
-// ❌ НЕПРАВИЛЬНО - не работает
-model: "gemini-2.0-flash"
-
-// ✅ ПРАВИЛЬНО
-model: "models/gemini-2.0-flash"
-```
-
-**Применяется**: Везде, где указывается имя Gemini модели (createAgent, ChatGoogleGenerativeAI).
+| Правило | Gotcha |
+|---------|--------|
+| Gemini prefix `"models/"` | [#1](./reference/gotchas.md#gemini-prefix) |
+| Checkpointer для interrupts | [#2](./reference/gotchas.md#checkpointer-required) |
+| thread_id для persistence | [#3](./reference/gotchas.md#thread-id-persistence) |
+| Command для state updates | [#4](./reference/gotchas.md#command-for-updates) |
+| messages field в schema | [#5](./reference/gotchas.md#messages-field-required) |
+| ToolMessage в Command | [#13](./reference/gotchas.md#13-command-без-toolmessage--undefined-error) |
+| goto НЕ работает с createAgent | [#15](./reference/gotchas.md#15-goto-не-работает-с-createagent) |
 
 ---
 
-### <a id="checkpointer-required"></a>Checkpointer Required
-
-**ОБЯЗАТЕЛЬНО**: Checkpointer нужен для:
-- Прерываний через `humanInTheLoopMiddleware` или `interrupt()`
-- Сохранения state между вызовами
-- Resume после interrupts
-
-```typescript
-// ❌ НЕПРАВИЛЬНО - interrupts не работают
-const agent = createAgent({
-  middleware: [humanInTheLoopMiddleware({ interruptOn: { confirm: true } })]
-  // НЕТ checkpointer!
-});
-
-// ✅ ПРАВИЛЬНО
-const agent = createAgent({
-  middleware: [humanInTheLoopMiddleware({ interruptOn: { confirm: true } })],
-  checkpointer: postgresService.getCheckpointer() // ОБЯЗАТЕЛЬНО!
-});
-```
-
-**См**: [concepts/checkpointers.md](#), [concepts/human-in-loop.md](#)
-
----
-
-### <a id="thread-id-persistence"></a>Thread ID for Persistence
-
-**ОБЯЗАТЕЛЬНО**: `thread_id` в `configurable` для сохранения state.
-
-```typescript
-// ❌ НЕПРАВИЛЬНО - state теряется каждый раз
-await agent.invoke({ messages: [...] });
-
-// ✅ ПРАВИЛЬНО - state сохраняется
-const config = {
-  configurable: {
-    thread_id: "session-123" // Один ID для всей сессии
-  }
-};
-await agent.invoke({ messages: [...] }, config);
-```
-
-**Применяется**: Все вызовы `agent.invoke()`, `agent.stream()`, `agent.getState()`.
-
-**См**: [concepts/checkpointers.md](#)
-
----
-
-### <a id="command-for-updates"></a>Command for State Updates
-
-**ОБЯЗАТЕЛЬНО**: Используй `Command` из `@langchain/langgraph` для обновления state в tools.
-
-```typescript
-// ❌ НЕПРАВИЛЬНО - state не обновится
-return { phase: "locked", data: result };
-
-// ✅ ПРАВИЛЬНО
-import { Command } from "@langchain/langgraph";
-return new Command({
-  update: { phase: "locked", data: result }
-});
-```
-
-**Применяется**: Возврат из tool functions, node functions.
-
-**См**: [concepts/tools.md](#), [concepts/routing.md](#)
-
----
-
-### <a id="messages-field-required"></a>Messages Field Required
-
-**ОБЯЗАТЕЛЬНО**: Custom state schema ДОЛЖЕН содержать `messages` field.
-
-```typescript
-// ❌ НЕПРАВИЛЬНО - agent не работает
-const MyState = z.object({
-  phase: z.string(),
-  data: z.any()
-  // НЕТ messages!
-});
-
-// ✅ ПРАВИЛЬНО
-import { MessagesZodState } from "@langchain/langgraph";
-
-const MyState = z.object({
-  messages: MessagesZodState.shape.messages, // ОБЯЗАТЕЛЬНО!
-  phase: z.string(),
-  data: z.any()
-});
-```
-
-**Применяется**: Custom `stateSchema` в `createAgent()`.
-
-**См**: [concepts/state-management.md](#)
-
----
-
-## 📚 Основные термины
+## 📚 API Reference
 
 ### createAgent
 
-**Что**: Упрощенный API для создания агентов в LangChain v1.0.
-
-**Синтаксис**:
 ```typescript
 import { createAgent } from "langchain";
 
 const agent = createAgent({
-  model: "models/gemini-2.0-flash",
+  model: "models/gemini-2.0-flash",  // или ChatModel instance
   tools: [tool1, tool2],
   systemPrompt: "You are a helpful assistant",
-  middleware: [humanInTheLoopMiddleware(...)],
-  checkpointer: postgresService.getCheckpointer(),
-  stateSchema: MyStateSchema
+  checkpointer: postgresService.getCheckpointer(),  // для interrupts
+  stateSchema: MyStateSchema  // Zod schema
 });
 ```
 
-**Ключевые параметры**:
-- `model`: string (название модели) или ChatModel instance
-- `tools`: массив tool объектов
-- `systemPrompt`: string или function
-- `middleware`: массив middleware (humanInTheLoopMiddleware, custom)
-- `checkpointer`: PostgresSaver для persistence
-- `stateSchema`: Zod schema для custom state
-
-**См**: [concepts/agents.md](#)
+**Детали**: [concepts/agents.md](./concepts/agents.md)
 
 ---
 
 ### tool()
 
-**Что**: Factory function для создания инструментов с Zod-валидацией.
-
-**Синтаксис**:
 ```typescript
 import { tool } from "langchain";
-import { z } from "zod";
+import type { ToolRuntime } from "@langchain/core/tools";
 
 const myTool = tool(
-  async (params, config) => {
-    // Логика tool
-    return result;
+  async (params, runtime: ToolRuntime<MyState>) => {
+    const { state, toolCallId } = runtime;
+    return new Command({ update: {...} });
   },
   {
     name: "tool_name",
-    description: "What this tool does",
-    schema: z.object({
-      param1: z.string().describe("Parameter description")
-    })
+    description: "What this tool does. After this, call next_tool.",
+    schema: z.object({ param1: z.string() })
   }
 );
 ```
 
-**Ключевые моменты**:
-- Первый аргумент: async функция-обработчик
-- Второй аргумент: конфигурация (name, description, schema)
-- `schema`: Zod объект для валидации параметров
-- `config`: доступ к tool runtime (state, context)
+**Важно**: Используй `ToolRuntime<State>` для доступа к `state` и `toolCallId`.
 
-**См**: [concepts/tools.md](#)
+**Детали**: [concepts/tools.md](./concepts/tools.md)
 
 ---
 
 ### Command
 
-**Что**: Объект для обновления state и управления routing в LangGraph.
-
-**Синтаксис**:
 ```typescript
-import { Command, END } from "@langchain/langgraph";
+import { Command } from "@langchain/langgraph";
+import { ToolMessage } from "@langchain/core/messages";
 
-// Обновление state
+// State update + ToolMessage (ОБЯЗАТЕЛЬНО!)
 return new Command({
-  update: { foo: "bar" }
-});
-
-// Обновление + routing
-return new Command({
-  update: { foo: "bar" },
-  goto: "nodeB"
+  update: {
+    phase: "next",
+    messages: [new ToolMessage({
+      content: "Operation done. Now call next_tool.",
+      tool_call_id: runtime.toolCallId
+    })]
+  }
 });
 
 // Resume из interrupt
-return new Command({
-  resume: userInput
-});
-
-// Завершение workflow
-return new Command({
-  goto: END
-});
+await agent.invoke(new Command({ resume: "да, подтверждаю" }), config);
 ```
 
-**Применяется**: Возврат из tools, nodes, interrupt resumption.
-
-**См**: [concepts/routing.md](#), [concepts/tools.md](#)
+**⚠️ ВАЖНО**: `goto` игнорируется в `createAgent`! Используй ToolMessage + description.
 
 ---
 
 ### interrupt()
 
-**Что**: Функция для паузы execution и запроса user input (human-in-the-loop).
-
-**Синтаксис**:
 ```typescript
 import { interrupt } from "@langchain/langgraph";
 
-async function myNode(state) {
-  const userInput = interrupt("Вопрос пользователю?");
-  // После resume userInput = значение из Command({ resume })
-  return { result: userInput };
-}
-```
+// Внутри tool
+const userMessage = interrupt({
+  type: "confirmation",
+  data: planData
+});
 
-**Требования**:
-- Checkpointer ОБЯЗАТЕЛЕН ([см. правило](#checkpointer-required))
-- thread_id для resume
-- JSON-serializable payload
-
-**См**: [concepts/human-in-loop.md](#)
-
----
-
-### humanInTheLoopMiddleware
-
-**Что**: Native middleware для автоматических interrupts на определенных tools.
-
-**Синтаксис**:
-```typescript
-import { humanInTheLoopMiddleware } from "langchain";
-
-const agent = createAgent({
-  middleware: [
-    humanInTheLoopMiddleware({
-      interruptOn: {
-        ask_clarification: true,
-        confirm_data: true
-      }
-    })
-  ],
-  checkpointer // ОБЯЗАТЕЛЬНО!
+// Tool НЕ парсит response! Передаёт в state:
+return new Command({
+  update: { userResponse: String(userMessage) }
 });
 ```
 
-**Принцип работы**:
-1. Tool вызывается
-2. Middleware прерывает execution ДО выполнения tool
-3. Результат доступен через `result.__interrupt__`
-4. Resume через `agent.invoke(new Command({ resume: value }), config)`
+**Рекомендация**: Agent-driven pattern — Agent сам парсит NLP.
 
-**См**: [concepts/human-in-loop.md](#), [concepts/middleware.md](#)
+**Детали**: [concepts/human-in-loop.md](./concepts/human-in-loop.md)
 
 ---
 
 ### PostgresSaver
 
-**Что**: Checkpointer для сохранения state в PostgreSQL.
-
-**Синтаксис**:
 ```typescript
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 
-// Из connection string
-const checkpointer = PostgresSaver.fromConnString(
-  "postgresql://user:password@localhost:5432/db"
-);
-
-// Из pg Pool
-const checkpointer = new PostgresSaver(pool);
-
-// ВАЖНО: Создать таблицы при первом запуске
-await checkpointer.setup();
+const checkpointer = PostgresSaver.fromConnString(connectionString);
+await checkpointer.setup();  // Создать таблицы
 ```
 
-**Cleanup ОБЯЗАТЕЛЕН**: ~100 rows per workflow → автоматическая очистка через pg_cron.
-
-**См**: [concepts/checkpointers.md](#)
+**Cleanup**: pg_cron для автоматической очистки старых checkpoints.
 
 ---
 
 ### MessagesZodState
 
-**Что**: Готовая Zod schema для messages field в state.
-
-**Синтаксис**:
 ```typescript
 import { MessagesZodState } from "@langchain/langgraph";
-import { z } from "zod";
 
 const MyState = z.object({
-  messages: MessagesZodState.shape.messages,
-  customField: z.string()
+  messages: MessagesZodState.shape.messages,  // ОБЯЗАТЕЛЬНО!
+  phase: z.string(),
+  userResponse: z.string().optional()
 });
 ```
-
-**Альтернатива** (manual):
-```typescript
-import { BaseMessage } from "@langchain/core/messages";
-import { MessagesZodMeta } from "@langchain/langgraph";
-import { registry } from "@langchain/langgraph/zod";
-
-const MyState = z.object({
-  messages: z.array(z.custom<BaseMessage>()).register(registry, MessagesZodMeta)
-});
-```
-
-**См**: [concepts/state-management.md](#)
-
----
-
-### withStructuredOutput
-
-**Что**: Метод для получения Zod-валидированного structured output от LLM.
-
-**Синтаксис**:
-```typescript
-import { z } from "zod";
-
-const MySchema = z.object({
-  title: z.string(),
-  year: z.number()
-});
-
-const structuredLlm = model.withStructuredOutput(MySchema);
-const result = await structuredLlm.invoke("Tell me about Inception");
-// result: { title: "Inception", year: 2010 }
-```
-
-**Применяется**: Extracting structured data, parsing user input.
-
-**См**: [concepts/structured-output.md](#)
 
 ---
 
 ## 🎯 Паттерны
 
-### Atomic Tools Pattern
+### Agent-Driven Decision (Recommended)
 
-**Принцип**: ONE tool = ONE entity operation. Agent видит каждый шаг.
+**Принцип**: Agent (LLM) сам парсит NLP и решает какую tool вызвать.
 
 ```typescript
-// ❌ НЕПРАВИЛЬНО - orchestrator tool
-const extractCareerData = tool(async ({ text }) => {
-  const partial = await extract(text);
-  if (!isValid(partial)) {
-    return askQuestions(); // Agent не видит этот шаг!
-  }
-  return confirm(partial); // Agent не видит этот шаг!
-});
-
-// ✅ ПРАВИЛЬНО - atomic tools
-const extractUserContext = tool(async ({ text }) => {
-  const validation = await validateData(text);
+// 1. Show tool ставит на паузу (НЕ парсит!)
+const showPlanTool = tool(async (_, runtime) => {
+  const userMessage = interrupt({ plan: runtime.state.planData });
   return new Command({
-    goto: validation.success ? "confirm_career_data" : "ask_clarification"
+    update: {
+      userResponse: String(userMessage),
+      phase: "awaiting_decision",
+      messages: [new ToolMessage({
+        content: `User responded: "${userMessage}"`,
+        tool_call_id: runtime.toolCallId
+      })]
+    }
   });
 });
 
-const askClarification = tool(...); // Отдельный tool
-const confirmCareerData = tool(...); // Отдельный tool
-```
+// 2. Отдельные tools для действий
+const confirmPlanTool = tool(...);   // Agent вызывает при approve
+const editPlanTool = tool(...);       // Agent вызывает при edit
 
-**Преимущества**:
-- Agent видит каждый шаг workflow
-- Легко unit-test каждый tool
-- Переиспользование (70-85% в production)
-
-**См**: [patterns/atomic-tools.md](#), [career-collector-agent.ts:398](../../../src/facade/langchain/career-collector-agent.ts#L398)
-
----
-
-### Hybrid Routing
-
-**Принцип**: Deterministic goto для business logic + LLM для user intent.
-
-```typescript
-// Business logic → goto (детерминированно)
-const extractUserContext = tool(async ({ text }, { state }) => {
-  const validation = userContextSchema.safeParse(merged);
-
-  if (!validation.success) {
-    return new Command({
-      goto: "ask_clarification" // Deterministic!
-    });
-  }
-
-  return new Command({
-    goto: "confirm_career_data" // Deterministic!
-  });
-});
-
-// User intent → LLM (через system prompt)
+// 3. System prompt обучает Agent парсить NLP
 systemPrompt: `
-AFTER CONFIRMATION (status="awaiting_confirmation"):
-1. CONFIRM intent: "yes", "да", "ok" → Call save_career_data
-2. CORRECTION intent: "change X to Y" → Call extract_user_context
-3. CANCEL intent: "cancel", "stop" → Cancel workflow
+When phase="awaiting_decision":
+- "да", "yes", "ok" → call confirm_plan
+- "измени", "edit" → call edit_plan
+YOU analyze natural language and decide!
 `
 ```
 
-**Когда использовать**:
-- ✅ goto: Business logic, валидация, error handling
-- ✅ LLM: User intent parsing, natural language понимание
+**Детали**: [concepts/human-in-loop.md](./concepts/human-in-loop.md), [ADR-009](../../../docs/facade/decisions/ADR-009-hitl-decision-transport.md)
 
-**См**: [concepts/routing.md](#), [career-collector-agent.ts:311](../../../src/facade/langchain/career-collector-agent.ts#L311)
+---
+
+### LLM Routing (вместо goto)
+
+**Принцип**: ToolMessage + description направляют LLM на следующий tool.
+
+```typescript
+const processTool = tool(
+  async (_, runtime) => {
+    const validation = schema.safeParse(data);
+    return new Command({
+      update: {
+        phase: validation.success ? "confirmed" : "clarification",
+        messages: [new ToolMessage({
+          content: validation.success
+            ? "Data OK. MUST call confirm_data NOW."
+            : "Validation failed. MUST call ask_clarification NOW.",
+          tool_call_id: runtime.toolCallId
+        })]
+      }
+    });
+  },
+  {
+    name: "process_data",
+    description: "Process data. After this, call confirm_data or ask_clarification."
+  }
+);
+```
+
+**⚠️**: `goto` НЕ работает с `createAgent`! Используй этот паттерн.
+
+**Детали**: [concepts/routing.md](./concepts/routing.md)
 
 ---
 
 ### Multi-Round Clarification
 
-**Принцип**: Iterative data collection с max rounds protection.
-
 ```typescript
-const extractUserContext = tool(async ({ text }, { state }) => {
-  const { clarificationRound = 0 } = state;
-
-  // Merge new data
-  const merged = mergePartialWithAnswers(state.partialContext, newPartial);
-
-  // Validate
-  const validation = userContextSchema.safeParse(merged);
+const extractTool = tool(async (_, runtime) => {
+  const { partialContext, clarificationRound = 0 } = runtime.state;
+  const validation = schema.safeParse(merged);
 
   if (!validation.success) {
     const round = clarificationRound + 1;
-    const maxRounds = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
-
-    if (round > maxRounds) {
-      return new Command({
-        update: { status: "failed" },
-        goto: END
-      });
+    if (round > MAX_ROUNDS) {
+      return new Command({ update: { phase: "failed" } });
     }
-
     return new Command({
-      update: { clarificationRound: round },
-      goto: "ask_clarification"
+      update: {
+        partialContext: merged,
+        clarificationRound: round,
+        phase: "awaiting_clarification",
+        messages: [new ToolMessage({
+          content: "Need more info. Call ask_clarification.",
+          tool_call_id: runtime.toolCallId
+        })]
+      }
     });
   }
-
-  // Success
-  return new Command({
-    update: { clarificationRound: 0 },
-    goto: "confirm_career_data"
-  });
+  // Success...
 });
 ```
 
 **Защита**: Max rounds предотвращает бесконечные циклы.
 
-**См**: [concepts/human-in-loop.md](#), [career-collector-agent.ts:182](../../../src/facade/langchain/career-collector-agent.ts#L182)
-
 ---
 
 ## 🔗 Cross-references
 
-- [Concepts](./concepts/) - Короткие заметки по концепциям
-- [Patterns](./patterns/) - Проверенные паттерны с примерами
-- [Reference](./reference/) - Gotchas и troubleshooting
-- [Production Example](../../../src/facade/langchain/career-collector-agent.ts) - Полный production agent
+- [gotchas.md](./reference/gotchas.md) — Критичные ошибки с решениями
+- [concepts/](./concepts/) — Детальные заметки
+- [ADR-009](../../../docs/facade/decisions/ADR-009-hitl-decision-transport.md) — Production решение для HITL

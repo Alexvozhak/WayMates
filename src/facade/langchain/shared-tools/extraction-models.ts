@@ -1,4 +1,4 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenAI } from "@langchain/openai";
 
 import { trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
 import { config } from "../../env.js";
@@ -24,12 +24,16 @@ export const extractableContextSchema = userContextSchemaBase.omit({
 
 export type ExtractableContext = z.infer<typeof extractableContextSchema>;
 
-export const contextExtractionModel = new ChatGoogleGenerativeAI({
-  model: config.LANGCHAIN_MODEL_NAME,
+// Use OpenRouter + gpt-4o-mini for reliable structured extraction
+const baseModel = new ChatOpenAI({
+  modelName: "openai/gpt-4o-mini",
+  apiKey: process.env.OPENROUTER_API_KEY,
   temperature: config.LANGCHAIN_TEMP_EXTRACTION,
-}).withStructuredOutput(extractableContextSchema);
+  configuration: {
+    baseURL: "https://openrouter.ai/api/v1",
+  },
+});
 
-export const trailExtractionModel = new ChatGoogleGenerativeAI({
-  model: config.LANGCHAIN_MODEL_NAME,
-  temperature: config.LANGCHAIN_TEMP_EXTRACTION,
-}).withStructuredOutput(extractableTrailSchema);
+export const contextExtractionModel = baseModel.withStructuredOutput(extractableContextSchema);
+
+export const trailExtractionModel = baseModel.withStructuredOutput(extractableTrailSchema);

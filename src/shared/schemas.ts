@@ -72,8 +72,9 @@ export const languageCodeSchema = z
 export type LanguageCode = z.infer<typeof languageCodeSchema>;
 
 export const scheduleSchema = z.object({
-  sessionsPerWeek: z.number().describe("Sessions per week").optional(),
-  hoursPerSession: z.number().describe("Hours per session").optional(),
+  // Note: .nullable() required for OpenAI Structured Output API compatibility
+  sessionsPerWeek: z.number().describe("Sessions per week").nullable().optional(),
+  hoursPerSession: z.number().describe("Hours per session").nullable().optional(),
 });
 
 export const trailSchema = z.object({
@@ -88,16 +89,17 @@ export const trailSchema = z.object({
     .describe("Target context ID - string for completed, null for ongoing"),
 
   // OPTIONAL metrics (не всегда известны при extraction)
-  totalDurationWeeks: z.number().describe("Total duration in weeks").optional(),
-  schedule: scheduleSchema.optional(),
-  costUsd: z.number().describe("Cost in USD").optional(),
-  ratingCourse: z.number().min(1).max(5).describe("Course rating 1-5").optional(),
-  ratingPlatform: z.number().min(1).max(5).describe("Platform rating 1-5").optional(),
-  ratingSchedule: z.number().min(1).max(5).describe("Schedule rating 1-5").optional(),
+  // Note: .nullable() required for OpenAI Structured Output API compatibility
+  totalDurationWeeks: z.number().describe("Total duration in weeks").nullable().optional(),
+  schedule: scheduleSchema.nullable().optional(),
+  costUsd: z.number().describe("Cost in USD").nullable().optional(),
+  ratingCourse: z.number().min(1).max(5).describe("Course rating 1-5").nullable().optional(),
+  ratingPlatform: z.number().min(1).max(5).describe("Platform rating 1-5").nullable().optional(),
+  ratingSchedule: z.number().min(1).max(5).describe("Schedule rating 1-5").nullable().optional(),
 
-  courseName: z.string().describe("Course name").optional(),
-  courseLink: z.string().describe("Course URL").optional(),
-  userFeedback: z.string().describe("User feedback").optional(),
+  courseName: z.string().describe("Course name").nullable().optional(),
+  courseLink: z.string().describe("Course URL").nullable().optional(),
+  userFeedback: z.string().describe("User feedback").nullable().optional(),
 });
 
 export const userConstraintsSchema = z.object({

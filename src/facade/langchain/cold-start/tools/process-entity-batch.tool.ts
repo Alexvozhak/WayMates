@@ -1,5 +1,5 @@
-import { HumanMessage } from "@langchain/core/messages";
-import { Command, END } from "@langchain/langgraph";
+import { HumanMessage, ToolMessage } from "@langchain/core/messages";
+import { Command } from "@langchain/langgraph";
 import { tool } from "langchain";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -17,6 +17,7 @@ import type { Trail, UserContext } from "../../../../shared/schemas.js";
 import type { ExtractableContext } from "../../shared-tools/extraction-models.js";
 import type { ColdStartState, ContextAgenda, MissingField } from "../types.js";
 import type { BaseMessage } from "@langchain/core/messages";
+import type { ToolRuntime } from "@langchain/core/tools";
 
 const MAX_QUESTIONS_PER_BATCH = config.LANGCHAIN_MAX_QUESTIONS_PER_BATCH;
 
@@ -119,7 +120,9 @@ async function extractAllTrails(
   queue: ContextAgenda[],
   contextIndex: number,
 ): Promise<Partial<Trail>[]> {
-  if (agenda.incomingTrails.length === 0) return [];
+  if (agenda.incomingTrails.length === 0) {
+    return [];
+  }
 
   const fromContextId = contextIndex > 0 ? (queue[contextIndex - 1]?.contextId ?? null) : null;
   const toContextId = agenda.contextId;
@@ -235,24 +238,41 @@ function determineOutcome(
   };
 }
 
-function outcomeToCommand(outcome: ToolOutcome): Command {
+function outcomeToCommand(outcome: ToolOutcome, toolCallId: string): Command {
   switch (outcome.type) {
     case "failed": {
       return new Command({
-        update: { phase: PHASE.failed },
-        goto: END,
+        update: {
+          phase: PHASE.failed,
+          /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+          messages: [
+            new ToolMessage({
+              content: "Failed: max clarification rounds exceeded",
+              tool_call_id: toolCallId,
+            }),
+          ],
+          /* eslint-enable @typescript-eslint/naming-convention */
+        },
       });
     }
 
     case "clarification": {
+      const fieldsInfo = outcome.missingFields.map((f) => f.field).join(", ");
       return new Command({
         update: {
           phase: PHASE.awaiting_clarification,
           missingFields: outcome.missingFields,
           currentEntityContext: { contextIndex: outcome.contextIndex, preview: outcome.preview },
           clarificationRound: outcome.round,
+          /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+          messages: [
+            new ToolMessage({
+              content: `Need clarification for "${outcome.preview}": missing ${fieldsInfo}. Now call ask_clarification to get user input.`,
+              tool_call_id: toolCallId,
+            }),
+          ],
+          /* eslint-enable @typescript-eslint/naming-convention */
         },
-        goto: "ask_clarification",
       });
     }
 
@@ -264,24 +284,39 @@ function outcomeToCommand(outcome: ToolOutcome): Command {
           collectedTrails: outcome.updatedTrails,
           currentEntityContext: { contextIndex: outcome.contextIndex, preview: outcome.preview },
           clarificationRound: 0,
+          /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+          messages: [
+            new ToolMessage({
+              content:
+                `✅ EXTRACTION COMPLETE for "${outcome.preview}". ` +
+                `STOP! You MUST call confirm_context NOW to show this to user. ` +
+                `Do NOT call process_entity_batch again until user confirms!`,
+              tool_call_id: toolCallId,
+            }),
+          ],
+          /* eslint-enable @typescript-eslint/naming-convention */
         },
-        goto: "confirm_context",
       });
     }
   }
 }
 
 export const processEntityBatchTool = tool(
-  async ({ contextIndex }: { contextIndex: number }, { state }: { state: ColdStartState }) => {
-    const { messages, queue, clarificationRound, collectedContexts, collectedTrails } = state;
+  async ({ contextIndex }: { contextIndex: number }, runtime: ToolRuntime<ColdStartState>) => {
+    const { state, toolCallId } = runtime;
+    // Note: Defaults needed because checkpoint may not have these fields on first run
+    const {
+      messages,
+      queue,
+      clarificationRound = 0,
+      collectedContexts = [],
+      collectedTrails = [],
+    } = state;
 
     const agenda = queue[contextIndex];
     if (!agenda) {
-      console.error(`❌ Invalid contextIndex: ${contextIndex}, queue length: ${queue.length}`);
-      return outcomeToCommand({ type: "failed" });
+      return outcomeToCommand({ type: "failed" }, toolCallId);
     }
-
-    console.log(`🔧 process_entity_batch: context ${contextIndex + 1}/${queue.length}`);
 
     let contextData: Partial<UserContext>;
     let trailsData: Partial<Trail>[];
@@ -291,12 +326,12 @@ export const processEntityBatchTool = tool(
         extractContext(messages, agenda, queue, contextIndex),
         extractAllTrails(messages, agenda, queue, contextIndex),
       ]);
-    } catch (error) {
-      console.error("❌ Extraction failed:", error);
-      return outcomeToCommand({ type: "failed" });
+    } catch {
+      return outcomeToCommand({ type: "failed" }, toolCallId);
     }
 
     const validation = validateAndCollectMissing(contextData, trailsData, agenda);
+
     const outcome = determineOutcome(
       validation,
       agenda,
@@ -305,13 +340,14 @@ export const processEntityBatchTool = tool(
       collectedContexts,
       collectedTrails,
     );
-    return outcomeToCommand(outcome);
+    return outcomeToCommand(outcome, toolCallId);
   },
   {
     name: "process_entity_batch",
     description:
       "Process ONE context + ALL its incoming trails. " +
-      "Extracts, validates, returns Command with phase update.",
+      "AFTER success: MUST call confirm_context (NOT process_entity_batch again!). " +
+      "Only call process_entity_batch again after confirm_context completes.",
     schema: z.object({
       contextIndex: z.number().describe("Index in queue (0-based)"),
     }),

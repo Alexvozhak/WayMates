@@ -14,17 +14,10 @@ const extractCareerData = tool(async ({ text }) => {
   const partial = await extract(text);
 
   if (!isValid(partial)) {
-    // Agent НЕ ВИДИТ что мы задаем вопросы!
-    return askQuestions();
+    return askQuestions();  // Agent НЕ ВИДИТ!
   }
 
-  if (!isConfirmed(partial)) {
-    // Agent НЕ ВИДИТ confirmation step!
-    return confirm(partial);
-  }
-
-  // Agent НЕ ВИДИТ save operation!
-  await save(partial);
+  await save(partial);  // Agent НЕ ВИДИТ!
   return { success: true };
 });
 ```
@@ -37,70 +30,90 @@ const extractCareerData = tool(async ({ text }) => {
 
 ---
 
-## Решение: Atomic Tools
+## Решение: Atomic Tools + ToolMessage
 
 ```typescript
-// ✅ ПРАВИЛЬНО - каждый шаг = отдельный tool
+import { ToolMessage } from "@langchain/core/messages";
+import type { ToolRuntime } from "@langchain/core/tools";
 
-// Tool 1: Extract + Validate
+// Tool 1: Extract + Validate → направляет LLM
 const extractUserContext = tool(
-  async ({ text }) => {
+  async ({ text }, runtime: ToolRuntime<MyState>) => {
     const partial = await extract(text);
     const validation = schema.safeParse(partial);
 
-    if (!validation.success) {
-      return new Command({
-        update: { partial },
-        goto: "ask_clarification"  // Explicit routing
-      });
-    }
-
+    // ToolMessage направляет LLM на следующий tool
     return new Command({
-      update: { data: validation.data },
-      goto: "confirm_career_data"
+      update: {
+        partial: validation.success ? null : partial,
+        data: validation.success ? validation.data : null,
+        messages: [new ToolMessage({
+          content: validation.success
+            ? "Data extracted. Now call confirm_data."
+            : "Validation failed. Now call ask_clarification.",
+          tool_call_id: runtime.toolCallId
+        })]
+      }
     });
   },
-  { name: "extract_user_context", description: "...", schema: ... }
+  {
+    name: "extract_user_context",
+    description: "Extract data. After this, call confirm_data or ask_clarification.",
+    schema: z.object({ text: z.string() })
+  }
 );
 
 // Tool 2: Ask Clarification (ATOMIC - только вопросы)
 const askClarification = tool(
-  async (_, { state }) => {
-    const questions = buildQuestions(state.partial);
+  async (_, runtime: ToolRuntime<MyState>) => {
+    const questions = buildQuestions(runtime.state.partial);
     return new Command({
       update: {
-        status: "awaiting_clarification",
-        message: formatQuestions(questions)
+        phase: "awaiting_clarification",
+        message: formatQuestions(questions),
+        messages: [new ToolMessage({
+          content: "Questions sent. Wait for user response.",
+          tool_call_id: runtime.toolCallId
+        })]
       }
     });
   },
-  { name: "ask_clarification", description: "...", schema: z.object({}) }
+  { name: "ask_clarification", description: "Ask clarification questions.", schema: z.object({}) }
 );
 
 // Tool 3: Confirm Data (ATOMIC - только confirmation)
-const confirmCareerData = tool(
-  async (_, { state }) => {
-    const preview = formatPreview(state.contexts);
+const confirmData = tool(
+  async (_, runtime: ToolRuntime<MyState>) => {
+    const preview = formatPreview(runtime.state.data);
     return new Command({
       update: {
-        status: "awaiting_confirmation",
-        message: preview
+        phase: "awaiting_confirmation",
+        message: preview,
+        messages: [new ToolMessage({
+          content: "Data shown for confirmation. Wait for user response.",
+          tool_call_id: runtime.toolCallId
+        })]
       }
     });
   },
-  { name: "confirm_career_data", description: "...", schema: z.object({}) }
+  { name: "confirm_data", description: "Show data for confirmation.", schema: z.object({}) }
 );
 
 // Tool 4: Save (ATOMIC - только save)
-const saveCareerData = tool(
-  async (_, { state }) => {
-    await coreClient.upsertStory({ userId, contexts: state.contexts });
+const saveData = tool(
+  async (_, runtime: ToolRuntime<MyState>) => {
+    await db.save(runtime.state.data);
     return new Command({
-      update: { status: "complete" },
-      goto: END
+      update: {
+        phase: "complete",
+        messages: [new ToolMessage({
+          content: "Data saved successfully.",
+          tool_call_id: runtime.toolCallId
+        })]
+      }
     });
   },
-  { name: "save_career_data", description: "...", schema: z.object({}) }
+  { name: "save_data", description: "Save data to database.", schema: z.object({}) }
 );
 ```
 
@@ -112,38 +125,22 @@ const saveCareerData = tool(
 2. **Testability**: Unit-test каждый tool изолированно
 3. **Reusability**: 70-85% переиспользование в production
 4. **Debuggability**: Clear trace через messages
-5. **Explicit Routing**: goto делает flow deterministic
+5. **LLM Routing**: ToolMessage явно направляет LLM
 
 ---
 
-## Production Example
+## Checklist
 
-**Source**: [career-collector-agent.ts:398-402](../../../../src/facade/langchain/career-collector-agent.ts#L398)
-
-```typescript
-tools: [
-  createExtractUserContextTool(deps),  // Atomic: extract + validate + route
-  askClarificationTool,                // Atomic: только вопросы
-  confirmCareerDataTool,               // Atomic: только confirmation
-  createSaveCareerDataTool({ coreClient }) // Atomic: только save
-]
-```
-
-**Reusability**: `askClarificationTool` и `confirmCareerDataTool` используются в shared-tools и переиспользуются в разных agents.
-
----
-
-## Metrics
-
-**WayMates Production Stats**:
-- `extractSingleContextTool`: 85% reuse (3+ agents)
-- `askClarificationTool`: 70% reuse (2+ agents)
-- `confirmCareerDataTool`: 70% reuse (2+ agents)
+- [ ] ✅ Один tool = одна операция
+- [ ] ✅ ToolMessage в каждом Command
+- [ ] ✅ Tool description указывает следующие шаги
+- [ ] ✅ Используешь `ToolRuntime<State>` для toolCallId
+- [ ] ✅ Не используешь `goto` с `createAgent`
 
 ---
 
 ## См. также
 
-- [glossary.md#atomic-tools-pattern](../glossary.md#atomic-tools-pattern) - Pattern overview
-- [concepts/routing.md](../concepts/routing.md) - Explicit routing с goto
-- [concepts/tools.md](../concepts/tools.md) - Command API
+- [tools.md](./tools.md) — Tool API reference
+- [routing.md](./routing.md) — LLM Routing через ToolMessage
+- [gotchas.md#15](../reference/gotchas.md#15-goto-не-работает-с-createagent) — goto не работает

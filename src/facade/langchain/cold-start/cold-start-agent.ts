@@ -1,14 +1,14 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { createAgent, humanInTheLoopMiddleware } from "langchain";
-import { z } from "zod";
+import { Command } from "@langchain/langgraph";
+import { createAgent } from "langchain";
 
 import { config } from "../../env.js";
 import { postgresService } from "../../infrastructure/postgres.service.js";
-import { InvalidStateError } from "../../mcp-server/tools/errors.js";
 import { askClarificationTool } from "../shared-tools/ask-clarification.tool.js";
 
 import { SYSTEM_PROMPT } from "./prompts.js";
+import { buildResponse } from "./response-builders.js";
 import { confirmContextTool } from "./tools/confirm-context.tool.js";
 import { confirmFinalTool } from "./tools/confirm-final.tool.js";
 import { confirmPlanTool } from "./tools/confirm-plan.tool.js";
@@ -16,186 +16,84 @@ import { editContextTool } from "./tools/edit-context.tool.js";
 import { editTrailTool } from "./tools/edit-trail.tool.js";
 import { planCareerHistoryTool } from "./tools/plan-career-history.tool.js";
 import { processEntityBatchTool } from "./tools/process-entity-batch.tool.js";
+import { showContextTool } from "./tools/show-context.tool.js";
+import { showFinalTool } from "./tools/show-final.tool.js";
+import { showPlanTool } from "./tools/show-plan.tool.js";
 import { coldStartStateSchema, PHASE } from "./types.js";
 
 import type { ColdStartResponse, ColdStartState } from "./types.js";
 import type { UserId } from "../../../shared/schemas.js";
 
+// Use Google Gemini 2.0 Flash directly for 1M token context window
 const model = new ChatGoogleGenerativeAI({
-  model: config.LANGCHAIN_MODEL_NAME,
+  model: "gemini-2.0-flash",
   temperature: config.LANGCHAIN_TEMP_AGENT,
 });
+
+const COLD_START_TOOLS = [
+  // Planning: analyze story → create extraction queue
+  planCareerHistoryTool,
+  processEntityBatchTool,
+  // Editing: user corrections to extracted data
+  editContextTool,
+  editTrailTool,
+  // Show: present data and wait for user response (interrupt)
+  showPlanTool,
+  showContextTool,
+  showFinalTool,
+  askClarificationTool,
+  // Confirm: finalize after user approval
+  confirmPlanTool,
+  confirmContextTool,
+  confirmFinalTool,
+];
 
 export function createColdStartAgent(): ReturnType<typeof createAgent> {
   return createAgent({
     model,
-    tools: [
-      planCareerHistoryTool,
-      processEntityBatchTool,
-      editContextTool,
-      editTrailTool,
-      confirmPlanTool,
-      confirmContextTool,
-      confirmFinalTool,
-      askClarificationTool,
-    ],
-    middleware: [
-      humanInTheLoopMiddleware({
-        /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API requires tool names with underscores */
-        interruptOn: {
-          confirm_plan: true,
-          confirm_context: true,
-          confirm_final: true,
-          ask_clarification: true,
-        },
-        /* eslint-enable @typescript-eslint/naming-convention */
-      }),
-    ],
+    tools: COLD_START_TOOLS,
     checkpointer: postgresService.getCheckpointer(),
     stateSchema: coldStartStateSchema,
     systemPrompt: SYSTEM_PROMPT,
   });
 }
 
-const stateSnapshotSchema = z.object({
-  values: z.record(z.unknown()).optional(),
-});
+async function getExistingState(threadId: string): Promise<ColdStartState | null> {
+  const checkpointState = await postgresService.getCheckpointState(threadId);
 
-function getExistingState(
-  agent: ReturnType<typeof createAgent>,
-  threadId: string,
-): ColdStartState | null {
-  /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API requires thread_id */
-  const rawSnapshot = agent.getState({
-    configurable: { thread_id: threadId },
-  });
-  /* eslint-enable @typescript-eslint/naming-convention */
-
-  const snapshotParsed = stateSnapshotSchema.safeParse(rawSnapshot);
-  if (!snapshotParsed.success || !snapshotParsed.data.values) {
+  if (!checkpointState || Object.keys(checkpointState).length === 0) {
     return null;
   }
 
-  const values = snapshotParsed.data.values;
-  if (Object.keys(values).length === 0) {
-    return null;
-  }
-
-  const parsed = coldStartStateSchema.safeParse(values);
+  const parsed = coldStartStateSchema.safeParse(checkpointState);
   if (!parsed.success) {
-    const errorDetails = JSON.stringify(parsed.error.flatten());
-    throw new Error(`Invalid cold start state schema: ${errorDetails}`);
+    return null;
   }
 
   return parsed.data;
 }
 
-function shouldResetState(existingState: ColdStartState): boolean {
+function shouldResetState(existingState: ColdStartState | null): boolean {
+  if (!existingState) return false;
   const terminalPhases: readonly string[] = [PHASE.saved, PHASE.already_saved, PHASE.failed];
   return terminalPhases.includes(existingState.phase);
 }
 
-function createInitialState(message: string, userId: UserId): ColdStartState {
-  return coldStartStateSchema.parse({
-    messages: [new HumanMessage(message)],
-    userId,
-  });
-}
+type AgentInput = { messages: HumanMessage[]; userId: UserId } | Command;
 
-function continueExistingState(existingState: ColdStartState, message: string): ColdStartState {
-  return {
-    ...existingState,
-    messages: [...existingState.messages, new HumanMessage(message)],
-  };
-}
-
-function buildStoryGatheringResponse(): ColdStartResponse {
-  return { phase: "story_gathering", message: "Tell me about your career history." };
-}
-
-function buildPlanConfirmationResponse(state: ColdStartState): ColdStartResponse {
-  if (state.queue.length === 0) {
-    throw new InvalidStateError("awaiting_plan_confirmation", "queue is empty");
-  }
-  return { phase: "awaiting_plan_confirmation", queue: state.queue };
-}
-
-function buildClarificationResponse(state: ColdStartState): ColdStartResponse {
-  const { missingFields } = state;
-  if (missingFields.length === 0) {
-    throw new InvalidStateError("awaiting_clarification", "missingFields is empty");
-  }
-  return {
-    phase: "awaiting_clarification",
-    missingFields,
-  };
-}
-
-function buildContextConfirmationResponse(state: ColdStartState): ColdStartResponse {
-  const { collectedContexts, collectedTrails, currentEntityContext, queue } = state;
-  if (!currentEntityContext) {
-    throw new InvalidStateError("awaiting_context_confirmation", "currentEntityContext is missing");
+async function resolveInput(
+  message: string,
+  userId: UserId,
+  threadId: string,
+  existingState: ColdStartState | null,
+): Promise<AgentInput> {
+  if (shouldResetState(existingState)) {
+    await postgresService.deleteCheckpoint(threadId);
+  } else if (await postgresService.hasPendingInterrupt(threadId)) {
+    return new Command({ resume: message });
   }
 
-  const currentContext = collectedContexts.at(-1);
-  if (!currentContext) {
-    throw new InvalidStateError("awaiting_context_confirmation", "no collected contexts");
-  }
-
-  return {
-    phase: "awaiting_context_confirmation",
-    entity: currentContext,
-    relatedTrails: collectedTrails.filter((t) => t.toContextId === currentContext.contextId),
-    progress: { current: currentEntityContext.contextIndex + 1, total: queue.length },
-  };
-}
-
-function buildFinalConfirmationResponse(state: ColdStartState): ColdStartResponse {
-  const { collectedContexts, collectedTrails } = state;
-  return {
-    phase: "awaiting_final_confirmation",
-    preview: { contexts: collectedContexts, trails: collectedTrails },
-    summary: { contextsCount: collectedContexts.length, trailsCount: collectedTrails.length },
-  };
-}
-
-function buildSavedResponse(state: ColdStartState): ColdStartResponse {
-  return {
-    phase: "saved",
-    userId: state.userId,
-    contexts: state.collectedContexts,
-    trails: state.collectedTrails,
-  };
-}
-
-type ResponseBuilder = (state: ColdStartState) => ColdStartResponse;
-
-const responseBuilders: Record<string, ResponseBuilder> = {
-  /* eslint-disable @typescript-eslint/naming-convention -- Phase names use snake_case */
-  story_gathering: () => buildStoryGatheringResponse(),
-  awaiting_plan_confirmation: (s) => buildPlanConfirmationResponse(s),
-  awaiting_clarification: (s) => buildClarificationResponse(s),
-  awaiting_context_confirmation: (s) => buildContextConfirmationResponse(s),
-  awaiting_final_confirmation: (s) => buildFinalConfirmationResponse(s),
-  saved: (s) => buildSavedResponse(s),
-  already_saved: () => ({
-    phase: "already_saved",
-    message: "Cold start already saved.",
-  }),
-  failed: () => buildFailedResponse(),
-  /* eslint-enable @typescript-eslint/naming-convention */
-};
-
-function buildResponse(state: ColdStartState): ColdStartResponse {
-  const builder = responseBuilders[state.phase];
-  if (!builder) {
-    throw new InvalidStateError(state.phase, "unknown phase");
-  }
-  return builder(state);
-}
-
-function buildFailedResponse(): ColdStartResponse {
-  return { phase: "failed", message: "Workflow failed. Please try again." };
+  return { messages: [new HumanMessage(message)], userId };
 }
 
 export async function runColdStartWorkflow(
@@ -203,29 +101,16 @@ export async function runColdStartWorkflow(
   threadId: string,
   userId: UserId,
 ): Promise<ColdStartResponse> {
-  console.log(`ColdStartAgent invoked with threadId: ${threadId}`);
-
   const agent = createColdStartAgent();
-  const existingState = getExistingState(agent, threadId);
-
-  const shouldStartFresh = !existingState || shouldResetState(existingState);
-  const initialState = shouldStartFresh
-    ? createInitialState(message, userId)
-    : continueExistingState(existingState, message);
+  const existingState = await getExistingState(threadId);
+  const input = await resolveInput(message, userId, threadId, existingState);
 
   const result = await agent.invoke(
-    initialState,
+    input,
     /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API requires thread_id */
     { configurable: { thread_id: threadId } },
     /* eslint-enable @typescript-eslint/naming-convention */
   );
 
-  const parsed = coldStartStateSchema.safeParse(result);
-  if (!parsed.success) {
-    console.error("Failed to parse agent result:", parsed.error);
-    return buildFailedResponse();
-  }
-
-  console.log(`ColdStartAgent result phase: ${parsed.data.phase}`);
-  return buildResponse(parsed.data);
+  return buildResponse(result);
 }

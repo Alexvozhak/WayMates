@@ -7,9 +7,14 @@ import { trackTestUser, cleanupAllTestUsers } from "../helpers/test-users-tracke
 import { UserStories } from "../../core/helpers/user-stories.js";
 
 import { cleanupColdStart, generateStoryFromFixture } from "./helpers/cold-start-helpers.js";
+import { PHASE } from "../../../src/facade/langchain/cold-start/types.js";
 
 import type { SessionId } from "../../../src/facade/mcp-server/result.js";
 import type { UserId } from "../../../src/shared/schemas.js";
+
+// Триггер для перехода story_gathering → plan_career_history.
+// Без этого agent будет просить продолжить рассказ (см. SYSTEM_PROMPT Phase 1).
+const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя карьерная история.";
 
 describe("Cold-Start Smoke Tests (P0)", () => {
   let testSessionId: SessionId;
@@ -51,27 +56,81 @@ describe("Cold-Start Smoke Tests (P0)", () => {
     expect(response.phase).toBe("story_gathering");
   });
 
-  // T02: Story → Agent responds (minimal happy path)
-  it("T02: Story processed by agent (minimal happy path)", async () => {
-    // Business rule: Agent должен обработать историю без ошибок.
-    // Проверяет: story generation → agent processing → valid phase.
-    // NOTE: Конкретная phase (story_gathering vs awaiting_plan_confirmation)
-    // зависит от LLM — оба результата валидны для smoke test.
+  // T02: Story → valid response structure per phase
+  it("T02: Story produces valid discriminated response", async () => {
+    // Business rule: Agent обрабатывает историю и возвращает корректный
+    // discriminated union response.
+    //
+    // Ожидаемый исход: awaiting_plan_confirmation (LLM распознал историю → queue)
+    // Fallback: story_gathering (LLM решил что история недостаточная)
+    //
+    // НЕ проверяем: exact extraction (LLM вариативен), Zod validation (гарантировано типами)
 
     const userStories = new UserStories();
     const u1 = userStories.getStoryBy("U1");
 
-    // Генерация story через LLM (используя unpacking prompt)
     const story = await generateStoryFromFixture(u1);
+    const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
 
-    // Передача story в agent
-    const response = await runColdStartWorkflow(story, threadId, testUserId);
+    const response = await runColdStartWorkflow(storyWithTrigger, threadId, testUserId);
 
-    // Business assertions: agent не упал и вернул валидную фазу
-    expect(response.phase).not.toBe("failed");
-    expect(response.phase).not.toBe("already_saved");
+    // Business assertions per phase (discriminated union)
+    if (response.phase === "story_gathering") {
+      // Fallback: LLM решил что история недостаточная несмотря на "готово"
+      expect(response.message.length).toBeGreaterThan(0);
+    } else if (response.phase === "awaiting_plan_confirmation") {
+      // LLM распознал историю → queue с контекстами
+      expect(response.queue.length).toBeGreaterThan(0);
 
-    // Логируем результат для отладки
-    console.log(`T02 result phase: ${response.phase}`);
+      const firstContext = response.queue[0]!;
+      // U1 имеет 2 контекста — минимум 1 должен быть распознан
+      expect(firstContext.preview.length).toBeGreaterThan(0);
+      // contextId генерируется upfront (UUID v7 format)
+      expect(firstContext.contextId).toMatch(/^ctx_[\da-f-]{36}$/);
+    } else {
+      // Неожиданная фаза → явный fail с диагностикой
+      expect.fail(`Unexpected phase after story: ${response.phase}`);
+    }
+
+    console.log(
+      `T02 result: phase=${response.phase}, queue=${response.phase === "awaiting_plan_confirmation" ? response.queue.length : "N/A"}`,
+    );
   }, 120_000);
+
+  // T03: Plan confirmation → extraction
+  it("T03: Plan confirmation triggers extraction", async () => {
+    // Business rule: После подтверждения плана agent извлекает первый контекст.
+    // Проверяет interrupt-resume flow + process_entity_batch + ToolMessage.
+
+    const userStories = new UserStories();
+    const u1 = userStories.getStoryBy("U1");
+
+    // Step 1: История → awaiting_plan_confirmation
+    const story = await generateStoryFromFixture(u1);
+    const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
+
+    const planResponse = await runColdStartWorkflow(storyWithTrigger, threadId, testUserId);
+
+    if (planResponse.phase !== PHASE.awaiting_plan_confirmation) {
+      expect.fail(`Expected awaiting_plan_confirmation, got ${planResponse.phase}`);
+    }
+
+    console.log(`T03 step 1: plan created with ${planResponse.queue.length} contexts`);
+
+    // Step 2: Подтверждаем план → process_entity_batch
+    const confirmResponse = await runColdStartWorkflow("да, всё верно", threadId, testUserId);
+
+    // Step 3: Ожидаем extraction phase
+    if (confirmResponse.phase === PHASE.awaiting_context_confirmation) {
+      console.log(
+        `T03 result: extracted "${confirmResponse.entity.position}" (${confirmResponse.progress.current}/${confirmResponse.progress.total})`,
+      );
+    } else if (confirmResponse.phase === PHASE.awaiting_clarification) {
+      console.log(
+        `T03 result: clarification needed for ${confirmResponse.missingFields.length} field(s)`,
+      );
+    } else {
+      expect.fail(`Expected extraction phase, got ${confirmResponse.phase}`);
+    }
+  }, 180_000);
 });

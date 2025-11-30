@@ -128,8 +128,8 @@ export default defineConfig(() => {
               },
             },
             setupFiles: ["./tests/facade/helpers/test-setup.ts"],
-            testTimeout: 60_000, // LLM calls + TrueLens evaluation slow
-            hookTimeout: 30_000,
+            testTimeout: 180_000, // 3min for LLM-heavy tests (cold-start agent)
+            hookTimeout: 60_000, // 1min for fixture loading (U1-U9 via tRPC)
             env: loadEnv("test", process.cwd(), ""),
           },
         },

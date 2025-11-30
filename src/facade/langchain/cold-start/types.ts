@@ -114,6 +114,11 @@ export const coldStartStateSchema = z.object({
   currentEntityContext: currentEntityContextSchema.optional(),
 
   userId: z.string(),
+
+  userResponse: z
+    .string()
+    .optional()
+    .describe("User response after interrupt - Agent parses NLP and decides next tool"),
 });
 
 export type ColdStartState = z.infer<typeof coldStartStateSchema>;
