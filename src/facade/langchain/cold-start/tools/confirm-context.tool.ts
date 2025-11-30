@@ -5,12 +5,18 @@ import { z } from "zod";
 
 import { PHASE } from "../types.js";
 
+import { phaseGuard } from "./guards.js";
+
 import type { ColdStartState } from "../types.js";
 import type { ToolRuntime } from "@langchain/core/tools";
 
 export const confirmContextTool = tool(
   (_, runtime: ToolRuntime<ColdStartState>) => {
     const { toolCallId, state } = runtime;
+
+    const guard = phaseGuard(state.phase, PHASE.awaiting_context_confirmation, toolCallId);
+    if (guard) return guard;
+
     const { queue } = state;
     const processed = state.collectedContexts.length;
 

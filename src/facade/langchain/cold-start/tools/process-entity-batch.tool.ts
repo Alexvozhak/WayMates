@@ -289,8 +289,7 @@ function outcomeToCommand(outcome: ToolOutcome, toolCallId: string): Command {
             new ToolMessage({
               content:
                 `✅ EXTRACTION COMPLETE for "${outcome.preview}". ` +
-                `STOP! You MUST call confirm_context NOW to show this to user. ` +
-                `Do NOT call process_entity_batch again until user confirms!`,
+                `Now call show_context to present to user and wait for approval.`,
               tool_call_id: toolCallId,
             }),
           ],
@@ -346,8 +345,8 @@ export const processEntityBatchTool = tool(
     name: "process_entity_batch",
     description:
       "Process ONE context + ALL its incoming trails. " +
-      "AFTER success: MUST call confirm_context (NOT process_entity_batch again!). " +
-      "Only call process_entity_batch again after confirm_context completes.",
+      "AFTER success: call show_context to present to user. " +
+      "Only call process_entity_batch again after user confirms via confirm_context.",
     schema: z.object({
       contextIndex: z.number().describe("Index in queue (0-based)"),
     }),

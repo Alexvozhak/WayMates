@@ -67,7 +67,7 @@ export const planCareerHistoryTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `Plan created with ${queue.length} contexts: ${previews}. Now call confirm_plan to get user approval.`,
+            content: `Plan created with ${queue.length} contexts: ${previews}. Now call show_plan to present to user and wait for approval.`,
             tool_call_id: toolCallId,
           }),
         ],
@@ -79,7 +79,7 @@ export const planCareerHistoryTool = tool(
     name: "plan_career_history",
     description:
       "Analyze career history from messages and build a queue with context IDs. " +
-      "AFTER calling this, immediately call confirm_plan to show the plan to the user.",
+      "AFTER calling this, immediately call show_plan to present the plan to user.",
     schema: z.object({}),
   },
 );

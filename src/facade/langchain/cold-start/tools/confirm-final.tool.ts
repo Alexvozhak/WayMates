@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import { PHASE } from "../types.js";
 
+import { assertStateValid, dataGuardForSave, phaseGuard } from "./guards.js";
+
 import type { ColdStartState } from "../types.js";
 import type { ToolRuntime } from "@langchain/core/tools";
 
@@ -12,20 +14,13 @@ export const confirmFinalTool = tool(
   (_, runtime: ToolRuntime<ColdStartState>) => {
     const { toolCallId, state } = runtime;
 
-    if (state.phase !== PHASE.awaiting_final_confirmation) {
-      return new Command({
-        update: {
-          /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
-          messages: [
-            new ToolMessage({
-              content: `Cannot save yet. Current phase is "${state.phase}". You MUST call show_final first to show the complete career history preview and get user's final approval.`,
-              tool_call_id: toolCallId,
-            }),
-          ],
-          /* eslint-enable @typescript-eslint/naming-convention */
-        },
-      });
-    }
+    assertStateValid(state, "confirm_final");
+
+    const guard = phaseGuard(state.phase, PHASE.awaiting_final_confirmation, toolCallId);
+    if (guard) return guard;
+
+    const dataGuard = dataGuardForSave(state, toolCallId);
+    if (dataGuard) return dataGuard;
 
     return new Command({
       update: {

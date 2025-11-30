@@ -96,7 +96,7 @@ export const editTrailTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `Trail ${trailId} updated. Now call confirm_context to get user approval.`,
+            content: `Trail ${trailId} updated. Now call show_context to present updated data to user.`,
             tool_call_id: toolCallId,
           }),
         ],
