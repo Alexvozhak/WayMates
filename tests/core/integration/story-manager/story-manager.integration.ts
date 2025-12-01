@@ -583,6 +583,88 @@ describe("StoryManager Integration Tests", () => {
     });
   });
 
+  describe("DELETE: deleteStory", () => {
+    // Business rule: Test cleanup must completely remove user's career history (contexts + trails + user node).
+    // Use case: afterAll cleanup in cold-start tests (ADR-008).
+    it("removes all contexts, trails, and user node for complete cleanup", async () => {
+      const testData = testDataManager.getStoryBy("U10"); // 3 contexts, 2 trails
+      const userId = testData.userId;
+
+      const storyManager = createStoryManager();
+      await storyManager.upsertStory(testData);
+
+      // Verify data exists before delete
+      const beforeStory = await storyManager.getUserStory(userId);
+      expect(beforeStory.contexts).toHaveLength(3);
+      expect(beforeStory.trails).toHaveLength(2);
+
+      // Delete entire story
+      const result = await storyManager.deleteStory(userId);
+
+      expect(result.deletedContexts).toBe(3);
+      expect(result.deletedTrails).toBe(2);
+
+      // Verify complete cleanup: no contexts, no trails, no user node
+      const afterStory = await storyManager.getUserStory(userId);
+      expect(afterStory.contexts).toHaveLength(0);
+      expect(afterStory.trails).toHaveLength(0);
+
+      const userCheck = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (u:User {userId: $userId}) RETURN u", { userId }),
+      );
+      expect(userCheck.records).toHaveLength(0);
+    });
+
+    // Business rule: deleteStory must be idempotent - repeated calls must not throw errors.
+    // Use case: Test frameworks may call cleanup multiple times (beforeEach + afterAll).
+    it("idempotent: repeated delete returns zero counts without error", async () => {
+      const testData = testDataManager.getStoryBy("U12"); // 4 contexts, 3 trails
+      const userId = testData.userId;
+
+      const storyManager = createStoryManager();
+      await storyManager.upsertStory(testData);
+
+      // First delete
+      const firstResult = await storyManager.deleteStory(userId);
+      expect(firstResult.deletedContexts).toBe(4);
+      expect(firstResult.deletedTrails).toBe(3);
+
+      // Second delete (idempotent)
+      const secondResult = await storyManager.deleteStory(userId);
+      expect(secondResult.deletedContexts).toBe(0);
+      expect(secondResult.deletedTrails).toBe(0);
+
+      // Third delete (still safe)
+      const thirdResult = await storyManager.deleteStory(userId);
+      expect(thirdResult.deletedContexts).toBe(0);
+      expect(thirdResult.deletedTrails).toBe(0);
+    });
+
+    // Business rule: deleteStory must not affect other users' data (isolation).
+    // Use case: Parallel test execution with shared database must be safe.
+    it("isolated: deleting one user does not affect other users", async () => {
+      const u10Data = testDataManager.getStoryBy("U10"); // 3 contexts, 2 trails
+      const u12Data = testDataManager.getStoryBy("U12"); // 4 contexts, 3 trails
+
+      const storyManager = createStoryManager();
+      await storyManager.upsertStory(u10Data);
+      await storyManager.upsertStory(u12Data);
+
+      // Delete only U10
+      await storyManager.deleteStory(u10Data.userId);
+
+      // U12 must remain intact
+      const u12Story = await storyManager.getUserStory(u12Data.userId);
+      expect(u12Story.contexts).toHaveLength(4);
+      expect(u12Story.trails).toHaveLength(3);
+
+      // U10 must be gone
+      const u10Story = await storyManager.getUserStory(u10Data.userId);
+      expect(u10Story.contexts).toHaveLength(0);
+      expect(u10Story.trails).toHaveLength(0);
+    });
+  });
+
   describe("VALIDATION: Edge Cases", () => {
     // Business rule: StoryInput must have at least one context (Zod validation).
     it("empty contexts array throws validation error", () => {

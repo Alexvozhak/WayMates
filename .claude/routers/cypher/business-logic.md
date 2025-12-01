@@ -29,6 +29,7 @@
 | **Paths: Collect trajectory** | PATH_COLLECTION_ARCHITECTURE.md (archived) | `buildCollectPathQuery()` | src/cypher/queries/paths.ts |
 | **Persistence: Store context** | persistence workflows | `storeContext()` | src/cypher/queries/persistence.ts |
 | **Persistence: Store story** | persistence workflows | `storeStory()` | src/cypher/queries/persistence.ts |
+| **Persistence: Delete story** | test cleanup workflows | `DELETE_STORY_QUERY` | src/cypher/queries/persistence.ts |
 
 ---
 

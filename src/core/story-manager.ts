@@ -3,6 +3,7 @@ import { v7 as uuidv7 } from "uuid";
 import {
   // CREATE_REASON_QUERY,
   DELETE_CONTEXT_QUERY,
+  DELETE_STORY_QUERY,
   DELETE_TRAIL_QUERY,
   GET_USER_STORY_QUERY,
   //  LIST_REASONS_QUERY,
@@ -11,6 +12,7 @@ import {
 } from "../cypher/index.js";
 import {
   contextIdSchema,
+  deleteStoryResultSchema,
   storyInputSchema,
   trailIdSchema,
   updateContextParamsSchema,
@@ -102,6 +104,24 @@ export class StoryManager {
     if (!success) {
       throw new Error(`Failed to delete trail ${trailId}`);
     }
+  }
+
+  async deleteStory(userId: string): Promise<{ deletedContexts: number; deletedTrails: number }> {
+    return this.db.write(async (tx) => {
+      const result = await tx.run(DELETE_STORY_QUERY, { userId });
+      const record = result.records[0];
+
+      if (!record) {
+        return { deletedContexts: 0, deletedTrails: 0 };
+      }
+
+      const queryResult = deleteStoryResultSchema.parse(record.get("result"));
+
+      return {
+        deletedContexts: queryResult.deletedContexts,
+        deletedTrails: queryResult.deletedTrails,
+      };
+    });
   }
 
   async updateContext(params: UpdateContextParams): Promise<UserContext> {

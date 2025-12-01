@@ -485,6 +485,12 @@ export const upsertStoryResultSchema = z.object({
   trails: upsertTrailResultSchema,
 });
 
+export const deleteStoryResultSchema = z.object({
+  success: z.boolean(),
+  deletedContexts: z.number(),
+  deletedTrails: z.number(),
+});
+
 export const goalSchema = z.object({
   userId: userIdSchema,
   targetCriteria: targetContextSchema.describe("Target position criteria with FieldFilter pattern"),
@@ -524,6 +530,7 @@ export type UpsertTrailInput = z.infer<typeof upsertTrailInputSchema>;
 export type UpsertTrailResult = z.infer<typeof upsertTrailResultSchema>;
 export type UpsertSingleTrailResult = z.infer<typeof upsertSingleTrailResultSchema>;
 export type UpsertStoryResult = z.infer<typeof upsertStoryResultSchema>;
+export type DeleteStoryResult = z.infer<typeof deleteStoryResultSchema>;
 export type Goal = z.infer<typeof goalSchema>;
 export type CreateGoalInput = z.infer<typeof createGoalInputSchema>;
 export type UpdateContextInput = z.infer<typeof updateContextInputSchema>;

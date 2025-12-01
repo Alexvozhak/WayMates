@@ -37,4 +37,20 @@ export const storyRouter = t.router({
         trails: story.trails,
       };
     }),
+
+  deleteStory: publicProcedure
+    .input(
+      z.object({
+        userId: userIdSchema,
+      }),
+    )
+    .output(
+      z.object({
+        deletedContexts: z.number(),
+        deletedTrails: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.storyManager.deleteStory(input.userId);
+    }),
 });
