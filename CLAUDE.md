@@ -189,29 +189,6 @@ class CacheManager {
 
 ---
 
-## Test Quality Standards
-
-**CRITICAL**: Follow test quality standards to avoid coverage theater and fake tests.
-
-See detailed guide: [routers/test/standards.md](.claude/routers/test/standards.md)
-
-**Quick reference**:
-- ✅ Validate business logic, not implementation
-- ✅ Avoid coverage theater (obvious invariants, Zod duplicates)
-- ✅ Ask 4 questions before writing assertions:
-  1. ❌ Is this guaranteed by Zod? → **Skip it**
-  2. ❌ Is this guaranteed by math/existence? → **Skip it**
-  3. ✅ Does this validate a **business rule**? → **Keep it**
-  4. ✅ Would this fail if business logic regresses? → **Keep it**
-
-**For full details**:
-- [routers/test/standards.md](.claude/routers/test/standards.md) - 5 Checks (Coverage Theater, Test Manipulation, Business Goal, Edge Cases, Schema/Cypher Risk)
-- [routers/test/test-rules.md](.claude/routers/test/test-rules.md) - Dev tips + test-specific mistakes
-- [routers/test/workflows.md](.claude/routers/test/workflows.md) - Processes, delegation rules, quality gates
-- [routers/test/environment.md](.claude/routers/test/environment.md) - Vitest config, setup, commands
-
----
-
 ## MCP Servers
 
 The following MCP servers provide specialized capabilities:
@@ -330,122 +307,17 @@ mcp__filesystem__write_file({
 
 ---
 
-## Knowledge Router
+## Knowledge Modules
 
-**CRITICAL**: Для сложных задач (Cypher, QA, ESLint, LangGraph) используй knowledge router.
+Для специализированных задач загружай соответствующий роутер:
 
-**Workflow**:
-1. Загрузи [.claude/routers/router.md](.claude/routers/router.md)
-2. Найди свою задачу в модулях
-3. Загрузи module-specific router (например, `.claude/routers/cypher/router.md`)
-4. Следуй инструкциям модуля
-
-**Self-awareness**: После работы используй `/reflect [module]` для анализа и улучшения документации.
-
-**Примеры**:
-- Работа с Cypher → загрузи `.claude/routers/cypher/router.md`
-- После Cypher-работы → `/reflect cypher`
-
----
-
-## Cypher Rules
-
-**CRITICAL**: Для работы с Cypher queries **ВСЕГДА** загружай `.claude/routers/cypher/router.md` первым.
-
-**Quick reference** (полный checklist в `.claude/routers/cypher/cypher-rules.md`):
-- ✅ Map projection: `RETURN c { .field, custom: value }`
-- ✅ Canonical naming: `searchingContext`, `matchedContext`, `searchingPathContext`, `matchedPathContext`
-- ✅ Null safety: `coalesce($array, [])`
-- ✅ Bounded patterns: `*0..20` (never unbounded)
-- ✅ Business logic: проверяй фильтры в `business-logic.md` (90% search багов = wrong filter!)
-- ✅ Integer params: `toInteger($limit)` для LIMIT/SKIP
-
-**Полный контекст**: [.claude/routers/cypher/router.md](.claude/routers/cypher/router.md)
-
----
-
-## Cypher Development Workflow
-
-**IMPORTANT**: Before debugging Cypher queries, read these guides:
-- [Search Modes Business Logic](docs/search_modes_business_logic.md) - Understand WHAT query should do
-- [Cypher Debugging Guide](docs/cypher_debugging_guide.md) - HOW to debug queries
-
-When working with Cypher queries, **ALWAYS delegate to cypher-expert agent** for:
-
-### When to Call cypher-expert
-
-**Mandatory triggers** (call immediately):
-- ✅ Writing new Cypher queries in query builders
-- ✅ Modifying existing Cypher queries
-- ✅ Query performance issues (slow queries, high DB hits)
-- ✅ Schema changes (new nodes, relationships, properties)
-- ✅ Complex scoring logic with aggregations
-- ✅ Trajectory collection and path queries
-
-**What cypher-expert provides**:
-1. ✅ **Tested queries** - validated via MCP neo4j-cypher against test DB
-2. ✅ **Performance analysis** - PROFILE output with optimization recommendations
-3. ✅ **Schema validation** - ensures query matches current DB schema
-4. ✅ **Convention compliance** - map projection, canonical names, null safety
-5. ✅ **Integration notes** - parameter types, expected output, TypeScript examples
-
-### Workflow with cypher-expert
-
-```
-You (Main Claude): Need to write/modify Cypher query
-  ↓
-You: Call cypher-expert agent with requirements
-  ↓
-cypher-expert:
-  1. Checks schema via MCP get_neo4j_schema
-  2. Drafts query following project conventions
-  3. Tests query via MCP read_neo4j_cypher
-  4. Runs PROFILE for performance analysis
-  5. Provides final tested query + integration notes
-  ↓
-You: Integrate query into TypeScript query builder
-  ↓
-You: Call reviewer (check TypeScript integration)
-  ↓
-You: Call qa (verify integration tests pass)
-```
-
-### Example: Delegating to cypher-expert
-
-```typescript
-// ❌ DON'T: Write Cypher directly without expert validation
-const query = `
-  MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)
-  WHERE u.user_id = $userId
-  RETURN c
-`;
-
-// ✅ DO: Delegate to cypher-expert first
-// You: "cypher-expert, I need a query to find all contexts for a user.
-//      Requirements:
-//      - Filter by user_id parameter
-//      - Return contexts with position, skills, domains
-//      - Use map projection
-//      - Order by created_at DESC
-//      Please test against neo4j-test DB and provide optimized query."
-//
-// cypher-expert returns tested query with PROFILE analysis
-// Then you integrate it into the code
-```
-
-### Cypher Query Checklist
-
-Before submitting any Cypher query to code review, ensure:
-
-- [ ] ✅ **Delegated to cypher-expert** for validation
-- [ ] ✅ **Tested** against neo4j-test via MCP
-- [ ] ✅ **Map projection** used for RETURN statements
-- [ ] ✅ **Canonical variable names** (if applicable)
-- [ ] ✅ **Null safety** with coalesce() for arrays
-- [ ] ✅ **PROFILE** analysis shows good performance
-- [ ] ✅ **Integration tests** pass
-
-**Remember**: cypher-expert has direct MCP access to test database. Use it!
+| Тема | Роутер | Когда загружать |
+|------|--------|-----------------|
+| Cypher | [cypher/router.md](.claude/routers/cypher/router.md) | Пишешь/фиксишь Cypher queries |
+| Test | [test/router.md](.claude/routers/test/router.md) | Пишешь/ревьюишь тесты |
+| LangChain | [langchain/router.md](.claude/routers/langchain/router.md) | Агенты, tools, persistence |
+| Infrastructure | [infrastructure/router.md](.claude/routers/infrastructure/router.md) | Docker, env, setup |
+| Architecture | [architecture/router.md](.claude/routers/architecture/router.md) | Планирование фич |
 
 ---
 
