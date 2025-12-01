@@ -85,3 +85,6 @@ todo-dropbox
 
 # Structurizr cache/index
 docs/architecture/.structurizr/
+
+# Git worktrees
+tree/
