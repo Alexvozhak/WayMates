@@ -28,13 +28,10 @@ Read eslint.config.mjs
 # 4. Test standards
 Read .claude/routers/test/standards.md
 
-# 5. Cold-start архитектура
-Read docs/architecture/facade/langchain/cold-start-architecture.md
-
-# 6. LangChain v1 API (ОБЯЗАТЕЛЬНО)
+# 5 LangChain v1 API (ОБЯЗАТЕЛЬНО)
 Read .claude/routers/langchain/router.md
 
-# 7. Vitest конфигурация
+# 6. Vitest конфигурация
 Read vitest.config.ts
 Read vitest.globalSetup.ts
 ```
@@ -49,6 +46,7 @@ Read vitest.globalSetup.ts
 2. **Задачи ⬜ в PLAN.md** — только если нет открытых вопросов
 
 Через `AskUserQuestion` предложи:
+
 - Если есть открытые Q → выбор из открытых вопросов
 - Если нет открытых Q → выбор из задач ⬜
 
@@ -297,7 +295,7 @@ npm run test:facade:run
 
 **Запуск**: `npm run test:facade:setup` → `npm run test:facade:run` → `npm run test:facade:teardown`
 
-**Env vars**: `.env.test` (GOOGLE_API_KEY, POSTGRES_URL, REDIS_URL, NEO4J_*)
+**Env vars**: `.env.test` (GOOGLE*API_KEY, POSTGRES_URL, REDIS_URL, NEO4J*\*)
 
 ---
 
@@ -318,6 +316,7 @@ npm run test:facade:run
 **Шаблоны**: → `tests/facade/cold-start/helpers/`
 
 **Правила**:
+
 1. Проверяй phase transitions, не exact extraction
 2. Используй fixtures U1-U18 + `buildUnpackingPrompt()`
 3. Каждый тест с бизнес-комментарием (зачем проверяем)
