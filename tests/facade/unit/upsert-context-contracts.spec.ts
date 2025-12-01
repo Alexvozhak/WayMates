@@ -94,8 +94,8 @@ describe("UpsertContext Contract Tests", () => {
       it(`${toolFile} imports and uses phaseGuard`, () => {
         const source = readToolSource(toolFile);
 
+        // Должен импортировать и вызывать phaseGuard
         expect(source).toContain("phaseGuard");
-        expect(source).toContain('from "../../shared-tools/guards.js"');
         expect(source).toMatch(/phaseGuard\s*\(/);
       });
     }

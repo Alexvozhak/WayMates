@@ -1,4 +1,5 @@
 import { UpdateContextWorkflow } from "../../langchain/update-context/update-context-agent.js";
+import { updateContextParamsSchema } from "../schemas.js";
 
 import { BaseTool } from "./base-tool.js";
 
@@ -7,6 +8,10 @@ import type { UpdateContextResponse } from "../../langchain/update-context/types
 import type { UpdateContextParams } from "../schemas.js";
 
 export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateContextResponse> {
+  protected override getParamsSchema(): typeof updateContextParamsSchema {
+    return updateContextParamsSchema;
+  }
+
   protected async executeImpl(params: UpdateContextParams, userId: UserId): Promise<UpdateContextResponse> {
     const threadId = `update_ctx_${userId}`;
 

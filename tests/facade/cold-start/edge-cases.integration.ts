@@ -19,7 +19,7 @@ const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя кар�
 
 describe("Cold-Start Edge Cases (Tier 3)", () => {
   let testSessionId: SessionId;
-  const testUserId: UserId = "usr_edge_01933ec5-0000-0000-0000-000000000008";
+  const testUserId: UserId = "usr_01933ec5-0008-0000-0000-000000000008";
   const threadId = `cold_start_${testUserId}`;
 
   const runWorkflow = (message: string) => new ColdStartWorkflow(testUserId).run(message, threadId);
@@ -33,7 +33,7 @@ describe("Cold-Start Edge Cases (Tier 3)", () => {
     const [_session, sessionId] = await setupSession(testUserId);
     testSessionId = sessionId;
 
-    await cleanupColdStart(testUserId, threadId, sessionId);
+    await cleanupColdStart(testUserId, threadId);
     trackTestUser(testUserId);
   });
 
@@ -43,7 +43,6 @@ describe("Cold-Start Edge Cases (Tier 3)", () => {
 
   afterAll(async () => {
     await cleanupAllTestUsers();
-    await FacadeTestContext.getInstance().cleanup();
     await postgresService.close();
   });
 
@@ -159,7 +158,10 @@ describe("Cold-Start Edge Cases (Tier 3)", () => {
 
     const runTool = async (message: string) => {
       const result = await coldStartTool.execute({ sessionId: testSessionId, message });
-      if (!result.ok) expect.fail(`ColdStartTool error: ${result.error.message}`);
+      if (!result.ok) {
+        console.error("T15 error details:", JSON.stringify(result.error, null, 2));
+        expect.fail(`ColdStartTool error: ${result.error.message}`);
+      }
       return result.value;
     };
 

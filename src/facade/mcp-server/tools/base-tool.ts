@@ -7,6 +7,7 @@ import { FacadeError } from "./errors.js";
 import type { AdhocUserContext, TargetContext, UserId } from "../../../shared/schemas.js";
 import type { CoreTRPCClient } from "../../core-client/core-trpc-client.js";
 import type { ErrorResponse, Result, SessionId } from "../result.js";
+import type { ZodSchema } from "zod";
 
 export type SessionMiddleware = {
   validate(sessionId: SessionId): Promise<UserId>;
@@ -29,12 +30,21 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
 
   async execute(params: TParams): Promise<Result<TResult, ErrorResponse>> {
     try {
+      const schema = this.getParamsSchema();
+      if (schema) {
+        schema.parse(params);
+      }
+
       const userId = await this.session.validate(params.sessionId);
       const result = await this.executeImpl(params, userId);
       return ok(result);
     } catch (error) {
       return err(this.handleError(error));
     }
+  }
+
+  protected getParamsSchema(): ZodSchema<TParams> | undefined {
+    return undefined;
   }
 
   protected abstract executeImpl(params: TParams, userId: UserId): Promise<TResult>;

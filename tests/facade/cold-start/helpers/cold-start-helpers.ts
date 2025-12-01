@@ -1,24 +1,23 @@
 import { postgresService } from "../../../../src/facade/infrastructure/postgres.service.js";
 import { getModel } from "../../../../src/facade/langchain/shared-tools/models.js";
-import { cleanupSession } from "../../helpers/mcp-tool-helpers.js";
 import { buildUnpackingPrompt } from "../unpacking-prompt.js";
 
 import type { UserId } from "../../../../src/shared/schemas.js";
 import type { FixtureData } from "../unpacking-prompt.js";
 
 /**
- * Cleanup PostgreSQL + Redis для cold-start тестов.
+ * Cleanup PostgreSQL state для cold-start тестов.
  * Вызывается в beforeEach для изоляции между тестами.
  *
  * Очищает:
  * - PostgreSQL: cold_start_completions flag (для T04 idempotency)
  * - PostgreSQL: checkpoints для threadId (для T15 checkpoint cleanup)
- * - Redis: session keys
+ *
+ * NOTE: НЕ очищает Redis session - это делается в afterEach
  */
-export async function cleanupColdStart(userId: UserId, threadId: string, sessionId: string): Promise<void> {
+export async function cleanupColdStart(userId: UserId, threadId: string): Promise<void> {
   await postgresService.resetColdStartStatus(userId);
   await postgresService.deleteCheckpoint(threadId);
-  await cleanupSession(sessionId);
 }
 
 /**

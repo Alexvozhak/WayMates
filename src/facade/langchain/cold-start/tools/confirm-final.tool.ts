@@ -17,6 +17,21 @@ export const confirmFinalTool = tool(
     const guard = phaseGuard(state.phase, PHASE.awaiting_final_confirmation, toolCallId);
     if (guard) return guard;
 
+    if (!state.userResponse) {
+      return new Command({
+        update: {
+          /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+          messages: [
+            new ToolMessage({
+              content: `Cannot confirm: you must call ${TOOL_NAME.show_final} first to show the final preview to user and get their approval.`,
+              tool_call_id: toolCallId,
+            }),
+          ],
+          /* eslint-enable @typescript-eslint/naming-convention */
+        },
+      });
+    }
+
     const { collectedContexts, queue } = state;
 
     if (!collectedContexts || collectedContexts.length === 0) {

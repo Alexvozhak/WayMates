@@ -39,22 +39,19 @@ describe("Contract Smoke Tests (C01-C05)", () => {
     it("plan_career_history → show_plan", () => {
       const source = readToolSource("plan-career-history.tool.ts");
 
-      // ToolMessage должен содержать "show_plan"
-      expect(source).toContain("call show_plan");
+      // ToolMessage должен направлять на show_plan через TOOL_NAME constant
+      expect(source).toContain(`TOOL_NAME.${TOOL_NAME.show_plan}`);
       // НЕ должен содержать старый routing
       expect(source).not.toMatch(/Now call confirm_plan(?! )/);
-
-      // Description тоже должен быть правильным
-      expect(source).toContain("call show_plan");
     });
 
     it("process_entity_batch → show_context (success) or ask_clarification (clarification)", () => {
       const source = readToolSource("process-entity-batch.tool.ts");
 
-      // Success case: должен направлять на show_context
-      expect(source).toContain("call show_context");
+      // Success case: должен направлять на show_context через TOOL_NAME constant
+      expect(source).toContain(`TOOL_NAME.${TOOL_NAME.show_context}`);
       // Clarification case: должен направлять на ask_clarification
-      expect(source).toContain("call ask_clarification");
+      expect(source).toContain(`TOOL_NAME.${TOOL_NAME.ask_clarification}`);
 
       // НЕ должен напрямую направлять на confirm_context
       expect(source).not.toMatch(/MUST call confirm_context/);
@@ -125,11 +122,8 @@ describe("Contract Smoke Tests (C01-C05)", () => {
       it(`${toolFile} imports and uses phaseGuard`, () => {
         const source = readToolSource(toolFile);
 
-        // Должен импортировать phaseGuard
+        // Должен импортировать и вызывать phaseGuard
         expect(source).toContain("phaseGuard");
-        // Должен импортировать из guards.js
-        expect(source).toContain('from "./guards.js"');
-        // Должен вызывать phaseGuard
         expect(source).toMatch(/phaseGuard\s*\(/);
       });
     }

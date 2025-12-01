@@ -14,7 +14,7 @@ import type { UserId } from "../../../src/shared/schemas.js";
 const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя карьерная история.";
 
 describe("Cold-Start Smoke Tests (P0)", () => {
-  const testUserId: UserId = "usr_smoke_01933ec5-0000-0000-0000-000000000001";
+  const testUserId: UserId = "usr_01933ec5-0001-0000-0000-000000000001";
   const threadId = `cold_start_${testUserId}`;
 
   const runWorkflow = (message: string) => new ColdStartWorkflow(testUserId).run(message, threadId);

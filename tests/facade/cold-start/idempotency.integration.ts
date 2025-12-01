@@ -44,12 +44,15 @@ describe("Cold-Start Idempotency Tests (T04, T05)", () => {
   });
 
   beforeEach(async () => {
-    // Cleanup PostgreSQL state BEFORE creating new session
+    const ctx = FacadeTestContext.getInstance();
+
+    // Cleanup all state BEFORE creating new session
     await postgresService.resetColdStartStatus(testUserId);
     await postgresService.deleteCheckpoint(threadId);
+    // Also cleanup Neo4j to ensure test isolation
+    await ctx.coreClient.client.story.deleteStory.mutate({ userId: testUserId });
 
-    // Now create fresh session
-    const ctx = FacadeTestContext.getInstance();
+    // Create fresh session
     const [_session, sessionId] = await setupSession(testUserId);
     testSessionId = sessionId;
 
@@ -70,7 +73,6 @@ describe("Cold-Start Idempotency Tests (T04, T05)", () => {
 
   afterAll(async () => {
     await cleanupAllTestUsers();
-    await FacadeTestContext.getInstance().cleanup();
     await postgresService.close();
   });
 

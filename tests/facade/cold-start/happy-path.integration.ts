@@ -17,7 +17,7 @@ const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя кар�
 
 describe("Cold-Start Happy Path Tests (P1)", () => {
   let testSessionId: SessionId;
-  const testUserId: UserId = "usr_happy_01933ec5-0000-0000-0000-000000000002";
+  const testUserId: UserId = "usr_01933ec5-0002-0000-0000-000000000002";
   const threadId = `cold_start_${testUserId}`;
 
   const runWorkflow = (message: string) => new ColdStartWorkflow(testUserId).run(message, threadId);
@@ -31,7 +31,7 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
     const [_session, sessionId] = await setupSession(testUserId);
     testSessionId = sessionId;
 
-    await cleanupColdStart(testUserId, threadId, sessionId);
+    await cleanupColdStart(testUserId, threadId);
     trackTestUser(testUserId);
   });
 
@@ -41,7 +41,6 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
 
   afterAll(async () => {
     await cleanupAllTestUsers();
-    await FacadeTestContext.getInstance().cleanup();
     await postgresService.close();
   });
 

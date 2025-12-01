@@ -38,6 +38,7 @@ export const confirmContextTool = tool(
     return new Command({
       update: {
         phase: PHASE.awaiting_final_confirmation,
+        userResponse: undefined,
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
