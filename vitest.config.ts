@@ -116,7 +116,11 @@ export default defineConfig(() => {
         {
           test: {
             name: "facade-integration",
-            include: ["tests/facade/integration/**/*.integration.ts"],
+            include: [
+              "tests/facade/integration/**/*.integration.ts",
+              "tests/facade/cold-start/**/*.integration.ts",
+              "tests/facade/upsert-context/**/*.integration.ts",
+            ],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -127,23 +131,6 @@ export default defineConfig(() => {
             setupFiles: ["./tests/facade/helpers/test-setup.ts"],
             testTimeout: 180_000, // 3min for LLM-heavy tests (cold-start agent)
             hookTimeout: 60_000, // 1min for fixture loading (U1-U9 via tRPC)
-            env: loadEnv("test", process.cwd(), ""),
-          },
-        },
-        // LangChain agent smoke tests (lightweight, no fixture loading)
-        {
-          test: {
-            name: "facade-smoke",
-            include: ["tests/facade/cold-start/**/*.integration.ts", "tests/facade/update-context/**/*.integration.ts"],
-            pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: false,
-                singleThread: true, // LLM state requires sequential execution
-              },
-            },
-            testTimeout: 180_000, // 3min for LLM-heavy tests
-            hookTimeout: 30_000, // 30s for PostgreSQL init only
             env: loadEnv("test", process.cwd(), ""),
           },
         },

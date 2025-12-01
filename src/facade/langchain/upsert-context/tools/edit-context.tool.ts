@@ -12,7 +12,7 @@ import { TOOL_NAME } from "../workflow-constants.js";
 
 import type { UserContext } from "../../../../shared/schemas.js";
 import type { ExtractableContext } from "../../shared-tools/extraction-models.js";
-import type { UpdateContextState } from "../types.js";
+import type { UpsertContextState } from "../types.js";
 import type { ToolRuntime } from "@langchain/core/tools";
 
 const editInputSchema = z.object({
@@ -32,14 +32,14 @@ function restoreSystemFields(existing: UserContext, extracted: ExtractableContex
 }
 
 export const editContextTool = tool(
-  async ({ corrections }: EditInput, runtime: ToolRuntime<UpdateContextState>) => {
+  async ({ corrections }: EditInput, runtime: ToolRuntime<UpsertContextState>) => {
     const { state, toolCallId } = runtime;
 
     const guard = phaseGuard(state.phase, PHASE.awaiting_confirmation, toolCallId);
     if (guard) return guard;
 
-    const { updatedContext, messages } = state;
-    if (!updatedContext) {
+    const { validatedContext, messages } = state;
+    if (!validatedContext) {
       return new Command({
         update: {
           phase: PHASE.failed,
@@ -55,9 +55,9 @@ export const editContextTool = tool(
       });
     }
 
-    const prompt = contextEditPrompt(updatedContext, corrections, messages);
+    const prompt = contextEditPrompt(validatedContext, corrections, messages);
     const extracted = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
-    const corrected = restoreSystemFields(updatedContext, extracted);
+    const corrected = restoreSystemFields(validatedContext, extracted);
 
     const parseResult = userContextSchema.safeParse(corrected);
     if (!parseResult.success) {
@@ -78,11 +78,11 @@ export const editContextTool = tool(
 
     return new Command({
       update: {
-        updatedContext: parseResult.data,
+        validatedContext: parseResult.data,
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `Context updated. Now call ${TOOL_NAME.show_updated_context} to present to user.`,
+            content: `Context updated. Now call ${TOOL_NAME.show_context} to present to user.`,
             tool_call_id: toolCallId,
           }),
         ],

@@ -7,7 +7,27 @@ import { cleanupSession, setupSession } from "../../helpers/mcp-tool-helpers.js"
 import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { FacadeAdhocSearchParams } from "../../../../src/facade/mcp-server/schemas.js";
+import type { FacadeAdhocSearchParams, UpdateContextParams } from "../../../../src/facade/mcp-server/schemas.js";
+import type { AdhocUserContext, ContextField } from "../../../../src/shared/schemas.js";
+
+const createFacadeSearchParams = (
+  sessionId: SessionId,
+  referenceContext: AdhocUserContext,
+  overrides?: Partial<{
+    limit: number;
+    pathLimit: number;
+    excludedContextFields: ContextField[];
+    excludedCreationReasons: string[];
+  }>,
+): FacadeAdhocSearchParams => ({
+  sessionId,
+  referenceContext,
+  limit: 10,
+  pathLimit: 10,
+  excludedContextFields: [],
+  excludedCreationReasons: [],
+  ...overrides,
+});
 
 describe("Error Handling Integration Tests", () => {
   let testSessionId: SessionId;
@@ -32,14 +52,7 @@ describe("Error Handling Integration Tests", () => {
     const tool = new SearchCareersTool(session, ctx.normalizer, ctx.coreClient);
 
     const invalidSession = "not_a_valid_session_id";
-    const params: FacadeAdhocSearchParams = {
-      sessionId: invalidSession,
-      referenceContext: { position: "senior" },
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
-    };
+    const params = createFacadeSearchParams(invalidSession, { position: "senior" });
 
     const result = await tool.execute(params);
 
@@ -57,14 +70,7 @@ describe("Error Handling Integration Tests", () => {
     const tool = new SearchCareersTool(session, ctx.normalizer, ctx.coreClient);
 
     const expiredSession: SessionId = "sess_00000000000000000000000000000000";
-    const params: FacadeAdhocSearchParams = {
-      sessionId: expiredSession,
-      referenceContext: { position: "senior" },
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
-    };
+    const params = createFacadeSearchParams(expiredSession, { position: "senior" });
 
     const result = await tool.execute(params);
 
@@ -81,16 +87,9 @@ describe("Error Handling Integration Tests", () => {
     const [session] = await setupSession(u1.userId);
     const tool = new SearchCareersTool(session, ctx.normalizer, ctx.coreClient);
 
-    const params: FacadeAdhocSearchParams = {
-      sessionId: testSessionId,
-      referenceContext: {
-        skills: ["NonExistentSkillThatWillLikelyFail123456789"],
-      },
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
-    };
+    const params = createFacadeSearchParams(testSessionId, {
+      skills: ["NonExistentSkillThatWillLikelyFail123456789"],
+    });
 
     const result = await tool.execute(params);
 
@@ -104,14 +103,7 @@ describe("Error Handling Integration Tests", () => {
     const [session] = await setupSession(u1.userId);
     const tool = new SearchCareersTool(session, ctx.normalizer, ctx.coreClient);
 
-    const params: FacadeAdhocSearchParams = {
-      sessionId: testSessionId,
-      referenceContext: { position: "senior" },
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
-    };
+    const params = createFacadeSearchParams(testSessionId, { position: "senior" });
 
     const result = await tool.execute(params);
 
@@ -126,14 +118,7 @@ describe("Error Handling Integration Tests", () => {
     const tool = new SearchCareersTool(session, ctx.normalizer, ctx.coreClient);
 
     const invalidSession: SessionId = "sess_11111111111111111111111111111111";
-    const params: FacadeAdhocSearchParams = {
-      sessionId: invalidSession,
-      referenceContext: { position: "senior" },
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
-    };
+    const params = createFacadeSearchParams(invalidSession, { position: "senior" });
 
     const result = await tool.execute(params);
 
@@ -143,17 +128,16 @@ describe("Error Handling Integration Tests", () => {
     }
   });
 
-  // TODO: Rewrite for NLP-based update-context API (message param instead of updates)
-  // Business rule: Empty/short message rejected (validation requires min 10 chars).
+  // Business rule: Too short message rejected (validation requires min 10 chars for NLP parsing).
   // UX: Frontend should validate, but backend enforces contract for direct API access.
-  it.skip("EH8: Empty context update - validation error", async () => {
+  it("EH8: Message too short - validation error", async () => {
     const ctx = FacadeTestContext.getInstance();
     const [session] = await setupSession(u1.userId);
     const tool = new UpdateContextTool(session, ctx.normalizer, ctx.coreClient);
 
-    const params = {
+    const params: UpdateContextParams = {
       sessionId: testSessionId,
-      message: "short",
+      message: "short", // Less than 10 chars
     };
 
     const result = await tool.execute(params);
@@ -176,23 +160,8 @@ describe("Error Handling Integration Tests", () => {
     const [session2, sessionId2] = await setupSession(u2.userId);
     const tool2 = new SearchCareersTool(session2, ctx.normalizer, ctx.coreClient);
 
-    const params1: FacadeAdhocSearchParams = {
-      sessionId: sessionId1,
-      referenceContext: { position: "junior" },
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
-    };
-
-    const params2: FacadeAdhocSearchParams = {
-      sessionId: sessionId2,
-      referenceContext: { position: "senior" },
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
-    };
+    const params1 = createFacadeSearchParams(sessionId1, { position: "junior" });
+    const params2 = createFacadeSearchParams(sessionId2, { position: "senior" });
 
     const [result1, result2] = await Promise.all([tool1.execute(params1), tool2.execute(params2)]);
 
@@ -210,16 +179,9 @@ describe("Error Handling Integration Tests", () => {
     const [session] = await setupSession(u1.userId);
     const tool = new SearchCareersTool(session, ctx.normalizer, ctx.coreClient);
 
-    const params: FacadeAdhocSearchParams = {
-      sessionId: testSessionId,
-      referenceContext: {
-        skills: ["питон", "реакт"],
-      },
-      limit: 10,
-      pathLimit: 10,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
-    };
+    const params = createFacadeSearchParams(testSessionId, {
+      skills: ["питон", "реакт"],
+    });
 
     const result = await tool.execute(params);
 

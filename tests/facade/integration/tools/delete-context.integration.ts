@@ -1,22 +1,25 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { DeleteContextTool } from "../../../../src/facade/mcp-server/tools/delete-context.tool.js";
-import { UpsertContextTool } from "../../../../src/facade/mcp-server/tools/upsert-context.tool.js";
+import { UserStories } from "../../../core/helpers/user-stories.js";
 import { FacadeTestContext } from "../../helpers/test-context.js";
 import { cleanupSession, setupSession } from "../../helpers/mcp-tool-helpers.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type {
-  DeleteContextParams,
-  UpsertContextParams,
-} from "../../../../src/facade/mcp-server/schemas.js";
-import type { ContextId, UserId } from "../../../../src/shared/schemas.js";
+import type { DeleteContextParams } from "../../../../src/facade/mcp-server/schemas.js";
+import type { ContextId, UserContext } from "../../../../src/shared/schemas.js";
+
+const userStories = new UserStories();
+const u1 = userStories.getStoryBy("U1");
+const u1Context = u1.contexts[0];
+if (!u1Context) {
+  throw new Error("U1 fixture must have at least one context");
+}
 
 describe("DeleteContextTool Integration Tests", () => {
   let deleteTool: DeleteContextTool;
-  let upsertTool: UpsertContextTool;
   let testSessionId: SessionId;
-  const testUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c111";
+  const testUserId = u1.userId;
 
   beforeEach(async () => {
     const ctx = FacadeTestContext.getInstance();
@@ -24,7 +27,6 @@ describe("DeleteContextTool Integration Tests", () => {
     testSessionId = sessionId;
 
     deleteTool = new DeleteContextTool(session, ctx.normalizer, ctx.coreClient);
-    upsertTool = new UpsertContextTool(session, ctx.normalizer, ctx.coreClient);
   });
 
   afterEach(async () => {
@@ -34,25 +36,19 @@ describe("DeleteContextTool Integration Tests", () => {
   // Business rule: User can delete context to clean up incorrect/outdated career history.
   // Flow: validate session → delete from DB → success (context and relationships removed).
   it("DC1: Delete existing context - removes context successfully", async () => {
+    const ctx = FacadeTestContext.getInstance();
     const contextId: ContextId = "ctx_01933ec5-c5f0-7a57-af82-87199be6caaa";
-    const upsertParams: UpsertContextParams = {
-      sessionId: testSessionId,
-      context: {
-        contextId,
-        createdAt: "2025-01-15T00:00:00Z",
-        creationReason: ["started_working"],
-        position: "junior",
-        domains: ["Frontend"],
-        skills: ["React"],
-        industry: "tech",
-        companySize: "startup",
-        countryCode: "us",
-        cityName: "san-francisco",
-        citizenships: ["us"],
-        birthYear: 1995,
-      },
+    const testContext: UserContext = {
+      ...u1Context,
+      contextId,
+      previousContextId: null,
+      nextContextId: null,
     };
-    await upsertTool.execute(upsertParams);
+
+    await ctx.coreClient.client.context.upsertContext.mutate({
+      userId: testUserId,
+      context: testContext,
+    });
 
     const deleteParams: DeleteContextParams = {
       sessionId: testSessionId,

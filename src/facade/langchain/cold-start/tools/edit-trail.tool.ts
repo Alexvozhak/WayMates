@@ -4,8 +4,7 @@ import { tool } from "langchain";
 import { z } from "zod";
 
 import { trailSchema } from "../../../../shared/schemas.js";
-import { extractableTrailSchema } from "../../shared-tools/extraction-models.js";
-import { getModel } from "../../shared-tools/models.js";
+import { trailCorrectionModel } from "../../shared-tools/extraction-models.js";
 import { trailCorrectionPrompt } from "../prompts.js";
 import { PHASE } from "../types.js";
 import { TOOL_NAME } from "../workflow-constants.js";
@@ -20,10 +19,6 @@ const editTrailInputSchema = z.object({
 });
 
 type EditTrailInput = z.infer<typeof editTrailInputSchema>;
-
-const correctionModel = getModel("extraction")
-  .withStructuredOutput(extractableTrailSchema)
-  .withRetry({ stopAfterAttempt: 2 });
 
 function findTrail(trails: Trail[], trailId: string): Trail | undefined {
   return trails.find((t) => t.trailId === trailId);
@@ -52,7 +47,7 @@ export const editTrailTool = tool(
     }
 
     const prompt = trailCorrectionPrompt(existingTrail, corrections, messages);
-    const extracted = await correctionModel.invoke([new HumanMessage(prompt)]);
+    const extracted = await trailCorrectionModel.invoke([new HumanMessage(prompt)]);
 
     const correctedTrail: Trail = {
       ...extracted,

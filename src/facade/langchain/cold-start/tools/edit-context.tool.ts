@@ -4,8 +4,7 @@ import { tool } from "langchain";
 import { z } from "zod";
 
 import { userContextSchema } from "../../../../shared/schemas.js";
-import { extractableContextSchema } from "../../shared-tools/extraction-models.js";
-import { getModel } from "../../shared-tools/models.js";
+import { contextCorrectionModel } from "../../shared-tools/extraction-models.js";
 import { contextCorrectionPrompt } from "../prompts.js";
 import { PHASE } from "../types.js";
 import { TOOL_NAME } from "../workflow-constants.js";
@@ -20,10 +19,6 @@ const editContextInputSchema = z.object({
 });
 
 type EditContextInput = z.infer<typeof editContextInputSchema>;
-
-const correctionModel = getModel("extraction")
-  .withStructuredOutput(extractableContextSchema)
-  .withRetry({ stopAfterAttempt: 2 });
 
 function findContext(contexts: UserContext[], contextId: string): UserContext | undefined {
   return contexts.find((ctx) => ctx.contextId === contextId);
@@ -56,7 +51,7 @@ export const editContextTool = tool(
     }
 
     const prompt = contextCorrectionPrompt(existingContext, corrections, messages);
-    const extracted = await correctionModel.invoke([new HumanMessage(prompt)]);
+    const extracted = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
 
     const correctedContext: UserContext = {
       ...extracted,

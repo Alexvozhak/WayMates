@@ -6,7 +6,6 @@ import {
   targetContextSchema,
   trailIdSchema,
   trailSchema,
-  upsertContextInputSchema,
   userIdSchema,
   userSearchParamsRawSchema,
 } from "../../shared/schemas.js";
@@ -93,7 +92,14 @@ export const deleteContextParamsSchema = z.object({
 
 export type DeleteContextParams = z.infer<typeof deleteContextParamsSchema>;
 
-export const upsertContextParamsSchema = upsertContextInputSchema.omit({ userId: true }).extend({
+export const upsertContextParamsSchema = z.object({
+  message: z
+    .string()
+    .min(10)
+    .describe(
+      "User message describing a new career context in natural language. " +
+        "Example: 'Я работаю senior backend в Яндексе с 2023 года в Москве, пишу на Python и Go'",
+    ),
   sessionId: sessionIdSchema,
 });
 
