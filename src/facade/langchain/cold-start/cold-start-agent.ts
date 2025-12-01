@@ -6,6 +6,7 @@ import { getModel } from "../shared-tools/models.js";
 
 import { SYSTEM_PROMPT } from "./prompts.js";
 import { failedResponse, responseBuilders } from "./response-builders.js";
+import { cancelWorkflowTool } from "./tools/cancel-workflow.tool.js";
 import { confirmContextTool } from "./tools/confirm-context.tool.js";
 import { confirmFinalTool } from "./tools/confirm-final.tool.js";
 import { confirmPlanTool } from "./tools/confirm-plan.tool.js";
@@ -33,6 +34,7 @@ const COLD_START_TOOLS = [
   confirmPlanTool,
   confirmContextTool,
   confirmFinalTool,
+  cancelWorkflowTool,
 ];
 
 const TERMINAL_PHASES: readonly ColdStartPhase[] = [PHASE.saved, PHASE.already_saved, PHASE.failed];

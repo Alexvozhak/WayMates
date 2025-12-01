@@ -19,7 +19,7 @@ export const updateContextStateSchema = z.object({
   messages: MessagesZodState.shape.messages,
   phase: updateContextPhaseSchema.default("collecting"),
   userId: userIdSchema,
-  currentContext: userContextSchema.optional(),
+  currentContext: userContextSchema,
   extractedUpdates: z.record(z.string(), z.unknown()).optional(),
   updatedContext: userContextSchema.optional(),
   clarificationRound: z.number().default(0),
@@ -41,13 +41,6 @@ export const updateContextResponseSchema = z.discriminatedUnion("phase", [
     phase: z.literal("awaiting_confirmation"),
     before: userContextSchema,
     after: userContextSchema,
-    diff: z.record(
-      z.string(),
-      z.object({
-        before: z.unknown(),
-        after: z.unknown(),
-      }),
-    ),
   }),
   z.object({
     phase: z.literal("saved"),

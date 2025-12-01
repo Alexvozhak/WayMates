@@ -1,3 +1,5 @@
+import { InvalidStateError } from "../../mcp-server/tools/errors.js";
+
 import { PHASE } from "./types.js";
 
 import type { UpdateContextPhase, UpdateContextResponse, UpdateContextState } from "./types.js";
@@ -18,17 +20,26 @@ export const responseBuilders: { [P in UpdateContextPhase]: ResponseBuilder<P> }
     missingFields: [],
   }),
 
-  [PHASE.awaiting_confirmation]: (state) => ({
-    phase: PHASE.awaiting_confirmation,
-    before: state.currentContext!,
-    after: state.updatedContext!,
-    diff: {},
-  }),
+  [PHASE.awaiting_confirmation]: (state) => {
+    if (!state.updatedContext) {
+      throw new InvalidStateError(PHASE.awaiting_confirmation, "updatedContext is missing");
+    }
+    return {
+      phase: PHASE.awaiting_confirmation,
+      before: state.currentContext,
+      after: state.updatedContext,
+    };
+  },
 
-  [PHASE.saved]: (state) => ({
-    phase: PHASE.saved,
-    updatedContext: state.updatedContext!,
-  }),
+  [PHASE.saved]: (state) => {
+    if (!state.updatedContext) {
+      throw new InvalidStateError(PHASE.saved, "updatedContext is missing");
+    }
+    return {
+      phase: PHASE.saved,
+      updatedContext: state.updatedContext,
+    };
+  },
 
   [PHASE.failed]: () => ({
     phase: PHASE.failed,

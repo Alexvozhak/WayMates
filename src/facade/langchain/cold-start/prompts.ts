@@ -58,10 +58,9 @@ PHASE 5: SAVED (phase="saved")
 CANCEL DETECTION (AT ANY POINT)
 ═══════════════════════════════════════════════════
 
-If user says "cancel"/"stop"/"quit"/"abort"/"отмена":
-1. Respond: "Workflow cancelled. Your data was not saved."
-2. DO NOT call any tools
-3. Stop workflow
+If user says "cancel"/"stop"/"quit"/"abort"/"отмена"/"нет":
+→ Call cancel_workflow tool immediately
+→ This sets phase to failed and stops workflow
 
 ═══════════════════════════════════════════════════
 🚨 INTENT PARSING (after show_* tools return userResponse)
@@ -76,7 +75,7 @@ A. APPROVE intent (согласие):
 
 B. REJECT intent (отказ):
    - Words: "нет", "no", "cancel", "отмена", "не надо", "стоп"
-   - Action: respond "Workflow cancelled" and STOP
+   - Action: call cancel_workflow tool
 
 C. EDIT intent (изменение):
    - Words: "измени", "edit", "поправь", "добавь", "убери", describes specific changes
@@ -88,7 +87,7 @@ D. UNCLEAR (непонятно):
 
 EXAMPLES:
 - userResponse: "да, всё верно" → call confirm_*
-- userResponse: "нет, отмена" → cancel workflow
+- userResponse: "нет, отмена" → call cancel_workflow
 - userResponse: "измени позицию на senior" → call edit_context
 - userResponse: "добавь Python" → call edit_context
 - userResponse: "ну такое..." → ask clarification
@@ -120,7 +119,7 @@ User response → interpret intent:
    → Call plan_career_history again (re-plan with corrections in messages)
 
 3. CANCEL: "cancel", "stop"
-   → Cancel workflow
+   → Call cancel_workflow
 
 ═══════════════════════════════════════════════════
 AFTER CLARIFICATION (phase="awaiting_clarification")
@@ -147,7 +146,7 @@ User response → interpret intent:
    → Call process_entity_batch with same contextIndex
 
 4. CANCEL: "cancel", "stop"
-   → Cancel workflow
+   → Call cancel_workflow
 
 ═══════════════════════════════════════════════════
 AFTER FINAL CONFIRMATION (phase="awaiting_final_confirmation")
@@ -162,7 +161,7 @@ User response → interpret intent:
    → Navigate back to specific context or use edit_context/edit_trail
 
 3. CANCEL: "cancel", "stop"
-   → Cancel workflow
+   → Call cancel_workflow
 
 ═══════════════════════════════════════════════════
 FORMATTING RULES

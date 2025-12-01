@@ -11,6 +11,7 @@ export const TOOL_NAME = {
   edit_trail: "edit_trail",
   show_final: "show_final",
   confirm_final: "confirm_final",
+  cancel_workflow: "cancel_workflow",
 } as const;
 /* eslint-enable @typescript-eslint/naming-convention */
 
