@@ -85,8 +85,8 @@ describe("Cold-Start Smoke Tests (P0)", () => {
     );
   }, 120_000);
 
-  // T03: Plan confirmation → extraction
-  it("T03: Plan confirmation triggers extraction", async () => {
+  // T02.5: Plan confirmation → extraction (smoke extension of T02)
+  it("T02.5: Plan confirmation triggers extraction", async () => {
     // Business rule: После подтверждения плана agent извлекает первый контекст.
     // Проверяет interrupt-resume flow + process_entity_batch + ToolMessage.
 
@@ -103,7 +103,7 @@ describe("Cold-Start Smoke Tests (P0)", () => {
       expect.fail(`Expected awaiting_plan_confirmation, got ${planResponse.phase}`);
     }
 
-    console.log(`T03 step 1: plan created with ${planResponse.queue.length} contexts`);
+    console.log(`T02.5 step 1: plan created with ${planResponse.queue.length} contexts`);
 
     // Step 2: Подтверждаем план → process_entity_batch
     const confirmResponse = await runWorkflow("да, всё верно");
@@ -111,10 +111,10 @@ describe("Cold-Start Smoke Tests (P0)", () => {
     // Step 3: Ожидаем extraction phase
     if (confirmResponse.phase === PHASE.awaiting_context_confirmation) {
       console.log(
-        `T03 result: extracted "${confirmResponse.entity.position}" (${confirmResponse.progress.current}/${confirmResponse.progress.total})`,
+        `T02.5 result: extracted "${confirmResponse.entity.position}" (${confirmResponse.progress.current}/${confirmResponse.progress.total})`,
       );
     } else if (confirmResponse.phase === PHASE.awaiting_clarification) {
-      console.log(`T03 result: clarification needed for ${confirmResponse.missingFields.length} field(s)`);
+      console.log(`T02.5 result: clarification needed for ${confirmResponse.missingFields.length} field(s)`);
     } else {
       expect.fail(`Expected extraction phase, got ${confirmResponse.phase}`);
     }

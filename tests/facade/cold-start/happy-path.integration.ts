@@ -147,4 +147,194 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
 
     console.log(`T06 [4/4]: ✅ Workflow complete! Saved ${savedResponse.contexts.length} contexts`);
   }, 240_000); // 4 min timeout for multi-context workflow
+
+  /**
+   * T03: Multi-context with trails (U10 fixture)
+   *
+   * Business rule: Cold-start должен корректно обрабатывать историю
+   * с 3+ контекстами и trails между ними.
+   *
+   * U10 fixture:
+   * - 3 contexts: junior → middle → senior
+   * - 2 trails: typescript (udemy), system-design (coursera)
+   *
+   * Проверяем:
+   * - Queue содержит >= 3 контекстов
+   * - Saved response содержит >= 3 контекстов
+   * - Trails корректно связаны с контекстами
+   */
+  it("T03: Multi-context (3+) → saved with U10 fixture", async () => {
+    const userStories = new UserStories();
+    const u10 = userStories.getStoryBy("U10"); // 3 contexts + 2 trails
+
+    const story = await generateStoryFromFixture(u10);
+    const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
+
+    console.log("T03 [1/4]: Sending U10 story (3 contexts + 2 trails)");
+    const planResponse = await runWorkflow(storyWithTrigger);
+
+    if (planResponse.phase !== PHASE.awaiting_plan_confirmation) {
+      expect.fail(`Expected awaiting_plan_confirmation, got ${planResponse.phase}`);
+    }
+
+    // Business assertion: должно быть минимум 3 контекста в queue
+    expect(planResponse.queue.length).toBeGreaterThanOrEqual(3);
+    console.log(`T03 [1/4]: ✅ Plan has ${planResponse.queue.length} contexts in queue`);
+
+    // Check trails are mentioned in queue (incomingTrails)
+    const contextsWithTrails = planResponse.queue.filter((q) => q.incomingTrails.length > 0);
+    console.log(`T03 [1/4]: ${contextsWithTrails.length} contexts have incoming trails`);
+
+    console.log("T03 [2/4]: Confirming plan...");
+    let currentResponse = await runWorkflow("да, всё верно");
+
+    // Loop through all contexts
+    while (currentResponse.phase === PHASE.awaiting_context_confirmation) {
+      console.log(
+        `T03 [3/4]: Confirming context ${currentResponse.progress.current}/${currentResponse.progress.total}`,
+      );
+      currentResponse = await runWorkflow("да, верно");
+    }
+
+    if (currentResponse.phase === PHASE.awaiting_clarification) {
+      console.log("T03: ⚠️ Clarification needed, cannot complete test deterministically");
+      expect.fail("T03 requires extraction without clarification");
+    }
+
+    if (currentResponse.phase !== PHASE.awaiting_final_confirmation) {
+      expect.fail(`Expected awaiting_final_confirmation, got ${currentResponse.phase}`);
+    }
+
+    // Business assertion: summary should show >= 3 contexts
+    expect(currentResponse.summary.contextsCount).toBeGreaterThanOrEqual(3);
+    console.log(
+      `T03 [3/4]: ✅ Final summary: ${currentResponse.summary.contextsCount} contexts, ${currentResponse.summary.trailsCount} trails`,
+    );
+
+    console.log("T03 [4/4]: Final confirmation → saved");
+    const savedResponse = await runWorkflow("сохрани");
+
+    expect(savedResponse.phase).toBe(PHASE.saved);
+    if (savedResponse.phase !== PHASE.saved) {
+      expect.fail(`Expected saved, got ${savedResponse.phase}`);
+    }
+
+    // Business assertion: saved contexts >= 3
+    expect(savedResponse.contexts.length).toBeGreaterThanOrEqual(3);
+    console.log(`T03 [4/4]: ✅ Saved ${savedResponse.contexts.length} contexts`);
+  }, 300_000); // 5 min timeout for complex workflow
+
+  /**
+   * T07: Trails extraction with correct links
+   *
+   * Business rule: Trails должны быть корректно связаны с контекстами
+   * через fromContextId и toContextId.
+   *
+   * U10 fixture trails:
+   * - Trail 1: typescript (junior → middle)
+   * - Trail 2: system-design (middle → senior)
+   *
+   * Проверяем:
+   * - Trails присутствуют в saved response (минимум 1)
+   * - Trails имеют skill и platform
+   * - Trails связаны с контекстами (не null fromContextId/toContextId)
+   *
+   * ВАЖНО: Это НЕ строгий тест "извлечь все 2 trails" — LLM может
+   * извлечь 1 из 2. Но если 0 — это regression.
+   */
+  // eslint-disable-next-line complexity -- integration test with sequential steps
+  it("T07: Trails extraction with correct context links", async () => {
+    const userStories = new UserStories();
+    const u10 = userStories.getStoryBy("U10"); // 3 contexts + 2 trails
+
+    const story = await generateStoryFromFixture(u10);
+    const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
+
+    console.log("T07 [1/4]: Sending U10 story for trails extraction");
+    const planResponse = await runWorkflow(storyWithTrigger);
+
+    if (planResponse.phase !== PHASE.awaiting_plan_confirmation) {
+      expect.fail(`Expected awaiting_plan_confirmation, got ${planResponse.phase}`);
+    }
+
+    // Check that plan mentions trails (incomingTrails in queue)
+    const totalIncomingTrails = planResponse.queue.reduce((sum, q) => sum + q.incomingTrails.length, 0);
+    console.log(`T07 [1/4]: Plan queue has ${totalIncomingTrails} total incoming trail references`);
+
+    console.log("T07 [2/4]: Confirming plan...");
+    let currentResponse = await runWorkflow("да, всё верно");
+
+    // Loop through all contexts
+    while (currentResponse.phase === PHASE.awaiting_context_confirmation) {
+      console.log(
+        `T07 [3/4]: Confirming context ${currentResponse.progress.current}/${currentResponse.progress.total}`,
+      );
+
+      // Log and verify trails for this context
+      const trails = currentResponse.relatedTrails;
+      if (trails.length > 0) {
+        console.log(`T07 [3/4]: Context has ${trails.length} related trail(s)`);
+      }
+      // Verify trail structure (assertions MUST pass for any extracted trails)
+      for (const trail of trails) {
+        expect(trail.skill).toBeDefined();
+        expect(trail.platform).toBeDefined();
+      }
+
+      currentResponse = await runWorkflow("да, верно");
+    }
+
+    if (currentResponse.phase === PHASE.awaiting_clarification) {
+      console.log("T07: ⚠️ Clarification needed, cannot complete test deterministically");
+      expect.fail("T07 requires extraction without clarification");
+    }
+
+    if (currentResponse.phase !== PHASE.awaiting_final_confirmation) {
+      expect.fail(`Expected awaiting_final_confirmation, got ${currentResponse.phase}`);
+    }
+
+    // Check trails in final summary
+    console.log(`T07 [3/4]: Summary shows ${currentResponse.summary.trailsCount} trails`);
+
+    console.log("T07 [4/4]: Final confirmation → saved");
+    const savedResponse = await runWorkflow("сохрани");
+
+    expect(savedResponse.phase).toBe(PHASE.saved);
+    if (savedResponse.phase !== PHASE.saved) {
+      expect.fail(`Expected saved, got ${savedResponse.phase}`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // BUSINESS ASSERTIONS — эти проверки ДОЛЖНЫ падать при regression
+    // ═══════════════════════════════════════════════════════════════════
+
+    // U10 has 2 trails — LLM should extract at least 1
+    // Если 0 — это regression в extraction или System Prompt
+    expect(savedResponse.trails.length).toBeGreaterThanOrEqual(1);
+    console.log(`T07 [4/4]: ✅ Saved ${savedResponse.trails.length} trail(s) (expected >= 1)`);
+
+    // Verify each trail has required structure
+    for (const trail of savedResponse.trails) {
+      expect(trail.trailId).toMatch(/^trl_/);
+      expect(trail.skill).toBeDefined();
+      expect(trail.platform).toBeDefined();
+
+      // At least one of fromContextId/toContextId should be set
+      const hasContextLink = trail.fromContextId || trail.toContextId;
+      expect(hasContextLink).toBeTruthy();
+      console.log(`T07 [4/4]: Trail "${trail.skill}" has context link: ${hasContextLink ? "✅" : "❌"}`);
+
+      // If fromContextId is set, verify it references a saved context
+      if (trail.fromContextId) {
+        const fromExists = savedResponse.contexts.some((c) => c.contextId === trail.fromContextId);
+        expect(fromExists).toBe(true);
+      }
+
+      // If toContextId is set, verify it references a saved context
+      if (trail.toContextId) {
+        const toExists = savedResponse.contexts.some((c) => c.contextId === trail.toContextId);
+        expect(toExists).toBe(true);
+      }
+    }
+  }, 300_000); // 5 min timeout for complex workflow
 });
