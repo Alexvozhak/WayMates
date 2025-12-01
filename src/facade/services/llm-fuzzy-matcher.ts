@@ -1,9 +1,11 @@
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 
+import { getModel } from "../langchain/shared-tools/models.js";
+
 import type { SimpleDictionaryType } from "../../shared/schemas.js";
+import type { ChatOpenAI } from "@langchain/openai";
 
 const fuzzyMatchResultSchema = z.object({
   canonical: z.string().nullable(),
@@ -12,21 +14,16 @@ const fuzzyMatchResultSchema = z.object({
 });
 
 export class LLMFuzzyMatcher {
-  private readonly model: ChatGoogleGenerativeAI;
+  private readonly model: ChatOpenAI;
   private readonly parser: StructuredOutputParser<typeof fuzzyMatchResultSchema>;
   private readonly prompt: ChatPromptTemplate;
 
-  constructor(apiKey: string) {
-    this.model = new ChatGoogleGenerativeAI({
-      model: "gemini-2.0-flash",
-      temperature: 0,
-      apiKey,
-    });
+  constructor() {
+    this.model = getModel("deterministic");
 
     this.parser = StructuredOutputParser.fromZodSchema(fuzzyMatchResultSchema);
 
-    this.prompt =
-      ChatPromptTemplate.fromTemplate(`You are a term normalization assistant for career data.
+    this.prompt = ChatPromptTemplate.fromTemplate(`You are a term normalization assistant for career data.
 
 Dictionary ({type}): {dictEntries}
 
@@ -43,11 +40,7 @@ Rules:
 Output ONLY valid JSON, no markdown.`);
   }
 
-  async fuzzyMatch(
-    type: SimpleDictionaryType,
-    value: string,
-    dict: Map<string, string>,
-  ): Promise<string | null> {
+  async fuzzyMatch(type: SimpleDictionaryType, value: string, dict: Map<string, string>): Promise<string | null> {
     if (dict.size === 0) {
       throw new TypeError(
         `Cannot fuzzy match ${type}:"${value}" with empty dictionary. ` +

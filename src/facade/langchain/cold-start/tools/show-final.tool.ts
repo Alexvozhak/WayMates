@@ -4,6 +4,7 @@ import { tool } from "langchain";
 import { z } from "zod";
 
 import { PHASE } from "../types.js";
+import { TOOL_NAME } from "../workflow-constants.js";
 
 import type { ColdStartState } from "../types.js";
 import type { ToolRuntime } from "@langchain/core/tools";
@@ -33,7 +34,7 @@ export const showFinalTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `Пользователь ответил: "${userMessage}". Проанализируй ответ по правилам INTENT PARSING и вызови confirm_final (если согласие сохранить), edit_context/edit_trail (если изменения), или отмени workflow (если отказ).`,
+            content: `Пользователь ответил: "${userMessage}". Проанализируй ответ по правилам INTENT PARSING и вызови ${TOOL_NAME.confirm_final} (если согласие сохранить), ${TOOL_NAME.edit_context}/${TOOL_NAME.edit_trail} (если изменения), или отмени workflow (если отказ).`,
             tool_call_id: toolCallId,
           }),
         ],
@@ -42,11 +43,11 @@ export const showFinalTool = tool(
     });
   },
   {
-    name: "show_final",
+    name: TOOL_NAME.show_final,
     description:
-      "Show complete career history for final confirmation before save. " +
-      "Call when all contexts are processed. " +
-      "After this tool returns, analyze userResponse and decide: confirm_final or edit/cancel.",
+      `Show complete career history for final confirmation before save. ` +
+      `Call when all contexts are processed. ` +
+      `After this tool returns, analyze userResponse and decide: ${TOOL_NAME.confirm_final} or edit/cancel.`,
     schema: z.object({}),
   },
 );

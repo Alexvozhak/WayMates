@@ -22,7 +22,7 @@ export class FacadeTestContext {
     const coreClient = new CoreTRPCClient(testEnv.CORE_API_URL);
 
     const llmMatcherMock = createMockLLMFuzzyMatcher();
-    const llmMatcherReal = new LLMFuzzyMatcher(testEnv.GOOGLE_API_KEY);
+    const llmMatcherReal = new LLMFuzzyMatcher();
 
     console.log("[Facade Setup] Creating Redis singleton...");
     const redis = new Redis({

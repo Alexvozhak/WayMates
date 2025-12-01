@@ -3,9 +3,9 @@ import { Command } from "@langchain/langgraph";
 import { tool } from "langchain";
 import { z } from "zod";
 
+import { phaseGuard } from "../../shared-tools/guards.js";
 import { PHASE } from "../types.js";
-
-import { phaseGuard } from "./guards.js";
+import { TOOL_NAME } from "../workflow-constants.js";
 
 import type { ColdStartState } from "../types.js";
 import type { ToolRuntime } from "@langchain/core/tools";
@@ -22,8 +22,7 @@ export const confirmPlanTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content:
-              "Plan confirmed. Now call process_entity_batch to start extraction (contextIndex: 0).",
+            content: `Plan confirmed. Now call ${TOOL_NAME.process_entity_batch} to start extraction (contextIndex: 0).`,
             tool_call_id: toolCallId,
           }),
         ],
@@ -32,10 +31,10 @@ export const confirmPlanTool = tool(
     });
   },
   {
-    name: "confirm_plan",
+    name: TOOL_NAME.confirm_plan,
     description:
-      "Confirm plan. Call when user APPROVED (да, ok, yes, подтверждаю, норм). " +
-      "You must analyze userResponse from show_plan first.",
+      `Confirm plan. Call when user APPROVED (да, ok, yes, подтверждаю, норм). ` +
+      `You must analyze userResponse from ${TOOL_NAME.show_plan} first.`,
     schema: z.object({}),
   },
 );

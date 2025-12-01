@@ -1,5 +1,5 @@
 import { postgresService } from "../../infrastructure/postgres.service.js";
-import { runColdStartWorkflow } from "../../langchain/cold-start/cold-start-agent.js";
+import { ColdStartWorkflow } from "../../langchain/cold-start/cold-start-agent.js";
 
 import { BaseTool } from "./base-tool.js";
 
@@ -19,7 +19,8 @@ export class ColdStartTool extends BaseTool<ColdStartParams, ColdStartResponse> 
       };
     }
 
-    const response = await runColdStartWorkflow(params.message, threadId, userId);
+    const workflow = new ColdStartWorkflow(userId);
+    const response = await workflow.run(params.message, threadId);
 
     if (response.phase === "saved") {
       await this.handleSaved(response, threadId);

@@ -1,15 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 
 import { postgresService } from "../../../src/facade/infrastructure/postgres.service.js";
-import { runColdStartWorkflow } from "../../../src/facade/langchain/cold-start/cold-start-agent.js";
-import { setupSession, cleanupSession } from "../helpers/mcp-tool-helpers.js";
-import { trackTestUser, cleanupAllTestUsers } from "../helpers/test-users-tracker.js";
+import { ColdStartWorkflow } from "../../../src/facade/langchain/cold-start/cold-start-agent.js";
+import { PHASE } from "../../../src/facade/langchain/cold-start/types.js";
 import { UserStories } from "../../core/helpers/user-stories.js";
 
-import { cleanupColdStart, generateStoryFromFixture } from "./helpers/cold-start-helpers.js";
-import { PHASE } from "../../../src/facade/langchain/cold-start/types.js";
+import { generateStoryFromFixture } from "./helpers/cold-start-helpers.js";
 
-import type { SessionId } from "../../../src/facade/mcp-server/result.js";
 import type { UserId } from "../../../src/shared/schemas.js";
 
 // Триггер для перехода story_gathering → plan_career_history.
@@ -17,29 +14,20 @@ import type { UserId } from "../../../src/shared/schemas.js";
 const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя карьерная история.";
 
 describe("Cold-Start Smoke Tests (P0)", () => {
-  let testSessionId: SessionId;
   const testUserId: UserId = "usr_smoke_01933ec5-0000-0000-0000-000000000001";
   const threadId = `cold_start_${testUserId}`;
 
-  // PostgreSQL инициализация для checkpointer
+  const runWorkflow = (message: string) => new ColdStartWorkflow(testUserId).run(message, threadId);
+
   beforeAll(async () => {
     await postgresService.initialize();
   });
 
   beforeEach(async () => {
-    const [_session, sessionId] = await setupSession(testUserId);
-    testSessionId = sessionId;
-
-    await cleanupColdStart(testUserId, threadId, sessionId);
-    trackTestUser(testUserId);
-  });
-
-  afterEach(async () => {
-    await cleanupSession(testSessionId);
+    await postgresService.deleteCheckpoint(threadId);
   });
 
   afterAll(async () => {
-    await cleanupAllTestUsers();
     await postgresService.close();
   });
 
@@ -50,7 +38,7 @@ describe("Cold-Start Smoke Tests (P0)", () => {
 
     const message = "Hello";
 
-    const response = await runColdStartWorkflow(message, threadId, testUserId);
+    const response = await runWorkflow(message);
 
     // Business assertion: Phase должна быть story_gathering (начальная фаза)
     expect(response.phase).toBe("story_gathering");
@@ -72,7 +60,7 @@ describe("Cold-Start Smoke Tests (P0)", () => {
     const story = await generateStoryFromFixture(u1);
     const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
 
-    const response = await runColdStartWorkflow(storyWithTrigger, threadId, testUserId);
+    const response = await runWorkflow(storyWithTrigger);
 
     // Business assertions per phase (discriminated union)
     if (response.phase === "story_gathering") {
@@ -109,7 +97,7 @@ describe("Cold-Start Smoke Tests (P0)", () => {
     const story = await generateStoryFromFixture(u1);
     const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
 
-    const planResponse = await runColdStartWorkflow(storyWithTrigger, threadId, testUserId);
+    const planResponse = await runWorkflow(storyWithTrigger);
 
     if (planResponse.phase !== PHASE.awaiting_plan_confirmation) {
       expect.fail(`Expected awaiting_plan_confirmation, got ${planResponse.phase}`);
@@ -118,7 +106,7 @@ describe("Cold-Start Smoke Tests (P0)", () => {
     console.log(`T03 step 1: plan created with ${planResponse.queue.length} contexts`);
 
     // Step 2: Подтверждаем план → process_entity_batch
-    const confirmResponse = await runColdStartWorkflow("да, всё верно", threadId, testUserId);
+    const confirmResponse = await runWorkflow("да, всё верно");
 
     // Step 3: Ожидаем extraction phase
     if (confirmResponse.phase === PHASE.awaiting_context_confirmation) {
@@ -126,9 +114,7 @@ describe("Cold-Start Smoke Tests (P0)", () => {
         `T03 result: extracted "${confirmResponse.entity.position}" (${confirmResponse.progress.current}/${confirmResponse.progress.total})`,
       );
     } else if (confirmResponse.phase === PHASE.awaiting_clarification) {
-      console.log(
-        `T03 result: clarification needed for ${confirmResponse.missingFields.length} field(s)`,
-      );
+      console.log(`T03 result: clarification needed for ${confirmResponse.missingFields.length} field(s)`);
     } else {
       expect.fail(`Expected extraction phase, got ${confirmResponse.phase}`);
     }

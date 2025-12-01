@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
 
 import { postgresService } from "../../../src/facade/infrastructure/postgres.service.js";
-import { runColdStartWorkflow } from "../../../src/facade/langchain/cold-start/cold-start-agent.js";
+import { ColdStartWorkflow } from "../../../src/facade/langchain/cold-start/cold-start-agent.js";
+import { PHASE } from "../../../src/facade/langchain/cold-start/types.js";
 import { setupSession, cleanupSession } from "../helpers/mcp-tool-helpers.js";
 import { trackTestUser, cleanupAllTestUsers } from "../helpers/test-users-tracker.js";
 import { UserStories } from "../../core/helpers/user-stories.js";
 
 import { cleanupColdStart, generateStoryFromFixture } from "./helpers/cold-start-helpers.js";
-import { PHASE } from "../../../src/facade/langchain/cold-start/types.js";
+import { FacadeTestContext } from "../helpers/test-context.js";
 
 import type { SessionId } from "../../../src/facade/mcp-server/result.js";
 import type { UserId } from "../../../src/shared/schemas.js";
@@ -19,7 +20,10 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
   const testUserId: UserId = "usr_happy_01933ec5-0000-0000-0000-000000000002";
   const threadId = `cold_start_${testUserId}`;
 
+  const runWorkflow = (message: string) => new ColdStartWorkflow(testUserId).run(message, threadId);
+
   beforeAll(async () => {
+    FacadeTestContext.initialize();
     await postgresService.initialize();
   });
 
@@ -37,6 +41,7 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
 
   afterAll(async () => {
     await cleanupAllTestUsers();
+    await FacadeTestContext.getInstance().cleanup();
     await postgresService.close();
   });
 
@@ -62,7 +67,7 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
     const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
 
     console.log("T06 [1/4]: Sending story → awaiting_plan_confirmation");
-    const planResponse = await runColdStartWorkflow(storyWithTrigger, threadId, testUserId);
+    const planResponse = await runWorkflow(storyWithTrigger);
 
     expect(planResponse.phase).toBe(PHASE.awaiting_plan_confirmation);
     if (planResponse.phase !== PHASE.awaiting_plan_confirmation) {
@@ -77,7 +82,7 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
     // ═══════════════════════════════════════════════════════════════
 
     console.log("T06 [2/4]: Confirming plan → awaiting_context_confirmation");
-    const extractionResponse = await runColdStartWorkflow("да, всё верно", threadId, testUserId);
+    const extractionResponse = await runWorkflow("да, всё верно");
 
     // Agent должен вызвать confirm_plan → process_entity_batch → extraction началась
     if (extractionResponse.phase === PHASE.awaiting_context_confirmation) {
@@ -86,13 +91,9 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
       );
     } else if (extractionResponse.phase === PHASE.awaiting_clarification) {
       // Fallback: LLM не смог извлечь полностью → clarification
-      console.log(
-        `T06 [2/4]: ⚠️ Clarification needed (${extractionResponse.missingFields.length} fields)`,
-      );
+      console.log(`T06 [2/4]: ⚠️ Clarification needed (${extractionResponse.missingFields.length} fields)`);
       // Для T06 пропускаем clarification flow (будет в T07)
-      expect.fail(
-        "T06 requires successful extraction without clarification (use simpler story or check LLM)",
-      );
+      expect.fail("T06 requires successful extraction without clarification (use simpler story or check LLM)");
     } else {
       expect.fail(`Unexpected phase after plan confirmation: ${extractionResponse.phase}`);
     }
@@ -104,7 +105,7 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
     console.log("T06 [3/4]: Confirming contexts → awaiting_final_confirmation");
 
     // Confirm first context (we're already at awaiting_context_confirmation)
-    const firstContextConfirm = await runColdStartWorkflow("да, верно", threadId, testUserId);
+    const firstContextConfirm = await runWorkflow("да, верно");
 
     // Business rule: After first context confirmation, we can be at:
     // - awaiting_context_confirmation (more contexts to extract)
@@ -117,15 +118,13 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
       const { current, total } = lastResponse.progress;
       console.log(`T06 [3/4]: Confirmed context ${current}/${total}, continuing...`);
 
-      lastResponse = await runColdStartWorkflow("да, верно", threadId, testUserId);
+      lastResponse = await runWorkflow("да, верно");
     }
 
     // After all contexts confirmed → должны быть в awaiting_final_confirmation
     expect(lastResponse.phase).toBe(PHASE.awaiting_final_confirmation);
     if (lastResponse.phase !== PHASE.awaiting_final_confirmation) {
-      expect.fail(
-        `Expected awaiting_final_confirmation after all contexts, got ${lastResponse.phase}`,
-      );
+      expect.fail(`Expected awaiting_final_confirmation after all contexts, got ${lastResponse.phase}`);
     }
 
     console.log(
@@ -137,7 +136,7 @@ describe("Cold-Start Happy Path Tests (P1)", () => {
     // ═══════════════════════════════════════════════════════════════
 
     console.log("T06 [4/4]: Final confirmation → saved");
-    const savedResponse = await runColdStartWorkflow("сохрани", threadId, testUserId);
+    const savedResponse = await runWorkflow("сохрани");
 
     expect(savedResponse.phase).toBe(PHASE.saved);
     if (savedResponse.phase !== PHASE.saved) {

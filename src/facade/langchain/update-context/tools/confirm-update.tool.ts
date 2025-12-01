@@ -7,26 +7,25 @@ import { phaseGuard } from "../../shared-tools/guards.js";
 import { PHASE } from "../types.js";
 import { TOOL_NAME } from "../workflow-constants.js";
 
-import type { ColdStartState } from "../types.js";
+import type { UpdateContextState } from "../types.js";
 import type { ToolRuntime } from "@langchain/core/tools";
 
-export const confirmContextTool = tool(
-  (_, runtime: ToolRuntime<ColdStartState>) => {
-    const { toolCallId, state } = runtime;
+export const confirmUpdateTool = tool(
+  (_, runtime: ToolRuntime<UpdateContextState>) => {
+    const { state, toolCallId } = runtime;
 
-    const guard = phaseGuard(state.phase, PHASE.awaiting_context_confirmation, toolCallId);
+    const guard = phaseGuard(state.phase, PHASE.awaiting_confirmation, toolCallId);
     if (guard) return guard;
 
-    const { queue } = state;
-    const processed = state.collectedContexts.length;
-
-    if (processed < queue.length) {
+    const { updatedContext } = state;
+    if (!updatedContext) {
       return new Command({
         update: {
+          phase: PHASE.failed,
           /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
           messages: [
             new ToolMessage({
-              content: `Context confirmed. Now call ${TOOL_NAME.process_entity_batch} with contextIndex: ${processed} to continue extraction.`,
+              content: "No updated context to save.",
               tool_call_id: toolCallId,
             }),
           ],
@@ -37,11 +36,11 @@ export const confirmContextTool = tool(
 
     return new Command({
       update: {
-        phase: PHASE.awaiting_final_confirmation,
+        phase: PHASE.saved,
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `All contexts extracted. Now call ${TOOL_NAME.show_final} to show complete career history for final approval.`,
+            content: "Context update confirmed and saved.",
             tool_call_id: toolCallId,
           }),
         ],
@@ -50,10 +49,10 @@ export const confirmContextTool = tool(
     });
   },
   {
-    name: TOOL_NAME.confirm_context,
+    name: TOOL_NAME.confirm_update,
     description:
-      `Confirm context. Call when user APPROVED (да, ok, yes, подтверждаю, норм). ` +
-      `You must analyze userResponse from ${TOOL_NAME.show_context} first.`,
+      "Confirm context update. Call when user APPROVED (да, ok, yes, save). " +
+      `Analyze userResponse from ${TOOL_NAME.show_updated_context} first.`,
     schema: z.object({}),
   },
 );

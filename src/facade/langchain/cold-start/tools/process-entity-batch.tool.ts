@@ -6,18 +6,20 @@ import { z } from "zod";
 
 import { trailSchema, userContextSchema } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
-import {
-  contextExtractionModel,
-  trailExtractionModel,
-} from "../../shared-tools/extraction-models.js";
+import { extractableContextSchema, extractableTrailSchema } from "../../shared-tools/extraction-models.js";
+import { getModel } from "../../shared-tools/models.js";
 import { contextExtractionPrompt, trailExtractionPrompt } from "../prompts.js";
 import { missingFieldSchema, PHASE } from "../types.js";
+import { TOOL_NAME } from "../workflow-constants.js";
 
 import type { Trail, UserContext } from "../../../../shared/schemas.js";
 import type { ExtractableContext } from "../../shared-tools/extraction-models.js";
 import type { ColdStartState, ContextAgenda, MissingField } from "../types.js";
 import type { BaseMessage } from "@langchain/core/messages";
 import type { ToolRuntime } from "@langchain/core/tools";
+
+const contextExtractionModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
+const trailExtractionModel = getModel("extraction").withStructuredOutput(extractableTrailSchema);
 
 const MAX_QUESTIONS_PER_BATCH = config.LANGCHAIN_MAX_QUESTIONS_PER_BATCH;
 
@@ -83,9 +85,7 @@ async function extractContext(
   contextIndex: number,
 ): Promise<Partial<UserContext>> {
   const prompt = contextExtractionPrompt(messages, agenda.preview);
-  const extracted: ExtractableContext = await contextExtractionModel.invoke([
-    new HumanMessage(prompt),
-  ]);
+  const extracted: ExtractableContext = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
   const { previousId, nextId } = getLinkedContextIds(queue, contextIndex);
 
   return {
@@ -177,11 +177,7 @@ function validateAndCollectMissing(
   return { success: true, context: ctxValidation.data, trails: validTrails };
 }
 
-function upsertContextAtIndex(
-  existing: UserContext[],
-  context: UserContext,
-  index: number,
-): UserContext[] {
+function upsertContextAtIndex(existing: UserContext[], context: UserContext, index: number): UserContext[] {
   const updated = [...existing];
   if (index < updated.length) {
     updated[index] = context;
@@ -191,11 +187,7 @@ function upsertContextAtIndex(
   return updated;
 }
 
-function upsertTrailsForContext(
-  existing: Trail[],
-  newTrails: Trail[],
-  toContextId: string,
-): Trail[] {
+function upsertTrailsForContext(existing: Trail[], newTrails: Trail[], toContextId: string): Trail[] {
   const filtered = existing.filter((t) => t.toContextId !== toContextId);
   return [...filtered, ...newTrails];
 }
@@ -223,11 +215,7 @@ function determineOutcome(
   }
 
   const updatedContexts = upsertContextAtIndex(collectedContexts, validation.context, contextIndex);
-  const updatedTrails = upsertTrailsForContext(
-    collectedTrails,
-    validation.trails,
-    agenda.contextId,
-  );
+  const updatedTrails = upsertTrailsForContext(collectedTrails, validation.trails, agenda.contextId);
 
   return {
     type: "confirmation",
@@ -267,7 +255,7 @@ function outcomeToCommand(outcome: ToolOutcome, toolCallId: string): Command {
           /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
           messages: [
             new ToolMessage({
-              content: `Need clarification for "${outcome.preview}": missing ${fieldsInfo}. Now call ask_clarification to get user input.`,
+              content: `Need clarification for "${outcome.preview}": missing ${fieldsInfo}. Now call ${TOOL_NAME.ask_clarification} to get user input.`,
               tool_call_id: toolCallId,
             }),
           ],
@@ -289,7 +277,7 @@ function outcomeToCommand(outcome: ToolOutcome, toolCallId: string): Command {
             new ToolMessage({
               content:
                 `✅ EXTRACTION COMPLETE for "${outcome.preview}". ` +
-                `Now call show_context to present to user and wait for approval.`,
+                `Now call ${TOOL_NAME.show_context} to present to user and wait for approval.`,
               tool_call_id: toolCallId,
             }),
           ],
@@ -304,13 +292,7 @@ export const processEntityBatchTool = tool(
   async ({ contextIndex }: { contextIndex: number }, runtime: ToolRuntime<ColdStartState>) => {
     const { state, toolCallId } = runtime;
     // Note: Defaults needed because checkpoint may not have these fields on first run
-    const {
-      messages,
-      queue,
-      clarificationRound = 0,
-      collectedContexts = [],
-      collectedTrails = [],
-    } = state;
+    const { messages, queue, clarificationRound = 0, collectedContexts = [], collectedTrails = [] } = state;
 
     const agenda = queue[contextIndex];
     if (!agenda) {
@@ -342,11 +324,11 @@ export const processEntityBatchTool = tool(
     return outcomeToCommand(outcome, toolCallId);
   },
   {
-    name: "process_entity_batch",
+    name: TOOL_NAME.process_entity_batch,
     description:
-      "Process ONE context + ALL its incoming trails. " +
-      "AFTER success: call show_context to present to user. " +
-      "Only call process_entity_batch again after user confirms via confirm_context.",
+      `Process ONE context + ALL its incoming trails. ` +
+      `AFTER success: call ${TOOL_NAME.show_context} to present to user. ` +
+      `Only call ${TOOL_NAME.process_entity_batch} again after user confirms via ${TOOL_NAME.confirm_context}.`,
     schema: z.object({
       contextIndex: z.number().describe("Index in queue (0-based)"),
     }),

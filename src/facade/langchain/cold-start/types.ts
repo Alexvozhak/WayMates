@@ -1,12 +1,7 @@
 import { MessagesZodState } from "@langchain/langgraph";
 import { z } from "zod";
 
-import {
-  contextIdSchema,
-  trailSchema,
-  userContextSchema,
-  userIdSchema,
-} from "../../../shared/schemas.js";
+import { contextIdSchema, trailSchema, userContextSchema, userIdSchema } from "../../../shared/schemas.js";
 
 /**
  * 8 phases for cold_start multi-context workflow.
@@ -37,9 +32,7 @@ export const PHASE = coldStartPhaseSchema.Values;
  */
 export const contextAgendaBaseSchema = z.object({
   preview: z.string().describe("Human-readable preview: 'Junior Backend в Яндексе 2020-2022'"),
-  incomingTrails: z
-    .array(z.string())
-    .describe("Array of trail preview strings: ['Coursera React course 2022']"),
+  incomingTrails: z.array(z.string()).describe("Array of trail preview strings: ['Coursera React course 2022']"),
 });
 
 export type ContextAgendaBase = z.infer<typeof contextAgendaBaseSchema>;

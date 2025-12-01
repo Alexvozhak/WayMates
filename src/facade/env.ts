@@ -18,14 +18,13 @@ const envSchema = z.object({
   POSTGRES_USER: z.string().min(1, "POSTGRES_USER is required"),
   POSTGRES_PASSWORD: z.string().min(1, "POSTGRES_PASSWORD is required"),
   POSTGRES_DB: z.string().min(1, "POSTGRES_DB is required"),
-  // LLM API keys
-  GOOGLE_API_KEY: z.string().min(1, "GOOGLE_API_KEY is required for LangChain agents"),
-  OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required for OpenRouter models"),
-  // LangChain model configuration
-  LANGCHAIN_MODEL_NAME: z.string().default("models/gemini-2.0-flash"),
-  LANGCHAIN_OPENROUTER_MODEL: z.string().default("openai/gpt-4o-mini"),
+  // LLM configuration (OpenRouter-compatible, auto-picked by ChatOpenAI)
+  OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required (use OpenRouter key)"),
+  OPENAI_API_BASE: z.string().url().default("https://openrouter.ai/api/v1"),
+  LANGCHAIN_MODEL_NAME: z.string().default("google/gemini-2.0-flash"),
+  LANGCHAIN_TEMP_DETERMINISTIC: z.coerce.number().min(0).max(1).default(0),
   LANGCHAIN_TEMP_EXTRACTION: z.coerce.number().min(0).max(1).default(0.2),
-  LANGCHAIN_TEMP_INTENT: z.coerce.number().min(0).max(1).default(0.1),
+  LANGCHAIN_TEMP_PLANNING: z.coerce.number().min(0).max(1).default(0.1),
   LANGCHAIN_TEMP_AGENT: z.coerce.number().min(0).max(1).default(0.3),
   LANGCHAIN_MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().positive().default(3),
   LANGCHAIN_MAX_QUESTIONS_PER_BATCH: z.coerce.number().int().positive().default(5),
@@ -38,9 +37,7 @@ export function loadEnv(): FacadeEnv {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    const errors = result.error.errors
-      .map((err) => `  - ${err.path.join(".")}: ${err.message}`)
-      .join("\n");
+    const errors = result.error.errors.map((err) => `  - ${err.path.join(".")}: ${err.message}`).join("\n");
 
     throw new Error(
       `❌ Invalid environment configuration for Facade:\n${errors}\n\n` +

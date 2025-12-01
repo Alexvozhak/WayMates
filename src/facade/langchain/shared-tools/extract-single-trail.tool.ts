@@ -2,12 +2,15 @@ import { HumanMessage } from "@langchain/core/messages";
 import { tool } from "langchain";
 import { z } from "zod";
 
-import { trailExtractionModel } from "./extraction-models.js";
+import { extractableTrailSchema } from "./extraction-models.js";
+import { getModel } from "./models.js";
 
 export { extractableTrailSchema } from "./extraction-models.js";
 export type { ExtractableTrail } from "./extraction-models.js";
 
 import type { ExtractableTrail } from "./extraction-models.js";
+
+const trailExtractionModel = getModel("extraction").withStructuredOutput(extractableTrailSchema);
 
 /**
  * Extract ONE career transition (trail) from text using structured output.

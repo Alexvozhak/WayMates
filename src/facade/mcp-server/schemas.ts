@@ -6,7 +6,6 @@ import {
   targetContextSchema,
   trailIdSchema,
   trailSchema,
-  updateContextInputSchema,
   upsertContextInputSchema,
   userIdSchema,
   userSearchParamsRawSchema,
@@ -53,12 +52,18 @@ export const setGoalParamsSchema = z.object({
 
 export type SetGoalParams = z.infer<typeof setGoalParamsSchema>;
 
-export const updateContextToolParamsSchema = z.object({
-  updates: updateContextInputSchema,
+export const updateContextParamsSchema = z.object({
+  message: z
+    .string()
+    .min(10)
+    .describe(
+      "User message describing context updates in natural language. " +
+        "Example: 'Добавь React в мои навыки' or 'Измени позицию на Senior Developer'",
+    ),
   sessionId: sessionIdSchema,
 });
 
-export type UpdateContextToolParams = z.infer<typeof updateContextToolParamsSchema>;
+export type UpdateContextParams = z.infer<typeof updateContextParamsSchema>;
 
 export const getGoalParamsSchema = z.object({
   targetUserId: userIdSchema.optional(),
@@ -95,10 +100,7 @@ export const upsertContextParamsSchema = upsertContextInputSchema.omit({ userId:
 export type UpsertContextParams = z.infer<typeof upsertContextParamsSchema>;
 
 export const coldStartParamsSchema = z.object({
-  message: z
-    .string()
-    .min(50)
-    .describe("User message with career history (resume, markdown, or text)"),
+  message: z.string().min(50).describe("User message with career history (resume, markdown, or text)"),
   sessionId: sessionIdSchema,
 });
 

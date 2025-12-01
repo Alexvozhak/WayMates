@@ -9,6 +9,6 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
   "editor.rulers": [
-    100
+    120
   ]
 }

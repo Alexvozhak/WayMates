@@ -359,11 +359,7 @@ Return the full context with corrections applied.
 DO NOT return partial data - include ALL fields from the original.`;
 }
 
-export function trailCorrectionPrompt(
-  existingTrail: Trail,
-  corrections: string,
-  messages: BaseMessage[],
-): string {
+export function trailCorrectionPrompt(existingTrail: Trail, corrections: string, messages: BaseMessage[]): string {
   const messagesText = serializeMessages(messages);
 
   return `Apply corrections to the following learning trail.

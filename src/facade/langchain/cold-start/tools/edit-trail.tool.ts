@@ -1,14 +1,14 @@
 import { HumanMessage, ToolMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
-import { ChatOpenAI } from "@langchain/openai";
 import { tool } from "langchain";
 import { z } from "zod";
 
 import { trailSchema } from "../../../../shared/schemas.js";
-import { config } from "../../../env.js";
 import { extractableTrailSchema } from "../../shared-tools/extraction-models.js";
+import { getModel } from "../../shared-tools/models.js";
 import { trailCorrectionPrompt } from "../prompts.js";
 import { PHASE } from "../types.js";
+import { TOOL_NAME } from "../workflow-constants.js";
 
 import type { Trail } from "../../../../shared/schemas.js";
 import type { ColdStartState } from "../types.js";
@@ -16,21 +16,12 @@ import type { ToolRuntime } from "@langchain/core/tools";
 
 const editTrailInputSchema = z.object({
   trailId: z.string().describe("Trail ID to edit (trl_<UUID>)"),
-  corrections: z
-    .string()
-    .describe("User's correction instructions (e.g., 'change platform to Udemy')"),
+  corrections: z.string().describe("User's correction instructions (e.g., 'change platform to Udemy')"),
 });
 
 type EditTrailInput = z.infer<typeof editTrailInputSchema>;
 
-const trailCorrectionModel = new ChatOpenAI({
-  modelName: "openai/gpt-4o-mini",
-  apiKey: process.env.OPENROUTER_API_KEY,
-  temperature: config.LANGCHAIN_TEMP_EXTRACTION,
-  configuration: {
-    baseURL: "https://openrouter.ai/api/v1",
-  },
-})
+const correctionModel = getModel("extraction")
   .withStructuredOutput(extractableTrailSchema)
   .withRetry({ stopAfterAttempt: 2 });
 
@@ -61,7 +52,7 @@ export const editTrailTool = tool(
     }
 
     const prompt = trailCorrectionPrompt(existingTrail, corrections, messages);
-    const extracted = await trailCorrectionModel.invoke([new HumanMessage(prompt)]);
+    const extracted = await correctionModel.invoke([new HumanMessage(prompt)]);
 
     const correctedTrail: Trail = {
       ...extracted,
@@ -96,7 +87,7 @@ export const editTrailTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `Trail ${trailId} updated. Now call show_context to present updated data to user.`,
+            content: `Trail ${trailId} updated. Now call ${TOOL_NAME.show_context} to present updated data to user.`,
             tool_call_id: toolCallId,
           }),
         ],
@@ -105,11 +96,11 @@ export const editTrailTool = tool(
     });
   },
   {
-    name: "edit_trail",
+    name: TOOL_NAME.edit_trail,
     description:
-      "Apply corrections to a learning trail. " +
-      "LLM re-extracts the full corrected object from user instructions. " +
-      "Use for corrections like 'change platform to Coursera' or 'add duration 8 weeks'.",
+      `Apply corrections to a learning trail. ` +
+      `LLM re-extracts the full corrected object from user instructions. ` +
+      `Use for corrections like 'change platform to Coursera' or 'add duration 8 weeks'.`,
     schema: editTrailInputSchema,
   },
 );

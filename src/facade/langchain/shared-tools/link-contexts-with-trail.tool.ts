@@ -1,28 +1,19 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
 import { tool } from "langchain";
 import { z } from "zod";
 
 import { trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
-import { config } from "../../env.js";
+
+import { getModel } from "./models.js";
 
 import type { Trail, UserContext } from "../../../shared/schemas.js";
 
-// For linking, we extract trail data (context IDs will be added from parameters)
 const linkTrailSchema = trailSchema.omit({
   fromContextId: true,
   toContextId: true,
 });
 
-// Model with structured output for guaranteed JSON
-const extractionModel = new ChatOpenAI({
-  modelName: "openai/gpt-4o-mini",
-  apiKey: process.env.OPENROUTER_API_KEY,
-  temperature: config.LANGCHAIN_TEMP_EXTRACTION,
-  configuration: {
-    baseURL: "https://openrouter.ai/api/v1",
-  },
-}).withStructuredOutput(linkTrailSchema);
+const linkModel = getModel("extraction").withStructuredOutput(linkTrailSchema);
 
 /**
  * Link TWO contexts with a trail (transition) between them.
@@ -33,10 +24,7 @@ function formatContextForPrompt(ctx: UserContext, label: string): string {
   const position = ctx.position || "unknown position";
   const industry = ctx.industry || "unknown industry";
   const skills = ctx.skills?.join(", ") || "not specified";
-  const location =
-    ctx.cityName && ctx.countryCode
-      ? `${ctx.cityName}, ${ctx.countryCode}`
-      : "location not specified";
+  const location = ctx.cityName && ctx.countryCode ? `${ctx.cityName}, ${ctx.countryCode}` : "location not specified";
 
   return `${label}: ${position} in ${industry}
 Skills: ${skills}
@@ -44,11 +32,7 @@ Location: ${location}`;
 }
 
 // Helper to build the transition prompt
-function buildTransitionPrompt(
-  fromContext: UserContext,
-  toContext: UserContext,
-  text?: string,
-): string {
+function buildTransitionPrompt(fromContext: UserContext, toContext: UserContext, text?: string): string {
   const fromText = formatContextForPrompt(fromContext, "FROM");
   const toText = formatContextForPrompt(toContext, "TO");
   const additional = text ? `\nAdditional context:\n${text}` : "";
@@ -91,7 +75,7 @@ export const linkContextsWithTrailTool = tool(
     const prompt = buildTransitionPrompt(fromContext, toContext, text);
 
     try {
-      const extracted = await extractionModel.invoke([new HumanMessage(prompt)]);
+      const extracted = await linkModel.invoke([new HumanMessage(prompt)]);
 
       if (!extracted) {
         return null;

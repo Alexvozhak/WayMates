@@ -11,7 +11,7 @@ import {
   searchByTargetParamsSchema,
   searchUserCareersParamsSchema,
   setGoalParamsSchema,
-  updateContextToolParamsSchema,
+  updateContextParamsSchema,
   upsertContextParamsSchema,
   upsertTrailParamsSchema,
 } from "./schemas.js";
@@ -61,20 +61,12 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     coldStart: new ColdStartTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     getStory: new GetStoryTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     searchCareers: new SearchCareersTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
-    searchUserCareers: new SearchUserCareersTool(
-      deps.sessionMiddleware,
-      deps.normalizer,
-      deps.coreClient,
-    ),
+    searchUserCareers: new SearchUserCareersTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     setGoal: new SetGoalTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     updateContext: new UpdateContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     getGoal: new GetGoalTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     deleteGoal: new DeleteGoalTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
-    searchByTarget: new SearchByTargetTool(
-      deps.sessionMiddleware,
-      deps.normalizer,
-      deps.coreClient,
-    ),
+    searchByTarget: new SearchByTargetTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     deleteContext: new DeleteContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     upsertContext: new UpsertContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     upsertTrail: new UpsertTrailTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
@@ -196,10 +188,10 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
 function registerContextTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "update_context",
-    description: "Update current context (partial update of mutable fields only)",
-    parameters: updateContextToolParamsSchema,
+    description: "Update current context via natural language message",
+    parameters: updateContextParamsSchema,
     execute: async (args: unknown) => {
-      const params = updateContextToolParamsSchema.parse(args);
+      const params = updateContextParamsSchema.parse(args);
       const result = await tools.updateContext.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -240,8 +232,7 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
 function registerSearchByTargetTool(server: FastMCP, tool: SearchByTargetTool): void {
   server.addTool({
     name: "search_by_target",
-    description:
-      "Reverse search: find users who have already achieved the target position/criteria",
+    description: "Reverse search: find users who have already achieved the target position/criteria",
     parameters: searchByTargetParamsSchema,
     execute: async (args: unknown) => {
       const params = searchByTargetParamsSchema.parse(args);

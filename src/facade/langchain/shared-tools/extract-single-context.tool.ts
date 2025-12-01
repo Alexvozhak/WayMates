@@ -3,9 +3,12 @@ import { tool } from "langchain";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
-import { contextExtractionModel } from "./extraction-models.js";
+import { extractableContextSchema } from "./extraction-models.js";
+import { getModel } from "./models.js";
 
 import type { UserContext } from "../../../shared/schemas.js";
+
+const contextExtractionModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
 
 /**
  * Extract ONE career context from text using STRICT UserContext schema.

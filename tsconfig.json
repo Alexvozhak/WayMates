@@ -19,6 +19,7 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
 
     // Для корректной работы раннера (tsx)
     "isolatedModules": true,

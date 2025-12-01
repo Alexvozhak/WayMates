@@ -20,7 +20,7 @@ async function main(): Promise<void> {
   const sessionMiddleware = new SessionMiddleware(redis);
 
   const cache = new DictionariesCache(redis, coreClient);
-  const llm = new LLMFuzzyMatcher(env.GOOGLE_API_KEY);
+  const llm = new LLMFuzzyMatcher();
   const normalizer = new FacadeNormalizer(cache, coreClient, llm);
 
   const server = createFacadeServer({

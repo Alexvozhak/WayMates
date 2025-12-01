@@ -4,6 +4,7 @@ import { tool } from "langchain";
 import { z } from "zod";
 
 import { PHASE } from "../types.js";
+import { TOOL_NAME } from "../workflow-constants.js";
 
 import type { ColdStartState } from "../types.js";
 import type { ToolRuntime } from "@langchain/core/tools";
@@ -35,7 +36,7 @@ export const showContextTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `Пользователь ответил: "${userMessage}". Проанализируй ответ по правилам INTENT PARSING и вызови confirm_context (если согласие), edit_context/edit_trail (если изменения), или отмени workflow (если отказ).`,
+            content: `Пользователь ответил: "${userMessage}". Проанализируй ответ по правилам INTENT PARSING и вызови ${TOOL_NAME.confirm_context} (если согласие), ${TOOL_NAME.edit_context}/${TOOL_NAME.edit_trail} (если изменения), или отмени workflow (если отказ).`,
             tool_call_id: toolCallId,
           }),
         ],
@@ -44,11 +45,11 @@ export const showContextTool = tool(
     });
   },
   {
-    name: "show_context",
+    name: TOOL_NAME.show_context,
     description:
-      "Show extracted context to user and wait for response. " +
-      "Call immediately after process_entity_batch succeeds. " +
-      "After this tool returns, analyze userResponse and decide next action.",
+      `Show extracted context to user and wait for response. ` +
+      `Call immediately after ${TOOL_NAME.process_entity_batch} succeeds. ` +
+      `After this tool returns, analyze userResponse and decide next action.`,
     schema: z.object({}),
   },
 );

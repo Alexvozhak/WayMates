@@ -1,7 +1,5 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-
-import { config } from "../../../../src/facade/env.js";
 import { postgresService } from "../../../../src/facade/infrastructure/postgres.service.js";
+import { getModel } from "../../../../src/facade/langchain/shared-tools/models.js";
 import { cleanupSession } from "../../helpers/mcp-tool-helpers.js";
 import { buildUnpackingPrompt } from "../unpacking-prompt.js";
 
@@ -17,11 +15,7 @@ import type { FixtureData } from "../unpacking-prompt.js";
  * - PostgreSQL: checkpoints для threadId (для T15 checkpoint cleanup)
  * - Redis: session keys
  */
-export async function cleanupColdStart(
-  userId: UserId,
-  threadId: string,
-  sessionId: string,
-): Promise<void> {
+export async function cleanupColdStart(userId: UserId, threadId: string, sessionId: string): Promise<void> {
   await postgresService.resetColdStartStatus(userId);
   await postgresService.deleteCheckpoint(threadId);
   await cleanupSession(sessionId);
@@ -33,12 +27,7 @@ export async function cleanupColdStart(
  */
 export async function generateStoryFromFixture(fixture: FixtureData): Promise<string> {
   const prompt = buildUnpackingPrompt(fixture);
-
-  const model = new ChatGoogleGenerativeAI({
-    model: config.LANGCHAIN_MODEL_NAME,
-    temperature: config.LANGCHAIN_TEMP_AGENT,
-  });
-
+  const model = getModel("agent");
   const result = await model.invoke(prompt);
   return String(result.content);
 }

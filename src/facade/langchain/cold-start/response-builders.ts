@@ -1,14 +1,12 @@
 import { InvalidStateError } from "../../mcp-server/tools/errors.js";
 
-import { coldStartStateSchema, PHASE } from "./types.js";
+import { PHASE } from "./types.js";
 
 import type { ColdStartPhase, ColdStartResponse, ColdStartState } from "./types.js";
 
-type ResponseBuilder<P extends ColdStartPhase> = (
-  state: ColdStartState,
-) => Extract<ColdStartResponse, { phase: P }>;
+type ResponseBuilder<P extends ColdStartPhase> = (state: ColdStartState) => Extract<ColdStartResponse, { phase: P }>;
 
-const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
+export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
   [PHASE.story_gathering]: () => ({
     phase: PHASE.story_gathering,
     message: "Tell me about your career history.",
@@ -38,10 +36,7 @@ const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
     const { collectedContexts, collectedTrails, currentEntityContext, queue } = state;
 
     if (!currentEntityContext) {
-      throw new InvalidStateError(
-        PHASE.awaiting_context_confirmation,
-        "currentEntityContext is missing",
-      );
+      throw new InvalidStateError(PHASE.awaiting_context_confirmation, "currentEntityContext is missing");
     }
 
     const currentContext = collectedContexts.at(-1);
@@ -84,15 +79,7 @@ const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
   }),
 };
 
-export function buildResponse(result: unknown): ColdStartResponse {
-  const parsed = coldStartStateSchema.safeParse(result);
-
-  if (!parsed.success) {
-    return {
-      phase: PHASE.failed,
-      message: "Workflow failed. Please try again.",
-    };
-  }
-
-  return responseBuilders[parsed.data.phase](parsed.data);
-}
+export const failedResponse: ColdStartResponse = {
+  phase: PHASE.failed,
+  message: "Workflow failed. Please try again.",
+};
