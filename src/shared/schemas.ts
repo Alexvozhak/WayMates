@@ -93,9 +93,18 @@ export const trailSchema = z.object({
   totalDurationWeeks: z.number().describe("Total duration in weeks").nullable().optional(),
   schedule: scheduleSchema.nullable().optional(),
   costUsd: z.number().describe("Cost in USD").nullable().optional(),
-  ratingCourse: z.number().min(1).max(5).describe("Course rating 1-5").nullable().optional(),
-  ratingPlatform: z.number().min(1).max(5).describe("Platform rating 1-5").nullable().optional(),
-  ratingSchedule: z.number().min(1).max(5).describe("Schedule rating 1-5").nullable().optional(),
+  ratingCourse: z
+    .union([z.number().min(1).max(5), z.null()])
+    .optional()
+    .describe("Course rating 1-5"),
+  ratingPlatform: z
+    .union([z.number().min(1).max(5), z.null()])
+    .optional()
+    .describe("Platform rating 1-5"),
+  ratingSchedule: z
+    .union([z.number().min(1).max(5), z.null()])
+    .optional()
+    .describe("Schedule rating 1-5"),
 
   courseName: z.string().describe("Course name").nullable().optional(),
   courseLink: z.string().describe("Course URL").nullable().optional(),
@@ -124,9 +133,7 @@ const userContextSchemaBase = z.object({
   creationReason: z
     .array(newContextReasonSchema)
     .min(1)
-    .describe(
-      "Reasons for context creation (always required, use 'started_working' for first job)",
-    ),
+    .describe("Reasons for context creation (always required, use 'started_working' for first job)"),
   position: z.string().min(1).describe("Position title"),
   domains: z.array(z.string()).min(1).describe("Work domains"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
@@ -152,17 +159,13 @@ const userContextSchemaBase = z.object({
     .min(0)
     .nullable()
     .optional()
-    .describe(
-      "Salary range minimum in USD. For privacy, specify range instead of exact. Use with salaryMax.",
-    ),
+    .describe("Salary range minimum in USD. For privacy, specify range instead of exact. Use with salaryMax."),
   salaryMax: z
     .number()
     .min(0)
     .nullable()
     .optional()
-    .describe(
-      "Salary range maximum in USD. For privacy, specify range instead of exact. Use with salaryMin.",
-    ),
+    .describe("Salary range maximum in USD. For privacy, specify range instead of exact. Use with salaryMin."),
 
   // Languages (B2+ proficiency)
   // Semantics: If language in array → B2+ level (fluent for work)
@@ -177,16 +180,12 @@ const userContextSchemaBase = z.object({
     .string()
     .max(200)
     .nullish()
-    .describe(
-      "Personal reflection on this transition: emotions, insights, lessons learned (max 200 chars)",
-    ),
+    .describe("Personal reflection on this transition: emotions, insights, lessons learned (max 200 chars)"),
 });
 
-export const adhocUserContextSchema = userContextSchemaBase
-  .partial()
-  .refine((data) => Object.keys(data).length > 0, {
-    message: "At least one field must be provided for search",
-  });
+export const adhocUserContextSchema = userContextSchemaBase.partial().refine((data) => Object.keys(data).length > 0, {
+  message: "At least one field must be provided for search",
+});
 
 export type AdhocUserContext = z.infer<typeof adhocUserContextSchema>;
 
@@ -210,8 +209,7 @@ export const userContextSchema = userContextSchemaBase.refine(
     return true;
   },
   {
-    message:
-      "Specify either exact salary OR salary range (min/max), not both. If range, min must be <= max.",
+    message: "Specify either exact salary OR salary range (min/max), not both. If range, min must be <= max.",
     path: ["salaryExact"],
   },
 );
@@ -275,8 +273,7 @@ export const targetContextSchema = z
       return hasAtLeastOne;
     },
     {
-      message:
-        "At least one target criterion is required (position, countries, domains, skills, or languages)",
+      message: "At least one target criterion is required (position, countries, domains, skills, or languages)",
     },
   );
 
@@ -333,17 +330,8 @@ export const userSearchParamsRawSchema = z.object({
     .array(newContextReasonSchema)
     .default([])
     .describe("Exclude candidates with these transition reasons (backward path filter in Cypher)"),
-  recencyThresholdMonths: z
-    .number()
-    .min(1)
-    .optional()
-    .describe("Filter by recency (months since last update)"),
-  limit: z
-    .number()
-    .min(1)
-    .max(100)
-    .default(20)
-    .describe("Maximum number of results to return (pre-filter before DTW)"),
+  recencyThresholdMonths: z.number().min(1).optional().describe("Filter by recency (months since last update)"),
+  limit: z.number().min(1).max(100).default(20).describe("Maximum number of results to return (pre-filter before DTW)"),
   pathLimit: z
     .number()
     .min(1)
@@ -356,13 +344,10 @@ export const userSearchParamsRawSchema = z.object({
  * Validated base schema WITH pathLimit <= limit check
  * Exported for reuse in Facade (replace userId with sessionId)
  */
-export const userSearchParamsBaseSchema = userSearchParamsRawSchema.refine(
-  (data) => data.pathLimit <= data.limit,
-  {
-    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
-    path: ["pathLimit"],
-  },
-);
+export const userSearchParamsBaseSchema = userSearchParamsRawSchema.refine((data) => data.pathLimit <= data.limit, {
+  message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
+  path: ["pathLimit"],
+});
 
 /**
  * User search parameters (Mode 2: search by user's current context)
@@ -394,11 +379,7 @@ export const targetSearchParamsSchema = z.object({
     .array(newContextReasonSchema)
     .default([])
     .describe("Exclude candidates with these transition reasons (backward path filter)"),
-  recencyThresholdMonths: z
-    .number()
-    .min(1)
-    .optional()
-    .describe("Filter by recency (months since last update)"),
+  recencyThresholdMonths: z.number().min(1).optional().describe("Filter by recency (months since last update)"),
   limit: z.number().min(1).max(100).default(20).describe("Maximum number of results to return"),
 });
 
@@ -564,10 +545,7 @@ export type CandidateCore = z.infer<typeof candidateCoreSchema>;
 
 // Block 2: Context scoring fields
 export const contextScoringFieldsSchema = z.object({
-  contextMatchScore: z
-    .number()
-    .min(0)
-    .describe("Context match score (raw: matched weights - extra penalties, >= 0)"),
+  contextMatchScore: z.number().min(0).describe("Context match score (raw: matched weights - extra penalties, >= 0)"),
   candidateType: z
     .enum(["pathfinder", "waymate"])
     .nullable()
@@ -578,9 +556,7 @@ export type ContextScoringFields = z.infer<typeof contextScoringFieldsSchema>;
 
 // Block 3: Path fields (renamed: trajectory → path)
 export const pathFieldsSchema = z.object({
-  path: z
-    .array(userContextSchema)
-    .describe("Full career path from started_working to matched_context"),
+  path: z.array(userContextSchema).describe("Full career path from started_working to matched_context"),
 });
 
 export type PathFields = z.infer<typeof pathFieldsSchema>;
@@ -627,16 +603,12 @@ export const scoredMatchedCandidateWithPathAndDTWSchema = candidateCoreSchema
   .refine(
     (data) => {
       const computed =
-        data.dtwMetrics.shapeSimilarity +
-        data.dtwMetrics.tempoSimilarity +
-        data.dtwMetrics.stabilityScore;
+        data.dtwMetrics.shapeSimilarity + data.dtwMetrics.tempoSimilarity + data.dtwMetrics.stabilityScore;
       return Math.abs(data.dtwTotal - computed) < 0.001;
     },
     { message: "dtwTotal must equal sum of dtwMetrics" },
   );
-export type ScoredMatchedCandidateWithPathAndDTW = z.infer<
-  typeof scoredMatchedCandidateWithPathAndDTWSchema
->;
+export type ScoredMatchedCandidateWithPathAndDTW = z.infer<typeof scoredMatchedCandidateWithPathAndDTWSchema>;
 
 // ==========================================
 // === DEPRECATED TYPES (для обратной совместимости) ===
