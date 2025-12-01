@@ -15,6 +15,7 @@ export type SessionMiddleware = {
 export type Normalizer = {
   normalizeUserContext(context: AdhocUserContext, userId: UserId): Promise<AdhocUserContext>;
   normalizeTargetContext(context: TargetContext, userId: UserId): Promise<TargetContext>;
+  normalizeSkill(skill: string, userId: UserId): Promise<string>;
 };
 
 export type WithSessionId = { sessionId: SessionId };

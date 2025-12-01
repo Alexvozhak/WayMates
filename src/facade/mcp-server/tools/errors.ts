@@ -111,3 +111,16 @@ export class AgentInvariantError extends FacadeError {
     super(`[${tool}] Invariant violation: ${reason}.${contextStr}`);
   }
 }
+
+export class ToolExecutionError extends FacadeError {
+  readonly errorCode: ErrorResponse["code"];
+
+  constructor(error: ErrorResponse) {
+    super(error.message);
+    this.errorCode = error.code;
+  }
+}
+
+export function throwToolError(error: ErrorResponse): never {
+  throw new ToolExecutionError(error);
+}

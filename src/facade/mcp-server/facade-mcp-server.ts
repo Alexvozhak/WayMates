@@ -4,6 +4,7 @@ import {
   coldStartParamsSchema,
   deleteContextParamsSchema,
   deleteGoalParamsSchema,
+  deleteTrailParamsSchema,
   facadeAdhocSearchParamsSchema,
   getGoalParamsSchema,
   getStoryParamsSchema,
@@ -12,10 +13,13 @@ import {
   setGoalParamsSchema,
   updateContextToolParamsSchema,
   upsertContextParamsSchema,
+  upsertTrailParamsSchema,
 } from "./schemas.js";
 import { ColdStartTool } from "./tools/cold-start.tool.js";
 import { DeleteContextTool } from "./tools/delete-context.tool.js";
 import { DeleteGoalTool } from "./tools/delete-goal.tool.js";
+import { DeleteTrailTool } from "./tools/delete-trail.tool.js";
+import { throwToolError } from "./tools/errors.js";
 import { GetGoalTool } from "./tools/get-goal.tool.js";
 import { GetStoryTool } from "./tools/get-story.tool.js";
 import { SearchByTargetTool } from "./tools/search-by-target.tool.js";
@@ -24,6 +28,7 @@ import { SearchUserCareersTool } from "./tools/search-user-careers.tool.js";
 import { SetGoalTool } from "./tools/set-goal.tool.js";
 import { UpdateContextTool } from "./tools/update-context.tool.js";
 import { UpsertContextTool } from "./tools/upsert-context.tool.js";
+import { UpsertTrailTool } from "./tools/upsert-trail.tool.js";
 
 import type { SessionMiddleware } from "./session-middleware.js";
 import type { Normalizer } from "./tools/base-tool.js";
@@ -47,6 +52,8 @@ type ToolInstances = {
   searchByTarget: SearchByTargetTool;
   deleteContext: DeleteContextTool;
   upsertContext: UpsertContextTool;
+  upsertTrail: UpsertTrailTool;
+  deleteTrail: DeleteTrailTool;
 };
 
 function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
@@ -70,6 +77,8 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     ),
     deleteContext: new DeleteContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     upsertContext: new UpsertContextTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
+    upsertTrail: new UpsertTrailTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
+    deleteTrail: new DeleteTrailTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
   };
 }
 
@@ -85,7 +94,7 @@ function registerColdStartTool(server: FastMCP, tool: ColdStartTool): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 }
@@ -101,7 +110,7 @@ function registerGetStoryTool(server: FastMCP, tool: GetStoryTool): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 }
@@ -118,7 +127,7 @@ function registerSearchCareersTool(server: FastMCP, tool: SearchCareersTool): vo
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 }
@@ -135,7 +144,7 @@ function registerSearchUserCareersTool(server: FastMCP, tool: SearchUserCareersT
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 }
@@ -151,7 +160,7 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 
@@ -165,7 +174,7 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 
@@ -179,7 +188,7 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 }
@@ -195,7 +204,7 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 
@@ -209,7 +218,7 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 
@@ -223,7 +232,7 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
     },
   });
 }
@@ -240,7 +249,37 @@ function registerSearchByTargetTool(server: FastMCP, tool: SearchByTargetTool): 
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throw new Error(`${result.error.code}: ${result.error.message}`);
+      throwToolError(result.error);
+    },
+  });
+}
+
+function registerTrailTools(server: FastMCP, tools: ToolInstances): void {
+  server.addTool({
+    name: "upsert_trail",
+    description: "Create or update a learning trail (course, certification, etc.)",
+    parameters: upsertTrailParamsSchema,
+    execute: async (args: unknown) => {
+      const params = upsertTrailParamsSchema.parse(args);
+      const result = await tools.upsertTrail.execute(params);
+      if (result.ok) {
+        return JSON.stringify(result.value, null, 2);
+      }
+      throwToolError(result.error);
+    },
+  });
+
+  server.addTool({
+    name: "delete_trail",
+    description: "Delete a specific trail from user's history",
+    parameters: deleteTrailParamsSchema,
+    execute: async (args: unknown) => {
+      const params = deleteTrailParamsSchema.parse(args);
+      const result = await tools.deleteTrail.execute(params);
+      if (result.ok) {
+        return JSON.stringify({ success: true }, null, 2);
+      }
+      throwToolError(result.error);
     },
   });
 }
@@ -253,6 +292,7 @@ function registerTools(server: FastMCP, tools: ToolInstances): void {
   registerSearchByTargetTool(server, tools.searchByTarget);
   registerGoalTools(server, tools);
   registerContextTools(server, tools);
+  registerTrailTools(server, tools);
 }
 
 export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
@@ -260,12 +300,13 @@ export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
     name: "waymates-facade",
     version: "3.0.0",
     instructions:
-      "WayMates MCP Server. Provides 11 tools for career operations: " +
+      "WayMates MCP Server. Provides 13 tools for career operations: " +
       "Cold Start (cold_start), " +
       "Story (get_story), " +
       "Search (search_careers, search_user_careers, search_by_target), " +
       "Goals (set_goal, get_goal, delete_goal), " +
-      "Contexts (update_context, upsert_context, delete_context). " +
+      "Contexts (update_context, upsert_context, delete_context), " +
+      "Trails (upsert_trail, delete_trail). " +
       "LibreChat LLM handles text-to-JSON extraction.",
   });
 

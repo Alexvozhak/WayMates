@@ -4,6 +4,8 @@ import {
   adhocUserContextSchema,
   contextIdSchema,
   targetContextSchema,
+  trailIdSchema,
+  trailSchema,
   updateContextInputSchema,
   upsertContextInputSchema,
   userIdSchema,
@@ -107,3 +109,17 @@ export const resetColdStartParamsSchema = z.object({
 });
 
 export type ResetColdStartParams = z.infer<typeof resetColdStartParamsSchema>;
+
+export const upsertTrailParamsSchema = z.object({
+  trail: trailSchema,
+  sessionId: sessionIdSchema,
+});
+
+export type UpsertTrailParams = z.infer<typeof upsertTrailParamsSchema>;
+
+export const deleteTrailParamsSchema = z.object({
+  trailId: trailIdSchema,
+  sessionId: sessionIdSchema,
+});
+
+export type DeleteTrailParams = z.infer<typeof deleteTrailParamsSchema>;

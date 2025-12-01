@@ -62,6 +62,10 @@ export class FacadeNormalizer {
     return normalized;
   }
 
+  async normalizeSkill(skill: string, userId: UserId): Promise<string> {
+    return this.normalizeTerm("skill", skill, userId);
+  }
+
   /**
    * 2-tier normalization: exact match → fuzzy match (LLM) → create unverified term
    * New skills created with complexity=null (admin verifies asynchronously)
