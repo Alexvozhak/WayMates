@@ -1,6 +1,6 @@
 import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
 
-import { CoreApiError } from "../mcp-server/tools/errors.js";
+import { CoreApiError } from "../errors.js";
 
 import type { AppRouter } from "../../shared/types.js";
 

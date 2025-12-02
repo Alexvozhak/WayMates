@@ -1,4 +1,4 @@
-import { InvalidStateError } from "../../mcp-server/tools/errors.js";
+import { InvalidStateError } from "../../errors.js";
 
 import { PHASE } from "./types.js";
 

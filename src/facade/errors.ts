@@ -1,4 +1,4 @@
-import type { ErrorResponse } from "../result.js";
+import type { ErrorResponse } from "./mcp-server/result.js";
 
 /**
  * Base class for all Facade errors.

@@ -1,9 +1,9 @@
 import { v7 as uuidv7 } from "uuid";
 
 import { userIdSchema } from "../../shared/schemas.js";
+import { InvalidTokenError } from "../errors.js";
 import { postgresService } from "../infrastructure/postgres.service.js";
 
-import { InvalidTokenError } from "./tools/errors.js";
 
 import type { SessionId } from "./result.js";
 import type { Token } from "./schemas.js";

@@ -2,9 +2,9 @@ import { randomBytes } from "node:crypto";
 
 import { userIdSchema } from "../../shared/schemas.js";
 import { config } from "../env.js";
+import { SessionExpiredError } from "../errors.js";
 
 import { sessionIdSchema } from "./result.js";
-import { SessionExpiredError } from "./tools/errors.js";
 
 import type { SessionId } from "./result.js";
 import type { UserId } from "../../shared/schemas.js";

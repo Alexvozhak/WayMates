@@ -1,5 +1,7 @@
 import { FastMCP } from "fastmcp";
 
+import { throwToolError } from "../errors.js";
+
 import { AuthService } from "./auth.service.js";
 import {
   authParamsSchema,
@@ -22,7 +24,6 @@ import { ColdStartTool } from "./tools/cold-start.tool.js";
 import { DeleteContextTool } from "./tools/delete-context.tool.js";
 import { DeleteGoalTool } from "./tools/delete-goal.tool.js";
 import { DeleteTrailTool } from "./tools/delete-trail.tool.js";
-import { throwToolError } from "./tools/errors.js";
 import { GetGoalTool } from "./tools/get-goal.tool.js";
 import { GetStoryTool } from "./tools/get-story.tool.js";
 import { SearchByTargetTool } from "./tools/search-by-target.tool.js";

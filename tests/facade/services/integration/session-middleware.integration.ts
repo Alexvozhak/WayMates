@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { Redis } from "ioredis";
 
 import { SessionMiddleware } from "../../../../src/facade/mcp-server/session-middleware.js";
-import { SessionExpiredError } from "../../../../src/facade/mcp-server/tools/errors.js";
+import { SessionExpiredError } from "../../../../src/facade/errors.js";
 import { FacadeTestContext } from "../../helpers/test-context.js";
 import { cleanupSession } from "../../helpers/mcp-tool-helpers.js";
 

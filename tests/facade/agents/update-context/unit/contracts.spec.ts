@@ -5,7 +5,7 @@ import { HumanMessage } from "@langchain/core/messages";
 
 import { responseBuilders } from "../../../../../src/facade/langchain/update-context/response-builders.js";
 import { PHASE, updateContextStateSchema } from "../../../../../src/facade/langchain/update-context/types.js";
-import { InvalidStateError } from "../../../../../src/facade/mcp-server/tools/errors.js";
+import { InvalidStateError } from "../../../../../src/facade/errors.js";
 
 import type { UpdateContextState } from "../../../../../src/facade/langchain/update-context/types.js";
 

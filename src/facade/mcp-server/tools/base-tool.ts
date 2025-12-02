@@ -1,8 +1,8 @@
 import { ZodError } from "zod";
 
+import { FacadeError } from "../../errors.js";
 import { err, ok } from "../result.js";
 
-import { FacadeError } from "./errors.js";
 
 import type { AdhocUserContext, TargetContext, UserId } from "../../../shared/schemas.js";
 import type { CoreTRPCClient } from "../../core-client/core-trpc-client.js";

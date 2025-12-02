@@ -2,7 +2,7 @@ import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import pg from "pg";
 
 import { config } from "../env.js";
-import { PostgresConnectionError } from "../mcp-server/tools/errors.js";
+import { PostgresConnectionError } from "../errors.js";
 
 import type { QueryResult, QueryResultRow } from "pg";
 

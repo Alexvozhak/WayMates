@@ -3,7 +3,7 @@ import { Command, interrupt } from "@langchain/langgraph";
 import { tool } from "langchain";
 import { z } from "zod";
 
-import { AgentInvariantError } from "../../../mcp-server/tools/errors.js";
+import { AgentInvariantError } from "../../../errors.js";
 import { PHASE } from "../types.js";
 import { TOOL_NAME } from "../workflow-constants.js";
 
