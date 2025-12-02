@@ -307,6 +307,30 @@ npm run test:facade:run
 
 → см. ADR-005 (LLM test categories)
 
+### При падении теста
+
+Если причина неясна — включи LangSmith tracing (временно, квота 5k):
+
+```bash
+# .env.test — добавить на время отладки
+LANGSMITH_TRACING=true
+LANGSMITH_PROJECT=waymates-cold-start
+```
+
+Затем запроси trace через SDK:
+
+```typescript
+import { Client } from "langsmith";
+const client = new Client();
+const runs = await client.listRuns({
+  projectName: "waymates-cold-start",
+  limit: 10,
+});
+// Покажет: LLM calls, tool calls, latency, errors
+```
+
+→ см. ADR-018 (LangSmith observability)
+
 ---
 
 ## 🧪 Написание тестов
