@@ -1,5 +1,6 @@
 import { afterAll, beforeAll } from "vitest";
 
+import { postgresService } from "../../../src/facade/infrastructure/postgres.service.js";
 import { UserStories } from "../../core/helpers/user-stories.js";
 
 import { FacadeTestContext } from "./test-context.js";
@@ -8,6 +9,9 @@ import type { UserKey } from "../../core/helpers/user-stories.js";
 
 beforeAll(async () => {
   console.log("[Facade Setup] Starting facade test infrastructure...");
+
+  console.log("[Facade Setup] Initializing PostgreSQL connection...");
+  await postgresService.initialize();
 
   const ctx = FacadeTestContext.initialize();
 
@@ -24,6 +28,8 @@ beforeAll(async () => {
 afterAll(async () => {
   console.log("[Facade Cleanup] Closing Redis connection...");
   await FacadeTestContext.getInstance().cleanup();
+  console.log("[Facade Cleanup] Closing PostgreSQL connection...");
+  await postgresService.close();
   console.log("[Facade Cleanup] Cleanup complete ✓");
 });
 
