@@ -1,3 +1,0 @@
-[submodule "src/cypher"]
-	path = src/cypher
-	url = git@github.com:Alexvozhak/waymates-cypher-private.git
