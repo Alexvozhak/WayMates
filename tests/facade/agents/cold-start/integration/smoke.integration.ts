@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 
-import { postgresService } from "../../../src/facade/infrastructure/postgres.service.js";
-import { ColdStartWorkflow } from "../../../src/facade/langchain/cold-start/cold-start-agent.js";
-import { PHASE } from "../../../src/facade/langchain/cold-start/types.js";
-import { UserStories } from "../../core/helpers/user-stories.js";
+import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
+import { ColdStartWorkflow } from "../../../../../src/facade/langchain/cold-start/cold-start-agent.js";
+import { PHASE } from "../../../../../src/facade/langchain/cold-start/types.js";
+import { UserStories } from "../../../../core/helpers/user-stories.js";
 
-import { generateStoryFromFixture } from "./helpers/cold-start-helpers.js";
+import { generateStoryFromFixture } from "../helpers/cold-start-helpers.js";
 
-import type { UserId } from "../../../src/shared/schemas.js";
+import type { UserId } from "../../../../../src/shared/schemas.js";
 
 // Триггер для перехода story_gathering → plan_career_history.
 // Без этого agent будет просить продолжить рассказ (см. SYSTEM_PROMPT Phase 1).

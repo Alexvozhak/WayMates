@@ -1,9 +1,9 @@
-import { postgresService } from "../../../../src/facade/infrastructure/postgres.service.js";
-import { getModel } from "../../../../src/facade/langchain/shared-tools/models.js";
-import { buildUnpackingPrompt } from "../unpacking-prompt.js";
+import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
+import { getModel } from "../../../../../src/facade/langchain/shared-tools/models.js";
+import { buildUnpackingPrompt } from "./unpacking-prompt.js";
 
-import type { UserId } from "../../../../src/shared/schemas.js";
-import type { FixtureData } from "../unpacking-prompt.js";
+import type { UserId } from "../../../../../src/shared/schemas.js";
+import type { FixtureData } from "./unpacking-prompt.js";
 
 /**
  * Cleanup PostgreSQL state для cold-start тестов.

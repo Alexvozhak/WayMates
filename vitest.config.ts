@@ -15,7 +15,14 @@ export default defineConfig(() => {
       testTimeout: INTEGRATION_TEST_TIMEOUT,
       hookTimeout: INTEGRATION_HOOK_TIMEOUT,
       environment: "node",
-      reporters: ["verbose"], // Показывает детальное время каждого теста
+      reporters: ["verbose"],
+      coverage: {
+        provider: "v8" as const,
+        reporter: ["text", "html"],
+        reportsDirectory: "./coverage",
+        include: ["src/facade/**/*.ts", "src/shared/**/*.ts"],
+        exclude: ["**/*.d.ts", "**/*.spec.ts", "**/index.ts"],
+      },
 
       // Projects run SEQUENTIALLY to avoid data race
       sequence: {
@@ -26,7 +33,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "unit",
-            include: ["tests/core/unit/**/*.spec.ts", "tests/facade/unit/**/*.spec.ts"],
+            include: ["tests/core/unit/**/*.spec.ts", "tests/facade/agents/**/unit/**/*.spec.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -117,9 +124,9 @@ export default defineConfig(() => {
           test: {
             name: "facade-integration",
             include: [
-              "tests/facade/integration/**/*.integration.ts",
-              "tests/facade/cold-start/**/*.integration.ts",
-              "tests/facade/upsert-context/**/*.integration.ts",
+              "tests/facade/agents/**/integration/**/*.integration.ts",
+              "tests/facade/mcp-tools/**/*.integration.ts",
+              "tests/facade/services/**/*.integration.ts",
             ],
             pool: "threads",
             poolOptions: {

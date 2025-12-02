@@ -1,4 +1,4 @@
-import type { Trail, UserContext } from "../../../src/shared/schemas.js";
+import type { Trail, UserContext } from "../../../../../src/shared/schemas.js";
 
 export type FixtureData = {
   userId: string;

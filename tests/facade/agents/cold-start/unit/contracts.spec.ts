@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { PHASE } from "../../../src/facade/langchain/cold-start/types.js";
-import { TOOL_NAME } from "../../../src/facade/langchain/cold-start/workflow-constants.js";
+import { PHASE } from "../../../../../src/facade/langchain/cold-start/types.js";
+import { TOOL_NAME } from "../../../../../src/facade/langchain/cold-start/workflow-constants.js";
 
-import type { ToolName } from "../../../src/facade/langchain/cold-start/workflow-constants.js";
+import type { ToolName } from "../../../../../src/facade/langchain/cold-start/workflow-constants.js";
 
 /**
  * Contract Smoke Tests (C01-C05)
@@ -17,7 +17,7 @@ import type { ToolName } from "../../../src/facade/langchain/cold-start/workflow
  * (plan_career_history говорил "call confirm_plan" вместо "call show_plan")
  */
 
-const TOOLS_DIR = path.resolve(import.meta.dirname, "../../../src/facade/langchain/cold-start/tools");
+const TOOLS_DIR = path.resolve(import.meta.dirname, "../../../../../src/facade/langchain/cold-start/tools");
 
 function readToolSource(toolFileName: string): string {
   return readFileSync(path.resolve(TOOLS_DIR, toolFileName), "utf8");

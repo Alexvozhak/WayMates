@@ -1,17 +1,17 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
 
-import { postgresService } from "../../../src/facade/infrastructure/postgres.service.js";
-import { ColdStartWorkflow } from "../../../src/facade/langchain/cold-start/cold-start-agent.js";
-import { PHASE } from "../../../src/facade/langchain/cold-start/types.js";
-import { setupSession, cleanupSession } from "../helpers/mcp-tool-helpers.js";
-import { trackTestUser, cleanupAllTestUsers } from "../helpers/test-users-tracker.js";
-import { UserStories } from "../../core/helpers/user-stories.js";
+import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
+import { ColdStartWorkflow } from "../../../../../src/facade/langchain/cold-start/cold-start-agent.js";
+import { PHASE } from "../../../../../src/facade/langchain/cold-start/types.js";
+import { setupSession, cleanupSession } from "../../../helpers/mcp-tool-helpers.js";
+import { trackTestUser, cleanupAllTestUsers } from "../../../helpers/test-users-tracker.js";
+import { UserStories } from "../../../../core/helpers/user-stories.js";
 
-import { cleanupColdStart, generateStoryFromFixture } from "./helpers/cold-start-helpers.js";
-import { FacadeTestContext } from "../helpers/test-context.js";
+import { cleanupColdStart, generateStoryFromFixture } from "../helpers/cold-start-helpers.js";
+import { FacadeTestContext } from "../../../helpers/test-context.js";
 
-import type { SessionId } from "../../../src/facade/mcp-server/result.js";
-import type { UserId } from "../../../src/shared/schemas.js";
+import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
+import type { UserId } from "../../../../../src/shared/schemas.js";
 
 const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя карьерная история.";
 

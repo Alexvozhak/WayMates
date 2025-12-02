@@ -3,11 +3,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { HumanMessage } from "@langchain/core/messages";
 
-import { responseBuilders } from "../../../src/facade/langchain/update-context/response-builders.js";
-import { PHASE, updateContextStateSchema } from "../../../src/facade/langchain/update-context/types.js";
-import { InvalidStateError } from "../../../src/facade/mcp-server/tools/errors.js";
+import { responseBuilders } from "../../../../../src/facade/langchain/update-context/response-builders.js";
+import { PHASE, updateContextStateSchema } from "../../../../../src/facade/langchain/update-context/types.js";
+import { InvalidStateError } from "../../../../../src/facade/mcp-server/tools/errors.js";
 
-import type { UpdateContextState } from "../../../src/facade/langchain/update-context/types.js";
+import type { UpdateContextState } from "../../../../../src/facade/langchain/update-context/types.js";
 
 /**
  * Update-Context Contract Tests (UC-C01-C05)
@@ -16,7 +16,7 @@ import type { UpdateContextState } from "../../../src/facade/langchain/update-co
  * Время выполнения: ~100ms (статический анализ)
  */
 
-const TOOLS_DIR = path.resolve(import.meta.dirname, "../../../src/facade/langchain/update-context/tools");
+const TOOLS_DIR = path.resolve(import.meta.dirname, "../../../../../src/facade/langchain/update-context/tools");
 
 function readToolSource(toolFileName: string): string {
   return readFileSync(path.resolve(TOOLS_DIR, toolFileName), "utf8");

@@ -93,14 +93,14 @@ tests/facade/
 
 | # | Этап | Scope | Коммит | Статус |
 |---|------|-------|--------|--------|
-| 1 | Подготовка | coverage, удалить пустые | `refactor(tests): prepare infrastructure` | ⬜ |
-| 2a | cold-start | unit + integration | `refactor(tests): restructure cold-start` | ⬜ |
-| 2b | update-context | unit + integration | `refactor(tests): restructure update-context` | ⬜ |
-| 2c | upsert-context | unit + integration | `refactor(tests): restructure upsert-context` | ⬜ |
-| 3 | mcp-tools | integration | `refactor(tests): restructure mcp-tools` | ⬜ |
-| 4 | services | integration | `refactor(tests): restructure services` | ⬜ |
-| 5 | Cleanup | vitest.config.ts | `refactor(tests): update vitest config` | ⬜ |
-| 6 | Coverage | baseline report | — | ⬜ |
+| 1 | Подготовка | coverage, удалить пустые | `refactor(tests): prepare infrastructure` | ✅ |
+| 2a | cold-start | unit + integration | `refactor(tests): restructure cold-start` | ✅ |
+| 2b | update-context | unit + integration | `refactor(tests): restructure update-context` | ✅ |
+| 2c | upsert-context | unit + integration | `refactor(tests): restructure upsert-context` | ✅ |
+| 3 | mcp-tools | integration | `refactor(tests): restructure mcp-tools` | ✅ |
+| 4 | services | integration | `refactor(tests): restructure services` | ✅ |
+| 5 | Cleanup | vitest.config.ts | `refactor(tests): update vitest config` | ✅ |
+| 6 | Coverage | baseline report | — | ✅ |
 
 ## Детали этапов
 

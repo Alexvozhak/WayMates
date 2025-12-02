@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
 
-import { postgresService } from "../../../src/facade/infrastructure/postgres.service.js";
-import { UpsertContextWorkflow } from "../../../src/facade/langchain/upsert-context/upsert-context-agent.js";
-import { cleanupSession, setupSession } from "../helpers/mcp-tool-helpers.js";
+import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
+import { UpsertContextWorkflow } from "../../../../../src/facade/langchain/upsert-context/upsert-context-agent.js";
+import { cleanupSession, setupSession } from "../../../helpers/mcp-tool-helpers.js";
 
-import type { SessionId } from "../../../src/facade/mcp-server/result.js";
-import type { UserId } from "../../../src/shared/schemas.js";
+import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
+import type { UserId } from "../../../../../src/shared/schemas.js";
 
 describe("UpsertContext Smoke Tests (UC-T01 to UC-T03)", () => {
   const testUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c222";

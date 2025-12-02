@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 
-import { postgresService } from "../../../src/facade/infrastructure/postgres.service.js";
-import { UpdateContextWorkflow } from "../../../src/facade/langchain/update-context/update-context-agent.js";
-import { PHASE } from "../../../src/facade/langchain/update-context/types.js";
+import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
+import { UpdateContextWorkflow } from "../../../../../src/facade/langchain/update-context/update-context-agent.js";
+import { PHASE } from "../../../../../src/facade/langchain/update-context/types.js";
 
-import type { UserId, UserContext } from "../../../src/shared/schemas.js";
+import type { UserId, UserContext } from "../../../../../src/shared/schemas.js";
 
 const TEST_CURRENT_CONTEXT: UserContext = {
   contextId: "ctx_019a6ea7-0000-0000-0000-000000000001",
