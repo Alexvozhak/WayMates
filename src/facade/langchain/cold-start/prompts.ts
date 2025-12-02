@@ -334,28 +334,43 @@ EXTRACTION RULES:
 export function contextCorrectionPrompt(
   existingContext: UserContext,
   corrections: string,
-  messages: BaseMessage[],
+  _messages: BaseMessage[],
 ): string {
-  const messagesText = serializeMessages(messages);
+  return `You are applying user corrections to a career context.
 
-  return `Apply corrections to the following career context.
-
-ORIGINAL CONTEXT:
+═══════════════════════════════════════════════════
+ORIGINAL CONTEXT (before correction):
+═══════════════════════════════════════════════════
 ${JSON.stringify(existingContext, null, 2)}
 
-USER CORRECTIONS:
-${corrections}
-
-CONVERSATION HISTORY (for additional context):
-${messagesText}
+═══════════════════════════════════════════════════
+USER CORRECTION REQUEST:
+═══════════════════════════════════════════════════
+"${corrections}"
 
 ═══════════════════════════════════════════════════
-TASK: Return the COMPLETE corrected context object
+YOUR TASK:
 ═══════════════════════════════════════════════════
+Apply the user's correction EXACTLY as requested:
 
-Apply the user's corrections while preserving all other fields.
-Return the full context with corrections applied.
-DO NOT return partial data - include ALL fields from the original.`;
+1. If user says "change position to X" or "измени позицию на X":
+   → Set position field to "X" (the new value)
+
+2. If user says "add skill X" or "добавь X":
+   → Add "X" to skills array
+
+3. If user says "remove X" or "убери X":
+   → Remove "X" from the relevant array
+
+EXAMPLES:
+- "измени позицию на lead" → position: "lead"
+- "change position to senior" → position: "senior"
+- "добавь Python" → skills: [...existing, "python"]
+
+IMPORTANT:
+- Apply corrections LITERALLY — if user says "lead", the position should be "lead"
+- Preserve ALL other fields unchanged
+- Return the COMPLETE context object with correction applied`;
 }
 
 export function trailCorrectionPrompt(existingTrail: Trail, corrections: string, messages: BaseMessage[]): string {

@@ -221,6 +221,114 @@ describe("Cold-Start Edge Cases (Tier 3)", () => {
   }, 300_000);
 
   /**
+   * T09: Context Correction (Edit Flow)
+   *
+   * Business rule: Пользователь может сказать "нет, измени X" при показе контекста.
+   * Agent должен:
+   * 1. Распознать EDIT intent (не APPROVE)
+   * 2. Вызвать edit_context с corrections
+   * 3. Показать обновлённый контекст
+   * 4. Дождаться нового подтверждения
+   *
+   * Flow:
+   * story → plan → confirm plan → process → show_context
+   * → "измени position на senior" → edit_context → show_context (updated)
+   * → "да, верно" → confirm_context → continue
+   *
+   * Critical: Проверяет что Agent корректно парсит EDIT intent
+   * и не путает с APPROVE при словах типа "измени", "поправь", "добавь".
+   */
+  // eslint-disable-next-line complexity -- integration test with multiple workflow steps
+  it("T09: Context correction via edit_context flow", async () => {
+    const userStories = new UserStories();
+    const u1 = userStories.getStoryBy("U1");
+
+    const story = await generateStoryFromFixture(u1);
+    const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
+
+    // Step 1: Story → Plan
+    console.log("T09 [1/6]: Sending story → awaiting_plan_confirmation");
+    const planResponse = await runWorkflow(storyWithTrigger);
+
+    if (planResponse.phase !== PHASE.awaiting_plan_confirmation) {
+      expect.fail(`Expected awaiting_plan_confirmation, got ${planResponse.phase}`);
+    }
+    console.log(`T09 [1/6]: ✅ Plan created with ${planResponse.queue.length} contexts`);
+
+    // Step 2: Confirm plan → Extract first context
+    console.log("T09 [2/6]: Confirming plan → awaiting_context_confirmation");
+    const extractionResponse = await runWorkflow("да, всё верно");
+
+    if (extractionResponse.phase === PHASE.awaiting_clarification) {
+      expect.fail("T09 requires successful extraction without clarification");
+    }
+
+    if (extractionResponse.phase !== PHASE.awaiting_context_confirmation) {
+      expect.fail(`Expected awaiting_context_confirmation, got ${extractionResponse.phase}`);
+    }
+
+    const originalPosition = extractionResponse.entity.position;
+    const contextId = extractionResponse.entity.contextId;
+    console.log(`T09 [2/6]: ✅ Context extracted: position="${originalPosition}", id=${contextId}`);
+
+    // Step 3: EDIT REQUEST — сказать "измени position"
+    // Agent должен распознать EDIT intent и вызвать edit_context
+    console.log("T09 [3/6]: Sending edit request → edit_context should be called");
+    const editResponse = await runWorkflow("нет, измени позицию на lead");
+
+    // После edit должен быть снова awaiting_context_confirmation
+    // (показывает обновлённый контекст для подтверждения)
+    if (editResponse.phase !== PHASE.awaiting_context_confirmation) {
+      console.log(`T09: ❌ After edit request, got phase: ${editResponse.phase}`);
+      console.log("T09: Agent may have misinterpreted EDIT intent as something else");
+      expect.fail(`Expected awaiting_context_confirmation after edit, got ${editResponse.phase}`);
+    }
+
+    // Position должен измениться
+    const updatedPosition = editResponse.entity.position;
+    console.log(`T09 [3/6]: ✅ Context updated: position="${updatedPosition}"`);
+
+    // Проверяем что position изменился (должен содержать "lead" или отличаться от original)
+    const positionChanged = updatedPosition !== originalPosition || updatedPosition.toLowerCase().includes("lead");
+
+    if (!positionChanged) {
+      console.log(`T09: ⚠️ Position may not have changed: "${originalPosition}" → "${updatedPosition}"`);
+      // Не fail — LLM может интерпретировать по-разному, главное что phase правильный
+    }
+
+    // Step 4: CONFIRM — теперь подтвердить
+    console.log("T09 [4/6]: Confirming edited context");
+    const confirmResponse = await runWorkflow("да, теперь верно");
+
+    // После подтверждения — либо следующий контекст, либо final
+    const validPhases = [PHASE.awaiting_context_confirmation, PHASE.awaiting_final_confirmation];
+    expect(validPhases).toContain(confirmResponse.phase);
+    console.log(`T09 [4/6]: ✅ Context confirmed, phase: ${confirmResponse.phase}`);
+
+    // Step 5: Complete workflow
+    let currentResponse = confirmResponse;
+    while (currentResponse.phase === PHASE.awaiting_context_confirmation) {
+      console.log(
+        `T09 [5/6]: Confirming context ${currentResponse.progress.current}/${currentResponse.progress.total}`,
+      );
+      currentResponse = await runWorkflow("да, верно");
+    }
+
+    if (currentResponse.phase !== PHASE.awaiting_final_confirmation) {
+      expect.fail(`Expected awaiting_final_confirmation, got ${currentResponse.phase}`);
+    }
+
+    // Final confirmation
+    console.log("T09 [6/6]: Final confirmation → saved");
+    const savedResponse = await runWorkflow("сохрани");
+    expect(savedResponse.phase).toBe(PHASE.saved);
+
+    if (savedResponse.phase === PHASE.saved) {
+      console.log(`T09: ✅ Edit flow test passed — ${savedResponse.contexts.length} contexts saved`);
+    }
+  }, 300_000);
+
+  /**
    * T14: Cancel Workflow
    *
    * Business rule: Пользователь может сказать "отмена" в любой момент

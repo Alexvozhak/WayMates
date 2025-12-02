@@ -42,7 +42,12 @@ export const confirmContextTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `All contexts extracted. Now call ${TOOL_NAME.show_final} to show complete career history for final approval.`,
+            content:
+              `[ALL CONTEXTS CONFIRMED] ` +
+              `All ${processed} contexts extracted and confirmed by user. ` +
+              `⚠️ IMPORTANT: Previous userResponse was for CONTEXT confirmation, NOT for final save! ` +
+              `You MUST call ${TOOL_NAME.show_final} to show complete career history and get NEW user approval before saving. ` +
+              `DO NOT call ${TOOL_NAME.confirm_final} until user responds to ${TOOL_NAME.show_final}.`,
             tool_call_id: toolCallId,
           }),
         ],

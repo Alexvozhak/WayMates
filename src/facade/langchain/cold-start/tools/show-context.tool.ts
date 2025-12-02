@@ -3,6 +3,7 @@ import { Command, interrupt } from "@langchain/langgraph";
 import { tool } from "langchain";
 import { z } from "zod";
 
+import { AgentInvariantError } from "../../../mcp-server/tools/errors.js";
 import { PHASE } from "../types.js";
 import { TOOL_NAME } from "../workflow-constants.js";
 
@@ -15,7 +16,13 @@ export const showContextTool = tool(
     const { collectedContexts, collectedTrails, queue, currentEntityContext } = state;
 
     const lastContext = collectedContexts.at(-1);
-    const relatedTrails = collectedTrails.filter((t) => t.toContextId === lastContext?.contextId);
+    if (!lastContext) {
+      throw new AgentInvariantError(TOOL_NAME.show_context, "collectedContexts is empty", {
+        collectedContextsLength: collectedContexts.length,
+        phase: state.phase,
+      });
+    }
+    const relatedTrails = collectedTrails.filter((t) => t.toContextId === lastContext.contextId);
     const progress = {
       current: (currentEntityContext?.contextIndex ?? 0) + 1,
       total: queue.length,
@@ -36,7 +43,15 @@ export const showContextTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `Пользователь ответил: "${userMessage}". Проанализируй ответ по правилам INTENT PARSING и вызови ${TOOL_NAME.confirm_context} (если согласие), ${TOOL_NAME.edit_context}/${TOOL_NAME.edit_trail} (если изменения), или отмени workflow (если отказ).`,
+            content:
+              `[CONTEXT ${progress.current}/${progress.total} CONFIRMATION] ` +
+              `contextId: ${lastContext.contextId} ` +
+              `Пользователь ответил: "${userMessage}". ` +
+              `⚠️ Это ответ НА КОНТЕКСТ #${progress.current}, НЕ на финальное сохранение всей истории! ` +
+              `Проанализируй ответ по правилам INTENT PARSING: ` +
+              `${TOOL_NAME.confirm_context} (согласие), ` +
+              `${TOOL_NAME.edit_context}(contextId="${lastContext.contextId}", corrections) / ${TOOL_NAME.edit_trail} (изменения), ` +
+              `или cancel_workflow (отказ).`,
             tool_call_id: toolCallId,
           }),
         ],

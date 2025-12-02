@@ -34,7 +34,14 @@ export const showFinalTool = tool(
         /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
         messages: [
           new ToolMessage({
-            content: `Пользователь ответил: "${userMessage}". Проанализируй ответ по правилам INTENT PARSING и вызови ${TOOL_NAME.confirm_final} (если согласие сохранить), ${TOOL_NAME.edit_context}/${TOOL_NAME.edit_trail} (если изменения), или отмени workflow (если отказ).`,
+            content:
+              `[FINAL SAVE CONFIRMATION] ` +
+              `Пользователь ответил: "${userMessage}". ` +
+              `✅ Это ответ на ФИНАЛЬНОЕ СОХРАНЕНИЕ всей истории (${collectedContexts.length} contexts). ` +
+              `Проанализируй ответ по правилам INTENT PARSING: ` +
+              `${TOOL_NAME.confirm_final} (согласие сохранить), ` +
+              `${TOOL_NAME.edit_context}/${TOOL_NAME.edit_trail} (изменения), ` +
+              `или cancel_workflow (отказ).`,
             tool_call_id: toolCallId,
           }),
         ],
