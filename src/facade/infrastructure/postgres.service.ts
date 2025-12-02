@@ -62,6 +62,7 @@ class PostgresService {
       try {
         await this.checkpointer.setup();
         await this.setupColdStartTable();
+        await this.setupAuthTable();
         this.isSetupDone = true;
         console.log("✅ LangGraph checkpoint tables initialized");
       } catch (error) {
@@ -85,10 +86,7 @@ class PostgresService {
     return this.pool;
   }
 
-  async query<T extends QueryResultRow = QueryResultRow>(
-    text: string,
-    params?: unknown[],
-  ): Promise<QueryResult<T>> {
+  async query<T extends QueryResultRow = QueryResultRow>(text: string, params?: unknown[]): Promise<QueryResult<T>> {
     const pool = this.getPool();
     return pool.query<T>(text, params);
   }
@@ -128,10 +126,7 @@ class PostgresService {
   }
 
   async resetColdStartStatus(userId: string): Promise<boolean> {
-    const result = await this.query(
-      "DELETE FROM facade.cold_start_completions WHERE user_id = $1",
-      [userId],
-    );
+    const result = await this.query("DELETE FROM facade.cold_start_completions WHERE user_id = $1", [userId]);
     return (result.rowCount ?? 0) > 0;
   }
 
@@ -165,6 +160,36 @@ class PostgresService {
 
     // pendingWrites содержит interrupt если есть pending tool calls
     return tuple.pendingWrites.length > 0;
+  }
+
+  async setupAuthTable(): Promise<void> {
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS facade.users (
+        user_id TEXT PRIMARY KEY,
+        token TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_auth_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+  }
+
+  async createUser(userId: string, token: string): Promise<void> {
+    await this.query("INSERT INTO facade.users (user_id, token) VALUES ($1, $2)", [userId, token]);
+  }
+
+  async findUserByToken(token: string): Promise<{ userId: string } | null> {
+    /* eslint-disable @typescript-eslint/naming-convention -- Database column name */
+    const result = await this.query<{ user_id: string }>("SELECT user_id FROM facade.users WHERE token = $1", [token]);
+    /* eslint-enable @typescript-eslint/naming-convention */
+    const row = result.rows[0];
+    if (!row) {
+      return null;
+    }
+    return { userId: row.user_id };
+  }
+
+  async updateLastAuthAt(userId: string): Promise<void> {
+    await this.query("UPDATE facade.users SET last_auth_at = NOW() WHERE user_id = $1", [userId]);
   }
 }
 

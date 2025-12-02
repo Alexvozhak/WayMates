@@ -10,6 +10,7 @@ export type SessionId = z.infer<typeof sessionIdSchema>;
 export const errorCodeSchema = z.enum([
   "session_expired",
   "session_invalid",
+  "invalid_token",
   "normalization_failed",
   "core_api_error",
   "validation_error",

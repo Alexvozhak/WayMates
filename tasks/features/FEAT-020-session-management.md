@@ -83,3 +83,22 @@
 ---
 
 **Created**: 2025-12-02
+
+---
+
+## Implementation Notes
+
+- Completed: 2025-12-02
+- Deviations from plan: None
+- Issues encountered:
+  - Race condition in createWithSingleActiveSession fixed with Lua script
+  - Token leak in error message fixed (no token in InvalidTokenError)
+  - TTL sync: pointer + thread keys now updated in validate()
+- Performance notes: Lua script ensures atomic session creation
+
+## TODO
+
+- [ ] Прогнать auth integration tests (требуется Redis + PostgreSQL):
+  ```bash
+  npm run test:integration -- --grep "Auth Tool"
+  ```

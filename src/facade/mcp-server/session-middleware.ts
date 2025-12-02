@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { userIdSchema } from "../../shared/schemas.js";
+import { config } from "../env.js";
 
 import { sessionIdSchema } from "./result.js";
 import { SessionExpiredError } from "./tools/errors.js";
@@ -10,30 +11,35 @@ import type { UserId } from "../../shared/schemas.js";
 import type { Redis } from "ioredis";
 
 export class SessionMiddleware {
-  private static readonly sessionTtlSeconds = 3600;
   private static readonly sessionKeyPrefix = "session:";
   private static readonly threadKeyPrefix = "thread:";
+  private static readonly currentSessionKeyPrefix = "user:currentSession:";
 
   constructor(private redis: Redis) {}
 
   async validate(sessionId: SessionId): Promise<UserId> {
-    const key = this.getSessionKey(sessionId);
-    const userId = await this.redis.get(key);
+    const sessionKey = this.getSessionKey(sessionId);
+    const userId = await this.redis.get(sessionKey);
 
     if (!userId) {
       throw new SessionExpiredError(`Session ${sessionId} not found or expired`);
     }
 
-    await this.redis.expire(key, SessionMiddleware.sessionTtlSeconds);
+    const userIdParsed = userIdSchema.parse(userId);
+    const pointerKey = this.getCurrentSessionKey(userIdParsed);
+    const threadKey = this.getThreadKey(sessionId);
+    const ttl = config.AUTH_SESSION_TTL_SECONDS;
 
-    return userIdSchema.parse(userId);
+    await this.redis.pipeline().expire(sessionKey, ttl).expire(pointerKey, ttl).expire(threadKey, ttl).exec();
+
+    return userIdParsed;
   }
 
   async create(userId: UserId): Promise<SessionId> {
     const sessionId = this.generateSessionId();
     const key = this.getSessionKey(sessionId);
 
-    await this.redis.setex(key, SessionMiddleware.sessionTtlSeconds, userId);
+    await this.redis.setex(key, config.AUTH_SESSION_TTL_SECONDS, userId);
 
     return sessionId;
   }
@@ -44,21 +50,61 @@ export class SessionMiddleware {
     await this.redis.del(key, threadKey);
   }
 
-  /**
-   * Get or create thread_id for LangGraph checkpointing
-   * Each session has one thread_id that persists across the session lifetime
-   */
   async getThreadId(sessionId: SessionId): Promise<string> {
     const threadKey = this.getThreadKey(sessionId);
     let threadId = await this.redis.get(threadKey);
 
     if (!threadId) {
-      // Generate new thread_id for this session
       threadId = `thread_${randomBytes(16).toString("hex")}`;
-      await this.redis.setex(threadKey, SessionMiddleware.sessionTtlSeconds, threadId);
+      await this.redis.setex(threadKey, config.AUTH_SESSION_TTL_SECONDS, threadId);
     }
 
     return threadId;
+  }
+
+  async createWithSingleActiveSession(userId: UserId): Promise<SessionId> {
+    const sessionId = this.generateSessionId();
+    const pointerKey = this.getCurrentSessionKey(userId);
+    const sessionKey = this.getSessionKey(sessionId);
+    const threadKey = this.getThreadKey(sessionId);
+    const ttl = config.AUTH_SESSION_TTL_SECONDS;
+
+    const script = `
+      local pointerKey = KEYS[1]
+      local sessionKey = KEYS[2]
+      local threadKey = KEYS[3]
+      local ttl = ARGV[1]
+      local userId = ARGV[2]
+      local sessionId = ARGV[3]
+
+      local oldSession = redis.call('GET', pointerKey)
+      if oldSession then
+        redis.call('DEL', 'session:' .. oldSession)
+        redis.call('DEL', 'thread:' .. oldSession)
+      end
+
+      redis.call('SETEX', sessionKey, ttl, userId)
+      redis.call('SETEX', pointerKey, ttl, sessionId)
+
+      return sessionId
+    `;
+
+    await this.redis.eval(script, 3, pointerKey, sessionKey, threadKey, ttl, userId, sessionId);
+
+    return sessionId;
+  }
+
+  async revokeAllUserSessions(userId: UserId): Promise<void> {
+    const pointerKey = this.getCurrentSessionKey(userId);
+    const existingSessionId = await this.redis.get(pointerKey);
+
+    if (existingSessionId) {
+      const parsed = sessionIdSchema.safeParse(existingSessionId);
+      if (parsed.success) {
+        await this.revoke(parsed.data);
+      }
+      await this.redis.del(pointerKey);
+    }
   }
 
   private getSessionKey(sessionId: SessionId): string {
@@ -67,6 +113,10 @@ export class SessionMiddleware {
 
   private getThreadKey(sessionId: SessionId): string {
     return `${SessionMiddleware.threadKeyPrefix}${sessionId}`;
+  }
+
+  private getCurrentSessionKey(userId: UserId): string {
+    return `${SessionMiddleware.currentSessionKeyPrefix}${userId}`;
   }
 
   private generateSessionId(): SessionId {

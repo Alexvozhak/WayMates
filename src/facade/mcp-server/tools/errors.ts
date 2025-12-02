@@ -61,6 +61,14 @@ export class SessionInvalidError extends FacadeError {
   }
 }
 
+export class InvalidTokenError extends FacadeError {
+  override readonly errorCode = "invalid_token";
+
+  protected override getPublicMessage(): string {
+    return "Invalid or unknown token. Please register for a new account.";
+  }
+}
+
 export class NormalizationError extends FacadeError {
   override readonly errorCode = "normalization_failed";
 }

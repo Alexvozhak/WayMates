@@ -131,3 +131,13 @@ export const deleteTrailParamsSchema = z.object({
 });
 
 export type DeleteTrailParams = z.infer<typeof deleteTrailParamsSchema>;
+
+export const tokenSchema = z.string().uuid().describe("User token (UUID v7 format) for authentication");
+
+export type Token = z.infer<typeof tokenSchema>;
+
+export const authParamsSchema = z.object({
+  token: tokenSchema.optional(),
+});
+
+export type AuthParams = z.infer<typeof authParamsSchema>;
