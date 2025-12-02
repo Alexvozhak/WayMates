@@ -26,7 +26,7 @@ Read docs/facade/FAQ.md
 Read eslint.config.mjs
 
 # 4. Test standards
-Read .claude/routers/test/standards.md
+Read .claude/routers/test/router.md
 
 # 5 LangChain v1 API (ОБЯЗАТЕЛЬНО)
 Read .claude/routers/langchain/router.md
@@ -345,7 +345,7 @@ const runs = await client.listRuns({
 2. Используй fixtures U1-U18 + `buildUnpackingPrompt()`
 3. Каждый тест с бизнес-комментарием (зачем проверяем)
 
-→ см. `.claude/routers/test/standards.md`
+→ см. `.claude/routers/test/router.md`
 
 ---
 
