@@ -1,6 +1,10 @@
 import { ChatOpenAI } from "@langchain/openai";
+import { createMiddleware } from "langchain";
 
 import { config } from "../../env.js";
+
+import type { AIMessage } from "@langchain/core/messages";
+import type { AgentMiddleware } from "langchain";
 
 export type ModelPurpose = "deterministic" | "extraction" | "planning" | "agent";
 
@@ -28,6 +32,21 @@ export function getModel(purpose: ModelPurpose): ChatOpenAI {
   }
   return model;
 }
+
+/* eslint-disable @typescript-eslint/naming-convention -- OpenAI API parameter */
+export const sequentialToolCallsMiddleware: AgentMiddleware = createMiddleware({
+  name: "sequential-tool-calls",
+  wrapModelCall: async (request, handler): Promise<AIMessage> => {
+    return handler({
+      ...request,
+      modelSettings: {
+        ...request.modelSettings,
+        parallel_tool_calls: false,
+      },
+    });
+  },
+});
+/* eslint-enable @typescript-eslint/naming-convention */
 
 export function clearModelInstances(): void {
   instances.clear();

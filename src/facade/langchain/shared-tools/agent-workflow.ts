@@ -3,6 +3,8 @@ import { createAgent } from "langchain";
 
 import { postgresService } from "../../infrastructure/postgres.service.js";
 
+import { sequentialToolCallsMiddleware } from "./models.js";
+
 import type { LanguageModelLike } from "@langchain/core/language_models/base";
 import type { HumanMessage } from "@langchain/core/messages";
 import type { StructuredTool } from "@langchain/core/tools";
@@ -49,6 +51,7 @@ export abstract class AgentWorkflow<TState extends { phase: TPhase }, TResponse,
       checkpointer: postgresService.getCheckpointer(),
       stateSchema: this.stateSchema,
       systemPrompt: this.systemPrompt,
+      middleware: [sequentialToolCallsMiddleware],
     });
   }
 
