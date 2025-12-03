@@ -39,9 +39,12 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
       throw new InvalidStateError(PHASE.awaiting_context_confirmation, "currentEntityContext is missing");
     }
 
-    const currentContext = collectedContexts.at(-1);
+    const currentContext = collectedContexts[currentEntityContext.contextIndex];
     if (!currentContext) {
-      throw new InvalidStateError(PHASE.awaiting_context_confirmation, "no collected contexts");
+      throw new InvalidStateError(
+        PHASE.awaiting_context_confirmation,
+        "no collected context at currentEntityContext.contextIndex",
+      );
     }
 
     return {
