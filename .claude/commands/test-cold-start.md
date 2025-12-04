@@ -1,15 +1,18 @@
 ---
 name: test-cold-start
-description: Тестирование cold-start agent. Следует плану из docs/facade/PLAN.md, распределяет информацию по 6 документам (FAQ, ADR, GLOSSARY, архитектура).
+description: Тестирование cold-start-v2 agent (LangGraph). Следует плану из docs/facade/PLAN.md, распределяет информацию по 6 документам (FAQ, ADR, GLOSSARY, архитектура).
 model: sonnet
 ---
 
-# Cold-Start Testing Workflow
+# Cold-Start v2 Testing Workflow
 
+> **Архитектура**: LangGraph StateGraph (nodes + routers), НЕ ToolMessage
 > **Test Cases**: → `docs/facade/TEST-PLAN.md` (ЧТО тестируем)
 > **Этот документ**: КАК писать тесты (инфраструктура, шаблоны, правила)
 
-Ты реализуешь тестирование cold-start agent. **СТРОГО следуй плану**, не импровизируй.
+Ты реализуешь тестирование cold-start-v2 agent. **СТРОГО следуй плану**, не импровизируй.
+
+**КРИТИЧНО**: Код в `src/facade/langchain/cold-start-v2/`, тесты в `tests/facade/agents/cold-start-v2/`.
 
 ---
 
@@ -28,12 +31,12 @@ Read eslint.config.mjs
 # 4. Test standards
 Read .claude/routers/test/router.md
 
-# 5 LangChain v1 API (ОБЯЗАТЕЛЬНО)
-Read .claude/routers/langchain/router.md
+# 5. LangGraph архитектура (ОБЯЗАТЕЛЬНО)
+Read src/facade/langchain/cold-start-v2/cold-start-graph.ts
+Read src/facade/langchain/cold-start-v2/routers/decision-router.ts
 
 # 6. Vitest конфигурация
 Read vitest.config.ts
-Read vitest.globalSetup.ts
 ```
 
 ---
@@ -61,8 +64,8 @@ Read vitest.globalSetup.ts
 | 1   | `docs/facade/PLAN.md`                     | Статусы задач                             | `⬜ → ✅`                            |
 | 2   | `docs/facade/FAQ.md`                      | Закрытые вопросы (1 предложение + ссылка) | "Timeout → 30 сек. → см. ADR-002"    |
 | 3   | `docs/facade/GLOSSARY.md`                 | Термины домена                            | "Context = снимок карьеры"           |
-| 4   | `docs/facade/decisions/ADR-XXX.md`        | Архитектурные решения                     | "Почему U1-U18, а не новые fixtures" |
-| 5   | `docs/architecture/facade/langchain/*.md` | Техническая архитектура                   | State machine, tools, flows          |
+| 4   | `docs/architecture/decisions/ADR-XXX.md`  | Архитектурные решения                     | "Почему U1-U18, а не новые fixtures" |
+| 5   | `docs/architecture/facade/langchain/*.md` | Техническая архитектура                   | State machine, nodes, routers        |
 | 6   | `.claude/commands/test-cold-start.md`     | Этот промпт                               | AI-инструкции                        |
 
 ---
@@ -186,14 +189,17 @@ Read docs/facade/PLAN.md
 # 2. Загрузи FAQ (открытые вопросы)
 Read docs/facade/FAQ.md
 
-# 3. Загрузи все ADR (архитектурные решения)
-Glob docs/facade/decisions/ADR-*.md
-Read каждый найденный ADR
+# 3. Загрузи ключевые ADR
+Read docs/architecture/decisions/ADR-026-test-strategy-revision.md
+Read docs/architecture/decisions/ADR-022-cold-start-test-strategy.md
 
-# 4. Найди первую ⬜ задачу
-# 5. Выполни её
-# 6. Распредели информацию по документам
-# 7. Отметь ✅ в PLAN.md
+# 4. Загрузи LangGraph архитектуру
+Read src/facade/langchain/cold-start-v2/cold-start-graph.ts
+
+# 5. Найди первую ⬜ задачу
+# 6. Выполни её
+# 7. Распредели информацию по документам
+# 8. Отметь ✅ в PLAN.md
 ```
 
 ### При выполнении задачи
@@ -305,7 +311,7 @@ npm run test:facade:run
 - **Flakiness**: проверяй структуру (`phase`, `contexts.length`), не exact values
 - **Sequential**: тесты идут последовательно (rate limiting, предсказуемость)
 
-→ см. ADR-005 (LLM test categories)
+→ см. ADR-020 (LLM test categories)
 
 ### При падении теста
 
@@ -335,15 +341,27 @@ const runs = await client.listRuns({
 
 ## 🧪 Написание тестов
 
-**Test cases**: → `docs/facade/TEST-PLAN.md` (T01-T15 с приоритетами)
+**Test cases**: → `docs/facade/TEST-PLAN.md` (C01-C05, T01-T15)
 
-**Шаблоны**: → `tests/facade/cold-start/helpers/`
+**Helpers**: → `tests/facade/agents/cold-start/helpers/`
+
+**Структура тестов**: → `tests/facade/agents/cold-start-v2/`
 
 **Правила**:
 
-1. Проверяй phase transitions, не exact extraction
-2. Используй fixtures U1-U18 + `buildUnpackingPrompt()`
-3. Каждый тест с бизнес-комментарием (зачем проверяем)
+1. **Contract tests (Tier 0)**: проверяй graph topology, router logic, invariants — БЕЗ LLM
+2. **Integration tests**: проверяй phase transitions, не exact extraction
+3. Используй fixtures U1-U18 + `generateStoryFromFixture()`
+4. Каждый тест с бизнес-комментарием (зачем проверяем)
+
+### Contract Tests (C01-C05) — LangGraph специфика
+
+```typescript
+// C01: Graph topology — edges в graph === routes в routers
+// C02: Router exhaustiveness — все intent варианты покрыты
+// C03: Invariant guards — parsedDecision NON-NULL после parse nodes
+// C05: State completeness — все поля для всех фаз
+```
 
 → см. `.claude/routers/test/router.md`
 
