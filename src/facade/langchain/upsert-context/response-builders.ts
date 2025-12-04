@@ -1,44 +1,45 @@
-import { PHASE } from "./types.js";
+import { InvalidStateError } from "../../errors.js";
 
-import type { UpsertContextPhase, UpsertContextResponse, UpsertContextState } from "./types.js";
+import { PHASE } from "./state.js";
 
-type ResponseBuilder<P extends UpsertContextPhase> = (
-  state: UpsertContextState,
-) => Extract<UpsertContextResponse, { phase: P }>;
+import type { UpsertContextPhase, UpsertContextStateType } from "./state.js";
+import type { UpsertContextResponse } from "./types.js";
 
-export const responseBuilders: { [P in UpsertContextPhase]: ResponseBuilder<P> } = {
+type ResponseBuilder = (state: UpsertContextStateType) => UpsertContextResponse;
+
+export const responseBuilders: Record<UpsertContextPhase, ResponseBuilder> = {
   [PHASE.extracting]: () => ({
     phase: PHASE.extracting,
     message: "Processing your request...",
   }),
 
-  [PHASE.awaiting_confirmation]: (state) => {
+  [PHASE.awaitingConfirmation]: (state) => {
     if (!state.validatedContext) {
-      throw new Error("validatedContext required for awaiting_confirmation");
+      throw new InvalidStateError(PHASE.awaitingConfirmation, "validatedContext is missing");
     }
     return {
-      phase: PHASE.awaiting_confirmation,
+      phase: PHASE.awaitingConfirmation,
       context: state.validatedContext,
     };
   },
 
-  [PHASE.saved]: (state) => {
+  [PHASE.approved]: (state) => {
     if (!state.validatedContext) {
-      throw new Error("validatedContext required for saved");
+      throw new InvalidStateError(PHASE.approved, "validatedContext is missing");
     }
     return {
-      phase: PHASE.saved,
+      phase: PHASE.approved,
       context: state.validatedContext,
     };
   },
 
-  [PHASE.failed]: () => ({
-    phase: PHASE.failed,
-    message: "Context creation failed",
+  [PHASE.cancelled]: () => ({
+    phase: PHASE.cancelled,
+    message: "Context creation cancelled by user.",
   }),
-};
 
-export const failedResponse: UpsertContextResponse = {
-  phase: PHASE.failed,
-  message: "Workflow failed",
+  [PHASE.failed]: (state) => ({
+    phase: PHASE.failed,
+    message: state.validationErrors.join("; ") || "Context creation failed.",
+  }),
 };

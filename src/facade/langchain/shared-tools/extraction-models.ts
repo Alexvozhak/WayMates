@@ -23,7 +23,3 @@ export type ExtractableContext = z.infer<typeof extractableContextSchema>;
 export const contextCorrectionModel = getModel("extraction")
   .withStructuredOutput(extractableContextSchema)
   .withRetry({ stopAfterAttempt: 2 });
-
-export const trailCorrectionModel = getModel("extraction")
-  .withStructuredOutput(extractableTrailSchema)
-  .withRetry({ stopAfterAttempt: 2 });
