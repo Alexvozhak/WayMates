@@ -1,4 +1,5 @@
-import { UpdateContextWorkflow } from "../../langchain/update-context/update-context-agent.js";
+import { postgresService } from "../../infrastructure/postgres.service.js";
+import { UpdateContextGraph } from "../../langchain/update-context/update-context-graph.js";
 import { updateContextParamsSchema } from "../schemas.js";
 
 import { BaseTool } from "./base-tool.js";
@@ -23,11 +24,12 @@ export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateConte
       };
     }
 
-    const workflow = new UpdateContextWorkflow(userId, currentContext);
-    const response = await workflow.run(params.message, threadId);
+    const graph = new UpdateContextGraph(userId, currentContext);
+    const response = await graph.run(params.message, threadId);
 
-    if (response.phase === "saved") {
+    if (response.phase === "approved") {
       await this.saveUpdatedContext(response.updatedContext, userId);
+      await postgresService.deleteCheckpoint(threadId);
     }
 
     return response;
