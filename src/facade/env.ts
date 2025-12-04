@@ -30,6 +30,9 @@ const envSchema = z.object({
   LANGCHAIN_MAX_QUESTIONS_PER_BATCH: z.coerce.number().int().positive().default(5),
   // Auth configuration
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
+  // Server transport configuration
+  FACADE_TRANSPORT: z.enum(["stdio", "http"]).default("stdio"),
+  FACADE_HTTP_PORT: z.coerce.number().int().positive().default(3000),
 });
 /* eslint-enable @typescript-eslint/naming-convention */
 

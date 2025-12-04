@@ -15,6 +15,8 @@ import {
   searchByTargetParamsSchema,
   searchUserCareersParamsSchema,
   setGoalParamsSchema,
+  telegramLinkParamsSchema,
+  telegramRegisterParamsSchema,
   updateContextParamsSchema,
   upsertContextParamsSchema,
   upsertTrailParamsSchema,
@@ -300,8 +302,45 @@ function registerTrailTools(server: FastMCP, tools: ToolInstances): void {
   });
 }
 
-function registerTools(server: FastMCP, tools: ToolInstances): void {
+function registerTelegramAuthTools(server: FastMCP, authService: AuthService): void {
+  server.addTool({
+    name: "register_telegram",
+    description:
+      "Register or authenticate user via Telegram. Idempotent: returns existing user if telegram_user_id already registered. " +
+      "Returns userId, token (for linking to LibreChat), and sessionId.",
+    parameters: telegramRegisterParamsSchema,
+    execute: async (args: unknown) => {
+      const params = telegramRegisterParamsSchema.parse(args);
+      const result = await authService.registerViaTelegram({
+        telegramUserId: params.telegramUserId,
+        telegramUsername: params.telegramUsername,
+        telegramFirstName: params.telegramFirstName,
+      });
+      return JSON.stringify(result, null, 2);
+    },
+  });
+
+  server.addTool({
+    name: "link_telegram",
+    description:
+      "Link Telegram account to existing LibreChat account using token. " +
+      "User provides token from LibreChat, bot links their Telegram ID to that account.",
+    parameters: telegramLinkParamsSchema,
+    execute: async (args: unknown) => {
+      const params = telegramLinkParamsSchema.parse(args);
+      const result = await authService.linkTelegram(params.token, {
+        telegramUserId: params.telegramUserId,
+        telegramUsername: params.telegramUsername,
+        telegramFirstName: params.telegramFirstName,
+      });
+      return JSON.stringify(result, null, 2);
+    },
+  });
+}
+
+function registerTools(server: FastMCP, tools: ToolInstances, authService: AuthService): void {
   registerAuthTool(server, tools.auth);
+  registerTelegramAuthTools(server, authService);
   registerColdStartTool(server, tools.coldStart);
   registerGetStoryTool(server, tools.getStory);
   registerSearchCareersTool(server, tools.searchCareers);
@@ -315,21 +354,22 @@ function registerTools(server: FastMCP, tools: ToolInstances): void {
 export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
   const server = new FastMCP({
     name: "waymates-facade",
-    version: "3.1.0",
+    version: "3.2.0",
     instructions:
-      "WayMates MCP Server. Provides 14 tools for career operations: " +
-      "Auth (auth), " +
+      "WayMates MCP Server. Provides 16 tools for career operations: " +
+      "Auth (auth, register_telegram, link_telegram), " +
       "Cold Start (cold_start), " +
       "Story (get_story), " +
       "Search (search_careers, search_user_careers, search_by_target), " +
       "Goals (set_goal, get_goal, delete_goal), " +
       "Contexts (update_context, upsert_context, delete_context), " +
       "Trails (upsert_trail, delete_trail). " +
-      "LibreChat LLM handles text-to-JSON extraction.",
+      "Supports both LibreChat (stdio) and Telegram Bot (HTTP) clients.",
   });
 
+  const authService = new AuthService(deps.sessionMiddleware);
   const tools = createToolInstances(deps);
-  registerTools(server, tools);
+  registerTools(server, tools, authService);
 
   return server;
 }

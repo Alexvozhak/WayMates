@@ -167,6 +167,10 @@ class PostgresService {
       CREATE TABLE IF NOT EXISTS facade.users (
         user_id TEXT PRIMARY KEY,
         token TEXT UNIQUE NOT NULL,
+        telegram_user_id BIGINT UNIQUE,
+        telegram_username TEXT,
+        telegram_first_name TEXT,
+        created_via TEXT NOT NULL DEFAULT 'librechat',
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         last_auth_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
@@ -174,7 +178,10 @@ class PostgresService {
   }
 
   async createUser(userId: string, token: string): Promise<void> {
-    await this.query("INSERT INTO facade.users (user_id, token) VALUES ($1, $2)", [userId, token]);
+    await this.query("INSERT INTO facade.users (user_id, token, created_via) VALUES ($1, $2, 'librechat')", [
+      userId,
+      token,
+    ]);
   }
 
   async findUserByToken(token: string): Promise<{ userId: string } | null> {
@@ -190,6 +197,48 @@ class PostgresService {
 
   async updateLastAuthAt(userId: string): Promise<void> {
     await this.query("UPDATE facade.users SET last_auth_at = NOW() WHERE user_id = $1", [userId]);
+  }
+
+  async findUserByTelegramId(telegramUserId: number): Promise<{ userId: string; token: string } | null> {
+    /* eslint-disable @typescript-eslint/naming-convention -- Database column name */
+    const result = await this.query<{ user_id: string; token: string }>(
+      "SELECT user_id, token FROM facade.users WHERE telegram_user_id = $1",
+      [telegramUserId],
+    );
+    /* eslint-enable @typescript-eslint/naming-convention */
+    const row = result.rows[0];
+    if (!row) {
+      return null;
+    }
+    return { userId: row.user_id, token: row.token };
+  }
+
+  async createTelegramUser(
+    userId: string,
+    token: string,
+    telegramUserId: number,
+    telegramUsername: string | undefined,
+    telegramFirstName: string | undefined,
+  ): Promise<void> {
+    await this.query(
+      `INSERT INTO facade.users (user_id, token, telegram_user_id, telegram_username, telegram_first_name, created_via)
+       VALUES ($1, $2, $3, $4, $5, 'telegram')`,
+      [userId, token, telegramUserId, telegramUsername ?? null, telegramFirstName ?? null],
+    );
+  }
+
+  async linkTelegramToUser(
+    userId: string,
+    telegramUserId: number,
+    telegramUsername: string | undefined,
+    telegramFirstName: string | undefined,
+  ): Promise<void> {
+    await this.query(
+      `UPDATE facade.users
+       SET telegram_user_id = $2, telegram_username = $3, telegram_first_name = $4
+       WHERE user_id = $1`,
+      [userId, telegramUserId, telegramUsername ?? null, telegramFirstName ?? null],
+    );
   }
 }
 

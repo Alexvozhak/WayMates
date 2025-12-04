@@ -29,11 +29,20 @@ async function main(): Promise<void> {
     coreClient,
   });
 
-  await server.start({
-    transportType: "stdio",
-  });
-
-  console.log("🚀 WayMates Facade MCP Server started successfully");
+  if (env.FACADE_TRANSPORT === "http") {
+    await server.start({
+      transportType: "httpStream",
+      httpStream: {
+        port: env.FACADE_HTTP_PORT,
+      },
+    });
+    console.log(`🚀 WayMates Facade MCP Server (HTTP) listening on port ${env.FACADE_HTTP_PORT}`);
+  } else {
+    await server.start({
+      transportType: "stdio",
+    });
+    console.log("🚀 WayMates Facade MCP Server (stdio) started successfully");
+  }
 }
 
 await main();

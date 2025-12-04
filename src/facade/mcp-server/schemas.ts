@@ -141,3 +141,20 @@ export const authParamsSchema = z.object({
 });
 
 export type AuthParams = z.infer<typeof authParamsSchema>;
+
+export const telegramRegisterParamsSchema = z.object({
+  telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
+  telegramUsername: z.string().optional().describe("Telegram username (without @)"),
+  telegramFirstName: z.string().optional().describe("Telegram first name"),
+});
+
+export type TelegramRegisterParams = z.infer<typeof telegramRegisterParamsSchema>;
+
+export const telegramLinkParamsSchema = z.object({
+  token: tokenSchema.describe("Token from LibreChat account to link"),
+  telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
+  telegramUsername: z.string().optional().describe("Telegram username (without @)"),
+  telegramFirstName: z.string().optional().describe("Telegram first name"),
+});
+
+export type TelegramLinkParams = z.infer<typeof telegramLinkParamsSchema>;
