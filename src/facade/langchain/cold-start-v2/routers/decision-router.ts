@@ -1,22 +1,32 @@
+import { AgentInvariantError } from "../../../errors.js";
+
 import type { ColdStartStateType, ParsedDecision } from "../state.js";
 
 type Intent = ParsedDecision["intent"];
 type RouteMap = Partial<Record<Intent, string>>;
 
-function routeByIntent(intent: Intent | undefined, routes: RouteMap, defaultRoute: string): string {
-  return (intent && routes[intent]) ?? defaultRoute;
+function getRequiredIntent(state: ColdStartStateType, routerName: string): Intent {
+  const { parsedDecision } = state;
+  if (!parsedDecision) {
+    throw new AgentInvariantError(routerName, "parsedDecision must exist after parse node", {
+      phase: state.phase,
+    });
+  }
+  return parsedDecision.intent;
+}
+
+function routeByIntent(intent: Intent, routes: RouteMap, defaultRoute: string): string {
+  return routes[intent] ?? defaultRoute;
 }
 
 export function routeAfterStoryDecision(state: ColdStartStateType): string {
-  return routeByIntent(state.parsedDecision?.intent, { approve: "plan_career", cancel: "cancel" }, "gather_story");
+  const intent = getRequiredIntent(state, "routeAfterStoryDecision");
+  return routeByIntent(intent, { approve: "plan_career", cancel: "cancel" }, "gather_story");
 }
 
 export function routeAfterPlanDecision(state: ColdStartStateType): string {
-  return routeByIntent(
-    state.parsedDecision?.intent,
-    { approve: "extract_context", edit: "gather_story", cancel: "cancel" },
-    "show_plan",
-  );
+  const intent = getRequiredIntent(state, "routeAfterPlanDecision");
+  return routeByIntent(intent, { approve: "extract_context", edit: "gather_story", cancel: "cancel" }, "show_plan");
 }
 
 export function routeAfterValidation(state: ColdStartStateType): string {
@@ -26,8 +36,8 @@ export function routeAfterValidation(state: ColdStartStateType): string {
 }
 
 export function routeAfterContextDecision(state: ColdStartStateType): string {
-  const { parsedDecision, currentContextIndex, queue } = state;
-  const intent = parsedDecision?.intent;
+  const intent = getRequiredIntent(state, "routeAfterContextDecision");
+  const { currentContextIndex, queue } = state;
 
   if (intent === "approve") {
     return currentContextIndex < queue.length - 1 ? "next_context" : "show_final";
@@ -37,9 +47,6 @@ export function routeAfterContextDecision(state: ColdStartStateType): string {
 }
 
 export function routeAfterFinalDecision(state: ColdStartStateType): string {
-  return routeByIntent(
-    state.parsedDecision?.intent,
-    { approve: "persist", edit: "show_context", cancel: "cancel" },
-    "show_final",
-  );
+  const intent = getRequiredIntent(state, "routeAfterFinalDecision");
+  return routeByIntent(intent, { approve: "persist", edit: "show_context", cancel: "cancel" }, "show_final");
 }

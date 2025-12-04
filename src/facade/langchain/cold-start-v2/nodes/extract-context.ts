@@ -1,10 +1,10 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { v7 as uuidv7 } from "uuid";
 
+import { AgentInvariantError } from "../../../errors.js";
 import { contextExtractionPrompt, trailExtractionPrompt } from "../../cold-start/prompts.js";
 import { extractableContextSchema, extractableTrailSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
-import { PHASE } from "../state.js";
 
 import type { ExtractableContext } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda, Trail, UserContext } from "../state.js";
@@ -75,9 +75,10 @@ export async function extractContextNode(state: ColdStartStateType): Promise<Par
 
   const agenda = queue[currentContextIndex];
   if (!agenda) {
-    return {
-      phase: PHASE.failed,
-    };
+    throw new AgentInvariantError("extractContextNode", "agenda must exist for currentContextIndex", {
+      currentContextIndex,
+      queueLength: queue.length,
+    });
   }
 
   const [contextData, trailsData] = await Promise.all([

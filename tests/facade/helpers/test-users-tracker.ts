@@ -17,19 +17,36 @@ export function trackTestUser(userId: UserId): void {
   testUserIds.add(userId);
 }
 
-async function deleteUserFromNeo4j(session: Session, userId: UserId): Promise<void> {
+async function deleteUserFromNeo4jWithSession(session: Session, userId: UserId): Promise<void> {
   try {
     await session.run(
       `
-      MATCH (u:User {user_id: $userId})
+      MATCH (u:User {userId: $userId})
       OPTIONAL MATCH (u)-[:HAS_CONTEXT]->(c:Context)
       OPTIONAL MATCH (u)-[:HAS_GOAL]->(g:Goal)
-      DETACH DELETE u, c, g
+      OPTIONAL MATCH (u)-[:HAS_TRAIL]->(t:Trail)
+      DETACH DELETE u, c, g, t
       `,
       { userId },
     );
   } catch (error) {
     console.warn(`Failed to cleanup user ${userId}:`, error);
+  }
+}
+
+/**
+ * Удалить одного пользователя из Neo4j.
+ * Для использования в beforeEach для изоляции тестов.
+ */
+export async function cleanupUserFromNeo4j(userId: UserId): Promise<void> {
+  const driver = createDriver();
+  const session = driver.session();
+
+  try {
+    await deleteUserFromNeo4jWithSession(session, userId);
+  } finally {
+    await session.close();
+    await driver.close();
   }
 }
 
@@ -47,7 +64,7 @@ export async function cleanupAllTestUsers(): Promise<void> {
 
   try {
     for (const userId of testUserIds) {
-      await deleteUserFromNeo4j(session, userId);
+      await deleteUserFromNeo4jWithSession(session, userId);
     }
   } finally {
     await session.close();

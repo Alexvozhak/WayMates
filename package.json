@@ -20,7 +20,7 @@
     "test:setup": "docker compose --env-file .env.test --profile test up neo4j-test -d --wait && npm run db:test:init",
     "test:facade:setup": "docker compose --env-file .env.test --profile test up -d --wait && npm run db:test:init",
     "test:facade:rebuild": "docker compose --env-file .env.test --profile test up --build -d --wait && npm run db:test:init",
-    "test:facade:run": "vitest --run --project facade-integration",
+    "test:facade:run": "docker compose --env-file .env.test --profile test up -d --wait && vitest --run --project facade-integration",
     "test:facade:analyze": "tsx tests/facade/scripts/analyze-truelens-metrics.ts",
     "test:facade": "npm run test:facade:setup && npm run test:facade:run && npm run test:facade:teardown",
     "test:facade:teardown": "docker compose --profile test down -v",
