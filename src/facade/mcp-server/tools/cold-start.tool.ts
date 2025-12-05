@@ -1,10 +1,10 @@
 import { postgresService } from "../../infrastructure/postgres.service.js";
-import { ColdStartGraph } from "../../langchain/cold-start-v2/index.js";
+import { ColdStartGraph } from "../../langchain/cold-start-v2/cold-start-graph.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { AdhocUserContext, UserContext, UserId } from "../../../shared/schemas.js";
-import type { ColdStartResponse, SavedResult } from "../../langchain/cold-start/types.js";
+import type { ColdStartResponse, SavedResult } from "../../langchain/cold-start-v2/types.js";
 import type { ColdStartParams } from "../schemas.js";
 
 export class ColdStartTool extends BaseTool<ColdStartParams, ColdStartResponse> {

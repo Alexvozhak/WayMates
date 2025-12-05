@@ -1,53 +1,49 @@
 import { InvalidStateError } from "../../errors.js";
 
-import { PHASE } from "./types.js";
+import { PHASE } from "./state.js";
 
-import type { UpdateContextPhase, UpdateContextResponse, UpdateContextState } from "./types.js";
+import type { UpdateContextPhase, UpdateContextStateType } from "./state.js";
+import type { UpdateContextResponse } from "./types.js";
 
-type ResponseBuilder<P extends UpdateContextPhase> = (
-  state: UpdateContextState,
-) => Extract<UpdateContextResponse, { phase: P }>;
+type ResponseBuilder = (state: UpdateContextStateType) => UpdateContextResponse;
 
-export const responseBuilders: { [P in UpdateContextPhase]: ResponseBuilder<P> } = {
-  [PHASE.collecting]: () => ({
-    phase: PHASE.collecting,
+export const responseBuilders: Record<UpdateContextPhase, ResponseBuilder> = {
+  [PHASE.extracting]: () => ({
+    phase: PHASE.extracting,
     message: "Processing your request...",
   }),
 
-  [PHASE.awaiting_clarification]: () => ({
-    phase: PHASE.awaiting_clarification,
-    message: "Need more information",
-    missingFields: [],
-  }),
-
-  [PHASE.awaiting_confirmation]: (state) => {
-    if (!state.updatedContext) {
-      throw new InvalidStateError(PHASE.awaiting_confirmation, "updatedContext is missing");
+  [PHASE.awaitingConfirmation]: (state) => {
+    if (!state.currentContext) {
+      throw new InvalidStateError(PHASE.awaitingConfirmation, "currentContext is missing");
+    }
+    if (!state.mergedContext) {
+      throw new InvalidStateError(PHASE.awaitingConfirmation, "mergedContext is missing");
     }
     return {
-      phase: PHASE.awaiting_confirmation,
+      phase: PHASE.awaitingConfirmation,
       before: state.currentContext,
-      after: state.updatedContext,
+      after: state.mergedContext,
     };
   },
 
-  [PHASE.saved]: (state) => {
-    if (!state.updatedContext) {
-      throw new InvalidStateError(PHASE.saved, "updatedContext is missing");
+  [PHASE.approved]: (state) => {
+    if (!state.mergedContext) {
+      throw new InvalidStateError(PHASE.approved, "mergedContext is missing");
     }
     return {
-      phase: PHASE.saved,
-      updatedContext: state.updatedContext,
+      phase: PHASE.approved,
+      updatedContext: state.mergedContext,
     };
   },
 
-  [PHASE.failed]: () => ({
-    phase: PHASE.failed,
-    message: "Update failed",
+  [PHASE.cancelled]: () => ({
+    phase: PHASE.cancelled,
+    message: "Context update cancelled by user.",
   }),
-};
 
-export const failedResponse: UpdateContextResponse = {
-  phase: PHASE.failed,
-  message: "Workflow failed",
+  [PHASE.failed]: (state) => ({
+    phase: PHASE.failed,
+    message: state.validationErrors.join("; ") || "Update failed.",
+  }),
 };

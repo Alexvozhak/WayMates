@@ -2,8 +2,8 @@ import { HumanMessage } from "@langchain/core/messages";
 
 import { userContextSchema } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
-import { contextCorrectionPrompt } from "../../cold-start/prompts.js";
 import { contextCorrectionModel } from "../../shared-tools/extraction-models.js";
+import { contextCorrectionPrompt } from "../prompts.js";
 import { PHASE } from "../state.js";
 
 import type { ColdStartStateType, UserContext } from "../state.js";
@@ -31,17 +31,18 @@ export async function editContextNode(state: ColdStartStateType): Promise<Partia
   const existingContext = currentContext;
 
   const prompt = contextCorrectionPrompt(existingContext, corrections, messages);
-  const extracted = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
+  const extractedCorrections = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
 
-  const correctedContext: UserContext = {
-    ...extracted,
+  const mergedContext = {
+    ...existingContext,
+    ...extractedCorrections,
     contextId: existingContext.contextId,
     previousContextId: existingContext.previousContextId,
     nextContextId: existingContext.nextContextId,
     createdAt: existingContext.createdAt,
   };
 
-  const parseResult = userContextSchema.safeParse(correctedContext);
+  const parseResult = userContextSchema.safeParse(mergedContext);
   if (!parseResult.success) {
     console.error("[editContextNode] LLM returned invalid context:", parseResult.error.flatten());
     return { phase: PHASE.failed };

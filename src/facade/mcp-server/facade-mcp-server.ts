@@ -12,6 +12,7 @@ import {
   facadeAdhocSearchParamsSchema,
   getGoalParamsSchema,
   getStoryParamsSchema,
+  resetColdStartParamsSchema,
   searchByTargetParamsSchema,
   searchUserCareersParamsSchema,
   setGoalParamsSchema,
@@ -28,6 +29,7 @@ import { DeleteGoalTool } from "./tools/delete-goal.tool.js";
 import { DeleteTrailTool } from "./tools/delete-trail.tool.js";
 import { GetGoalTool } from "./tools/get-goal.tool.js";
 import { GetStoryTool } from "./tools/get-story.tool.js";
+import { ResetColdStartTool } from "./tools/reset-cold-start.tool.js";
 import { SearchByTargetTool } from "./tools/search-by-target.tool.js";
 import { SearchCareersTool } from "./tools/search-careers.tool.js";
 import { SearchUserCareersTool } from "./tools/search-user-careers.tool.js";
@@ -49,6 +51,7 @@ export type FacadeServerDependencies = {
 type ToolInstances = {
   auth: AuthTool;
   coldStart: ColdStartTool;
+  resetColdStart: ResetColdStartTool;
   getStory: GetStoryTool;
   searchCareers: SearchCareersTool;
   searchUserCareers: SearchUserCareersTool;
@@ -68,6 +71,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
   return {
     auth: new AuthTool(authService),
     coldStart: new ColdStartTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
+    resetColdStart: new ResetColdStartTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     getStory: new GetStoryTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     searchCareers: new SearchCareersTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
     searchUserCareers: new SearchUserCareersTool(deps.sessionMiddleware, deps.normalizer, deps.coreClient),
@@ -109,6 +113,22 @@ function registerColdStartTool(server: FastMCP, tool: ColdStartTool): void {
     parameters: coldStartParamsSchema,
     execute: async (args: unknown) => {
       const params = coldStartParamsSchema.parse(args);
+      const result = await tool.execute(params);
+      if (result.ok) {
+        return JSON.stringify(result.value, null, 2);
+      }
+      throwToolError(result.error);
+    },
+  });
+}
+
+function registerResetColdStartTool(server: FastMCP, tool: ResetColdStartTool): void {
+  server.addTool({
+    name: "reset_cold_start",
+    description: "Reset cold start status and clear checkpoint. Allows user to restart career history import.",
+    parameters: resetColdStartParamsSchema,
+    execute: async (args: unknown) => {
+      const params = resetColdStartParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -342,6 +362,7 @@ function registerTools(server: FastMCP, tools: ToolInstances, authService: AuthS
   registerAuthTool(server, tools.auth);
   registerTelegramAuthTools(server, authService);
   registerColdStartTool(server, tools.coldStart);
+  registerResetColdStartTool(server, tools.resetColdStart);
   registerGetStoryTool(server, tools.getStory);
   registerSearchCareersTool(server, tools.searchCareers);
   registerSearchUserCareersTool(server, tools.searchUserCareers);
@@ -356,9 +377,9 @@ export function createFacadeServer(deps: FacadeServerDependencies): FastMCP {
     name: "waymates-facade",
     version: "3.2.0",
     instructions:
-      "WayMates MCP Server. Provides 16 tools for career operations: " +
+      "WayMates MCP Server. Provides 17 tools for career operations: " +
       "Auth (auth, register_telegram, link_telegram), " +
-      "Cold Start (cold_start), " +
+      "Cold Start (cold_start, reset_cold_start), " +
       "Story (get_story), " +
       "Search (search_careers, search_user_careers, search_by_target), " +
       "Goals (set_goal, get_goal, delete_goal), " +

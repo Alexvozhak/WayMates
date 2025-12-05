@@ -1,7 +1,11 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
-import { ColdStartGraph, PHASE, resetCheckpointer } from "../../../../../src/facade/langchain/cold-start-v2/index.js";
+import {
+  ColdStartGraph,
+  PHASE,
+  resetCheckpointer,
+} from "../../../../../src/facade/langchain/cold-start-v2/cold-start-graph.js";
 import { SessionMiddleware } from "../../../../../src/facade/mcp-server/session-middleware.js";
 import { ColdStartTool } from "../../../../../src/facade/mcp-server/tools/cold-start.tool.js";
 import { cleanupSession, setupSession } from "../../../helpers/mcp-tool-helpers.js";
@@ -11,7 +15,7 @@ import { UserStories } from "../../../../core/helpers/user-stories.js";
 import { generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";
 import { FacadeTestContext } from "../../../helpers/test-context.js";
 
-import type { ColdStartResponse } from "../../../../../src/facade/langchain/cold-start/types.js";
+import type { ColdStartResponse } from "../../../../../src/facade/langchain/cold-start-v2/types.js";
 import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
 import type { UserId } from "../../../../../src/shared/schemas.js";
 

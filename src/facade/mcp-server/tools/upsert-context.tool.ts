@@ -1,5 +1,6 @@
 import { postgresService } from "../../infrastructure/postgres.service.js";
-import { UpsertContextWorkflow } from "../../langchain/upsert-context/upsert-context-agent.js";
+import { PHASE } from "../../langchain/upsert-context/state.js";
+import { UpsertContextGraph } from "../../langchain/upsert-context/upsert-context-graph.js";
 
 import { BaseTool } from "./base-tool.js";
 
@@ -11,10 +12,10 @@ export class UpsertContextTool extends BaseTool<UpsertContextParams, UpsertConte
   protected async executeImpl(params: UpsertContextParams, userId: UserId): Promise<UpsertContextResponse> {
     const threadId = `upsert_ctx_${userId}`;
 
-    const workflow = new UpsertContextWorkflow(userId);
-    const response = await workflow.run(params.message, threadId);
+    const graph = new UpsertContextGraph(userId);
+    const response = await graph.run(params.message, threadId);
 
-    if (response.phase === "saved") {
+    if (response.phase === PHASE.approved) {
       await this.saveContext(response.context, userId);
       await postgresService.deleteCheckpoint(threadId);
     }

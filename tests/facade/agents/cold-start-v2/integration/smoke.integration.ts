@@ -1,7 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
-import { ColdStartGraph, PHASE, resetCheckpointer } from "../../../../../src/facade/langchain/cold-start-v2/index.js";
+import {
+  ColdStartGraph,
+  PHASE,
+  resetCheckpointer,
+} from "../../../../../src/facade/langchain/cold-start-v2/cold-start-graph.js";
 import { UserStories } from "../../../../core/helpers/user-stories.js";
 
 import { generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";

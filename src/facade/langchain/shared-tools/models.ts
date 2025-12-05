@@ -24,6 +24,7 @@ export function getModel(purpose: ModelPurpose): ChatOpenAI {
       model: config.LANGCHAIN_MODEL_NAME,
       apiKey: config.OPENAI_API_KEY,
       temperature: temperatureMap[purpose],
+      timeout: config.LANGCHAIN_TIMEOUT_MS,
       configuration: {
         baseURL: config.OPENAI_API_BASE,
       },

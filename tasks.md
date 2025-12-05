@@ -805,3 +805,238 @@ q2 приложи ссылки по месту, чтоб ты соориенти
 q4 вариант A если хотим строгий flow: меню → ввод
 q7 "upsert_trail → trail" вот не уверен, что стоит отдавать на откуп телеграмной (либрчатной) ллмке. посмотри в каких случаях мы переходили на парсинг nlp в фасаде, стоит ли и здесь перейти. Сравни 2 подхода, дай своё мнение, аргументируй
 q5 вариант 1 небезопасно же, нет? зачем тогда ввобще вводить ttl, если он автоматом перезапрашивается, если истечет. ценность ттл и айдисессии разве не теряется? мы обсуждали во время имплементации фасада, что если айди сессии утечет - не страшно, по ттл протухнет. главное, чтоб токен не потеряли/не забыли, тк именно он связывает пользователя с его userid и всем контекстом чтоб в neo4j и postgress. давай варианты 3-4 хранить, чтобы бот передавать клиенту телеграм ключ и как-то потом автоматом ( не вариант 3) мог его от клиента получить. мб клиентская сторона может от бота получать секреты? в общем накидывай ещё варианты, сходи в инет посмотри какие есть варианты решений. что говорят best practice
+
+---
+
+ВЕТКА с langgraph:
+"● Вот развёрнутая инструкция для мержа:
+
+---
+
+Инструкция: LangGraph миграция upsert-context, update-context, upsert-trail
+
+Задача
+
+Миграция 3 агентов с LangChain ToolMessage на LangGraph StateGraph:
+
+- upsert-context — создание контекста пользователя
+- update-context — обновление существующего контекста
+- upsert-trail — создание перехода между контекстами (новый агент)
+
+Почему миграция
+
+ToolMessage архитектура (LangChain v1):
+
+- Агент сам выбирает какой tool вызвать
+- Сложно контролировать flow
+- Phase guards в каждом tool
+
+StateGraph архитектура (LangGraph):
+
+- Явный граф переходов между nodes
+- Детерминированные routers
+- Checkpointing из коробки
+- Консистентно с cold-start-v2
+
+---
+
+Изменения в коде
+
+1. Удалённые файлы (D)
+
+update-context/
+
+| Файл                               | Зачем удалён                        |
+| ---------------------------------- | ----------------------------------- |
+| tools/confirm-update.tool.ts       | Заменён на nodes/persist-update.ts  |
+| tools/edit-context.tool.ts         | Заменён на nodes/edit-update.ts     |
+| tools/extract-updates.tool.ts      | Заменён на nodes/extract-updates.ts |
+| tools/show-updated-context.tool.ts | Заменён на nodes/show-update.ts     |
+| tools/index.ts                     | Больше нет tools                    |
+| update-context-agent.ts            | Заменён на update-context-graph.ts  |
+| workflow-constants.ts              | Константы перенесены в state.ts     |
+
+upsert-context/
+
+| Файл                          | Зачем удалён                        |
+| ----------------------------- | ----------------------------------- |
+| tools/confirm-context.tool.ts | Заменён на nodes/persist-context.ts |
+| tools/edit-context.tool.ts    | Заменён на nodes/edit-context.ts    |
+| tools/extract-context.tool.ts | Заменён на nodes/extract-context.ts |
+| tools/show-context.tool.ts    | Заменён на nodes/show-context.ts    |
+| upsert-context-agent.ts       | Заменён на upsert-context-graph.ts  |
+| workflow-constants.ts         | Константы перенесены в state.ts     |
+
+shared-tools/
+
+| Файл              | Зачем удалён                                                    |
+| ----------------- | --------------------------------------------------------------- |
+| agent-workflow.ts | Базовый класс для ToolMessage агентов — больше не нужен         |
+| guards.ts         | Phase guards — в LangGraph не нужны (routers контролируют flow) |
+
+2. Новые файлы (??)
+
+shared/
+
+| Файл        | Что делает                                       |
+| ----------- | ------------------------------------------------ |
+| decision.ts | Shared LLM parser для approve/edit/cancel intent |
+| index.ts    | Re-exports                                       |
+| reducers.ts | LangGraph state reducers (lastValue)             |
+
+update-context/
+
+| Файл                     | Что делает                                |
+| ------------------------ | ----------------------------------------- |
+| state.ts                 | PHASE enum + StateAnnotation (LangGraph)  |
+| update-context-graph.ts  | StateGraph definition + runner class      |
+| nodes/extract-updates.ts | LLM extraction изменений                  |
+| nodes/merge-context.ts   | Merge currentContext + extractedUpdates   |
+| nodes/show-update.ts     | Interrupt для показа before/after diff    |
+| nodes/parse-decision.ts  | Parse user response (approve/edit/cancel) |
+| nodes/edit-update.ts     | LLM correction по инструкции              |
+| nodes/persist-update.ts  | Финализация → approved phase              |
+| nodes/cancel.ts          | Отмена → cancelled phase                  |
+| routers/update-router.ts | routeAfterMerge, routeAfterDecision       |
+
+upsert-context/
+
+| Файл                      | Что делает                               |
+| ------------------------- | ---------------------------------------- |
+| state.ts                  | PHASE enum + StateAnnotation             |
+| upsert-context-graph.ts   | StateGraph definition + runner class     |
+| nodes/extract-context.ts  | LLM extraction контекста                 |
+| nodes/validate-context.ts | Zod validation                           |
+| nodes/show-context.ts     | Interrupt для показа извлечённого        |
+| nodes/parse-decision.ts   | Parse user response                      |
+| nodes/edit-context.ts     | LLM correction                           |
+| nodes/persist-context.ts  | Финализация → approved phase             |
+| nodes/cancel.ts           | Отмена → cancelled phase                 |
+| routers/context-router.ts | routeAfterValidation, routeAfterDecision |
+
+upsert-trail/ (полностью новый)
+
+| Файл                  | Что делает                                                     |
+| --------------------- | -------------------------------------------------------------- |
+| state.ts              | PHASE enum + StateAnnotation для trail                         |
+| types.ts              | Response schema                                                |
+| prompts.ts            | LLM prompts для extraction/edit                                |
+| response-builders.ts  | Phase → Response mapping                                       |
+| upsert-trail-graph.ts | StateGraph + runner                                            |
+| nodes/\*              | extract, validate, show, parse-decision, edit, persist, cancel |
+| routers/\*            | routeAfterValidation, routeAfterDecision                       |
+
+3. Модифицированные файлы (M)
+
+| Файл                                    | Что изменилось                              |
+| --------------------------------------- | ------------------------------------------- |
+| update-context/types.ts                 | PHASE: saved → approved, добавлен cancelled |
+| update-context/response-builders.ts     | Новые builders для approved/cancelled       |
+| update-context/prompts.ts               | Без изменений логики                        |
+| upsert-context/types.ts                 | PHASE: saved → approved, добавлен cancelled |
+| upsert-context/response-builders.ts     | Новые builders для approved/cancelled       |
+| upsert-context/prompts.ts               | Без изменений логики                        |
+| mcp-server/tools/update-context.tool.ts | "saved" → "approved" в условии сохранения   |
+| mcp-server/tools/upsert-context.tool.ts | "saved" → "approved" в условии сохранения   |
+| shared-tools/extraction-models.ts       | Удалён неиспользуемый trailCorrectionModel  |
+
+---
+
+Изменения в тестах
+
+Удалённые тесты
+
+| Файл | Почему удалён | Что
+делать |
+|---------------------------------------------------------------------|-------------------------------------------------------------------------|------
+---------------------------------------------------------------|
+| tests/facade/agents/update-context/unit/contracts.spec.ts | Тестировал ToolMessage routing (tools/\*.ts). Этих файлов больше нет. |
+Написать новый для LangGraph: topology, routers, phase completeness |
+| tests/facade/agents/update-context/integration/smoke.integration.ts | Использовал UpdateContextWorkflow класс. Заменён на UpdateContextGraph. |
+Написать новый с UpdateContextGraph.run() |
+| tests/facade/agents/upsert-context/unit/contracts.spec.ts | Тестировал ToolMessage routing. |
+Написать новый для LangGraph |
+| tests/facade/agents/upsert-context/integration/smoke.integration.ts | Использовал старый Workflow класс. |
+Написать новый с UpsertContextGraph.run() |
+
+Что тестировали старые тесты
+
+contracts.spec.ts (unit):
+// Читали source code tools/\*.ts через readFileSync
+// Проверяли regex: toContain("show_updated_context")
+// ЭТО БОЛЬШЕ НЕ РАБОТАЕТ — tools/ удалены
+
+smoke.integration.ts (integration):
+// Создавали UpdateContextWorkflow / UpsertContextWorkflow
+// Вызывали .run(message, threadId)
+// Проверяли response.phase
+// КЛАСС ПЕРЕИМЕНОВАН — нужно заменить на \*Graph"
+
+ВЕТКА С ТЕСТАМИ:
+● 📊 Сводка изменений (незакомиченное)
+
+Тесты: БЫЛО → СТАЛО
+
+| Файл                      | БЫЛО    | СТАЛО    | Изменения                                               |
+| ------------------------- | ------- | -------- | ------------------------------------------------------- |
+| happy-path.integration.ts | 3 теста | 3 теста  | Добавлено "+ Neo4j verification" в T03, T06, T07        |
+| edge-cases.integration.ts | 4 теста | 5 тестов | +T08 (clarification flow), "+ Neo4j verification" в T14 |
+
+Детали по тестам:
+
+happy-path.integration.ts:
+
+- T06: Full workflow phase transitions
+
+* T06: Full workflow phase transitions + Neo4j verification
+
+- T03: Multi-context (3+) → saved with U10 fixture
+
+* T03: Multi-context (3+) → saved with U10 fixture + Neo4j verification
+
+- T07: Trails extraction with correct context links
+
+* T07: Trails extraction with correct context links + Neo4j verification
+
+edge-cases.integration.ts:
+T10: State resume after 'closing chat' - continues from checkpoint
+T15: Checkpoint cleanup after save (via handleSaved)
+T09: Context correction via edit flow
+
+- T14: Cancel workflow stops without saving
+
+* T14: Cancel workflow stops without saving + Neo4j verification
+* T08: Clarification flow - missing birthYear triggers clarification → user provides → extraction succeeds #
+  НОВЫЙ
+
+---
+
+Изменения в инфраструктуре:
+
+| Файл                                        | Что изменено                                                   |
+| ------------------------------------------- | -------------------------------------------------------------- |
+| .env.test                                   | +LANGCHAIN_TIMEOUT_MS=60000                                    |
+| src/facade/env.ts                           | +LANGCHAIN_TIMEOUT_MS парсинг                                  |
+| src/facade/langchain/shared-tools/models.ts | Использует LANGCHAIN_TIMEOUT_MS в getModel()                   |
+| package.json                                | test:facade:setup → docker compose up -d --wait (health check) |
+| routers/decision-router.ts                  | getRequiredIntent() с AgentInvariantError (Q86/Q87 fix)        |
+| nodes/extract-context.ts                    | AgentInvariantError на missing agenda (Q86 fix)                |
+| test-users-tracker.ts                       | Fix Cypher: user_id → userId (Q88 fix)                         |
+| cold-start-helpers.ts                       | Улучшен cleanup                                                |
+
+---
+
+Итого тестов:
+
+| Метрика             | БЫЛО | СТАЛО                    |
+| ------------------- | ---- | ------------------------ |
+| Happy-path тесты    | 3    | 3 (+ Neo4j verification) |
+| Edge-case тесты     | 4    | 5 (+T08)                 |
+| Всего cold-start-v2 | 7    | 8                        |
+
+Новые возможности:
+
+- ✅ Neo4j verification во всех "saved" тестах (T03, T06, T07, T14)
+- ✅ T08 clarification flow (был ⬜, стал написан, но flaky — Q90)
+- ✅ Configurable LLM timeout через env var
+- ✅ Docker health check перед тестами

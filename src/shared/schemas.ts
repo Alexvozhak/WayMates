@@ -3,6 +3,38 @@ import { z } from "zod";
 import { REASON_IDS } from "../../database/reasons.js";
 
 // ==========================================
+// === ZOD UTILITIES ===
+// ==========================================
+
+/**
+ * Transform ZodObject schema to have all fields .nullable().
+ * Required for OpenAI Structured Output API which doesn't support .optional().
+ *
+ * @example
+ * const extractionSchema = makeNullable(userContextSchemaBase);
+ * // All fields become T | null instead of T | undefined
+ */
+type NullableShape<T extends z.ZodRawShape> = {
+  [K in keyof T]: z.ZodNullable<T[K]>;
+};
+
+export function makeNullable<T extends z.ZodRawShape>(schema: z.ZodObject<T>): z.ZodObject<NullableShape<T>> {
+  const shape = schema.shape;
+  const nullableShape: Record<string, z.ZodNullable<z.ZodTypeAny>> = {};
+
+  for (const key of Object.keys(shape)) {
+    const field = shape[key];
+    if (field) {
+      nullableShape[key] = field.nullable();
+    }
+  }
+
+  /* eslint-disable @typescript-eslint/consistent-type-assertions -- Required for Zod generic transformation */
+  return z.object(nullableShape as NullableShape<T>);
+  /* eslint-enable @typescript-eslint/consistent-type-assertions */
+}
+
+// ==========================================
 // === ID PATTERNS & BASE SCHEMAS ===
 // ==========================================
 
@@ -77,16 +109,14 @@ export const scheduleSchema = z.object({
   hoursPerSession: z.number().describe("Hours per session").nullable().optional(),
 });
 
-export const trailSchema = z.object({
-  trailId: trailIdSchema.describe("Trail ID in format trl_<UUID>"),
+/**
+ * Base trail schema WITHOUT ID fields.
+ * Used by makeNullable() for LLM extraction schemas.
+ * IDs (trailId, fromContextId, toContextId) are added by validation node.
+ */
+export const trailSchemaBase = z.object({
   skill: z.string().describe("Skill being developed"),
   platform: z.string().describe("Learning platform used"),
-  fromContextId: z
-    .union([contextIdSchema, z.null().describe("null for trails leading to first context")])
-    .describe("Source context ID - string for transition between contexts, null for first context"),
-  toContextId: z
-    .union([contextIdSchema, z.null().describe("null for ongoing trails")])
-    .describe("Target context ID - string for completed, null for ongoing"),
 
   // OPTIONAL metrics (не всегда известны при extraction)
   // Note: .nullable() required for OpenAI Structured Output API compatibility
@@ -111,14 +141,14 @@ export const trailSchema = z.object({
   userFeedback: z.string().describe("User feedback").nullable().optional(),
 });
 
-export const userConstraintsSchema = z.object({
-  maxHoursPerWeek: z.number().describe("Maximum hours per week").optional(),
-  maxMonthlyBudget: z.number().describe("Maximum monthly budget in USD").optional(),
-  deadlineDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Deadline date must be in YYYY-MM-DD format")
-    .describe("Deadline date in YYYY-MM-DD format")
-    .optional(),
+export const trailSchema = trailSchemaBase.extend({
+  trailId: trailIdSchema.describe("Trail ID in format trl_<UUID>"),
+  fromContextId: z
+    .union([contextIdSchema, z.null().describe("null for trails leading to first context")])
+    .describe("Source context ID - string for transition between contexts, null for first context"),
+  toContextId: z
+    .union([contextIdSchema, z.null().describe("null for ongoing trails")])
+    .describe("Target context ID - string for completed, null for ongoing"),
 });
 
 // Base schema without refine (for .omit() and .partial() compatibility)
@@ -214,17 +244,11 @@ export const userContextSchema = userContextSchemaBase.refine(
   },
 );
 
-// Partial schema for clarification workflow (without refine - validation happens on merge)
-export const userContextSchemaPartial = userContextSchemaBase.partial();
-
-export type UserContextPartial = z.infer<typeof userContextSchemaPartial>;
-
-// Export base for internal use (.omit(), .partial())
+// Export base for internal use (makeNullable, .omit(), .partial())
 export { userContextSchemaBase };
 
 export type Schedule = z.infer<typeof scheduleSchema>;
 export type Trail = z.infer<typeof trailSchema>;
-export type UserConstraints = z.infer<typeof userConstraintsSchema>;
 export type UserContext = z.infer<typeof userContextSchema>;
 
 // ==========================================

@@ -315,7 +315,7 @@ mcp__filesystem__write_file({
 |------|--------|-----------------|
 | Cypher | [cypher/router.md](.claude/routers/cypher/router.md) | Пишешь/фиксишь Cypher queries |
 | Test | [test/router.md](.claude/routers/test/router.md) | Пишешь/ревьюишь тесты |
-| LangChain | [langchain/router.md](.claude/routers/langchain/router.md) | Агенты, tools, persistence |
+| LangGraph | [langgraph/router.md](.claude/routers/langgraph/router.md) | StateGraph, interrupt, routing |
 | Infrastructure | [infrastructure/router.md](.claude/routers/infrastructure/router.md) | Docker, env, setup |
 | Architecture | [architecture/router.md](.claude/routers/architecture/router.md) | Планирование фич |
 

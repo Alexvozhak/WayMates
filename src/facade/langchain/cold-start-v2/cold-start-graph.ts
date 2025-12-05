@@ -3,36 +3,33 @@ import { z } from "zod";
 
 import { AgentInvariantError } from "../../errors.js";
 import { postgresService } from "../../infrastructure/postgres.service.js";
-import { responseBuilders } from "../cold-start/response-builders.js";
-import { coldStartPhaseSchema } from "../cold-start/types.js";
 
-import {
-  cancelNode,
-  clarifyNode,
-  editContextNode,
-  extractContextNode,
-  gatherStoryNode,
-  nextContextNode,
-  parseDecisionNode,
-  parseStoryDecisionNode,
-  persistNode,
-  planCareerNode,
-  showContextNode,
-  showFinalNode,
-  showPlanNode,
-  validateContextNode,
-} from "./nodes/index.js";
 import {
   routeAfterContextDecision,
   routeAfterFinalDecision,
   routeAfterPlanDecision,
   routeAfterStoryDecision,
   routeAfterValidation,
-} from "./routers/index.js";
+} from "./decision-router.js";
+import { cancelNode } from "./nodes/cancel.js";
+import { clarifyNode } from "./nodes/clarify.js";
+import { editContextNode } from "./nodes/edit-context.js";
+import { extractContextNode } from "./nodes/extract-context.js";
+import { gatherStoryNode } from "./nodes/gather-story.js";
+import { nextContextNode } from "./nodes/next-context.js";
+import { parseDecisionNode, parseStoryDecisionNode } from "./nodes/parse-decision.js";
+import { persistNode } from "./nodes/persist.js";
+import { planCareerNode } from "./nodes/plan-career.js";
+import { showContextNode } from "./nodes/show-context.js";
+import { showFinalNode } from "./nodes/show-final.js";
+import { showPlanNode } from "./nodes/show-plan.js";
+import { validateContextNode } from "./nodes/validate-context.js";
+import { responseBuilders } from "./response-builders.js";
 import { coldStartStateAnnotation } from "./state.js";
+import { coldStartPhaseSchema } from "./types.js";
 
 import type { ColdStartStateType, UserId } from "./state.js";
-import type { ColdStartPhase, ColdStartResponse, ColdStartState } from "../cold-start/types.js";
+import type { ColdStartPhase, ColdStartResponse, ColdStartState } from "./types.js";
 import type { StateSnapshot } from "@langchain/langgraph";
 
 export { PHASE } from "./state.js";

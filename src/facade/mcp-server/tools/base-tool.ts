@@ -3,7 +3,6 @@ import { ZodError } from "zod";
 import { FacadeError } from "../../errors.js";
 import { err, ok } from "../result.js";
 
-
 import type { AdhocUserContext, TargetContext, UserId } from "../../../shared/schemas.js";
 import type { CoreTRPCClient } from "../../core-client/core-trpc-client.js";
 import type { ErrorResponse, Result, SessionId } from "../result.js";
@@ -17,6 +16,7 @@ export type Normalizer = {
   normalizeUserContext(context: AdhocUserContext, userId: UserId): Promise<AdhocUserContext>;
   normalizeTargetContext(context: TargetContext, userId: UserId): Promise<TargetContext>;
   normalizeSkill(skill: string, userId: UserId): Promise<string>;
+  normalizePlatform(platform: string, userId: UserId): Promise<string>;
 };
 
 export type WithSessionId = { sessionId: SessionId };
