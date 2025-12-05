@@ -223,13 +223,34 @@ export default [
   {
     files: ['tests/**/*.ts', 'vitest.config.ts'],
     rules: {
-      '@typescript-eslint/explicit-function-return-type': 'off', // Не требовать return type в тестах
-      '@typescript-eslint/no-non-null-assertion': 'off', // В тестах ! безопасен (если null → тест упадёт)
-      'max-lines-per-function': 'off', // Разрешить длинные test describe блоки
-      'import-x/no-default-export': 'off', // Для vitest.config.ts нужен default export
-      '@typescript-eslint/naming-convention': 'off', // В тестах разрешить любые имена (U1, U2, AC1, etc.)
-      'import-x/order': 'off', // В тестах не требовать строгий порядок импортов
-      'unicorn/numeric-separators-style': 'off', // В тестах числа типа 70000 читабельны без разделителей
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      'max-lines-per-function': 'off',
+      'import-x/no-default-export': 'off',
+      '@typescript-eslint/naming-convention': 'off',
+      'import-x/order': 'off',
+      'unicorn/numeric-separators-style': 'off',
+    },
+  },
+
+  // Telegram Bot - allow snake_case for Telegram API properties
+  {
+    files: ['src/telegram-bot/**/*.ts'],
+    rules: {
+      '@typescript-eslint/naming-convention': [
+        'error',
+        { selector: 'default', format: ['camelCase'], leadingUnderscore: 'allow' },
+        { selector: 'variable', format: ['camelCase', 'UPPER_CASE'], leadingUnderscore: 'allow' },
+        { selector: 'function', format: ['camelCase'] },
+        { selector: 'parameter', format: ['camelCase'], leadingUnderscore: 'allow' },
+        { selector: 'typeLike', format: ['PascalCase'] },
+        { selector: 'enumMember', format: ['PascalCase'] },
+        { selector: 'import', format: null },
+        { selector: 'property', format: null, modifiers: ['requiresQuotes'] },
+        // Allow snake_case for Telegram/grammY API (parse_mode, reply_markup, etc.)
+        // Allow UPPER_CASE for env variables (TELEGRAM_BOT_TOKEN, etc.)
+        { selector: 'property', format: ['camelCase', 'snake_case', 'UPPER_CASE'] },
+      ],
     },
   },
 

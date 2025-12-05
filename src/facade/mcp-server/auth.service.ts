@@ -24,6 +24,7 @@ export type TelegramRegisterResult = {
   token: Token;
   sessionId: SessionId;
   isNewUser: boolean;
+  hasStory: boolean;
 };
 
 export type TelegramLinkResult = {
@@ -76,6 +77,7 @@ export class AuthService {
 
     if (existing) {
       const userId = userIdSchema.parse(existing.userId);
+      const hasStory = await postgresService.isColdStartCompleted(userId);
       const sessionId = await this.sessionMiddleware.createWithSingleActiveSession(userId);
       await postgresService.updateLastAuthAt(userId);
 
@@ -84,6 +86,7 @@ export class AuthService {
         token: existing.token,
         sessionId,
         isNewUser: false,
+        hasStory,
       };
     }
 
@@ -105,6 +108,7 @@ export class AuthService {
       token,
       sessionId,
       isNewUser: true,
+      hasStory: false,
     };
   }
 
