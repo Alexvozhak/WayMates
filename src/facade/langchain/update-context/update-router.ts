@@ -1,4 +1,4 @@
-import type { UpdateContextStateType } from "../state.js";
+import type { UpdateContextStateType } from "./state.js";
 
 export function routeAfterMerge(state: UpdateContextStateType): string {
   if (state.validationErrors.length > 0 && !state.mergedContext) {

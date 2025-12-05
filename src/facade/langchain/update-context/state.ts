@@ -1,9 +1,10 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
-import { lastValue } from "../shared/index.js";
+import { lastValue } from "../shared/state-utils.js";
 
-import type { UserContext, UserContextPartial, UserId } from "../../../shared/schemas.js";
-import type { ParsedDecision } from "../shared/index.js";
+import type { UserContext, UserId } from "../../../shared/schemas.js";
+import type { ParsedDecision } from "../shared/decision.js";
+import type { ExtractableContext } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 export const PHASE = {
@@ -24,7 +25,7 @@ export const updateContextStateAnnotation = Annotation.Root({
   parsedDecision: Annotation<ParsedDecision | null>({ reducer: lastValue, default: () => null }),
 
   currentContext: Annotation<UserContext | null>({ reducer: lastValue, default: () => null }),
-  extractedUpdates: Annotation<UserContextPartial | null>({ reducer: lastValue, default: () => null }),
+  extractedUpdates: Annotation<ExtractableContext | null>({ reducer: lastValue, default: () => null }),
   mergedContext: Annotation<UserContext | null>({ reducer: lastValue, default: () => null }),
 
   validationErrors: Annotation<string[]>({ reducer: lastValue, default: () => [] }),

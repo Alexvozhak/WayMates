@@ -4,18 +4,16 @@ import { z } from "zod";
 import { AgentInvariantError } from "../../errors.js";
 import { postgresService } from "../../infrastructure/postgres.service.js";
 
-import {
-  cancelNode,
-  editUpdateNode,
-  extractUpdatesNode,
-  mergeContextNode,
-  parseDecisionNode,
-  persistUpdateNode,
-  showUpdateNode,
-} from "./nodes/index.js";
+import { cancelNode } from "./nodes/cancel.js";
+import { editUpdateNode } from "./nodes/edit-update.js";
+import { extractUpdatesNode } from "./nodes/extract-updates.js";
+import { mergeContextNode } from "./nodes/merge-context.js";
+import { parseDecisionNode } from "./nodes/parse-decision.js";
+import { persistUpdateNode } from "./nodes/persist-update.js";
+import { showUpdateNode } from "./nodes/show-update.js";
 import { responseBuilders } from "./response-builders.js";
-import { routeAfterDecision, routeAfterMerge } from "./routers/index.js";
 import { PHASE, updateContextStateAnnotation } from "./state.js";
+import { routeAfterDecision, routeAfterMerge } from "./update-router.js";
 
 import type { UpdateContextPhase, UpdateContextStateType } from "./state.js";
 import type { UpdateContextResponse } from "./types.js";

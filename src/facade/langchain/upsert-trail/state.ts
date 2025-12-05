@@ -1,14 +1,16 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
-import { lastValue } from "../shared/index.js";
+import { lastValue } from "../shared/state-utils.js";
 
 import type { ContextId, Trail, UserId } from "../../../shared/schemas.js";
-import type { ParsedDecision } from "../shared/index.js";
+import type { MissingField } from "../cold-start-v2/types.js";
+import type { ParsedDecision } from "../shared/decision.js";
 import type { ExtractableTrail } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 export const PHASE = {
   extracting: "extracting",
+  awaitingClarification: "awaiting_clarification",
   awaitingConfirmation: "awaiting_confirmation",
   approved: "approved",
   cancelled: "cancelled",
@@ -30,6 +32,8 @@ export const upsertTrailStateAnnotation = Annotation.Root({
   validatedTrail: Annotation<Trail | null>({ reducer: lastValue, default: () => null }),
 
   validationErrors: Annotation<string[]>({ reducer: lastValue, default: () => [] }),
+  missingFields: Annotation<MissingField[]>({ reducer: lastValue, default: () => [] }),
+  clarificationRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
 });
 
 export type UpsertTrailStateType = typeof upsertTrailStateAnnotation.State;

@@ -4,17 +4,16 @@ import { z } from "zod";
 import { AgentInvariantError } from "../../errors.js";
 import { postgresService } from "../../infrastructure/postgres.service.js";
 
-import {
-  cancelNode,
-  editContextNode,
-  extractContextNode,
-  parseDecisionNode,
-  persistContextNode,
-  showContextNode,
-  validateContextNode,
-} from "./nodes/index.js";
+import { routeAfterDecision, routeAfterValidation } from "./context-router.js";
+import { cancelNode } from "./nodes/cancel.js";
+import { clarifyNode } from "./nodes/clarify.js";
+import { editContextNode } from "./nodes/edit-context.js";
+import { extractContextNode } from "./nodes/extract-context.js";
+import { parseDecisionNode } from "./nodes/parse-decision.js";
+import { persistContextNode } from "./nodes/persist-context.js";
+import { showContextNode } from "./nodes/show-context.js";
+import { validateContextNode } from "./nodes/validate-context.js";
 import { responseBuilders } from "./response-builders.js";
-import { routeAfterDecision, routeAfterValidation } from "./routers/index.js";
 import { PHASE, upsertContextStateAnnotation } from "./state.js";
 
 import type { UpsertContextPhase, UpsertContextStateType } from "./state.js";
@@ -24,7 +23,14 @@ import type { StateSnapshot } from "@langchain/langgraph";
 
 const interruptValueSchema = z.object({
   phase: z
-    .enum([PHASE.extracting, PHASE.awaitingConfirmation, PHASE.approved, PHASE.cancelled, PHASE.failed])
+    .enum([
+      PHASE.extracting,
+      PHASE.awaitingClarification,
+      PHASE.awaitingConfirmation,
+      PHASE.approved,
+      PHASE.cancelled,
+      PHASE.failed,
+    ])
     .optional(),
 });
 
@@ -38,6 +44,7 @@ function createGraphBuilder() {
   return new StateGraph(upsertContextStateAnnotation)
     .addNode("extract_context", extractContextNode)
     .addNode("validate_context", validateContextNode)
+    .addNode("clarify", clarifyNode)
     .addNode("show_context", showContextNode)
     .addNode("parse_decision", parseDecisionNode)
     .addNode("edit_context", editContextNode)
@@ -47,9 +54,11 @@ function createGraphBuilder() {
     .addEdge(START, "extract_context")
     .addEdge("extract_context", "validate_context")
     .addConditionalEdges("validate_context", routeAfterValidation, {
+      clarify: "clarify",
       show_context: "show_context",
       cancel: "cancel",
     })
+    .addEdge("clarify", "extract_context")
     .addEdge("show_context", "parse_decision")
     .addConditionalEdges("parse_decision", routeAfterDecision, {
       persist_context: "persist_context",

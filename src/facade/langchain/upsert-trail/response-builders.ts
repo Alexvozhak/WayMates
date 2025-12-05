@@ -13,6 +13,11 @@ export const responseBuilders: Record<UpsertTrailPhase, ResponseBuilder> = {
     message: "Extracting trail information...",
   }),
 
+  [PHASE.awaitingClarification]: (state) => ({
+    phase: PHASE.awaitingClarification,
+    missingFields: state.missingFields,
+  }),
+
   [PHASE.awaitingConfirmation]: (state) => {
     if (!state.validatedTrail) {
       throw new InvalidStateError(PHASE.awaitingConfirmation, "validatedTrail is missing");

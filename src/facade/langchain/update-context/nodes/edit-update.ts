@@ -1,12 +1,12 @@
 import { HumanMessage } from "@langchain/core/messages";
 
-import { userContextSchemaPartial } from "../../../../shared/schemas.js";
+import { extractableContextSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
 import { UPDATE_EDIT_PROMPT } from "../prompts.js";
 
 import type { UpdateContextStateType } from "../state.js";
 
-const editModel = getModel("extraction").withStructuredOutput(userContextSchemaPartial);
+const editModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
 
 export async function editUpdateNode(state: UpdateContextStateType): Promise<Partial<UpdateContextStateType>> {
   const { mergedContext, parsedDecision, messages } = state;

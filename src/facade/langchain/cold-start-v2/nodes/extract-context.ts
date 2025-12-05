@@ -2,12 +2,13 @@ import { HumanMessage } from "@langchain/core/messages";
 import { v7 as uuidv7 } from "uuid";
 
 import { AgentInvariantError } from "../../../errors.js";
-import { contextExtractionPrompt, trailExtractionPrompt } from "../../cold-start/prompts.js";
 import { extractableContextSchema, extractableTrailSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
+import { contextExtractionPrompt, trailExtractionPrompt } from "../prompts.js";
 
-import type { ExtractableContext } from "../../shared-tools/extraction-models.js";
-import type { ColdStartStateType, ContextAgenda, Trail, UserContext } from "../state.js";
+import type { ContextId } from "../../../../shared/schemas.js";
+import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
+import type { ColdStartStateType, ContextAgenda } from "../state.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 const contextExtractionModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
@@ -28,15 +29,15 @@ async function extractAllTrails(
   agenda: ContextAgenda,
   queue: ContextAgenda[],
   contextIndex: number,
-): Promise<Partial<Trail>[]> {
+): Promise<ExtractableTrail[]> {
   if (agenda.incomingTrails.length === 0) {
     return [];
   }
 
-  const fromContextId = contextIndex > 0 ? (queue[contextIndex - 1]?.contextId ?? null) : null;
-  const toContextId = agenda.contextId;
+  const fromContextId: ContextId | null = contextIndex > 0 ? (queue[contextIndex - 1]?.contextId ?? null) : null;
+  const toContextId: ContextId = agenda.contextId;
 
-  const trailPromises = agenda.incomingTrails.map(async (trailPreview) => {
+  const trailPromises = agenda.incomingTrails.map(async (trailPreview): Promise<ExtractableTrail> => {
     const prompt = trailExtractionPrompt(messages, trailPreview);
     const extracted = await trailExtractionModel.invoke([new HumanMessage(prompt)]);
 
@@ -56,9 +57,9 @@ async function extractContextData(
   agenda: ContextAgenda,
   queue: ContextAgenda[],
   contextIndex: number,
-): Promise<Partial<UserContext>> {
+): Promise<ExtractableContext> {
   const prompt = contextExtractionPrompt(messages, agenda.preview);
-  const extracted: ExtractableContext = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
+  const extracted = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
   const { previousId, nextId } = getLinkedContextIds(queue, contextIndex);
 
   return {

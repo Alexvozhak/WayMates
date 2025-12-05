@@ -3,7 +3,7 @@ import { Command, interrupt } from "@langchain/langgraph";
 import { tool } from "langchain";
 import { z } from "zod";
 
-import type { ColdStartState } from "../../langchain/cold-start/types.js";
+import type { ColdStartState } from "../../langchain/cold-start-v2/types.js";
 import type { ToolRuntime } from "@langchain/core/tools";
 
 /**

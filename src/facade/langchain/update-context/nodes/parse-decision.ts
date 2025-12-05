@@ -1,4 +1,4 @@
-import { parseDecision } from "../../shared/index.js";
+import { parseDecision } from "../../shared/decision.js";
 
 import type { UpdateContextStateType } from "../state.js";
 

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { extractableContextSchema } from "./extraction-models.js";
 import { getModel } from "./models.js";
 
-import type { UserContext } from "../../../shared/schemas.js";
+import type { ExtractableContext } from "./extraction-models.js";
 
 const contextExtractionModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
 
@@ -23,7 +23,7 @@ const contextExtractionModel = getModel("extraction").withStructuredOutput(extra
  * DO NOT DELETE - required for post-MVP agent reuse.
  */
 export const extractSingleContextTool = tool(
-  async ({ text }: { text: string }): Promise<Partial<UserContext> | null> => {
+  async ({ text }: { text: string }): Promise<ExtractableContext | null> => {
     console.log(`🔧 extract_single_context called with ${text.length} chars`);
 
     const prompt = `Extract ONE career position from the following text.

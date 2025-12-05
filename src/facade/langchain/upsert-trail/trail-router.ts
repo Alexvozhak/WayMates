@@ -1,8 +1,13 @@
-import type { UpsertTrailStateType } from "../state.js";
+import { PHASE } from "./state.js";
+
+import type { UpsertTrailStateType } from "./state.js";
 
 export function routeAfterValidation(state: UpsertTrailStateType): string {
-  if (state.validationErrors.length > 0 && !state.validatedTrail) {
+  if (state.phase === PHASE.failed) {
     return "cancel";
+  }
+  if (state.missingFields.length > 0) {
+    return "clarify";
   }
   return "show_trail";
 }

@@ -1,4 +1,5 @@
 import { postgresService } from "../../infrastructure/postgres.service.js";
+import { PHASE } from "../../langchain/upsert-context/state.js";
 import { UpsertContextGraph } from "../../langchain/upsert-context/upsert-context-graph.js";
 
 import { BaseTool } from "./base-tool.js";
@@ -14,7 +15,7 @@ export class UpsertContextTool extends BaseTool<UpsertContextParams, UpsertConte
     const graph = new UpsertContextGraph(userId);
     const response = await graph.run(params.message, threadId);
 
-    if (response.phase === "approved") {
+    if (response.phase === PHASE.approved) {
       await this.saveContext(response.context, userId);
       await postgresService.deleteCheckpoint(threadId);
     }

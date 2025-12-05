@@ -4,18 +4,17 @@ import { z } from "zod";
 import { AgentInvariantError } from "../../errors.js";
 import { postgresService } from "../../infrastructure/postgres.service.js";
 
-import {
-  cancelNode,
-  editTrailNode,
-  extractTrailNode,
-  parseDecisionNode,
-  persistTrailNode,
-  showTrailNode,
-  validateTrailNode,
-} from "./nodes/index.js";
+import { cancelNode } from "./nodes/cancel.js";
+import { clarifyNode } from "./nodes/clarify.js";
+import { editTrailNode } from "./nodes/edit-trail.js";
+import { extractTrailNode } from "./nodes/extract-trail.js";
+import { parseDecisionNode } from "./nodes/parse-decision.js";
+import { persistTrailNode } from "./nodes/persist-trail.js";
+import { showTrailNode } from "./nodes/show-trail.js";
+import { validateTrailNode } from "./nodes/validate-trail.js";
 import { responseBuilders } from "./response-builders.js";
-import { routeAfterDecision, routeAfterValidation } from "./routers/index.js";
 import { PHASE, upsertTrailStateAnnotation } from "./state.js";
+import { routeAfterDecision, routeAfterValidation } from "./trail-router.js";
 
 import type { UpsertTrailPhase, UpsertTrailStateType } from "./state.js";
 import type { UpsertTrailResponse } from "./types.js";
@@ -24,7 +23,14 @@ import type { StateSnapshot } from "@langchain/langgraph";
 
 const interruptValueSchema = z.object({
   phase: z
-    .enum([PHASE.extracting, PHASE.awaitingConfirmation, PHASE.approved, PHASE.cancelled, PHASE.failed])
+    .enum([
+      PHASE.extracting,
+      PHASE.awaitingClarification,
+      PHASE.awaitingConfirmation,
+      PHASE.approved,
+      PHASE.cancelled,
+      PHASE.failed,
+    ])
     .optional(),
 });
 
@@ -38,6 +44,7 @@ function createGraphBuilder() {
   return new StateGraph(upsertTrailStateAnnotation)
     .addNode("extract_trail", extractTrailNode)
     .addNode("validate_trail", validateTrailNode)
+    .addNode("clarify", clarifyNode)
     .addNode("show_trail", showTrailNode)
     .addNode("parse_decision", parseDecisionNode)
     .addNode("edit_trail", editTrailNode)
@@ -47,9 +54,11 @@ function createGraphBuilder() {
     .addEdge(START, "extract_trail")
     .addEdge("extract_trail", "validate_trail")
     .addConditionalEdges("validate_trail", routeAfterValidation, {
+      clarify: "clarify",
       show_trail: "show_trail",
       cancel: "cancel",
     })
+    .addEdge("clarify", "extract_trail")
     .addEdge("show_trail", "parse_decision")
     .addConditionalEdges("parse_decision", routeAfterDecision, {
       persist_trail: "persist_trail",

@@ -1,4 +1,5 @@
 import { postgresService } from "../../infrastructure/postgres.service.js";
+import { PHASE } from "../../langchain/update-context/state.js";
 import { UpdateContextGraph } from "../../langchain/update-context/update-context-graph.js";
 import { updateContextParamsSchema } from "../schemas.js";
 
@@ -19,7 +20,7 @@ export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateConte
     const currentContext = await this.loadCurrentContext(userId);
     if (!currentContext) {
       return {
-        phase: "failed",
+        phase: PHASE.failed,
         message: "No current context found. Use cold_start first.",
       };
     }
@@ -27,7 +28,7 @@ export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateConte
     const graph = new UpdateContextGraph(userId, currentContext);
     const response = await graph.run(params.message, threadId);
 
-    if (response.phase === "approved") {
+    if (response.phase === PHASE.approved) {
       await this.saveUpdatedContext(response.updatedContext, userId);
       await postgresService.deleteCheckpoint(threadId);
     }

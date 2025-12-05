@@ -1,8 +1,13 @@
-import type { UpsertContextStateType } from "../state.js";
+import { PHASE } from "./state.js";
+
+import type { UpsertContextStateType } from "./state.js";
 
 export function routeAfterValidation(state: UpsertContextStateType): string {
-  if (state.validationErrors.length > 0 && !state.validatedContext) {
+  if (state.phase === PHASE.failed) {
     return "cancel";
+  }
+  if (state.missingFields.length > 0) {
+    return "clarify";
   }
   return "show_context";
 }

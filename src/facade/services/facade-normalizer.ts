@@ -1,11 +1,6 @@
 import type { DictionariesCache } from "./dictionaries-cache.js";
 import type { LLMFuzzyMatcher } from "./llm-fuzzy-matcher.js";
-import type {
-  AdhocUserContext,
-  SimpleDictionaryType,
-  TargetContext,
-  UserId,
-} from "../../shared/schemas.js";
+import type { AdhocUserContext, SimpleDictionaryType, TargetContext, UserId } from "../../shared/schemas.js";
 import type { CoreTRPCClient } from "../core-client/core-trpc-client.js";
 
 export class FacadeNormalizer {
@@ -43,11 +38,7 @@ export class FacadeNormalizer {
     const normalized: TargetContext = { ...context };
 
     if (context.position) {
-      const normalizedValues = await this.normalizeTerms(
-        "position",
-        context.position.values,
-        userId,
-      );
+      const normalizedValues = await this.normalizeTerms("position", context.position.values, userId);
       normalized.position = { mode: context.position.mode, values: normalizedValues };
     }
     if (context.skills) {
@@ -66,15 +57,15 @@ export class FacadeNormalizer {
     return this.normalizeTerm("skill", skill, userId);
   }
 
+  async normalizePlatform(platform: string, userId: UserId): Promise<string> {
+    return this.normalizeTerm("platform", platform, userId);
+  }
+
   /**
    * 2-tier normalization: exact match → fuzzy match (LLM) → create unverified term
    * New skills created with complexity=null (admin verifies asynchronously)
    */
-  private async normalizeTerm(
-    type: SimpleDictionaryType,
-    value: string,
-    userId: UserId,
-  ): Promise<string> {
+  private async normalizeTerm(type: SimpleDictionaryType, value: string, userId: UserId): Promise<string> {
     const dict = await this.cache.getSimple(type);
 
     const exact = dict.get(value.toLowerCase());
@@ -100,11 +91,7 @@ export class FacadeNormalizer {
     return canonical;
   }
 
-  private async normalizeTerms(
-    type: SimpleDictionaryType,
-    values: string[],
-    userId: UserId,
-  ): Promise<string[]> {
+  private async normalizeTerms(type: SimpleDictionaryType, values: string[], userId: UserId): Promise<string[]> {
     return Promise.all(values.map((v) => this.normalizeTerm(type, v, userId)));
   }
 }

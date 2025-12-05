@@ -1,9 +1,10 @@
 import { trailSchema, userContextSchema } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
-import { missingFieldSchema } from "../../cold-start/types.js";
 import { PHASE } from "../state.js";
+import { missingFieldSchema } from "../types.js";
 
+import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda, MissingField, Trail, UserContext } from "../state.js";
 import type { z } from "zod";
 
@@ -39,7 +40,7 @@ function extractMissingFields<T>(
 }
 
 function validateTrails(
-  trailsData: Partial<Trail>[],
+  trailsData: ExtractableTrail[],
   agenda: ContextAgenda,
 ): { validTrails: Trail[]; trailMissing: MissingField[] } {
   const validTrails: Trail[] = [];
@@ -64,8 +65,8 @@ type ValidationFailure = { success: false; missing: MissingField[] };
 type ValidationResult = ValidationSuccess | ValidationFailure;
 
 function validateAndCollectMissing(
-  contextData: Partial<UserContext>,
-  trailsData: Partial<Trail>[],
+  contextData: ExtractableContext,
+  trailsData: ExtractableTrail[],
   agenda: ContextAgenda,
 ): ValidationResult {
   const ctxValidation = userContextSchema.safeParse(contextData);

@@ -1,18 +1,18 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
-import { ColdStartGraph, PHASE, resetCheckpointer } from "../../../../../src/facade/langchain/cold-start-v2/index.js";
+import {
+  ColdStartGraph,
+  PHASE,
+  resetCheckpointer,
+} from "../../../../../src/facade/langchain/cold-start-v2/cold-start-graph.js";
 import { SessionMiddleware } from "../../../../../src/facade/mcp-server/session-middleware.js";
 import { ColdStartTool } from "../../../../../src/facade/mcp-server/tools/cold-start.tool.js";
 import { cleanupSession, setupSession } from "../../../helpers/mcp-tool-helpers.js";
 import { cleanupAllTestUsers, cleanupUserFromNeo4j, trackTestUser } from "../../../helpers/test-users-tracker.js";
 import { UserStories } from "../../../../core/helpers/user-stories.js";
 
-import {
-  cleanupColdStart,
-  generateStoryFromFixture,
-  OMISSION_INSTRUCTIONS,
-} from "../../cold-start/helpers/cold-start-helpers.js";
+import { cleanupColdStart, generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";
 import { FacadeTestContext } from "../../../helpers/test-context.js";
 
 import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
@@ -319,7 +319,7 @@ describe("Cold-Start V2 Edge Cases (Tier 3)", () => {
     const u1 = userStories.getStoryBy("U1");
 
     console.log("T08 [1/6]: Generating incomplete story (no birthYear)...");
-    const incompleteStory = await generateStoryFromFixture(u1, OMISSION_INSTRUCTIONS.birthYear);
+    const incompleteStory = await generateStoryFromFixture(u1, "birthYear");
     const storyWithTrigger = incompleteStory + STORY_COMPLETION_TRIGGER;
 
     console.log("T08 [2/6]: Sending incomplete story → awaiting_plan_confirmation");
@@ -335,10 +335,10 @@ describe("Cold-Start V2 Edge Cases (Tier 3)", () => {
     const afterPlanResponse = await runWorkflow("да, всё верно");
 
     if (afterPlanResponse.phase === PHASE.awaiting_context_confirmation) {
-      console.log("T08: ⚠️ LLM successfully extracted birthYear despite instruction to omit it");
-      console.log("T08: This means the test cannot verify clarification flow");
-      console.log("T08: Consider using a different omission field or stricter prompt");
-      expect.fail("T08 requires clarification to trigger — LLM extracted all fields successfully");
+      console.log("T08: ⚠️ LLM successfully extracted all required fields");
+      console.log("T08: birthYear was removed from fixture but extraction succeeded anyway");
+      console.log("T08: This is unexpected — check if extraction prompt allows defaults");
+      expect.fail("T08 requires clarification to trigger — extraction succeeded without birthYear in story");
     }
 
     if (afterPlanResponse.phase !== PHASE.awaiting_clarification) {

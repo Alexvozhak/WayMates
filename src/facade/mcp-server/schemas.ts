@@ -5,7 +5,6 @@ import {
   contextIdSchema,
   targetContextSchema,
   trailIdSchema,
-  trailSchema,
   userIdSchema,
   userSearchParamsRawSchema,
 } from "../../shared/schemas.js";
@@ -119,7 +118,17 @@ export const resetColdStartParamsSchema = z.object({
 export type ResetColdStartParams = z.infer<typeof resetColdStartParamsSchema>;
 
 export const upsertTrailParamsSchema = z.object({
-  trail: trailSchema,
+  message: z
+    .string()
+    .min(10)
+    .describe(
+      "User message describing a learning trail in natural language. " +
+        "Example: 'I took a React course on Udemy for 8 weeks'",
+    ),
+  fromContextId: contextIdSchema
+    .nullable()
+    .optional()
+    .describe("Source context ID if trail originates from a specific context"),
   sessionId: sessionIdSchema,
 });
 

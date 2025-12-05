@@ -1,22 +1,14 @@
-import { trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
+import { makeNullable, trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
 
 import { getModel } from "./models.js";
 
 import type { z } from "zod";
 
-export const extractableTrailSchema = trailSchema.omit({
-  trailId: true,
-  fromContextId: true,
-  toContextId: true,
-});
+export const extractableTrailSchema = makeNullable(trailSchema);
 
 export type ExtractableTrail = z.infer<typeof extractableTrailSchema>;
 
-export const extractableContextSchema = userContextSchemaBase.omit({
-  contextId: true,
-  previousContextId: true,
-  nextContextId: true,
-});
+export const extractableContextSchema = makeNullable(userContextSchemaBase);
 
 export type ExtractableContext = z.infer<typeof extractableContextSchema>;
 
