@@ -1,28 +1,48 @@
 import { Redis } from "ioredis";
 
-import { CoreTRPCClient } from "../../../src/facade/core-client/core-trpc-client.js";
+import { CoreClient } from "../../../src/facade/core-client.js";
+import { CheckpointService } from "../../../src/facade/services/checkpoint.service.js";
 import { DictionariesCache } from "../../../src/facade/services/dictionaries-cache.js";
-import { FacadeNormalizer } from "../../../src/facade/services/facade-normalizer.js";
-import { LLMFuzzyMatcher } from "../../../src/facade/services/llm-fuzzy-matcher.js";
+import { Normalizer } from "../../../src/facade/services/normalizer.js";
+import { PostgresService } from "../../../src/facade/services/postgres.service.js";
+import { SessionService } from "../../../src/facade/services/session.service.js";
+import { UserService } from "../../../src/facade/services/user.service.js";
 
 import { getTestEnv } from "./test-env.js";
-import { createMockLLMFuzzyMatcher } from "./llm-mock.js";
+import { createMockFuzzyModel } from "./llm-mock.js";
 
 export class FacadeTestContext {
   private static instance: FacadeTestContext | null = null;
 
-  static initialize(): FacadeTestContext {
+  static async initialize(): Promise<FacadeTestContext> {
     if (FacadeTestContext.instance) {
       return FacadeTestContext.instance;
     }
 
     const testEnv = getTestEnv();
 
-    console.log("[Facade Setup] Creating base clients...");
-    const coreClient = new CoreTRPCClient(testEnv.CORE_API_URL);
+    const poolConfig = {
+      host: testEnv.POSTGRES_HOST,
+      port: testEnv.POSTGRES_PORT,
+      user: testEnv.POSTGRES_USER,
+      password: testEnv.POSTGRES_PASSWORD,
+      database: testEnv.POSTGRES_DB,
+      max: 10,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 2000,
+    };
 
-    const llmMatcherMock = createMockLLMFuzzyMatcher();
-    const llmMatcherReal = new LLMFuzzyMatcher();
+    console.log("[Facade Setup] Creating PostgreSQL service...");
+    const postgres = await PostgresService.create(poolConfig);
+
+    console.log("[Facade Setup] Creating checkpoint service...");
+    const checkpointService = await CheckpointService.create(postgres.getPool());
+
+    console.log("[Facade Setup] Creating user service...");
+    const userService = new UserService(postgres);
+
+    console.log("[Facade Setup] Creating base clients...");
+    const coreClient = new CoreClient(testEnv.CORE_API_URL);
 
     console.log("[Facade Setup] Creating Redis singleton...");
     const redis = new Redis({
@@ -32,15 +52,21 @@ export class FacadeTestContext {
 
     console.log("[Facade Setup] Creating cache and normalizer singletons...");
     const cache = new DictionariesCache(redis, coreClient);
-    const normalizer = new FacadeNormalizer(cache, coreClient, llmMatcherMock);
+    const mockFuzzyModel = createMockFuzzyModel();
+    const normalizer = new Normalizer(cache, coreClient, mockFuzzyModel);
+
+    console.log("[Facade Setup] Creating session service...");
+    const sessionService = new SessionService(redis);
 
     FacadeTestContext.instance = new FacadeTestContext(
       coreClient,
-      llmMatcherMock,
-      llmMatcherReal,
       redis,
       cache,
       normalizer,
+      postgres,
+      checkpointService,
+      userService,
+      sessionService,
     );
 
     return FacadeTestContext.instance;
@@ -53,31 +79,38 @@ export class FacadeTestContext {
     return FacadeTestContext.instance;
   }
 
-  public readonly coreClient: CoreTRPCClient;
-  public readonly llmMatcherMock: LLMFuzzyMatcher;
-  public readonly llmMatcherReal: LLMFuzzyMatcher;
+  public readonly coreClient: CoreClient;
   public readonly redis: Redis;
   public readonly cache: DictionariesCache;
-  public readonly normalizer: FacadeNormalizer;
+  public readonly normalizer: Normalizer;
+  public readonly postgres: PostgresService;
+  public readonly checkpointService: CheckpointService;
+  public readonly userService: UserService;
+  public readonly sessionService: SessionService;
 
   private constructor(
-    coreClient: CoreTRPCClient,
-    llmMatcherMock: LLMFuzzyMatcher,
-    llmMatcherReal: LLMFuzzyMatcher,
+    coreClient: CoreClient,
     redis: Redis,
     cache: DictionariesCache,
-    normalizer: FacadeNormalizer,
+    normalizer: Normalizer,
+    postgres: PostgresService,
+    checkpointService: CheckpointService,
+    userService: UserService,
+    sessionService: SessionService,
   ) {
     this.coreClient = coreClient;
-    this.llmMatcherMock = llmMatcherMock;
-    this.llmMatcherReal = llmMatcherReal;
     this.redis = redis;
     this.cache = cache;
     this.normalizer = normalizer;
+    this.postgres = postgres;
+    this.checkpointService = checkpointService;
+    this.userService = userService;
+    this.sessionService = sessionService;
   }
 
   async cleanup(): Promise<void> {
     await this.redis.quit();
+    await this.postgres.close();
     FacadeTestContext.instance = null;
   }
 }

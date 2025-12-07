@@ -1,8 +1,7 @@
 import { FacadeError } from "../../errors.js";
 import { err, ok } from "../result.js";
 
-
-import type { AuthenticateResult, AuthService, RegisterResult } from "../auth.service.js";
+import type { AuthenticateResult, AuthService, RegisterResult } from "../../services/auth.service.js";
 import type { ErrorResponse, Result } from "../result.js";
 import type { AuthParams } from "../schemas.js";
 

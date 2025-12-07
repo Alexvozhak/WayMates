@@ -1,21 +1,15 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
-import {
-  ColdStartGraph,
-  PHASE,
-  resetCheckpointer,
-} from "../../../../../src/facade/langchain/cold-start-v2/cold-start-graph.js";
-import { SessionMiddleware } from "../../../../../src/facade/mcp-server/session-middleware.js";
+import { ColdStartGraph, PHASE } from "../../../../../src/facade/langGraph/cold-start-v2/cold-start-graph.js";
 import { ColdStartTool } from "../../../../../src/facade/mcp-server/tools/cold-start.tool.js";
-import { cleanupSession, setupSession } from "../../../helpers/mcp-tool-helpers.js";
+import { cleanupSession, getToolDeps, setupSession } from "../../../helpers/mcp-tool-helpers.js";
 import { cleanupAllTestUsers, trackTestUser } from "../../../helpers/test-users-tracker.js";
 import { UserStories } from "../../../../core/helpers/user-stories.js";
 
 import { generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";
 import { FacadeTestContext } from "../../../helpers/test-context.js";
 
-import type { ColdStartResponse } from "../../../../../src/facade/langchain/cold-start-v2/types.js";
+import type { ColdStartResponse } from "../../../../../src/facade/langGraph/cold-start-v2/types.js";
 import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
 import type { UserId } from "../../../../../src/shared/schemas.js";
 
@@ -27,8 +21,17 @@ describe("Cold-Start V2 Idempotency Tests (T04, T05)", () => {
   const testUserId: UserId = "usr_01933ec5-0004-0000-0000-000000000004";
   const threadId = `cold_start_v2_${testUserId}`;
 
-  const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> =>
-    new ColdStartGraph(testUserId).run(message, threadId);
+  const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> => {
+    const ctx = FacadeTestContext.getInstance();
+    const checkpointer = ctx.checkpointService.getCheckpointer();
+    return new ColdStartGraph(testUserId, checkpointer).run(
+      message,
+      threadId,
+      ctx.coreClient,
+      ctx.normalizer,
+      ctx.userService,
+    );
+  };
 
   const runTool = async (message: string): Promise<ColdStartResponse> => {
     console.log(`runTool: sessionId=${testSessionId}, message=${message.slice(0, 50)}...`);
@@ -40,28 +43,21 @@ describe("Cold-Start V2 Idempotency Tests (T04, T05)", () => {
     return result.value;
   };
 
-  beforeAll(async () => {
-    FacadeTestContext.initialize();
-    await postgresService.initialize();
-  });
-
   beforeEach(async () => {
     const ctx = FacadeTestContext.getInstance();
 
-    await postgresService.resetColdStartStatus(testUserId);
-    await postgresService.deleteCheckpoint(threadId);
+    await ctx.userService.resetColdStartStatus(testUserId);
+    await ctx.checkpointService.delete(threadId);
     await ctx.coreClient.client.story.deleteStory.mutate({ userId: testUserId });
 
-    const [_session, sessionId] = await setupSession(testUserId);
+    const sessionId = await setupSession(testUserId);
     testSessionId = sessionId;
 
     const storedUserId = await ctx.redis.get(`session:${sessionId}`);
     console.log(`beforeEach: sessionId=${sessionId}, storedUserId=${storedUserId}, expectedUserId=${testUserId}`);
 
-    const sessionMiddleware = new SessionMiddleware(ctx.redis);
-    coldStartTool = new ColdStartTool(sessionMiddleware, ctx.normalizer, ctx.coreClient);
+    coldStartTool = new ColdStartTool(getToolDeps());
 
-    resetCheckpointer();
     trackTestUser(testUserId);
   });
 
@@ -71,7 +67,6 @@ describe("Cold-Start V2 Idempotency Tests (T04, T05)", () => {
 
   afterAll(async () => {
     await cleanupAllTestUsers();
-    await postgresService.close();
   });
 
   it("T04: Repeated cold_start returns already_saved after completion", async () => {
@@ -122,12 +117,12 @@ describe("Cold-Start V2 Idempotency Tests (T04, T05)", () => {
     expect(storyInDb.contexts.length, "Neo4j: нет contexts").toBeGreaterThan(0);
     console.log(`T04: ✅ Neo4j contains ${storyInDb.contexts.length} context(s)`);
 
-    const isCompleted = await postgresService.isColdStartCompleted(testUserId);
+    const isCompleted = await ctx.userService.isColdStartCompleted(testUserId);
     expect(isCompleted, "handleSaved() не установил completion flag").toBe(true);
     console.log("T04: ✅ PostgreSQL cold_start_completions flag set");
 
     const toolThreadId = `cold_start_${testUserId}`;
-    const checkpoint = await postgresService.getCheckpointState(toolThreadId);
+    const checkpoint = await ctx.checkpointService.getState(toolThreadId);
     expect(checkpoint, "handleSaved() не удалил checkpoint").toBeNull();
     console.log("T04: ✅ LangGraph checkpoint deleted");
 

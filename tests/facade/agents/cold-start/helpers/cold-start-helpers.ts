@@ -1,34 +1,17 @@
-import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
-import { getModel } from "../../../../../src/facade/langchain/shared-tools/models.js";
+import { getModel } from "../../../../../src/facade/langGraph/shared-tools/models.js";
+import { FacadeTestContext } from "../../../helpers/test-context.js";
 import { buildUnpackingPrompt } from "./unpacking-prompt.js";
 
 import type { UserContext, UserId } from "../../../../../src/shared/schemas.js";
 import type { FixtureData } from "./unpacking-prompt.js";
 
-/**
- * Fields that can be omitted from fixture when generating incomplete stories.
- * Used in T08 to provoke clarification flow.
- *
- * The field is physically removed from fixture JSON before LLM processes it,
- * guaranteeing omission. This models real scenario: user forgot to mention data.
- *
- * Derived from UserContext to stay in sync with business schema.
- */
 export type OmittableField = keyof Pick<UserContext, "birthYear" | "citizenships" | "educationLevel">;
 
-/**
- * Cleanup PostgreSQL state для cold-start тестов.
- * Вызывается в beforeEach для изоляции между тестами.
- *
- * Очищает:
- * - PostgreSQL: cold_start_completions flag (для T04 idempotency)
- * - PostgreSQL: checkpoints для threadId (для T15 checkpoint cleanup)
- *
- * NOTE: НЕ очищает Redis session - это делается в afterEach
- */
 export async function cleanupColdStart(userId: UserId, threadId: string): Promise<void> {
-  await postgresService.resetColdStartStatus(userId);
-  await postgresService.deleteCheckpoint(threadId);
+  const ctx = FacadeTestContext.getInstance();
+  await ctx.userService.resetColdStartStatus(userId);
+  await ctx.checkpointService.delete(threadId);
+  await ctx.coreClient.client.story.deleteStory.mutate({ userId });
 }
 
 /**

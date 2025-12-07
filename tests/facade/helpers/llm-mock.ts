@@ -1,30 +1,36 @@
-import type { LLMFuzzyMatcher } from "../../../src/facade/services/llm-fuzzy-matcher.js";
-import type { SimpleDictionaryType } from "../../../src/shared/schemas.js";
+import type { FuzzyMatchResult, FuzzyModel } from "../../../src/facade/services/normalizer.js";
+import type { HumanMessage } from "@langchain/core/messages";
 
-export function createMockLLMFuzzyMatcher(): LLMFuzzyMatcher {
+const typoMap: Record<string, string> = {
+  pyton: "python",
+  reactjs: "react",
+  typescirpt: "typescript",
+  питон: "python",
+  реакт: "react",
+};
+
+export function createMockFuzzyModel(): FuzzyModel {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Test mock requires type assertion for Runnable interface
   return {
-    fuzzyMatch(
-      _type: SimpleDictionaryType,
-      value: string,
-      dict: Map<string, string>,
-    ): Promise<string | null> {
-      if (dict.size === 0) {
-        return Promise.resolve(null);
+    invoke(messages: HumanMessage[]): Promise<FuzzyMatchResult> {
+      const content = messages[0]?.content;
+      if (typeof content !== "string") {
+        return Promise.resolve({ canonical: null, confidence: "low", reasoning: "No content" });
       }
 
-      const normalized = value.toLowerCase().trim();
+      const valueMatch = content.match(/Find the canonical name for "([^"]+)"/);
+      if (!valueMatch?.[1]) {
+        return Promise.resolve({ canonical: null, confidence: "low", reasoning: "Could not parse value" });
+      }
 
-      const typoMap: Record<string, string> = {
-        pyton: "python",
-        reactjs: "react",
-        typescirpt: "typescript",
-        питон: "python",
-        реакт: "react",
-      };
+      const value = valueMatch[1].toLowerCase().trim();
+      const canonical = typoMap[value] ?? null;
 
-      const canonical = typoMap[normalized] ?? normalized;
-      const result = dict.get(canonical) ?? null;
-      return Promise.resolve(result);
+      return Promise.resolve({
+        canonical,
+        confidence: canonical ? "high" : "low",
+        reasoning: canonical ? `Matched typo "${value}" to "${canonical}"` : "No match found",
+      });
     },
-  } as LLMFuzzyMatcher;
+  } as FuzzyModel;
 }

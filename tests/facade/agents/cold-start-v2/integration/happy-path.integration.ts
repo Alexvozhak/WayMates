@@ -1,17 +1,15 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
-import { PHASE, resetCheckpointer } from "../../../../../src/facade/langchain/cold-start-v2/cold-start-graph.js";
-import { SessionMiddleware } from "../../../../../src/facade/mcp-server/session-middleware.js";
+import { PHASE } from "../../../../../src/facade/langGraph/cold-start-v2/cold-start-graph.js";
 import { ColdStartTool } from "../../../../../src/facade/mcp-server/tools/cold-start.tool.js";
-import { cleanupSession, setupSession } from "../../../helpers/mcp-tool-helpers.js";
+import { cleanupSession, getToolDeps, setupSession } from "../../../helpers/mcp-tool-helpers.js";
 import { cleanupAllTestUsers, cleanupUserFromNeo4j, trackTestUser } from "../../../helpers/test-users-tracker.js";
 import { UserStories } from "../../../../core/helpers/user-stories.js";
 
 import { cleanupColdStart, generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";
 import { FacadeTestContext } from "../../../helpers/test-context.js";
 
-import type { ColdStartResponse } from "../../../../../src/facade/langchain/cold-start-v2/types.js";
+import type { ColdStartResponse } from "../../../../../src/facade/langGraph/cold-start-v2/types.js";
 import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
 import type { UserId } from "../../../../../src/shared/schemas.js";
 
@@ -32,23 +30,13 @@ describe("Cold-Start V2 Happy Path Tests (LangGraph)", () => {
     return result.value;
   };
 
-  beforeAll(async () => {
-    FacadeTestContext.initialize();
-    await postgresService.initialize();
-  });
-
   beforeEach(async () => {
-    const ctx = FacadeTestContext.getInstance();
-
     await cleanupColdStart(testUserId, threadId);
     await cleanupUserFromNeo4j(testUserId);
-    resetCheckpointer();
 
-    const [_session, sessionId] = await setupSession(testUserId);
-    testSessionId = sessionId;
+    testSessionId = await setupSession(testUserId);
 
-    const sessionMiddleware = new SessionMiddleware(ctx.redis);
-    coldStartTool = new ColdStartTool(sessionMiddleware, ctx.normalizer, ctx.coreClient);
+    coldStartTool = new ColdStartTool(getToolDeps());
 
     trackTestUser(testUserId);
   });
@@ -59,7 +47,6 @@ describe("Cold-Start V2 Happy Path Tests (LangGraph)", () => {
 
   afterAll(async () => {
     await cleanupAllTestUsers();
-    await postgresService.close();
   });
 
   it("T06: Full workflow phase transitions + Neo4j verification", async () => {
@@ -169,6 +156,7 @@ describe("Cold-Start V2 Happy Path Tests (LangGraph)", () => {
 
     if (currentResponse.phase === PHASE.awaiting_clarification) {
       console.log("T03: ⚠️ Clarification needed, cannot complete test deterministically");
+      console.log("T03: Missing fields:", JSON.stringify(currentResponse.missingFields, null, 2));
       expect.fail("T03 requires extraction without clarification");
     }
 

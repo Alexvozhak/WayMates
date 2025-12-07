@@ -13,7 +13,7 @@ const testEnvSchema = z.object({
   POSTGRES_PORT: z.coerce.number().int().positive().default(5433),
   POSTGRES_USER: z.string().default("postgres"),
   POSTGRES_PASSWORD: z.string().default("testpassword123"),
-  POSTGRES_DATABASE: z.string().default("waymates_facade_test"),
+  POSTGRES_DB: z.string().default("waymates_facade_test"),
 
   // Google Gemini for LLM tests
   GOOGLE_API_KEY: z.string().min(1, "GOOGLE_API_KEY required for LLM fuzzy matching tests"),
@@ -31,9 +31,7 @@ export function getTestEnv(): FacadeTestEnv {
   const result = testEnvSchema.safeParse(process.env);
 
   if (!result.success) {
-    const errors = result.error.errors
-      .map((err) => `  - ${err.path.join(".")}: ${err.message}`)
-      .join("\n");
+    const errors = result.error.errors.map((err) => `  - ${err.path.join(".")}: ${err.message}`).join("\n");
 
     throw new Error(
       `❌ Invalid test environment configuration:\n${errors}\n\nCheck .env.test file and ensure all required variables are set.`,

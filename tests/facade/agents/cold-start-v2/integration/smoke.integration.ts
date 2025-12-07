@@ -1,11 +1,7 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
-import {
-  ColdStartGraph,
-  PHASE,
-  resetCheckpointer,
-} from "../../../../../src/facade/langchain/cold-start-v2/cold-start-graph.js";
+import { ColdStartGraph, PHASE } from "../../../../../src/facade/langGraph/cold-start-v2/cold-start-graph.js";
+import { FacadeTestContext } from "../../../helpers/test-context.js";
 import { UserStories } from "../../../../core/helpers/user-stories.js";
 
 import { generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";
@@ -18,20 +14,21 @@ describe("Cold-Start V2 Smoke Tests (P0)", () => {
   const testUserId: UserId = "usr_01933ec5-0001-0000-0000-000000000001";
   const threadId = `cold_start_v2_${testUserId}`;
 
-  const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> =>
-    new ColdStartGraph(testUserId).run(message, threadId);
-
-  beforeAll(async () => {
-    await postgresService.initialize();
-  });
+  const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> => {
+    const ctx = FacadeTestContext.getInstance();
+    const checkpointer = ctx.checkpointService.getCheckpointer();
+    return new ColdStartGraph(testUserId, checkpointer).run(
+      message,
+      threadId,
+      ctx.coreClient,
+      ctx.normalizer,
+      ctx.userService,
+    );
+  };
 
   beforeEach(async () => {
-    await postgresService.deleteCheckpoint(threadId);
-    resetCheckpointer();
-  });
-
-  afterAll(async () => {
-    await postgresService.close();
+    const ctx = FacadeTestContext.getInstance();
+    await ctx.checkpointService.delete(threadId);
   });
 
   it("T01: Graph workflow responds (LangGraph config check)", async () => {

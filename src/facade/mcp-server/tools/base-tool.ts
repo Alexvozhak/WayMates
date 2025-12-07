@@ -3,30 +3,39 @@ import { ZodError } from "zod";
 import { FacadeError } from "../../errors.js";
 import { err, ok } from "../result.js";
 
-import type { AdhocUserContext, TargetContext, UserId } from "../../../shared/schemas.js";
-import type { CoreTRPCClient } from "../../core-client/core-trpc-client.js";
+import type { UserId } from "../../../shared/schemas.js";
+import type { CoreClient } from "../../core-client.js";
+import type { CheckpointService } from "../../services/checkpoint.service.js";
+import type { Normalizer } from "../../services/normalizer.js";
+import type { SessionService } from "../../services/session.service.js";
+import type { UserService } from "../../services/user.service.js";
 import type { ErrorResponse, Result, SessionId } from "../result.js";
 import type { ZodSchema } from "zod";
 
-export type SessionMiddleware = {
-  validate(sessionId: SessionId): Promise<UserId>;
-};
-
-export type Normalizer = {
-  normalizeUserContext(context: AdhocUserContext, userId: UserId): Promise<AdhocUserContext>;
-  normalizeTargetContext(context: TargetContext, userId: UserId): Promise<TargetContext>;
-  normalizeSkill(skill: string, userId: UserId): Promise<string>;
-  normalizePlatform(platform: string, userId: UserId): Promise<string>;
-};
-
 export type WithSessionId = { sessionId: SessionId };
 
+export type BaseToolDependencies = {
+  session: SessionService;
+  normalizer: Normalizer;
+  coreClient: CoreClient;
+  checkpointService: CheckpointService;
+  userService: UserService;
+};
+
 export abstract class BaseTool<TParams extends WithSessionId, TResult> {
-  constructor(
-    protected session: SessionMiddleware,
-    protected normalizer: Normalizer,
-    protected coreClient: CoreTRPCClient,
-  ) {}
+  protected session: SessionService;
+  protected normalizer: Normalizer;
+  protected coreClient: CoreClient;
+  protected checkpointService: CheckpointService;
+  protected userService: UserService;
+
+  constructor(deps: BaseToolDependencies) {
+    this.session = deps.session;
+    this.normalizer = deps.normalizer;
+    this.coreClient = deps.coreClient;
+    this.checkpointService = deps.checkpointService;
+    this.userService = deps.userService;
+  }
 
   async execute(params: TParams): Promise<Result<TResult, ErrorResponse>> {
     try {

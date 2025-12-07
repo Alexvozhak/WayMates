@@ -1,11 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SearchUserCareersTool } from "../../../../src/facade/mcp-server/tools/search-user-careers.tool.js";
-import { FacadeTestContext } from "../../helpers/test-context.js";
-import { cleanupSession, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 import { UserStories } from "../../../core/helpers/user-stories.js";
 
-import type { SessionMiddleware } from "../../../../src/facade/mcp-server/session-middleware.js";
+import type { BaseToolDependencies } from "../../../../src/facade/mcp-server/tools/base-tool.js";
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { SearchUserCareersParams } from "../../../../src/facade/mcp-server/schemas.js";
 import type { UserId } from "../../../../src/shared/schemas.js";
@@ -13,19 +12,16 @@ import type { UserId } from "../../../../src/shared/schemas.js";
 describe("SearchUserCareersTool Integration Tests", () => {
   let tool: SearchUserCareersTool;
   let testSessionId: SessionId;
-  let session: SessionMiddleware;
+  let deps: BaseToolDependencies;
 
   const userStories = new UserStories();
   // U1 from fixtures - has contexts for search testing
   const testUserId: UserId = userStories.getStoryBy("U1").userId;
 
   beforeEach(async () => {
-    const ctx = FacadeTestContext.getInstance();
-    const [sess, sessId] = await setupSession(testUserId);
-    session = sess;
-    testSessionId = sessId;
-
-    tool = new SearchUserCareersTool(session, ctx.normalizer, ctx.coreClient);
+    testSessionId = await setupSession(testUserId);
+    deps = getToolDeps();
+    tool = new SearchUserCareersTool(deps);
   });
 
   afterEach(async () => {
@@ -76,7 +72,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   it("SUC3: Empty profile handling - returns empty array for users without contexts", async () => {
     // Abstract user ID (not from fixtures) - tests cold start with empty profile
     const emptyUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c999";
-    const emptySession = await session.create(emptyUserId);
+    const emptySession = await deps.session.create(emptyUserId);
 
     const params: SearchUserCareersParams = {
       sessionId: emptySession,

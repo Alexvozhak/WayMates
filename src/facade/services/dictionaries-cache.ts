@@ -3,7 +3,7 @@ import { z } from "zod";
 import { config } from "../env.js";
 
 import type { SimpleDictionaryType } from "../../shared/schemas.js";
-import type { CoreTRPCClient } from "../core-client/core-trpc-client.js";
+import type { CoreClient } from "../core-client.js";
 import type { Redis } from "ioredis";
 
 export class DictionariesCache {
@@ -11,7 +11,7 @@ export class DictionariesCache {
 
   constructor(
     private readonly redis: Redis,
-    private readonly coreClient: CoreTRPCClient,
+    private readonly coreClient: CoreClient,
   ) {
     this.ttl = config.DICT_CACHE_TTL_SECONDS;
   }
@@ -27,17 +27,8 @@ export class DictionariesCache {
     }
 
     const coreData = await this.coreClient.client.dictionaries.getVerified.query();
-    const rawItems = coreData[type];
-
-    if (!Array.isArray(rawItems)) {
-      throw new TypeError(`Invalid dictionaries response: ${type} is not an array`);
-    }
-
-    if (!this.isStringArray(rawItems)) {
-      throw new TypeError(`Invalid dictionaries response: ${type} should contain strings`);
-    }
-
-    const dict = new Map(rawItems.map((name) => [name.toLowerCase(), name]));
+    const items = coreData[type];
+    const dict = new Map(items.map((name) => [name.toLowerCase(), name]));
 
     await this.redis.setex(key, this.ttl, JSON.stringify([...dict.entries()]));
 
@@ -54,9 +45,5 @@ export class DictionariesCache {
     if (keys.length > 0) {
       await this.redis.del(keys);
     }
-  }
-
-  private isStringArray(items: unknown[]): items is string[] {
-    return items.every((item) => typeof item === "string");
   }
 }

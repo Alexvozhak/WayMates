@@ -4,11 +4,8 @@ import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js"
 import type { FacadeAdhocSearchParams } from "../schemas.js";
 
 export class SearchCareersTool extends BaseTool<FacadeAdhocSearchParams, ScoredMatchedCandidate[]> {
-  protected async executeImpl(
-    params: FacadeAdhocSearchParams,
-    userId: UserId,
-  ): Promise<ScoredMatchedCandidate[]> {
-    const normalized = await this.normalizer.normalizeUserContext(params.referenceContext, userId);
+  protected async executeImpl(params: FacadeAdhocSearchParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
+    const normalized = await this.normalizer.normalizeAdhocContext(params.referenceContext, userId);
 
     const { sessionId: _sessionId, referenceContext: _ref, ...searchParams } = params;
 

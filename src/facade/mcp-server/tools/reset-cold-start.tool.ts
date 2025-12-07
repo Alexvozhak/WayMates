@@ -1,5 +1,3 @@
-import { postgresService } from "../../infrastructure/postgres.service.js";
-
 import { BaseTool } from "./base-tool.js";
 
 import type { UserId } from "../../../shared/schemas.js";
@@ -14,8 +12,8 @@ export class ResetColdStartTool extends BaseTool<ResetColdStartParams, ResetResu
   protected async executeImpl(_params: ResetColdStartParams, userId: UserId): Promise<ResetResult> {
     const threadId = `cold_start_${userId}`;
 
-    const wasCompleted = await postgresService.resetColdStartStatus(userId);
-    await postgresService.deleteCheckpoint(threadId);
+    const wasCompleted = await this.userService.resetColdStartStatus(userId);
+    await this.checkpointService.delete(threadId);
 
     if (wasCompleted) {
       return {

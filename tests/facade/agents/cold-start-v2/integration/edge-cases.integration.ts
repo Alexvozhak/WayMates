@@ -1,14 +1,8 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { postgresService } from "../../../../../src/facade/infrastructure/postgres.service.js";
-import {
-  ColdStartGraph,
-  PHASE,
-  resetCheckpointer,
-} from "../../../../../src/facade/langchain/cold-start-v2/cold-start-graph.js";
-import { SessionMiddleware } from "../../../../../src/facade/mcp-server/session-middleware.js";
+import { ColdStartGraph, PHASE } from "../../../../../src/facade/langGraph/cold-start-v2/cold-start-graph.js";
 import { ColdStartTool } from "../../../../../src/facade/mcp-server/tools/cold-start.tool.js";
-import { cleanupSession, setupSession } from "../../../helpers/mcp-tool-helpers.js";
+import { cleanupSession, getToolDeps, setupSession } from "../../../helpers/mcp-tool-helpers.js";
 import { cleanupAllTestUsers, cleanupUserFromNeo4j, trackTestUser } from "../../../helpers/test-users-tracker.js";
 import { UserStories } from "../../../../core/helpers/user-stories.js";
 
@@ -25,21 +19,23 @@ describe("Cold-Start V2 Edge Cases (Tier 3)", () => {
   const testUserId: UserId = "usr_01933ec5-0008-0000-0000-000000000008";
   const threadId = `cold_start_v2_${testUserId}`;
 
-  const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> =>
-    new ColdStartGraph(testUserId).run(message, threadId);
-
-  beforeAll(async () => {
-    FacadeTestContext.initialize();
-    await postgresService.initialize();
-  });
+  const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> => {
+    const ctx = FacadeTestContext.getInstance();
+    const checkpointer = ctx.checkpointService.getCheckpointer();
+    return new ColdStartGraph(testUserId, checkpointer).run(
+      message,
+      threadId,
+      ctx.coreClient,
+      ctx.normalizer,
+      ctx.userService,
+    );
+  };
 
   beforeEach(async () => {
-    const [_session, sessionId] = await setupSession(testUserId);
-    testSessionId = sessionId;
+    testSessionId = await setupSession(testUserId);
 
     await cleanupColdStart(testUserId, threadId);
     await cleanupUserFromNeo4j(testUserId);
-    resetCheckpointer();
     trackTestUser(testUserId);
   });
 
@@ -49,7 +45,6 @@ describe("Cold-Start V2 Edge Cases (Tier 3)", () => {
 
   afterAll(async () => {
     await cleanupAllTestUsers();
-    await postgresService.close();
   });
 
   it("T10: State resume after 'closing chat' - continues from checkpoint", async () => {
@@ -86,7 +81,8 @@ describe("Cold-Start V2 Edge Cases (Tier 3)", () => {
     );
 
     console.log("T10 [3/5]: Verifying checkpoint exists (simulating 'close chat')");
-    const checkpointState = await postgresService.getCheckpointState(threadId);
+    const ctx = FacadeTestContext.getInstance();
+    const checkpointState = await ctx.checkpointService.getState(threadId);
     expect(checkpointState).not.toBeNull();
     console.log("T10 [3/5]: ✅ Checkpoint exists in PostgreSQL");
 
@@ -114,9 +110,7 @@ describe("Cold-Start V2 Edge Cases (Tier 3)", () => {
     const userStories = new UserStories();
     const u1 = userStories.getStoryBy("U1");
 
-    const ctx = FacadeTestContext.getInstance();
-    const sessionMiddleware = new SessionMiddleware(ctx.redis);
-    const coldStartTool = new ColdStartTool(sessionMiddleware, ctx.normalizer, ctx.coreClient);
+    const coldStartTool = new ColdStartTool(getToolDeps());
 
     const runTool = async (message: string) => {
       const result = await coldStartTool.execute({ sessionId: testSessionId, message });
@@ -164,13 +158,14 @@ describe("Cold-Start V2 Edge Cases (Tier 3)", () => {
     console.log(`T15 [3/5]: ✅ Workflow completed: ${savedResponse.contexts.length} contexts saved`);
 
     console.log("T15 [4/5]: Verifying checkpoint was deleted by handleSaved()");
+    const ctx = FacadeTestContext.getInstance();
     const toolThreadId = `cold_start_${testUserId}`;
-    const checkpointAfterSave = await postgresService.getCheckpointState(toolThreadId);
+    const checkpointAfterSave = await ctx.checkpointService.getState(toolThreadId);
 
     expect(checkpointAfterSave).toBeNull();
     console.log("T15 [4/5]: ✅ Checkpoint deleted immediately by handleSaved()");
 
-    const isCompleted = await postgresService.isColdStartCompleted(testUserId);
+    const isCompleted = await ctx.userService.isColdStartCompleted(testUserId);
     expect(isCompleted).toBe(true);
     console.log("T15 [5/5]: ✅ Cold start marked as completed");
 
@@ -320,6 +315,7 @@ describe("Cold-Start V2 Edge Cases (Tier 3)", () => {
 
     console.log("T08 [1/6]: Generating incomplete story (no birthYear)...");
     const incompleteStory = await generateStoryFromFixture(u1, "birthYear");
+    console.log("T08 [1/6]: Generated story:", incompleteStory.slice(0, 300) + "...");
     const storyWithTrigger = incompleteStory + STORY_COMPLETION_TRIGGER;
 
     console.log("T08 [2/6]: Sending incomplete story → awaiting_plan_confirmation");
