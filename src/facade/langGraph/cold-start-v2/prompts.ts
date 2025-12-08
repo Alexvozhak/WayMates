@@ -1,4 +1,4 @@
-import type { Trail, UserContext } from "../../../shared/schemas.js";
+import type { UserContext } from "../../../shared/schemas.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 function serializeMessages(messages: BaseMessage[]): string {
@@ -69,7 +69,7 @@ PHASE 5: SAVED (phase="saved")
 CANCEL DETECTION (AT ANY POINT)
 ═══════════════════════════════════════════════════
 
-If user says "cancel"/"stop"/"quit"/"abort"/"отмена"/"нет":
+If user expresses desire to stop the process completely (not just reject a suggestion):
 → Call cancel_workflow tool immediately
 → This sets phase to failed and stops workflow
 
@@ -80,29 +80,19 @@ If user says "cancel"/"stop"/"quit"/"abort"/"отмена"/"нет":
 When a show_* tool returns with userResponse, YOU (the Agent) must analyze it
 and decide which tool to call next. The show_* tool does NOT parse - YOU parse!
 
-A. APPROVE intent (согласие):
-   - Words: "да", "yes", "ok", "подтверждаю", "согласен", "верно", "approve", "давай", "норм", "пойдёт"
-   - Action: call confirm_plan / confirm_context / confirm_final
+Use semantic understanding to determine user intent:
 
-B. REJECT intent (отказ):
-   - Words: "нет", "no", "cancel", "отмена", "не надо", "стоп"
-   - Action: call cancel_workflow tool
+APPROVE: User confirms and agrees to proceed with current state.
+→ Action: call confirm_plan / confirm_context / confirm_final
 
-C. EDIT intent (изменение):
-   - Words: "измени", "edit", "поправь", "добавь", "убери", describes specific changes
-   - Action: call edit_context / edit_trail with changes OR re-plan
+EDIT: User wants to change, modify, or redo something. Includes rejections with intent to improve.
+→ Action: call edit_context with changes OR re-plan (trails are regenerated, not edited)
 
-D. UNCLEAR (непонятно):
-   - Cannot determine intent
-   - Action: ask user for clarification
+CANCEL: User wants to stop the process completely, with no intent to continue or improve.
+→ Action: call cancel_workflow tool
 
-EXAMPLES:
-- userResponse: "да, всё верно" → call confirm_*
-- userResponse: "нет, отмена" → call cancel_workflow
-- userResponse: "измени позицию на senior" → call edit_context
-- userResponse: "добавь Python" → call edit_context
-- userResponse: "ну такое..." → ask clarification
-- userResponse: "норм" → call confirm_* (разговорное согласие)
+UNCLEAR: Cannot determine intent from the message.
+→ Action: ask user for clarification
 
 ═══════════════════════════════════════════════════
 TOOL CALLING WORKFLOW (follow ToolMessage instructions!)
@@ -150,8 +140,9 @@ User response → interpret intent:
    → confirm_context will tell you what to call next (process_entity_batch or confirm_final)
 
 2. MINOR CORRECTION: "add skill X", "change position to Y"
-   → Call edit_context({ contextId, corrections }) or edit_trail({ trailId, corrections })
+   → Call edit_context({ contextId, corrections })
    → Then follow ToolMessage instructions
+   → Note: Trails are regenerated via re-extraction, not edited directly
 
 3. MAJOR CORRECTION: "that's wrong position", "re-extract"
    → Call process_entity_batch with same contextIndex
@@ -169,7 +160,8 @@ User response → interpret intent:
    → Call confirm_final (it sets phase="saved")
 
 2. CORRECTION: "change X"
-   → Navigate back to specific context or use edit_context/edit_trail
+   → Navigate back to specific context or use edit_context
+   → For trail changes, re-extract the affected context
 
 3. CANCEL: "cancel", "stop"
    → Call cancel_workflow
@@ -382,27 +374,4 @@ IMPORTANT:
 - Apply corrections LITERALLY — if user says "lead", the position should be "lead"
 - Preserve ALL other fields unchanged
 - Return the COMPLETE context object with correction applied`;
-}
-
-export function trailCorrectionPrompt(existingTrail: Trail, corrections: string, messages: BaseMessage[]): string {
-  const messagesText = serializeMessages(messages);
-
-  return `Apply corrections to the following learning trail.
-
-ORIGINAL TRAIL:
-${JSON.stringify(existingTrail, null, 2)}
-
-USER CORRECTIONS:
-${corrections}
-
-CONVERSATION HISTORY (for additional context):
-${messagesText}
-
-═══════════════════════════════════════════════════
-TASK: Return the COMPLETE corrected trail object
-═══════════════════════════════════════════════════
-
-Apply the user's corrections while preserving all other fields.
-Return the full trail with corrections applied.
-DO NOT return partial data - include ALL fields from the original.`;
 }

@@ -6,6 +6,7 @@ import { AgentInvariantError } from "../../errors.js";
 import {
   routeAfterContextDecision,
   routeAfterFinalDecision,
+  routeAfterPlanCareer,
   routeAfterPlanDecision,
   routeAfterStoryDecision,
   routeAfterValidation,
@@ -25,7 +26,7 @@ import { showPlanNode } from "./nodes/show-plan.js";
 import { validateContextNode } from "./nodes/validate-context.js";
 import { responseBuilders } from "./response-builders.js";
 import { coldStartStateAnnotation } from "./state.js";
-import { coldStartPhaseSchema } from "./types.js";
+import { coldStartPhaseSchema, NODE } from "./types.js";
 
 import type { ColdStartStateType, UserId } from "./state.js";
 import type { ColdStartPhase, ColdStartResponse, ColdStartState } from "./types.js";
@@ -59,68 +60,71 @@ function stateToResponse(state: ColdStartStateType): ColdStartResponse {
   return responseBuilders[phase](coldStartState);
 }
 
-/* eslint-disable @typescript-eslint/naming-convention, @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
+/* eslint-disable max-lines-per-function, @typescript-eslint/explicit-function-return-type -- LangGraph builder requires fluent chaining */
 function createGraphBuilder() {
   return new StateGraph(coldStartStateAnnotation)
-    .addNode("gather_story", gatherStoryNode)
-    .addNode("parse_story_decision", parseStoryDecisionNode)
-    .addNode("plan_career", planCareerNode)
-    .addNode("show_plan", showPlanNode)
-    .addNode("parse_plan_decision", parseDecisionNode)
-    .addNode("extract_context", extractContextNode)
-    .addNode("validate_context", validateContextNode)
-    .addNode("clarify", clarifyNode)
-    .addNode("show_context", showContextNode)
-    .addNode("parse_context_decision", parseDecisionNode)
-    .addNode("edit_context", editContextNode)
-    .addNode("next_context", nextContextNode)
-    .addNode("show_final", showFinalNode)
-    .addNode("parse_final_decision", parseDecisionNode)
-    .addNode("persist", persistNode)
-    .addNode("cancel", cancelNode)
-    .addEdge(START, "gather_story")
-    .addEdge("gather_story", "parse_story_decision")
-    .addConditionalEdges("parse_story_decision", routeAfterStoryDecision, {
-      plan_career: "plan_career",
-      gather_story: "gather_story",
-      cancel: "cancel",
+    .addNode(NODE.gather_story, gatherStoryNode)
+    .addNode(NODE.parse_story_decision, parseStoryDecisionNode)
+    .addNode(NODE.plan_career, planCareerNode)
+    .addNode(NODE.show_plan, showPlanNode)
+    .addNode(NODE.parse_plan_decision, parseDecisionNode)
+    .addNode(NODE.extract_context, extractContextNode)
+    .addNode(NODE.validate_context, validateContextNode)
+    .addNode(NODE.clarify, clarifyNode)
+    .addNode(NODE.show_context, showContextNode)
+    .addNode(NODE.parse_context_decision, parseDecisionNode)
+    .addNode(NODE.edit_context, editContextNode)
+    .addNode(NODE.next_context, nextContextNode)
+    .addNode(NODE.show_final, showFinalNode)
+    .addNode(NODE.parse_final_decision, parseDecisionNode)
+    .addNode(NODE.persist, persistNode)
+    .addNode(NODE.cancel, cancelNode)
+    .addEdge(START, NODE.gather_story)
+    .addEdge(NODE.gather_story, NODE.parse_story_decision)
+    .addConditionalEdges(NODE.parse_story_decision, routeAfterStoryDecision, {
+      [NODE.plan_career]: NODE.plan_career,
+      [NODE.gather_story]: NODE.gather_story,
+      [NODE.cancel]: NODE.cancel,
     })
-    .addEdge("plan_career", "show_plan")
-    .addEdge("show_plan", "parse_plan_decision")
-    .addConditionalEdges("parse_plan_decision", routeAfterPlanDecision, {
-      extract_context: "extract_context",
-      gather_story: "gather_story",
-      cancel: "cancel",
-      show_plan: "show_plan",
+    .addConditionalEdges(NODE.plan_career, routeAfterPlanCareer, {
+      [NODE.show_plan]: NODE.show_plan,
+      [NODE.cancel]: NODE.cancel,
     })
-    .addEdge("extract_context", "validate_context")
-    .addConditionalEdges("validate_context", routeAfterValidation, {
-      clarify: "clarify",
-      show_context: "show_context",
-      cancel: "cancel",
+    .addEdge(NODE.show_plan, NODE.parse_plan_decision)
+    .addConditionalEdges(NODE.parse_plan_decision, routeAfterPlanDecision, {
+      [NODE.extract_context]: NODE.extract_context,
+      [NODE.gather_story]: NODE.gather_story,
+      [NODE.cancel]: NODE.cancel,
+      [NODE.show_plan]: NODE.show_plan,
     })
-    .addEdge("clarify", "extract_context")
-    .addEdge("show_context", "parse_context_decision")
-    .addConditionalEdges("parse_context_decision", routeAfterContextDecision, {
-      next_context: "next_context",
-      show_final: "show_final",
-      edit_context: "edit_context",
-      cancel: "cancel",
-      show_context: "show_context",
+    .addEdge(NODE.extract_context, NODE.validate_context)
+    .addConditionalEdges(NODE.validate_context, routeAfterValidation, {
+      [NODE.clarify]: NODE.clarify,
+      [NODE.show_context]: NODE.show_context,
+      [NODE.cancel]: NODE.cancel,
     })
-    .addEdge("edit_context", "show_context")
-    .addEdge("next_context", "extract_context")
-    .addEdge("show_final", "parse_final_decision")
-    .addConditionalEdges("parse_final_decision", routeAfterFinalDecision, {
-      persist: "persist",
-      show_context: "show_context",
-      cancel: "cancel",
-      show_final: "show_final",
+    .addEdge(NODE.clarify, NODE.extract_context)
+    .addEdge(NODE.show_context, NODE.parse_context_decision)
+    .addConditionalEdges(NODE.parse_context_decision, routeAfterContextDecision, {
+      [NODE.next_context]: NODE.next_context,
+      [NODE.show_final]: NODE.show_final,
+      [NODE.edit_context]: NODE.edit_context,
+      [NODE.cancel]: NODE.cancel,
+      [NODE.show_context]: NODE.show_context,
     })
-    .addEdge("persist", END)
-    .addEdge("cancel", END);
+    .addEdge(NODE.edit_context, NODE.show_context)
+    .addEdge(NODE.next_context, NODE.extract_context)
+    .addEdge(NODE.show_final, NODE.parse_final_decision)
+    .addConditionalEdges(NODE.parse_final_decision, routeAfterFinalDecision, {
+      [NODE.persist]: NODE.persist,
+      [NODE.show_context]: NODE.show_context,
+      [NODE.cancel]: NODE.cancel,
+      [NODE.show_final]: NODE.show_final,
+    })
+    .addEdge(NODE.persist, END)
+    .addEdge(NODE.cancel, END);
 }
-/* eslint-enable @typescript-eslint/naming-convention, @typescript-eslint/explicit-function-return-type */
+/* eslint-enable max-lines-per-function, @typescript-eslint/explicit-function-return-type */
 
 type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
 

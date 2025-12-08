@@ -12,7 +12,7 @@ import { persistTrailNode } from "./nodes/persist-trail.js";
 import { showTrailNode } from "./nodes/show-trail.js";
 import { validateTrailNode } from "./nodes/validate-trail.js";
 import { responseBuilders } from "./response-builders.js";
-import { PHASE, upsertTrailStateAnnotation } from "./state.js";
+import { NODE, PHASE, upsertTrailStateAnnotation } from "./state.js";
 import { routeAfterDecision, routeAfterValidation } from "./trail-router.js";
 
 import type { UpsertTrailPhase, UpsertTrailStateType } from "./state.js";
@@ -41,38 +41,38 @@ function stateToResponse(state: UpsertTrailStateType): UpsertTrailResponse {
   return responseBuilders[phase](state);
 }
 
-/* eslint-disable @typescript-eslint/naming-convention, @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
 function createGraphBuilder() {
   return new StateGraph(upsertTrailStateAnnotation)
-    .addNode("extract_trail", extractTrailNode)
-    .addNode("validate_trail", validateTrailNode)
-    .addNode("clarify", clarifyNode)
-    .addNode("show_trail", showTrailNode)
-    .addNode("parse_decision", parseDecisionNode)
-    .addNode("edit_trail", editTrailNode)
-    .addNode("persist_trail", persistTrailNode)
-    .addNode("cancel", cancelNode)
+    .addNode(NODE.extract_trail, extractTrailNode)
+    .addNode(NODE.validate_trail, validateTrailNode)
+    .addNode(NODE.clarify, clarifyNode)
+    .addNode(NODE.show_trail, showTrailNode)
+    .addNode(NODE.parse_decision, parseDecisionNode)
+    .addNode(NODE.edit_trail, editTrailNode)
+    .addNode(NODE.persist_trail, persistTrailNode)
+    .addNode(NODE.cancel, cancelNode)
 
-    .addEdge(START, "extract_trail")
-    .addEdge("extract_trail", "validate_trail")
-    .addConditionalEdges("validate_trail", routeAfterValidation, {
-      clarify: "clarify",
-      show_trail: "show_trail",
-      cancel: "cancel",
+    .addEdge(START, NODE.extract_trail)
+    .addEdge(NODE.extract_trail, NODE.validate_trail)
+    .addConditionalEdges(NODE.validate_trail, routeAfterValidation, {
+      [NODE.clarify]: NODE.clarify,
+      [NODE.show_trail]: NODE.show_trail,
+      [NODE.cancel]: NODE.cancel,
     })
-    .addEdge("clarify", "extract_trail")
-    .addEdge("show_trail", "parse_decision")
-    .addConditionalEdges("parse_decision", routeAfterDecision, {
-      persist_trail: "persist_trail",
-      edit_trail: "edit_trail",
-      cancel: "cancel",
-      show_trail: "show_trail",
+    .addEdge(NODE.clarify, NODE.extract_trail)
+    .addEdge(NODE.show_trail, NODE.parse_decision)
+    .addConditionalEdges(NODE.parse_decision, routeAfterDecision, {
+      [NODE.persist_trail]: NODE.persist_trail,
+      [NODE.edit_trail]: NODE.edit_trail,
+      [NODE.cancel]: NODE.cancel,
+      [NODE.show_trail]: NODE.show_trail,
     })
-    .addEdge("edit_trail", "validate_trail")
-    .addEdge("persist_trail", END)
-    .addEdge("cancel", END);
+    .addEdge(NODE.edit_trail, NODE.validate_trail)
+    .addEdge(NODE.persist_trail, END)
+    .addEdge(NODE.cancel, END);
 }
-/* eslint-enable @typescript-eslint/naming-convention, @typescript-eslint/explicit-function-return-type */
+/* eslint-enable @typescript-eslint/explicit-function-return-type */
 
 type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
 

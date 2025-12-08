@@ -1,9 +1,12 @@
 import { AgentInvariantError } from "../../errors.js";
 
+import { NODE } from "./types.js";
+
 import type { ColdStartStateType, ParsedDecision } from "./state.js";
+import type { NodeName } from "./types.js";
 
 type Intent = ParsedDecision["intent"];
-type RouteMap = Partial<Record<Intent, string>>;
+type RouteMap = Partial<Record<Intent, NodeName>>;
 
 function getRequiredIntent(state: ColdStartStateType, routerName: string): Intent {
   const { parsedDecision } = state;
@@ -15,38 +18,51 @@ function getRequiredIntent(state: ColdStartStateType, routerName: string): Inten
   return parsedDecision.intent;
 }
 
-function routeByIntent(intent: Intent, routes: RouteMap, defaultRoute: string): string {
+function routeByIntent(intent: Intent, routes: RouteMap, defaultRoute: NodeName): NodeName {
   return routes[intent] ?? defaultRoute;
 }
 
-export function routeAfterStoryDecision(state: ColdStartStateType): string {
+export function routeAfterStoryDecision(state: ColdStartStateType): NodeName {
   const intent = getRequiredIntent(state, "routeAfterStoryDecision");
-  return routeByIntent(intent, { approve: "plan_career", cancel: "cancel" }, "gather_story");
+  return routeByIntent(intent, { approve: NODE.plan_career, cancel: NODE.cancel }, NODE.gather_story);
 }
 
-export function routeAfterPlanDecision(state: ColdStartStateType): string {
+export function routeAfterPlanDecision(state: ColdStartStateType): NodeName {
   const intent = getRequiredIntent(state, "routeAfterPlanDecision");
-  return routeByIntent(intent, { approve: "extract_context", edit: "gather_story", cancel: "cancel" }, "show_plan");
+  return routeByIntent(
+    intent,
+    { approve: NODE.extract_context, edit: NODE.gather_story, cancel: NODE.cancel },
+    NODE.show_plan,
+  );
 }
 
-export function routeAfterValidation(state: ColdStartStateType): string {
-  if (state.phase === "failed") return "cancel";
-  if (state.missingFields.length > 0) return "clarify";
-  return "show_context";
+export function routeAfterValidation(state: ColdStartStateType): NodeName {
+  if (state.phase === "failed") return NODE.cancel;
+  if (state.missingFields.length > 0) return NODE.clarify;
+  return NODE.show_context;
 }
 
-export function routeAfterContextDecision(state: ColdStartStateType): string {
+export function routeAfterPlanCareer(state: ColdStartStateType): NodeName {
+  if (state.phase === "failed" || state.queue.length === 0) return NODE.cancel;
+  return NODE.show_plan;
+}
+
+export function routeAfterContextDecision(state: ColdStartStateType): NodeName {
   const intent = getRequiredIntent(state, "routeAfterContextDecision");
   const { currentContextIndex, queue } = state;
 
   if (intent === "approve") {
-    return currentContextIndex < queue.length - 1 ? "next_context" : "show_final";
+    return currentContextIndex < queue.length - 1 ? NODE.next_context : NODE.show_final;
   }
 
-  return routeByIntent(intent, { edit: "edit_context", cancel: "cancel" }, "show_context");
+  return routeByIntent(intent, { edit: NODE.edit_context, cancel: NODE.cancel }, NODE.show_context);
 }
 
-export function routeAfterFinalDecision(state: ColdStartStateType): string {
+export function routeAfterFinalDecision(state: ColdStartStateType): NodeName {
   const intent = getRequiredIntent(state, "routeAfterFinalDecision");
-  return routeByIntent(intent, { approve: "persist", edit: "show_context", cancel: "cancel" }, "show_final");
+  return routeByIntent(
+    intent,
+    { approve: NODE.persist, edit: NODE.show_context, cancel: NODE.cancel },
+    NODE.show_final,
+  );
 }

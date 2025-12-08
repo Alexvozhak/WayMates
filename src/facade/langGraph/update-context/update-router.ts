@@ -1,26 +1,28 @@
-import type { UpdateContextStateType } from "./state.js";
+import { NODE } from "./state.js";
 
-export function routeAfterMerge(state: UpdateContextStateType): string {
+import type { NodeName, UpdateContextStateType } from "./state.js";
+
+export function routeAfterMerge(state: UpdateContextStateType): NodeName {
   if (state.validationErrors.length > 0 && !state.mergedContext) {
-    return "cancel";
+    return NODE.cancel;
   }
-  return "show_update";
+  return NODE.show_update;
 }
 
-export function routeAfterDecision(state: UpdateContextStateType): string {
+export function routeAfterDecision(state: UpdateContextStateType): NodeName {
   const intent = state.parsedDecision?.intent;
   switch (intent) {
     case "approve": {
-      return "persist_update";
+      return NODE.persist_update;
     }
     case "edit": {
-      return "edit_update";
+      return NODE.edit_update;
     }
     case "cancel": {
-      return "cancel";
+      return NODE.cancel;
     }
     default: {
-      return "show_update";
+      return NODE.show_update;
     }
   }
 }

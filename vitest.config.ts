@@ -42,6 +42,8 @@ export default defineConfig(() => {
             },
             testTimeout: UNIT_TEST_TIMEOUT,
             // Unit tests don't use globalSetup (no database needed)
+            // But facade unit tests need env vars for config imports
+            env: loadEnv("test", process.cwd(), ""),
           },
         },
         // Read-only search tests (parallel execution, shared globalSetup data)

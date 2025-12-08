@@ -1,31 +1,31 @@
-import { PHASE } from "./state.js";
+import { NODE, PHASE } from "./state.js";
 
-import type { UpsertTrailStateType } from "./state.js";
+import type { NodeName, UpsertTrailStateType } from "./state.js";
 
-export function routeAfterValidation(state: UpsertTrailStateType): string {
+export function routeAfterValidation(state: UpsertTrailStateType): NodeName {
   if (state.phase === PHASE.failed) {
-    return "cancel";
+    return NODE.cancel;
   }
   if (state.missingFields.length > 0) {
-    return "clarify";
+    return NODE.clarify;
   }
-  return "show_trail";
+  return NODE.show_trail;
 }
 
-export function routeAfterDecision(state: UpsertTrailStateType): string {
+export function routeAfterDecision(state: UpsertTrailStateType): NodeName {
   const intent = state.parsedDecision?.intent;
   switch (intent) {
     case "approve": {
-      return "persist_trail";
+      return NODE.persist_trail;
     }
     case "edit": {
-      return "edit_trail";
+      return NODE.edit_trail;
     }
     case "cancel": {
-      return "cancel";
+      return NODE.cancel;
     }
     default: {
-      return "show_trail";
+      return NODE.show_trail;
     }
   }
 }

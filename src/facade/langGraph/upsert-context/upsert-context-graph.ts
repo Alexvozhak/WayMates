@@ -13,7 +13,7 @@ import { persistContextNode } from "./nodes/persist-context.js";
 import { showContextNode } from "./nodes/show-context.js";
 import { validateContextNode } from "./nodes/validate-context.js";
 import { responseBuilders } from "./response-builders.js";
-import { PHASE, upsertContextStateAnnotation } from "./state.js";
+import { NODE, PHASE, upsertContextStateAnnotation } from "./state.js";
 
 import type { UpsertContextPhase, UpsertContextStateType } from "./state.js";
 import type { UpsertContextResponse } from "./types.js";
@@ -41,38 +41,38 @@ function stateToResponse(state: UpsertContextStateType): UpsertContextResponse {
   return responseBuilders[phase](state);
 }
 
-/* eslint-disable @typescript-eslint/naming-convention, @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
 function createGraphBuilder() {
   return new StateGraph(upsertContextStateAnnotation)
-    .addNode("extract_context", extractContextNode)
-    .addNode("validate_context", validateContextNode)
-    .addNode("clarify", clarifyNode)
-    .addNode("show_context", showContextNode)
-    .addNode("parse_decision", parseDecisionNode)
-    .addNode("edit_context", editContextNode)
-    .addNode("persist_context", persistContextNode)
-    .addNode("cancel", cancelNode)
+    .addNode(NODE.extract_context, extractContextNode)
+    .addNode(NODE.validate_context, validateContextNode)
+    .addNode(NODE.clarify, clarifyNode)
+    .addNode(NODE.show_context, showContextNode)
+    .addNode(NODE.parse_decision, parseDecisionNode)
+    .addNode(NODE.edit_context, editContextNode)
+    .addNode(NODE.persist_context, persistContextNode)
+    .addNode(NODE.cancel, cancelNode)
 
-    .addEdge(START, "extract_context")
-    .addEdge("extract_context", "validate_context")
-    .addConditionalEdges("validate_context", routeAfterValidation, {
-      clarify: "clarify",
-      show_context: "show_context",
-      cancel: "cancel",
+    .addEdge(START, NODE.extract_context)
+    .addEdge(NODE.extract_context, NODE.validate_context)
+    .addConditionalEdges(NODE.validate_context, routeAfterValidation, {
+      [NODE.clarify]: NODE.clarify,
+      [NODE.show_context]: NODE.show_context,
+      [NODE.cancel]: NODE.cancel,
     })
-    .addEdge("clarify", "extract_context")
-    .addEdge("show_context", "parse_decision")
-    .addConditionalEdges("parse_decision", routeAfterDecision, {
-      persist_context: "persist_context",
-      edit_context: "edit_context",
-      cancel: "cancel",
-      show_context: "show_context",
+    .addEdge(NODE.clarify, NODE.extract_context)
+    .addEdge(NODE.show_context, NODE.parse_decision)
+    .addConditionalEdges(NODE.parse_decision, routeAfterDecision, {
+      [NODE.persist_context]: NODE.persist_context,
+      [NODE.edit_context]: NODE.edit_context,
+      [NODE.cancel]: NODE.cancel,
+      [NODE.show_context]: NODE.show_context,
     })
-    .addEdge("edit_context", "validate_context")
-    .addEdge("persist_context", END)
-    .addEdge("cancel", END);
+    .addEdge(NODE.edit_context, NODE.validate_context)
+    .addEdge(NODE.persist_context, END)
+    .addEdge(NODE.cancel, END);
 }
-/* eslint-enable @typescript-eslint/naming-convention, @typescript-eslint/explicit-function-return-type */
+/* eslint-enable @typescript-eslint/explicit-function-return-type */
 
 type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
 

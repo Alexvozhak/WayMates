@@ -17,6 +17,21 @@ export const PHASE = {
 
 export type UpdateContextPhase = (typeof PHASE)[keyof typeof PHASE];
 
+/** Node names in update-context graph - single source of truth for graph topology */
+/* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
+export const NODE = {
+  extract_updates: "extract_updates",
+  merge_context: "merge_context",
+  show_update: "show_update",
+  parse_decision: "parse_decision",
+  edit_update: "edit_update",
+  persist_update: "persist_update",
+  cancel: "cancel",
+} as const;
+/* eslint-enable @typescript-eslint/naming-convention */
+
+export type NodeName = (typeof NODE)[keyof typeof NODE];
+
 export const updateContextStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),

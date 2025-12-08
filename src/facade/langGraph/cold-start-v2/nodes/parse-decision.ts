@@ -7,10 +7,13 @@ const intentParser = getModel("deterministic").withStructuredOutput(decisionSche
 
 const CONFIRMATION_PROMPT = `Parse the user's intent from their message.
 
-Rules:
-- "да", "yes", "ok", "подтверждаю", "согласен", "верно", "approve", "давай", "норм", "пойдёт", "save", "сохрани", "сохранить" → approve
-- "изменить", "edit", "поправить", "измени", "добавь", "убери" → edit
-- "нет", "cancel", "отмена", "стоп", "выход", "stop" → cancel
+Three possible intents:
+
+APPROVE: User confirms and agrees to proceed with the current state.
+
+EDIT: User wants to change, modify, or redo something. This includes rejections with intent to improve or fix.
+
+CANCEL: User wants to stop the process completely and exit, with no intent to continue or improve.
 
 Return structured JSON with:
 - intent: "approve", "edit", or "cancel"
@@ -19,26 +22,28 @@ Return structured JSON with:
 
 const STORY_DECISION_PROMPT = `Determine if the user has finished telling their career story.
 
-CRITICAL RULE: Default to "approve" unless the message is CLEARLY incomplete.
+STRICT RULES (priority order):
+1. NO EXPERIENCE STATED: If message explicitly states "никогда не работал", "no work experience", "нет опыта"
+   → return CONTINUE (ask for clarification, even if completion signal present)
 
-Rules (in priority order):
-1. Explicit completion phrases → approve ALWAYS:
-   "готово", "done", "that's all", "это всё", "вот и всё", "закончил", "всё", "finish", "конец"
+2. EXPLICIT COMPLETION SIGNAL + SUFFICIENT DETAIL: If message contains "готово", "done", "that's all", "это всё", "всё"
+   AND has 1+ career positions with dates/companies/technologies
+   → return APPROVE
 
-2. Cancel phrases → cancel:
-   "нет", "cancel", "отмена", "стоп", "выход", "stop"
+3. EXPLICIT COMPLETION SIGNAL + INSUFFICIENT DETAIL: If message contains completion signal
+   BUT has NO career positions (e.g., student with no work history)
+   → return CONTINUE (ask for clarification)
 
-3. Message length heuristic:
-   - Message > 100 characters with ANY career details (dates, companies, positions, roles) → approve
-   - Message < 50 characters without completion phrase → continue
+4. SUFFICIENT DETAIL WITHOUT SIGNAL: If message contains 2+ career positions with dates/companies/technologies
+   → return APPROVE
 
-4. Detailed career history → approve:
-   If the message mentions specific years, companies, job titles, or career transitions → approve
+5. INSUFFICIENT DETAIL: If greeting ("привет", "hello") OR single vague sentence with no career details
+   → return CONTINUE
 
-Only return "continue" for:
-- Very short greetings ("Hello", "Hi", "Привет")
-- Questions without career content
-- Messages that explicitly ask for more prompts
+Three possible intents:
+- APPROVE: Story complete (signal + details OR 2+ positions with details)
+- CONTINUE: Greeting, insufficient detail, or explicit no experience
+- CANCEL: User wants to stop
 
 Return structured JSON with:
 - intent: "approve" (story complete/detailed), "continue" (greeting/incomplete), or "cancel"

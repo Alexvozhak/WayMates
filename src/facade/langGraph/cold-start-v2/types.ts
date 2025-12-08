@@ -26,6 +26,30 @@ export type ColdStartPhase = z.infer<typeof coldStartPhaseSchema>;
 /** Alias for coldStartPhaseSchema.Values for shorter access: PHASE.failed */
 export const PHASE = coldStartPhaseSchema.Values;
 
+/** Node names in cold-start graph - single source of truth for graph topology */
+/* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
+export const NODE = {
+  gather_story: "gather_story",
+  parse_story_decision: "parse_story_decision",
+  plan_career: "plan_career",
+  show_plan: "show_plan",
+  parse_plan_decision: "parse_plan_decision",
+  extract_context: "extract_context",
+  validate_context: "validate_context",
+  clarify: "clarify",
+  show_context: "show_context",
+  parse_context_decision: "parse_context_decision",
+  edit_context: "edit_context",
+  next_context: "next_context",
+  show_final: "show_final",
+  parse_final_decision: "parse_final_decision",
+  persist: "persist",
+  cancel: "cancel",
+} as const;
+/* eslint-enable @typescript-eslint/naming-convention */
+
+export type NodeName = (typeof NODE)[keyof typeof NODE];
+
 /**
  * Base schema for context agenda (what LLM returns during planning).
  * Used by planCareerHistoryTool's structured output.

@@ -11,7 +11,7 @@ import { parseDecisionNode } from "./nodes/parse-decision.js";
 import { persistUpdateNode } from "./nodes/persist-update.js";
 import { showUpdateNode } from "./nodes/show-update.js";
 import { responseBuilders } from "./response-builders.js";
-import { PHASE, updateContextStateAnnotation } from "./state.js";
+import { NODE, PHASE, updateContextStateAnnotation } from "./state.js";
 import { routeAfterDecision, routeAfterMerge } from "./update-router.js";
 
 import type { UpdateContextPhase, UpdateContextStateType } from "./state.js";
@@ -31,35 +31,35 @@ function stateToResponse(state: UpdateContextStateType): UpdateContextResponse {
   return responseBuilders[phase](state);
 }
 
-/* eslint-disable @typescript-eslint/naming-convention, @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
 function createGraphBuilder() {
   return new StateGraph(updateContextStateAnnotation)
-    .addNode("extract_updates", extractUpdatesNode)
-    .addNode("merge_context", mergeContextNode)
-    .addNode("show_update", showUpdateNode)
-    .addNode("parse_decision", parseDecisionNode)
-    .addNode("edit_update", editUpdateNode)
-    .addNode("persist_update", persistUpdateNode)
-    .addNode("cancel", cancelNode)
+    .addNode(NODE.extract_updates, extractUpdatesNode)
+    .addNode(NODE.merge_context, mergeContextNode)
+    .addNode(NODE.show_update, showUpdateNode)
+    .addNode(NODE.parse_decision, parseDecisionNode)
+    .addNode(NODE.edit_update, editUpdateNode)
+    .addNode(NODE.persist_update, persistUpdateNode)
+    .addNode(NODE.cancel, cancelNode)
 
-    .addEdge(START, "extract_updates")
-    .addEdge("extract_updates", "merge_context")
-    .addConditionalEdges("merge_context", routeAfterMerge, {
-      show_update: "show_update",
-      cancel: "cancel",
+    .addEdge(START, NODE.extract_updates)
+    .addEdge(NODE.extract_updates, NODE.merge_context)
+    .addConditionalEdges(NODE.merge_context, routeAfterMerge, {
+      [NODE.show_update]: NODE.show_update,
+      [NODE.cancel]: NODE.cancel,
     })
-    .addEdge("show_update", "parse_decision")
-    .addConditionalEdges("parse_decision", routeAfterDecision, {
-      persist_update: "persist_update",
-      edit_update: "edit_update",
-      cancel: "cancel",
-      show_update: "show_update",
+    .addEdge(NODE.show_update, NODE.parse_decision)
+    .addConditionalEdges(NODE.parse_decision, routeAfterDecision, {
+      [NODE.persist_update]: NODE.persist_update,
+      [NODE.edit_update]: NODE.edit_update,
+      [NODE.cancel]: NODE.cancel,
+      [NODE.show_update]: NODE.show_update,
     })
-    .addEdge("edit_update", "merge_context")
-    .addEdge("persist_update", END)
-    .addEdge("cancel", END);
+    .addEdge(NODE.edit_update, NODE.merge_context)
+    .addEdge(NODE.persist_update, END)
+    .addEdge(NODE.cancel, END);
 }
-/* eslint-enable @typescript-eslint/naming-convention, @typescript-eslint/explicit-function-return-type */
+/* eslint-enable @typescript-eslint/explicit-function-return-type */
 
 type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
 

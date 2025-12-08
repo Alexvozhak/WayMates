@@ -184,6 +184,7 @@ export default [
 
       'max-depth': ['error', 2],
       complexity: ['error', { max: 8 }],
+      'no-unreachable': 'error', // Запрет недостижимого кода после return/throw/break/continue
       'no-nested-ternary': 'error', // Запрет вложенных тернарных операторов
       'max-lines-per-function': [
         'error',

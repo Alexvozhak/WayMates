@@ -19,6 +19,22 @@ export const PHASE = {
 
 export type UpsertContextPhase = (typeof PHASE)[keyof typeof PHASE];
 
+/** Node names in upsert-context graph - single source of truth for graph topology */
+/* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
+export const NODE = {
+  extract_context: "extract_context",
+  validate_context: "validate_context",
+  clarify: "clarify",
+  show_context: "show_context",
+  parse_decision: "parse_decision",
+  edit_context: "edit_context",
+  persist_context: "persist_context",
+  cancel: "cancel",
+} as const;
+/* eslint-enable @typescript-eslint/naming-convention */
+
+export type NodeName = (typeof NODE)[keyof typeof NODE];
+
 export const upsertContextStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),

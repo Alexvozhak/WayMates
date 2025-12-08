@@ -1,31 +1,31 @@
-import { PHASE } from "./state.js";
+import { NODE, PHASE } from "./state.js";
 
-import type { UpsertContextStateType } from "./state.js";
+import type { NodeName, UpsertContextStateType } from "./state.js";
 
-export function routeAfterValidation(state: UpsertContextStateType): string {
+export function routeAfterValidation(state: UpsertContextStateType): NodeName {
   if (state.phase === PHASE.failed) {
-    return "cancel";
+    return NODE.cancel;
   }
   if (state.missingFields.length > 0) {
-    return "clarify";
+    return NODE.clarify;
   }
-  return "show_context";
+  return NODE.show_context;
 }
 
-export function routeAfterDecision(state: UpsertContextStateType): string {
+export function routeAfterDecision(state: UpsertContextStateType): NodeName {
   const intent = state.parsedDecision?.intent;
   switch (intent) {
     case "approve": {
-      return "persist_context";
+      return NODE.persist_context;
     }
     case "edit": {
-      return "edit_context";
+      return NODE.edit_context;
     }
     case "cancel": {
-      return "cancel";
+      return NODE.cancel;
     }
     default: {
-      return "show_context";
+      return NODE.show_context;
     }
   }
 }
