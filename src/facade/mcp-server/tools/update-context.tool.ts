@@ -1,12 +1,11 @@
-import { postgresService } from "../../infrastructure/postgres.service.js";
-import { PHASE } from "../../langchain/update-context/state.js";
-import { UpdateContextGraph } from "../../langchain/update-context/update-context-graph.js";
+import { PHASE } from "../../langGraph/update-context/state.js";
+import { UpdateContextGraph } from "../../langGraph/update-context/update-context-graph.js";
 import { updateContextParamsSchema } from "../schemas.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { UserContext, UserId } from "../../../shared/schemas.js";
-import type { UpdateContextResponse } from "../../langchain/update-context/types.js";
+import type { UpdateContextResponse } from "../../langGraph/update-context/types.js";
 import type { UpdateContextParams } from "../schemas.js";
 
 export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateContextResponse> {
@@ -16,6 +15,7 @@ export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateConte
 
   protected async executeImpl(params: UpdateContextParams, userId: UserId): Promise<UpdateContextResponse> {
     const threadId = `update_ctx_${userId}`;
+    const checkpointer = this.checkpointService.getCheckpointer();
 
     const currentContext = await this.loadCurrentContext(userId);
     if (!currentContext) {
@@ -25,12 +25,11 @@ export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateConte
       };
     }
 
-    const graph = new UpdateContextGraph(userId, currentContext);
-    const response = await graph.run(params.message, threadId);
+    const graph = new UpdateContextGraph(userId, currentContext, checkpointer);
+    const response = await graph.run(params.message, threadId, this.coreClient, this.normalizer);
 
-    if (response.phase === PHASE.approved) {
-      await this.saveUpdatedContext(response.updatedContext, userId);
-      await postgresService.deleteCheckpoint(threadId);
+    if (response.phase === PHASE.saved) {
+      await this.checkpointService.delete(threadId);
     }
 
     return response;
@@ -40,25 +39,5 @@ export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateConte
     const story = await this.coreClient.client.story.getStory.query({ userId });
     const current = story.contexts.find((ctx) => ctx.nextContextId === null);
     return current ?? null;
-  }
-
-  private async saveUpdatedContext(context: UserContext, userId: UserId): Promise<void> {
-    const normalized = await this.normalizer.normalizeUserContext(
-      {
-        position: context.position,
-        skills: context.skills,
-        domains: context.domains,
-        industry: context.industry,
-        cityName: context.cityName,
-      },
-      userId,
-    );
-
-    const merged = { ...context, ...normalized };
-
-    await this.coreClient.client.context.update.mutate({
-      userId,
-      updates: merged,
-    });
   }
 }

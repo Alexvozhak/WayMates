@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SearchByTargetTool } from "../../../../src/facade/mcp-server/tools/search-by-target.tool.js";
-import { FacadeTestContext } from "../../helpers/test-context.js";
-import { cleanupSession, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { SearchByTargetParams } from "../../../../src/facade/mcp-server/schemas.js";
@@ -14,11 +13,9 @@ describe("SearchByTargetTool Integration Tests", () => {
   const testUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c111";
 
   beforeEach(async () => {
-    const ctx = FacadeTestContext.getInstance();
-    const [session, sessionId] = await setupSession(testUserId);
-    testSessionId = sessionId;
+    testSessionId = await setupSession(testUserId);
 
-    tool = new SearchByTargetTool(session, ctx.normalizer, ctx.coreClient);
+    tool = new SearchByTargetTool(getToolDeps());
   });
 
   afterEach(async () => {

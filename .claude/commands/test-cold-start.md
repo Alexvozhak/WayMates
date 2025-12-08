@@ -1,26 +1,26 @@
 ---
 name: test-cold-start
-description: Тестирование cold-start-v2 agent (LangGraph). Следует плану из docs/facade/PLAN.md, распределяет информацию по 6 документам (FAQ, ADR, GLOSSARY, архитектура).
-model: sonnet
+description: Тестирование cold-start-v2 agent (LangGraph). Следует coverage схеме из COLD-START-COVERAGE.md. Формат JSDoc (Given/Then). Деление по этапам workflow.
+model: opus
 ---
 
 # Cold-Start v2 Testing Workflow
 
 > **Архитектура**: LangGraph StateGraph (nodes + routers), НЕ ToolMessage
-> **Test Cases**: → `docs/facade/TEST-PLAN.md` (ЧТО тестируем)
+> **Coverage Strategy**: → `docs/facade/COLD-START-COVERAGE.md` (схема тестирования)
 > **Этот документ**: КАК писать тесты (инфраструктура, шаблоны, правила)
 
-Ты реализуешь тестирование cold-start-v2 agent. **СТРОГО следуй плану**, не импровизируй.
+Ты реализуешь тестирование cold-start-v2 agent. **СТРОГО следуй схеме**, не импровизируй. Будь максимально бдительным, подозрительным, не спеши делать выводы и подгонять тесты под бизнес-код. **ТВОЯ ОСНОВНАЯ ЗАДАЧА - НАЙТИ ОШИБКИ В БИЗНЕС КОДЕ, А НЕ COVERAGE С ФИКТИВНЫМИ ТЕСТАМИ СДЕЛАТЬ!!!**
 
-**КРИТИЧНО**: Код в `src/facade/langchain/cold-start-v2/`, тесты в `tests/facade/agents/cold-start-v2/`.
+**КРИТИЧНО**: Код в `src/facade/langGraph/cold-start-v2/`, тесты в `tests/facade/agents/cold-start-v2/`.
 
 ---
 
 ## 🔍 Загрузи контекст (ОБЯЗАТЕЛЬНО в начале)
 
 ```bash
-# 1. План (ГЛАВНЫЙ документ)
-Read docs/facade/PLAN.md
+# 1. Coverage схема (ГЛАВНЫЙ документ)
+Read docs/facade/COLD-START-COVERAGE.md
 
 # 2. FAQ (закрытые вопросы с решениями)
 Read docs/facade/FAQ.md
@@ -31,9 +31,8 @@ Read eslint.config.mjs
 # 4. Test standards
 Read .claude/routers/test/router.md
 
-# 5. LangGraph архитектура (ОБЯЗАТЕЛЬНО)
-Read src/facade/langchain/cold-start-v2/cold-start-graph.ts
-Read src/facade/langchain/cold-start-v2/routers/decision-router.ts
+# 5. LangGraph архитектура
+Read .claude/routers/langgraph/router.md
 
 # 6. Vitest конфигурация
 Read vitest.config.ts
@@ -43,29 +42,24 @@ Read vitest.config.ts
 
 ## 🚦 После загрузки контекста
 
-**НЕ НАЧИНАЙ сразу!** Проверь в таком порядке:
+**НЕ НАЧИНАЙ сразу!** Посмотри Coverage Matrix в COLD-START-COVERAGE.md и предложи пользователю через `AskUserQuestion`:
 
-1. **Открытые вопросы в FAQ.md** — если есть, предложи их решить первыми
-2. **Задачи ⬜ в PLAN.md** — только если нет открытых вопросов
-
-Через `AskUserQuestion` предложи:
-
-- Если есть открытые Q → выбор из открытых вопросов
-- Если нет открытых Q → выбор из задач ⬜
+1. **Какие gaps закрывать** (критичные P0, важные P1, или другое)
+2. **Или актуализировать существующие тесты** (переименовать T01 → TC-P1 и т.д.)
 
 Пользователь выбирает с чего начать.
 
 ---
 
-## 📚 6 документов: знай их scope
+## 📚 Документы: знай их scope
 
 | #   | Документ                                  | Что туда                                  | Пример                               |
 | --- | ----------------------------------------- | ----------------------------------------- | ------------------------------------ |
-| 1   | `docs/facade/PLAN.md`                     | Статусы задач                             | `⬜ → ✅`                            |
+| 1   | `docs/facade/COLD-START-COVERAGE.md`      | Coverage схема, gaps, migration plan      | Coverage Matrix, TC-P1..TC-I5        |
 | 2   | `docs/facade/FAQ.md`                      | Закрытые вопросы (1 предложение + ссылка) | "Timeout → 30 сек. → см. ADR-002"    |
 | 3   | `docs/facade/GLOSSARY.md`                 | Термины домена                            | "Context = снимок карьеры"           |
 | 4   | `docs/architecture/decisions/ADR-XXX.md`  | Архитектурные решения                     | "Почему U1-U18, а не новые fixtures" |
-| 5   | `docs/architecture/facade/langchain/*.md` | Техническая архитектура                   | State machine, nodes, routers        |
+| 5   | `docs/architecture/facade/langGraph/*.md` | Техническая архитектура                   | State machine, nodes, routers        |
 | 6   | `.claude/commands/test-cold-start.md`     | Этот промпт                               | AI-инструкции                        |
 
 ---
@@ -77,8 +71,8 @@ Read vitest.config.ts
 | Решил вопрос (короткий)      | `FAQ.md` (1 предложение + ссылка) |
 | Решил вопрос (архитектурный) | `ADR-XXX.md` + в FAQ ссылка       |
 | Новый термин                 | `GLOSSARY.md`                     |
-| Техническая деталь           | `langchain/*.md`                  |
-| Задача выполнена             | `PLAN.md` (✅)                    |
+| Техническая деталь           | `langGraph/*.md`                  |
+| Обнаружил gap в покрытии     | `COLD-START-COVERAGE.md` (gaps)   |
 
 ### FAQ формат (табличный)
 
@@ -176,32 +170,6 @@ import { something } from "./module"; // без .js
 3. Проверяет бизнес-правило? → **KEEP**
 4. Упадёт при регрессии? → **KEEP**
 
----
-
-## 📋 Workflow
-
-### При старте сессии
-
-```bash
-# 1. Загрузи план (ГЛАВНЫЙ документ)
-Read docs/facade/PLAN.md
-
-# 2. Загрузи FAQ (открытые вопросы)
-Read docs/facade/FAQ.md
-
-# 3. Загрузи ключевые ADR
-Read docs/architecture/decisions/ADR-026-test-strategy-revision.md
-Read docs/architecture/decisions/ADR-022-cold-start-test-strategy.md
-
-# 4. Загрузи LangGraph архитектуру
-Read src/facade/langchain/cold-start-v2/cold-start-graph.ts
-
-# 5. Найди первую ⬜ задачу
-# 6. Выполни её
-# 7. Распредели информацию по документам
-# 8. Отметь ✅ в PLAN.md
-```
-
 ### При выполнении задачи
 
 1. **Читай** контекст (файлы из задачи)
@@ -212,51 +180,12 @@ Read src/facade/langchain/cold-start-v2/cold-start-graph.ts
 
 ### При появлении вопроса
 
-1. Добавь в `FAQ.md` → таблица "Открытые вопросы" (Q#, вопрос)
-2. Реши вопрос (архитектурный → создай ADR, простой → ответ в 1 предложение)
-3. **⚠️ ПРОВЕРЬ КОНФЛИКТЫ**: убедись что решение не противоречит существующим закрытым вопросам и ADR
-4. Перенеси в таблицу "Закрытые вопросы" (Q#, вопрос, ответ, → ссылка)
+1. Предложи пользователю опции добавить вопрос в `FAQ.md` → таблица "Открытые вопросы" (Q#, вопрос) или решить сейчас
 
-### При завершении сессии
+### При получении ответа на вопрос
 
-```bash
-# Quality gates
-npm run lint
-npx tsc --noEmit
-npm run test:facade:run  # когда тесты готовы
-```
-
----
-
-## 🛠️ Генерация тестовых историй
-
-### Unpacking Prompt (для LibreChat/Telegram)
-
-Этот промпт переиспользуется для:
-
-- Генерации тестовых историй из U1-U18
-- Проверки что agent собрал данные правильно
-- Production use в LibreChat/Telegram
-
-```markdown
-Ты помогаешь пользователю рассказать свою карьерную историю.
-
-У тебя есть JSON с контекстами и тропами пользователя.
-Твоя задача: превратить его в естественный рассказ от первого лица.
-
-Правила:
-
-- Пиши от первого лица ("Я работал...")
-- Упоминай: позицию, компанию/индустрию, навыки, локацию
-- Хронологический порядок (от старого к новому)
-- Естественный язык, как будто человек рассказывает другу
-
-Пример:
-JSON: { contexts: [{ position: "junior", domains: ["frontend"], skills: ["react"], ... }] }
-Текст: "Я начинал как junior frontend разработчик, работал с React..."
-```
-
----
+1. **⚠️ ПРОВЕРЬ КОНФЛИКТЫ**: убедись что ответ не противоречит существующим закрытым вопросам и ADR
+2. Если ответ решает открытый вопрос (если решение найдено и одобрено), то перенеси вопрос из таблицы "Открытые вопрос" в таблицу "Закрытые вопросы" (Q#, вопрос, ответ, → ссылка)
 
 ## ❓ Когда спрашивать пользователя
 
@@ -269,7 +198,7 @@ JSON: { contexts: [{ position: "junior", domains: ["frontend"], skills: ["react"
 **Формат вопросов:**
 
 - Язык: русский
-- Перед вопросом: краткий анализ вариантов + твоя рекомендация
+- Перед вопросом: анализ вариантов + короткие примеры + сравнение примеров + твоя рекомендация
 - Options: на русском с описаниями
 
 **НЕ СПРАШИВАЙ:**
@@ -308,64 +237,101 @@ npm run test:facade:run
 ## 🤖 LLM-тесты
 
 - **Timeout**: 60s (vitest.config.ts), для сложных flows — 120s inline
-- **Flakiness**: проверяй структуру (`phase`, `contexts.length`), не exact values
 - **Sequential**: тесты идут последовательно (rate limiting, предсказуемость)
+- **Assertions**: проверяй структуру (`phase`, `contexts.length`), не exact values
 
 → см. ADR-020 (LLM test categories)
 
-### При падении теста
+### 🚨 При падении теста — ОБЯЗАТЕЛЬНЫЙ ПРОТОКОЛ
 
-Если причина неясна — включи LangSmith tracing (временно, квота 5k):
+**ЗАПРЕЩЕНО:**
 
-```bash
-# .env.test — добавить на время отладки
-LANGSMITH_TRACING=true
-LANGSMITH_PROJECT=waymates-cold-start
+- ❌ Говорить "flaky test" без доказательств
+- ❌ Говорить "LLM non-deterministic" как объяснение
+- ❌ Говорить "так и должно быть" / "expected behavior"
+- ❌ Пропускать тест без root cause analysis
+- ❌ Добавлять retry/skip как "решение"
+
+**ОБЯЗАТЕЛЬНЫЙ АЛГОРИТМ:**
+
+```
+1. ЧИТАЙ ERROR MESSAGE — дословно, без интерпретации
+2. ЧИТАЙ STACK TRACE — найди точный файл и строку
+3. ВКЛЮЧИ LANGSMITH → см. ADR-018 (СРАЗУ, не откладывай!)
+4. ЛОГИРУЙ state перед падением — добавь console.log в тест
+5. СРАВНИ с успешным прогоном — что изменилось?
+6. ПРОВЕРЬ входные данные — fixture корректен?
+7. ПРОВЕРЬ assertions — тест проверяет правильную вещь?
+8. НАЙДИ ROOT CAUSE — конкретная строка кода с багом
+9. ИСПРАВЬ КОД, не тест (если баг в коде)
 ```
 
-Затем запроси trace через SDK:
+**LangSmith — СРАЗУ при первой ошибке** → `ADR-018-langsmith-observability.md`
 
-```typescript
-import { Client } from "langsmith";
-const client = new Client();
-const runs = await client.listRuns({
-  projectName: "waymates-cold-start",
-  limit: 10,
-});
-// Покажет: LLM calls, tool calls, latency, errors
-```
+**Если тест падает ИНОГДА:**
 
-→ см. ADR-018 (LangSmith observability)
+1. Запусти 5 раз подряд → записи сколько упало
+2. Если >1 падение → это НЕ flaky, это баг в коде
+3. Найди паттерн: какие входные данные вызывают падение
+4. Исправь код чтобы обрабатывал все варианты
+5. Во время разбирательств не трать время на правки некритичных (стилевых) ошибок eslint и ts (исправишь, когда тест пройдет)
 
 ---
 
 ## 🧪 Написание тестов
 
-**Test cases**: → `docs/facade/TEST-PLAN.md` (C01-C05, T01-T15)
+**Coverage схема**: → `docs/facade/COLD-START-COVERAGE.md` (полная картина)
 
 **Helpers**: → `tests/facade/agents/cold-start/helpers/`
 
-**Структура тестов**: → `tests/facade/agents/cold-start-v2/`
-
-**Правила**:
-
-1. **Contract tests (Tier 0)**: проверяй graph topology, router logic, invariants — БЕЗ LLM
-2. **Integration tests**: проверяй phase transitions, не exact extraction
-3. Используй fixtures U1-U18 + `generateStoryFromFixture()`
-4. Каждый тест с бизнес-комментарием (зачем проверяем)
-
-### Contract Tests (C01-C05) — LangGraph специфика
-
-```typescript
-// C01: Graph topology — edges в graph === routes в routers
-// C02: Router exhaustiveness — все intent варианты покрыты
-// C03: Invariant guards — parsedDecision NON-NULL после parse nodes
-// C05: State completeness — все поля для всех фаз
-```
-
-→ см. `.claude/routers/test/router.md`
+**Структура тестов**: → `tests/facade/agents/cold-start-v2/` (по этапам workflow)
 
 ---
+
+### Формат теста (JSDoc + Given/Then)
+
+```typescript
+/**
+ * TC-P1: Story → Plan creation
+ *
+ * Что тестируем:
+ * Система извлекает из текстовой истории карьерные позиции и траектории обучения.
+ * LLM парсит неструктурированный текст и создаёт queue с contextId для каждой позиции.
+ *
+ * Given:
+ * - Story: "Я работал джуном 2 года, потом мидлом 3 года"
+ * - Phase: story_gathering
+ *
+ * Then:
+ * - Phase: awaiting_plan_confirmation
+ * - Queue содержит 2 контекста с preview
+ * - Каждый context имеет contextId
+ *
+ * Тип теста: Integration (real LLM)
+ */
+it("TC-P1: Story → Plan creation", async () => {
+  // Given
+  const story = generateStoryFromFixture(U1);
+
+  // When
+  const response = await graph.run(story, threadId, ...);
+
+  // Then
+  expect(response.phase).toBe("awaiting_plan_confirmation");
+  expect(response.queue.length).toBe(2);
+});
+```
+
+---
+
+### Правила:
+
+1. **JSDoc перед КАЖДЫМ тестом** — полное описание Given/Then
+2. **TC-* ID обязателен** — см. COLD-START-COVERAGE.md для нумерации
+3. **Contract tests (TC-C*)**: graph topology, routers — БЕЗ LLM
+4. **Integration tests (TC-P*, TC-E*, TC-D*, TC-I*)**: real LLM + DB
+5. Используй fixtures U1-U18 + `generateStoryFromFixture()`
+6. **Не дублируй описание** — JSDoc = source of truth, не копируй в MD
 
 ## 🚫 Антипаттерны
 
@@ -381,3 +347,4 @@ const runs = await client.listRuns({
 10. ❌ **Defensive coding на invariants** — `?.` и `?? "unknown"` прячут баги. Используй `AgentInvariantError` из `errors.ts`
 11. ❌ **Сырой Error** — всегда через `errors.ts` (специфичный класс + контекст)
 12. ❌ **Не предложить тест на смежный кейс** — после фикса: какие ещё flows затронуты?
+13. ❌ Править некритичные (стилевые) eslint и ts ошибки ДО прохода теста

@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { DeleteGoalTool } from "../../../../src/facade/mcp-server/tools/delete-goal.tool.js";
 import { SetGoalTool } from "../../../../src/facade/mcp-server/tools/set-goal.tool.js";
-import { FacadeTestContext } from "../../helpers/test-context.js";
-import { cleanupSession, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { DeleteGoalParams, SetGoalParams } from "../../../../src/facade/mcp-server/schemas.js";
@@ -16,12 +15,11 @@ describe("DeleteGoalTool Integration Tests", () => {
   const testUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c111";
 
   beforeEach(async () => {
-    const ctx = FacadeTestContext.getInstance();
-    const [session, sessionId] = await setupSession(testUserId);
-    testSessionId = sessionId;
+    testSessionId = await setupSession(testUserId);
 
-    deleteTool = new DeleteGoalTool(session, ctx.normalizer, ctx.coreClient);
-    setTool = new SetGoalTool(session, ctx.normalizer, ctx.coreClient);
+    const deps = getToolDeps();
+    deleteTool = new DeleteGoalTool(deps);
+    setTool = new SetGoalTool(deps);
   });
 
   afterEach(async () => {

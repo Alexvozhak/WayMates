@@ -31,12 +31,22 @@ JSON с контекстами (contexts) и тропами (trails) польз�
 
 ### Что включать для каждого контекста
 
-1. Позицию (position): junior, middle, senior
-2. Домены (domains): frontend, backend, devops, qa
-3. Навыки (skills): ключевые технологии
-4. Локацию (cityName, countryCode): город и страна
-5. Индустрию (industry): tech, finance, healthcare (если есть)
-6. Причины смены (creationReason): зачем сменил работу/позицию
+Включай в рассказ ТОЛЬКО те поля, которые ЯВНО присутствуют в JSON:
+
+1. position → позицию: junior, middle, senior
+2. domains → домены: frontend, backend, devops, qa
+3. skills → навыки: ключевые технологии
+4. cityName, countryCode → локацию: город и страна
+5. industry → индустрию: tech, finance (если есть в JSON)
+6. creationReason → причины смены: зачем сменил работу/позицию
+7. birthYear → год рождения: "Мне X лет" (ТОЛЬКО если birthYear есть в JSON!)
+8. educationLevel → образование (ТОЛЬКО если есть в JSON!)
+9. citizenships → гражданство (ТОЛЬКО если есть в JSON!)
+
+**КРИТИЧЕСКИ ВАЖНО**:
+- НЕ выдумывай данные которых нет в JSON!
+- Если поля нет в JSON — НЕ упоминай его в рассказе вообще
+- Пример: если birthYear отсутствует — НЕ пиши "родился в X году"
 
 ### Как вплетать trails (тропы)
 

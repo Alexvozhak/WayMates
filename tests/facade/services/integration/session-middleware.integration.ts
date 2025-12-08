@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import type { Redis } from "ioredis";
 
-import { SessionMiddleware } from "../../../../src/facade/mcp-server/session-middleware.js";
+import { SessionService } from "../../../../src/facade/services/session.service.js";
 import { SessionExpiredError } from "../../../../src/facade/errors.js";
 import { FacadeTestContext } from "../../helpers/test-context.js";
 import { cleanupSession } from "../../helpers/mcp-tool-helpers.js";
@@ -13,13 +13,13 @@ import type { UserId } from "../../../../src/shared/schemas.js";
 describe("Session Middleware Integration Tests", () => {
   let ctx: FacadeTestContext;
   let redis: Redis;
-  let middleware: SessionMiddleware;
+  let middleware: SessionService;
   let testSessionId: SessionId | null = null;
 
   beforeEach(() => {
     ctx = FacadeTestContext.getInstance();
     redis = ctx.redis;
-    middleware = new SessionMiddleware(redis);
+    middleware = new SessionService(redis);
   });
 
   afterEach(async () => {

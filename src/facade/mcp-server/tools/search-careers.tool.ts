@@ -12,7 +12,7 @@ export class SearchCareersTool extends BaseTool<FacadeAdhocSearchParams, ScoredM
       throw new ValidationError("At least one field is required in reference context");
     }
 
-    const normalized = await this.normalizer.normalizeUserContext(params.referenceContext, userId);
+    const normalized = await this.normalizer.normalizeAdhocContext(params.referenceContext, userId);
 
     const { sessionId: _sessionId, referenceContext: _ref, ...searchParams } = params;
 

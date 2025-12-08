@@ -20,7 +20,7 @@ describe("Facade Normalizer Integration Tests", () => {
       skills: ["Python", "React"],
     };
 
-    const result = await ctx.normalizer.normalizeUserContext(context, "usr_01933ec5-0101-0000-0000-000000000001");
+    const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0101-0000-0000-000000000001");
 
     expect(result.position).toBe("junior");
     expect(result.skills).toContain("python");
@@ -34,7 +34,7 @@ describe("Facade Normalizer Integration Tests", () => {
       skills: ["Pyton"],
     };
 
-    const result = await ctx.normalizer.normalizeUserContext(context, "usr_01933ec5-0102-0000-0000-000000000002");
+    const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0102-0000-0000-000000000002");
 
     expect(result.skills).toEqual(["python"]);
   });
@@ -47,7 +47,7 @@ describe("Facade Normalizer Integration Tests", () => {
       skills: [unknownSkill],
     };
 
-    const result = await ctx.normalizer.normalizeUserContext(context, "usr_01933ec5-0103-0000-0000-000000000003");
+    const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0103-0000-0000-000000000003");
 
     expect(result.skills).toEqual([unknownSkill.toLowerCase()]);
   });
@@ -60,7 +60,7 @@ describe("Facade Normalizer Integration Tests", () => {
       skills: [newSkill],
     };
 
-    const result = await ctx.normalizer.normalizeUserContext(context, "usr_01933ec5-0104-0000-0000-000000000004");
+    const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0104-0000-0000-000000000004");
 
     // Verify normalizer returns the new skill in canonical lowercase format
     expect(result.skills).toEqual([newSkill.toLowerCase()]);
@@ -78,7 +78,7 @@ describe("Facade Normalizer Integration Tests", () => {
       domains: ["Frontend", "Backend"],
     };
 
-    const result = await ctx.normalizer.normalizeUserContext(context, "usr_01933ec5-0105-0000-0000-000000000005");
+    const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0105-0000-0000-000000000005");
 
     expect(result.skills).toHaveLength(3);
     expect(result.domains).toHaveLength(2);
@@ -95,7 +95,7 @@ describe("Facade Normalizer Integration Tests", () => {
       cityName: "Berlin",
     };
 
-    const result = await ctx.normalizer.normalizeUserContext(context, "usr_01933ec5-0106-0000-0000-000000000006");
+    const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0106-0000-0000-000000000006");
 
     expect(result.position).toBe("senior");
     expect(result.skills).toEqual(["python"]);
@@ -126,7 +126,7 @@ describe("Facade Normalizer Integration Tests", () => {
   it("FN8: Empty context - returns empty normalized context", async () => {
     const context: AdhocUserContext = {};
 
-    const result = await ctx.normalizer.normalizeUserContext(context, "usr_01933ec5-0108-0000-0000-000000000008");
+    const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0108-0000-0000-000000000008");
 
     expect(Object.keys(result)).toHaveLength(0);
   });

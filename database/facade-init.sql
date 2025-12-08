@@ -7,37 +7,22 @@ CREATE SCHEMA IF NOT EXISTS facade;
 -- Set search path
 SET search_path TO facade, public;
 
--- Users table (migration from SQLite auth.db)
+-- Users table
 CREATE TABLE IF NOT EXISTS facade.users (
-    user_id VARCHAR(36) PRIMARY KEY,  -- UUID v7
-    email VARCHAR(255) UNIQUE,
-    token_hash VARCHAR(64),  -- SHA256 hash of auth token
+    user_id VARCHAR(40) PRIMARY KEY,  -- usr_ + UUID v7
+    token_hash VARCHAR(64) NOT NULL,  -- SHA256 hash of auth token
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Index for email lookup
-CREATE INDEX IF NOT EXISTS idx_users_email ON facade.users(email);
-
 -- Index for token lookup
 CREATE INDEX IF NOT EXISTS idx_users_token_hash ON facade.users(token_hash);
 
--- Sessions table (optional, if not using Redis exclusively)
--- We'll keep session metadata in PostgreSQL for durability
-CREATE TABLE IF NOT EXISTS facade.sessions (
-    session_id VARCHAR(36) PRIMARY KEY,  -- UUID v7
-    user_id VARCHAR(36) NOT NULL REFERENCES facade.users(user_id) ON DELETE CASCADE,
-    thread_id VARCHAR(36) NOT NULL,  -- LangGraph thread_id for checkpointing
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    is_active BOOLEAN DEFAULT true
+-- Cold start completions tracking
+CREATE TABLE IF NOT EXISTS facade.cold_start_completions (
+    user_id VARCHAR(40) PRIMARY KEY REFERENCES facade.users(user_id) ON DELETE CASCADE,
+    completed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
--- Index for user sessions lookup
-CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON facade.sessions(user_id);
-
--- Index for expired sessions cleanup
-CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON facade.sessions(expires_at) WHERE is_active = true;
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION facade.update_updated_at_column()
@@ -51,6 +36,22 @@ $$ LANGUAGE plpgsql;
 -- Trigger for users table
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON facade.users
     FOR EACH ROW EXECUTE FUNCTION facade.update_updated_at_column();
+
+-- Function to cleanup checkpoints when user is deleted
+CREATE OR REPLACE FUNCTION facade.cleanup_checkpoints_on_user_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM facade.checkpoints WHERE thread_id = 'thread_' || OLD.user_id;
+    DELETE FROM facade.checkpoint_blobs WHERE thread_id = 'thread_' || OLD.user_id;
+    DELETE FROM facade.checkpoint_writes WHERE thread_id = 'thread_' || OLD.user_id;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to cleanup checkpoints on user deletion
+CREATE TRIGGER cleanup_checkpoints_trigger
+BEFORE DELETE ON facade.users
+FOR EACH ROW EXECUTE FUNCTION facade.cleanup_checkpoints_on_user_delete();
 
 -- Note: LangGraph checkpoint tables will be created automatically
 -- by PostgresSaver.setup() when the application starts

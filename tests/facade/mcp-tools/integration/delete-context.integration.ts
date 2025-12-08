@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { DeleteContextTool } from "../../../../src/facade/mcp-server/tools/delete-context.tool.js";
 import { UserStories } from "../../../core/helpers/user-stories.js";
 import { FacadeTestContext } from "../../helpers/test-context.js";
-import { cleanupSession, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { DeleteContextParams } from "../../../../src/facade/mcp-server/schemas.js";
@@ -22,11 +22,9 @@ describe("DeleteContextTool Integration Tests", () => {
   const testUserId = u1.userId;
 
   beforeEach(async () => {
-    const ctx = FacadeTestContext.getInstance();
-    const [session, sessionId] = await setupSession(testUserId);
-    testSessionId = sessionId;
+    testSessionId = await setupSession(testUserId);
 
-    deleteTool = new DeleteContextTool(session, ctx.normalizer, ctx.coreClient);
+    deleteTool = new DeleteContextTool(getToolDeps());
   });
 
   afterEach(async () => {
