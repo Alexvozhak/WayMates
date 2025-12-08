@@ -20,46 +20,57 @@
 
 ## Фаза 1: NLP Parsers
 
-### 1.1 Создать NLP-схемы на базе shared/schemas.ts
+### 1.0 Подготовка shared/schemas.ts
+
+**Файл:** `src/shared/schemas.ts`
+
+Добавить экспорт base-схем для использования с `makeNullable`:
+
+```typescript
+// Выделить base без refine (аналогично userContextSchemaBase)
+const targetContextSchemaBase = z.object({
+  position: fieldFilterSchema.optional().describe("Target position filter"),
+  countries: fieldFilterSchema.optional().describe("Target countries filter"),
+  domains: fieldFilterSchema.optional().describe("Target work domains filter"),
+  skills: fieldFilterSchema.optional().describe("Target skills filter"),
+  languages: fieldFilterSchema.optional().describe("Target languages filter"),
+});
+
+export const targetContextSchema = targetContextSchemaBase.refine(...);
+
+// Экспортировать base для makeNullable
+export { targetContextSchemaBase };
+
+// Adhoc: уже есть userContextSchemaBase, нужно .pick() для NLP полей
+export const adhocContextSchemaBase = userContextSchemaBase.pick({
+  position: true,
+  skills: true,
+  domains: true,
+  industry: true,
+  countryCode: true,
+  cityName: true,
+});
+```
+
+### 1.1 Создать NLP-схемы с использованием `makeNullable`
 
 **Файл:** `src/telegram-bot/services/nlp-parser.ts`
 
-Импортируем базовые схемы и создаём NLP-версии с `.nullable().optional()`:
-
 ```typescript
 import {
-  fieldFilterSchema,
+  makeNullable,
+  targetContextSchemaBase,
+  adhocContextSchemaBase,
   type TargetContext,
   type AdhocUserContext,
 } from "../../shared/schemas.js";
 
-// NLP-версия FieldFilter для OpenAI Structured Output
-// Базовая схема из shared, но с nullable для LLM
-const fieldFilterNlpSchema = fieldFilterSchema.nullable().optional();
-
-// NLP-версия TargetContext (для /by_target)
-// Структура идентична shared/targetContextSchema, но все поля nullable
-const targetContextNlpSchema = z.object({
-  position: fieldFilterNlpSchema.describe("Целевая позиция"),
-  countries: fieldFilterNlpSchema.describe("Страны (ISO коды: RU, US, DE)"),
-  domains: fieldFilterNlpSchema.describe("Домены (FinTech, HealthTech, etc)"),
-  skills: fieldFilterNlpSchema.describe("Навыки"),
-  languages: fieldFilterNlpSchema.describe("Языки (ISO коды: en, ru, de)"),
-});
-
-// NLP-версия AdhocUserContext (для /by_adhoc)
-// Подмножество полей из shared/userContextSchemaBase
-const adhocContextNlpSchema = z.object({
-  position: z.string().nullable().optional().describe("Позиция"),
-  skills: z.array(z.string()).nullable().optional().describe("Навыки"),
-  domains: z.array(z.string()).nullable().optional().describe("Домены"),
-  industry: z.string().nullable().optional().describe("Индустрия"),
-  countryCode: z.string().nullable().optional().describe("Код страны (RU, US, DE)"),
-  cityName: z.string().nullable().optional().describe("Город"),
-});
+// NLP-схемы: makeNullable делает все поля nullable
+const targetContextNlpSchema = makeNullable(targetContextSchemaBase);
+const adhocContextNlpSchema = makeNullable(adhocContextSchemaBase);
 ```
 
-**Принцип:** Структура схем идентична `shared/schemas.ts`, но обёрнута в `.nullable().optional()` для совместимости с OpenAI Structured Output API.
+**Принцип:** Без дублирования — base-схемы в shared, `makeNullable` в nlp-parser.
 
 ### 1.2 Функции парсинга
 

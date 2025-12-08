@@ -333,8 +333,6 @@ function registerTelegramAuthTools(server: FastMCP, authService: AuthService): v
       const params = telegramRegisterParamsSchema.parse(args);
       const result = await authService.registerViaTelegram({
         telegramUserId: params.telegramUserId,
-        telegramUsername: params.telegramUsername,
-        telegramFirstName: params.telegramFirstName,
       });
       return JSON.stringify(result, null, 2);
     },
@@ -350,8 +348,6 @@ function registerTelegramAuthTools(server: FastMCP, authService: AuthService): v
       const params = telegramLinkParamsSchema.parse(args);
       const result = await authService.linkTelegram(params.token, {
         telegramUserId: params.telegramUserId,
-        telegramUsername: params.telegramUsername,
-        telegramFirstName: params.telegramFirstName,
       });
       return JSON.stringify(result, null, 2);
     },

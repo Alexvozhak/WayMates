@@ -1,4 +1,5 @@
 import { targetContextSchema } from "../../../shared/schemas.js";
+import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
@@ -6,20 +7,21 @@ import type { MatchedCandidateWithPath, UserId } from "../../../shared/schemas.j
 import type { SearchByTargetParams } from "../schemas.js";
 
 export class SearchByTargetTool extends BaseTool<SearchByTargetParams, MatchedCandidateWithPath[]> {
-  protected async executeImpl(
-    params: SearchByTargetParams,
-    userId: UserId,
-  ): Promise<MatchedCandidateWithPath[]> {
-    const normalizedPartial = await this.normalizer.normalizeTargetContext(
-      params.targetContext,
-      userId,
-    );
+  protected async executeImpl(params: SearchByTargetParams, userId: UserId): Promise<MatchedCandidateWithPath[]> {
+    const normalizedPartial = await this.normalizer.normalizeTargetContext(params.targetContext, userId);
 
     const normalized = targetContextSchema.parse(normalizedPartial);
 
+    const hasAnyCriterion = Object.values(normalized).some((v) => v !== undefined);
+    if (!hasAnyCriterion) {
+      throw new ValidationError("At least one target criterion is required");
+    }
+
     return this.coreClient.client.search.byTarget.query({
       userId,
-      criteria: normalized,
+      targetContext: normalized,
+      excludedCreationReasons: params.excludedCreationReasons,
+      recencyThresholdMonths: params.recencyThresholdMonths,
       limit: params.limit,
     });
   }

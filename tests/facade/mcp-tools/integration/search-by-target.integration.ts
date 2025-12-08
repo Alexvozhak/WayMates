@@ -34,6 +34,7 @@ describe("SearchByTargetTool Integration Tests", () => {
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python", "React"] },
       },
+      excludedCreationReasons: [],
       limit: 20,
     };
 
@@ -54,6 +55,7 @@ describe("SearchByTargetTool Integration Tests", () => {
       targetContext: {
         position: { mode: "desired", values: ["senior"] },
       },
+      excludedCreationReasons: [],
       limit: 20,
     };
 
@@ -73,6 +75,7 @@ describe("SearchByTargetTool Integration Tests", () => {
       targetContext: {
         skills: { mode: "desired", values: ["Pyton"] },
       },
+      excludedCreationReasons: [],
       limit: 20,
     };
 
@@ -93,6 +96,7 @@ describe("SearchByTargetTool Integration Tests", () => {
         position: { mode: "undesired", values: ["Intern"] },
         skills: { mode: "desired", values: ["Python"] },
       },
+      excludedCreationReasons: [],
       limit: 20,
     };
 

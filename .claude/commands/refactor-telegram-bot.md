@@ -1,221 +1,244 @@
 ---
-description: "Исправление поисковых команд Telegram Bot — три типа поиска с правильными схемами"
+description: "Комплексный рефакторинг Telegram Bot: Production Readiness, ООП архитектура, LLM Integration"
 allowed-tools: ["Read", "Edit", "Write", "Task", "AskUserQuestion", "Bash", "TodoWrite", "Glob", "Grep"]
 ---
 
-# 🔍 Refactor Search Commands
+# 🔧 Telegram Bot Refactoring (Production + Architecture)
 
-## Цель
+## ⚠️ КРИТИЧЕСКИ ВАЖНО: Подход к работе
 
-Исправить поисковые команды Telegram Bot:
-1. `/search` использует неправильную схему — заменить на три команды
-2. Добавить недостающие типы поиска (`search_user_careers`, `search_careers`)
-3. Использовать схемы из `shared/schemas.ts` (без дублирования)
+**НЕ СЛЕПО СЛЕДУЙ ПЛАНУ!** Документ рефакторинга (`TELEGRAM-BOT-REFACTORING-PLAN.md`) - это **ОРИЕНТИР**, НЕ АБСОЛЮТНАЯ ИСТИНА.
 
-**Критерий успеха**: lint + tsc проходят, все три команды работают.
+### Твоя ответственность:
+
+1. **ПРОВЕРЯЙ ВСЁ САМОСТОЯТЕЛЬНО**:
+   - Читай файлы ПЕРЕД изменениями
+   - Понимай текущую архитектуру
+   - Проверяй, что проблема РЕАЛЬНО существует
+   - Убедись, что решение корректно
+
+2. **НЕ БЕЗДУМНО ИДИ ПО ПЛАНУ**:
+   - План может быть устаревшим
+   - Код мог измениться
+   - Проблема может быть решена другим способом
+   - Твоё решение может быть лучше
+
+3. **ОТМАЗКИ НЕ ПРИНИМАЮТСЯ**:
+   - ❌ "Я шел просто по плану"
+   - ❌ "В документе так написано"
+   - ❌ "Я не проверял, доверился плану"
+   - ✅ "Я проверил код, понял проблему, предложил решение"
+
+4. **РАЗБИРАЙСЯ В ТОМ, ЧТО ДЕЛАЕШЬ**:
+   - Понимай ПОЧЕМУ это проблема
+   - Понимай КАК твоё решение её исправляет
+   - Понимай КАКИЕ ПОСЛЕДСТВИЯ будут
+   - Если не понимаешь - СПРАШИВАЙ через AskUserQuestion
+
+**Качество работы оценивается по ПОНИМАНИЮ, не по выполнению чек-листа.**
 
 ---
 
-## Обязательный контекст
+## Источник Правды
 
-**ПЕРЕД началом работы** прочитай:
+**Главный документ**: `TELEGRAM-BOT-REFACTORING-PLAN.md`
 
-1. **План**: `SEARCH-COMMANDS-PLAN.md` (ГЛАВНЫЙ документ)
-2. **Shared схемы**: `src/shared/schemas.ts` (source of truth)
-3. **Facade схемы**: `src/facade/mcp-server/schemas.ts`
+Там найдёшь:
+- Все фазы рефакторинга (0, 1a, 2, 3, 1b, 4, 5, 6)
+- Примеры кода для каждой фазы
+- Обоснование решений
+- Файлы для изменения
 
-**Текущая реализация**:
-
-4. **Types**: `src/telegram-bot/types.ts`
-5. **Bot**: `src/telegram-bot/bot.ts`
-6. **NLP Parser**: `src/telegram-bot/services/nlp-parser.ts`
-7. **Handlers**: `src/telegram-bot/handlers/*.ts`
-
----
-
-## Три типа поиска
-
-| Команда | Facade Tool | Назначение | Требует story |
-|---------|-------------|------------|---------------|
-| `/by_target <цель>` | `search_by_target` | "Хочу стать X" | Нет |
-| `/by_current` | `search_user_careers` | "Похожие на меня" | **Да** |
-| `/by_adhoc <контекст>` | `search_careers` | "Похожие на контекст Y" | Нет |
+**ОБЯЗАТЕЛЬНО** прочитай план ПЕРЕД началом работы!
 
 ---
 
 ## Workflow
 
-### Фаза 1: NLP Parsers
+### 1. Подготовка
 
-1. **Переписать `nlp-parser.ts`**:
-   - Импортировать `fieldFilterSchema`, `TargetContext`, `AdhocUserContext` из `shared/schemas.ts`
-   - Создать NLP-схемы с `.nullable().optional()` для OpenAI
-   - `parseTargetQuery()` → возвращает `TargetContext`
-   - `parseAdhocQuery()` → возвращает `Partial<AdhocUserContext>`
-   - Удалить старый `parseSearchQuery()`
+**ПЕРЕД началом**:
+1. Прочитай `TELEGRAM-BOT-REFACTORING-PLAN.md` полностью
+2. Прочитай текущие файлы, которые будешь менять
+3. Убедись, что понимаешь проблему и решение
+4. Используй TodoWrite для планирования фазы
 
-2. **Проверка**: `npm run lint && npx tsc --noEmit`
+### 2. Выполнение Фазы
 
-### Фаза 2: Handlers
+**Для каждой фазы:**
 
-1. **Создать `handlers/by-target.ts`** — `/by_target` команда
-2. **Создать `handlers/by-current.ts`** — `/by_current` команда
-3. **Создать `handlers/by-adhoc.ts`** — `/by_adhoc` команда
-4. **Удалить `handlers/search.ts`** — больше не нужен
+1. **Создай TodoList** с задачами фазы (из плана)
+2. **Читай файлы** перед изменениями (ВСЕГДА!)
+3. **Проверяй зависимости**:
+   - Фаза 1b ЗАВИСИТ от Фазы 3 (нужен SessionService с Redis)
+   - Фаза 3 Migration ЗАВИСИТ от созданных классов
+4. **Делай изменения** осознанно, понимая каждую строку
+5. **Отмечай todos** как completed после каждой задачи
 
-5. **Проверка**: `npm run lint && npx tsc --noEmit`
+### 3. Проверка После Фазы
 
-### Фаза 3: Types
+**ПОСЛЕ завершения фазы** (ОБЯЗАТЕЛЬНО):
 
-1. **Обновить `types.ts`**:
-   ```typescript
-   // Было:
-   export type PendingAction = "story" | "search";
-
-   // Станет:
-   export type PendingAction = "story" | "by_target" | "by_adhoc";
-   ```
-
-2. **Проверка**: `npm run lint && npx tsc --noEmit`
-
-### Фаза 4: Bot.ts
-
-1. **Обновить импорты** — удалить search, добавить by-target/by-current/by-adhoc
-2. **Добавить `/by_current` в guard**:
-   ```typescript
-   const STORY_REQUIRED_COMMANDS = new Set(["/goal", "/context", "/trail", "/by_current"]);
-   ```
-3. **Зарегистрировать команды**:
-   ```typescript
-   bot.command("by_target", handleByTarget);
-   bot.command("by_current", handleByCurrent);
-   bot.command("by_adhoc", handleByAdhoc);
-   ```
-
-4. **Проверка**: `npm run lint && npx tsc --noEmit`
-
-### Фаза 5: Text/Voice Routing
-
-1. **Обновить `text.ts`** — routing для `by_target` и `by_adhoc`
-2. **Обновить `voice.ts`** — аналогично
-
-3. **Проверка**: `npm run lint && npx tsc --noEmit`
-
-### Фаза 6: Help
-
-1. **Обновить `help.ts`** — новые команды в справке
-
-2. **Финальная проверка**: `npm run lint && npx tsc --noEmit`
-
----
-
-## Ключевые паттерны
-
-### NLP схемы на базе shared
-
-```typescript
-import { fieldFilterSchema, type TargetContext } from "../../shared/schemas.js";
-
-// NLP-версия с nullable для OpenAI Structured Output
-const fieldFilterNlpSchema = fieldFilterSchema.nullable().optional();
-
-const targetContextNlpSchema = z.object({
-  position: fieldFilterNlpSchema.describe("Целевая позиция"),
-  countries: fieldFilterNlpSchema.describe("Страны (ISO: RU, US, DE)"),
-  domains: fieldFilterNlpSchema.describe("Домены"),
-  skills: fieldFilterNlpSchema.describe("Навыки"),
-  languages: fieldFilterNlpSchema.describe("Языки (ISO: en, ru)"),
-});
-```
-
-### FieldFilter формат
-
-```typescript
-// Правильный формат для Facade
-{
-  position: { mode: "desired", values: ["Senior ML Engineer"] },
-  domains: { mode: "desired", values: ["FinTech"] },
-}
-```
-
-### removeNullFields утилита
-
-```typescript
-function removeNullFields<T extends Record<string, unknown>>(obj: T): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v != null)
-  ) as Partial<T>;
-}
-```
-
----
-
-## Файлы для изменения
-
-| Файл | Действие |
-|------|----------|
-| `src/telegram-bot/services/nlp-parser.ts` | Переписать |
-| `src/telegram-bot/types.ts` | Изменить PendingAction |
-| `src/telegram-bot/handlers/search.ts` | **Удалить** |
-| `src/telegram-bot/handlers/by-target.ts` | **Создать** |
-| `src/telegram-bot/handlers/by-current.ts` | **Создать** |
-| `src/telegram-bot/handlers/by-adhoc.ts` | **Создать** |
-| `src/telegram-bot/handlers/text.ts` | Изменить routing |
-| `src/telegram-bot/handlers/voice.ts` | Изменить routing |
-| `src/telegram-bot/bot.ts` | Команды + guard |
-| `src/telegram-bot/handlers/help.ts` | Справка |
-
----
-
-## Не делай
-
-- ❌ Не дублируй схемы — импортируй из `shared/schemas.ts`
-- ❌ Не используй `as` для type assertions — используй Zod `.parse()`
-- ❌ Не превышай complexity 8, max-depth 2, 60 строк на функцию
-- ❌ Не добавляй `organization`/`location` — их нет в Facade
-
----
-
-## Примеры вызовов Facade
-
-### `/by_target Senior ML Engineer в финтехе`
-```typescript
-await callTool(ctx, "search_by_target", {
-  targetContext: {
-    position: { mode: "desired", values: ["Senior ML Engineer"] },
-    domains: { mode: "desired", values: ["FinTech"] },
-  },
-  limit: 10,
-});
-```
-
-### `/by_current`
-```typescript
-await callTool(ctx, "search_user_careers", {
-  limit: 20,
-});
-```
-
-### `/by_adhoc Backend Python в Германии`
-```typescript
-await callTool(ctx, "search_careers", {
-  referenceContext: {
-    position: "Backend Developer",
-    skills: ["Python"],
-    countryCode: "DE",
-  },
-  limit: 20,
-});
-```
-
----
-
-## Quality Gates
-
-После каждой фазы:
 ```bash
-npm run lint
+# 1. TypeScript compilation check
 npx tsc --noEmit
+
+# 2. Linter
+npm run lint
 ```
 
-После завершения — ручное тестирование всех трёх команд.
+**Если ошибки:**
+- Анализируй ПРИЧИНУ (не гадай!)
+- Читай файлы, понимай контекст
+- Исправляй ОСОЗНАННО (не наугад)
+- Повторяй проверку
+
+**Если всё OK** → переходи к следующей фазе.
+
+---
+
+## Критические Правила
+
+### ❌ НЕ делай:
+
+1. **НЕ дублируй код** — план уже содержит решения для DRY
+2. **НЕ пропускай чтение файлов** — ВСЕГДА читай перед изменениями
+3. **НЕ делай Фазу 1b до Фазы 3** — зависимости важны!
+4. **НЕ забывай про breaking changes** — Фаза 3 Migration требует обновления 6 handlers
+5. **НЕ используй type assertions (`as`)** — используй Zod `.parse()`
+6. **НЕ превышай complexity 8, max-depth 2, 60 строк** — ESLint проверит
+
+### ✅ Делай:
+
+1. **Читай план** — он содержит обоснование решений
+2. **Проверяй код** — убедись, что проблема реальна
+3. **Понимай решение** — если не понял, спрашивай
+4. **Тестируй после фазы** — tsc + lint ОБЯЗАТЕЛЬНЫ
+5. **Используй TodoWrite** — трекай прогресс
+6. **Спрашивай AskUserQuestion** — если неясно
+
+---
+
+## Порядок Фаз
+
+**ВАЖНО**: Соблюдай порядок из плана!
+
+```
+Фаза 0 → Фаза 1a → Фаза 2 → Фаза 3 → Фаза 1b → Фаза 4 → Фаза 5 → Фаза 6
+         ↑ независимая          ↑                ↑ зависит от Фазы 3
+```
+
+**Почему порядок важен:**
+- Фаза 1b использует SessionService из Фазы 3
+- Фаза 3 Migration требует response schemas из Фазы 2
+- Фаза 0 независима, можно сделать первой
+
+---
+
+## Breaking Changes (Фаза 3)
+
+**КРИТИЧЕСКИ ВАЖНО**: Фаза 3 ООП Рефакторинг — breaking change для ВСЕХ handlers!
+
+**Затронуты 6 файлов:**
+- `handlers/by-target.ts`
+- `handlers/by-adhoc.ts`
+- `handlers/by-current.ts`
+- `handlers/story.ts`
+- `handlers/link.ts`
+- `handlers/token.ts`
+
+**Было (функциональный стиль):**
+```typescript
+const result = await callTool(ctx, "search_by_target", params);
+```
+
+**Станет (ООП стиль):**
+```typescript
+const result = await ctx.services.mcpClient.callTool(
+  "search_by_target",
+  params,
+  searchByTargetParamsSchema,
+  searchResultResponseSchema
+);
+```
+
+**Migration Plan (из плана, раздел Фаза 3):**
+1. Создать классы McpClient, SessionService, SearchPresenter
+2. Обновить BotServices тип
+3. Обновить index.ts (DI)
+4. Обновить ВСЕ 6 handlers
+5. Удалить старый функциональный callTool
+6. Quality gates (lint + tsc)
+
+---
+
+## Self-Review (После Завершения ВСЕХ Фаз)
+
+**ОБЯЗАТЕЛЬНО** после завершения всего рефакторинга:
+
+### 1. Автоматические проверки
+
+```bash
+npx tsc --noEmit
+npm run lint
+```
+
+### 2. Ручной Code Review (БЕЗ агентов)
+
+**Проверь:**
+
+1. **Type Safety**:
+   - Нет `as` assertions? (`grep -r " as " src/telegram-bot`)
+   - Все Zod schemas используют `.parse()`?
+
+2. **DRY Violations**:
+   - Нет дублирования между файлами?
+   - Все обертки `handleByTargetWithText` удалены?
+
+3. **Architecture**:
+   - Все классы созданы (McpClient, SessionService, SearchPresenter)?
+   - BotServices обновлен?
+   - Все 6 handlers обновлены на ООП стиль?
+
+4. **Production Readiness**:
+   - Request timeout установлен?
+   - Graceful shutdown работает?
+   - sessionId кэширование в Redis (TTL 30 мин)?
+
+5. **LLM Integration**:
+   - generateWelcomeMessage используется в `/start`?
+   - formatColdStartMessage используется в `/story`?
+   - CONFIRMATION фаза НЕ форматируется через LLM?
+
+**Если нашёл проблемы** — исправь СРАЗУ.
+
+---
+
+## Итоговый Чеклист
+
+После завершения ВСЕХ фаз:
+
+- [ ] Фаза 0 выполнена (handlers cleanup)
+- [ ] Фаза 1a выполнена (production readiness)
+- [ ] Фаза 2 выполнена (архитектурные изменения)
+- [ ] Фаза 3 выполнена (ООП + migration 6 handlers)
+- [ ] Фаза 1b выполнена (sessionId кэширование)
+- [ ] Фаза 4 выполнена (LLM integration)
+- [ ] Фаза 5 выполнена (error handling)
+- [ ] Фаза 6 выполнена (security)
+- [ ] `npx tsc --noEmit` проходит
+- [ ] `npm run lint` проходит
+- [ ] Self-review выполнен
+- [ ] Нет критических проблем
+
+**Статус**: ✅ Готово / ⚠️ Нужны исправления
+
+---
+
+## Напоминания
+
+1. **План — источник правды**: `TELEGRAM-BOT-REFACTORING-PLAN.md`
+2. **Порядок фаз важен**: не делай 1b до 3!
+3. **Breaking changes**: Фаза 3 требует migration 6 handlers
+4. **Quality gates**: tsc + lint после КАЖДОЙ фазы
+5. **Понимание важнее выполнения**: разбирайся, не слепо копируй

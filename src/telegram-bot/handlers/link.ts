@@ -1,5 +1,5 @@
-import { callTool } from "../services/mcp-client.js";
-import { parseJsonContent } from "../services/mcp-utils.js";
+import { telegramLinkParamsSchema } from "../../facade/mcp-server/schemas.js";
+import { telegramLinkResponseSchema } from "../schemas/mcp-responses.js";
 
 import type { BotContext } from "../types.js";
 
@@ -13,7 +13,7 @@ export async function handleLink(ctx: BotContext): Promise<void> {
 
   const telegramUserId = ctx.from?.id;
   if (!telegramUserId) {
-    await ctx.reply("❌ Не удалось получить ваш Telegram ID");
+    await ctx.reply(ctx.t("link-no-telegram-id"));
     return;
   }
 
@@ -21,55 +21,35 @@ export async function handleLink(ctx: BotContext): Promise<void> {
 }
 
 async function showLinkUsage(ctx: BotContext): Promise<void> {
-  await ctx.reply(
-    "🔗 Привязка LibreChat аккаунта\n\n" +
-      "Использование:\n" +
-      "/link <ваш_token>\n\n" +
-      "Токен можно получить в LibreChat через команду /token",
-  );
+  await ctx.reply(ctx.t("link-usage"));
 }
-
-type LinkResponse = { sessionId?: string; hasStory?: boolean; token?: string };
 
 async function performLinking(ctx: BotContext, token: string, telegramUserId: number): Promise<void> {
   try {
-    const result = await callLinkTool(ctx, token, telegramUserId);
-    saveSessionFromLinkResult(ctx, telegramUserId, result, token);
-    await ctx.reply("✅ Аккаунты успешно привязаны! Теперь вы можете использовать бота.");
+    const result = await ctx.services.mcpClient.callTool(
+      "link_telegram",
+      { token, telegramUserId },
+      telegramLinkParamsSchema,
+      telegramLinkResponseSchema,
+    );
+
+    ctx.session = {
+      status: "initialised",
+      token: result.token,
+      hasStory: result.hasStory,
+    };
+
+    await ctx.services.sessionService.saveSessionId(telegramUserId, result.sessionId);
+
+    await ctx.reply(ctx.t("link-success"));
   } catch (error) {
     await handleLinkError(ctx, error);
   }
 }
 
-async function callLinkTool(ctx: BotContext, token: string, telegramUserId: number): Promise<LinkResponse | null> {
-  const result = await callTool(ctx, "link_telegram", {
-    token,
-    telegramUserId,
-    telegramUsername: ctx.from?.username,
-    telegramFirstName: ctx.from?.first_name,
-  });
-
-  return parseJsonContent<LinkResponse>(result);
-}
-
-function saveSessionFromLinkResult(
-  ctx: BotContext,
-  telegramUserId: number,
-  data: LinkResponse | null,
-  token: string,
-): void {
-  if (!data?.sessionId) return;
-
-  ctx.sessions.set(telegramUserId, {
-    sessionId: data.sessionId,
-    hasStory: data.hasStory ?? false,
-    token: data.token ?? token,
-  });
-}
-
 async function handleLinkError(ctx: BotContext, error: unknown): Promise<void> {
   if (error instanceof Error && error.message.includes("already linked")) {
-    await ctx.reply("❌ Этот Telegram аккаунт уже привязан к другому пользователю");
+    await ctx.reply(ctx.t("link-already-exists"));
     return;
   }
   throw error;

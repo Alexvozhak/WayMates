@@ -129,6 +129,10 @@ export class ToolExecutionError extends FacadeError {
   }
 }
 
+export class ValidationError extends FacadeError {
+  override readonly errorCode = "validation_error";
+}
+
 export function throwToolError(error: ErrorResponse): never {
   throw new ToolExecutionError(error);
 }

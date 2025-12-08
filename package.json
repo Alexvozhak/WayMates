@@ -91,6 +91,10 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@grammyjs/auto-retry": "^2.0.2",
+    "@grammyjs/hydrate": "^1.6.0",
+    "@grammyjs/i18n": "^1.1.2",
+    "@grammyjs/storage-redis": "^2.5.1",
     "@langchain/google-genai": "^1.0.3",
     "@langchain/langgraph": "^1.0.2",
     "@langchain/langgraph-checkpoint-postgres": "^1.0.0",
@@ -106,6 +110,7 @@
     "express": "^5.1.0",
     "fastmcp": "^3.19.0",
     "grammy": "^1.38.4",
+    "groq-sdk": "^0.37.0",
     "ioredis": "^5.8.2",
     "langchain": "^1.0.6",
     "neo4j-driver": "^6.0.0",

@@ -33,7 +33,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         position: {
           mode: "desired",
           values: ["middle"],
@@ -76,7 +76,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         position: {
           mode: "undesired",
           values: ["junior"],
@@ -120,7 +120,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         domains: {
           mode: "desired",
           values: ["frontend"],
@@ -170,7 +170,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         domains: {
           mode: "undesired",
           values: ["frontend"],
@@ -218,7 +218,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         skills: {
           mode: "desired",
           values: ["python"],
@@ -267,7 +267,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         skills: {
           mode: "undesired",
           values: ["python"],
@@ -318,7 +318,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         position: {
           mode: "desired",
           values: ["junior"],
@@ -383,7 +383,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         languages: {
           mode: "desired",
           values: ["en", "fr"],
@@ -434,7 +434,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     const results = await searchManager.searchByTarget({
       userId: u3.userId,
-      criteria: {
+      targetContext: {
         languages: {
           mode: "undesired",
           values: ["en"],

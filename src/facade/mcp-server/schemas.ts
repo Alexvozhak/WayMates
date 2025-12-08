@@ -4,6 +4,7 @@ import {
   adhocUserContextSchema,
   contextIdSchema,
   targetContextSchema,
+  targetSearchParamsBaseSchema,
   trailIdSchema,
   userIdSchema,
   userSearchParamsRawSchema,
@@ -76,9 +77,7 @@ export const deleteGoalParamsSchema = z.object({
 
 export type DeleteGoalParams = z.infer<typeof deleteGoalParamsSchema>;
 
-export const searchByTargetParamsSchema = z.object({
-  targetContext: targetContextSchema,
-  limit: z.number().int().positive().default(20),
+export const searchByTargetParamsSchema = targetSearchParamsBaseSchema.extend({
   sessionId: sessionIdSchema,
 });
 
@@ -153,8 +152,6 @@ export type AuthParams = z.infer<typeof authParamsSchema>;
 
 export const telegramRegisterParamsSchema = z.object({
   telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
-  telegramUsername: z.string().optional().describe("Telegram username (without @)"),
-  telegramFirstName: z.string().optional().describe("Telegram first name"),
 });
 
 export type TelegramRegisterParams = z.infer<typeof telegramRegisterParamsSchema>;
@@ -162,8 +159,6 @@ export type TelegramRegisterParams = z.infer<typeof telegramRegisterParamsSchema
 export const telegramLinkParamsSchema = z.object({
   token: tokenSchema.describe("Token from LibreChat account to link"),
   telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
-  telegramUsername: z.string().optional().describe("Telegram username (without @)"),
-  telegramFirstName: z.string().optional().describe("Telegram first name"),
 });
 
 export type TelegramLinkParams = z.infer<typeof telegramLinkParamsSchema>;

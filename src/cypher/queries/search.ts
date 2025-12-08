@@ -300,13 +300,13 @@ RETURN matchedUser.userId AS userId,
  */
 // eslint-disable-next-line max-lines-per-function -- Cypher query builder with conditional blocks
 export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): string {
-  const { criteria, recencyThresholdMonths, excludedCreationReasons } = params;
+  const { targetContext, recencyThresholdMonths, excludedCreationReasons } = params;
 
   // Build WHERE conditions for target filtering
   const conditions: string[] = ["matchedUser.userId <> $userId"];
 
   // Position filter (if strict)
-  if ("position" in criteria) {
+  if ("position" in targetContext) {
     conditions.push(
       `
     CASE
@@ -319,7 +319,7 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
   }
 
   // Country filter (if strict)
-  if ("countryCode" in criteria) {
+  if ("countryCode" in targetContext) {
     conditions.push(
       `
     CASE
@@ -332,7 +332,7 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
   }
 
   // Domains filter (if strict)
-  if ("domains" in criteria) {
+  if ("domains" in targetContext) {
     conditions.push(
       `
     CASE
@@ -345,7 +345,7 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
   }
 
   // Skills filter (if strict)
-  if ("skills" in criteria) {
+  if ("skills" in targetContext) {
     conditions.push(
       `
     CASE
@@ -358,7 +358,7 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
   }
 
   // Languages filter (if strict)
-  if ("languages" in criteria) {
+  if ("languages" in targetContext) {
     conditions.push(
       `
     CASE

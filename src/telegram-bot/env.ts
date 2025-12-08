@@ -4,7 +4,9 @@ export const envSchema = z.object({
   // Core
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   FACADE_MCP_URL: z.string().url().default("http://localhost:3000/mcp"),
+  FACADE_REQUEST_TIMEOUT_MS: z.coerce.number().min(1000).max(60_000).default(30_000),
   OPENAI_API_KEY: z.string().min(1),
+  GROQ_API_KEY: z.string().min(1),
   NODE_ENV: z.enum(["development", "production"]).default("development"),
   // LLM Formatter configuration
   FORMATTER_LLM_MODEL: z.string().default("gpt-4o-mini"),

@@ -1,8 +1,4 @@
-import {
-  buildCurrentSearchQuery,
-  buildTargetSearchWithPathsQuery,
-  userCurrentContextQuery,
-} from "../cypher/index.js";
+import { buildCurrentSearchQuery, buildTargetSearchWithPathsQuery, userCurrentContextQuery } from "../cypher/index.js";
 import {
   CONTEXT_FIELD_NAMES,
   matchedCandidateWithPathSchema,
@@ -77,7 +73,7 @@ export class SearchManager {
 
     const queryParams = {
       userId: params.userId,
-      ...params.criteria,
+      ...params.targetContext,
       excludedCreationReasons: params.excludedCreationReasons,
       recencyThresholdMonths: params.recencyThresholdMonths,
       limit: params.limit,
@@ -86,9 +82,7 @@ export class SearchManager {
     return this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);
 
-      return result.records.map((record) =>
-        matchedCandidateWithPathSchema.parse(record.toObject()),
-      );
+      return result.records.map((record) => matchedCandidateWithPathSchema.parse(record.toObject()));
     });
   }
 
@@ -96,14 +90,8 @@ export class SearchManager {
     params: AdhocSearchParams,
     filterByCurrentContext = false,
   ): Promise<ScoredMatchedCandidate[]> {
-    const {
-      referenceContext,
-      userId,
-      excludedContextFields,
-      excludedCreationReasons,
-      recencyThresholdMonths,
-      limit,
-    } = params;
+    const { referenceContext, userId, excludedContextFields, excludedCreationReasons, recencyThresholdMonths, limit } =
+      params;
 
     const strictFields = computeStrictFields(excludedContextFields);
 
@@ -111,14 +99,9 @@ export class SearchManager {
 
     // Extract goal positions for Cypher parameter (null if no goal or no position filter)
     const goalPositions =
-      goal?.targetCriteria.position?.mode === "desired"
-        ? goal.targetCriteria.position.values
-        : null;
+      goal?.targetCriteria.position?.mode === "desired" ? goal.targetCriteria.position.values : null;
 
-    const rankedStrictFields = await this.selectivity.rankStrictFields(
-      strictFields,
-      referenceContext,
-    );
+    const rankedStrictFields = await this.selectivity.rankStrictFields(strictFields, referenceContext);
 
     const query = buildCurrentSearchQuery(
       goalPositions,
@@ -223,8 +206,7 @@ export class SearchManager {
 
     const dtwMetrics = this.trajectorySimilarity.computeDTWMetrics(userPath, path);
 
-    const dtwTotal =
-      dtwMetrics.shapeSimilarity + dtwMetrics.tempoSimilarity + dtwMetrics.stabilityScore;
+    const dtwTotal = dtwMetrics.shapeSimilarity + dtwMetrics.tempoSimilarity + dtwMetrics.stabilityScore;
 
     return {
       ...candidate,

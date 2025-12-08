@@ -1,5 +1,9 @@
-import type { Context } from "grammy";
-import type OpenAI from "openai";
+import type { SearchPresenter } from "./presenters/search-presenter.js";
+import type { McpClient } from "./services/mcp-client.js";
+import type { SessionService } from "./services/session-service.js";
+import type { HydrateFlavor } from "@grammyjs/hydrate";
+import type { I18nFlavor } from "@grammyjs/i18n";
+import type { Context, SessionFlavor } from "grammy";
 
 export type LlmConfig = {
   model: string;
@@ -7,27 +11,28 @@ export type LlmConfig = {
 };
 
 export type BotServices = {
-  facadeMcpUrl: string;
+  mcpClient: McpClient;
+  sessionService: SessionService;
+  searchPresenter: SearchPresenter;
   openaiApiKey: string;
-  openaiClient: OpenAI;
+  groqApiKey: string;
   botToken: string;
-  formatterLlm: LlmConfig;
 };
 
-export type SessionData = {
-  sessionId: string;
-  hasStory: boolean;
-  token: string;
-};
+export type PendingAction = "story" | "by_target" | "by_adhoc" | "by_current";
 
-export type SessionStorage = Map<number, SessionData>;
+export type MySessionData =
+  | { status: "uninitialised" }
+  | {
+      status: "initialised";
+      token: string;
+      hasStory: boolean;
+      pendingAction?: PendingAction;
+    };
 
-export type PendingAction = "story" | "search";
-
-export type PendingActionStorage = Map<number, PendingAction>;
-
-export type BotContext = Context & {
-  services: BotServices;
-  sessions: SessionStorage;
-  pendingActions: PendingActionStorage;
-};
+export type BotContext = Context &
+  I18nFlavor &
+  HydrateFlavor<Context> &
+  SessionFlavor<MySessionData> & {
+    services: BotServices;
+  };

@@ -2,36 +2,53 @@ import { z } from "zod";
 
 import { REASON_IDS } from "../../database/reasons.js";
 
+import type { ZodTypeAny } from "zod";
+
 // ==========================================
 // === ZOD UTILITIES ===
 // ==========================================
 
+function unwrapSchema(schema: ZodTypeAny): ZodTypeAny {
+  if (schema instanceof z.ZodOptional) {
+    return unwrapSchema(schema.unwrap());
+  }
+  if (schema instanceof z.ZodDefault) {
+    return unwrapSchema(schema.removeDefault());
+  }
+  return schema;
+}
+
 /**
- * Transform ZodObject schema to have all fields .nullable().
- * Required for OpenAI Structured Output API which doesn't support .optional().
+ * Recursively transforms a Zod schema making all fields nullable at all levels.
+ * Used for OpenAI Structured Output which requires nullable (not optional) fields.
+ *
+ * Handles: ZodObject (recursive), ZodArray, ZodEnum, primitives
+ * Does NOT handle: ZodUnion, ZodIntersection, ZodEffects (will just make nullable at top level)
  *
  * @example
  * const extractionSchema = makeNullable(userContextSchemaBase);
- * // All fields become T | null instead of T | undefined
+ * // All fields become T | null instead of T | undefined at all nesting levels
  */
-type NullableShape<T extends z.ZodRawShape> = {
-  [K in keyof T]: z.ZodNullable<T[K]>;
-};
+export function makeNullable<T extends ZodTypeAny>(schema: T): z.ZodNullable<ZodTypeAny> {
+  const unwrapped = unwrapSchema(schema);
 
-export function makeNullable<T extends z.ZodRawShape>(schema: z.ZodObject<T>): z.ZodObject<NullableShape<T>> {
-  const shape = schema.shape;
-  const nullableShape: Record<string, z.ZodNullable<z.ZodTypeAny>> = {};
+  if (unwrapped instanceof z.ZodObject) {
+    /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Zod shape is Record<string, ZodTypeAny> at runtime */
+    const shape = unwrapped.shape as Record<string, ZodTypeAny>;
+    const newShape: Record<string, z.ZodNullable<ZodTypeAny>> = {};
 
-  for (const key of Object.keys(shape)) {
-    const field = shape[key];
-    if (field) {
-      nullableShape[key] = field.nullable();
+    for (const [key, value] of Object.entries(shape)) {
+      newShape[key] = makeNullable(value);
     }
+
+    return z.object(newShape).nullable();
   }
 
-  /* eslint-disable @typescript-eslint/consistent-type-assertions -- Required for Zod generic transformation */
-  return z.object(nullableShape as NullableShape<T>);
-  /* eslint-enable @typescript-eslint/consistent-type-assertions */
+  if (unwrapped instanceof z.ZodArray) {
+    return unwrapped.nullable();
+  }
+
+  return unwrapped.nullable();
 }
 
 // ==========================================
@@ -213,9 +230,7 @@ const userContextSchemaBase = z.object({
     .describe("Personal reflection on this transition: emotions, insights, lessons learned (max 200 chars)"),
 });
 
-export const adhocUserContextSchema = userContextSchemaBase.partial().refine((data) => Object.keys(data).length > 0, {
-  message: "At least one field must be provided for search",
-});
+export const adhocUserContextSchema = userContextSchemaBase.partial();
 
 export type AdhocUserContext = z.infer<typeof adhocUserContextSchema>;
 
@@ -278,28 +293,13 @@ export type FieldFilter = z.infer<typeof fieldFilterSchema>;
  * Target context for search criteria
  * Uses FieldFilter discriminated union pattern
  */
-export const targetContextSchema = z
-  .object({
-    position: fieldFilterSchema.optional().describe("Target position filter"),
-    countries: fieldFilterSchema.optional().describe("Target countries filter"),
-    domains: fieldFilterSchema.optional().describe("Target work domains filter"),
-    skills: fieldFilterSchema.optional().describe("Target skills filter"),
-    languages: fieldFilterSchema.optional().describe("Target languages filter"),
-  })
-  .refine(
-    (data) => {
-      const hasAtLeastOne =
-        data.position !== undefined ||
-        data.countries !== undefined ||
-        data.domains !== undefined ||
-        data.skills !== undefined ||
-        data.languages !== undefined;
-      return hasAtLeastOne;
-    },
-    {
-      message: "At least one target criterion is required (position, countries, domains, skills, or languages)",
-    },
-  );
+export const targetContextSchema = z.object({
+  position: fieldFilterSchema.optional().describe("Target position filter"),
+  countries: fieldFilterSchema.optional().describe("Target countries filter"),
+  domains: fieldFilterSchema.optional().describe("Target work domains filter"),
+  skills: fieldFilterSchema.optional().describe("Target skills filter"),
+  languages: fieldFilterSchema.optional().describe("Target languages filter"),
+});
 
 export type TargetContext = z.infer<typeof targetContextSchema>;
 
@@ -393,18 +393,41 @@ export const adhocSearchParamsSchema = userSearchParamsRawSchema
 export type AdhocSearchParams = z.infer<typeof adhocSearchParamsSchema>;
 
 /**
- * Target search parameters (Mode 4: reverse search by target criteria)
- * Flat structure with positive field filtering logic
+ * Current search parameters (without userId/sessionId) — for Telegram NLP extraction
+ * User's context fetched from DB automatically by Core API
  */
-export const targetSearchParamsSchema = z.object({
-  userId: userIdSchema.describe("User ID to exclude from results (avoid self-match)"),
-  criteria: targetContextSchema.describe("Target context criteria (FieldFilter with mode/values)"),
+export const currentSearchParamsBaseSchema = userSearchParamsRawSchema
+  .omit({ userId: true })
+  .refine((data) => data.pathLimit <= data.limit, {
+    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
+    path: ["pathLimit"],
+  });
+
+export type CurrentSearchParamsBase = z.infer<typeof currentSearchParamsBaseSchema>;
+
+/**
+ * Base target search parameters (without userId) — for Telegram and Facade
+ * Uses targetContext field name for API compatibility
+ * Used by makeNullable() for NLP extraction
+ */
+export const targetSearchParamsBaseSchema = z.object({
+  targetContext: targetContextSchema.describe("Target context criteria (FieldFilter with mode/values)"),
   excludedCreationReasons: z
     .array(newContextReasonSchema)
     .default([])
     .describe("Exclude candidates with these transition reasons (backward path filter)"),
   recencyThresholdMonths: z.number().min(1).optional().describe("Filter by recency (months since last update)"),
   limit: z.number().min(1).max(100).default(20).describe("Maximum number of results to return"),
+});
+
+export type TargetSearchParamsBase = z.infer<typeof targetSearchParamsBaseSchema>;
+
+/**
+ * Target search parameters (Mode 4: reverse search by target criteria)
+ * Extends base with userId for Core layer
+ */
+export const targetSearchParamsSchema = targetSearchParamsBaseSchema.extend({
+  userId: userIdSchema.describe("User ID to exclude from results (avoid self-match)"),
 });
 
 export type TargetSearchParams = z.infer<typeof targetSearchParamsSchema>;

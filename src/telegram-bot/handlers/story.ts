@@ -1,7 +1,7 @@
 import { InlineKeyboard } from "grammy";
 
-import { formatColdStartResult } from "../formatters/story.js";
-import { callTool } from "../services/mcp-client.js";
+import { coldStartParamsSchema } from "../../facade/mcp-server/schemas.js";
+import { coldStartResponseSchema } from "../schemas/mcp-responses.js";
 import { clearPendingAction, setPendingAction } from "../services/pending-actions.js";
 
 import type { BotContext } from "../types.js";
@@ -27,23 +27,24 @@ async function processStoryMessage(ctx: BotContext, message: string | undefined)
 
 async function showStoryPrompt(ctx: BotContext): Promise<void> {
   setPendingAction(ctx, "story");
-  await ctx.reply(
-    "📝 Расскажите о своей карьерной истории:\n\n" +
-      "Например:\n" +
-      "Работал backend разработчиком в Яндексе с 2020 по 2023, писал на Python и Go. " +
-      "Потом перешёл в стартап на позицию Tech Lead...\n\n" +
-      "💬 Вы можете отправить текст или голосовое сообщение.",
-  );
+  await ctx.reply(ctx.t("story-prompt"));
 }
 
 async function sendStoryToAgent(ctx: BotContext, message: string): Promise<void> {
-  const result = await callTool(ctx, "cold_start", { message });
+  const sessionId = await ctx.services.sessionService.getSessionId(ctx);
+
+  const result = await ctx.services.mcpClient.callTool(
+    "cold_start",
+    { message, sessionId },
+    coldStartParamsSchema,
+    coldStartResponseSchema,
+  );
 
   const keyboard = new InlineKeyboard()
-    .text("✅ Подтвердить", "decision:approve")
-    .text("✏️ Редактировать", "decision:edit")
+    .text(ctx.t("button-approve"), "decision:approve")
+    .text(ctx.t("button-edit"), "decision:edit")
     .row()
-    .text("❌ Отмена", "decision:cancel");
+    .text(ctx.t("button-cancel"), "decision:cancel");
 
-  await ctx.reply(formatColdStartResult(result), { reply_markup: keyboard, parse_mode: "Markdown" });
+  await ctx.reply(result.message, { reply_markup: keyboard, parse_mode: "Markdown" });
 }

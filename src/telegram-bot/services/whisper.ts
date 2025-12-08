@@ -1,3 +1,4 @@
+import Groq from "groq-sdk";
 import { toFile } from "openai";
 
 import { WhisperError } from "../errors.js";
@@ -6,7 +7,7 @@ import type { BotContext } from "../types.js";
 
 export async function transcribeVoice(ctx: BotContext, fileId: string): Promise<string> {
   await ctx.replyWithChatAction("typing");
-  const openai = ctx.services.openaiClient;
+  const groq = new Groq({ apiKey: ctx.services.groqApiKey });
   const fileUrl = await getFileUrl(ctx, fileId);
 
   try {
@@ -19,10 +20,9 @@ export async function transcribeVoice(ctx: BotContext, fileId: string): Promise<
     const buffer = Buffer.from(arrayBuffer);
     const file = await toFile(buffer, "voice.ogg", { type: "audio/ogg" });
 
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await groq.audio.transcriptions.create({
       file,
-      model: "whisper-1",
-      language: "ru",
+      model: "whisper-large-v3",
     });
 
     return transcription.text;
