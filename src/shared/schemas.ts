@@ -19,17 +19,9 @@ function unwrapSchema(schema: ZodTypeAny): ZodTypeAny {
 }
 
 /**
- * Recursively transforms a Zod schema making all fields nullable at all levels.
- * Used for OpenAI Structured Output which requires nullable (not optional) fields.
- *
- * Handles: ZodObject (recursive), ZodArray, ZodEnum, primitives
- * Does NOT handle: ZodUnion, ZodIntersection, ZodEffects (will just make nullable at top level)
- *
- * @example
- * const extractionSchema = makeNullable(userContextSchemaBase);
- * // All fields become T | null instead of T | undefined at all nesting levels
+ * Internal: recursively makes fields nullable (for nested objects)
  */
-export function makeNullable<T extends ZodTypeAny>(schema: T): z.ZodNullable<ZodTypeAny> {
+function makeFieldNullable(schema: ZodTypeAny): z.ZodNullable<ZodTypeAny> {
   const unwrapped = unwrapSchema(schema);
 
   if (unwrapped instanceof z.ZodObject) {
@@ -38,7 +30,7 @@ export function makeNullable<T extends ZodTypeAny>(schema: T): z.ZodNullable<Zod
     const newShape: Record<string, z.ZodNullable<ZodTypeAny>> = {};
 
     for (const [key, value] of Object.entries(shape)) {
-      newShape[key] = makeNullable(value);
+      newShape[key] = makeFieldNullable(value);
     }
 
     return z.object(newShape).nullable();
@@ -51,6 +43,37 @@ export function makeNullable<T extends ZodTypeAny>(schema: T): z.ZodNullable<Zod
   return unwrapped.nullable();
 }
 
+/**
+ * Transforms a Zod object schema making all fields nullable at all levels.
+ * Used for OpenAI Structured Output which requires:
+ * - Root type MUST be "object" (not nullable)
+ * - All fields MUST be nullable (not optional)
+ *
+ * Handles: ZodObject (recursive), ZodArray, ZodEnum, primitives
+ * Does NOT handle: ZodUnion, ZodIntersection, ZodEffects
+ *
+ * @example
+ * const extractionSchema = makeNullable(userContextSchemaBase);
+ * // Root is object, all fields become T | null
+ */
+export function makeNullable<T extends z.ZodObject<z.ZodRawShape>>(schema: T): z.ZodObject<z.ZodRawShape> {
+  const unwrapped = unwrapSchema(schema);
+
+  if (!(unwrapped instanceof z.ZodObject)) {
+    throw new TypeError("makeNullable requires a ZodObject schema at root level");
+  }
+
+  /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Zod shape is Record<string, ZodTypeAny> at runtime */
+  const shape = unwrapped.shape as Record<string, ZodTypeAny>;
+  const newShape: Record<string, z.ZodNullable<ZodTypeAny>> = {};
+
+  for (const [key, value] of Object.entries(shape)) {
+    newShape[key] = makeFieldNullable(value);
+  }
+
+  return z.object(newShape);
+}
+
 // ==========================================
 // === ID PATTERNS & BASE SCHEMAS ===
 // ==========================================
@@ -61,7 +84,6 @@ export const UUID_V7_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 export const USER_ID_PATTERN = `^usr_${UUID_V7_PATTERN}$`;
 export const CONTEXT_ID_PATTERN = `^ctx_${UUID_V7_PATTERN}$`;
 export const TRAIL_ID_PATTERN = `^trl_${UUID_V7_PATTERN}$`;
-export const GOAL_ID_PATTERN = `^goal_${UUID_V7_PATTERN}$`;
 
 export const userIdSchema = z
   .string()
@@ -78,15 +100,9 @@ export const trailIdSchema = z
   .regex(new RegExp(TRAIL_ID_PATTERN), "Trail ID must be in format trl_<UUID>")
   .describe("Trail ID in format trl_<UUID>");
 
-export const goalIdSchema = z
-  .string()
-  .regex(new RegExp(GOAL_ID_PATTERN), "Goal ID must be in format goal_<UUID>")
-  .describe("Goal ID in format goal_<UUID>");
-
 export type UserId = z.infer<typeof userIdSchema>;
 export type ContextId = z.infer<typeof contextIdSchema>;
 export type TrailId = z.infer<typeof trailIdSchema>;
-export type GoalId = z.infer<typeof goalIdSchema>;
 
 // ==========================================
 // === DOMAIN ENTITIES ===
@@ -635,51 +651,6 @@ export type ScoredMatchedCandidate = z.infer<typeof scoredMatchedCandidateSchema
 // Type 3: Core + Path
 export const matchedCandidateWithPathSchema = candidateCoreSchema.merge(pathFieldsSchema);
 export type MatchedCandidateWithPath = z.infer<typeof matchedCandidateWithPathSchema>;
-
-// Type 4: Core + Path + Scoring
-export const scoredMatchedCandidateWithPathSchema = candidateCoreSchema
-  .merge(pathFieldsSchema)
-  .merge(contextScoringFieldsSchema);
-export type ScoredMatchedCandidateWithPath = z.infer<typeof scoredMatchedCandidateWithPathSchema>;
-
-// Type 5: Core + Path + Scoring + DTW
-export const scoredMatchedCandidateWithPathAndDTWSchema = candidateCoreSchema
-  .merge(pathFieldsSchema)
-  .merge(contextScoringFieldsSchema)
-  .merge(dtwFieldsSchema)
-  .refine(
-    (data) => {
-      const computed =
-        data.dtwMetrics.shapeSimilarity + data.dtwMetrics.tempoSimilarity + data.dtwMetrics.stabilityScore;
-      return Math.abs(data.dtwTotal - computed) < 0.001;
-    },
-    { message: "dtwTotal must equal sum of dtwMetrics" },
-  );
-export type ScoredMatchedCandidateWithPathAndDTW = z.infer<typeof scoredMatchedCandidateWithPathAndDTWSchema>;
-
-// ==========================================
-// === DEPRECATED TYPES (для обратной совместимости) ===
-// ==========================================
-
-/**
- * @deprecated Use matchedCandidateSchema instead
- */
-export const candidateMatchedSchema = candidateCoreSchema;
-export type CandidateMatched = CandidateCore;
-
-// ==========================================
-// === PATH COLLECTION TYPES ===
-// ==========================================
-
-/**
- * Result of batch path collection query
- */
-export const pathBatchResultSchema = z.object({
-  userId: z.string().describe("User ID for which trajectory was collected"),
-  path: z.array(userContextSchema).describe("Trajectory from career start to current context"),
-});
-
-export type PathBatchResult = z.infer<typeof pathBatchResultSchema>;
 
 // ==========================================
 // === DICTIONARIES ===

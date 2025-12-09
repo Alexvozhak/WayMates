@@ -17,12 +17,14 @@ export class SearchByTargetTool extends BaseTool<SearchByTargetParams, MatchedCa
       throw new ValidationError("At least one target criterion is required");
     }
 
-    return this.coreClient.client.search.byTarget.query({
+    const coreParams = {
       userId,
       targetContext: normalized,
       excludedCreationReasons: params.excludedCreationReasons,
       recencyThresholdMonths: params.recencyThresholdMonths,
       limit: params.limit,
-    });
+    };
+
+    return this.coreClient.client.search.byTarget.query(coreParams);
   }
 }
