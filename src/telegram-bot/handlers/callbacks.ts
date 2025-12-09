@@ -15,16 +15,17 @@ export async function handleApproveCallback(ctx: BotContext): Promise<void> {
     coldStartResponseSchema,
   );
 
-  if (result.phase === "COMPLETED") {
-    if (ctx.session.status === "uninitialised") {
-      await ctx.editMessageText(ctx.t("session-expired"));
-      return;
+  if (result.phase === "saved") {
+    // Story saved successfully → update session
+    // Note: session.status guaranteed to be "initialised" by guard middleware
+    if (ctx.session.status === "initialised") {
+      ctx.session.hasStory = result.contexts.length > 0;
     }
-    ctx.session.hasStory = result.hasStory ?? true;
-    await ctx.editMessageText(ctx.t("story-approved", { message: result.message }));
+    await ctx.editMessageText(ctx.t("story-approved", { message: ctx.t("story-saved-success") }));
     return;
   }
 
+  // Other phases (awaiting_*, story_gathering) → show confirmation message
   await ctx.editMessageText(ctx.t("story-confirmed"));
 }
 

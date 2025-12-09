@@ -3,6 +3,9 @@ import { z } from "zod";
 import { tokenSchema } from "../../facade/mcp-server/schemas.js";
 import { scoredMatchedCandidateSchema, userIdSchema } from "../../shared/schemas.js";
 
+// Re-export coldStartResponseSchema from Facade (single source of truth)
+export { coldStartResponseSchema } from "../../facade/langGraph/cold-start-v2/types.js";
+
 export const sessionIdSchema = z.string().regex(/^sess_[0-9a-f]{32}$/);
 
 export const errorCodeSchema = z.enum(["session_expired", "session_invalid", "unauthorized"]);
@@ -18,12 +21,6 @@ export const telegramRegisterResponseSchema = z.object({
   sessionId: sessionIdSchema,
   isNewUser: z.boolean(),
   hasStory: z.boolean(),
-});
-
-export const coldStartResponseSchema = z.object({
-  phase: z.enum(["COLLECTING", "CONFIRMATION", "COMPLETED"]),
-  message: z.string(),
-  hasStory: z.boolean().optional(),
 });
 
 export const searchResultResponseSchema = z.object({

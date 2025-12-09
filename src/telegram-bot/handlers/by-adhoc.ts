@@ -32,10 +32,7 @@ export async function processAdhocQuery(ctx: BotContext, query: string): Promise
 
   await ctx.api.deleteMessage(statusMsg.chat.id, statusMsg.message_id);
 
-  const formattedText = await ctx.services.searchPresenter.formatSearchResult(
-    JSON.stringify(result),
-    ctx.from?.language_code ?? "ru",
-  );
+  const formattedText = await ctx.services.searchPresenter.format(result, ctx.from?.language_code);
 
   await ctx.reply(formattedText, { parse_mode: "Markdown" });
 }

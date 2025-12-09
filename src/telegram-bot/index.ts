@@ -1,9 +1,12 @@
+import axios from "axios";
 import { Redis } from "ioredis";
 
 import { createBot } from "./bot.js";
 import { validateEnv } from "./env.js";
 import { logger } from "./logger.js";
+import { ColdStartPresenter } from "./presenters/cold-start-presenter.js";
 import { SearchPresenter } from "./presenters/search-presenter.js";
+import { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import { McpClient } from "./services/mcp-client.js";
 import { SessionService } from "./services/session-service.js";
 
@@ -17,15 +20,7 @@ async function checkDependencies(): Promise<void> {
     await redis.ping();
     logger.info("Redis connected");
 
-    const facadeHealthUrl = `${env.FACADE_MCP_URL.replace("/mcp", "")}/health`;
-    const response = await fetch(facadeHealthUrl, {
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Facade health check failed: ${response.status}`);
-    }
-
+    await axios.get(`${env.FACADE_MCP_URL}/health`, { timeout: 5000 });
     logger.info("Facade MCP reachable");
   } catch (error) {
     logger.fatal({ err: error }, "Failed to connect to dependencies");
@@ -55,6 +50,14 @@ const searchPresenter = new SearchPresenter(env.OPENAI_API_KEY, {
   model: env.FORMATTER_LLM_MODEL,
   temperature: env.FORMATTER_LLM_TEMPERATURE,
 });
+const coldStartPresenter = new ColdStartPresenter(env.OPENAI_API_KEY, {
+  model: env.FORMATTER_LLM_MODEL,
+  temperature: env.FORMATTER_LLM_TEMPERATURE,
+});
+const welcomePresenter = new WelcomePresenter(env.OPENAI_API_KEY, {
+  model: env.FORMATTER_LLM_MODEL,
+  temperature: env.FORMATTER_LLM_TEMPERATURE,
+});
 
 const bot = createBot(
   env.TELEGRAM_BOT_TOKEN,
@@ -62,6 +65,8 @@ const bot = createBot(
     mcpClient,
     sessionService,
     searchPresenter,
+    coldStartPresenter,
+    welcomePresenter,
     openaiApiKey: env.OPENAI_API_KEY,
     groqApiKey: env.GROQ_API_KEY,
     botToken: env.TELEGRAM_BOT_TOKEN,

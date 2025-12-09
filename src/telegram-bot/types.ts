@@ -1,4 +1,6 @@
+import type { ColdStartPresenter } from "./presenters/cold-start-presenter.js";
 import type { SearchPresenter } from "./presenters/search-presenter.js";
+import type { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import type { McpClient } from "./services/mcp-client.js";
 import type { SessionService } from "./services/session-service.js";
 import type { HydrateFlavor } from "@grammyjs/hydrate";
@@ -14,6 +16,8 @@ export type BotServices = {
   mcpClient: McpClient;
   sessionService: SessionService;
   searchPresenter: SearchPresenter;
+  coldStartPresenter: ColdStartPresenter;
+  welcomePresenter: WelcomePresenter;
   openaiApiKey: string;
   groqApiKey: string;
   botToken: string;

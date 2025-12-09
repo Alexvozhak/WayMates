@@ -46,6 +46,22 @@ async function storyRequiredGuard(ctx: BotContext, next: () => Promise<void>): P
   await ctx.reply(ctx.t("story-required"));
 }
 
+async function sessionInitGuard(ctx: BotContext, next: () => Promise<void>): Promise<void> {
+  if (ctx.session.status === "uninitialised") {
+    await ctx.services.sessionService.initialize(ctx);
+  }
+  await next();
+}
+
+async function callbackSessionGuard(ctx: BotContext, next: () => Promise<void>): Promise<void> {
+  if (ctx.session.status === "uninitialised") {
+    await ctx.answerCallbackQuery({ text: "Session expired" });
+    await ctx.editMessageText(ctx.t("session-expired"));
+    return;
+  }
+  await next();
+}
+
 export function createBot(token: string, services: BotServices, redis: Redis): Bot<BotContext> {
   const bot = new Bot<BotContext>(token);
 
@@ -77,6 +93,7 @@ export function createBot(token: string, services: BotServices, redis: Redis): B
     await next();
   });
 
+  bot.use(sessionInitGuard);
   bot.use(storyRequiredGuard);
 
   bot.command("start", handleStart);
@@ -89,6 +106,7 @@ export function createBot(token: string, services: BotServices, redis: Redis): B
   bot.command("cancel", handleCancel);
   bot.command("token", handleToken);
 
+  bot.callbackQuery(/^decision:/, callbackSessionGuard);
   bot.callbackQuery("decision:approve", handleApproveCallback);
   bot.callbackQuery("decision:edit", handleEditCallback);
   bot.callbackQuery("decision:cancel", handleCancelCallback);

@@ -1,4 +1,5 @@
 import { telegramRegisterParamsSchema } from "../../facade/mcp-server/schemas.js";
+import { SessionError } from "../errors.js";
 import { telegramRegisterResponseSchema } from "../schemas/mcp-responses.js";
 
 import type { BotContext } from "../types.js";
@@ -14,7 +15,7 @@ export class SessionService {
   async initialize(ctx: BotContext): Promise<void> {
     const telegramUserId = ctx.from?.id;
     if (!telegramUserId) {
-      throw new Error("Telegram user ID not found");
+      throw new SessionError("Telegram user ID not found");
     }
 
     const result = await this.mcpClient.callTool(
@@ -37,7 +38,7 @@ export class SessionService {
   async getSessionId(ctx: BotContext): Promise<string> {
     const telegramUserId = ctx.from?.id;
     if (!telegramUserId) {
-      throw new Error("Telegram user ID not found");
+      throw new SessionError("Telegram user ID not found");
     }
 
     const cacheKey = `telegram:session:${telegramUserId}:sessionId`;

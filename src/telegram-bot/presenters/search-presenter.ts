@@ -1,27 +1,7 @@
-import { ChatOpenAI } from "@langchain/openai";
+import { BasePresenter } from "./base-presenter.js";
 
-import type { LlmConfig } from "../types.js";
-
-export class SearchPresenter {
-  private llm: ChatOpenAI;
-
-  constructor(apiKey: string, llmConfig: LlmConfig) {
-    this.llm = new ChatOpenAI({
-      modelName: llmConfig.model,
-      temperature: llmConfig.temperature,
-      openAIApiKey: apiKey,
-    });
-  }
-
-  async formatSearchResult(rawJsonResult: string, languageCode: string): Promise<string> {
-    const prompt = this.createPrompt(rawJsonResult, languageCode);
-    const response = await this.llm.invoke(prompt);
-    const content = typeof response.content === "string" ? response.content : String(response.content);
-    return content.trim();
-  }
-
-  private createPrompt(rawJson: string, languageCode: string): string {
-    const language = this.mapLanguageCode(languageCode);
+export class SearchPresenter extends BasePresenter {
+  protected createPrompt(rawJson: string, language: string): string {
     return `You are a friendly career consultant in a Telegram bot.
 
 Task: Present career path search results in a warm, human tone.
@@ -41,17 +21,5 @@ Data (JSON):
 ${rawJson}
 
 Response (Markdown only, no explanations):`;
-  }
-
-  private mapLanguageCode(code: string): string {
-    const languageMap: Record<string, string> = {
-      ru: "Russian",
-      en: "English",
-      de: "German",
-      fr: "French",
-      es: "Spanish",
-    };
-
-    return languageMap[code] ?? "Russian";
   }
 }

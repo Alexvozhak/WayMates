@@ -46,5 +46,7 @@ async function sendStoryToAgent(ctx: BotContext, message: string): Promise<void>
     .row()
     .text(ctx.t("button-cancel"), "decision:cancel");
 
-  await ctx.reply(result.message, { reply_markup: keyboard, parse_mode: "Markdown" });
+  const formattedMessage = await ctx.services.coldStartPresenter.format(result, ctx.from?.language_code);
+
+  await ctx.reply(formattedMessage, { reply_markup: keyboard, parse_mode: "Markdown" });
 }
