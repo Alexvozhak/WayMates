@@ -1,11 +1,7 @@
 import { z } from "zod";
 
-import {
-  trailIdSchema,
-  upsertSingleTrailResultSchema,
-  upsertTrailInputSchema,
-  userIdSchema,
-} from "../../shared/schemas.js";
+import { trailIdSchema, upsertTrailInputSchema, userIdSchema } from "../../shared/schemas.js";
+import { upsertSingleTrailResultSchema } from "../schemas.js";
 
 import { publicProcedure, t } from "./trpc.js";
 

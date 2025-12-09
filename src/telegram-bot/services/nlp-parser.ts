@@ -10,7 +10,7 @@ import {
 } from "../../shared/schemas.js";
 import { NlpParseError } from "../errors.js";
 
-import type { ZodType } from "zod";
+import type { ZodObject, ZodRawShape } from "zod";
 
 export type TargetNlpResult = z.infer<typeof targetNlpSchema>;
 export type AdhocNlpResult = z.infer<typeof adhocNlpSchema>;
@@ -74,7 +74,11 @@ function removeNullFields(obj: Record<string, unknown>): Record<string, unknown>
   return result;
 }
 
-async function invokeLlmStructured<T extends ZodType>(apiKey: string, schema: T, prompt: string): Promise<z.infer<T>> {
+async function invokeLlmStructured<T extends ZodObject<ZodRawShape>>(
+  apiKey: string,
+  schema: T,
+  prompt: string,
+): Promise<z.infer<T>> {
   const llm = new ChatOpenAI({ modelName: "gpt-4o-mini", temperature: 0, openAIApiKey: apiKey });
   const nullableSchema = makeNullable(schema);
   const structuredLlm = llm.withStructuredOutput(nullableSchema);

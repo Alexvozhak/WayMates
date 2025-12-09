@@ -130,4 +130,15 @@ token-display = Ваш токен для LibreChat:
 
 # === Errors ===
 error-generic = Произошла непредвиденная ошибка. Попробуйте позже.
-session-expired = Ваша сессия истекла. Используйте /start для повторной регистрации.
+
+# MCP Error Codes (error-{code} format for bot.catch())
+error-session_expired = Ваша сессия истекла. Используйте /start для повторной регистрации.
+error-session_invalid = Недействительная сессия. Используйте /start для входа.
+error-unauthorized = Доступ запрещен. Проверьте свои права доступа.
+error-invalid_token = Недействительный токен. Используйте /start для повторной регистрации.
+error-normalization_failed = Не удалось распознать введенные данные. Попробуйте переформулировать.
+error-core_api_error = Ошибка сервера при обработке запроса. Попробуйте позже.
+error-validation_error = Некорректные данные. Проверьте правильность ввода.
+error-internal_error = Внутренняя ошибка сервера. Мы уже работаем над исправлением.
+error-postgres_connection_failed = Проблемы с подключением к базе данных. Попробуйте позже.
+error-postgres_query_failed = Ошибка при выполнении запроса. Попробуйте позже.

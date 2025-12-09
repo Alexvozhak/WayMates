@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance } from "axios";
 import { z } from "zod";
 
+import { resultErrorSchema } from "../../shared/schemas.js";
 import { McpClientError } from "../errors.js";
 
 let requestId = 0;
@@ -121,11 +122,21 @@ export class McpClient {
       throw new McpClientError("Content has no text");
     }
 
+    let parsed: unknown;
     try {
-      return JSON.parse(firstContent.text);
+      parsed = JSON.parse(firstContent.text);
     } catch {
       throw new McpClientError("Failed to parse tool result as JSON");
     }
+
+    // Check Result<T, ErrorResponse> discriminator using Zod schema
+    const resultCheck = resultErrorSchema.safeParse(parsed);
+    if (resultCheck.success) {
+      const { error } = resultCheck.data;
+      throw new McpClientError(error.message, error.code, error.details);
+    }
+
+    return parsed;
   }
 
   private isClientError(error: Error): boolean {

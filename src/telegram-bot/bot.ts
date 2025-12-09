@@ -7,7 +7,7 @@ import { I18n } from "@grammyjs/i18n";
 import { RedisAdapter } from "@grammyjs/storage-redis";
 import { Bot, session } from "grammy";
 
-import { BotError } from "./errors.js";
+import { BotError, McpClientError } from "./errors.js";
 import { handleByAdhoc } from "./handlers/by-adhoc.js";
 import { handleByCurrent } from "./handlers/by-current.js";
 import { handleByTarget } from "./handlers/by-target.js";
@@ -56,7 +56,7 @@ async function sessionInitGuard(ctx: BotContext, next: () => Promise<void>): Pro
 async function callbackSessionGuard(ctx: BotContext, next: () => Promise<void>): Promise<void> {
   if (ctx.session.status === "uninitialised") {
     await ctx.answerCallbackQuery({ text: "Session expired" });
-    await ctx.editMessageText(ctx.t("session-expired"));
+    await ctx.editMessageText(ctx.t("error-session_expired"));
     return;
   }
   await next();
@@ -120,6 +120,11 @@ export function createBot(token: string, services: BotServices, redis: Redis): B
 
   bot.catch(async (error) => {
     const ctx = error.ctx;
+
+    if (error.error instanceof McpClientError && error.error.code) {
+      await ctx.reply(ctx.t(`error-${error.error.code}`));
+      return;
+    }
 
     if (error.error instanceof BotError) {
       await ctx.reply(`❌ ${error.error.message}`);

@@ -1,19 +1,11 @@
 import { z } from "zod";
 
-import { tokenSchema } from "../../facade/mcp-server/schemas.js";
-import { scoredMatchedCandidateSchema, userIdSchema } from "../../shared/schemas.js";
+import { scoredMatchedCandidateSchema, sessionIdSchema, tokenSchema, userIdSchema } from "../../shared/schemas.js";
+
+// Re-export error schemas for telegram-bot usage
 
 // Re-export coldStartResponseSchema from Facade (single source of truth)
 export { coldStartResponseSchema } from "../../facade/langGraph/cold-start-v2/types.js";
-
-export const sessionIdSchema = z.string().regex(/^sess_[0-9a-f]{32}$/);
-
-export const errorCodeSchema = z.enum(["session_expired", "session_invalid", "unauthorized"]);
-
-export const errorResponseSchema = z.object({
-  code: errorCodeSchema,
-  message: z.string(),
-});
 
 export const telegramRegisterResponseSchema = z.object({
   userId: userIdSchema,
@@ -33,3 +25,5 @@ export const telegramLinkResponseSchema = z.object({
   hasStory: z.boolean(),
   token: tokenSchema,
 });
+
+export { errorCodeSchema, errorResponseSchema } from "../../shared/schemas.js";

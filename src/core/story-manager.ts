@@ -18,12 +18,12 @@ import {
   updateContextParamsSchema,
   upsertContextInputSchema,
   upsertContextResultSchema,
-  upsertSingleContextResultSchema,
-  upsertSingleTrailResultSchema,
   upsertStoryResultSchema,
   upsertTrailInputSchema,
   upsertTrailResultSchema,
 } from "../shared/schemas.js";
+
+import { upsertSingleContextResultSchema, upsertSingleTrailResultSchema } from "./schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";
 import type {
@@ -46,10 +46,7 @@ export class StoryManager {
   constructor(private db: DatabaseContext) {}
 
   async upsertStory(params: StoryInput): Promise<UpsertStoryResult> {
-    const contextsResult: UpsertContextResult = await this.upsertContexts(
-      params.userId,
-      params.contexts,
-    );
+    const contextsResult: UpsertContextResult = await this.upsertContexts(params.userId, params.contexts);
     const trailsResult: UpsertTrailResult = await this.upsertTrails(params.userId, params.trails);
     return upsertStoryResultSchema.parse({
       contexts: contextsResult,
@@ -133,17 +130,13 @@ export class StoryManager {
     } catch {
       // getUserStory throws Zod validation error for users without contexts
       // Convert to business-friendly error message
-      throw new Error(
-        `Current context not found for user ${params.userId} or user has no contexts`,
-      );
+      throw new Error(`Current context not found for user ${params.userId} or user has no contexts`);
     }
 
     const currentContext = story.contexts.find((ctx) => ctx.nextContextId === null);
 
     if (!currentContext) {
-      throw new Error(
-        `Current context not found for user ${params.userId} or user has no contexts`,
-      );
+      throw new Error(`Current context not found for user ${params.userId} or user has no contexts`);
     }
 
     const definedUpdates = Object.fromEntries(
@@ -214,10 +207,7 @@ export class StoryManager {
     });
   }
 
-  private async upsertContexts(
-    userId: string,
-    contexts: UserContext[],
-  ): Promise<UpsertContextResult> {
+  private async upsertContexts(userId: string, contexts: UserContext[]): Promise<UpsertContextResult> {
     return this.db.write(async (tx) => {
       const results: ContextId[] = [];
       for (const context of contexts) {

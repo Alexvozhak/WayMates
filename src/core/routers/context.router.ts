@@ -4,10 +4,10 @@ import {
   contextIdSchema,
   updateContextParamsSchema,
   upsertContextInputSchema,
-  upsertSingleContextResultSchema,
   userContextSchema,
   userIdSchema,
 } from "../../shared/schemas.js";
+import { upsertSingleContextResultSchema } from "../schemas.js";
 
 import { publicProcedure, t } from "./trpc.js";
 
