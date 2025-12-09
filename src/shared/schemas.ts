@@ -104,6 +104,42 @@ export type UserId = z.infer<typeof userIdSchema>;
 export type ContextId = z.infer<typeof contextIdSchema>;
 export type TrailId = z.infer<typeof trailIdSchema>;
 
+// Session and authentication
+export const SESSION_ID_PATTERN = "^sess_[0-9a-f]{32}$";
+
+export const sessionIdSchema = z
+  .string()
+  .regex(new RegExp(SESSION_ID_PATTERN), "Session ID must be in format sess_<32-char-hex>")
+  .describe("Session ID in format sess_<32-char-hex>");
+
+export const tokenSchema = z.string().uuid().describe("User token (UUID v7 format) for authentication");
+
+export type SessionId = z.infer<typeof sessionIdSchema>;
+export type Token = z.infer<typeof tokenSchema>;
+
+// Error handling
+export const errorCodeSchema = z.enum([
+  "session_expired",
+  "session_invalid",
+  "unauthorized",
+  "invalid_token",
+  "normalization_failed",
+  "core_api_error",
+  "validation_error",
+  "internal_error",
+  "postgres_connection_failed",
+  "postgres_query_failed",
+]);
+
+export const errorResponseSchema = z.object({
+  code: errorCodeSchema,
+  message: z.string(),
+  details: z.record(z.unknown()).optional().describe("Additional error context for debugging"),
+});
+
+export type ErrorCode = z.infer<typeof errorCodeSchema>;
+export type ErrorResponse = z.infer<typeof errorResponseSchema>;
+
 // ==========================================
 // === DOMAIN ENTITIES ===
 // ==========================================

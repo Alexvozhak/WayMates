@@ -1,32 +1,18 @@
-import { z } from "zod";
+import {
+  errorCodeSchema as sharedErrorCodeSchema,
+  errorResponseSchema as sharedErrorResponseSchema,
+  sessionIdSchema as sharedSessionIdSchema,
+} from "../../shared/schemas.js";
 
-export const sessionIdSchema = z
-  .string()
-  .regex(/^sess_[0-9a-f]{32}$/, "Session ID must be in format sess_<32-char-hex>")
-  .describe("Session ID in format sess_<32-char-hex>");
+import type { z } from "zod";
+
+// Backward compatibility aliases (will be removed in Phase 2)
+export const sessionIdSchema = sharedSessionIdSchema;
+export const errorCodeSchema = sharedErrorCodeSchema;
+export const errorResponseSchema = sharedErrorResponseSchema;
 
 export type SessionId = z.infer<typeof sessionIdSchema>;
-
-export const errorCodeSchema = z.enum([
-  "session_expired",
-  "session_invalid",
-  "invalid_token",
-  "normalization_failed",
-  "core_api_error",
-  "validation_error",
-  "internal_error",
-  "postgres_connection_failed",
-  "postgres_query_failed",
-]);
-
 export type ErrorCode = z.infer<typeof errorCodeSchema>;
-
-export const errorResponseSchema = z.object({
-  code: errorCodeSchema,
-  message: z.string(),
-  details: z.record(z.unknown()).optional(),
-});
-
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
 
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };

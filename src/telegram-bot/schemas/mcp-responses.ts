@@ -1,16 +1,13 @@
 import { z } from "zod";
 
-import { tokenSchema } from "../../facade/mcp-server/schemas.js";
-import { scoredMatchedCandidateSchema, userIdSchema } from "../../shared/schemas.js";
+import { scoredMatchedCandidateSchema, sessionIdSchema, tokenSchema, userIdSchema } from "../../shared/schemas.js";
 
-export const sessionIdSchema = z.string().regex(/^sess_[0-9a-f]{32}$/);
-
-export const errorCodeSchema = z.enum(["session_expired", "session_invalid", "unauthorized"]);
-
-export const errorResponseSchema = z.object({
-  code: errorCodeSchema,
-  message: z.string(),
-});
+// TODO: Remove dead code in separate telegram session
+// export const errorCodeSchema = z.enum(["session_expired", "session_invalid", "unauthorized"]);
+// export const errorResponseSchema = z.object({
+//   code: errorCodeSchema,
+//   message: z.string(),
+// });
 
 export const telegramRegisterResponseSchema = z.object({
   userId: userIdSchema,
