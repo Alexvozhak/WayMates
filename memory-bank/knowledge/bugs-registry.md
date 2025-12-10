@@ -17,9 +17,7 @@ Production bugs and design flaws discovered in the codebase.
 
 ## Active Bugs
 
-| ID | Date | Status | Title | Priority | Component | File | Session |
-|----|------|--------|-------|----------|-----------|------|---------|
-| BUG-002 | 2025-11-15 | READY_FOR_WORK | 22 integration tests failing after BUG-001 fix (search returns 0 results) | 🔴 P0 | search-query-builder | [tasks/bugs/BUG-002-integration-tests-failing.md](../../tasks/bugs/BUG-002-integration-tests-failing.md) | session-2025-11-15 |
+*No active bugs currently tracked.*
 
 ---
 
@@ -29,7 +27,8 @@ Brief history of resolved bugs. Full details in task files and Memory MCP.
 
 | ID | Date | Status | Title | Priority | Component | Resolved | Commit |
 |----|------|--------|-------|----------|-----------|----------|--------|
-| BUG-001 | 2025-11-15 | RESOLVED | Race condition in setup-read-only.ts with parallel tests | 🟡 P1 | Test infrastructure | 2025-11-15 | [pending] |
+| BUG-002 | 2025-11-15 | RESOLVED | 22 integration tests failing after BUG-001 fix (search returns 0 results) | 🔴 P0 | Test infrastructure | 2025-12-09 | 9eeafbf |
+| BUG-001 | 2025-11-15 | RESOLVED | Race condition in setup-read-only.ts with parallel tests | 🟡 P1 | Test infrastructure | 2025-11-15 | 9eeafbf |
 | #5 | 2025-11-13 | RESOLVED | durationCapMonths parameter has flawed business logic | 🟡 P1 | trajectory-similarity.service | 2025-11-13 | [commit] |
 | #4 | 2025-11-12 | RESOLVED | searchAdhoc returns 0 results - currentContextId filter breaks historical search | 🔴 P0 | cypher/queries/search | 2025-11-12 | [commit] |
 | #3 | 2025-11-12 | RESOLVED | DTW metrics values differ after Phase 3 migration | 🟡 P1 | cypher/queries/search | 2025-11-12 | [commit] |
@@ -39,6 +38,16 @@ Brief history of resolved bugs. Full details in task files and Memory MCP.
 ---
 
 ## Archive Notes
+
+### BUG-002: 22 Integration Tests Failing After BUG-001 Fix
+- **Root Cause**: globalSetup deleted ALL nodes including Language reference data created by `db:test:init`
+- **Timeline**: `db:test:init` creates Language/Skill/Reason nodes → globalSetup runs `MATCH (n) DETACH DELETE n` → reference data lost → persistence.ts creates Language nodes without `name` property
+- **Solution**: Modified globalSetup cleanup to preserve reference data (Language, Skill, SkillCategory, Reason nodes)
+  - `dbFixture.cleanTestData()` - selective cleanup (preserves reference data)
+  - `dbFixture.verifyReferenceData()` - fail-fast verification
+- **Impact**: 78/78 core integration tests pass after fix (AC1-AC12, TG1-TG7, UN1/UN4, DT1-DT4, G1-G5, GM1-GM4, SM1-SM5)
+- **Files Changed**: `vitest.globalSetup.ts`, `tests/core/helpers/database-fixture.ts`
+- **Lesson**: Never delete reference data that tests depend on. Document data lifecycle clearly (reference vs test data).
 
 ### BUG-001: Race Condition in setup-read-only.ts
 - **Root Cause**: Projects run sequentially, but each expected different datasets. `setup-read-only.ts` checked `userCount !== 18` → saw 13 users from previous project → skipped import → tests failed (U14-U18 missing)
