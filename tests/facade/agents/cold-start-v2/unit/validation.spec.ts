@@ -28,6 +28,7 @@ function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStart
     userId: U1.userId,
     phase: PHASE.story_gathering,
     userResponse: "",
+    cvText: undefined,
     parsedDecision: null,
     queue: [createAgendaFromContext(firstContext)],
     currentContextIndex: 0,

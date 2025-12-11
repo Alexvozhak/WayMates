@@ -57,8 +57,9 @@ async function extractContextData(
   agenda: ContextAgenda,
   queue: ContextAgenda[],
   contextIndex: number,
+  cvText?: string,
 ): Promise<ExtractableContext> {
-  const prompt = contextExtractionPrompt(messages, agenda.preview);
+  const prompt = contextExtractionPrompt(messages, agenda.preview, cvText);
   const extracted = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
   const { previousId, nextId } = getLinkedContextIds(queue, contextIndex);
 
@@ -72,7 +73,7 @@ async function extractContextData(
 }
 
 export async function extractContextNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {
-  const { messages, queue, currentContextIndex } = state;
+  const { messages, queue, currentContextIndex, cvText } = state;
 
   const agenda = queue[currentContextIndex];
   if (!agenda) {
@@ -83,7 +84,7 @@ export async function extractContextNode(state: ColdStartStateType): Promise<Par
   }
 
   const [contextData, trailsData] = await Promise.all([
-    extractContextData(messages, agenda, queue, currentContextIndex),
+    extractContextData(messages, agenda, queue, currentContextIndex, cvText),
     extractAllTrails(messages, agenda, queue, currentContextIndex),
   ]);
 
@@ -96,5 +97,3 @@ export async function extractContextNode(state: ColdStartStateType): Promise<Par
     },
   };
 }
-
-export { extractAllTrails, extractContextData };

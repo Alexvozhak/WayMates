@@ -1168,6 +1168,7 @@ export type McpUpsertContextParams = z.infer<typeof mcpUpsertContextParamsSchema
 export const mcpColdStartParamsSchema = z.object({
   message: z.string().min(1).describe("User message (career history or confirmation)"),
   sessionId: sessionIdSchema,
+  cvText: z.string().optional().describe("Parsed anonymized text from PDF resume if provided"),
 });
 
 export type McpColdStartParams = z.infer<typeof mcpColdStartParamsSchema>;
@@ -1244,3 +1245,23 @@ export const mcpTelegramLinkParamsSchema = z.object({
 });
 
 export type McpTelegramLinkParams = z.infer<typeof mcpTelegramLinkParamsSchema>;
+
+/**
+ * Params for parse_cv_to_text MCP tool.
+ * Parses PDF CV to anonymized markdown text.
+ */
+export const mcpParseCvToTextParamsSchema = z.object({
+  fileBuffer: z.string().describe("Base64-encoded PDF file content"),
+  sessionId: sessionIdSchema,
+});
+
+export type McpParseCvToTextParams = z.infer<typeof mcpParseCvToTextParamsSchema>;
+
+/**
+ * Response from parse_cv_to_text MCP tool
+ */
+export const parseCvToTextResponseSchema = z.object({
+  text: z.string().describe("Parsed anonymized markdown text from CV"),
+});
+
+export type ParseCvToTextResponse = z.infer<typeof parseCvToTextResponseSchema>;

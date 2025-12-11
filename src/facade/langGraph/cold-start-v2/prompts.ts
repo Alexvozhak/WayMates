@@ -213,20 +213,41 @@ IMPORTANT RULES
 5. Use progress.current from response to track sequential collection
 `;
 
-export function planningPrompt(messages: BaseMessage[]): string {
+export function planningPrompt(messages: BaseMessage[], cvText?: string): string {
   const messagesText = serializeMessages(messages);
 
   return `Analyze career history and create a collection plan.
 
 CONVERSATION:
 ${messagesText}
-
+${
+  cvText
+    ? `
+═══════════════════════════════════════════════════
+CV/RESUME (additional anonymized context):
+═══════════════════════════════════════════════════
+${cvText}
+`
+    : ""
+}
 ═══════════════════════════════════════════════════
 YOUR TASK: Identify all career positions in CHRONOLOGICAL order (oldest → newest)
 ═══════════════════════════════════════════════════
+${
+  cvText
+    ? `
+IMPORTANT: Use BOTH conversation and CV data to build comprehensive plan:
+- CV provides structured career information
+- Conversation may contain clarifications, corrections, or additional details
+- If there are discrepancies, prioritize conversation (user's clarifications are more recent)
+`
+    : ""
+}
 
 For each position, return:
-1. preview: Short label - "Role at Company YYYY-YYYY" (e.g., "Junior Developer at Yandex 2018-2020")
+1. preview: Rich label with key info for user validation
+   Format: "Role at Company YYYY-YYYY (skill1, skill2, skill3 | industry)"
+   Example: "Junior Developer at Yandex 2018-2020 (python, django, postgresql | fintech)"
 2. incomingTrails: Learning activities that LED TO this position (from the previous one)
 
 ═══════════════════════════════════════════════════
@@ -237,54 +258,72 @@ RULES:
 - Trail preview format: "Platform Course Name YYYY" (e.g., "Coursera Machine Learning 2019")
 - Include promotions and internal moves as separate positions if significantly different
 - Education → first job counts as first position (no incoming trail needed)
+- Preview MUST include top 3 skills and industry for user to validate early
 
 ═══════════════════════════════════════════════════
 EXAMPLE OUTPUT:
 ═══════════════════════════════════════════════════
 contexts: [
-  { preview: "Intern at Startup 2017-2018", incomingTrails: [] },
-  { preview: "Junior Python Dev at Yandex 2018-2020", incomingTrails: ["CS50 Harvard course 2017"] },
-  { preview: "Senior Backend at Google 2020-2023", incomingTrails: ["System Design course 2020", "Go Lang bootcamp 2020"] }
+  { preview: "Intern at Startup 2017-2018 (html, css, javascript | e-commerce)", incomingTrails: [] },
+  { preview: "Junior Python Dev at Yandex 2018-2020 (python, django, postgresql | tech)", incomingTrails: ["CS50 Harvard course 2017"] },
+  { preview: "Senior Backend at Google 2020-2023 (go, kubernetes, grpc | tech)", incomingTrails: ["System Design course 2020", "Go Lang bootcamp 2020"] }
 ]`;
 }
 
-export function contextExtractionPrompt(messages: BaseMessage[], preview: string): string {
+function buildContextExtractionRules(hasCv: boolean): string {
+  const cvMergeNote = hasCv
+    ? `IMPORTANT: Use BOTH sources to extract comprehensive data:
+- CV provides structured information (skills, dates, industries)
+- Conversation may have additional details or corrections
+- If conflict exists, prioritize conversation (user's latest input)\n\n`
+    : "";
+
+  return `${cvMergeNote}- All terms: lowercase-kebab-case (e.g., "machine-learning", "data-science")
+- cityName: lowercase (e.g., "berlin", "san-francisco")
+- countryCode/citizenships: lowercase ISO 3166-1 alpha-2 (e.g., "de", "ru")
+- languages: lowercase ISO 639-1 (e.g., "en", "de")
+- DO NOT invent data - extract ONLY what is explicitly mentioned`;
+}
+
+export function contextExtractionPrompt(messages: BaseMessage[], preview: string, cvText?: string): string {
   const text = serializeMessages(messages);
+  const cvSection = cvText
+    ? `\n═══════════════════════════════════════════════════
+CV/RESUME (additional anonymized context):
+═══════════════════════════════════════════════════
+${cvText}\n`
+    : "";
+
   return `Extract career context for: "${preview}"
 
 CONVERSATION:
 ${text}
-
+${cvSection}
 ═══════════════════════════════════════════════════
 FORMAT RULES (STRICT):
 ═══════════════════════════════════════════════════
-- All terms: lowercase-kebab-case (e.g., "machine-learning", "data-science")
-- cityName: lowercase (e.g., "berlin", "san-francisco")
-- countryCode/citizenships: lowercase ISO 3166-1 alpha-2 (e.g., "de", "ru")
-- languages: lowercase ISO 639-1 (e.g., "en", "de")
-- DO NOT invent data - extract ONLY what is explicitly mentioned
+${buildContextExtractionRules(!!cvText)}
 
 ═══════════════════════════════════════════════════
 REQUIRED FIELDS (must extract):
 ═══════════════════════════════════════════════════
 - position: Job level (e.g., "junior", "middle", "senior", "lead")
 - domains: Work areas (e.g., ["frontend", "backend", "devops"]) - min 1
-- skills: Technical skills explicitly mentioned (e.g., ["react", "typescript"]) - min 1
+- skills: Technical skills (e.g., ["react", "typescript"]) - min 1
 - industry: Company's industry (e.g., "tech", "fintech", "e-commerce")
 - companySize: Approximate size (e.g., "startup", "50-200", "1000+")
 - countryCode: ISO 3166-1 alpha-2 lowercase (e.g., "us", "de", "ru")
 - cityName: City name lowercase (e.g., "berlin", "moscow")
 - citizenships: Citizenship codes lowercase (e.g., ["ru", "de"])
 - birthYear: Year of birth (e.g., 1990)
-- creationReason: Why this job started. Choose from:
-  started_working, got_promoted, changed_position, changed_company,
-  changed_industry, changed_domain, got_fired, burnout, relocation,
-  education_upgrade, career_restart, management_transition, tech_shift
+- creationReason: started_working | got_promoted | changed_position | changed_company |
+  changed_industry | changed_domain | got_fired | burnout | relocation |
+  education_upgrade | career_restart | management_transition | tech_shift
 
 ═══════════════════════════════════════════════════
 OPTIONAL FIELDS (include ONLY if explicitly mentioned):
 ═══════════════════════════════════════════════════
-- educationLevel: NONE, HIGH_SCHOOL, ASSOCIATE, BACHELOR, MASTER, DOCTORATE, PROFESSIONAL
+- educationLevel: NONE | HIGH_SCHOOL | ASSOCIATE | BACHELOR | MASTER | DOCTORATE | PROFESSIONAL
 - salaryExact: Exact annual salary in USD (OR use salaryMin/salaryMax for range)
 - salaryMin/salaryMax: Salary range bounds in USD
 - languages: ISO 639-1 lowercase for B2+ proficiency (e.g., ["en", "de"])

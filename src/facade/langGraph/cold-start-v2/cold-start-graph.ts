@@ -17,7 +17,8 @@ import { editContextNode } from "./nodes/edit-context.js";
 import { extractContextNode } from "./nodes/extract-context.js";
 import { gatherStoryNode } from "./nodes/gather-story.js";
 import { nextContextNode } from "./nodes/next-context.js";
-import { parseDecisionNode, parseStoryDecisionNode } from "./nodes/parse-decision.js";
+import { parseConfirmationNode } from "./nodes/parse-confirmation.js";
+import { parseStoryCompletionNode } from "./nodes/parse-story-completion.js";
 import { persistNode } from "./nodes/persist.js";
 import { planCareerNode } from "./nodes/plan-career.js";
 import { showContextNode } from "./nodes/show-context.js";
@@ -65,19 +66,19 @@ function stateToResponse(state: ColdStartStateType): ColdStartResponse {
 function createGraphBuilder() {
   return new StateGraph(coldStartStateAnnotation)
     .addNode(NODE.gather_story, gatherStoryNode)
-    .addNode(NODE.parse_story_decision, parseStoryDecisionNode)
+    .addNode(NODE.parse_story_decision, parseStoryCompletionNode)
     .addNode(NODE.plan_career, planCareerNode)
     .addNode(NODE.show_plan, showPlanNode)
-    .addNode(NODE.parse_plan_decision, parseDecisionNode)
+    .addNode(NODE.parse_plan_decision, parseConfirmationNode)
     .addNode(NODE.extract_context, extractContextNode)
     .addNode(NODE.validate_context, validateContextNode)
     .addNode(NODE.clarify, clarifyNode)
     .addNode(NODE.show_context, showContextNode)
-    .addNode(NODE.parse_context_decision, parseDecisionNode)
+    .addNode(NODE.parse_context_decision, parseConfirmationNode)
     .addNode(NODE.edit_context, editContextNode)
     .addNode(NODE.next_context, nextContextNode)
     .addNode(NODE.show_final, showFinalNode)
-    .addNode(NODE.parse_final_decision, parseDecisionNode)
+    .addNode(NODE.parse_final_decision, parseConfirmationNode)
     .addNode(NODE.persist, persistNode)
     .addNode(NODE.cancel, cancelNode)
     .addEdge(START, NODE.gather_story)
@@ -169,6 +170,7 @@ export class ColdStartGraph {
     coreClient: CoreClient,
     normalizer: Normalizer,
     userService: UserService,
+    cvText?: string,
   ): Promise<ColdStartResponse> {
     /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
     const config = { configurable: { thread_id: threadId, coreClient, normalizer, userService } };
@@ -183,6 +185,7 @@ export class ColdStartGraph {
           {
             userId: this.userId,
             userResponse: message,
+            cvText,
           },
           config,
         );

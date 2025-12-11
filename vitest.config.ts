@@ -33,7 +33,11 @@ export default defineConfig(() => {
         {
           test: {
             name: "unit",
-            include: ["tests/core/unit/**/*.spec.ts", "tests/facade/agents/**/unit/**/*.spec.ts"],
+            include: [
+              "tests/core/unit/**/*.spec.ts",
+              "tests/facade/agents/**/unit/**/*.spec.ts",
+              "tests/facade/tools/**/*.spec.ts",
+            ],
             pool: "threads",
             poolOptions: {
               threads: {

@@ -8,6 +8,7 @@ import {
   mcpDeleteTrailParamsSchema,
   mcpGetGoalParamsSchema,
   mcpGetStoryParamsSchema,
+  mcpParseCvToTextParamsSchema,
   mcpResetColdStartParamsSchema,
   mcpSearchByTargetParamsSchema,
   mcpSearchCareersParamsSchema,
@@ -28,6 +29,7 @@ import { DeleteGoalTool } from "./tools/delete-goal.tool.js";
 import { DeleteTrailTool } from "./tools/delete-trail.tool.js";
 import { GetGoalTool } from "./tools/get-goal.tool.js";
 import { GetStoryTool } from "./tools/get-story.tool.js";
+import { ParseCvToTextTool } from "./tools/parse-cv-to-text.tool.js";
 import { ResetColdStartTool } from "./tools/reset-cold-start.tool.js";
 import { SearchByTargetTool } from "./tools/search-by-target.tool.js";
 import { SearchCareersTool } from "./tools/search-careers.tool.js";
@@ -69,6 +71,7 @@ type ToolInstances = {
   upsertContext: UpsertContextTool;
   upsertTrail: UpsertTrailTool;
   deleteTrail: DeleteTrailTool;
+  parseCvToText: ParseCvToTextTool;
 };
 
 function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
@@ -96,6 +99,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     upsertContext: new UpsertContextTool(toolDeps),
     upsertTrail: new UpsertTrailTool(toolDeps),
     deleteTrail: new DeleteTrailTool(toolDeps),
+    parseCvToText: new ParseCvToTextTool(toolDeps),
   };
 }
 
@@ -304,6 +308,23 @@ function registerSearchByTargetTool(server: FastMCP, tool: SearchByTargetTool): 
   });
 }
 
+function registerParseCvToTextTool(server: FastMCP, tool: ParseCvToTextTool): void {
+  server.addTool({
+    name: "parse_cv_to_text",
+    description:
+      "Parse PDF CV to anonymized markdown text for career history extraction. Removes personal info, keeps career data.",
+    parameters: mcpParseCvToTextParamsSchema,
+    execute: async (args: unknown) => {
+      const params = mcpParseCvToTextParamsSchema.parse(args);
+      const result = await tool.execute(params);
+      if (result.ok) {
+        return JSON.stringify(result.value, null, 2);
+      }
+      throwToolError(result.error);
+    },
+  });
+}
+
 function registerTrailTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "upsert_trail",
@@ -370,6 +391,7 @@ function registerTools(server: FastMCP, tools: ToolInstances, authService: AuthS
   registerAuthTool(server, tools.auth);
   registerTelegramAuthTools(server, authService);
   registerColdStartTool(server, tools.coldStart);
+  registerParseCvToTextTool(server, tools.parseCvToText);
   registerResetColdStartTool(server, tools.resetColdStart);
   registerGetStoryTool(server, tools.getStory);
   registerSearchCareersTool(server, tools.searchCareers);
@@ -385,9 +407,9 @@ export function createMcpServer(deps: FacadeServerDependencies): FastMCP {
     name: "waymates-facade",
     version: "3.2.0",
     instructions:
-      "WayMates MCP Server. Provides 17 tools for career operations: " +
+      "WayMates MCP Server. Provides 18 tools for career operations: " +
       "Auth (auth, register_telegram, link_telegram), " +
-      "Cold Start (cold_start, reset_cold_start), " +
+      "Cold Start (cold_start, parse_cv_to_text, reset_cold_start), " +
       "Story (get_story), " +
       "Search (search_careers, search_user_careers, search_by_target), " +
       "Goals (set_goal, get_goal, delete_goal), " +

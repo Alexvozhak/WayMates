@@ -70,6 +70,8 @@ export const coldStartStateSchema = z.object({
     .string()
     .optional()
     .describe("User response after interrupt - Agent parses NLP and decides next tool"),
+
+  cvText: z.string().optional().describe("Parsed anonymized text from PDF resume if provided"),
 });
 
 export type ColdStartState = z.infer<typeof coldStartStateSchema>;

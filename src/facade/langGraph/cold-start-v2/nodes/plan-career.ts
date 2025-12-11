@@ -24,9 +24,9 @@ function generateContextIds(contexts: ContextAgendaBase[]): ContextAgenda[] {
 }
 
 export async function planCareerNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {
-  const { messages } = state;
+  const { messages, cvText } = state;
 
-  const prompt = planningPrompt(messages);
+  const prompt = planningPrompt(messages, cvText);
   const planOutput = await planningModel.invoke([new HumanMessage(prompt)]);
 
   if (!planOutput || planOutput.contexts.length === 0) {

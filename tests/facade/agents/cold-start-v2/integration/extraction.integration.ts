@@ -7,14 +7,17 @@ import { UserStories } from "../../../../core/helpers/user-stories.js";
 
 import { cleanupColdStart, generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";
 import { FacadeTestContext } from "../../../helpers/test-context.js";
+import { cleanupSession, setupSession } from "../../../helpers/mcp-tool-helpers.js";
 
 import type { UserId } from "../../../../../src/shared/schemas.js";
+import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
 
 const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя карьерная история.";
 
 describe("Cold-Start V2: Extraction (TC-E)", () => {
   const testUserId: UserId = "usr_01933ec5-0008-0000-0000-000000000008";
   const threadId = `cold_start_v2_${testUserId}`;
+  let testSessionId: SessionId;
 
   const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
@@ -31,10 +34,12 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
   beforeEach(async () => {
     await cleanupColdStart(testUserId, threadId);
     await cleanupUserFromNeo4j(testUserId);
+    testSessionId = await setupSession(testUserId);
     trackTestUser(testUserId);
   });
 
   afterAll(async () => {
+    await cleanupSession(testSessionId);
     await cleanupAllTestUsers();
   });
 

@@ -38,6 +38,11 @@ const envSchema = z.object({
   // Server transport configuration
   FACADE_TRANSPORT: z.enum(["stdio", "http"]).default("stdio"),
   FACADE_HTTP_PORT: z.coerce.number().int().positive().default(3000),
+  // CV parser configuration
+  CV_PARSER_MODEL: z.string().default("google/gemini-2.5-flash"),
+  CV_PARSER_MAX_FILE_SIZE_MB: z.coerce.number().int().positive().default(10),
+  CV_PARSER_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(4000),
+  CV_PARSER_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.1),
 });
 /* eslint-enable @typescript-eslint/naming-convention */
 
