@@ -3,12 +3,11 @@ import { UpsertTrailGraph } from "../../langGraph/upsert-trail/upsert-trail-grap
 
 import { BaseTool } from "./base-tool.js";
 
-import type { UserId } from "../../../shared/schemas.js";
+import type { McpUpsertTrailParams, UserId } from "../../../shared/schemas.js";
 import type { UpsertTrailResponse } from "../../langGraph/upsert-trail/types.js";
-import type { UpsertTrailParams } from "../schemas.js";
 
-export class UpsertTrailTool extends BaseTool<UpsertTrailParams, UpsertTrailResponse> {
-  protected async executeImpl(params: UpsertTrailParams, userId: UserId): Promise<UpsertTrailResponse> {
+export class UpsertTrailTool extends BaseTool<McpUpsertTrailParams, UpsertTrailResponse> {
+  protected async executeImpl(params: McpUpsertTrailParams, userId: UserId): Promise<UpsertTrailResponse> {
     const threadId = `upsert_trail_${userId}`;
     const checkpointer = this.checkpointService.getCheckpointer();
 

@@ -7,9 +7,11 @@ import {
   fieldFilterSchema,
   makeNullable,
   newContextReasonSchema,
+  targetContextSchema,
 } from "../../shared/schemas.js";
 import { NlpParseError } from "../errors.js";
 
+import type { TargetContext } from "../../shared/schemas.js";
 import type { ZodObject, ZodRawShape } from "zod";
 
 export type TargetNlpResult = z.infer<typeof targetNlpSchema>;
@@ -168,4 +170,29 @@ Return JSON with:
 Query: ${query}`;
 
   return invokeLlmStructured(apiKey, currentNlpSchema, prompt);
+}
+
+export async function parseGoalQuery(apiKey: string, query: string): Promise<TargetContext> {
+  const prompt = `Extract target career goal from user message.
+
+Return JSON with targetContext fields:
+- position: { mode: "desired", values: ["position name"] } or null
+- countries: { mode: "desired", values: ["RU", "US"] } or null (ISO codes)
+- domains: { mode: "desired", values: ["domain1", "domain2"] } or null
+- skills: { mode: "desired", values: ["skill1", "skill2"] } or null
+- languages: { mode: "desired", values: ["en", "ru"] } or null (ISO codes)
+
+Examples:
+- "Хочу стать Senior Backend в финтехе" → position: {mode:"desired", values:["Senior Backend Developer"]}, domains: {mode:"desired", values:["финтех"]}
+- "Want to work in US with Python" → countries: {mode:"desired", values:["US"]}, skills: {mode:"desired", values:["Python"]}
+
+Query: ${query}`;
+
+  const result = await invokeLlmStructured(apiKey, targetContextSchema, prompt);
+
+  if (Object.keys(result).length === 0) {
+    throw new NlpParseError("Could not recognize career goal. Please specify position, location, skills or domain.");
+  }
+
+  return result;
 }

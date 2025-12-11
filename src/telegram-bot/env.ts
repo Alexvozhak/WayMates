@@ -11,6 +11,11 @@ export const envSchema = z.object({
   // LLM Formatter configuration
   FORMATTER_LLM_MODEL: z.string().default("gpt-4o-mini"),
   FORMATTER_LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
+  // Rate limiting
+  USER_RATE_LIMIT_WINDOW_MS: z.coerce.number().positive().default(10_000),
+  USER_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().positive().default(3),
+  TELEGRAM_PRESENTER_RPM_LIMIT: z.coerce.number().int().positive().default(60),
+  TELEGRAM_PRESENTER_MAX_CONCURRENT: z.coerce.number().int().positive().default(5),
 });
 
 export type BotEnv = z.infer<typeof envSchema>;

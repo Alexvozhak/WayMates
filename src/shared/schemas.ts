@@ -608,7 +608,8 @@ export const updateContextInputSchema = userContextSchemaBase
     message: "At least one field must be provided for update",
   });
 
-export const updateContextParamsSchema = z.object({
+// Core API: Structured update (used by tRPC)
+export const coreUpdateContextParamsSchema = z.object({
   userId: userIdSchema,
   updates: updateContextInputSchema,
 });
@@ -625,7 +626,7 @@ export type DeleteStoryResult = z.infer<typeof deleteStoryResultSchema>;
 export type Goal = z.infer<typeof goalSchema>;
 export type CreateGoalInput = z.infer<typeof createGoalInputSchema>;
 export type UpdateContextInput = z.infer<typeof updateContextInputSchema>;
-export type UpdateContextParams = z.infer<typeof updateContextParamsSchema>;
+export type CoreUpdateContextParams = z.infer<typeof coreUpdateContextParamsSchema>;
 
 // ==========================================
 // === SEARCH CANDIDATE TYPES (композиция) ===
@@ -749,3 +750,497 @@ export const addTermInputSchema = z.object({
 });
 
 export type AddTermInput = z.infer<typeof addTermInputSchema>;
+
+// ==========================================
+// === COLD START MCP RESPONSE ===
+// ==========================================
+
+/**
+ * Base schema for context agenda (what LLM returns during planning).
+ * Used by planCareerHistoryTool's structured output.
+ */
+export const contextAgendaBaseSchema = z.object({
+  preview: z.string().describe("Human-readable preview: 'Junior Backend в Яндексе 2020-2022'"),
+  incomingTrails: z.array(z.string()).describe("Array of trail preview strings: ['Coursera React course 2022']"),
+});
+
+export type ContextAgendaBase = z.infer<typeof contextAgendaBaseSchema>;
+
+/**
+ * Queue item with context ID generated upfront (in planning phase).
+ * Extends base schema with server-generated contextId.
+ */
+export const contextAgendaSchema = contextAgendaBaseSchema.extend({
+  contextId: contextIdSchema.describe("UUID v7 generated in planning phase"),
+});
+
+export type ContextAgenda = z.infer<typeof contextAgendaSchema>;
+
+/**
+ * Structured validation error for clarification workflow.
+ * Generic helper extracts these from ANY Zod schema.
+ */
+export const missingFieldSchema = z.object({
+  field: z.string().describe("Field name that failed validation"),
+  entityLabel: z.string().describe("Human-readable entity label: 'Backend Engineer at Google'"),
+  entityType: z.enum(["context", "trail"]).describe("Which entity type this field belongs to"),
+  zodMessage: z.string().describe("Zod error message"),
+});
+
+export type MissingField = z.infer<typeof missingFieldSchema>;
+
+/**
+ * Progress indicator for multi-context collection.
+ */
+export const collectionProgressSchema = z.object({
+  current: z.number().describe("Current context number (1-based for display)"),
+  total: z.number().describe("Total contexts in queue"),
+});
+
+export type CollectionProgress = z.infer<typeof collectionProgressSchema>;
+
+/**
+ * Result of processEntityBatchTool execution - clarification needed.
+ */
+export const entityBatchResultClarificationSchema = z.object({
+  phase: z.literal("awaiting_clarification"),
+  missingFields: z.array(missingFieldSchema),
+});
+
+/**
+ * Result of processEntityBatchTool execution - confirmation needed.
+ */
+export const entityBatchResultConfirmationSchema = z.object({
+  phase: z.literal("awaiting_context_confirmation"),
+  entity: userContextSchema,
+  relatedTrails: z.array(trailSchema),
+  progress: collectionProgressSchema,
+});
+
+/**
+ * Result of planCareerHistoryTool execution.
+ */
+export const planResultSchema = z.object({
+  phase: z.literal("awaiting_plan_confirmation"),
+  queue: z.array(contextAgendaSchema),
+});
+
+export type PlanResult = z.infer<typeof planResultSchema>;
+
+/**
+ * Final preview result for awaiting_final_confirmation phase.
+ */
+export const finalPreviewSchema = z.object({
+  phase: z.literal("awaiting_final_confirmation"),
+  preview: z.object({
+    contexts: z.array(userContextSchema),
+    trails: z.array(trailSchema),
+  }),
+  summary: z.object({
+    contextsCount: z.number(),
+    trailsCount: z.number(),
+  }),
+});
+
+export type FinalPreview = z.infer<typeof finalPreviewSchema>;
+
+/**
+ * Collected story data (contexts + trails + userId).
+ * Matches StoryInput structure from shared/schemas.
+ */
+export const collectedStorySchema = z.object({
+  userId: userIdSchema,
+  contexts: z.array(userContextSchema),
+  trails: z.array(trailSchema),
+});
+
+export type CollectedStory = z.infer<typeof collectedStorySchema>;
+
+/**
+ * Saved result after successful collection.
+ * MCP handler calls Core upsertStory.
+ */
+export const savedResultSchema = z
+  .object({
+    phase: z.literal("saved"),
+  })
+  .merge(collectedStorySchema);
+
+export type SavedResult = z.infer<typeof savedResultSchema>;
+
+/**
+ * Already saved result (idempotency protection).
+ */
+export const alreadySavedResultSchema = z.object({
+  phase: z.literal("already_saved"),
+  message: z.string(),
+});
+
+export type AlreadySavedResult = z.infer<typeof alreadySavedResultSchema>;
+
+/**
+ * Cold Start MCP response - discriminated union by phase.
+ * This is what cold_start MCP tool returns to telegram-bot.
+ */
+export const coldStartResponseSchema = z.discriminatedUnion("phase", [
+  z.object({
+    phase: z.literal("story_gathering"),
+    message: z.string(),
+  }),
+  planResultSchema,
+  entityBatchResultClarificationSchema,
+  entityBatchResultConfirmationSchema,
+  finalPreviewSchema,
+  savedResultSchema,
+  alreadySavedResultSchema,
+  z.object({
+    phase: z.literal("failed"),
+    message: z.string(),
+  }),
+]);
+
+export type ColdStartResponse = z.infer<typeof coldStartResponseSchema>;
+
+// ==========================================
+// === MCP RESPONSE SCHEMAS ===
+// ==========================================
+
+/**
+ * Response from register_telegram MCP tool.
+ * Registers or authenticates user via Telegram (idempotent).
+ */
+export const telegramRegisterResponseSchema = z.object({
+  userId: userIdSchema,
+  token: tokenSchema,
+  sessionId: sessionIdSchema,
+  isNewUser: z.boolean(),
+  hasStory: z.boolean(),
+});
+
+export type TelegramRegisterResponse = z.infer<typeof telegramRegisterResponseSchema>;
+
+/**
+ * Response from link_telegram MCP tool.
+ * Links Telegram account to existing LibreChat account.
+ */
+export const telegramLinkResponseSchema = z.object({
+  userId: userIdSchema,
+  sessionId: sessionIdSchema,
+  hasStory: z.boolean(),
+  token: tokenSchema,
+});
+
+export type TelegramLinkResponse = z.infer<typeof telegramLinkResponseSchema>;
+
+/**
+ * Response from search_careers and search_user_careers MCP tools.
+ * Contains array of matched candidates with scores.
+ */
+export const searchResultResponseSchema = z.object({
+  candidates: z.array(scoredMatchedCandidateSchema),
+  totalCount: z.number(),
+});
+
+export type SearchResultResponse = z.infer<typeof searchResultResponseSchema>;
+
+/**
+ * Response from set_goal MCP tool.
+ * Returns the created goal ID.
+ */
+export const setGoalResponseSchema = z.object({
+  goalId: z.string(),
+});
+
+export type SetGoalResponse = z.infer<typeof setGoalResponseSchema>;
+
+/**
+ * Response from get_story MCP tool.
+ * Returns user's career story (contexts + trails).
+ */
+export const getStoryResponseSchema = z.object({
+  contexts: z.array(z.unknown()),
+  trails: z.array(z.unknown()),
+});
+
+export type GetStoryResponse = z.infer<typeof getStoryResponseSchema>;
+
+/**
+ * Response from get_goal MCP tool.
+ * Returns user's goal or null if not set.
+ */
+export const getGoalResponseSchema = z
+  .object({
+    goalId: z.string(),
+    targetContext: z.unknown(),
+  })
+  .nullable();
+
+export type GetGoalResponse = z.infer<typeof getGoalResponseSchema>;
+
+/**
+ * Response from update_context MCP tool.
+ * Multi-phase workflow for updating existing context.
+ */
+export const updateContextResponseSchema = z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("extracting"), message: z.string() }),
+  z.object({ phase: z.literal("awaiting_clarification"), missingFields: z.array(missingFieldSchema) }),
+  z.object({
+    phase: z.literal("awaiting_confirmation"),
+    before: userContextSchema,
+    after: userContextSchema,
+  }),
+  z.object({ phase: z.literal("saved"), updatedContext: userContextSchema }),
+  z.object({ phase: z.literal("cancelled"), message: z.string() }),
+  z.object({ phase: z.literal("failed"), message: z.string() }),
+]);
+
+export type UpdateContextResponse = z.infer<typeof updateContextResponseSchema>;
+
+/**
+ * Response from upsert_context MCP tool.
+ * Multi-phase workflow for creating new context.
+ */
+export const upsertContextResponseSchema = z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("extracting"), message: z.string() }),
+  z.object({ phase: z.literal("awaiting_clarification"), missingFields: z.array(missingFieldSchema) }),
+  z.object({ phase: z.literal("awaiting_confirmation"), context: userContextSchema }),
+  z.object({ phase: z.literal("saved"), context: userContextSchema }),
+  z.object({ phase: z.literal("cancelled"), message: z.string() }),
+  z.object({ phase: z.literal("failed"), message: z.string() }),
+]);
+
+export type UpsertContextResponse = z.infer<typeof upsertContextResponseSchema>;
+
+/**
+ * Response from upsert_trail MCP tool.
+ * Multi-phase workflow for creating new trail.
+ */
+export const upsertTrailResponseSchema = z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("extracting"), message: z.string() }),
+  z.object({ phase: z.literal("awaiting_clarification"), missingFields: z.array(missingFieldSchema) }),
+  z.object({ phase: z.literal("awaiting_confirmation"), trail: trailSchema }),
+  z.object({ phase: z.literal("saved"), trail: trailSchema }),
+  z.object({ phase: z.literal("cancelled"), message: z.string() }),
+  z.object({ phase: z.literal("failed"), message: z.string() }),
+]);
+
+export type UpsertTrailResponse = z.infer<typeof upsertTrailResponseSchema>;
+
+// ==========================================
+// === MCP PARAMS SCHEMAS ===
+// ==========================================
+
+/**
+ * Params for get_story MCP tool.
+ * Returns user's career story (contexts + trails).
+ */
+export const mcpGetStoryParamsSchema = z.object({
+  targetUserId: userIdSchema.optional(),
+  sessionId: sessionIdSchema,
+});
+
+export type McpGetStoryParams = z.infer<typeof mcpGetStoryParamsSchema>;
+
+/**
+ * Params for search_careers MCP tool (adhoc search).
+ * Search candidates by reference context (without user story).
+ */
+export const mcpSearchCareersParamsSchema = userSearchParamsRawSchema
+  .omit({ userId: true })
+  .extend({
+    referenceContext: adhocUserContextSchema,
+    sessionId: sessionIdSchema,
+  })
+  .refine((data) => data.pathLimit <= data.limit, {
+    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
+    path: ["pathLimit"],
+  });
+
+export type McpSearchCareersParams = z.infer<typeof mcpSearchCareersParamsSchema>;
+
+/**
+ * Params for search_user_careers MCP tool.
+ * Search candidates using authenticated user's story.
+ */
+export const mcpSearchUserCareersParamsSchema = userSearchParamsRawSchema
+  .omit({ userId: true })
+  .extend({
+    sessionId: sessionIdSchema,
+  })
+  .refine((data) => data.pathLimit <= data.limit, {
+    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
+    path: ["pathLimit"],
+  });
+
+export type McpSearchUserCareersParams = z.infer<typeof mcpSearchUserCareersParamsSchema>;
+
+/**
+ * Params for set_goal MCP tool.
+ * Creates or updates user's career goal.
+ */
+export const mcpSetGoalParamsSchema = z.object({
+  targetContext: targetContextSchema,
+  sessionId: sessionIdSchema,
+});
+
+export type McpSetGoalParams = z.infer<typeof mcpSetGoalParamsSchema>;
+
+/**
+ * Params for update_context MCP tool (conversational API).
+ * Updates existing context via LangGraph agent (NLP-based).
+ */
+export const mcpUpdateContextParamsSchema = z.object({
+  message: z
+    .string()
+    .min(10)
+    .describe(
+      "User message describing context updates in natural language. " +
+        "Example: 'Добавь React в мои навыки' or 'Измени позицию на Senior Developer'",
+    ),
+  sessionId: sessionIdSchema,
+});
+
+export type McpUpdateContextParams = z.infer<typeof mcpUpdateContextParamsSchema>;
+
+/**
+ * Params for get_goal MCP tool.
+ * Returns user's goal or null if not set.
+ */
+export const mcpGetGoalParamsSchema = z.object({
+  targetUserId: userIdSchema.optional(),
+  sessionId: sessionIdSchema,
+});
+
+export type McpGetGoalParams = z.infer<typeof mcpGetGoalParamsSchema>;
+
+/**
+ * Params for delete_goal MCP tool.
+ * Deletes user's goal.
+ */
+export const mcpDeleteGoalParamsSchema = z.object({
+  sessionId: sessionIdSchema,
+});
+
+export type McpDeleteGoalParams = z.infer<typeof mcpDeleteGoalParamsSchema>;
+
+/**
+ * Params for search_by_target MCP tool.
+ * Search candidates by target context.
+ */
+export const mcpSearchByTargetParamsSchema = targetSearchParamsBaseSchema.extend({
+  sessionId: sessionIdSchema,
+});
+
+export type McpSearchByTargetParams = z.infer<typeof mcpSearchByTargetParamsSchema>;
+
+/**
+ * Params for delete_context MCP tool.
+ * Deletes specific context.
+ */
+export const mcpDeleteContextParamsSchema = z.object({
+  contextId: contextIdSchema,
+  sessionId: sessionIdSchema,
+});
+
+export type McpDeleteContextParams = z.infer<typeof mcpDeleteContextParamsSchema>;
+
+/**
+ * Params for upsert_context MCP tool (conversational API).
+ * Creates new context via LangGraph agent (NLP-based).
+ */
+export const mcpUpsertContextParamsSchema = z.object({
+  message: z
+    .string()
+    .min(10)
+    .describe(
+      "User message describing a new career context in natural language. " +
+        "Example: 'Я работаю senior backend в Яндексе с 2023 года в Москве, пишу на Python и Go'",
+    ),
+  sessionId: sessionIdSchema,
+});
+
+export type McpUpsertContextParams = z.infer<typeof mcpUpsertContextParamsSchema>;
+
+/**
+ * Params for cold_start MCP tool.
+ * Multi-turn dialog for collecting user's career history.
+ */
+export const mcpColdStartParamsSchema = z.object({
+  message: z.string().min(1).describe("User message (career history or confirmation)"),
+  sessionId: sessionIdSchema,
+});
+
+export type McpColdStartParams = z.infer<typeof mcpColdStartParamsSchema>;
+
+/**
+ * Params for reset_cold_start MCP tool.
+ * Resets cold start flow and deletes checkpoint.
+ */
+export const mcpResetColdStartParamsSchema = z.object({
+  sessionId: sessionIdSchema,
+});
+
+export type McpResetColdStartParams = z.infer<typeof mcpResetColdStartParamsSchema>;
+
+/**
+ * Params for upsert_trail MCP tool (conversational API).
+ * Creates new trail via LangGraph agent (NLP-based).
+ */
+export const mcpUpsertTrailParamsSchema = z.object({
+  message: z
+    .string()
+    .min(10)
+    .describe(
+      "User message describing a learning trail in natural language. " +
+        "Example: 'I took a React course on Udemy for 8 weeks'",
+    ),
+  fromContextId: contextIdSchema
+    .nullable()
+    .optional()
+    .describe("Source context ID if trail originates from a specific context"),
+  sessionId: sessionIdSchema,
+});
+
+export type McpUpsertTrailParams = z.infer<typeof mcpUpsertTrailParamsSchema>;
+
+/**
+ * Params for delete_trail MCP tool.
+ * Deletes specific trail.
+ */
+export const mcpDeleteTrailParamsSchema = z.object({
+  trailId: trailIdSchema,
+  sessionId: sessionIdSchema,
+});
+
+export type McpDeleteTrailParams = z.infer<typeof mcpDeleteTrailParamsSchema>;
+
+/**
+ * Params for auth MCP tool.
+ * Authenticates user via token.
+ */
+export const mcpAuthParamsSchema = z.object({
+  token: tokenSchema.optional(),
+});
+
+export type McpAuthParams = z.infer<typeof mcpAuthParamsSchema>;
+
+/**
+ * Params for register_telegram MCP tool.
+ * Registers or authenticates user via Telegram (idempotent).
+ */
+export const mcpTelegramRegisterParamsSchema = z.object({
+  telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
+});
+
+export type McpTelegramRegisterParams = z.infer<typeof mcpTelegramRegisterParamsSchema>;
+
+/**
+ * Params for link_telegram MCP tool.
+ * Links Telegram account to existing LibreChat account.
+ */
+export const mcpTelegramLinkParamsSchema = z.object({
+  token: tokenSchema.describe("Token from LibreChat account to link"),
+  telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
+});
+
+export type McpTelegramLinkParams = z.infer<typeof mcpTelegramLinkParamsSchema>;

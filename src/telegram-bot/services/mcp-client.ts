@@ -1,149 +1,62 @@
-import axios, { type AxiosInstance } from "axios";
-import { z } from "zod";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { CallToolResultSchema, TextContentSchema } from "@modelcontextprotocol/sdk/types.js";
 
-import { resultErrorSchema } from "../../shared/schemas.js";
+import packageJson from "../../../package.json" with { type: "json" };
 import { McpClientError } from "../errors.js";
 
-let requestId = 0;
+import { TOOL_REGISTRY } from "./tool-registry.js";
 
-const mcpResponseSchema = z.object({
-  result: z
-    .object({
-      content: z.array(
-        z.object({
-          type: z.string(),
-          text: z.string().optional(),
-        }),
-      ),
-      isError: z.boolean().optional(),
-    })
-    .optional(),
-  error: z
-    .object({
-      code: z.number(),
-      message: z.string(),
-    })
-    .optional(),
-});
-
-export type McpToolResult = {
-  content: {
-    type: string;
-    text?: string | undefined;
-  }[];
-  isError?: boolean | undefined;
-};
+import type { FacadeToolName, ToolResponse } from "./tool-registry.js";
 
 export class McpClient {
-  private axiosInstance: AxiosInstance;
-
-  constructor(baseUrl: string, timeoutMs: number) {
-    this.axiosInstance = axios.create({
-      baseURL: baseUrl,
-      timeout: timeoutMs,
-    });
-  }
-
-  async callTool<TParams, TResponse>(
-    toolName: string,
-    params: TParams,
-    paramsSchema: z.ZodType<TParams>,
-    responseSchema: z.ZodType<TResponse>,
-  ): Promise<TResponse> {
-    const validatedParams = paramsSchema.parse(params);
-    const result = await this.sendWithRetry(toolName, validatedParams);
-    const parsedContent = this.parseJsonContent(result);
-    return responseSchema.parse(parsedContent);
-  }
-
-  private async sendWithRetry(toolName: string, params: unknown): Promise<McpToolResult> {
-    const maxRetries = 3;
-    let lastError: Error | undefined;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        return await this.sendRequest(toolName, params);
-      } catch (error) {
-        lastError = this.handleRetryError(error);
-
-        const delay = Math.pow(2, attempt) * 1000;
-        await this.sleep(delay);
-      }
-    }
-
-    throw new McpClientError(`Failed after ${maxRetries} retries`, lastError);
-  }
-
-  private handleRetryError(error: unknown): Error {
-    const err = error instanceof Error ? error : new Error(String(error));
-
-    if (this.isClientError(err)) {
-      throw err;
-    }
-
-    return err;
-  }
-
-  private async sendRequest(toolName: string, params: unknown): Promise<McpToolResult> {
-    const response = await this.axiosInstance.post("", {
-      jsonrpc: "2.0",
-      id: ++requestId,
-      method: "tools/call",
-      params: {
-        name: toolName,
-        arguments: params,
-      },
+  static async create(baseUrl: string): Promise<McpClient> {
+    const client = new Client({
+      name: packageJson.name,
+      version: packageJson.version,
     });
 
-    const data = mcpResponseSchema.parse(response.data);
+    const transport = new StreamableHTTPClientTransport(new URL(baseUrl));
 
-    if (data.error) {
-      throw new McpClientError(`MCP error: ${data.error.message}`);
-    }
+    // @ts-expect-error TS2379: exactOptionalPropertyTypes incompatibility with MCP SDK
+    await client.connect(transport);
 
-    if (!data.result) {
-      throw new McpClientError("No result in MCP response");
-    }
-
-    return data.result;
+    return new McpClient(client);
   }
 
-  private parseJsonContent(result: McpToolResult): unknown {
-    if (result.content.length === 0) {
-      throw new McpClientError("Tool result has no content");
-    }
+  private constructor(private readonly client: Client) {}
 
-    const firstContent = result.content[0];
-    if (!firstContent || firstContent.type !== "text") {
-      throw new McpClientError(`Unexpected content type: ${firstContent?.type}`);
-    }
+  async callTool<T extends FacadeToolName>(toolName: T, params: Record<string, unknown>): Promise<ToolResponse<T>> {
+    const tool = TOOL_REGISTRY[toolName];
 
-    if (!firstContent.text) {
-      throw new McpClientError("Content has no text");
-    }
-
-    let parsed: unknown;
     try {
-      parsed = JSON.parse(firstContent.text);
-    } catch {
-      throw new McpClientError("Failed to parse tool result as JSON");
-    }
+      const validatedParams = tool.paramsSchema.parse(params);
 
-    // Check Result<T, ErrorResponse> discriminator using Zod schema
-    const resultCheck = resultErrorSchema.safeParse(parsed);
-    if (resultCheck.success) {
-      const { error } = resultCheck.data;
-      throw new McpClientError(error.message, error.code, error.details);
-    }
+      const rawResult = await this.client.callTool(
+        {
+          name: toolName,
+          arguments: validatedParams,
+        },
+        CallToolResultSchema,
+      );
 
-    return parsed;
+      const result = CallToolResultSchema.parse(rawResult);
+      const content = TextContentSchema.parse(result.content[0]);
+      const data = JSON.parse(content.text);
+
+      const validatedResponse = tool.responseSchema.parse(data);
+      return validatedResponse;
+    } catch (error) {
+      if (error instanceof McpClientError) {
+        throw error;
+      }
+
+      const err = error instanceof Error ? error : new Error(String(error));
+      throw new McpClientError(err.message, err);
+    }
   }
 
-  private isClientError(error: Error): boolean {
-    return error.message.includes("HTTP error 4");
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  async close(): Promise<void> {
+    await this.client.close();
   }
 }

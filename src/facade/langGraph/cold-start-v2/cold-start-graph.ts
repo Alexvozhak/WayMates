@@ -29,7 +29,8 @@ import { coldStartStateAnnotation } from "./state.js";
 import { coldStartPhaseSchema, NODE } from "./types.js";
 
 import type { ColdStartStateType, UserId } from "./state.js";
-import type { ColdStartPhase, ColdStartResponse, ColdStartState } from "./types.js";
+import type { ColdStartPhase, ColdStartState } from "./types.js";
+import type { ColdStartResponse } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 import type { Normalizer } from "../../services/normalizer.js";
 import type { UserService } from "../../services/user.service.js";

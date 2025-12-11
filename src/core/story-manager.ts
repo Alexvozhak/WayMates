@@ -12,10 +12,10 @@ import {
 } from "../cypher/index.js";
 import {
   contextIdSchema,
+  coreUpdateContextParamsSchema,
   deleteStoryResultSchema,
   storyInputSchema,
   trailIdSchema,
-  updateContextParamsSchema,
   upsertContextInputSchema,
   upsertContextResultSchema,
   upsertStoryResultSchema,
@@ -28,10 +28,10 @@ import { upsertSingleContextResultSchema, upsertSingleTrailResultSchema } from "
 import type { DatabaseContext } from "./database-context.js";
 import type {
   ContextId,
+  CoreUpdateContextParams,
   StoryInput,
   Trail,
   TrailId,
-  UpdateContextParams,
   UpsertContextInput,
   UpsertContextResult,
   UpsertSingleContextResult,
@@ -66,41 +66,34 @@ export class StoryManager {
     });
   }
 
-  async deleteContext(userId: string, contextId: string): Promise<void> {
-    const success = await this.db.write(async (tx) => {
+  async deleteContext(userId: string, contextId: string): Promise<boolean> {
+    return this.db.write(async (tx) => {
       const result = await tx.run(DELETE_CONTEXT_QUERY, {
         userId: userId,
         contextId: contextId,
       });
       const record = result.records[0];
       if (!record) {
-        // Idempotent: context not found = already deleted = success
-        return true;
+        // Idempotent: context not found = already deleted = false
+        return false;
       }
       return Boolean(record.get("result").success);
     });
-
-    if (!success) {
-      throw new Error(`Failed to delete context ${contextId}`);
-    }
   }
 
-  async deleteTrail(userId: string, trailId: string): Promise<void> {
-    const success = await this.db.write(async (tx) => {
+  async deleteTrail(userId: string, trailId: string): Promise<boolean> {
+    return this.db.write(async (tx) => {
       const result = await tx.run(DELETE_TRAIL_QUERY, {
         userId: userId,
         trailId: trailId,
       });
       const record = result.records[0];
       if (!record) {
-        throw new Error(`deleteTrail: no result returned for user=${userId}, trail=${trailId}`);
+        // Idempotent: trail not found = already deleted = false
+        return false;
       }
       return Boolean(record.get("result"));
     });
-
-    if (!success) {
-      throw new Error(`Failed to delete trail ${trailId}`);
-    }
   }
 
   async deleteStory(userId: string): Promise<{ deletedContexts: number; deletedTrails: number }> {
@@ -121,8 +114,8 @@ export class StoryManager {
     });
   }
 
-  async updateContext(params: UpdateContextParams): Promise<UserContext> {
-    updateContextParamsSchema.parse(params);
+  async updateContext(params: CoreUpdateContextParams): Promise<UserContext> {
+    coreUpdateContextParamsSchema.parse(params);
 
     let story: StoryInput;
     try {

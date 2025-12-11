@@ -2,12 +2,10 @@ import { ColdStartGraph } from "../../langGraph/cold-start-v2/cold-start-graph.j
 
 import { BaseTool } from "./base-tool.js";
 
-import type { UserId } from "../../../shared/schemas.js";
-import type { ColdStartResponse } from "../../langGraph/cold-start-v2/types.js";
-import type { ColdStartParams } from "../schemas.js";
+import type { ColdStartResponse, McpColdStartParams, UserId } from "../../../shared/schemas.js";
 
-export class ColdStartTool extends BaseTool<ColdStartParams, ColdStartResponse> {
-  protected async executeImpl(params: ColdStartParams, userId: UserId): Promise<ColdStartResponse> {
+export class ColdStartTool extends BaseTool<McpColdStartParams, ColdStartResponse> {
+  protected async executeImpl(params: McpColdStartParams, userId: UserId): Promise<ColdStartResponse> {
     const threadId = `cold_start_${userId}`;
 
     const alreadySaved = await this.userService.isColdStartCompleted(userId);

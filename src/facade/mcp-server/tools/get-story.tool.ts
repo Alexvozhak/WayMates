@@ -1,10 +1,9 @@
 import { BaseTool } from "./base-tool.js";
 
-import type { StoryInput, UserId } from "../../../shared/schemas.js";
-import type { GetStoryParams } from "../schemas.js";
+import type { McpGetStoryParams, StoryInput, UserId } from "../../../shared/schemas.js";
 
-export class GetStoryTool extends BaseTool<GetStoryParams, StoryInput> {
-  protected async executeImpl(params: GetStoryParams, userId: UserId): Promise<StoryInput> {
+export class GetStoryTool extends BaseTool<McpGetStoryParams, StoryInput> {
+  protected async executeImpl(params: McpGetStoryParams, userId: UserId): Promise<StoryInput> {
     // targetUserId optional - if not provided, use service userId
     // If provided, user can request any userId (own or other user's profile)
     const targetUserId = params.targetUserId || userId;

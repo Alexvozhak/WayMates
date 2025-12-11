@@ -6,8 +6,12 @@ import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-too
 import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { FacadeAdhocSearchParams, UpdateContextParams } from "../../../../src/facade/mcp-server/schemas.js";
-import type { AdhocUserContext, ContextField } from "../../../../src/shared/schemas.js";
+import type {
+  McpSearchCareersParams,
+  McpUpdateContextParams,
+  AdhocUserContext,
+  ContextField,
+} from "../../../../src/shared/schemas.js";
 
 const createFacadeSearchParams = (
   sessionId: SessionId,
@@ -18,7 +22,7 @@ const createFacadeSearchParams = (
     excludedContextFields: ContextField[];
     excludedCreationReasons: string[];
   }>,
-): FacadeAdhocSearchParams => ({
+): McpSearchCareersParams => ({
   sessionId,
   referenceContext,
   limit: 10,
@@ -121,7 +125,7 @@ describe("Error Handling Integration Tests", () => {
   it("EH8: Message too short - validation error", async () => {
     const tool = new UpdateContextTool(getToolDeps());
 
-    const params: UpdateContextParams = {
+    const params: McpUpdateContextParams = {
       sessionId: testSessionId,
       message: "short", // Less than 10 chars
     };

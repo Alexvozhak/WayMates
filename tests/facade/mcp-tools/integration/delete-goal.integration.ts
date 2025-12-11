@@ -5,8 +5,7 @@ import { SetGoalTool } from "../../../../src/facade/mcp-server/tools/set-goal.to
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { DeleteGoalParams, SetGoalParams } from "../../../../src/facade/mcp-server/schemas.js";
-import type { UserId } from "../../../../src/shared/schemas.js";
+import type { McpDeleteGoalParams, McpSetGoalParams, UserId } from "../../../../src/shared/schemas.js";
 
 describe("DeleteGoalTool Integration Tests", () => {
   let deleteTool: DeleteGoalTool;
@@ -29,7 +28,7 @@ describe("DeleteGoalTool Integration Tests", () => {
   // Business rule: User can delete career goal to stop goal-driven search recommendations.
   // Flow: validate session → delete goal from DB → success (idempotent).
   it("DG1: Delete existing goal - removes goal successfully", async () => {
-    const setParams: SetGoalParams = {
+    const setParams: McpSetGoalParams = {
       sessionId: testSessionId,
       targetContext: {
         position: { mode: "desired", values: ["senior"] },
@@ -37,7 +36,7 @@ describe("DeleteGoalTool Integration Tests", () => {
     };
     await setTool.execute(setParams);
 
-    const deleteParams: DeleteGoalParams = {
+    const deleteParams: McpDeleteGoalParams = {
       sessionId: testSessionId,
     };
 
@@ -50,7 +49,7 @@ describe("DeleteGoalTool Integration Tests", () => {
   // Prevents unauthorized goal deletion; only authenticated users can modify their goals.
   it("DG2: Invalid session rejected - returns error", async () => {
     const invalidSession: SessionId = "sess_invalid_delete_000";
-    const params: DeleteGoalParams = {
+    const params: McpDeleteGoalParams = {
       sessionId: invalidSession,
     };
 
@@ -65,7 +64,7 @@ describe("DeleteGoalTool Integration Tests", () => {
   // Business rule: Delete is idempotent (deleting non-existent goal succeeds - no error).
   // UX: User can safely retry delete without error; backend handles "already deleted" gracefully.
   it("DG3: Idempotent delete - deleting non-existent goal succeeds", async () => {
-    const params: DeleteGoalParams = {
+    const params: McpDeleteGoalParams = {
       sessionId: testSessionId,
     };
 

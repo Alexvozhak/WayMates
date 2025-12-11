@@ -22,6 +22,35 @@ You are the **main Claude instance** responsible for:
 
 ---
 
+## Execution Best Practices
+
+### ALWAYS choose the SIMPLEST solution
+
+Before executing any task, ask yourself: **"What is the SIMPLEST way?"**
+
+**Examples:**
+- Move file → `mv source dest` (NOT `read` + `write`)
+- Rename file → `mv old new` (NOT `read` + `write` with new name)
+- Copy file → `cp source dest` (NOT `read` + `write`)
+- Change string → `sed -i` or Edit tool (NOT `read` + `write` entire file)
+- Remove unused import → Edit tool (NOT rewrite entire imports section)
+
+**Rule**: If one-line solution exists → use it. Don't overcomplicate.
+
+### Code Review
+
+When user asks "смущает код?" / "есть проблемы?" / "можно улучшить?":
+
+**Follow the protocol**: See [`.claude/commands/code-review-protocol.md`](.claude/commands/code-review-protocol.md)
+
+**Key principles:**
+1. Start with what works CORRECTLY (don't jump to problems)
+2. Check `package.json` for existing libraries before suggesting alternatives
+3. Verify claims via context7/docs (don't guess API)
+4. "Code is fine" is a VALID answer (don't invent problems)
+
+---
+
 ## Asking Questions Pattern
 
 When you need to gather user preferences, clarify ambiguous requirements, or make decisions during execution:

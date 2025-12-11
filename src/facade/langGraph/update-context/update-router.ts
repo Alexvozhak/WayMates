@@ -3,6 +3,9 @@ import { NODE } from "./state.js";
 import type { NodeName, UpdateContextStateType } from "./state.js";
 
 export function routeAfterMerge(state: UpdateContextStateType): NodeName {
+  if (state.missingFields.length > 0) {
+    return NODE.clarify;
+  }
   if (state.validationErrors.length > 0 && !state.mergedContext) {
     return NODE.cancel;
   }

@@ -10,9 +10,8 @@ import { UserStories } from "../../../../core/helpers/user-stories.js";
 import { cleanupColdStart, generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";
 import { FacadeTestContext } from "../../../helpers/test-context.js";
 
-import type { ColdStartResponse } from "../../../../../src/facade/langGraph/cold-start-v2/types.js";
+import type { ColdStartResponse, UserId } from "../../../../../src/shared/schemas.js";
 import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
-import type { UserId } from "../../../../../src/shared/schemas.js";
 
 const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя карьерная история.";
 

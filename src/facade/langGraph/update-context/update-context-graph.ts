@@ -4,6 +4,7 @@ import { z } from "zod";
 import { AgentInvariantError } from "../../errors.js";
 
 import { cancelNode } from "./nodes/cancel.js";
+import { clarifyNode } from "./nodes/clarify.js";
 import { editUpdateNode } from "./nodes/edit-update.js";
 import { extractUpdatesNode } from "./nodes/extract-updates.js";
 import { mergeContextNode } from "./nodes/merge-context.js";
@@ -23,7 +24,16 @@ import type { StateSnapshot } from "@langchain/langgraph";
 import type { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 
 const interruptValueSchema = z.object({
-  phase: z.enum([PHASE.extracting, PHASE.awaitingConfirmation, PHASE.saved, PHASE.cancelled, PHASE.failed]).optional(),
+  phase: z
+    .enum([
+      PHASE.extracting,
+      PHASE.awaitingClarification,
+      PHASE.awaitingConfirmation,
+      PHASE.saved,
+      PHASE.cancelled,
+      PHASE.failed,
+    ])
+    .optional(),
 });
 
 function stateToResponse(state: UpdateContextStateType): UpdateContextResponse {
@@ -36,6 +46,7 @@ function createGraphBuilder() {
   return new StateGraph(updateContextStateAnnotation)
     .addNode(NODE.extract_updates, extractUpdatesNode)
     .addNode(NODE.merge_context, mergeContextNode)
+    .addNode(NODE.clarify, clarifyNode)
     .addNode(NODE.show_update, showUpdateNode)
     .addNode(NODE.parse_decision, parseDecisionNode)
     .addNode(NODE.edit_update, editUpdateNode)
@@ -45,9 +56,11 @@ function createGraphBuilder() {
     .addEdge(START, NODE.extract_updates)
     .addEdge(NODE.extract_updates, NODE.merge_context)
     .addConditionalEdges(NODE.merge_context, routeAfterMerge, {
+      [NODE.clarify]: NODE.clarify,
       [NODE.show_update]: NODE.show_update,
       [NODE.cancel]: NODE.cancel,
     })
+    .addEdge(NODE.clarify, NODE.extract_updates)
     .addEdge(NODE.show_update, NODE.parse_decision)
     .addConditionalEdges(NODE.parse_decision, routeAfterDecision, {
       [NODE.persist_update]: NODE.persist_update,

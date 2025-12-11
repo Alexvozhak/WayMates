@@ -5,7 +5,7 @@ import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-too
 import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { GetStoryParams } from "../../../../src/facade/mcp-server/schemas.js";
+import type { McpGetStoryParams } from "../../../../src/shared/schemas.js";
 
 describe("GetStoryTool Integration Tests", () => {
   let tool: GetStoryTool;
@@ -27,7 +27,7 @@ describe("GetStoryTool Integration Tests", () => {
   // Business rule: User can retrieve their own profile (contexts + trails).
   // Flow: validate session → fetch from DB → return StoryInput for display/editing.
   it("GS1: Retrieve own story - returns full profile with contexts and trails", async () => {
-    const params: GetStoryParams = {
+    const params: McpGetStoryParams = {
       sessionId: testSessionId,
     };
 
@@ -48,7 +48,7 @@ describe("GetStoryTool Integration Tests", () => {
   // Prevents unauthorized profile access; only authenticated users can retrieve stories.
   it("GS2: Invalid session rejected - returns error", async () => {
     const invalidSession: SessionId = "sess_invalid_get_story_000";
-    const params: GetStoryParams = {
+    const params: McpGetStoryParams = {
       sessionId: invalidSession,
     };
 
@@ -63,7 +63,7 @@ describe("GetStoryTool Integration Tests", () => {
   // Business rule: User can request any userId (own or other user's profile for viewing).
   // Use case: Social feature - viewing other users' career paths for inspiration.
   it("GS3: Retrieve other user's story - targetUserId overrides session userId", async () => {
-    const params: GetStoryParams = {
+    const params: McpGetStoryParams = {
       sessionId: testSessionId,
       targetUserId: u2.userId,
     };
@@ -84,7 +84,7 @@ describe("GetStoryTool Integration Tests", () => {
     const newSessionId = await setupSession(newUserId);
     const newTool = new GetStoryTool(getToolDeps());
 
-    const params: GetStoryParams = {
+    const params: McpGetStoryParams = {
       sessionId: newSessionId,
     };
 

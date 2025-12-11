@@ -1,7 +1,5 @@
 import { InlineKeyboard } from "grammy";
 
-import { coldStartParamsSchema } from "../../facade/mcp-server/schemas.js";
-import { coldStartResponseSchema } from "../schemas/mcp-responses.js";
 import { clearPendingAction, setPendingAction } from "../services/pending-actions.js";
 
 import type { BotContext } from "../types.js";
@@ -33,12 +31,7 @@ async function showStoryPrompt(ctx: BotContext): Promise<void> {
 async function sendStoryToAgent(ctx: BotContext, message: string): Promise<void> {
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
-  const result = await ctx.services.mcpClient.callTool(
-    "cold_start",
-    { message, sessionId },
-    coldStartParamsSchema,
-    coldStartResponseSchema,
-  );
+  const result = await ctx.services.mcpClient.callTool("cold_start", { message, sessionId });
 
   const keyboard = new InlineKeyboard()
     .text(ctx.t("button-approve"), "decision:approve")
@@ -46,7 +39,7 @@ async function sendStoryToAgent(ctx: BotContext, message: string): Promise<void>
     .row()
     .text(ctx.t("button-cancel"), "decision:cancel");
 
-  const formattedMessage = await ctx.services.coldStartPresenter.format(result, ctx.from?.language_code);
+  const formattedMessage = await ctx.services.langGraphPresenter.format(result, ctx.from?.language_code);
 
   await ctx.reply(formattedMessage, { reply_markup: keyboard, parse_mode: "Markdown" });
 }

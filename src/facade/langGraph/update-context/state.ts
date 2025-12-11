@@ -2,13 +2,14 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
 import { lastValue } from "../shared/state-utils.js";
 
-import type { UserContext, UserId } from "../../../shared/schemas.js";
+import type { MissingField, UserContext, UserId } from "../../../shared/schemas.js";
 import type { ParsedDecision } from "../shared/decision.js";
 import type { ExtractableContext } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 export const PHASE = {
   extracting: "extracting",
+  awaitingClarification: "awaiting_clarification",
   awaitingConfirmation: "awaiting_confirmation",
   saved: "saved",
   cancelled: "cancelled",
@@ -22,6 +23,7 @@ export type UpdateContextPhase = (typeof PHASE)[keyof typeof PHASE];
 export const NODE = {
   extract_updates: "extract_updates",
   merge_context: "merge_context",
+  clarify: "clarify",
   show_update: "show_update",
   parse_decision: "parse_decision",
   edit_update: "edit_update",
@@ -44,6 +46,8 @@ export const updateContextStateAnnotation = Annotation.Root({
   mergedContext: Annotation<UserContext | null>({ reducer: lastValue, default: () => null }),
 
   validationErrors: Annotation<string[]>({ reducer: lastValue, default: () => [] }),
+  missingFields: Annotation<MissingField[]>({ reducer: lastValue, default: () => [] }),
+  clarificationRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
 });
 
 export type UpdateContextStateType = typeof updateContextStateAnnotation.State;

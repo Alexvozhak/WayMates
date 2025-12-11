@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import {
   contextIdSchema,
-  updateContextParamsSchema,
+  coreUpdateContextParamsSchema,
   upsertContextInputSchema,
   userContextSchema,
   userIdSchema,
@@ -20,7 +20,7 @@ export const contextRouter = t.router({
     }),
 
   update: publicProcedure
-    .input(updateContextParamsSchema)
+    .input(coreUpdateContextParamsSchema)
     .output(userContextSchema)
     .mutation(async ({ ctx, input }) => {
       return ctx.storyManager.updateContext(input);

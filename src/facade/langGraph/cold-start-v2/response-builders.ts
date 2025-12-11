@@ -2,7 +2,8 @@ import { InvalidStateError } from "../../errors.js";
 
 import { PHASE } from "./types.js";
 
-import type { ColdStartPhase, ColdStartResponse, ColdStartState } from "./types.js";
+import type { ColdStartPhase, ColdStartState } from "./types.js";
+import type { ColdStartResponse } from "../../../shared/schemas.js";
 
 type ResponseBuilder<P extends ColdStartPhase> = (state: ColdStartState) => Extract<ColdStartResponse, { phase: P }>;
 

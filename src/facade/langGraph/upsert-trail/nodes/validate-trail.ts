@@ -10,15 +10,17 @@ import type { UpsertTrailStateType } from "../state.js";
 const MAX_CLARIFICATION_ROUNDS = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
 
 export function validateTrailNode(state: UpsertTrailStateType): Partial<UpsertTrailStateType> {
-  const { extractedTrail, fromContextId, clarificationRound } = state;
+  const { extractedTrail, fromContextId, clarificationRound, validatedTrail } = state;
 
   if (!extractedTrail) {
     return { phase: PHASE.failed, validationErrors: ["No trail extracted"] };
   }
 
+  const existingTrailId = validatedTrail?.trailId;
+
   const fullTrail = {
     ...extractedTrail,
-    trailId: `trl_${uuidv7()}`,
+    trailId: existingTrailId ?? `trl_${uuidv7()}`,
     fromContextId,
     toContextId: null,
   };

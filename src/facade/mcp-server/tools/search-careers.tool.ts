@@ -2,11 +2,10 @@ import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
-import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
-import type { FacadeAdhocSearchParams } from "../schemas.js";
+import type { McpSearchCareersParams, ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
 
-export class SearchCareersTool extends BaseTool<FacadeAdhocSearchParams, ScoredMatchedCandidate[]> {
-  protected async executeImpl(params: FacadeAdhocSearchParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
+export class SearchCareersTool extends BaseTool<McpSearchCareersParams, ScoredMatchedCandidate[]> {
+  protected async executeImpl(params: McpSearchCareersParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
     const hasAnyField = Object.keys(params.referenceContext).length > 0;
     if (!hasAnyField) {
       throw new ValidationError("At least one field is required in reference context");

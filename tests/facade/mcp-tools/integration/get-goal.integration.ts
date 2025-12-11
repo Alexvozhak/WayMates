@@ -7,8 +7,7 @@ import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { BaseToolDependencies } from "../../../../src/facade/mcp-server/tools/base-tool.js";
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { GetGoalParams, SetGoalParams } from "../../../../src/facade/mcp-server/schemas.js";
-import type { UserId } from "../../../../src/shared/schemas.js";
+import type { McpGetGoalParams, McpSetGoalParams, UserId } from "../../../../src/shared/schemas.js";
 
 describe("GetGoalTool Integration Tests", () => {
   let getTool: GetGoalTool;
@@ -36,7 +35,7 @@ describe("GetGoalTool Integration Tests", () => {
   // Business rule: Retrieve user's saved goal to display current career aspiration or populate search UI.
   // Flow: validate session → extract userId → Core fetches goal from DB → return target criteria.
   it("GG1: Retrieve saved goal - returns user's target context", async () => {
-    const setParams: SetGoalParams = {
+    const setParams: McpSetGoalParams = {
       sessionId: testSessionId,
       targetContext: {
         position: { mode: "desired", values: ["senior"] },
@@ -46,7 +45,7 @@ describe("GetGoalTool Integration Tests", () => {
 
     await setTool.execute(setParams);
 
-    const getParams: GetGoalParams = {
+    const getParams: McpGetGoalParams = {
       sessionId: testSessionId,
     };
 
@@ -65,7 +64,7 @@ describe("GetGoalTool Integration Tests", () => {
   it("GG2: No goal exists - returns null for users without saved goals", async () => {
     const newSession = await deps.session.create(userWithoutGoal);
 
-    const params: GetGoalParams = {
+    const params: McpGetGoalParams = {
       sessionId: newSession,
     };
 

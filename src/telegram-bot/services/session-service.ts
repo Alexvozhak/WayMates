@@ -1,6 +1,4 @@
-import { telegramRegisterParamsSchema } from "../../facade/mcp-server/schemas.js";
 import { SessionError } from "../errors.js";
-import { telegramRegisterResponseSchema } from "../schemas/mcp-responses.js";
 
 import type { BotContext } from "../types.js";
 import type { McpClient } from "./mcp-client.js";
@@ -18,12 +16,7 @@ export class SessionService {
       throw new SessionError("Telegram user ID not found");
     }
 
-    const result = await this.mcpClient.callTool(
-      "register_telegram",
-      { telegramUserId },
-      telegramRegisterParamsSchema,
-      telegramRegisterResponseSchema,
-    );
+    const result = await this.mcpClient.callTool("register_telegram", { telegramUserId });
 
     ctx.session = {
       status: "initialised",
@@ -48,12 +41,7 @@ export class SessionService {
       return cachedSessionId;
     }
 
-    const result = await this.mcpClient.callTool(
-      "register_telegram",
-      { telegramUserId },
-      telegramRegisterParamsSchema,
-      telegramRegisterResponseSchema,
-    );
+    const result = await this.mcpClient.callTool("register_telegram", { telegramUserId });
 
     await this.redis.setex(cacheKey, 1800, result.sessionId);
 

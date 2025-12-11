@@ -4,8 +4,7 @@ import { SearchCareersTool } from "../../../../src/facade/mcp-server/tools/searc
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { FacadeAdhocSearchParams } from "../../../../src/facade/mcp-server/schemas.js";
-import type { AdhocUserContext, ContextField, UserId } from "../../../../src/shared/schemas.js";
+import type { McpSearchCareersParams, AdhocUserContext, ContextField, UserId } from "../../../../src/shared/schemas.js";
 
 const createFacadeSearchParams = (
   sessionId: SessionId,
@@ -16,7 +15,7 @@ const createFacadeSearchParams = (
     excludedContextFields: ContextField[];
     excludedCreationReasons: string[];
   }>,
-): FacadeAdhocSearchParams => ({
+): McpSearchCareersParams => ({
   sessionId,
   referenceContext,
   limit: 10,
