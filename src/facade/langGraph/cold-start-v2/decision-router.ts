@@ -8,12 +8,10 @@ import type { NodeName } from "./types.js";
 type Intent = ParsedDecision["intent"];
 type RouteMap = Partial<Record<Intent, NodeName>>;
 
-function getRequiredIntent(state: ColdStartStateType, routerName: string): Intent {
+function getRequiredIntent(state: ColdStartStateType, afterNode: string): Intent {
   const { parsedDecision } = state;
   if (!parsedDecision) {
-    throw new AgentInvariantError(routerName, "parsedDecision must exist after parse node", {
-      phase: state.phase,
-    });
+    throw new AgentInvariantError(afterNode, "parsedDecision must exist after parse node");
   }
   return parsedDecision.intent;
 }
@@ -23,12 +21,12 @@ function routeByIntent(intent: Intent, routes: RouteMap, defaultRoute: NodeName)
 }
 
 export function routeAfterStoryDecision(state: ColdStartStateType): NodeName {
-  const intent = getRequiredIntent(state, "routeAfterStoryDecision");
+  const intent = getRequiredIntent(state, NODE.parse_story_decision);
   return routeByIntent(intent, { approve: NODE.plan_career, cancel: NODE.cancel }, NODE.gather_story);
 }
 
 export function routeAfterPlanDecision(state: ColdStartStateType): NodeName {
-  const intent = getRequiredIntent(state, "routeAfterPlanDecision");
+  const intent = getRequiredIntent(state, NODE.parse_plan_decision);
   return routeByIntent(
     intent,
     { approve: NODE.extract_context, edit: NODE.gather_story, cancel: NODE.cancel },
@@ -48,7 +46,7 @@ export function routeAfterPlanCareer(state: ColdStartStateType): NodeName {
 }
 
 export function routeAfterContextDecision(state: ColdStartStateType): NodeName {
-  const intent = getRequiredIntent(state, "routeAfterContextDecision");
+  const intent = getRequiredIntent(state, NODE.parse_context_decision);
   const { currentContextIndex, queue } = state;
 
   if (intent === "approve") {
@@ -59,7 +57,7 @@ export function routeAfterContextDecision(state: ColdStartStateType): NodeName {
 }
 
 export function routeAfterFinalDecision(state: ColdStartStateType): NodeName {
-  const intent = getRequiredIntent(state, "routeAfterFinalDecision");
+  const intent = getRequiredIntent(state, NODE.parse_final_decision);
   return routeByIntent(
     intent,
     { approve: NODE.persist, edit: NODE.show_context, cancel: NODE.cancel },

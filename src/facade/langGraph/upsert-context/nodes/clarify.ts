@@ -6,7 +6,7 @@ import { PHASE } from "../state.js";
 import type { UpsertContextStateType } from "../state.js";
 
 export function clarifyNode(state: UpsertContextStateType): Partial<UpsertContextStateType> {
-  const { missingFields } = state;
+  const { missingFields, messages } = state;
 
   const questions = missingFields.map((mf) => ({
     field: mf.field,
@@ -26,7 +26,7 @@ export function clarifyNode(state: UpsertContextStateType): Partial<UpsertContex
 
   return {
     userResponse: response,
-    messages: [new HumanMessage(response)],
+    messages: [...messages, new HumanMessage(response)],
     phase: PHASE.awaitingClarification,
   };
 }
