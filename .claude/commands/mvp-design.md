@@ -139,6 +139,20 @@ src/shared/
 Утверждаем дизайн?
 ```
 
+**Вопросы — через `AskUserQuestion`:**
+
+```typescript
+{
+  question: "Утверждаем дизайн?",
+  header: "Approve",
+  multiSelect: false,
+  options: [
+    { label: "Да, реализуем", description: "Переход к /mvp-implement" },
+    { label: "Нужны правки", description: "Уточнить детали" }
+  ]
+}
+```
+
 ---
 
 ## 📋 Порядок согласования

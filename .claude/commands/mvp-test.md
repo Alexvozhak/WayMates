@@ -242,6 +242,37 @@ tests/
 
 ---
 
+## ❓ Формат вопросов (через AskUserQuestion)
+
+**Все вопросы к пользователю — через `AskUserQuestion` tool:**
+
+```typescript
+// Выбор модуля для тестирования
+{
+  question: "Какой модуль тестируем?",
+  header: "Module",
+  multiSelect: false,
+  options: [
+    { label: "upsert-context", description: "LangGraph агент" },
+    { label: "upsert-trail", description: "LangGraph агент" },
+    { label: "SearchManager", description: "Core модуль" }
+  ]
+}
+
+// После покрытия — что дальше
+{
+  question: "Тестирование модуля завершено. Что дальше?",
+  header: "Next step",
+  multiSelect: false,
+  options: [
+    { label: "Следующий модуль", description: "Продолжить тестирование" },
+    { label: "Вернуться к /mvp-release", description: "Завершить фазу тестов" }
+  ]
+}
+```
+
+---
+
 ## ✅ Критерии готовности тестов
 
 - [ ] JSDoc с Given/Then для каждого теста

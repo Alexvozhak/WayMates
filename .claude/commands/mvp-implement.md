@@ -41,10 +41,18 @@ Read vitest.config.ts
 - Понимание integration points
 - Оценка LOC
 
-**Если дизайна нет — СТОП:**
-```
-Дизайн не согласован. Нужно сначала `/mvp-design`.
-Что проектируем?
+**Если дизайна нет — СТОП и спроси через `AskUserQuestion`:**
+
+```typescript
+{
+  question: "Дизайн не согласован. Что делаем?",
+  header: "No design",
+  multiSelect: false,
+  options: [
+    { label: "Сначала /mvp-design", description: "Спроектировать types/API" },
+    { label: "Дизайн есть", description: "Покажу где согласовали" }
+  ]
+}
 ```
 
 ### 2. Подготовка к реализации

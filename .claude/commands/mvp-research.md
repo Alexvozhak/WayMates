@@ -65,6 +65,35 @@ Read docs/architecture/decisions/  # список ADRs
 - ❌ Выдумывать API без проверки docs
 - ❌ Советовать deprecated решения
 
+---
+
+## ❓ Формат вопросов (ОБЯЗАТЕЛЬНО через AskUserQuestion)
+
+**Все вопросы к пользователю — через `AskUserQuestion` tool:**
+
+1. Сначала дай контекст в чат (что исследовал, варианты)
+2. Потом `AskUserQuestion` с выбором
+
+```typescript
+// Пример после ресерча
+{
+  question: "Какой вариант выбираем для rate limiting?",
+  header: "Rate limit",
+  multiSelect: false,
+  options: [
+    { label: "Bottleneck (~20 LOC)", description: "✅ Рекомендую. npm 2M/week" },
+    { label: "p-limit (~15 LOC)", description: "⚠️ Нет per-user" },
+    { label: "Custom (~60 LOC)", description: "❌ Велосипед" }
+  ]
+}
+```
+
+**Правила:**
+- header: max 12 символов
+- options: 2-4 варианта
+- description: краткое обоснование
+- Рекомендуемый вариант первым
+
 ### 3. Сформировать варианты
 
 **Минимум 2, максимум 4 варианта.** Сортировка от лучшего к худшему.
