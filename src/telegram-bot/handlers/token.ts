@@ -6,5 +6,10 @@ export async function handleToken(ctx: BotContext): Promise<void> {
     return;
   }
 
+  if (!ctx.session.token) {
+    await ctx.reply(ctx.t("token-unavailable"));
+    return;
+  }
+
   await ctx.reply(ctx.t("token-display", { token: ctx.session.token }), { parse_mode: "Markdown" });
 }

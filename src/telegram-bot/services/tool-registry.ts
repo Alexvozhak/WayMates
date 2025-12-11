@@ -2,8 +2,10 @@ import { z } from "zod";
 
 import {
   coldStartResponseSchema,
+  deleteSuccessResponseSchema,
   getGoalResponseSchema,
   getStoryResponseSchema,
+  matchedCandidateWithPathSchema,
   mcpAuthParamsSchema,
   mcpColdStartParamsSchema,
   mcpDeleteContextParamsSchema,
@@ -21,7 +23,8 @@ import {
   mcpUpdateContextParamsSchema,
   mcpUpsertContextParamsSchema,
   mcpUpsertTrailParamsSchema,
-  searchResultResponseSchema,
+  resetColdStartResponseSchema,
+  scoredMatchedCandidateSchema,
   setGoalResponseSchema,
   telegramLinkResponseSchema,
   telegramRegisterResponseSchema,
@@ -41,7 +44,7 @@ export const TOOL_REGISTRY = {
   },
   reset_cold_start: {
     paramsSchema: mcpResetColdStartParamsSchema,
-    responseSchema: coldStartResponseSchema,
+    responseSchema: resetColdStartResponseSchema,
   },
   get_story: {
     paramsSchema: mcpGetStoryParamsSchema,
@@ -49,11 +52,11 @@ export const TOOL_REGISTRY = {
   },
   search_careers: {
     paramsSchema: mcpSearchCareersParamsSchema,
-    responseSchema: searchResultResponseSchema,
+    responseSchema: z.array(scoredMatchedCandidateSchema),
   },
   search_user_careers: {
     paramsSchema: mcpSearchUserCareersParamsSchema,
-    responseSchema: searchResultResponseSchema,
+    responseSchema: z.array(scoredMatchedCandidateSchema),
   },
   set_goal: {
     paramsSchema: mcpSetGoalParamsSchema,
@@ -65,7 +68,7 @@ export const TOOL_REGISTRY = {
   },
   delete_goal: {
     paramsSchema: mcpDeleteGoalParamsSchema,
-    responseSchema: z.boolean(),
+    responseSchema: deleteSuccessResponseSchema,
   },
   update_context: {
     paramsSchema: mcpUpdateContextParamsSchema,
@@ -77,11 +80,11 @@ export const TOOL_REGISTRY = {
   },
   delete_context: {
     paramsSchema: mcpDeleteContextParamsSchema,
-    responseSchema: z.boolean(),
+    responseSchema: deleteSuccessResponseSchema,
   },
   search_by_target: {
     paramsSchema: mcpSearchByTargetParamsSchema,
-    responseSchema: searchResultResponseSchema,
+    responseSchema: z.array(matchedCandidateWithPathSchema),
   },
   upsert_trail: {
     paramsSchema: mcpUpsertTrailParamsSchema,
@@ -89,7 +92,7 @@ export const TOOL_REGISTRY = {
   },
   delete_trail: {
     paramsSchema: mcpDeleteTrailParamsSchema,
-    responseSchema: z.boolean(),
+    responseSchema: deleteSuccessResponseSchema,
   },
   register_telegram: {
     paramsSchema: mcpTelegramRegisterParamsSchema,

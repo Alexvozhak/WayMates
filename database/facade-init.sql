@@ -11,12 +11,16 @@ SET search_path TO facade, public;
 CREATE TABLE IF NOT EXISTS facade.users (
     user_id VARCHAR(40) PRIMARY KEY,  -- usr_ + UUID v7
     token_hash VARCHAR(64) NOT NULL,  -- SHA256 hash of auth token
+    telegram_user_id BIGINT UNIQUE,   -- Telegram user ID for bot auth
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for token lookup
 CREATE INDEX IF NOT EXISTS idx_users_token_hash ON facade.users(token_hash);
+
+-- Index for telegram user lookup
+CREATE INDEX IF NOT EXISTS idx_users_telegram_user_id ON facade.users(telegram_user_id);
 
 -- Cold start completions tracking
 CREATE TABLE IF NOT EXISTS facade.cold_start_completions (

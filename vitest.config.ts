@@ -147,6 +147,24 @@ export default defineConfig(() => {
             env: loadEnv("test", process.cwd(), ""),
           },
         },
+        // Telegram Bot integration tests (MCP Client → Facade MCP Server)
+        {
+          test: {
+            name: "telegram-integration",
+            include: ["tests/telegram-bot/**/*.integration.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: false,
+                singleThread: true, // Sequential to avoid MCP session conflicts
+              },
+            },
+            setupFiles: ["./tests/telegram-bot/helpers/test-setup.ts"],
+            testTimeout: 60_000, // 1min for MCP round-trips
+            hookTimeout: 30_000,
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
       ],
     },
   };

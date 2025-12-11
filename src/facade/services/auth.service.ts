@@ -69,7 +69,7 @@ export class AuthService {
 
       return {
         userId: existing.userId,
-        token: existing.token,
+        token: null,
         sessionId,
         isNewUser: false,
         hasStory,

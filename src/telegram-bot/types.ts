@@ -43,7 +43,7 @@ export type MySessionData =
   | { status: "uninitialised" }
   | {
       status: "initialised";
-      token: string;
+      token: string | null;
       hasStory: boolean;
       pendingAction?: PendingAction;
     };

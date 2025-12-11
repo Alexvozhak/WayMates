@@ -908,10 +908,12 @@ export type ColdStartResponse = z.infer<typeof coldStartResponseSchema>;
 /**
  * Response from register_telegram MCP tool.
  * Registers or authenticates user via Telegram (idempotent).
+ * Token is only returned for new users (isNewUser: true).
+ * For existing users, token cannot be recovered from hash storage.
  */
 export const telegramRegisterResponseSchema = z.object({
   userId: userIdSchema,
-  token: tokenSchema,
+  token: tokenSchema.nullable(),
   sessionId: sessionIdSchema,
   isNewUser: z.boolean(),
   hasStory: z.boolean(),
@@ -952,6 +954,25 @@ export const setGoalResponseSchema = z.object({
 });
 
 export type SetGoalResponse = z.infer<typeof setGoalResponseSchema>;
+
+/**
+ * Response from delete_* MCP tools (delete_goal, delete_context, delete_trail).
+ */
+export const deleteSuccessResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+export type DeleteSuccessResponse = z.infer<typeof deleteSuccessResponseSchema>;
+
+/**
+ * Response from reset_cold_start MCP tool.
+ */
+export const resetColdStartResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});
+
+export type ResetColdStartResponse = z.infer<typeof resetColdStartResponseSchema>;
 
 /**
  * Response from get_story MCP tool.
