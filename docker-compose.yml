@@ -170,6 +170,44 @@ services:
       start_period: 15s
     restart: "no"
 
+  facade-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: facade-test
+    container_name: waymates-facade-test
+    profiles: ["test"]
+    network_mode: host
+    environment:
+      FACADE_TRANSPORT: http
+      FACADE_HTTP_PORT: ${FACADE_HTTP_PORT}
+      CORE_API_URL: http://localhost:${CORE_PORT}
+      REDIS_HOST: localhost
+      REDIS_PORT: ${REDIS_PORT}
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_API_BASE: ${OPENAI_API_BASE}
+      LANGCHAIN_MODEL_NAME: ${LANGCHAIN_MODEL_NAME}
+      LANGCHAIN_TIMEOUT_MS: ${LANGCHAIN_TIMEOUT_MS}
+    depends_on:
+      core-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      postgres-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "${FACADE_HTTP_PORT}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    restart: "no"
+
   # ============================================================================
   # TOOLS
   # ============================================================================

@@ -10,6 +10,12 @@ FROM base AS core-test
 ENV NODE_ENV=test
 CMD ["npx", "tsx", "src/core/index.ts"]
 
+# Facade для тестов (HTTP MCP Server)
+FROM base AS facade-test
+ENV NODE_ENV=test
+ENV FACADE_TRANSPORT=http
+CMD ["npx", "tsx", "src/facade/index.ts"]
+
 # Core для production (будущее - SaaS)
 FROM base AS core-production
 ENV NODE_ENV=production
