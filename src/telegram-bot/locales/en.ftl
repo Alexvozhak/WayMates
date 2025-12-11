@@ -176,3 +176,7 @@ trail-not-found = ❌ Trail not found. Check ID with /get_story
 langgraph-saved = ✅ Saved successfully!
 langgraph-edit-prompt = Enter corrections
 langgraph-cancelled = ❌ Operation cancelled
+
+# === Feedback ===
+feedback-prompt = Describe the issue or send feedback:
+feedback-sent = ✅ Thank you for your feedback!

@@ -176,3 +176,7 @@ trail-not-found = ❌ Трейл не найден. Проверьте ID чер
 langgraph-saved = ✅ Сохранено успешно!
 langgraph-edit-prompt = Введите исправления
 langgraph-cancelled = ❌ Операция отменена
+
+# === Feedback ===
+feedback-prompt = Опишите проблему или оставьте отзыв:
+feedback-sent = ✅ Спасибо за обратную связь!

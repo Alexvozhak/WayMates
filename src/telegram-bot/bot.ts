@@ -14,6 +14,7 @@ import { handleByTarget } from "./handlers/by-target.js";
 import { handleApproveCallback, handleCancelCallback, handleEditCallback } from "./handlers/callbacks.js";
 import { handleCancel } from "./handlers/cancel.js";
 import { handleContext } from "./handlers/context-router.js";
+import { handleFeedback } from "./handlers/feedback.js";
 import { handleGetStory } from "./handlers/get-story.js";
 import { handleGoal } from "./handlers/goal-router.js";
 import { handleHelp } from "./handlers/help.js";
@@ -94,6 +95,7 @@ function registerCommands(bot: Bot<BotContext>): void {
   bot.command("link", handleLink);
   bot.command("cancel", handleCancel);
   bot.command("token", handleToken);
+  bot.command("feedback", handleFeedback);
 }
 
 function registerCallbacks(bot: Bot<BotContext>): void {

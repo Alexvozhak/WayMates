@@ -25,6 +25,7 @@ export type BotServices = {
   openaiApiKey: string;
   groqApiKey: string;
   botToken: string;
+  feedbackChatId: string | undefined;
 };
 
 export type PendingAction =
@@ -35,7 +36,8 @@ export type PendingAction =
   | "set_goal"
   | "update_context"
   | "add_context"
-  | "add_trail";
+  | "add_trail"
+  | "feedback";
 
 export type MySessionData =
   | { status: "uninitialised" }

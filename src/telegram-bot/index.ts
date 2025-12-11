@@ -114,6 +114,7 @@ const bot = createBot(
     openaiApiKey: env.OPENAI_API_KEY,
     groqApiKey: env.GROQ_API_KEY,
     botToken: env.TELEGRAM_BOT_TOKEN,
+    feedbackChatId: env.FEEDBACK_CHAT_ID,
   },
   redis,
   env,

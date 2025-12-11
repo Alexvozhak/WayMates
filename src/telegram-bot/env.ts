@@ -11,6 +11,8 @@ export const envSchema = z.object({
   // LLM Formatter configuration
   FORMATTER_LLM_MODEL: z.string().default("gpt-4o-mini"),
   FORMATTER_LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
+  // Feedback
+  FEEDBACK_CHAT_ID: z.string().optional(),
   // Rate limiting
   USER_RATE_LIMIT_WINDOW_MS: z.coerce.number().positive().default(10_000),
   USER_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().positive().default(3),

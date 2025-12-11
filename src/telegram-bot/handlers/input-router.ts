@@ -5,6 +5,7 @@ import { handleAddTrailWithText } from "./add-trail.js";
 import { processAdhocQuery } from "./by-adhoc.js";
 import { processCurrentQuery } from "./by-current.js";
 import { processTargetQuery } from "./by-target.js";
+import { handleFeedbackWithText } from "./feedback.js";
 import { handleSetGoalWithText } from "./set-goal.js";
 import { handleStoryWithText } from "./story.js";
 import { handleUpdateContextWithText } from "./update-context.js";
@@ -20,6 +21,7 @@ const handlers: Record<PendingAction, (ctx: BotContext, text: string) => Promise
   update_context: handleUpdateContextWithText,
   add_context: handleAddContextWithText,
   add_trail: handleAddTrailWithText,
+  feedback: handleFeedbackWithText,
 };
 
 export async function routeInput(ctx: BotContext, text: string): Promise<void> {
