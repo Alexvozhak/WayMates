@@ -18,7 +18,7 @@ export async function processAdhocQuery(ctx: BotContext, query: string): Promise
   const statusMsg = await ctx.reply(ctx.t("searching-adhoc"));
   await ctx.replyWithChatAction("typing");
 
-  const searchParams = await parseAdhocQuery(ctx.services.openaiApiKey, query);
+  const searchParams = await parseAdhocQuery(ctx.services.openaiApiKey, query, ctx.services.openaiApiBase);
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
   const result = await ctx.services.mcpClient.callTool("search_careers", { ...searchParams, sessionId });

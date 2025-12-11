@@ -58,6 +58,10 @@ function processValue(value: unknown): unknown {
   if (value == null) {
     return undefined;
   }
+  // Remove empty strings — LLM sometimes returns "" instead of null
+  if (value === "") {
+    return undefined;
+  }
   if (isNonNullObject(value)) {
     const cleaned = removeNullFields(value);
     return Object.keys(cleaned).length > 0 ? cleaned : undefined;
@@ -78,24 +82,31 @@ function removeNullFields(obj: Record<string, unknown>): Record<string, unknown>
 
 async function invokeLlmStructured<T extends ZodObject<ZodRawShape>>(
   apiKey: string,
+  baseUrl: string | undefined,
   schema: T,
   prompt: string,
+  options?: { allowEmpty?: boolean },
 ): Promise<z.infer<T>> {
-  const llm = new ChatOpenAI({ modelName: "gpt-4o-mini", temperature: 0, openAIApiKey: apiKey });
+  const llm = new ChatOpenAI({
+    modelName: "gpt-4o-mini",
+    temperature: 0,
+    openAIApiKey: apiKey,
+    ...(baseUrl && { configuration: { baseURL: baseUrl } }),
+  });
   const nullableSchema = makeNullable(schema);
   const structuredLlm = llm.withStructuredOutput(nullableSchema);
 
   const result = await structuredLlm.invoke(prompt);
   const cleaned = removeNullFields(result);
 
-  if (Object.keys(cleaned).length === 0) {
+  if (Object.keys(cleaned).length === 0 && !options?.allowEmpty) {
     throw new NlpParseError("LLM returned empty result after cleaning null fields");
   }
 
   return schema.parse(cleaned);
 }
 
-export async function parseTargetQuery(apiKey: string, query: string): Promise<TargetNlpResult> {
+export async function parseTargetQuery(apiKey: string, query: string, baseUrl?: string): Promise<TargetNlpResult> {
   const prompt = `Extract target job search parameters from user query.
 
 Return JSON with nested structure:
@@ -109,7 +120,7 @@ Return JSON with nested structure:
 
 Query: ${query}`;
 
-  const result = await invokeLlmStructured(apiKey, targetNlpSchema, prompt);
+  const result = await invokeLlmStructured(apiKey, baseUrl, targetNlpSchema, prompt);
 
   if (!result.targetContext) {
     throw new NlpParseError("Could not recognize search criteria. Please specify position, country, skills or domain.");
@@ -122,7 +133,7 @@ Query: ${query}`;
   return result;
 }
 
-export async function parseAdhocQuery(apiKey: string, query: string): Promise<AdhocNlpResult> {
+export async function parseAdhocQuery(apiKey: string, query: string, baseUrl?: string): Promise<AdhocNlpResult> {
   const prompt = `Extract career search parameters from user description.
 
 Return JSON with:
@@ -139,7 +150,7 @@ Return JSON with:
 
 Query: ${query}`;
 
-  const result = await invokeLlmStructured(apiKey, adhocNlpSchema, prompt);
+  const result = await invokeLlmStructured(apiKey, baseUrl, adhocNlpSchema, prompt);
 
   if (!result.referenceContext) {
     throw new NlpParseError("Could not recognize profile for search. Please specify position, skills or experience.");
@@ -152,7 +163,7 @@ Query: ${query}`;
   return result;
 }
 
-export async function parseCurrentQuery(apiKey: string, query: string): Promise<CurrentNlpResult> {
+export async function parseCurrentQuery(apiKey: string, query: string, baseUrl?: string): Promise<CurrentNlpResult> {
   const prompt = `Extract search filter parameters from user query for searching careers based on user's current context (context fetched from DB automatically).
 
 Return JSON with:
@@ -169,10 +180,10 @@ Return JSON with:
 
 Query: ${query}`;
 
-  return invokeLlmStructured(apiKey, currentNlpSchema, prompt);
+  return invokeLlmStructured(apiKey, baseUrl, currentNlpSchema, prompt, { allowEmpty: true });
 }
 
-export async function parseGoalQuery(apiKey: string, query: string): Promise<TargetContext> {
+export async function parseGoalQuery(apiKey: string, query: string, baseUrl?: string): Promise<TargetContext> {
   const prompt = `Extract target career goal from user message.
 
 Return JSON with targetContext fields:
@@ -188,7 +199,7 @@ Examples:
 
 Query: ${query}`;
 
-  const result = await invokeLlmStructured(apiKey, targetContextSchema, prompt);
+  const result = await invokeLlmStructured(apiKey, baseUrl, targetContextSchema, prompt);
 
   if (Object.keys(result).length === 0) {
     throw new NlpParseError("Could not recognize career goal. Please specify position, location, skills or domain.");

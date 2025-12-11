@@ -12,11 +12,12 @@ export abstract class BasePresenter {
   protected llm: ChatOpenAI;
   protected limiter: Bottleneck;
 
-  constructor(apiKey: string, llmConfig: LlmConfig, rpmLimit: number, maxConcurrent: number) {
+  constructor(apiKey: string, llmConfig: LlmConfig, rpmLimit: number, maxConcurrent: number, baseUrl?: string) {
     this.llm = new ChatOpenAI({
       modelName: llmConfig.model,
       temperature: llmConfig.temperature,
       openAIApiKey: apiKey,
+      ...(baseUrl && { configuration: { baseURL: baseUrl } }),
     });
 
     /**

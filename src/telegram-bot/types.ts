@@ -23,6 +23,7 @@ export type BotServices = {
   goalPresenter: GoalPresenter;
   welcomePresenter: WelcomePresenter;
   openaiApiKey: string;
+  openaiApiBase: string | undefined;
   groqApiKey: string;
   botToken: string;
   feedbackChatId: string | undefined;

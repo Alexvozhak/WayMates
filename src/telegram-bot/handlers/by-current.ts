@@ -18,7 +18,7 @@ export async function processCurrentQuery(ctx: BotContext, query: string): Promi
   const statusMsg = await ctx.reply(ctx.t("searching-current"));
   await ctx.replyWithChatAction("typing");
 
-  const searchParams = await parseCurrentQuery(ctx.services.openaiApiKey, query);
+  const searchParams = await parseCurrentQuery(ctx.services.openaiApiKey, query, ctx.services.openaiApiBase);
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
   const result = await ctx.services.mcpClient.callTool("search_user_careers", { ...searchParams, sessionId });

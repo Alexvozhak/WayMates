@@ -55,50 +55,44 @@ try {
 }
 
 const sessionService = new SessionService(mcpClient, redis);
+const llmConfig = {
+  model: env.FORMATTER_LLM_MODEL,
+  temperature: env.FORMATTER_LLM_TEMPERATURE,
+};
 const searchPresenter = new SearchPresenter(
   env.OPENAI_API_KEY,
-  {
-    model: env.FORMATTER_LLM_MODEL,
-    temperature: env.FORMATTER_LLM_TEMPERATURE,
-  },
+  llmConfig,
   env.TELEGRAM_PRESENTER_RPM_LIMIT,
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  env.OPENAI_API_BASE,
 );
 const langGraphPresenter = new LangGraphPresenter(
   env.OPENAI_API_KEY,
-  {
-    model: env.FORMATTER_LLM_MODEL,
-    temperature: env.FORMATTER_LLM_TEMPERATURE,
-  },
+  llmConfig,
   env.TELEGRAM_PRESENTER_RPM_LIMIT,
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  env.OPENAI_API_BASE,
 );
 const storyPresenter = new StoryPresenter(
   env.OPENAI_API_KEY,
-  {
-    model: env.FORMATTER_LLM_MODEL,
-    temperature: env.FORMATTER_LLM_TEMPERATURE,
-  },
+  llmConfig,
   env.TELEGRAM_PRESENTER_RPM_LIMIT,
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  env.OPENAI_API_BASE,
 );
 const goalPresenter = new GoalPresenter(
   env.OPENAI_API_KEY,
-  {
-    model: env.FORMATTER_LLM_MODEL,
-    temperature: env.FORMATTER_LLM_TEMPERATURE,
-  },
+  llmConfig,
   env.TELEGRAM_PRESENTER_RPM_LIMIT,
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  env.OPENAI_API_BASE,
 );
 const welcomePresenter = new WelcomePresenter(
   env.OPENAI_API_KEY,
-  {
-    model: env.FORMATTER_LLM_MODEL,
-    temperature: env.FORMATTER_LLM_TEMPERATURE,
-  },
+  llmConfig,
   env.TELEGRAM_PRESENTER_RPM_LIMIT,
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  env.OPENAI_API_BASE,
 );
 
 const bot = createBot(
@@ -112,6 +106,7 @@ const bot = createBot(
     goalPresenter,
     welcomePresenter,
     openaiApiKey: env.OPENAI_API_KEY,
+    openaiApiBase: env.OPENAI_API_BASE,
     groqApiKey: env.GROQ_API_KEY,
     botToken: env.TELEGRAM_BOT_TOKEN,
     feedbackChatId: env.FEEDBACK_CHAT_ID,

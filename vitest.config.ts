@@ -50,6 +50,22 @@ export default defineConfig(() => {
             env: loadEnv("test", process.cwd(), ""),
           },
         },
+        // Telegram Bot unit tests with LLM (nlp-parser needs longer timeout)
+        {
+          test: {
+            name: "telegram-unit",
+            include: ["tests/telegram-bot/unit/**/*.spec.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: false,
+                singleThread: true, // Sequential to avoid rate limit issues
+              },
+            },
+            testTimeout: 30_000, // 30s for LLM calls
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
         // Read-only search tests (parallel execution, shared globalSetup data)
         {
           test: {

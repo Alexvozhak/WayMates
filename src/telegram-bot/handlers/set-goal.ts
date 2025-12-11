@@ -27,7 +27,7 @@ async function processSetGoal(ctx: BotContext, query: string): Promise<void> {
   const statusMsg = await ctx.reply(ctx.t("parsing-goal"));
   await ctx.replyWithChatAction("typing");
 
-  const targetContext = await parseGoalQuery(ctx.services.openaiApiKey, query);
+  const targetContext = await parseGoalQuery(ctx.services.openaiApiKey, query, ctx.services.openaiApiBase);
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
   const result = await ctx.services.mcpClient.callTool("set_goal", {

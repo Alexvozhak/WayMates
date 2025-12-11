@@ -18,7 +18,7 @@ export async function processTargetQuery(ctx: BotContext, query: string): Promis
   const statusMsg = await ctx.reply(ctx.t("searching-target"));
   await ctx.replyWithChatAction("typing");
 
-  const searchParams = await parseTargetQuery(ctx.services.openaiApiKey, query);
+  const searchParams = await parseTargetQuery(ctx.services.openaiApiKey, query, ctx.services.openaiApiBase);
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
   const result = await ctx.services.mcpClient.callTool("search_by_target", {
