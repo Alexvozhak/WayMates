@@ -3,11 +3,10 @@ import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
-import type { MatchedCandidateWithPath, UserId } from "../../../shared/schemas.js";
-import type { SearchByTargetParams } from "../schemas.js";
+import type { MatchedCandidateWithPath, McpSearchByTargetParams, UserId } from "../../../shared/schemas.js";
 
-export class SearchByTargetTool extends BaseTool<SearchByTargetParams, MatchedCandidateWithPath[]> {
-  protected async executeImpl(params: SearchByTargetParams, userId: UserId): Promise<MatchedCandidateWithPath[]> {
+export class SearchByTargetTool extends BaseTool<McpSearchByTargetParams, MatchedCandidateWithPath[]> {
+  protected async executeImpl(params: McpSearchByTargetParams, userId: UserId): Promise<MatchedCandidateWithPath[]> {
     const normalizedPartial = await this.normalizer.normalizeTargetContext(params.targetContext, userId);
 
     const normalized = targetContextSchema.parse(normalizedPartial);

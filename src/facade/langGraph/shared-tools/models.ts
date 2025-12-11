@@ -1,10 +1,6 @@
-import { ChatOpenAI } from "@langchain/openai";
-import { createMiddleware } from "langchain";
-
 import { config } from "../../env.js";
 
-import type { AIMessage } from "@langchain/core/messages";
-import type { AgentMiddleware } from "langchain";
+import { RateLimitedChatOpenAI } from "./rate-limit.js";
 
 export type ModelPurpose = "deterministic" | "extraction" | "planning" | "agent";
 
@@ -15,12 +11,12 @@ const temperatureMap: Record<ModelPurpose, number> = {
   agent: config.LANGCHAIN_TEMP_AGENT,
 };
 
-const instances = new Map<ModelPurpose, ChatOpenAI>();
+const instances = new Map<ModelPurpose, RateLimitedChatOpenAI>();
 
-export function getModel(purpose: ModelPurpose): ChatOpenAI {
+export function getModel(purpose: ModelPurpose): RateLimitedChatOpenAI {
   let model = instances.get(purpose);
   if (!model) {
-    model = new ChatOpenAI({
+    model = new RateLimitedChatOpenAI({
       model: config.LANGCHAIN_MODEL_NAME,
       apiKey: config.OPENAI_API_KEY,
       temperature: temperatureMap[purpose],
@@ -33,21 +29,6 @@ export function getModel(purpose: ModelPurpose): ChatOpenAI {
   }
   return model;
 }
-
-/* eslint-disable @typescript-eslint/naming-convention -- OpenAI API parameter */
-export const sequentialToolCallsMiddleware: AgentMiddleware = createMiddleware({
-  name: "sequential-tool-calls",
-  wrapModelCall: async (request, handler): Promise<AIMessage> => {
-    return handler({
-      ...request,
-      modelSettings: {
-        ...request.modelSettings,
-        parallel_tool_calls: false,
-      },
-    });
-  },
-});
-/* eslint-enable @typescript-eslint/naming-convention */
 
 export function clearModelInstances(): void {
   instances.clear();

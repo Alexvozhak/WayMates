@@ -1,5 +1,3 @@
-import { searchUserCareersParamsSchema } from "../../facade/mcp-server/schemas.js";
-import { searchResultResponseSchema } from "../schemas/mcp-responses.js";
 import { parseCurrentQuery } from "../services/nlp-parser.js";
 import { setPendingAction } from "../services/pending-actions.js";
 
@@ -23,12 +21,7 @@ export async function processCurrentQuery(ctx: BotContext, query: string): Promi
   const searchParams = await parseCurrentQuery(ctx.services.openaiApiKey, query);
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
-  const result = await ctx.services.mcpClient.callTool(
-    "search_user_careers",
-    { ...searchParams, sessionId },
-    searchUserCareersParamsSchema,
-    searchResultResponseSchema,
-  );
+  const result = await ctx.services.mcpClient.callTool("search_user_careers", { ...searchParams, sessionId });
 
   await ctx.api.deleteMessage(statusMsg.chat.id, statusMsg.message_id);
 

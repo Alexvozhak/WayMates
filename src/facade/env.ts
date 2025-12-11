@@ -18,6 +18,7 @@ const envSchema = z.object({
   POSTGRES_USER: z.string().min(1, "POSTGRES_USER is required"),
   POSTGRES_PASSWORD: z.string().min(1, "POSTGRES_PASSWORD is required"),
   POSTGRES_DB: z.string().min(1, "POSTGRES_DB is required"),
+  POSTGRES_POOL_MAX: z.coerce.number().int().positive().default(20),
   // LLM configuration (OpenRouter-compatible, auto-picked by ChatOpenAI)
   OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required (use OpenRouter key)"),
   OPENAI_API_BASE: z.string().url().default("https://openrouter.ai/api/v1"),
@@ -29,6 +30,9 @@ const envSchema = z.object({
   LANGCHAIN_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
   LANGCHAIN_MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().positive().default(3),
   LANGCHAIN_MAX_QUESTIONS_PER_BATCH: z.coerce.number().int().positive().default(5),
+  // Rate limiting
+  OPENAI_FACADE_RPM_LIMIT: z.coerce.number().int().positive().default(500),
+  OPENAI_FACADE_MAX_CONCURRENT: z.coerce.number().int().positive().default(10),
   // Auth configuration
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
   // Server transport configuration

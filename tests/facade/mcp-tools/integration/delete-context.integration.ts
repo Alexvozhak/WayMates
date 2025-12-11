@@ -6,8 +6,7 @@ import { FacadeTestContext } from "../../helpers/test-context.js";
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { DeleteContextParams } from "../../../../src/facade/mcp-server/schemas.js";
-import type { ContextId, UserContext } from "../../../../src/shared/schemas.js";
+import type { McpDeleteContextParams, ContextId, UserContext } from "../../../../src/shared/schemas.js";
 
 const userStories = new UserStories();
 const u1 = userStories.getStoryBy("U1");
@@ -48,7 +47,7 @@ describe("DeleteContextTool Integration Tests", () => {
       context: testContext,
     });
 
-    const deleteParams: DeleteContextParams = {
+    const deleteParams: McpDeleteContextParams = {
       sessionId: testSessionId,
       contextId,
     };
@@ -65,7 +64,7 @@ describe("DeleteContextTool Integration Tests", () => {
   // Prevents unauthorized context deletion; only authenticated users can modify their history.
   it("DC2: Invalid session rejected - returns error", async () => {
     const invalidSession: SessionId = "sess_invalid_delete_ctx_000";
-    const params: DeleteContextParams = {
+    const params: McpDeleteContextParams = {
       sessionId: invalidSession,
       contextId: "ctx_01933ec5-c5f0-7a57-af82-87199be6cbbb",
     };
@@ -81,7 +80,7 @@ describe("DeleteContextTool Integration Tests", () => {
   // Business rule: Delete is idempotent (deleting non-existent context succeeds - no error).
   // UX: User can safely retry delete without error; backend handles "already deleted" gracefully.
   it("DC3: Idempotent delete - deleting non-existent context succeeds", async () => {
-    const params: DeleteContextParams = {
+    const params: McpDeleteContextParams = {
       sessionId: testSessionId,
       contextId: "ctx_01933ec5-c5f0-7a57-af82-87199be6cccc",
     };

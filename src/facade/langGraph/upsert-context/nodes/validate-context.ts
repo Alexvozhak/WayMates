@@ -10,15 +10,17 @@ import type { UpsertContextStateType } from "../state.js";
 const MAX_CLARIFICATION_ROUNDS = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
 
 export function validateContextNode(state: UpsertContextStateType): Partial<UpsertContextStateType> {
-  const { extractedContext, clarificationRound } = state;
+  const { extractedContext, clarificationRound, validatedContext } = state;
 
   if (!extractedContext) {
     return { phase: PHASE.failed, validationErrors: ["No context extracted"] };
   }
 
+  const existingContextId = validatedContext?.contextId;
+
   const fullContext = {
     ...extractedContext,
-    contextId: `ctx_${uuidv7()}`,
+    contextId: existingContextId ?? `ctx_${uuidv7()}`,
     previousContextId: null,
     nextContextId: null,
   };

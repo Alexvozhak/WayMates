@@ -3,15 +3,14 @@ import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
-import type { UserId } from "../../../shared/schemas.js";
-import type { SetGoalParams } from "../schemas.js";
+import type { McpSetGoalParams, UserId } from "../../../shared/schemas.js";
 
 type SetGoalResult = {
   goalId: string;
 };
 
-export class SetGoalTool extends BaseTool<SetGoalParams, SetGoalResult> {
-  protected async executeImpl(params: SetGoalParams, userId: UserId): Promise<SetGoalResult> {
+export class SetGoalTool extends BaseTool<McpSetGoalParams, SetGoalResult> {
+  protected async executeImpl(params: McpSetGoalParams, userId: UserId): Promise<SetGoalResult> {
     const normalizedPartial = await this.normalizer.normalizeTargetContext(params.targetContext, userId);
 
     const normalized = targetContextSchema.parse(normalizedPartial);

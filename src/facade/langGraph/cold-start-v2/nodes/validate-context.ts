@@ -1,8 +1,7 @@
-import { trailSchema, userContextSchema } from "../../../../shared/schemas.js";
+import { missingFieldSchema, trailSchema, userContextSchema } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { PHASE } from "../state.js";
-import { missingFieldSchema } from "../types.js";
 
 import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda, MissingField, Trail, UserContext } from "../state.js";

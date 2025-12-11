@@ -6,8 +6,7 @@ import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { BaseToolDependencies } from "../../../../src/facade/mcp-server/tools/base-tool.js";
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { SearchUserCareersParams } from "../../../../src/facade/mcp-server/schemas.js";
-import type { UserId } from "../../../../src/shared/schemas.js";
+import type { McpSearchUserCareersParams, UserId } from "../../../../src/shared/schemas.js";
 
 describe("SearchUserCareersTool Integration Tests", () => {
   let tool: SearchUserCareersTool;
@@ -31,7 +30,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   // Business rule: Mode 2 search uses user's current context from DB (no client-side referenceContext).
   // Flow: validate session → extract userId → Core fetches user's latest context → match candidates.
   it("SUC1: Full flow - returns candidates based on user's stored context", async () => {
-    const params: SearchUserCareersParams = {
+    const params: McpSearchUserCareersParams = {
       sessionId: testSessionId,
       limit: 10,
       pathLimit: 5,
@@ -51,7 +50,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   // Prevents unauthorized queries; user must authenticate via session before accessing their data.
   it("SUC2: Invalid session rejected - returns error", async () => {
     const invalidSession: SessionId = "sess_invalid456";
-    const params: SearchUserCareersParams = {
+    const params: McpSearchUserCareersParams = {
       sessionId: invalidSession,
       limit: 10,
       pathLimit: 5,
@@ -74,7 +73,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
     const emptyUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c999";
     const emptySession = await deps.session.create(emptyUserId);
 
-    const params: SearchUserCareersParams = {
+    const params: McpSearchUserCareersParams = {
       sessionId: emptySession,
       limit: 10,
       pathLimit: 5,
@@ -93,7 +92,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   // Business rule: Filtering excluded fields reduces match noise (e.g., ignore industry if job-hopping across sectors).
   // User controls relevance: "show me any careers with my skills, ignore industry mismatch".
   it("SUC4: Field exclusion applied - respects excludedContextFields parameter", async () => {
-    const params: SearchUserCareersParams = {
+    const params: McpSearchUserCareersParams = {
       sessionId: testSessionId,
       limit: 10,
       pathLimit: 5,
@@ -112,7 +111,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   // Business rule: Creation reason filtering enables "organic growth only" queries (exclude career breaks).
   // User asks: "show me people who naturally progressed, not forced transitions from layoffs".
   it("SUC5: Creation reason filtering - respects excludedCreationReasons parameter", async () => {
-    const params: SearchUserCareersParams = {
+    const params: McpSearchUserCareersParams = {
       sessionId: testSessionId,
       limit: 10,
       pathLimit: 5,

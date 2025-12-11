@@ -453,7 +453,7 @@ createAgent
 
 1.  [text](src/facade/mcp-server/tools/cold-start.tool.ts) как будто мы не агент должен писать в бд, а trpc ручка - то есть агент возвращает готовую к записе storyinput (только сформировывает), подумай над текущим вариантом и предлагаемым - что чище, правильней, логичней, дай рекомендации, что бы сделали best practice. createSaveCareerDataTool кажется лишним и мне чёт не очень нравиться что мы ручку mcp пробрасываем в агента "await deps.coreClient.client.story.upsertStory.mutate"
 
-2.          return state as unknown as AgentState; - давай через zod parse
+2.            return state as unknown as AgentState; - давай через zod parse
 
 3 [](src/facade/langchain/career-collector-agent.ts) строчки 449-474 повторяются
 
@@ -1186,3 +1186,135 @@ Graceful degradation" просто вбросил без подробносте�
 Вопрос 4: Fallback для LLM Ошибок - A) Показать ошибку пользователю: - пока так
 
 2. Tool Registry — Варианты -- Вариант B: Упрощенный (только Zod валидация) ок
+
+" 1️⃣ Bottleneck для OpenAI (API-level protection)
+
+Где применить: НЕ для Facade (internal service), ТОЛЬКО для OpenAI LLM
+
+Архитектура:
+// src/telegram-bot/services/openai-limiter.ts
+
+export interface RateLimiter {
+schedule<T>(fn: () => Promise<T>): Promise<T>;
+}" непонятно почему нужно свой интерфейс создавать? ты же не про самописный bottleneck говоришь?
+
+3. Long Polling vs Webhook - ну ок, тестируем с лонгполингом, а потом в конце релизим мвп с вебхуком. отдельно его как-то тестировать можно или сложно и нет смысла?
+
+#1: Grammy ratelimiter - глобальный или per-command? - per-command
+
+"#2: Bottleneck для Facade MCP - нужен ли?
+
+Аргументы ПРОТИВ:
+
+- Facade - internal service, не third-party API" что за формулировоки? ты имеешь в виду что bottleneck мб стоит делать не в телеге а в фасаде? кстати! у нас же помимо телеги к нашему фасаду будут другие клиенты подключаться по мсп. Что тогда стоит пересмотреть в нашем подходе? мб реально часть проверок нужно не в телеге делать (ограничительные), а в фасаде. то есть ретраи ок - делаем ещё в телеге, а всякие bottleneck и rate limiter целеособразней в фасаде же? хотя с другой стороны у телеграма тоже своя ллмка есть, которую тоже нужно как-то обезопасить
+
+#6: UX для Bottleneck queue waiting - Вариант B: Status message (как в by-target.ts)
+
+я так и не понял какие проблемы мы можем встретить в телеге, какие в фасаде, и что мы закрываем с помощью bottlenec, а что - с помощью ratelimit
+
+Вариант A: Разные API keys (ПРОСТОЙ) его
+использовать Bottleneck напрямую
+Facade rate limiting: Согласен добавить Bottleneck в Facade для Neo4j + cold_start? - да
+Архитектура: Два уровня (Facade для core APIs + Telegram для presenters)? - не понял вопроса.
+так же не понимаю зачем в телеграме ботлнет, если можно обойтись rate limit? если мы ограничим функционал на уровне телеграма, то и экстра расхода не будет в ллм, нет?
+
+" wrapModelCall: async (request, handler): Promise<AIMessage> => {
+return handler({
+...request,
+modelSettings: {
+...request.modelSettings,
+parallel_tool_calls: false,
+},
+});" это так и не заработало в langchain! рудимент!
+
+      "  Наш rate limiting middleware будет работать аналогично:
+
+import Bottleneck from "bottleneck";
+import { createMiddleware } from "langchain";
+
+const openaiLimiter = new Bottleneck({
+reservoir: config.OPENAI_FACADE_RPM_LIMIT,
+reservoirRefreshInterval: 60_000,
+});
+
+export const rateLimitMiddleware = createMiddleware({
+name: "openai-rate-limit",
+wrapModelCall: async (request, handler) => {
+// ✅ Wraps ENTIRE model call (invoke, stream, batch)
+return await openaiLimiter.schedule(() => handler(request));
+},
+});
+
+// Usage
+export function getModel(purpose: ModelPurpose): ChatOpenAI {
+const model = new ChatOpenAI({...});
+return model.withConfig({
+middlewares: [rateLimitMiddleware, sequentialToolCallsMiddleware]
+});
+}" нужен poc, чтобы убедиться что он работает
+
+Твое мнение: Rate limit callbacks или нет?- не нужно 3. Database Pooling Values - Обоснование - ок
+
+" С Вариантом C: parse логика живёт внутри preprocess node (часть LangGraph).
+
+- ❌ Нельзя "просто распарсить PDF" без запуска всего cold_start graph
+- ❌ Нужно запустить graph → preprocess node → остановить (weird) " - это ок, резюме нужно только при coldstart
+
+" Проблемы:
+
+- ❌ LangGraph = workflow orchestrator, НЕ должен знать про external APIs (нарушение SRP)
+- ❌ Testing: чтобы тестировать LangGraph, нужно мокать Gemini API
+- ❌ Deployment: LangGraph должен иметь GOOGLE_API_KEY (coupling)" не вижу проблем ещё один ключ дать для gemini, и то что встраиваем gemini в ланграф - тоже не вижу проблем, gptmini же встроили, рядом и gemini сделаем
+  F3c решает: Facade отвечает за external APIs, LangGraph только orchestration. - ну ок сделать так же как и с gptmini
+
+- Phase 2: Orchestrator + metadata (3-4h) - что за метадата? ты предлагаешь резюме сохранять не в банк сообщений, а в отдельное поле в state графа? я вот думаю, что для мвп мб не нужна гибкость и можно рассмотреть два варианта - всегда начинать с резюме или без резюме; второй вариант - давать ту самую гибкость до фазы, в которой план подтвержден (но тоггда нужно проверять видимо фаза и в зависимости от этого как-то реагировать). конечно для графа мб проще было бы не парсить резюме (не быть всегда готовым к тому что прилетит резюме)
+
+проблема имхо - что мы не можем пользователя ограничить когда он может отправлять резюме а когда - нет. или можем так? какие есть варианты реализации это? элегантные без жесткого говнокода объемного, чтоб по архитектуре ложилось нужно.
+
+если мы сможем телеграм ограничить, то в принципе норм вариант с гибкой обработкой резюме.
+
+кажется без ограничения со стороны телеграма нам не обойтись - мы задолбимся в фасаде быть всегда готовыми к тому что в любой момент вместо очередного ответа от пользователя прилетит его резюме текстовое.
+
+я возможно готов пойти на уступки, чтобы стартовать граф с резюме, но не подкидывать его в процессе - если это сильно облегчит нам жизнь. и в то же время хотел бы, чтоб у пользователя была возможность только у нужные нам фазы отправить резюме.
+
+🔴 КРИТИЧНО: Race condition в validateContextNode/validateTrailNode - мне непонятные обстоятельства и реальность "(например, если LangGraph retry или параллельные вызовы)" параллельных вызовов быть не должно у нас (у одно пользователя) и что за retry ланграфа?
+
+Правильное решение: Генерировать ID один раз в начале графа, не в validate ноде. - звучит здраво. Какие варианты? стоит ли менять? вроде тестами должны были покрыть это, проблем не выявили
+
+🟡 ВАЖНО: editMessageReplyMarkup() может бросить MESSAGE_NOT_MODIFIED
+" if (ctx.callbackQuery?.message?.reply_markup) {
+await ctx.editMessageReplyMarkup();
+}" - как бы ок, если это не паранойя
+
+" 🟡 ВАЖНО: clearPendingAction не идемпотентен при concurrent errors
+
+Файл: bot.ts:167
+
+Проблема: Если два error handler вызовутся параллельно (теоретически возможно при concurrent middleware),
+оба вызовут clearPendingAction, но:" у нас разве так? и возможно ли это
+
+" - Если нет → генерирует новый (❌ не идемпотентно при retry)" - это норма для нас, важно, чтоб связи не рушились между контекстами и тропами
+
+Q1.1: Metadata transport через MCP
+C) Separate field в state (не message) - а я склоняюсь к этому варианту, не понимаю зачем доп сложности из варианта А. только бы назвал всё же CvText
+
+Q1.2: Phase tracking для Telegram UI - смотри сам по коду, должна возвращаться фаза. Проверь, что можем на эту фазу повеситься
+
+Q1.3: Где живёт Gemini API key? A) В Facade
+
+Q2.1: Merge strategy (dialogue + resume contexts)
+пока план несоставел, ллмка по идея (как я вижу) должна использовать и messages поле (банк истории) и теперь ещё cv поле, т.е. подправляем системные промпты мб имеющихся нод? чтоб промпты учитывали cv при построении плана и детального разбора контекстов?
+
+Q2.2: Trails handling (resume не содержит trails) - тут без изменений, после того как план утвержден - идем по контексту и тропам, выспрашиваем
+
+Q2.3: Resume quality validation - C) No validation (optimistic)
+
+Q3.1: parse_resume_to_text tool signature - A) Simple - только давай без лишней абстрации (интерфейсов)
+
+Q3.2: cold_start расширение для metadata - так и не понял почему нельзя просто string optional
+
+Q3.3: Merge function signature - мержа не будет. фактически правим промпт, чтоб теперь строил план контексты тропы с учетом возможного cv
+
+Q4.3: Phase names в LangGraph
+
+Вопрос: Как называть фазы для Telegram UI? - это здесь причем? как сейчас?

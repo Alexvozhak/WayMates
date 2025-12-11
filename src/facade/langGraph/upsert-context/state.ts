@@ -2,8 +2,7 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
 import { lastValue } from "../shared/state-utils.js";
 
-import type { UserContext, UserId } from "../../../shared/schemas.js";
-import type { MissingField } from "../cold-start-v2/types.js";
+import type { MissingField, UserContext, UserId } from "../../../shared/schemas.js";
 import type { ParsedDecision } from "../shared/decision.js";
 import type { ExtractableContext } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
@@ -19,7 +18,6 @@ export const PHASE = {
 
 export type UpsertContextPhase = (typeof PHASE)[keyof typeof PHASE];
 
-/** Node names in upsert-context graph - single source of truth for graph topology */
 /* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
 export const NODE = {
   extract_context: "extract_context",

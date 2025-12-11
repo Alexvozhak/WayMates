@@ -1,19 +1,17 @@
+import { mcpUpdateContextParamsSchema } from "../../../shared/schemas.js";
 import { PHASE } from "../../langGraph/update-context/state.js";
 import { UpdateContextGraph } from "../../langGraph/update-context/update-context-graph.js";
-import { updateContextParamsSchema } from "../schemas.js";
 
 import { BaseTool } from "./base-tool.js";
 
-import type { UserContext, UserId } from "../../../shared/schemas.js";
-import type { UpdateContextResponse } from "../../langGraph/update-context/types.js";
-import type { UpdateContextParams } from "../schemas.js";
+import type { McpUpdateContextParams, UpdateContextResponse, UserContext, UserId } from "../../../shared/schemas.js";
 
-export class UpdateContextTool extends BaseTool<UpdateContextParams, UpdateContextResponse> {
-  protected override getParamsSchema(): typeof updateContextParamsSchema {
-    return updateContextParamsSchema;
+export class UpdateContextTool extends BaseTool<McpUpdateContextParams, UpdateContextResponse> {
+  protected override getParamsSchema(): typeof mcpUpdateContextParamsSchema {
+    return mcpUpdateContextParamsSchema;
   }
 
-  protected async executeImpl(params: UpdateContextParams, userId: UserId): Promise<UpdateContextResponse> {
+  protected async executeImpl(params: McpUpdateContextParams, userId: UserId): Promise<UpdateContextResponse> {
     const threadId = `update_ctx_${userId}`;
     const checkpointer = this.checkpointService.getCheckpointer();
 

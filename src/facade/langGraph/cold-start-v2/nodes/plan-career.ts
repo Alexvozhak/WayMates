@@ -2,10 +2,10 @@ import { HumanMessage } from "@langchain/core/messages";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
+import { contextAgendaBaseSchema } from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { planningPrompt } from "../prompts.js";
 import { PHASE } from "../state.js";
-import { contextAgendaBaseSchema } from "../types.js";
 
 import type { ColdStartStateType, ContextAgenda, ContextAgendaBase } from "../state.js";
 

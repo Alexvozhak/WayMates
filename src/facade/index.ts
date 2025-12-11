@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     user: config.POSTGRES_USER,
     password: config.POSTGRES_PASSWORD,
     database: config.POSTGRES_DB,
-    max: 20,
+    max: config.POSTGRES_POOL_MAX,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 2000,
   };
@@ -50,6 +50,8 @@ async function main(): Promise<void> {
   });
 
   if (config.FACADE_TRANSPORT === "http") {
+    // FastMCP defaults: endpoint="/mcp", enableJsonResponse=false (SSE mode)
+    // For Docker deployment, add: host: "0.0.0.0"
     await server.start({
       transportType: "httpStream",
       httpStream: {

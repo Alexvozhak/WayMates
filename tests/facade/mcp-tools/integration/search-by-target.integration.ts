@@ -4,8 +4,7 @@ import { SearchByTargetTool } from "../../../../src/facade/mcp-server/tools/sear
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { SearchByTargetParams } from "../../../../src/facade/mcp-server/schemas.js";
-import type { UserId } from "../../../../src/shared/schemas.js";
+import type { McpSearchByTargetParams, UserId } from "../../../../src/shared/schemas.js";
 
 describe("SearchByTargetTool Integration Tests", () => {
   let tool: SearchByTargetTool;
@@ -25,7 +24,7 @@ describe("SearchByTargetTool Integration Tests", () => {
   // Business rule: Target search finds candidates matching user's desired criteria (goal-driven mode).
   // Flow: validate session → normalize target criteria → Core matches candidates → return with paths.
   it("SBT1: Full flow with normalization - returns candidates matching target", async () => {
-    const params: SearchByTargetParams = {
+    const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
       targetContext: {
         position: { mode: "desired", values: ["senior"] },
@@ -47,7 +46,7 @@ describe("SearchByTargetTool Integration Tests", () => {
   // Prevents unauthorized search queries; error code helps client distinguish auth vs data issues.
   it("SBT2: Invalid session rejected - returns error", async () => {
     const invalidSession: SessionId = "sess_invalid789";
-    const params: SearchByTargetParams = {
+    const params: McpSearchByTargetParams = {
       sessionId: invalidSession,
       targetContext: {
         position: { mode: "desired", values: ["senior"] },
@@ -67,7 +66,7 @@ describe("SearchByTargetTool Integration Tests", () => {
   // Business rule: Typo normalization applies to target criteria too (not just user context).
   // User entering "Pyton" in desired skills should still find Python experts, not empty results.
   it("SBT3: Typos normalized before Core - LLM corrects target criteria", async () => {
-    const params: SearchByTargetParams = {
+    const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
       targetContext: {
         skills: { mode: "desired", values: ["Pyton"] },
@@ -87,7 +86,7 @@ describe("SearchByTargetTool Integration Tests", () => {
   // Business rule: Undesired filters enable negative criteria ("show me non-management roles").
   // FieldFilter mode "undesired" excludes candidates matching those values, refining results.
   it("SBT4: Undesired mode filters - excludes candidates with undesired values", async () => {
-    const params: SearchByTargetParams = {
+    const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
       targetContext: {
         position: { mode: "undesired", values: ["Intern"] },

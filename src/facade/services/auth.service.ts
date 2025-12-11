@@ -5,9 +5,7 @@ import { InvalidTokenError } from "../errors.js";
 
 import type { SessionService } from "./session.service.js";
 import type { UserService } from "./user.service.js";
-import type { UserId } from "../../shared/schemas.js";
-import type { SessionId } from "../mcp-server/result.js";
-import type { Token } from "../mcp-server/schemas.js";
+import type { SessionId, TelegramLinkResponse, TelegramRegisterResponse, Token, UserId } from "../../shared/schemas.js";
 
 export type RegisterResult = {
   token: Token;
@@ -16,19 +14,6 @@ export type RegisterResult = {
 };
 
 export type AuthenticateResult = {
-  sessionId: SessionId;
-};
-
-export type TelegramRegisterResult = {
-  userId: string;
-  token: Token;
-  sessionId: SessionId;
-  isNewUser: boolean;
-  hasStory: boolean;
-};
-
-export type TelegramLinkResult = {
-  userId: string;
   sessionId: SessionId;
 };
 
@@ -73,7 +58,7 @@ export class AuthService {
     return { sessionId };
   }
 
-  async registerViaTelegram(info: TelegramUserInfo): Promise<TelegramRegisterResult> {
+  async registerViaTelegram(info: TelegramUserInfo): Promise<TelegramRegisterResponse> {
     const existing = await this.userService.findByTelegramId(info.telegramUserId);
 
     if (existing) {
@@ -107,28 +92,32 @@ export class AuthService {
     };
   }
 
-  async linkTelegram(token: Token, info: TelegramUserInfo): Promise<TelegramLinkResult> {
+  async linkTelegram(token: Token, info: TelegramUserInfo): Promise<TelegramLinkResponse> {
     const user = await this.userService.findByToken(token);
 
     if (!user) {
       throw new InvalidTokenError("Token not found or invalid");
     }
 
+    const userId = userIdSchema.parse(user.userId);
+
     const existingTelegram = await this.userService.findByTelegramId(info.telegramUserId);
     if (existingTelegram) {
       if (existingTelegram.userId === user.userId) {
-        const sessionId = await this.sessionService.create(userIdSchema.parse(user.userId));
-        return { userId: user.userId, sessionId };
+        const sessionId = await this.sessionService.create(userId);
+        const hasStory = await this.userService.isColdStartCompleted(userId);
+        return { userId: user.userId, sessionId, hasStory, token };
       }
       throw new InvalidTokenError("Telegram account already linked to another user");
     }
 
     await this.userService.linkTelegramToUser(user.userId, info.telegramUserId);
 
-    const sessionId = await this.sessionService.create(userIdSchema.parse(user.userId));
+    const sessionId = await this.sessionService.create(userId);
     await this.userService.updateLastAuthAt(user.userId);
+    const hasStory = await this.userService.isColdStartCompleted(userId);
 
-    return { userId: user.userId, sessionId };
+    return { userId: user.userId, sessionId, hasStory, token };
   }
 
   private generateUserId(): UserId {

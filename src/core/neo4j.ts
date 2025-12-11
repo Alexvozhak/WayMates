@@ -11,9 +11,12 @@ type Credentials = {
 export function createDriver(options?: { uri?: string }): Driver {
   const { uri, user, password } = getCredentials(options?.uri);
 
+  const maxPoolSize = process.env.NEO4J_MAX_POOL_SIZE ? Number.parseInt(process.env.NEO4J_MAX_POOL_SIZE, 10) : 50;
+
   const config: neo4j.Config = {
     encrypted: false,
     disableLosslessIntegers: true,
+    maxConnectionPoolSize: maxPoolSize,
   };
 
   const driver = neo4j.driver(uri, neo4j.auth.basic(user, password), config);
@@ -30,10 +33,7 @@ export async function verifyConnection(driver: Driver): Promise<void> {
 /**
  * Helper to execute read work in a session and close it.
  */
-export async function withReadSession<T>(
-  driver: Driver,
-  work: (tx: ManagedTransaction) => Promise<T>,
-): Promise<T> {
+export async function withReadSession<T>(driver: Driver, work: (tx: ManagedTransaction) => Promise<T>): Promise<T> {
   const session = driver.session();
   try {
     return await session.executeRead((tx) => work(tx));
@@ -45,10 +45,7 @@ export async function withReadSession<T>(
 /**
  * Helper to execute write work in a session and close it.
  */
-export async function withWriteSession<T>(
-  driver: Driver,
-  work: (tx: ManagedTransaction) => Promise<T>,
-): Promise<T> {
+export async function withWriteSession<T>(driver: Driver, work: (tx: ManagedTransaction) => Promise<T>): Promise<T> {
   const session = driver.session();
   try {
     return await session.executeWrite((tx) => work(tx));
@@ -77,9 +74,7 @@ function getCredentials(uriOverride?: string): Credentials {
   const password = process.env.NEO4J_PASSWORD;
 
   if (!uri || !user || !password) {
-    throw new Error(
-      "Missing required environment variables: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD",
-    );
+    throw new Error("Missing required environment variables: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD");
   }
 
   return { uri, user, password };

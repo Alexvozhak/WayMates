@@ -142,3 +142,37 @@ error-validation_error = Некорректные данные. Проверьт
 error-internal_error = Внутренняя ошибка сервера. Мы уже работаем над исправлением.
 error-postgres_connection_failed = Проблемы с подключением к базе данных. Попробуйте позже.
 error-postgres_query_failed = Ошибка при выполнении запроса. Попробуйте позже.
+error-rate_limit = ⏱ Слишком много запросов. Подождите несколько секунд и попробуйте снова.
+
+# === Story & Goals ===
+loading-story = ⏳ Загружаю вашу карьерную историю...
+loading-goal = ⏳ Загружаю вашу цель...
+goal-not-set = У вас еще не установлена карьерная цель. Используйте /goal set <описание цели>
+goal-usage = Опишите вашу карьерную цель:
+
+    Пример: /goal set Хочу стать Senior Backend в финтехе
+parsing-goal = ⏳ Анализирую вашу цель...
+goal-set-success = ✅ Цель установлена! (ID: { $goalId })
+goal-deleted = ✅ Цель удалена
+
+# === Context & Trail Management ===
+update-context-prompt = Опишите изменения в текущем контексте:
+
+    Пример: Добавь React в навыки
+add-context-prompt = Опишите новую карьерную позицию:
+
+    Пример: Работал Senior Backend в Яндексе с 2020 по 2022 в Москве, Python и Go
+add-trail-prompt = Опишите обучающий трейл:
+
+    Пример: Прошел курс React на Udemy в течение 8 недель
+delete-context-usage = Использование: /delete_context <contextId>
+delete-trail-usage = Использование: /delete_trail <trailId>
+context-deleted = ✅ Контекст удален
+trail-deleted = ✅ Трейл удален
+context-not-found = ❌ Контекст не найден. Проверьте ID через /get_story
+trail-not-found = ❌ Трейл не найден. Проверьте ID через /get_story
+
+# === LangGraph Workflows ===
+langgraph-saved = ✅ Сохранено успешно!
+langgraph-edit-prompt = Введите исправления
+langgraph-cancelled = ❌ Операция отменена

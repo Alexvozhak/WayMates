@@ -14,11 +14,8 @@ import { decisionSchema, PHASE } from "../../../../../src/facade/langGraph/cold-
 import { coldStartPhaseSchema, NODE } from "../../../../../src/facade/langGraph/cold-start-v2/types.js";
 
 import type { ColdStartStateType, ParsedDecision } from "../../../../../src/facade/langGraph/cold-start-v2/state.js";
-import type {
-  ColdStartPhase,
-  ContextAgenda,
-  MissingField,
-} from "../../../../../src/facade/langGraph/cold-start-v2/types.js";
+import type { ContextAgenda, MissingField } from "../../../../../src/shared/schemas.js";
+import type { ColdStartPhase } from "../../../../../src/facade/langGraph/cold-start-v2/types.js";
 
 function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStartStateType {
   return {

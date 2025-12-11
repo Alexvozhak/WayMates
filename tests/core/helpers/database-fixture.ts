@@ -1,6 +1,15 @@
 import type { Driver, Record } from "neo4j-driver";
 
-const REFERENCE_DATA_LABELS = ["Language", "Skill", "Reason"] as const;
+const REFERENCE_DATA_LABELS = [
+  "Language",
+  "Skill",
+  "Reason",
+  "Position",
+  "WorkDomain",
+  "City",
+  "Industry",
+  "Platform",
+] as const;
 
 export class DatabaseFixture {
   static getReferenceDataLabels(): readonly string[] {
@@ -21,6 +30,11 @@ export class DatabaseFixture {
         WHERE NOT n:Language
           AND NOT n:Skill
           AND NOT n:Reason
+          AND NOT n:Position
+          AND NOT n:WorkDomain
+          AND NOT n:City
+          AND NOT n:Industry
+          AND NOT n:Platform
         DETACH DELETE n
       `);
     } finally {
@@ -103,11 +117,7 @@ export class DatabaseFixture {
     };
   }
 
-  private validateReferenceDataCounts(counts: {
-    langCount: number;
-    skillCount: number;
-    reasonCount: number;
-  }): void {
+  private validateReferenceDataCounts(counts: { langCount: number; skillCount: number; reasonCount: number }): void {
     const { langCount, skillCount, reasonCount } = counts;
 
     if (langCount === 0 || skillCount === 0 || reasonCount === 0) {

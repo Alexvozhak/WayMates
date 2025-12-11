@@ -3,12 +3,11 @@ import { UpsertContextGraph } from "../../langGraph/upsert-context/upsert-contex
 
 import { BaseTool } from "./base-tool.js";
 
-import type { UserId } from "../../../shared/schemas.js";
+import type { McpUpsertContextParams, UserId } from "../../../shared/schemas.js";
 import type { UpsertContextResponse } from "../../langGraph/upsert-context/types.js";
-import type { UpsertContextParams } from "../schemas.js";
 
-export class UpsertContextTool extends BaseTool<UpsertContextParams, UpsertContextResponse> {
-  protected async executeImpl(params: UpsertContextParams, userId: UserId): Promise<UpsertContextResponse> {
+export class UpsertContextTool extends BaseTool<McpUpsertContextParams, UpsertContextResponse> {
+  protected async executeImpl(params: McpUpsertContextParams, userId: UserId): Promise<UpsertContextResponse> {
     const threadId = `upsert_ctx_${userId}`;
 
     const checkpointer = this.checkpointService.getCheckpointer();

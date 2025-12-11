@@ -1,7 +1,11 @@
 import { userContextSchema } from "../../../../shared/schemas.js";
+import { config } from "../../../env.js";
+import { extractMissingFields } from "../../cold-start-v2/nodes/validate-context.js";
 import { PHASE } from "../state.js";
 
 import type { UpdateContextStateType } from "../state.js";
+
+const MAX_CLARIFICATION_ROUNDS = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
 
 export function mergeContextNode(state: UpdateContextStateType): Partial<UpdateContextStateType> {
   const { currentContext, extractedUpdates } = state;
@@ -25,13 +29,27 @@ export function mergeContextNode(state: UpdateContextStateType): Partial<UpdateC
   const result = userContextSchema.safeParse(merged);
 
   if (!result.success) {
-    const errors = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
-    return { phase: PHASE.failed, validationErrors: errors };
+    const missing = extractMissingFields(result, "Updated Context", "context");
+
+    const nextRound = state.clarificationRound + 1;
+    if (nextRound > MAX_CLARIFICATION_ROUNDS) {
+      const errors = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+      return { phase: PHASE.failed, validationErrors: errors };
+    }
+
+    return {
+      phase: PHASE.awaitingClarification,
+      missingFields: missing,
+      clarificationRound: nextRound,
+      validationErrors: [],
+    };
   }
 
   return {
     mergedContext: result.data,
     validationErrors: [],
+    missingFields: [],
+    clarificationRound: 0,
     phase: PHASE.awaitingConfirmation,
   };
 }

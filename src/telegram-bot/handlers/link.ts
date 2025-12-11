@@ -1,6 +1,3 @@
-import { telegramLinkParamsSchema } from "../../facade/mcp-server/schemas.js";
-import { telegramLinkResponseSchema } from "../schemas/mcp-responses.js";
-
 import type { BotContext } from "../types.js";
 
 export async function handleLink(ctx: BotContext): Promise<void> {
@@ -26,12 +23,7 @@ async function showLinkUsage(ctx: BotContext): Promise<void> {
 
 async function performLinking(ctx: BotContext, token: string, telegramUserId: number): Promise<void> {
   try {
-    const result = await ctx.services.mcpClient.callTool(
-      "link_telegram",
-      { token, telegramUserId },
-      telegramLinkParamsSchema,
-      telegramLinkResponseSchema,
-    );
+    const result = await ctx.services.mcpClient.callTool("link_telegram", { token, telegramUserId });
 
     ctx.session = {
       status: "initialised",

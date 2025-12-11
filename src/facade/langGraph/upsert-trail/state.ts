@@ -2,8 +2,7 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
 import { lastValue } from "../shared/state-utils.js";
 
-import type { ContextId, Trail, UserId } from "../../../shared/schemas.js";
-import type { MissingField } from "../cold-start-v2/types.js";
+import type { ContextId, MissingField, Trail, UserId } from "../../../shared/schemas.js";
 import type { ParsedDecision } from "../shared/decision.js";
 import type { ExtractableTrail } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";

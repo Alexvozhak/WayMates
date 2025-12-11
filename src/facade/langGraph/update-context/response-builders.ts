@@ -3,7 +3,7 @@ import { InvalidStateError } from "../../errors.js";
 import { PHASE } from "./state.js";
 
 import type { UpdateContextPhase, UpdateContextStateType } from "./state.js";
-import type { UpdateContextResponse } from "./types.js";
+import type { UpdateContextResponse } from "../../../shared/schemas.js";
 
 type ResponseBuilder = (state: UpdateContextStateType) => UpdateContextResponse;
 
@@ -11,6 +11,11 @@ export const responseBuilders: Record<UpdateContextPhase, ResponseBuilder> = {
   [PHASE.extracting]: () => ({
     phase: PHASE.extracting,
     message: "Processing your request...",
+  }),
+
+  [PHASE.awaitingClarification]: (state) => ({
+    phase: PHASE.awaitingClarification,
+    missingFields: state.missingFields,
   }),
 
   [PHASE.awaitingConfirmation]: (state) => {

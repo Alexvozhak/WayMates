@@ -1,5 +1,3 @@
-import { facadeAdhocSearchParamsSchema } from "../../facade/mcp-server/schemas.js";
-import { searchResultResponseSchema } from "../schemas/mcp-responses.js";
 import { parseAdhocQuery } from "../services/nlp-parser.js";
 import { setPendingAction } from "../services/pending-actions.js";
 
@@ -23,12 +21,7 @@ export async function processAdhocQuery(ctx: BotContext, query: string): Promise
   const searchParams = await parseAdhocQuery(ctx.services.openaiApiKey, query);
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
-  const result = await ctx.services.mcpClient.callTool(
-    "search_careers",
-    { ...searchParams, sessionId },
-    facadeAdhocSearchParamsSchema,
-    searchResultResponseSchema,
-  );
+  const result = await ctx.services.mcpClient.callTool("search_careers", { ...searchParams, sessionId });
 
   await ctx.api.deleteMessage(statusMsg.chat.id, statusMsg.message_id);
 

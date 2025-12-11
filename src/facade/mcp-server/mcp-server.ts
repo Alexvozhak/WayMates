@@ -1,26 +1,26 @@
 import { FastMCP } from "fastmcp";
 
+import {
+  mcpAuthParamsSchema,
+  mcpColdStartParamsSchema,
+  mcpDeleteContextParamsSchema,
+  mcpDeleteGoalParamsSchema,
+  mcpDeleteTrailParamsSchema,
+  mcpGetGoalParamsSchema,
+  mcpGetStoryParamsSchema,
+  mcpResetColdStartParamsSchema,
+  mcpSearchByTargetParamsSchema,
+  mcpSearchCareersParamsSchema,
+  mcpSearchUserCareersParamsSchema,
+  mcpSetGoalParamsSchema,
+  mcpTelegramLinkParamsSchema,
+  mcpTelegramRegisterParamsSchema,
+  mcpUpdateContextParamsSchema,
+  mcpUpsertContextParamsSchema,
+  mcpUpsertTrailParamsSchema,
+} from "../../shared/schemas.js";
 import { throwToolError } from "../errors.js";
 
-import {
-  authParamsSchema,
-  coldStartParamsSchema,
-  deleteContextParamsSchema,
-  deleteGoalParamsSchema,
-  deleteTrailParamsSchema,
-  facadeAdhocSearchParamsSchema,
-  getGoalParamsSchema,
-  getStoryParamsSchema,
-  resetColdStartParamsSchema,
-  searchByTargetParamsSchema,
-  searchUserCareersParamsSchema,
-  setGoalParamsSchema,
-  telegramLinkParamsSchema,
-  telegramRegisterParamsSchema,
-  updateContextParamsSchema,
-  upsertContextParamsSchema,
-  upsertTrailParamsSchema,
-} from "./schemas.js";
 import { AuthTool } from "./tools/auth.tool.js";
 import { ColdStartTool } from "./tools/cold-start.tool.js";
 import { DeleteContextTool } from "./tools/delete-context.tool.js";
@@ -105,9 +105,9 @@ function registerAuthTool(server: FastMCP, tool: AuthTool): void {
     description:
       "Authenticate or register user. Without token: creates new user + returns token + sessionId. " +
       "With token: validates token + returns sessionId. Single Active Session: new auth revokes previous session.",
-    parameters: authParamsSchema,
+    parameters: mcpAuthParamsSchema,
     execute: async (args: unknown) => {
-      const params = authParamsSchema.parse(args);
+      const params = mcpAuthParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -122,9 +122,9 @@ function registerColdStartTool(server: FastMCP, tool: ColdStartTool): void {
     name: "cold_start",
     description:
       "Import full career history via multi-turn conversation. Agent extracts contexts and trails from markdown/text resume. Returns status: collecting/awaiting_clarification/awaiting_confirmation/complete.",
-    parameters: coldStartParamsSchema,
+    parameters: mcpColdStartParamsSchema,
     execute: async (args: unknown) => {
-      const params = coldStartParamsSchema.parse(args);
+      const params = mcpColdStartParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -138,9 +138,9 @@ function registerResetColdStartTool(server: FastMCP, tool: ResetColdStartTool): 
   server.addTool({
     name: "reset_cold_start",
     description: "Reset cold start status and clear checkpoint. Allows user to restart career history import.",
-    parameters: resetColdStartParamsSchema,
+    parameters: mcpResetColdStartParamsSchema,
     execute: async (args: unknown) => {
-      const params = resetColdStartParamsSchema.parse(args);
+      const params = mcpResetColdStartParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -154,9 +154,9 @@ function registerGetStoryTool(server: FastMCP, tool: GetStoryTool): void {
   server.addTool({
     name: "get_story",
     description: "Get career story (contexts and trails) for a user",
-    parameters: getStoryParamsSchema,
+    parameters: mcpGetStoryParamsSchema,
     execute: async (args: unknown) => {
-      const params = getStoryParamsSchema.parse(args);
+      const params = mcpGetStoryParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -171,9 +171,9 @@ function registerSearchCareersTool(server: FastMCP, tool: SearchCareersTool): vo
     name: "search_careers",
     description:
       "Search for career transition paths with custom context. LibreChat LLM extracts structured context from user text.",
-    parameters: facadeAdhocSearchParamsSchema,
+    parameters: mcpSearchCareersParamsSchema,
     execute: async (args: unknown) => {
-      const params = facadeAdhocSearchParamsSchema.parse(args);
+      const params = mcpSearchCareersParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -188,9 +188,9 @@ function registerSearchUserCareersTool(server: FastMCP, tool: SearchUserCareersT
     name: "search_user_careers",
     description:
       "Search for career paths based on user's current context (fetched from DB automatically). No need to provide referenceContext.",
-    parameters: searchUserCareersParamsSchema,
+    parameters: mcpSearchUserCareersParamsSchema,
     execute: async (args: unknown) => {
-      const params = searchUserCareersParamsSchema.parse(args);
+      const params = mcpSearchUserCareersParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -204,9 +204,9 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "set_goal",
     description: "Set career goal with target context criteria",
-    parameters: setGoalParamsSchema,
+    parameters: mcpSetGoalParamsSchema,
     execute: async (args: unknown) => {
-      const params = setGoalParamsSchema.parse(args);
+      const params = mcpSetGoalParamsSchema.parse(args);
       const result = await tools.setGoal.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -218,9 +218,9 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "get_goal",
     description: "Get user's career goal (current or specific user)",
-    parameters: getGoalParamsSchema,
+    parameters: mcpGetGoalParamsSchema,
     execute: async (args: unknown) => {
-      const params = getGoalParamsSchema.parse(args);
+      const params = mcpGetGoalParamsSchema.parse(args);
       const result = await tools.getGoal.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -232,9 +232,9 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "delete_goal",
     description: "Delete user's career goal",
-    parameters: deleteGoalParamsSchema,
+    parameters: mcpDeleteGoalParamsSchema,
     execute: async (args: unknown) => {
-      const params = deleteGoalParamsSchema.parse(args);
+      const params = mcpDeleteGoalParamsSchema.parse(args);
       const result = await tools.deleteGoal.execute(params);
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
@@ -248,9 +248,9 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "update_context",
     description: "Update current context via natural language message",
-    parameters: updateContextParamsSchema,
+    parameters: mcpUpdateContextParamsSchema,
     execute: async (args: unknown) => {
-      const params = updateContextParamsSchema.parse(args);
+      const params = mcpUpdateContextParamsSchema.parse(args);
       const result = await tools.updateContext.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -262,9 +262,9 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "upsert_context",
     description: "Create or update a single context",
-    parameters: upsertContextParamsSchema,
+    parameters: mcpUpsertContextParamsSchema,
     execute: async (args: unknown) => {
-      const params = upsertContextParamsSchema.parse(args);
+      const params = mcpUpsertContextParamsSchema.parse(args);
       const result = await tools.upsertContext.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -276,9 +276,9 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "delete_context",
     description: "Delete a specific context from user's history",
-    parameters: deleteContextParamsSchema,
+    parameters: mcpDeleteContextParamsSchema,
     execute: async (args: unknown) => {
-      const params = deleteContextParamsSchema.parse(args);
+      const params = mcpDeleteContextParamsSchema.parse(args);
       const result = await tools.deleteContext.execute(params);
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
@@ -292,9 +292,9 @@ function registerSearchByTargetTool(server: FastMCP, tool: SearchByTargetTool): 
   server.addTool({
     name: "search_by_target",
     description: "Reverse search: find users who have already achieved the target position/criteria",
-    parameters: searchByTargetParamsSchema,
+    parameters: mcpSearchByTargetParamsSchema,
     execute: async (args: unknown) => {
-      const params = searchByTargetParamsSchema.parse(args);
+      const params = mcpSearchByTargetParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -308,9 +308,9 @@ function registerTrailTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "upsert_trail",
     description: "Create or update a learning trail (course, certification, etc.)",
-    parameters: upsertTrailParamsSchema,
+    parameters: mcpUpsertTrailParamsSchema,
     execute: async (args: unknown) => {
-      const params = upsertTrailParamsSchema.parse(args);
+      const params = mcpUpsertTrailParamsSchema.parse(args);
       const result = await tools.upsertTrail.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -322,9 +322,9 @@ function registerTrailTools(server: FastMCP, tools: ToolInstances): void {
   server.addTool({
     name: "delete_trail",
     description: "Delete a specific trail from user's history",
-    parameters: deleteTrailParamsSchema,
+    parameters: mcpDeleteTrailParamsSchema,
     execute: async (args: unknown) => {
-      const params = deleteTrailParamsSchema.parse(args);
+      const params = mcpDeleteTrailParamsSchema.parse(args);
       const result = await tools.deleteTrail.execute(params);
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
@@ -340,9 +340,9 @@ function registerTelegramAuthTools(server: FastMCP, authService: AuthService): v
     description:
       "Register or authenticate user via Telegram. Idempotent: returns existing user if telegram_user_id already registered. " +
       "Returns userId, token (for linking to LibreChat), and sessionId.",
-    parameters: telegramRegisterParamsSchema,
+    parameters: mcpTelegramRegisterParamsSchema,
     execute: async (args: unknown) => {
-      const params = telegramRegisterParamsSchema.parse(args);
+      const params = mcpTelegramRegisterParamsSchema.parse(args);
       const result = await authService.registerViaTelegram({
         telegramUserId: params.telegramUserId,
       });
@@ -355,9 +355,9 @@ function registerTelegramAuthTools(server: FastMCP, authService: AuthService): v
     description:
       "Link Telegram account to existing LibreChat account using token. " +
       "User provides token from LibreChat, bot links their Telegram ID to that account.",
-    parameters: telegramLinkParamsSchema,
+    parameters: mcpTelegramLinkParamsSchema,
     execute: async (args: unknown) => {
-      const params = telegramLinkParamsSchema.parse(args);
+      const params = mcpTelegramLinkParamsSchema.parse(args);
       const result = await authService.linkTelegram(params.token, {
         telegramUserId: params.telegramUserId,
       });

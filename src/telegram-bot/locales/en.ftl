@@ -142,3 +142,37 @@ error-validation_error = Invalid data. Please check your input.
 error-internal_error = Internal server error. We're already working on a fix.
 error-postgres_connection_failed = Database connection issues. Please try again later.
 error-postgres_query_failed = Query execution error. Please try again later.
+error-rate_limit = ⏱ Too many requests. Please wait a few seconds and try again.
+
+# === Story & Goals ===
+loading-story = ⏳ Loading your career story...
+loading-goal = ⏳ Loading your goal...
+goal-not-set = You haven't set a career goal yet. Use /goal set <goal description>
+goal-usage = Describe your career goal:
+
+    Example: /goal set Want to become Senior Backend in fintech
+parsing-goal = ⏳ Analyzing your goal...
+goal-set-success = ✅ Goal set! (ID: { $goalId })
+goal-deleted = ✅ Goal deleted
+
+# === Context & Trail Management ===
+update-context-prompt = Describe changes to your current context:
+
+    Example: Add React to skills
+add-context-prompt = Describe a new career position:
+
+    Example: Worked as Senior Backend at Google from 2020 to 2022 in SF, Python and Go
+add-trail-prompt = Describe a learning trail:
+
+    Example: Completed React course on Udemy over 8 weeks
+delete-context-usage = Usage: /delete_context <contextId>
+delete-trail-usage = Usage: /delete_trail <trailId>
+context-deleted = ✅ Context deleted
+trail-deleted = ✅ Trail deleted
+context-not-found = ❌ Context not found. Check ID with /get_story
+trail-not-found = ❌ Trail not found. Check ID with /get_story
+
+# === LangGraph Workflows ===
+langgraph-saved = ✅ Saved successfully!
+langgraph-edit-prompt = Enter corrections
+langgraph-cancelled = ❌ Operation cancelled
