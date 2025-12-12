@@ -7,6 +7,20 @@ import type { UpdateContextStateType } from "../state.js";
 
 const MAX_CLARIFICATION_ROUNDS = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
 
+function hasNonNullValues(obj: Record<string, unknown>): boolean {
+  return Object.values(obj).some((v) => v !== null && v !== undefined);
+}
+
+function hasActualChanges(current: Record<string, unknown>, updates: Record<string, unknown>): boolean {
+  for (const [key, value] of Object.entries(updates)) {
+    if (value === null || value === undefined) continue;
+    if (JSON.stringify(current[key]) !== JSON.stringify(value)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function mergeContextNode(state: UpdateContextStateType): Partial<UpdateContextStateType> {
   const { currentContext, extractedUpdates } = state;
 
@@ -14,8 +28,12 @@ export function mergeContextNode(state: UpdateContextStateType): Partial<UpdateC
     return { phase: PHASE.failed, validationErrors: ["No current context provided"] };
   }
 
-  if (!extractedUpdates || Object.keys(extractedUpdates).length === 0) {
+  if (!extractedUpdates || !hasNonNullValues(extractedUpdates)) {
     return { phase: PHASE.failed, validationErrors: ["No updates extracted from message"] };
+  }
+
+  if (!hasActualChanges(currentContext, extractedUpdates)) {
+    return { phase: PHASE.failed, validationErrors: ["No changes detected - extracted values match current context"] };
   }
 
   const merged = {
