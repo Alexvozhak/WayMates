@@ -91,10 +91,15 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
 
     console.log(`TC-UT-E1 [2/3]: Saved, trailId=${savedResponse.trail.trailId}`);
 
-    console.log("TC-UT-E1 [3/3]: Verifying trail ID format");
-    expect(savedResponse.trail.trailId).toMatch(/^trl_[0-9a-f-]+$/);
+    console.log("TC-UT-E1 [3/3]: Verifying Neo4j persistence");
+    const facadeCtx = FacadeTestContext.getInstance();
+    const storyInDb = await facadeCtx.coreClient.client.story.getStory.query({ userId: testUserId });
 
-    console.log("TC-UT-E1 [3/3]: Trail verified with trailId format");
+    expect(storyInDb.trails.length).toBe(1);
+    expect(storyInDb.trails[0]?.skill.toLowerCase()).toContain("python");
+    expect(storyInDb.trails[0]?.platform.toLowerCase()).toContain("coursera");
+
+    console.log("TC-UT-E1 [3/3]: Trail verified in Neo4j");
   });
 
   /**
