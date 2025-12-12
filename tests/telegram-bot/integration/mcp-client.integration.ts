@@ -49,8 +49,14 @@ describe("McpClient → Facade MCP Server Integration", () => {
     });
 
     /**
+     * SBT2: Graceful degradation for nonexistent position
+     *
      * Бизнес-сценарий: Поиск по несуществующей позиции не должен ломать систему.
-     * Проверяем graceful degradation - пустой массив вместо ошибки.
+     * Проверяем graceful degradation — пустой массив вместо ошибки.
+     *
+     * Given: Позиция которой нет в БД
+     * When: Вызываем search_by_target
+     * Then: Возвращается пустой массив (не ошибка)
      */
     it("SBT2: search for nonexistent position returns empty array", async () => {
       const ctx = TelegramTestContext.getInstance();
@@ -63,9 +69,9 @@ describe("McpClient → Facade MCP Server Integration", () => {
         limit: 5,
       });
 
-      expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeGreaterThanOrEqual(0);
+      // Для несуществующей позиции ожидаем пустой массив
+      expect(result.length).toBe(0);
     });
   });
 
@@ -145,6 +151,10 @@ describe("McpClient → Facade MCP Server Integration", () => {
       });
 
       expect(Array.isArray(result)).toBe(true);
+      // Verify filtering: no candidates with excluded creation reason
+      for (const candidate of result) {
+        expect(candidate.matchedContext.creationReason).not.toContain("stopped_working");
+      }
     });
 
     /**
@@ -167,6 +177,13 @@ describe("McpClient → Facade MCP Server Integration", () => {
       });
 
       expect(Array.isArray(result)).toBe(true);
+      // Verify recency: all candidates should have recent context creation
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+      for (const candidate of result) {
+        const createdAt = new Date(candidate.matchedContext.createdAt);
+        expect(createdAt.getTime()).toBeGreaterThanOrEqual(twelveMonthsAgo.getTime());
+      }
     });
 
     /**
