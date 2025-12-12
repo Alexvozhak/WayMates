@@ -73,7 +73,9 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
     }
 
     expect(extractionResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) return;
+    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+      expect.fail(`Unexpected phase: ${extractionResponse.phase}`);
+    }
 
     const ctx = extractionResponse.context;
     console.log(`TC-UC-E1 [1/3]: ✅ Extracted: position="${ctx.position}", skills=${ctx.skills.length}`);
@@ -86,7 +88,9 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
     const savedResponse = await runWorkflow("да, всё верно");
 
     expect(savedResponse.phase).toBe(PHASE.saved);
-    if (savedResponse.phase !== PHASE.saved) return;
+    if (savedResponse.phase !== PHASE.saved) {
+      expect.fail(`Expected saved, got: ${savedResponse.phase}`);
+    }
 
     console.log(`TC-UC-E1 [2/3]: ✅ Saved, contextId=${savedResponse.context.contextId}`);
 
@@ -128,7 +132,9 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
     }
 
     expect(response.phase).toBe(PHASE.awaitingClarification);
-    if (response.phase !== PHASE.awaitingClarification) return;
+    if (response.phase !== PHASE.awaitingClarification) {
+      expect.fail(`Unexpected phase: ${response.phase}`);
+    }
 
     expect(response.missingFields.length).toBeGreaterThan(0);
     console.log(
@@ -250,7 +256,9 @@ Backend developer в fintech, Москва, Python, FastAPI.
     const editResponse = await runWorkflow("измени позицию на lead backend developer");
 
     expect(editResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (editResponse.phase !== PHASE.awaitingConfirmation) return;
+    if (editResponse.phase !== PHASE.awaitingConfirmation) {
+      expect.fail(`Expected awaiting_confirmation after edit, got: ${editResponse.phase}`);
+    }
 
     const newPosition = editResponse.context.position;
     console.log(`TC-UC-E3 [2/3]: ✅ New position: "${newPosition}"`);
