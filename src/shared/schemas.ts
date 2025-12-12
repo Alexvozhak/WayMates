@@ -428,13 +428,13 @@ export const userSearchParamsRawSchema = z.object({
 });
 
 /**
- * Validated base schema WITH pathLimit <= limit check
+ * Validated base schema WITH pathLimit auto-clamped to limit
  * Exported for reuse in Facade (replace userId with sessionId)
  */
-export const userSearchParamsBaseSchema = userSearchParamsRawSchema.refine((data) => data.pathLimit <= data.limit, {
-  message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
-  path: ["pathLimit"],
-});
+export const userSearchParamsBaseSchema = userSearchParamsRawSchema.transform((data) => ({
+  ...data,
+  pathLimit: Math.min(data.pathLimit, data.limit),
+}));
 
 /**
  * User search parameters (Mode 2: search by user's current context)
@@ -448,10 +448,10 @@ export const adhocSearchParamsSchema = userSearchParamsRawSchema
   .extend({
     referenceContext: adhocUserContextSchema,
   })
-  .refine((data) => data.pathLimit <= data.limit, {
-    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
-    path: ["pathLimit"],
-  });
+  .transform((data) => ({
+    ...data,
+    pathLimit: Math.min(data.pathLimit, data.limit),
+  }));
 
 export type AdhocSearchParams = z.infer<typeof adhocSearchParamsSchema>;
 
@@ -459,12 +459,10 @@ export type AdhocSearchParams = z.infer<typeof adhocSearchParamsSchema>;
  * Current search parameters (without userId/sessionId) — for Telegram NLP extraction
  * User's context fetched from DB automatically by Core API
  */
-export const currentSearchParamsBaseSchema = userSearchParamsRawSchema
-  .omit({ userId: true })
-  .refine((data) => data.pathLimit <= data.limit, {
-    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
-    path: ["pathLimit"],
-  });
+export const currentSearchParamsBaseSchema = userSearchParamsRawSchema.omit({ userId: true }).transform((data) => ({
+  ...data,
+  pathLimit: Math.min(data.pathLimit, data.limit),
+}));
 
 export type CurrentSearchParamsBase = z.infer<typeof currentSearchParamsBaseSchema>;
 
@@ -1072,10 +1070,10 @@ export const mcpSearchCareersParamsSchema = userSearchParamsRawSchema
     referenceContext: adhocUserContextSchema,
     sessionId: sessionIdSchema,
   })
-  .refine((data) => data.pathLimit <= data.limit, {
-    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
-    path: ["pathLimit"],
-  });
+  .transform((data) => ({
+    ...data,
+    pathLimit: Math.min(data.pathLimit, data.limit),
+  }));
 
 export type McpSearchCareersParams = z.infer<typeof mcpSearchCareersParamsSchema>;
 
@@ -1088,10 +1086,10 @@ export const mcpSearchUserCareersParamsSchema = userSearchParamsRawSchema
   .extend({
     sessionId: sessionIdSchema,
   })
-  .refine((data) => data.pathLimit <= data.limit, {
-    message: "pathLimit must be <= limit (cannot return more results than fetched from DB)",
-    path: ["pathLimit"],
-  });
+  .transform((data) => ({
+    ...data,
+    pathLimit: Math.min(data.pathLimit, data.limit),
+  }));
 
 export type McpSearchUserCareersParams = z.infer<typeof mcpSearchUserCareersParamsSchema>;
 
