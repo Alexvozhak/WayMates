@@ -94,5 +94,17 @@
       ]
     }
   ],
-  "trails": []
+  "trails": [
+    {
+      "trailId": "trl_019a6ea7-18c1-75bc-9276-f00000000013",
+      "skill": "python",
+      "platform": "coursera",
+      "fromContextId": null,
+      "toContextId": "ctx_019a6ea7-18c1-75bc-9276-d5f7bc8acc1b",
+      "totalDurationWeeks": 8,
+      "courseName": "Python for Data Science",
+      "ratingCourse": 5,
+      "ratingPlatform": 4
+    }
+  ]
 }

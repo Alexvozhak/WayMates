@@ -24,5 +24,21 @@
       ]
     }
   ],
-  "trails": []
+  "trails": [
+    {
+      "trailId": "trl_019a6ea7-18be-770d-85a1-f00000000015",
+      "skill": "rust",
+      "platform": "exercism",
+      "fromContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d75",
+      "toContextId": null,
+      "totalDurationWeeks": 16,
+      "schedule": {
+        "sessionsPerWeek": 3,
+        "hoursPerSession": 2
+      },
+      "courseName": "Rust Track",
+      "ratingCourse": 5,
+      "ratingPlatform": 5
+    }
+  ]
 }

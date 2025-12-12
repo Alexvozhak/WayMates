@@ -31,6 +31,16 @@ describe("StoryManager Integration Tests", () => {
   const testDataManager = new UserStories();
 
   /**
+   * Helper: Load full story with trails
+   */
+  async function loadStoryWithTrails(userKey: UserKey) {
+    const testData = testDataManager.getStoryBy(userKey);
+    const storyManager = createStoryManager();
+    await storyManager.upsertStory(testData);
+    return { testData, storyManager };
+  }
+
+  /**
    * Helper: Upsert single context
    */
   async function upsertSingleContext(userKey: UserKey, contextIndex: number) {
@@ -83,10 +93,10 @@ describe("StoryManager Integration Tests", () => {
       expect(contextCheck.records[0]!.get("c.birthYear")).toBe(context.birthYear);
 
       const relationCheck = await withReadSession(driver, (tx) =>
-        tx.run(
-          "MATCH (u:User {userId: $userId})-[r:HAS_CONTEXT]->(c:Context {contextId: $contextId}) RETURN r",
-          { userId, contextId },
-        ),
+        tx.run("MATCH (u:User {userId: $userId})-[r:HAS_CONTEXT]->(c:Context {contextId: $contextId}) RETURN r", {
+          userId,
+          contextId,
+        }),
       );
       expect(relationCheck.records.length).toBeGreaterThan(0);
     });
@@ -511,9 +521,7 @@ describe("StoryManager Integration Tests", () => {
     it("returns error when user has no contexts", async () => {
       const orphanUserId = "usr_019a6ea7-0000-7000-0000-000000000000";
 
-      await withWriteSession(driver, (tx) =>
-        tx.run("MERGE (u:User {userId: $userId})", { userId: orphanUserId }),
-      );
+      await withWriteSession(driver, (tx) => tx.run("MERGE (u:User {userId: $userId})", { userId: orphanUserId }));
 
       const storyManager = createStoryManager();
 
@@ -786,6 +794,278 @@ describe("StoryManager Integration Tests", () => {
         ),
       );
       expect(Number(u3LanguagesResult.records[0]!.get("count"))).toBe(0);
+    });
+  });
+
+  describe("TRAILS: Trail Persistence", () => {
+    /**
+     * Тропа может вести к первому контексту пользователя (fromContextId = null).
+     * Сценарий: пользователь добавляет курс, который прошёл до начала карьеры.
+     * Баг: старый код делал MERGE на null contextId, создавая мусорный узел.
+     */
+    it("TC-TR1: creates trail with fromContextId = null (leads to first context)", async () => {
+      const { testData } = await loadStoryWithTrails("U13");
+      const userId = testData.userId;
+      const trail = testData.trails[0]!;
+
+      const trailCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (t:Trail {trailId: $trailId})
+           RETURN t.skill AS skill, t.fromContextId AS fromCtx, t.toContextId AS toCtx`,
+          { trailId: trail.trailId },
+        ),
+      );
+      expect(trailCheck.records).toHaveLength(1);
+      expect(trailCheck.records[0]!.get("skill")).toBe("python");
+      expect(trailCheck.records[0]!.get("fromCtx")).toBeNull();
+      expect(trailCheck.records[0]!.get("toCtx")).toBe(trail.toContextId);
+
+      // Нет STEPS_ON связи (fromContextId = null)
+      const stepsOnCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (c:Context)-[:STEPS_ON]->(t:Trail {trailId: $trailId})
+           RETURN count(c) AS count`,
+          { trailId: trail.trailId },
+        ),
+      );
+      expect(Number(stepsOnCheck.records[0]!.get("count"))).toBe(0);
+
+      // STEPS_TO связь существует
+      const stepsToCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (t:Trail {trailId: $trailId})-[:STEPS_TO]->(c:Context {contextId: $contextId})
+           RETURN count(*) AS count`,
+          { trailId: trail.trailId, contextId: trail.toContextId },
+        ),
+      );
+      expect(Number(stepsToCheck.records[0]!.get("count"))).toBe(1);
+
+      // HAS_TRAIL связь с пользователем
+      const hasTrailCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (u:User {userId: $userId})-[:HAS_TRAIL]->(t:Trail {trailId: $trailId})
+           RETURN count(*) AS count`,
+          { userId, trailId: trail.trailId },
+        ),
+      );
+      expect(Number(hasTrailCheck.records[0]!.get("count"))).toBe(1);
+    });
+
+    /**
+     * Тропа может быть "в процессе" — пользователь сейчас проходит курс (toContextId = null).
+     * Сценарий: отслеживание текущего обучения до его завершения.
+     * Связь STEPS_TO не создаётся, пока курс не завершён.
+     */
+    it("TC-TR2: creates trail with toContextId = null (ongoing trail)", async () => {
+      const { testData } = await loadStoryWithTrails("U19");
+      const trail = testData.trails[0]!;
+
+      const trailCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (t:Trail {trailId: $trailId})
+           RETURN t.toContextId AS toCtx, t.fromContextId AS fromCtx`,
+          { trailId: trail.trailId },
+        ),
+      );
+      expect(trailCheck.records[0]!.get("toCtx")).toBeNull();
+      expect(trailCheck.records[0]!.get("fromCtx")).toBe(trail.fromContextId);
+
+      // STEPS_ON связь существует
+      const stepsOnCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (c:Context {contextId: $contextId})-[:STEPS_ON]->(t:Trail {trailId: $trailId})
+           RETURN count(*) AS count`,
+          { contextId: trail.fromContextId, trailId: trail.trailId },
+        ),
+      );
+      expect(Number(stepsOnCheck.records[0]!.get("count"))).toBe(1);
+
+      // Нет STEPS_TO связи (toContextId = null)
+      const stepsToCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (t:Trail {trailId: $trailId})-[:STEPS_TO]->(c:Context)
+           RETURN count(c) AS count`,
+          { trailId: trail.trailId },
+        ),
+      );
+      expect(Number(stepsToCheck.records[0]!.get("count"))).toBe(0);
+    });
+
+    /**
+     * Тропа создаёт связи Platform и SkillPlatformNode для аналитики.
+     * Сценарий: агрегация данных по платформам (сколько людей учились на Udemy).
+     * SkillPlatformNode — уникальная комбинация skill+platform для быстрого поиска.
+     */
+    it("TC-TR3: creates Platform and SkillPlatformNode relationships", async () => {
+      const { testData } = await loadStoryWithTrails("U10");
+      const trail = testData.trails[0]!;
+
+      const platformCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (p:Platform {canonicalName: $platform})
+           RETURN p.verified AS verified`,
+          { platform: trail.platform },
+        ),
+      );
+      expect(platformCheck.records).toHaveLength(1);
+      expect(platformCheck.records[0]!.get("verified")).toBe(false);
+
+      const spnCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (t:Trail {trailId: $trailId})-[:DEVELOPS]->(spn:SkillPlatformNode)-[:ON_PLATFORM]->(p:Platform)
+           RETURN spn.skill AS skill, spn.platform AS platform, p.canonicalName AS platformName`,
+          { trailId: trail.trailId },
+        ),
+      );
+      expect(spnCheck.records).toHaveLength(1);
+      expect(spnCheck.records[0]!.get("skill")).toBe(trail.skill);
+      expect(spnCheck.records[0]!.get("platform")).toBe(trail.platform);
+      expect(spnCheck.records[0]!.get("platformName")).toBe(trail.platform);
+    });
+
+    /**
+     * Удаление тропы не затрагивает другие тропы пользователя.
+     * Сценарий: пользователь удаляет ошибочно добавленный курс.
+     * Важно: связи HAS_TRAIL других троп остаются нетронутыми.
+     */
+    it("TC-TR4: deleteTrail removes only specified trail", async () => {
+      const { testData, storyManager } = await loadStoryWithTrails("U10");
+      const userId = testData.userId;
+
+      const beforeStory = await storyManager.getUserStory(userId);
+      expect(beforeStory.trails).toHaveLength(2);
+
+      const trailToDelete = testData.trails[0]!.trailId;
+      const trailToKeep = testData.trails[1]!.trailId;
+
+      const deleteResult = await storyManager.deleteTrail(userId, trailToDelete);
+      expect(deleteResult).toBe(true);
+
+      const afterStory = await storyManager.getUserStory(userId);
+      expect(afterStory.trails).toHaveLength(1);
+      expect(afterStory.trails[0]!.trailId).toBe(trailToKeep);
+
+      const deletedCheck = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (t:Trail {trailId: $trailId}) RETURN t", { trailId: trailToDelete }),
+      );
+      expect(deletedCheck.records).toHaveLength(0);
+    });
+
+    /**
+     * Удаление контекста не затрагивает другие контексты пользователя.
+     * Сценарий: пользователь удаляет последний (текущий) контекст.
+     * Каскадное удаление: связи HAS_CONTEXT, HAS_POSITION и т.д. удаляются автоматически.
+     * Note: Удаляем последний контекст, т.к. удаление из середины ломает ссылочную целостность.
+     */
+    it("TC-TR5: deleteContext removes only specified context", async () => {
+      const { testData, storyManager } = await loadStoryWithTrails("U11");
+      const userId = testData.userId;
+
+      const beforeCount = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (u:User {userId: $userId})-[:HAS_CONTEXT]->(c:Context) RETURN count(c) AS cnt", {
+          userId,
+        }),
+      );
+      const initialCount = Number(beforeCount.records[0]!.get("cnt"));
+      expect(initialCount).toBeGreaterThan(1);
+
+      // Удаляем последний контекст (без nextContextId)
+      const lastContext = testData.contexts.at(-1)!;
+      const contextToDelete = lastContext.contextId;
+
+      const deleteResult = await storyManager.deleteContext(userId, contextToDelete);
+      expect(deleteResult).toBe(true);
+
+      const afterCount = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (u:User {userId: $userId})-[:HAS_CONTEXT]->(c:Context) RETURN count(c) AS cnt", {
+          userId,
+        }),
+      );
+      expect(Number(afterCount.records[0]!.get("cnt"))).toBe(initialCount - 1);
+
+      const deletedCheck = await withReadSession(driver, (tx) =>
+        tx.run("MATCH (c:Context {contextId: $contextId}) RETURN c", {
+          contextId: contextToDelete,
+        }),
+      );
+      expect(deletedCheck.records).toHaveLength(0);
+    });
+
+    /**
+     * Вложенный объект schedule сохраняется корректно (sessionsPerWeek, hoursPerSession).
+     * Сценарий: пользователь отслеживает расписание занятий (3 раза в неделю по 2 часа).
+     * Cypher денормализует nested object в плоские свойства узла Trail.
+     */
+    it("TC-TR6: persists trail schedule nested object", async () => {
+      const { testData } = await loadStoryWithTrails("U15");
+      const trail = testData.trails[0]!;
+
+      const trailCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (t:Trail {trailId: $trailId})
+           RETURN t.sessionsPerWeek AS sessions, t.hoursPerSession AS hours`,
+          { trailId: trail.trailId },
+        ),
+      );
+      expect(trailCheck.records).toHaveLength(1);
+      expect(Number(trailCheck.records[0]!.get("sessions"))).toBe(3);
+      expect(Number(trailCheck.records[0]!.get("hours"))).toBe(2);
+    });
+
+    /**
+     * При добавлении нового контекста ongoing trails автоматически завершаются.
+     * Сценарий: пользователь учился на курсе (toContextId = null), сменил работу — курс завершён.
+     * Cypher обновляет toContextId и создаёт STEPS_TO связь к новому контексту.
+     */
+    it("TC-TR7: auto-completes ongoing trails when new context is added", async () => {
+      const { testData, storyManager } = await loadStoryWithTrails("U19");
+      const userId = testData.userId;
+      const ongoingTrail = testData.trails[0]!;
+      const currentContextId = testData.contexts[1]!.contextId;
+
+      // Trail ongoing до добавления нового контекста
+      const beforeCheck = await withReadSession(driver, (tx) =>
+        tx.run(`MATCH (t:Trail {trailId: $trailId}) RETURN t.toContextId AS toCtx`, { trailId: ongoingTrail.trailId }),
+      );
+      expect(beforeCheck.records[0]!.get("toCtx")).toBeNull();
+
+      // Добавляем новый контекст, связанный с предыдущим
+      const newContextId = "ctx_019a6ea7-18be-770d-85a1-ea515ab10d21";
+      await storyManager.upsertContext({
+        userId,
+        context: {
+          contextId: newContextId,
+          previousContextId: currentContextId,
+          createdAt: "2025-12-01T00:00:00Z",
+          creationReason: ["position_changed"],
+          position: "senior",
+          industry: "tech",
+          companySize: "midsize",
+          domains: ["backend", "devops", "platform"],
+          skills: ["python", "sql", "docker", "kubernetes"],
+          countryCode: "ru",
+          cityName: "moscow",
+          birthYear: 1998,
+          educationLevel: "BACHELOR",
+          citizenships: ["ru"],
+        },
+      });
+
+      // Trail автоматически завершён — toContextId указывает на новый контекст
+      const afterCheck = await withReadSession(driver, (tx) =>
+        tx.run(`MATCH (t:Trail {trailId: $trailId}) RETURN t.toContextId AS toCtx`, { trailId: ongoingTrail.trailId }),
+      );
+      expect(afterCheck.records[0]!.get("toCtx")).toBe(newContextId);
+
+      // STEPS_TO связь создана
+      const stepsToCheck = await withReadSession(driver, (tx) =>
+        tx.run(
+          `MATCH (t:Trail {trailId: $trailId})-[:STEPS_TO]->(c:Context {contextId: $contextId})
+           RETURN count(*) AS count`,
+          { trailId: ongoingTrail.trailId, contextId: newContextId },
+        ),
+      );
+      expect(Number(stepsToCheck.records[0]!.get("count"))).toBe(1);
     });
   });
 });

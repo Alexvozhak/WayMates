@@ -92,7 +92,7 @@ export class StoryManager {
         // Idempotent: trail not found = already deleted = false
         return false;
       }
-      return Boolean(record.get("result"));
+      return Boolean(record.get("result").success);
     });
   }
 
@@ -229,10 +229,9 @@ export class StoryManager {
     return this.db.write(async (tx) => {
       const results: TrailId[] = [];
       for (const trail of trails) {
-        const trailId = this.generateTrailId();
         const result = await tx.run(UPSERT_TRAILS_QUERY, {
           userId,
-          trailId,
+          trailId: trail.trailId,
           trail,
         });
         const record = result.records[0];

@@ -31,7 +31,8 @@ export type UserKey =
   | "U15"
   | "U16"
   | "U17"
-  | "U18";
+  | "U18"
+  | "U19";
 
 export class UserStories {
   private readonly dataDir: string;

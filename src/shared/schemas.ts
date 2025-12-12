@@ -195,8 +195,8 @@ export const scheduleSchema = z.object({
  * IDs (trailId, fromContextId, toContextId) are added by validation node.
  */
 export const trailSchemaBase = z.object({
-  skill: z.string().describe("Skill being developed"),
-  platform: z.string().describe("Learning platform used"),
+  skill: z.string().min(1).describe("Skill being developed"),
+  platform: z.string().min(1).describe("Learning platform used"),
 
   // OPTIONAL metrics (не всегда известны при extraction)
   // Note: .nullable() required for OpenAI Structured Output API compatibility

@@ -142,6 +142,21 @@ FOREACH (_ IN CASE WHEN prev IS NOT NULL THEN [1] ELSE [] END |
   SET prev.nextContextId = context.contextId
 )
 
+// Auto-complete ongoing trails: when new context links to previous,
+// update trails from previous context that have toContextId = null
+// Uses collect() to safely handle case when previousContextId is null (MATCH returns nothing)
+WITH context, citizenships, languages
+OPTIONAL MATCH (prevCtx:Context {contextId: context.previousContextId})-[:STEPS_ON]->(ongoingTrail:Trail)
+WHERE ongoingTrail.toContextId IS NULL
+WITH context, citizenships, languages, collect(ongoingTrail) AS ongoingTrails
+FOREACH (t IN ongoingTrails |
+  SET t.toContextId = context.contextId
+)
+WITH context, citizenships, languages, ongoingTrails
+FOREACH (t IN ongoingTrails |
+  MERGE (t)-[:STEPS_TO]->(context)
+)
+
 WITH context, citizenships, languages
 FOREACH (code IN citizenships |
   MERGE (ct:Country {name: code})
@@ -197,15 +212,19 @@ MERGE (spn)-[:ON_PLATFORM]->(pl)
 MERGE (t)-[:DEVELOPS]->(spn)
 
 WITH t
-MERGE (from_ctx:Context {contextId: $trail.fromContextId})
-MERGE (from_ctx)-[:STEPS_ON]->(t)
+FOREACH (_ IN CASE WHEN $trail.fromContextId IS NOT NULL THEN [1] ELSE [] END |
+  MERGE (from_ctx:Context {contextId: $trail.fromContextId})
+  MERGE (from_ctx)-[:STEPS_ON]->(t)
+)
 
-FOREACH (_ IN CASE WHEN $trail.toContextId IS NULL THEN [] ELSE [1] END |
+WITH t
+FOREACH (_ IN CASE WHEN $trail.toContextId IS NOT NULL THEN [1] ELSE [] END |
   MERGE (to_ctx:Context {contextId: $trail.toContextId})
   MERGE (t)-[:STEPS_TO]->(to_ctx)
 )
 
 // Create direct User-Trail relationship for better query performance
+WITH t
 MERGE (user:User {userId: $userId})
 MERGE (user)-[:HAS_TRAIL]->(t)
 
@@ -308,10 +327,9 @@ RETURN { success: deletedCount > 0 } AS result;`;
  * Returns:
  * - result: { success: boolean }
  */
-export const DELETE_TRAIL_QUERY = `MATCH (user:User {userId: $userId})-[rel:HAS_TRAIL]->(t:Trail {trailId: $trailId})
-WITH count(rel) AS deletedCount
+export const DELETE_TRAIL_QUERY = `MATCH (user:User {userId: $userId})-[:HAS_TRAIL]->(t:Trail {trailId: $trailId})
 DETACH DELETE t
-RETURN { success: deletedCount > 0 } AS result;`;
+RETURN { success: true } AS result;`;
 
 /**
  * List all reasons

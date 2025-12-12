@@ -1,0 +1,70 @@
+{
+  "userId": "usr_019a6ea7-18be-770d-85a1-ea515ab10d19",
+  "contexts": [
+    {
+      "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d19",
+      "createdAt": "2025-06-01T00:00:00Z",
+      "creationReason": [
+        "started_working"
+      ],
+      "position": "junior",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "backend"
+      ],
+      "skills": [
+        "python",
+        "sql"
+      ],
+      "countryCode": "ru",
+      "cityName": "moscow",
+      "birthYear": 1998,
+      "educationLevel": "BACHELOR",
+      "citizenships": [
+        "ru"
+      ],
+      "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d20"
+    },
+    {
+      "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d20",
+      "previousContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d19",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "creationReason": [
+        "position_changed"
+      ],
+      "position": "middle",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": [
+        "backend",
+        "devops"
+      ],
+      "skills": [
+        "python",
+        "sql",
+        "docker"
+      ],
+      "countryCode": "ru",
+      "cityName": "moscow",
+      "birthYear": 1998,
+      "educationLevel": "BACHELOR",
+      "citizenships": [
+        "ru"
+      ]
+    }
+  ],
+  "trails": [
+    {
+      "trailId": "trl_019a6ea7-18be-770d-85a1-f00000000019",
+      "skill": "docker",
+      "platform": "udemy",
+      "fromContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d20",
+      "toContextId": null,
+      "totalDurationWeeks": 8,
+      "courseName": "Docker Mastery",
+      "ratingCourse": 5,
+      "ratingPlatform": 4
+    }
+  ]
+}
