@@ -1,5 +1,3 @@
-import { v7 as uuidv7 } from "uuid";
-
 import {
   // CREATE_REASON_QUERY,
   DELETE_CONTEXT_QUERY,
@@ -152,14 +150,10 @@ export class StoryManager {
   async upsertContext(params: UpsertContextInput): Promise<UpsertSingleContextResult> {
     upsertContextInputSchema.parse(params);
 
-    const contextWithId = Object.assign({}, params.context, {
-      contextId: params.context.contextId || this.generateContextId(),
-    });
-
     return this.db.write(async (tx) => {
       const result = await tx.run(UPSERT_CONTEXTS_QUERY, {
         userId: params.userId,
-        ctx: contextWithId,
+        ctx: params.context,
       });
 
       const record = result.records[0];
@@ -178,12 +172,10 @@ export class StoryManager {
   async upsertTrail(params: UpsertTrailInput): Promise<UpsertSingleTrailResult> {
     upsertTrailInputSchema.parse(params);
 
-    const trailId = this.generateTrailId();
-
     return this.db.write(async (tx) => {
       const result = await tx.run(UPSERT_TRAILS_QUERY, {
         userId: params.userId,
-        trailId: trailId,
+        trailId: params.trail.trailId,
         trail: params.trail,
       });
 
@@ -204,13 +196,9 @@ export class StoryManager {
     return this.db.write(async (tx) => {
       const results: ContextId[] = [];
       for (const context of contexts) {
-        const contextWithId = Object.assign({}, context, {
-          contextId: context.contextId || this.generateContextId(),
-        });
-
         const result = await tx.run(UPSERT_CONTEXTS_QUERY, {
           userId,
-          ctx: contextWithId,
+          ctx: context,
         });
         const record = result.records[0];
         if (!record) {
@@ -245,13 +233,5 @@ export class StoryManager {
         trailIds: results,
       });
     });
-  }
-
-  private generateContextId(): string {
-    return `ctx_${uuidv7()}`;
-  }
-
-  private generateTrailId(): string {
-    return `trl_${uuidv7()}`;
   }
 }
