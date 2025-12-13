@@ -15,6 +15,7 @@ export const responseBuilders: Record<UpsertTrailPhase, ResponseBuilder> = {
 
   [PHASE.awaitingClarification]: (state) => ({
     phase: PHASE.awaitingClarification,
+    message: "Please provide the missing information.",
     missingFields: state.missingFields,
   }),
 
@@ -24,6 +25,7 @@ export const responseBuilders: Record<UpsertTrailPhase, ResponseBuilder> = {
     }
     return {
       phase: PHASE.awaitingConfirmation,
+      message: "Please confirm the trail details.",
       trail: state.validatedTrail,
     };
   },
@@ -34,6 +36,7 @@ export const responseBuilders: Record<UpsertTrailPhase, ResponseBuilder> = {
     }
     return {
       phase: PHASE.saved,
+      message: "Trail saved successfully.",
       trail: state.validatedTrail,
     };
   },

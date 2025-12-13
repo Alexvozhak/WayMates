@@ -4,11 +4,12 @@ import { UpdateContextGraph } from "../../langGraph/update-context/update-contex
 
 import { BaseTool } from "./base-tool.js";
 
+import type { BaseToolDependencies } from "./base-tool.js";
 import type { McpUpdateContextParams, UpdateContextResponse, UserContext, UserId } from "../../../shared/schemas.js";
 
 export class UpdateContextTool extends BaseTool<McpUpdateContextParams, UpdateContextResponse> {
-  protected override getParamsSchema(): typeof mcpUpdateContextParamsSchema {
-    return mcpUpdateContextParamsSchema;
+  constructor(deps: BaseToolDependencies) {
+    super(deps, mcpUpdateContextParamsSchema);
   }
 
   protected async executeImpl(params: McpUpdateContextParams, userId: UserId): Promise<UpdateContextResponse> {

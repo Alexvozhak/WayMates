@@ -10,7 +10,7 @@ import type { Normalizer } from "../../services/normalizer.js";
 import type { SessionService } from "../../services/session.service.js";
 import type { UserService } from "../../services/user.service.js";
 import type { ErrorResponse, Result, SessionId } from "../result.js";
-import type { ZodSchema } from "zod";
+import type { ZodType } from "zod";
 
 export type WithSessionId = { sessionId: SessionId };
 
@@ -28,32 +28,26 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
   protected coreClient: CoreClient;
   protected checkpointService: CheckpointService;
   protected userService: UserService;
+  private paramsSchema: ZodType;
 
-  constructor(deps: BaseToolDependencies) {
+  constructor(deps: BaseToolDependencies, paramsSchema: ZodType) {
     this.session = deps.session;
     this.normalizer = deps.normalizer;
     this.coreClient = deps.coreClient;
     this.checkpointService = deps.checkpointService;
     this.userService = deps.userService;
+    this.paramsSchema = paramsSchema;
   }
 
   async execute(params: TParams): Promise<Result<TResult, ErrorResponse>> {
     try {
-      const schema = this.getParamsSchema();
-      if (schema) {
-        schema.parse(params);
-      }
-
+      this.paramsSchema.parse(params);
       const userId = await this.session.validate(params.sessionId);
       const result = await this.executeImpl(params, userId);
       return ok(result);
     } catch (error) {
       return err(this.handleError(error));
     }
-  }
-
-  protected getParamsSchema(): ZodSchema<TParams> | undefined {
-    return undefined;
   }
 
   protected abstract executeImpl(params: TParams, userId: UserId): Promise<TResult>;

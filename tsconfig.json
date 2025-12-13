@@ -26,6 +26,6 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts", "database/**/*.ts", "generated/**/*.ts", "vitest.config.ts", "vitest.globalSetup.ts"],
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts", "database/**/*.ts", "generated/**/*.ts", "poc/**/*.ts", "vitest.config.ts", "vitest.globalSetup.ts"],
   "exclude": ["src_old", "dist", "node_modules"]
 }

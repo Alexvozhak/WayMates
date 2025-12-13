@@ -1,8 +1,15 @@
+import { mcpGetStoryParamsSchema } from "../../../shared/schemas.js";
+
 import { BaseTool } from "./base-tool.js";
 
+import type { BaseToolDependencies } from "./base-tool.js";
 import type { McpGetStoryParams, StoryInput, UserId } from "../../../shared/schemas.js";
 
 export class GetStoryTool extends BaseTool<McpGetStoryParams, StoryInput> {
+  constructor(deps: BaseToolDependencies) {
+    super(deps, mcpGetStoryParamsSchema);
+  }
+
   protected async executeImpl(params: McpGetStoryParams, userId: UserId): Promise<StoryInput> {
     // targetUserId optional - if not provided, use service userId
     // If provided, user can request any userId (own or other user's profile)

@@ -117,6 +117,15 @@ export const tokenSchema = z.string().uuid().describe("User token (UUID v7 forma
 export type SessionId = z.infer<typeof sessionIdSchema>;
 export type Token = z.infer<typeof tokenSchema>;
 
+// User state (for orchestrator routing)
+export const userStateSchema = z.object({
+  hasContext: z.boolean().describe("User has at least 1 context"),
+  hasTrajectory: z.boolean().describe("User has >1 context (linked trajectory)"),
+  hasGoal: z.boolean().describe("User has a Goal node"),
+});
+
+export type UserState = z.infer<typeof userStateSchema>;
+
 // Error handling
 export const errorCodeSchema = z.enum([
   "session_expired",
@@ -580,6 +589,11 @@ export const deleteStoryResultSchema = z.object({
   deletedTrails: z.number(),
 });
 
+export const operationResultSchema = z.object({
+  success: z.boolean(),
+});
+export type OperationResult = z.infer<typeof operationResultSchema>;
+
 export const goalSchema = z.object({
   userId: userIdSchema,
   targetCriteria: targetContextSchema.describe("Target position criteria with FieldFilter pattern"),
@@ -802,6 +816,7 @@ export type CollectionProgress = z.infer<typeof collectionProgressSchema>;
  */
 export const entityBatchResultClarificationSchema = z.object({
   phase: z.literal("awaiting_clarification"),
+  message: z.string(),
   missingFields: z.array(missingFieldSchema),
 });
 
@@ -810,6 +825,7 @@ export const entityBatchResultClarificationSchema = z.object({
  */
 export const entityBatchResultConfirmationSchema = z.object({
   phase: z.literal("awaiting_context_confirmation"),
+  message: z.string(),
   entity: userContextSchema,
   relatedTrails: z.array(trailSchema),
   progress: collectionProgressSchema,
@@ -820,6 +836,7 @@ export const entityBatchResultConfirmationSchema = z.object({
  */
 export const planResultSchema = z.object({
   phase: z.literal("awaiting_plan_confirmation"),
+  message: z.string(),
   queue: z.array(contextAgendaSchema),
 });
 
@@ -830,6 +847,7 @@ export type PlanResult = z.infer<typeof planResultSchema>;
  */
 export const finalPreviewSchema = z.object({
   phase: z.literal("awaiting_final_confirmation"),
+  message: z.string(),
   preview: z.object({
     contexts: z.array(userContextSchema),
     trails: z.array(trailSchema),
@@ -861,6 +879,7 @@ export type CollectedStory = z.infer<typeof collectedStorySchema>;
 export const savedResultSchema = z
   .object({
     phase: z.literal("saved"),
+    message: z.string(),
   })
   .merge(collectedStorySchema);
 
@@ -1002,13 +1021,18 @@ export type GetGoalResponse = z.infer<typeof getGoalResponseSchema>;
  */
 export const updateContextResponseSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("extracting"), message: z.string() }),
-  z.object({ phase: z.literal("awaiting_clarification"), missingFields: z.array(missingFieldSchema) }),
+  z.object({
+    phase: z.literal("awaiting_clarification"),
+    message: z.string(),
+    missingFields: z.array(missingFieldSchema),
+  }),
   z.object({
     phase: z.literal("awaiting_confirmation"),
+    message: z.string(),
     before: userContextSchema,
     after: userContextSchema,
   }),
-  z.object({ phase: z.literal("saved"), updatedContext: userContextSchema }),
+  z.object({ phase: z.literal("saved"), message: z.string(), updatedContext: userContextSchema }),
   z.object({ phase: z.literal("cancelled"), message: z.string() }),
   z.object({ phase: z.literal("failed"), message: z.string() }),
 ]);
@@ -1021,9 +1045,13 @@ export type UpdateContextResponse = z.infer<typeof updateContextResponseSchema>;
  */
 export const upsertContextResponseSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("extracting"), message: z.string() }),
-  z.object({ phase: z.literal("awaiting_clarification"), missingFields: z.array(missingFieldSchema) }),
-  z.object({ phase: z.literal("awaiting_confirmation"), context: userContextSchema }),
-  z.object({ phase: z.literal("saved"), context: userContextSchema }),
+  z.object({
+    phase: z.literal("awaiting_clarification"),
+    message: z.string(),
+    missingFields: z.array(missingFieldSchema),
+  }),
+  z.object({ phase: z.literal("awaiting_confirmation"), message: z.string(), context: userContextSchema }),
+  z.object({ phase: z.literal("saved"), message: z.string(), context: userContextSchema }),
   z.object({ phase: z.literal("cancelled"), message: z.string() }),
   z.object({ phase: z.literal("failed"), message: z.string() }),
 ]);
@@ -1036,9 +1064,13 @@ export type UpsertContextResponse = z.infer<typeof upsertContextResponseSchema>;
  */
 export const upsertTrailResponseSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("extracting"), message: z.string() }),
-  z.object({ phase: z.literal("awaiting_clarification"), missingFields: z.array(missingFieldSchema) }),
-  z.object({ phase: z.literal("awaiting_confirmation"), trail: trailSchema }),
-  z.object({ phase: z.literal("saved"), trail: trailSchema }),
+  z.object({
+    phase: z.literal("awaiting_clarification"),
+    message: z.string(),
+    missingFields: z.array(missingFieldSchema),
+  }),
+  z.object({ phase: z.literal("awaiting_confirmation"), message: z.string(), trail: trailSchema }),
+  z.object({ phase: z.literal("saved"), message: z.string(), trail: trailSchema }),
   z.object({ phase: z.literal("cancelled"), message: z.string() }),
   z.object({ phase: z.literal("failed"), message: z.string() }),
 ]);
@@ -1179,6 +1211,17 @@ export const mcpUpsertContextParamsSchema = z.object({
 });
 
 export type McpUpsertContextParams = z.infer<typeof mcpUpsertContextParamsSchema>;
+
+/**
+ * Params for converse MCP tool.
+ * Single entry point for all user messages — orchestrator determines intent and routes.
+ */
+export const mcpConverseParamsSchema = z.object({
+  message: z.string().min(1).describe("User message in natural language"),
+  sessionId: sessionIdSchema,
+});
+
+export type McpConverseParams = z.infer<typeof mcpConverseParamsSchema>;
 
 /**
  * Params for cold_start MCP tool.

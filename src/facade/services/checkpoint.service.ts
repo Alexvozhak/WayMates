@@ -30,4 +30,16 @@ export class CheckpointService {
 
     return tuple.checkpoint.channel_values;
   }
+
+  async hasPendingInterrupt(threadId: string): Promise<boolean> {
+    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
+    const tuple = await this.checkpointer.getTuple({ configurable: { thread_id: threadId } });
+    /* eslint-enable @typescript-eslint/naming-convention */
+
+    if (!tuple) {
+      return false;
+    }
+
+    return tuple.pendingWrites !== undefined && tuple.pendingWrites.length > 0;
+  }
 }

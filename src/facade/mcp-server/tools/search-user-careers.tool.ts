@@ -1,13 +1,15 @@
+import { mcpSearchUserCareersParamsSchema } from "../../../shared/schemas.js";
+
 import { BaseTool } from "./base-tool.js";
 
+import type { BaseToolDependencies } from "./base-tool.js";
 import type { McpSearchUserCareersParams, ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
 
-/**
- * User search careers tool (Mode 2)
- * Core API fetches user's current context from DB automatically
- * No need for LibreChat to provide referenceContext
- */
 export class SearchUserCareersTool extends BaseTool<McpSearchUserCareersParams, ScoredMatchedCandidate[]> {
+  constructor(deps: BaseToolDependencies) {
+    super(deps, mcpSearchUserCareersParamsSchema);
+  }
+
   protected async executeImpl(params: McpSearchUserCareersParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
     // userId extracted from sessionId by BaseTool
     // Remove sessionId before passing to Core API

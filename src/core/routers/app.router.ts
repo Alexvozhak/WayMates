@@ -5,6 +5,7 @@ import { searchRouter } from "./search.router.js";
 import { storyRouter } from "./story.router.js";
 import { trailRouter } from "./trail.router.js";
 import { t } from "./trpc.js";
+import { userRouter } from "./user.router.js";
 
 export const appRouter = t.router({
   search: searchRouter,
@@ -13,6 +14,7 @@ export const appRouter = t.router({
   dictionaries: dictionariesRouter,
   context: contextRouter,
   trail: trailRouter,
+  user: userRouter,
 });
 
 export type AppRouter = typeof appRouter;

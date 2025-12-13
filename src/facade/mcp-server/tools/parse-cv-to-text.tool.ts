@@ -1,15 +1,14 @@
 import OpenAI from "openai";
 
+import { mcpParseCvToTextParamsSchema } from "../../../shared/schemas.js";
 import { config } from "../../env.js";
 import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
+import type { BaseToolDependencies } from "./base-tool.js";
 import type { McpParseCvToTextParams, ParseCvToTextResponse, UserId } from "../../../shared/schemas.js";
 
-/**
- * Tool for parsing PDF CV to markdown text using Gemini Vision API
- */
 export class ParseCvToTextTool extends BaseTool<McpParseCvToTextParams, ParseCvToTextResponse> {
   private readonly maxFileSizeBytes = config.CV_PARSER_MAX_FILE_SIZE_MB * 1024 * 1024;
 
@@ -55,6 +54,10 @@ Industry: Fintech, Company Size: 50-200, Location: Moscow, Russia
 - Led team of 5 developers
 
 Output ONLY the anonymized markdown, no meta-commentary.`;
+
+  constructor(deps: BaseToolDependencies) {
+    super(deps, mcpParseCvToTextParamsSchema);
+  }
 
   protected async executeImpl(params: McpParseCvToTextParams, _userId: UserId): Promise<ParseCvToTextResponse> {
     // Validate file size

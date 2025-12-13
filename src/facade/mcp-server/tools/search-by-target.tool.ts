@@ -1,11 +1,16 @@
-import { targetContextSchema } from "../../../shared/schemas.js";
+import { mcpSearchByTargetParamsSchema, targetContextSchema } from "../../../shared/schemas.js";
 import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
+import type { BaseToolDependencies } from "./base-tool.js";
 import type { MatchedCandidateWithPath, McpSearchByTargetParams, UserId } from "../../../shared/schemas.js";
 
 export class SearchByTargetTool extends BaseTool<McpSearchByTargetParams, MatchedCandidateWithPath[]> {
+  constructor(deps: BaseToolDependencies) {
+    super(deps, mcpSearchByTargetParamsSchema);
+  }
+
   protected async executeImpl(params: McpSearchByTargetParams, userId: UserId): Promise<MatchedCandidateWithPath[]> {
     const normalizedPartial = await this.normalizer.normalizeTargetContext(params.targetContext, userId);
 

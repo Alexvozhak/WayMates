@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createGoalInputSchema, goalSchema, userIdSchema } from "../../shared/schemas.js";
+import { createGoalInputSchema, goalSchema, operationResultSchema, userIdSchema } from "../../shared/schemas.js";
 
 import { publicProcedure, t } from "./trpc.js";
 
@@ -34,8 +34,9 @@ export const goalRouter = t.router({
         userId: userIdSchema,
       }),
     )
-    .output(z.void())
+    .output(operationResultSchema)
     .mutation(async ({ ctx, input }) => {
-      await ctx.goalsManager.deleteGoal(input.userId);
+      const success = await ctx.goalsManager.deleteGoal(input.userId);
+      return { success };
     }),
 });

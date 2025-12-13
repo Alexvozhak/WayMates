@@ -1,10 +1,16 @@
+import { mcpSearchCareersParamsSchema } from "../../../shared/schemas.js";
 import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
+import type { BaseToolDependencies } from "./base-tool.js";
 import type { McpSearchCareersParams, ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
 
 export class SearchCareersTool extends BaseTool<McpSearchCareersParams, ScoredMatchedCandidate[]> {
+  constructor(deps: BaseToolDependencies) {
+    super(deps, mcpSearchCareersParamsSchema);
+  }
+
   protected async executeImpl(params: McpSearchCareersParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
     const hasAnyField = Object.keys(params.referenceContext).length > 0;
     if (!hasAnyField) {

@@ -15,6 +15,7 @@ export const responseBuilders: Record<UpdateContextPhase, ResponseBuilder> = {
 
   [PHASE.awaitingClarification]: (state) => ({
     phase: PHASE.awaitingClarification,
+    message: "Please provide the missing information.",
     missingFields: state.missingFields,
   }),
 
@@ -27,6 +28,7 @@ export const responseBuilders: Record<UpdateContextPhase, ResponseBuilder> = {
     }
     return {
       phase: PHASE.awaitingConfirmation,
+      message: "Please confirm the changes.",
       before: state.currentContext,
       after: state.mergedContext,
     };
@@ -38,6 +40,7 @@ export const responseBuilders: Record<UpdateContextPhase, ResponseBuilder> = {
     }
     return {
       phase: PHASE.saved,
+      message: "Position updated successfully.",
       updatedContext: state.mergedContext,
     };
   },

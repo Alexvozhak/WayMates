@@ -122,6 +122,23 @@ export default defineConfig(() => {
             env: loadEnv("test", process.cwd(), ""),
           },
         },
+        // User router tests (sequential, write operations)
+        {
+          test: {
+            name: "integration-user-router",
+            include: ["tests/core/integration/user-router/*.integration.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: true,
+                singleThread: true,
+              },
+            },
+            globalSetup: "./vitest.globalSetup.ts",
+            testTimeout: INTEGRATION_TEST_TIMEOUT,
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
         // Story persistence tests (sequential, runs LAST to avoid cleanup conflicts)
         {
           test: {

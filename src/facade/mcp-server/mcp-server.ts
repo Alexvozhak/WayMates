@@ -3,6 +3,7 @@ import { FastMCP } from "fastmcp";
 import {
   mcpAuthParamsSchema,
   mcpColdStartParamsSchema,
+  mcpConverseParamsSchema,
   mcpDeleteContextParamsSchema,
   mcpDeleteGoalParamsSchema,
   mcpDeleteTrailParamsSchema,
@@ -24,6 +25,7 @@ import { throwToolError } from "../errors.js";
 
 import { AuthTool } from "./tools/auth.tool.js";
 import { ColdStartTool } from "./tools/cold-start.tool.js";
+import { ConverseTool } from "./tools/converse.tool.js";
 import { DeleteContextTool } from "./tools/delete-context.tool.js";
 import { DeleteGoalTool } from "./tools/delete-goal.tool.js";
 import { DeleteTrailTool } from "./tools/delete-trail.tool.js";
@@ -58,6 +60,7 @@ export type FacadeServerDependencies = {
 type ToolInstances = {
   auth: AuthTool;
   coldStart: ColdStartTool;
+  converse: ConverseTool;
   resetColdStart: ResetColdStartTool;
   getStory: GetStoryTool;
   searchCareers: SearchCareersTool;
@@ -86,6 +89,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
   return {
     auth: new AuthTool(deps.authService),
     coldStart: new ColdStartTool(toolDeps),
+    converse: new ConverseTool(toolDeps),
     resetColdStart: new ResetColdStartTool(toolDeps),
     getStory: new GetStoryTool(toolDeps),
     searchCareers: new SearchCareersTool(toolDeps),
@@ -112,6 +116,24 @@ function registerAuthTool(server: FastMCP, tool: AuthTool): void {
     parameters: mcpAuthParamsSchema,
     execute: async (args: unknown) => {
       const params = mcpAuthParamsSchema.parse(args);
+      const result = await tool.execute(params);
+      if (result.ok) {
+        return JSON.stringify(result.value, null, 2);
+      }
+      throwToolError(result.error);
+    },
+  });
+}
+
+function registerConverseTool(server: FastMCP, tool: ConverseTool): void {
+  server.addTool({
+    name: "converse",
+    description:
+      "Single entry point for all user messages. Orchestrator determines intent and routes to appropriate graph/tool. " +
+      "Supports: onboarding, search, goal management, context/trail updates, help, cancel.",
+    parameters: mcpConverseParamsSchema,
+    execute: async (args: unknown) => {
+      const params = mcpConverseParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -390,6 +412,7 @@ function registerTelegramAuthTools(server: FastMCP, authService: AuthService): v
 function registerTools(server: FastMCP, tools: ToolInstances, authService: AuthService): void {
   registerAuthTool(server, tools.auth);
   registerTelegramAuthTools(server, authService);
+  registerConverseTool(server, tools.converse);
   registerColdStartTool(server, tools.coldStart);
   registerParseCvToTextTool(server, tools.parseCvToText);
   registerResetColdStartTool(server, tools.resetColdStart);
@@ -407,7 +430,8 @@ export function createMcpServer(deps: FacadeServerDependencies): FastMCP {
     name: "waymates-facade",
     version: "3.2.0",
     instructions:
-      "WayMates MCP Server. Provides 18 tools for career operations: " +
+      "WayMates MCP Server. Provides 19 tools for career operations: " +
+      "Main entry (converse), " +
       "Auth (auth, register_telegram, link_telegram), " +
       "Cold Start (cold_start, parse_cv_to_text, reset_cold_start), " +
       "Story (get_story), " +
@@ -415,6 +439,7 @@ export function createMcpServer(deps: FacadeServerDependencies): FastMCP {
       "Goals (set_goal, get_goal, delete_goal), " +
       "Contexts (update_context, upsert_context, delete_context), " +
       "Trails (upsert_trail, delete_trail). " +
+      "For new integrations: prefer 'converse' as single entry point. " +
       "Supports both LibreChat (stdio) and Telegram Bot (HTTP) clients.",
   });
 

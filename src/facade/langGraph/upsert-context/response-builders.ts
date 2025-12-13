@@ -15,6 +15,7 @@ export const responseBuilders: Record<UpsertContextPhase, ResponseBuilder> = {
 
   [PHASE.awaitingClarification]: (state) => ({
     phase: PHASE.awaitingClarification,
+    message: "Please provide the missing information.",
     missingFields: state.missingFields,
   }),
 
@@ -24,6 +25,7 @@ export const responseBuilders: Record<UpsertContextPhase, ResponseBuilder> = {
     }
     return {
       phase: PHASE.awaitingConfirmation,
+      message: "Please confirm the position details.",
       context: state.validatedContext,
     };
   },
@@ -34,6 +36,7 @@ export const responseBuilders: Record<UpsertContextPhase, ResponseBuilder> = {
     }
     return {
       phase: PHASE.saved,
+      message: "Position saved successfully.",
       context: state.validatedContext,
     };
   },

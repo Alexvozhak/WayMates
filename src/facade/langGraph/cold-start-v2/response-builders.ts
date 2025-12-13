@@ -19,6 +19,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
     }
     return {
       phase: PHASE.awaiting_plan_confirmation,
+      message: "Please confirm the career plan.",
       queue: state.queue,
     };
   },
@@ -29,6 +30,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
     }
     return {
       phase: PHASE.awaiting_clarification,
+      message: "Please provide the missing information.",
       missingFields: state.missingFields,
     };
   },
@@ -50,6 +52,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
 
     return {
       phase: PHASE.awaiting_context_confirmation,
+      message: "Please confirm this position.",
       entity: currentContext,
       relatedTrails: collectedTrails.filter((t) => t.toContextId === currentContext.contextId),
       progress: { current: currentEntityContext.contextIndex + 1, total: queue.length },
@@ -60,6 +63,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
     const { collectedContexts, collectedTrails } = state;
     return {
       phase: PHASE.awaiting_final_confirmation,
+      message: "Please confirm your complete career story.",
       preview: { contexts: collectedContexts, trails: collectedTrails },
       summary: { contextsCount: collectedContexts.length, trailsCount: collectedTrails.length },
     };
@@ -67,6 +71,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
 
   [PHASE.saved]: (state) => ({
     phase: PHASE.saved,
+    message: "Your career story has been saved.",
     userId: state.userId,
     contexts: state.collectedContexts,
     trails: state.collectedTrails,
