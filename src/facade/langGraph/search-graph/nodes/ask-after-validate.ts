@@ -1,9 +1,8 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { PHASE } from "../state.js";
+import { OPTIONS, PHASE } from "../state.js";
 
 import { parseUserIntent } from "./parse-intent.js";
-
 
 import type { SearchStateType } from "../state.js";
 
@@ -14,7 +13,7 @@ export async function askAfterValidateNode(state: SearchStateType): Promise<Part
     type: "ask_after_validate",
     candidates: validationResults,
     message: "Based on these trajectories, is this the goal you want?",
-    options: ["confirm", "clarify", "change", "cancel"],
+    options: OPTIONS.askAfterValidate,
     phase: PHASE.askingAfterValidate,
   });
 

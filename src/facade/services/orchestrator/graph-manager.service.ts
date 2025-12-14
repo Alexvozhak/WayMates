@@ -33,7 +33,6 @@ type AnyGraphResponse =
 
 const INTENT_TO_GRAPH: Record<GraphIntent, GraphType> = {
   startStory: "cold_start",
-  startContext: "upsert_context",
   startAdhoc: "search",
   addContext: "upsert_context",
   updateContext: "update_context",
@@ -42,7 +41,7 @@ const INTENT_TO_GRAPH: Record<GraphIntent, GraphType> = {
   setGoal: "search",
 };
 
-const TERMINAL_PHASES = new Set(["saved", "cancelled", "failed", "showing_results"]);
+const TERMINAL_PHASES = new Set(["saved", "cancelled", "failed"]);
 
 export class GraphManager {
   constructor(private readonly deps: GraphDeps) {}

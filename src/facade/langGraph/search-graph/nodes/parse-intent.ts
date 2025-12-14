@@ -6,7 +6,7 @@ import { USER_INTENT_PROMPT } from "../prompts.js";
 import type { SearchUserIntent } from "../state.js";
 
 const intentSchema = z.object({
-  intent: z.enum(["search", "validate", "change", "explore", "clarify", "confirm", "cancel"]),
+  intent: z.enum(["proceed", "validate", "clarify", "save", "change", "refine", "delete", "cancel"]),
 });
 
 const intentParser = getModel("deterministic").withStructuredOutput(intentSchema);

@@ -5,18 +5,21 @@ import { NODE, PHASE } from "../state.js";
 import type { SearchStateType } from "../state.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
-export async function searchNode(
+/**
+ * Explore node: searches ALL candidates without goal filter.
+ * Used when user has no goal yet or wants to browse all matches.
+ */
+export async function exploreNode(
   state: SearchStateType,
   config: LangGraphRunnableConfig,
 ): Promise<Partial<SearchStateType>> {
   const { userId, adhocContext } = state;
 
   if (!hasConfigDeps(config)) {
-    throw new AgentInvariantError(NODE.search, "Missing coreClient or normalizer");
+    throw new AgentInvariantError(NODE.explore, "Missing coreClient or normalizer");
   }
   const { coreClient } = config.configurable;
 
-  // Adhoc mode: use temporary context instead of user's saved context
   const results = adhocContext
     ? await coreClient.client.search.adhoc.query({
         userId,
@@ -27,7 +30,7 @@ export async function searchNode(
       });
 
   return {
-    searchResults: results,
-    phase: PHASE.showingResults,
+    explorationResults: results,
+    phase: PHASE.showingExploration,
   };
 }

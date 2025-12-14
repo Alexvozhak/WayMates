@@ -16,15 +16,15 @@ import type { BaseMessage } from "@langchain/core/messages";
 
 export const PHASE = {
   checkingGoal: "checking_goal",
-  askingWithGoal: "asking_with_goal",
-  askingNoGoal: "asking_no_goal",
+  exploring: "exploring",
+  showingExploration: "showing_exploration",
   extractingGoal: "extracting_goal",
   showingGoal: "showing_goal",
   clarifyingGoal: "clarifying_goal",
   validatingGoal: "validating_goal",
   askingAfterValidate: "asking_after_validate",
-  confirmingGoal: "confirming_goal",
   settingGoal: "setting_goal",
+  deletingGoal: "deleting_goal",
   searching: "searching",
   showingResults: "showing_results",
   cancelled: "cancelled",
@@ -37,15 +37,16 @@ export type SearchPhase = (typeof PHASE)[keyof typeof PHASE];
 export const NODE = {
   load_context: "load_context",
   check_goal: "check_goal",
-  ask_with_goal: "ask_with_goal",
-  ask_no_goal: "ask_no_goal",
+  explore: "explore",
+  show_exploration: "show_exploration",
   extract_goal: "extract_goal",
   show_goal: "show_goal",
   clarify_goal: "clarify_goal",
   validate_goal: "validate_goal",
   ask_after_validate: "ask_after_validate",
-  confirm_goal: "confirm_goal",
+  load_existing_goal: "load_existing_goal",
   set_goal: "set_goal",
+  delete_goal: "delete_goal",
   search: "search",
   show_results: "show_results",
   cancel: "cancel",
@@ -54,14 +55,7 @@ export const NODE = {
 
 export type NodeName = (typeof NODE)[keyof typeof NODE];
 
-export type SearchUserIntent =
-  | "search"
-  | "validate"
-  | "change"
-  | "explore"
-  | "clarify"
-  | "confirm"
-  | "cancel";
+export type SearchUserIntent = "proceed" | "validate" | "clarify" | "save" | "change" | "refine" | "delete" | "cancel";
 
 export const searchStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
@@ -80,6 +74,7 @@ export const searchStateAnnotation = Annotation.Root({
   clarifyRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   newPositionRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
 
+  explorationResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
   validationResults: Annotation<MatchedCandidateWithPath[]>({ reducer: lastValue, default: () => [] }),
   searchResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
 
@@ -90,3 +85,10 @@ export type SearchStateType = typeof searchStateAnnotation.State;
 
 export const MAX_CLARIFY_ROUNDS = 3;
 export const MAX_NEW_POSITION_ROUNDS = 2;
+
+export const OPTIONS = {
+  showExploration: ["proceed", "cancel"],
+  showGoal: ["validate", "clarify", "save", "cancel"],
+  askAfterValidate: ["save", "change", "cancel"],
+  showResults: ["refine", "delete", "cancel"],
+};

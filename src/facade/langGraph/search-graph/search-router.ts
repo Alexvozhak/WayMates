@@ -4,76 +4,41 @@ import type { NodeName, SearchStateType } from "./state.js";
 
 export function routeAfterCheckGoal(state: SearchStateType): NodeName {
   if (state.existingGoal) {
-    return NODE.ask_with_goal;
+    return NODE.search;
   }
-  return NODE.ask_no_goal;
+  return NODE.explore;
 }
 
-export function routeAfterAskWithGoal(state: SearchStateType): NodeName {
+export function routeAfterShowExploration(state: SearchStateType): NodeName {
   const { searchUserIntent } = state;
 
-  switch (searchUserIntent) {
-    case "search": {
-      return NODE.search;
-    }
-    case "validate": {
-      return NODE.validate_goal;
-    }
-    case "change": {
-      return NODE.extract_goal;
-    }
-    case "explore": {
-      return NODE.search;
-    }
-    case "cancel": {
-      return NODE.cancel;
-    }
-    default: {
-      return NODE.search;
-    }
+  if (searchUserIntent === "cancel") {
+    return NODE.cancel;
   }
-}
-
-export function routeAfterAskNoGoal(state: SearchStateType): NodeName {
-  const { searchUserIntent } = state;
-
-  switch (searchUserIntent) {
-    case "confirm": {
-      return NODE.extract_goal;
-    }
-    case "explore": {
-      return NODE.search;
-    }
-    case "cancel": {
-      return NODE.cancel;
-    }
-    default: {
-      return NODE.extract_goal;
-    }
-  }
+  return NODE.extract_goal;
 }
 
 export function routeAfterShowGoal(state: SearchStateType): NodeName {
   const { searchUserIntent } = state;
 
   switch (searchUserIntent) {
-    case "clarify": {
-      if (state.clarifyRound >= MAX_CLARIFY_ROUNDS) {
-        return NODE.confirm_goal;
-      }
-      return NODE.clarify_goal;
-    }
     case "validate": {
       return NODE.validate_goal;
     }
-    case "confirm": {
-      return NODE.confirm_goal;
+    case "clarify": {
+      if (state.clarifyRound >= MAX_CLARIFY_ROUNDS) {
+        return NODE.set_goal;
+      }
+      return NODE.clarify_goal;
+    }
+    case "save": {
+      return NODE.set_goal;
     }
     case "cancel": {
       return NODE.cancel;
     }
     default: {
-      return NODE.confirm_goal;
+      return NODE.set_goal;
     }
   }
 }
@@ -82,18 +47,12 @@ export function routeAfterAskAfterValidate(state: SearchStateType): NodeName {
   const { searchUserIntent } = state;
 
   switch (searchUserIntent) {
-    case "confirm": {
-      return NODE.confirm_goal;
-    }
-    case "clarify": {
-      if (state.clarifyRound >= MAX_CLARIFY_ROUNDS) {
-        return NODE.confirm_goal;
-      }
-      return NODE.clarify_goal;
+    case "save": {
+      return NODE.set_goal;
     }
     case "change": {
       if (state.newPositionRound >= MAX_NEW_POSITION_ROUNDS) {
-        return NODE.confirm_goal;
+        return NODE.set_goal;
       }
       return NODE.extract_goal;
     }
@@ -101,21 +60,28 @@ export function routeAfterAskAfterValidate(state: SearchStateType): NodeName {
       return NODE.cancel;
     }
     default: {
-      return NODE.confirm_goal;
+      return NODE.set_goal;
     }
   }
 }
 
-export function routeAfterConfirmGoal(state: SearchStateType): NodeName {
+export function routeAfterShowResults(state: SearchStateType): NodeName {
   const { searchUserIntent } = state;
 
-  if (searchUserIntent === "confirm") {
-    return NODE.set_goal;
+  switch (searchUserIntent) {
+    case "refine": {
+      return NODE.load_existing_goal;
+    }
+    case "delete": {
+      return NODE.delete_goal;
+    }
+    case "cancel": {
+      return NODE.cancel;
+    }
+    default: {
+      return NODE.cancel;
+    }
   }
-  if (searchUserIntent === "cancel") {
-    return NODE.cancel;
-  }
-  return NODE.show_goal;
 }
 
 /* eslint-disable @typescript-eslint/consistent-type-assertions -- LangGraph route map pattern */

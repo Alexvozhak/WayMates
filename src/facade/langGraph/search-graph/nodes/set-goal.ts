@@ -16,7 +16,7 @@ export async function setGoalNode(
   }
 
   if (!hasConfigDeps(config)) {
-    return { phase: PHASE.failed };
+    throw new AgentInvariantError(NODE.set_goal, "Missing coreClient or normalizer");
   }
   const { coreClient, normalizer } = config.configurable;
 

@@ -32,24 +32,27 @@ If nothing specific mentioned, at least extract position.`;
 export const USER_INTENT_PROMPT = `Classify user's intent from their response.
 
 Intent classification:
-- SEARCH: User wants to search now, find matches, see results
+- PROCEED: User is ready to proceed, has decided, wants to move forward
 - VALIDATE: User wants to validate/check goal, see who achieved it, see trajectories
-- CHANGE: User wants to change goal to something different
-- EXPLORE: User wants to explore without setting goal, browse, get inspired
-- CLARIFY: User wants to add details, refine, specify more
-- CONFIRM: User confirms, agrees, approves, says yes
+- CLARIFY: User wants to add details, refine current goal, specify more
+- SAVE: User confirms and wants to save the goal
+- CHANGE: User wants to change goal to something completely different
+- REFINE: User wants to adjust existing saved goal
+- DELETE: User wants to delete goal and explore again
 - CANCEL: User wants to cancel, stop, exit
 
 Examples:
-- "yes, search" → SEARCH
+- "I've decided" → PROCEED
+- "yes, let's go" → PROCEED
 - "show me who achieved this" → VALIDATE
-- "actually, I want to be a PM" → CHANGE
-- "let me just browse" → EXPLORE
 - "add Germany to countries" → CLARIFY
-- "looks good, save it" → CONFIRM
+- "looks good, save it" → SAVE
+- "actually, I want to be a PM" → CHANGE
+- "adjust my goal" → REFINE
+- "delete my goal" → DELETE
 - "cancel" → CANCEL
 
-Return the intent as a single word: search, validate, change, explore, clarify, confirm, cancel`;
+Return the intent as a single word: proceed, validate, clarify, save, change, refine, delete, cancel`;
 
 export const GOAL_CLARIFICATION_PROMPT = `Update the existing goal based on user's clarification.
 

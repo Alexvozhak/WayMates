@@ -4,7 +4,6 @@ import { getModel } from "../../langGraph/shared-tools/models.js";
 
 export const GRAPH_INTENT = {
   startStory: "startStory",
-  startContext: "startContext",
   startAdhoc: "startAdhoc",
   setGoal: "setGoal",
   addContext: "addContext",
@@ -25,7 +24,6 @@ export const NON_GRAPH_INTENT = {
 
 export const graphIntentSchema = z.enum([
   GRAPH_INTENT.startStory,
-  GRAPH_INTENT.startContext,
   GRAPH_INTENT.startAdhoc,
   GRAPH_INTENT.setGoal,
   GRAPH_INTENT.addContext,
@@ -52,7 +50,6 @@ export const userIntentSchema = z.enum([...graphIntentSchema.options, ...nonGrap
 
 const intentDescriptions: ReadonlyMap<UserIntent, string> = new Map([
   ["startStory", "wants to tell full career story with trajectory"],
-  ["startContext", "wants to add only current position"],
   ["startAdhoc", "wants quick search without saving profile"],
   ["getStory", "wants to see saved career story"],
   ["setGoal", "wants to set career goal"],

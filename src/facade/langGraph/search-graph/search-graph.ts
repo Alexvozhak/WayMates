@@ -4,16 +4,17 @@ import { z } from "zod";
 import { AgentInvariantError } from "../../errors.js";
 
 import { askAfterValidateNode } from "./nodes/ask-after-validate.js";
-import { askNoGoalNode } from "./nodes/ask-no-goal.js";
-import { askWithGoalNode } from "./nodes/ask-with-goal.js";
 import { cancelNode } from "./nodes/cancel.js";
 import { checkGoalNode } from "./nodes/check-goal.js";
 import { clarifyGoalNode } from "./nodes/clarify-goal.js";
-import { confirmGoalNode } from "./nodes/confirm-goal.js";
+import { deleteGoalNode } from "./nodes/delete-goal.js";
+import { exploreNode } from "./nodes/explore.js";
 import { extractGoalNode } from "./nodes/extract-goal.js";
 import { loadContextNode } from "./nodes/load-context.js";
+import { loadExistingGoalNode } from "./nodes/load-existing-goal.js";
 import { searchNode } from "./nodes/search.js";
 import { setGoalNode } from "./nodes/set-goal.js";
+import { showExplorationNode } from "./nodes/show-exploration.js";
 import { showGoalNode } from "./nodes/show-goal.js";
 import { showResultsNode } from "./nodes/show-results.js";
 import { validateGoalNode } from "./nodes/validate-goal.js";
@@ -21,11 +22,10 @@ import { responseBuilders } from "./response-builders.js";
 import {
   buildRouteMap,
   routeAfterAskAfterValidate,
-  routeAfterAskNoGoal,
-  routeAfterAskWithGoal,
   routeAfterCheckGoal,
-  routeAfterConfirmGoal,
+  routeAfterShowExploration,
   routeAfterShowGoal,
+  routeAfterShowResults,
 } from "./search-router.js";
 import { NODE, searchStateAnnotation } from "./state.js";
 
@@ -50,57 +50,51 @@ function createGraphBuilder() {
   return new StateGraph(searchStateAnnotation)
     .addNode(NODE.load_context, loadContextNode)
     .addNode(NODE.check_goal, checkGoalNode)
-    .addNode(NODE.ask_with_goal, askWithGoalNode)
-    .addNode(NODE.ask_no_goal, askNoGoalNode)
+    .addNode(NODE.explore, exploreNode)
+    .addNode(NODE.show_exploration, showExplorationNode)
     .addNode(NODE.extract_goal, extractGoalNode)
     .addNode(NODE.show_goal, showGoalNode)
     .addNode(NODE.clarify_goal, clarifyGoalNode)
     .addNode(NODE.validate_goal, validateGoalNode)
     .addNode(NODE.ask_after_validate, askAfterValidateNode)
-    .addNode(NODE.confirm_goal, confirmGoalNode)
+    .addNode(NODE.load_existing_goal, loadExistingGoalNode)
     .addNode(NODE.set_goal, setGoalNode)
+    .addNode(NODE.delete_goal, deleteGoalNode)
     .addNode(NODE.search, searchNode)
     .addNode(NODE.show_results, showResultsNode)
     .addNode(NODE.cancel, cancelNode)
 
     .addEdge(START, NODE.load_context)
     .addEdge(NODE.load_context, NODE.check_goal)
+    .addConditionalEdges(NODE.check_goal, routeAfterCheckGoal, buildRouteMap([NODE.search, NODE.explore]))
+    .addEdge(NODE.explore, NODE.show_exploration)
     .addConditionalEdges(
-      NODE.check_goal,
-      routeAfterCheckGoal,
-      buildRouteMap([NODE.ask_with_goal, NODE.ask_no_goal]),
-    )
-    .addConditionalEdges(
-      NODE.ask_with_goal,
-      routeAfterAskWithGoal,
-      buildRouteMap([NODE.search, NODE.validate_goal, NODE.extract_goal, NODE.cancel]),
-    )
-    .addConditionalEdges(
-      NODE.ask_no_goal,
-      routeAfterAskNoGoal,
-      buildRouteMap([NODE.extract_goal, NODE.search, NODE.cancel]),
+      NODE.show_exploration,
+      routeAfterShowExploration,
+      buildRouteMap([NODE.extract_goal, NODE.cancel]),
     )
     .addEdge(NODE.extract_goal, NODE.show_goal)
     .addConditionalEdges(
       NODE.show_goal,
       routeAfterShowGoal,
-      buildRouteMap([NODE.clarify_goal, NODE.validate_goal, NODE.confirm_goal, NODE.cancel]),
+      buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.cancel]),
     )
     .addEdge(NODE.clarify_goal, NODE.show_goal)
     .addEdge(NODE.validate_goal, NODE.ask_after_validate)
     .addConditionalEdges(
       NODE.ask_after_validate,
       routeAfterAskAfterValidate,
-      buildRouteMap([NODE.confirm_goal, NODE.clarify_goal, NODE.extract_goal, NODE.cancel]),
-    )
-    .addConditionalEdges(
-      NODE.confirm_goal,
-      routeAfterConfirmGoal,
-      buildRouteMap([NODE.set_goal, NODE.show_goal, NODE.cancel]),
+      buildRouteMap([NODE.set_goal, NODE.extract_goal, NODE.cancel]),
     )
     .addEdge(NODE.set_goal, NODE.search)
     .addEdge(NODE.search, NODE.show_results)
-    .addEdge(NODE.show_results, END)
+    .addConditionalEdges(
+      NODE.show_results,
+      routeAfterShowResults,
+      buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.cancel]),
+    )
+    .addEdge(NODE.load_existing_goal, NODE.show_goal)
+    .addEdge(NODE.delete_goal, NODE.explore)
     .addEdge(NODE.cancel, END);
 }
 /* eslint-enable @typescript-eslint/explicit-function-return-type */

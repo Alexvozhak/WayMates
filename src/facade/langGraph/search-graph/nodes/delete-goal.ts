@@ -2,23 +2,29 @@ import { AgentInvariantError } from "../../../errors.js";
 import { hasConfigDeps } from "../../shared/types.js";
 import { NODE, PHASE } from "../state.js";
 
-import type { Goal } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
-export async function checkGoalNode(
+/**
+ * Delete goal node: removes user's goal from database.
+ * After deletion, flow returns to explore (all candidates without goal filter).
+ */
+export async function deleteGoalNode(
   state: SearchStateType,
   config: LangGraphRunnableConfig,
 ): Promise<Partial<SearchStateType>> {
+  const { userId } = state;
+
   if (!hasConfigDeps(config)) {
-    throw new AgentInvariantError(NODE.check_goal, "Missing coreClient or normalizer");
+    throw new AgentInvariantError(NODE.delete_goal, "Missing coreClient or normalizer");
   }
   const { coreClient } = config.configurable;
 
-  const goal: Goal | null = await coreClient.client.goal.getByUser.query({ userId: state.userId });
+  await coreClient.client.goal.delete.mutate({ userId });
 
   return {
-    existingGoal: goal,
-    phase: goal ? PHASE.searching : PHASE.exploring,
+    existingGoal: null,
+    extractedGoal: null,
+    phase: PHASE.exploring,
   };
 }

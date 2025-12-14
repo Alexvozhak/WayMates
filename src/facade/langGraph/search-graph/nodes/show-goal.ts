@@ -1,10 +1,9 @@
 import { interrupt } from "@langchain/langgraph";
 
 import { AgentInvariantError } from "../../../errors.js";
-import { NODE, PHASE } from "../state.js";
+import { NODE, OPTIONS, PHASE } from "../state.js";
 
 import { parseUserIntent } from "./parse-intent.js";
-
 
 import type { SearchStateType } from "../state.js";
 
@@ -18,7 +17,7 @@ export async function showGoalNode(state: SearchStateType): Promise<Partial<Sear
   const userResponse = interrupt({
     type: "show_goal",
     extractedGoal,
-    options: ["clarify", "validate", "confirm", "cancel"],
+    options: OPTIONS.showGoal,
     phase: PHASE.showingGoal,
   });
 

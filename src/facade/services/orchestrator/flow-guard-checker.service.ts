@@ -6,13 +6,8 @@ import type { UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
 const ONBOARDING = `Let's start! Tell me about yourself:
-• Current position — just where you are now
 • Full career story — your complete trajectory
 • Quick search — find similar careers without saving profile`;
-
-const ADD_HISTORY = `You have your current position saved. Would you like to:
-• Add career history — I'll analyze your full trajectory
-• Search now — find similar professionals based on current position`;
 
 const HELP = `I can help you find your career path!
 
@@ -41,19 +36,11 @@ export class FlowGuardChecker {
 
     // Onboarding — no context
     if (!state.hasContext) {
-      const isStart = intent === "startStory" || intent === "startContext" || intent === "startAdhoc";
+      const isStart = intent === "startStory" || intent === "startAdhoc";
       if (!isStart) {
         return createResponse(ONBOARDING);
       }
       return null;
-    }
-
-    // Has context but no trajectory
-    if (!state.hasTrajectory) {
-      if (intent === "startStory" || intent === "search" || intent === "setGoal") {
-        return null;
-      }
-      return createResponse(ADD_HISTORY);
     }
 
     // Goal guards

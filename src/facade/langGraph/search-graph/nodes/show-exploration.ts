@@ -7,16 +7,15 @@ import { parseUserIntent } from "./parse-intent.js";
 import type { SearchStateType } from "../state.js";
 
 /**
- * Show results node: displays search results with current goal and waits for user decision.
- * User can refine goal, delete goal (return to explore), or finish.
+ * Show exploration node: displays all candidates and waits for user decision.
+ * User can either proceed to set a goal or cancel.
  */
-export async function showResultsNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
+export async function showExplorationNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
   const userResponse = interrupt({
-    type: "show_results",
-    results: state.searchResults,
-    goal: state.existingGoal,
-    options: OPTIONS.showResults,
-    phase: PHASE.showingResults,
+    type: "show_exploration",
+    candidates: state.explorationResults,
+    options: OPTIONS.showExploration,
+    phase: PHASE.showingExploration,
   });
 
   const response = String(userResponse);

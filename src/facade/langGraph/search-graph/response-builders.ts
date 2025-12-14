@@ -1,27 +1,17 @@
 import { InvalidStateError } from "../../errors.js";
 
-import { PHASE } from "./state.js";
+import { OPTIONS, PHASE } from "./state.js";
 
 import type { SearchPhase, SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
 
 type ResponseBuilder = (state: SearchStateType) => SearchGraphResponse;
 
-function requireExtractedGoal(
-  state: SearchStateType,
-  phase: string,
-): NonNullable<SearchStateType["extractedGoal"]> {
+function requireExtractedGoal(state: SearchStateType, phase: string): NonNullable<SearchStateType["extractedGoal"]> {
   if (!state.extractedGoal) {
     throw new InvalidStateError(phase, "extractedGoal is missing");
   }
   return state.extractedGoal;
-}
-
-function requireExistingGoal(state: SearchStateType, phase: string): NonNullable<SearchStateType["existingGoal"]> {
-  if (!state.existingGoal) {
-    throw new InvalidStateError(phase, "existingGoal is missing");
-  }
-  return state.existingGoal;
 }
 
 export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
@@ -30,20 +20,16 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     message: "Checking your goal...",
   }),
 
-  [PHASE.askingWithGoal]: (state) => {
-    const goal = requireExistingGoal(state, PHASE.askingWithGoal);
-    return {
-      phase: PHASE.askingWithGoal,
-      message: formatGoalMessage(goal),
-      goal,
-      options: ["search", "validate", "change", "explore", "cancel"],
-    };
-  },
+  [PHASE.exploring]: () => ({
+    phase: PHASE.exploring,
+    message: "Searching all candidates...",
+  }),
 
-  [PHASE.askingNoGoal]: () => ({
-    phase: PHASE.askingNoGoal,
-    message: "What career goal would you like to achieve?",
-    options: ["confirm", "explore", "cancel"],
+  [PHASE.showingExploration]: (state) => ({
+    phase: PHASE.showingExploration,
+    message: formatExplorationMessage(state.explorationResults.length),
+    candidates: state.explorationResults,
+    options: OPTIONS.showExploration,
   }),
 
   [PHASE.extractingGoal]: () => ({
@@ -57,7 +43,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
       phase: PHASE.showingGoal,
       message: formatExtractedGoalMessage(extractedGoal),
       extractedGoal,
-      options: ["clarify", "validate", "confirm", "cancel"],
+      options: OPTIONS.showGoal,
     };
   },
 
@@ -80,32 +66,30 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     phase: PHASE.askingAfterValidate,
     message: "Based on these trajectories, is this the goal you want?",
     candidates: state.validationResults,
-    options: ["confirm", "clarify", "change", "cancel"],
+    options: OPTIONS.askAfterValidate,
   }),
-
-  [PHASE.confirmingGoal]: (state) => {
-    const extractedGoal = requireExtractedGoal(state, PHASE.confirmingGoal);
-    return {
-      phase: PHASE.confirmingGoal,
-      message: "Save this goal?",
-      extractedGoal,
-    };
-  },
 
   [PHASE.settingGoal]: () => ({
     phase: PHASE.settingGoal,
     message: "Saving your goal...",
   }),
 
+  [PHASE.deletingGoal]: () => ({
+    phase: PHASE.deletingGoal,
+    message: "Deleting your goal...",
+  }),
+
   [PHASE.searching]: () => ({
     phase: PHASE.searching,
-    message: "Searching for similar careers...",
+    message: "Searching for matching careers...",
   }),
 
   [PHASE.showingResults]: (state) => ({
     phase: PHASE.showingResults,
     message: formatResultsMessage(state.searchResults.length),
     results: state.searchResults,
+    goal: state.existingGoal ?? undefined,
+    options: OPTIONS.showResults,
   }),
 
   [PHASE.cancelled]: () => ({
@@ -119,18 +103,11 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
   }),
 };
 
-function formatGoalMessage(goal: NonNullable<SearchStateType["existingGoal"]>): string {
-  const criteria = goal.targetCriteria;
-  const parts: string[] = [];
-
-  if (criteria.position?.values.length) {
-    parts.push(`Position: ${criteria.position.values.join(", ")}`);
+function formatExplorationMessage(count: number): string {
+  if (count === 0) {
+    return "No candidates found. Try providing more details about yourself.";
   }
-  if (criteria.domains?.values.length) {
-    parts.push(`Domains: ${criteria.domains.values.join(", ")}`);
-  }
-
-  return parts.length > 0 ? `Your current goal:\n${parts.join("\n")}` : "Your current goal is set.";
+  return `Found ${count} candidate${count === 1 ? "" : "s"}. Would you like to set a career goal?`;
 }
 
 function formatField(
@@ -158,7 +135,7 @@ function formatExtractedGoalMessage(goal: NonNullable<SearchStateType["extracted
 
 function formatResultsMessage(count: number): string {
   if (count === 0) {
-    return "No matching careers found. Try adjusting your criteria.";
+    return "No matching careers found. Try adjusting your goal.";
   }
   return `Found ${count} matching career${count === 1 ? "" : "s"}:`;
 }
