@@ -679,7 +679,8 @@ export type ContextScoringFields = z.infer<typeof contextScoringFieldsSchema>;
 
 // Block 3: Path fields (renamed: trajectory → path)
 export const pathFieldsSchema = z.object({
-  path: z.array(userContextSchema).describe("Full career path from started_working to matched_context"),
+  path: z.array(userContextSchema).describe("Full career path from started_working to current_context"),
+  trails: z.array(trailSchema).describe("Learning paths between contexts"),
 });
 
 export type PathFields = z.infer<typeof pathFieldsSchema>;

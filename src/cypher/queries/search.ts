@@ -7,7 +7,7 @@ import { buildContextMapProjection } from "../constants/projections.js";
 import { buildWithCollect } from "../helpers/aggregation.js";
 import { buildExcludedReasonsFilter, buildStrictWhereClause } from "../helpers/filters.js";
 import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
-import { buildMatchPath, buildUnwindPath } from "../helpers/trajectory.js";
+import { buildFullTrajectoryFromUser, buildUnwindPath } from "../helpers/trajectory.js";
 
 import type { ContextField, TargetSearchParams } from "../../shared/schemas.js";
 
@@ -268,8 +268,13 @@ RETURN matchedUser.userId AS userId,
 /**
  * Build target search query with trajectory collection
  *
- * Finds candidates by target criteria (desired/undesired modes) and collects full trajectory
+ * Finds candidates by target criteria (desired/undesired modes) and collects FULL trajectory.
  * Used for Mode 4: Reverse Search (target-only)
+ *
+ * Key behavior:
+ * - matchedContext = context that matches target criteria (for filtering by position/skills/etc.)
+ * - path = FULL trajectory from first context to CURRENT context (not just up to matchedContext)
+ * - trails = learning paths between contexts
  *
  * Target criteria use discriminated union pattern:
  * - FieldFilter { mode: 'desired' | 'undesired', values: string[] }
@@ -277,8 +282,10 @@ RETURN matchedUser.userId AS userId,
  * - Domains/Skills: ANY match for desired, NONE match for undesired
  *
  * Trajectory collection:
- * - Traverses PREVIOUS_CONTEXT relationships backwards to first context
- * - Enriches each context in path with relationships
+ * - Phase 1: Find contexts matching target criteria
+ * - Phase 2: For each match, get user's CURRENT context
+ * - Phase 3: Traverse from current backwards to get FULL trajectory
+ * - Phase 4: Collect trails for each user
  * - Filters out trajectories with excluded reasons
  *
  * Parameters:
@@ -293,9 +300,10 @@ RETURN matchedUser.userId AS userId,
  *
  * Returns:
  * - userId: Matched user ID
- * - matchedContext: Matched context object
+ * - matchedContext: Context that matched target criteria
  * - timeSinceMatchedMonths: Age of matched context
- * - path: Array of contexts (trajectory from first to matched)
+ * - path: Array of contexts (FULL trajectory from first to current)
+ * - trails: Array of trails (learning paths between contexts)
  *
  * @param params - Target search parameters
  * @returns Complete Cypher query
@@ -372,7 +380,7 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
     );
   }
 
-  // Recency filter (if specified)
+  // Recency filter (if specified) - filters matchedContext (target-matching context)
   if (recencyThresholdMonths) {
     conditions.push(
       "duration.between(datetime(matchedContext.createdAt), datetime()).months <= $recencyThresholdMonths",
@@ -388,6 +396,7 @@ export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): str
       : "";
 
   return `
+// Phase 1: Find contexts matching target criteria
 ${buildMatchedContextBase(false)}
 
 ${whereClause}
@@ -395,7 +404,8 @@ ${whereClause}
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
-${buildMatchPath("matchedContext")}
+// Phase 2-3: Get FULL trajectory from user's current context
+${buildFullTrajectoryFromUser("matchedUser", ["matchedContext", "matchedPosition", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceMatchedMonths"])}
 
 ${buildUnwindPath("matchedPathNodes", "matchedPathContext")}
 
@@ -407,6 +417,37 @@ ORDER BY matchedPathContext.createdAt ASC
 
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      collect(${buildContextMapProjection("matchedPath")}) AS trajectory
+
+// Phase 4: Collect trails for this user
+CALL {
+  WITH matchedUser
+  OPTIONAL MATCH (matchedUser)-[:HAS_TRAIL]->(t:Trail)
+  WITH t {
+    .trailId,
+    .skill,
+    .platform,
+    .fromContextId,
+    .toContextId,
+    .totalDurationWeeks,
+    .costUsd,
+    .ratingCourse,
+    .ratingPlatform,
+    .ratingSchedule,
+    .courseName,
+    .courseLink,
+    .userFeedback,
+    schedule: CASE
+      WHEN t.sessionsPerWeek IS NOT NULL OR t.hoursPerSession IS NOT NULL
+      THEN { sessionsPerWeek: t.sessionsPerWeek, hoursPerSession: t.hoursPerSession }
+      ELSE null
+    END
+  } AS trail
+  WHERE trail.trailId IS NOT NULL
+  RETURN collect(trail) AS trails
+}
+
+WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+     timeSinceMatchedMonths, trajectory, trails
 ${excludedReasonsCheck}
 
 ORDER BY timeSinceMatchedMonths ASC
@@ -415,6 +456,7 @@ LIMIT toInteger($limit)
 RETURN matchedUser.userId AS userId,
        ${buildContextMapProjection("matched")} AS matchedContext,
        timeSinceMatchedMonths,
-       trajectory AS path
+       trajectory AS path,
+       trails
   `.trim();
 }
