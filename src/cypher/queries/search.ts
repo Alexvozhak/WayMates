@@ -158,7 +158,8 @@ export function buildCurrentSearchQuery(
     whereClause = `WHERE ${additionalConditions.join(" AND\n  ")}`;
   }
 
-  // Goal filtering CASE statement
+  // Goal filtering: CASE classification + WHERE filter
+  // When goal is set: classify candidates AND filter out those without goal match
   const goalFilterClause = hasGoal
     ? `
 OPTIONAL MATCH (matchedUser)-[:HAS_GOAL]->(candidateGoal:Goal)
@@ -178,6 +179,7 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
        THEN 'waymate'
        ELSE null
      END AS candidateType
+WHERE candidateType IS NOT NULL
     `
     : `
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,

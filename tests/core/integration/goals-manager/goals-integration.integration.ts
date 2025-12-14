@@ -7,10 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/goals-driver.js";
-import {
-  FixtureSearchManager,
-  createUserSearchParams,
-} from "../../helpers/fixture-search-manager.js";
+import { FixtureSearchManager, createUserSearchParams } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 import { GoalsManager } from "../../../../src/core/goals-manager.js";
 import { DatabaseContext } from "../../../../src/core/database-context.js";
@@ -285,9 +282,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     // Assert - U5 is marked as pathfinder (achieved Senior)
     // U5 may appear multiple times (different contexts), find Senior context specifically
-    const u5SeniorResult = results.find(
-      (r) => r.userId === u5.userId && r.matchedContext.position === "senior",
-    );
+    const u5SeniorResult = results.find((r) => r.userId === u5.userId && r.matchedContext.position === "senior");
     console.log(
       "[G2] U5 Senior result:",
       u5SeniorResult
@@ -460,14 +455,10 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       })),
     );
 
-    // Assert - candidateType field is present (Goals work with search)
+    // Assert - Only pathfinder/waymate candidates returned (null filtered out by goal)
     expect(results.length).toBeGreaterThan(0);
     results.forEach((r) => {
-      expect(
-        r.candidateType === null ||
-          r.candidateType === "pathfinder" ||
-          r.candidateType === "waymate",
-      ).toBe(true);
+      expect(r.candidateType === "pathfinder" || r.candidateType === "waymate").toBe(true);
     });
 
     // Assert - If pathfinders exist, they should be properly detected
