@@ -4,6 +4,7 @@ import { PHASE, UpsertTrailGraph } from "../../../../../src/facade/langGraph/ups
 import { cleanupAllTestUsers, cleanupUserFromNeo4j, trackTestUser } from "../../../helpers/test-users-tracker.js";
 import { FacadeTestContext } from "../../../helpers/test-context.js";
 import { cleanupSession, setupSession } from "../../../helpers/mcp-tool-helpers.js";
+import { UserStories } from "../../../../core/helpers/user-stories.js";
 
 import type { UserId } from "../../../../../src/shared/schemas.js";
 import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
@@ -13,6 +14,9 @@ async function cleanupUpsertTrail(userId: UserId, threadId: string): Promise<voi
   await ctx.checkpointService.delete(threadId);
   await ctx.coreClient.client.story.deleteStory.mutate({ userId });
 }
+
+const userStories = new UserStories();
+const u1 = userStories.getStoryBy("U1");
 
 describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
   const testUserId: UserId = "usr_01933ec5-0200-0000-0000-000000000200";
@@ -53,6 +57,13 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
    * Тип теста: Integration (real LLM + Neo4j)
    */
   it("TC-UT-E1: Happy path — full trail → saved", async () => {
+    const facadeCtx = FacadeTestContext.getInstance();
+    await facadeCtx.coreClient.client.story.upsertStory.mutate({
+      userId: testUserId,
+      contexts: u1.contexts,
+      trails: [],
+    });
+
     const fullTrailInput = `
 Прошёл курс Python на Coursera, 8 недель, $49.
 Занимался 3 раза в неделю по 2 часа.
@@ -91,7 +102,6 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
     console.log(`TC-UT-E1 [2/3]: Saved, trailId=${savedResponse.trail.trailId}`);
 
     console.log("TC-UT-E1 [3/3]: Verifying Neo4j persistence");
-    const facadeCtx = FacadeTestContext.getInstance();
     const storyInDb = await facadeCtx.coreClient.client.story.getStory.query({ userId: testUserId });
 
     expect(storyInDb.trails.length).toBe(1);

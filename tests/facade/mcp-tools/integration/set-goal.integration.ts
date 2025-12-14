@@ -45,7 +45,7 @@ describe("SetGoalTool Integration Tests", () => {
   // Business rule: Security-first design - invalid sessions rejected before normalization or DB writes.
   // Prevents unauthorized goal creation; only authenticated users can set career goals.
   it("SG2: Invalid session rejected - returns error", async () => {
-    const invalidSession: SessionId = "sess_invalid_goal_000";
+    const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params: McpSetGoalParams = {
       sessionId: invalidSession,
       targetContext: {

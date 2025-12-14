@@ -61,7 +61,7 @@ describe("SearchCareersTool Integration Tests", () => {
   // Business rule: Security-first design - invalid sessions rejected before normalization or Core access.
   // Prevents unauthorized search queries; error code helps client distinguish auth vs data issues.
   it("SC2: Invalid session rejected - returns error", async () => {
-    const invalidSession: SessionId = "sess_invalid123";
+    const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params = createFacadeSearchParams(invalidSession, { position: "junior" });
 
     const result = await tool.execute(params);

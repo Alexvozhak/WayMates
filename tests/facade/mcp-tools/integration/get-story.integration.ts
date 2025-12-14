@@ -47,7 +47,7 @@ describe("GetStoryTool Integration Tests", () => {
   // Business rule: Security-first design - invalid sessions rejected before DB reads.
   // Prevents unauthorized profile access; only authenticated users can retrieve stories.
   it("GS2: Invalid session rejected - returns error", async () => {
-    const invalidSession: SessionId = "sess_invalid_get_story_000";
+    const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params: McpGetStoryParams = {
       sessionId: invalidSession,
     };

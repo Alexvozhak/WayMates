@@ -45,7 +45,7 @@ describe("SearchByTargetTool Integration Tests", () => {
   // Business rule: Security-first design - invalid sessions rejected before normalization or Core access.
   // Prevents unauthorized search queries; error code helps client distinguish auth vs data issues.
   it("SBT2: Invalid session rejected - returns error", async () => {
-    const invalidSession: SessionId = "sess_invalid789";
+    const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params: McpSearchByTargetParams = {
       sessionId: invalidSession,
       targetContext: {

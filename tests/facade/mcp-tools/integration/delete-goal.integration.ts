@@ -48,7 +48,7 @@ describe("DeleteGoalTool Integration Tests", () => {
   // Business rule: Security-first design - invalid sessions rejected before DB writes.
   // Prevents unauthorized goal deletion; only authenticated users can modify their goals.
   it("DG2: Invalid session rejected - returns error", async () => {
-    const invalidSession: SessionId = "sess_invalid_delete_000";
+    const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params: McpDeleteGoalParams = {
       sessionId: invalidSession,
     };

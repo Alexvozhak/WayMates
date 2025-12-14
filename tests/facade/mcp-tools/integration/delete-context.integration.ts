@@ -63,7 +63,7 @@ describe("DeleteContextTool Integration Tests", () => {
   // Business rule: Security-first design - invalid sessions rejected before DB writes.
   // Prevents unauthorized context deletion; only authenticated users can modify their history.
   it("DC2: Invalid session rejected - returns error", async () => {
-    const invalidSession: SessionId = "sess_invalid_delete_ctx_000";
+    const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params: McpDeleteContextParams = {
       sessionId: invalidSession,
       contextId: "ctx_01933ec5-c5f0-7a57-af82-87199be6cbbb",
