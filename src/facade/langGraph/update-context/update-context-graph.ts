@@ -18,10 +18,8 @@ import { routeAfterDecision, routeAfterMerge } from "./update-router.js";
 import type { UpdateContextPhase, UpdateContextStateType } from "./state.js";
 import type { UpdateContextResponse } from "./types.js";
 import type { UserContext, UserId } from "../../../shared/schemas.js";
-import type { CoreClient } from "../../core-client.js";
-import type { Normalizer } from "../../services/normalizer.js";
+import type { GraphDeps } from "../shared/types.js";
 import type { StateSnapshot } from "@langchain/langgraph";
-import type { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 
 const interruptValueSchema = z.object({
   phase: z
@@ -104,22 +102,18 @@ function extractInterruptPhase(snapshot: StateSnapshot): UpdateContextPhase | un
 export class UpdateContextGraph {
   private readonly compiledGraph: CompiledGraph;
 
-  constructor(
-    private readonly userId: UserId,
-    private readonly currentContext: UserContext,
-    checkpointer: PostgresSaver,
-  ) {
-    this.compiledGraph = createGraphBuilder().compile({ checkpointer });
+  constructor(private readonly deps: GraphDeps) {
+    this.compiledGraph = createGraphBuilder().compile({ checkpointer: deps.checkpointService.getCheckpointer() });
   }
 
   async run(
     message: string,
     threadId: string,
-    coreClient: CoreClient,
-    normalizer: Normalizer,
+    userId: UserId,
+    currentContext: UserContext,
   ): Promise<UpdateContextResponse> {
     /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
-    const config = { configurable: { thread_id: threadId, coreClient, normalizer } };
+    const config = { configurable: { thread_id: threadId, ...this.deps } };
     /* eslint-enable @typescript-eslint/naming-convention */
 
     const currentSnapshot = await this.compiledGraph.getState(config);
@@ -129,8 +123,8 @@ export class UpdateContextGraph {
       ? await this.compiledGraph.invoke(new Command({ resume: message }), config)
       : await this.compiledGraph.invoke(
           {
-            userId: this.userId,
-            currentContext: this.currentContext,
+            userId,
+            currentContext,
             userResponse: message,
           },
           config,

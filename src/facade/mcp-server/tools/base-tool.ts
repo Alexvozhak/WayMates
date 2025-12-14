@@ -5,6 +5,7 @@ import { err, ok } from "../result.js";
 
 import type { UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
+import type { GraphDeps } from "../../langGraph/shared/types.js";
 import type { CheckpointService } from "../../services/checkpoint.service.js";
 import type { Normalizer } from "../../services/normalizer.js";
 import type { SessionService } from "../../services/session.service.js";
@@ -37,6 +38,15 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
     this.checkpointService = deps.checkpointService;
     this.userService = deps.userService;
     this.paramsSchema = paramsSchema;
+  }
+
+  protected get graphDeps(): GraphDeps {
+    return {
+      coreClient: this.coreClient,
+      normalizer: this.normalizer,
+      userService: this.userService,
+      checkpointService: this.checkpointService,
+    };
   }
 
   async execute(params: TParams): Promise<Result<TResult, ErrorResponse>> {

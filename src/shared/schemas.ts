@@ -1078,6 +1078,64 @@ export const upsertTrailResponseSchema = z.discriminatedUnion("phase", [
 
 export type UpsertTrailResponse = z.infer<typeof upsertTrailResponseSchema>;
 
+/**
+ * Response from SearchGraph.
+ * Multi-phase workflow for goal formation and search.
+ */
+export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("checking_goal"), message: z.string() }),
+  z.object({
+    phase: z.literal("asking_with_goal"),
+    message: z.string(),
+    goal: goalSchema,
+    options: z.array(z.string()),
+  }),
+  z.object({
+    phase: z.literal("asking_no_goal"),
+    message: z.string(),
+    options: z.array(z.string()),
+  }),
+  z.object({ phase: z.literal("extracting_goal"), message: z.string() }),
+  z.object({
+    phase: z.literal("showing_goal"),
+    message: z.string(),
+    extractedGoal: targetContextSchema,
+    options: z.array(z.string()),
+  }),
+  z.object({
+    phase: z.literal("clarifying_goal"),
+    message: z.string(),
+    extractedGoal: targetContextSchema,
+  }),
+  z.object({
+    phase: z.literal("validating_goal"),
+    message: z.string(),
+    candidates: z.array(matchedCandidateWithPathSchema),
+  }),
+  z.object({
+    phase: z.literal("asking_after_validate"),
+    message: z.string(),
+    candidates: z.array(matchedCandidateWithPathSchema),
+    options: z.array(z.string()),
+  }),
+  z.object({
+    phase: z.literal("confirming_goal"),
+    message: z.string(),
+    extractedGoal: targetContextSchema,
+  }),
+  z.object({ phase: z.literal("setting_goal"), message: z.string() }),
+  z.object({ phase: z.literal("searching"), message: z.string() }),
+  z.object({
+    phase: z.literal("showing_results"),
+    message: z.string(),
+    results: z.array(scoredMatchedCandidateSchema),
+  }),
+  z.object({ phase: z.literal("cancelled"), message: z.string() }),
+  z.object({ phase: z.literal("failed"), message: z.string() }),
+]);
+
+export type SearchGraphResponse = z.infer<typeof searchGraphResponseSchema>;
+
 // ==========================================
 // === MCP PARAMS SCHEMAS ===
 // ==========================================

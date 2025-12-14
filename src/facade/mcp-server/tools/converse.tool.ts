@@ -18,37 +18,29 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
 
   constructor(deps: BaseToolDependencies) {
     super(deps, mcpConverseParamsSchema);
-    this.graphManager = new GraphManager(this.checkpointService, this.coreClient, this.normalizer, this.userService);
+    this.graphManager = new GraphManager(this.graphDeps);
     this.queryExecutor = new QueryExecutor(this.coreClient);
     this.flowGuardChecker = new FlowGuardChecker(this.coreClient);
   }
 
   protected async executeImpl(params: McpConverseParams, userId: UserId): Promise<ConverseResponse> {
-    const { intent } = await classifyIntent(params.message);
+    const intent = await classifyIntent(params.message);
 
-    // 1. Active graph — cancel or resume
+    // 1. Active graph — resume or cancel
     const activeResult = await this.graphManager.executeActiveGraph(intent, params.message, userId);
-    if (activeResult) {
-      return activeResult;
-    }
+    if (activeResult) return activeResult;
 
-    // 2. Guards — help, onboarding, state checks
-    const earlyResponse = await this.flowGuardChecker.check(intent, userId);
-    if (earlyResponse) {
-      return earlyResponse;
-    }
+    // 2. Guards — help, cancel, onboarding, state checks
+    const guardResult = await this.flowGuardChecker.check(intent, userId);
+    if (guardResult) return guardResult;
 
-    // 3. Query — getStory, getGoal, deleteGoal, deleteContext
-    const queryResult = await this.queryExecutor.execute(intent, userId);
-    if (queryResult) {
-      return queryResult;
-    }
-
-    // 4. Graph — cold_start, upsert_context, update_context, upsert_trail, search
+    // 3. New graph — cold_start, upsert_context, update_context, upsert_trail, search
     const graphResult = await this.graphManager.executeNewGraph(intent, params.message, userId);
-    if (graphResult) {
-      return graphResult;
-    }
+    if (graphResult) return graphResult;
+
+    // 4. Query — getStory, getGoal, deleteGoal, deleteContext, deleteTrail
+    const queryResult = await this.queryExecutor.execute(intent, userId);
+    if (queryResult) return queryResult;
 
     return createResponse("I didn't understand. Try 'help' for available commands.");
   }

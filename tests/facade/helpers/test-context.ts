@@ -11,6 +11,8 @@ import { UserService } from "../../../src/facade/services/user.service.js";
 import { getTestEnv } from "./test-env.js";
 import { createMockFuzzyModel } from "./llm-mock.js";
 
+import type { GraphDeps } from "../../../src/facade/langGraph/shared/types.js";
+
 export class FacadeTestContext {
   private static instance: FacadeTestContext | null = null;
 
@@ -106,6 +108,15 @@ export class FacadeTestContext {
     this.checkpointService = checkpointService;
     this.userService = userService;
     this.sessionService = sessionService;
+  }
+
+  getGraphDeps(): GraphDeps {
+    return {
+      coreClient: this.coreClient,
+      normalizer: this.normalizer,
+      userService: this.userService,
+      checkpointService: this.checkpointService,
+    };
   }
 
   async cleanup(): Promise<void> {

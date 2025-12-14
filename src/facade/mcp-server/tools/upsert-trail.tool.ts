@@ -15,10 +15,9 @@ export class UpsertTrailTool extends BaseTool<McpUpsertTrailParams, UpsertTrailR
 
   protected async executeImpl(params: McpUpsertTrailParams, userId: UserId): Promise<UpsertTrailResponse> {
     const threadId = `upsert_trail_${userId}`;
-    const checkpointer = this.checkpointService.getCheckpointer();
 
-    const graph = new UpsertTrailGraph(userId, params.fromContextId ?? null, checkpointer);
-    const response = await graph.run(params.message, threadId, this.coreClient, this.normalizer);
+    const graph = new UpsertTrailGraph(this.graphDeps);
+    const response = await graph.run(params.message, threadId, userId, params.fromContextId ?? null);
 
     if (response.phase === PHASE.saved) {
       await this.checkpointService.delete(threadId);

@@ -14,7 +14,6 @@ export class UpdateContextTool extends BaseTool<McpUpdateContextParams, UpdateCo
 
   protected async executeImpl(params: McpUpdateContextParams, userId: UserId): Promise<UpdateContextResponse> {
     const threadId = `update_ctx_${userId}`;
-    const checkpointer = this.checkpointService.getCheckpointer();
 
     const currentContext = await this.loadCurrentContext(userId);
     if (!currentContext) {
@@ -24,8 +23,8 @@ export class UpdateContextTool extends BaseTool<McpUpdateContextParams, UpdateCo
       };
     }
 
-    const graph = new UpdateContextGraph(userId, currentContext, checkpointer);
-    const response = await graph.run(params.message, threadId, this.coreClient, this.normalizer);
+    const graph = new UpdateContextGraph(this.graphDeps);
+    const response = await graph.run(params.message, threadId, userId, currentContext);
 
     if (response.phase === PHASE.saved) {
       await this.checkpointService.delete(threadId);

@@ -13,14 +13,7 @@ describe("Cold-Start V2: Story Gathering (TC-S)", () => {
 
   const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
-    const checkpointer = ctx.checkpointService.getCheckpointer();
-    return new ColdStartGraph(testUserId, checkpointer).run(
-      message,
-      threadId,
-      ctx.coreClient,
-      ctx.normalizer,
-      ctx.userService,
-    );
+    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId);
   };
 
   beforeEach(async () => {

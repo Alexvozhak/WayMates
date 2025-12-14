@@ -90,8 +90,14 @@ export class SearchManager {
     params: AdhocSearchParams,
     filterByCurrentContext = false,
   ): Promise<ScoredMatchedCandidate[]> {
-    const { referenceContext, userId, excludedContextFields, excludedCreationReasons, recencyThresholdMonths, limit } =
-      params;
+    const {
+      referenceContext,
+      userId,
+      excludedContextFields,
+      excludedCreationReasons,
+      recencyThresholdMonths,
+      limit,
+    } = params;
 
     const strictFields = computeStrictFields(excludedContextFields);
 

@@ -2,25 +2,53 @@ import { z } from "zod";
 
 import { getModel } from "../../langGraph/shared-tools/models.js";
 
-export const userIntentSchema = z.enum([
-  "startStory",
-  "startContext",
-  "startAdhoc",
-  "getStory",
-  "setGoal",
-  "getGoal",
-  "deleteGoal",
-  "addContext",
-  "updateContext",
-  "deleteContext",
-  "addTrail",
-  "deleteTrail",
-  "search",
-  "cancel",
-  "help",
+export const GRAPH_INTENT = {
+  startStory: "startStory",
+  startContext: "startContext",
+  startAdhoc: "startAdhoc",
+  setGoal: "setGoal",
+  addContext: "addContext",
+  updateContext: "updateContext",
+  addTrail: "addTrail",
+  search: "search",
+} as const;
+
+export const NON_GRAPH_INTENT = {
+  getStory: "getStory",
+  getGoal: "getGoal",
+  deleteGoal: "deleteGoal",
+  deleteContext: "deleteContext",
+  deleteTrail: "deleteTrail",
+  cancel: "cancel",
+  help: "help",
+} as const;
+
+export const graphIntentSchema = z.enum([
+  GRAPH_INTENT.startStory,
+  GRAPH_INTENT.startContext,
+  GRAPH_INTENT.startAdhoc,
+  GRAPH_INTENT.setGoal,
+  GRAPH_INTENT.addContext,
+  GRAPH_INTENT.updateContext,
+  GRAPH_INTENT.addTrail,
+  GRAPH_INTENT.search,
 ]);
 
-export type UserIntent = z.infer<typeof userIntentSchema>;
+export const nonGraphIntentSchema = z.enum([
+  NON_GRAPH_INTENT.getStory,
+  NON_GRAPH_INTENT.getGoal,
+  NON_GRAPH_INTENT.deleteGoal,
+  NON_GRAPH_INTENT.deleteContext,
+  NON_GRAPH_INTENT.deleteTrail,
+  NON_GRAPH_INTENT.cancel,
+  NON_GRAPH_INTENT.help,
+]);
+
+export type GraphIntent = z.infer<typeof graphIntentSchema>;
+export type NonGraphIntent = z.infer<typeof nonGraphIntentSchema>;
+export type UserIntent = GraphIntent | NonGraphIntent;
+
+export const userIntentSchema = z.enum([...graphIntentSchema.options, ...nonGraphIntentSchema.options]);
 
 const intentDescriptions: ReadonlyMap<UserIntent, string> = new Map([
   ["startStory", "wants to tell full career story with trajectory"],
@@ -40,20 +68,9 @@ const intentDescriptions: ReadonlyMap<UserIntent, string> = new Map([
   ["help", "needs help with commands"],
 ]);
 
-const classificationSchema = z.object({
-  intent: userIntentSchema,
-  extractedData: z
-    .object({
-      targetPosition: z.string().nullable(),
-      searchCriteria: z.string().nullable(),
-    })
-    .nullable(),
-});
-
-export type IntentClassification = z.infer<typeof classificationSchema>;
-
 function buildIntentList(): string {
-  return userIntentSchema.options.map((intent) => `- ${intent}: ${intentDescriptions.get(intent)}`).join("\n");
+  const allIntents = [...graphIntentSchema.options, ...nonGraphIntentSchema.options];
+  return allIntents.map((intent) => `- ${intent}: ${intentDescriptions.get(intent)}`).join("\n");
 }
 
 const INTENT_CLASSIFICATION_PROMPT = `Classify user intent from their message.
@@ -61,15 +78,15 @@ const INTENT_CLASSIFICATION_PROMPT = `Classify user intent from their message.
 Intent types:
 ${buildIntentList()}
 
-If user message is unclear or doesn't match any intent, classify as "help".
+If user message is unclear or doesn't match any intent, classify as "help".`;
 
-Extract targetPosition for goal_set, searchCriteria for search intent.`;
-
+const classificationSchema = z.object({ intent: userIntentSchema });
 const classifier = getModel("deterministic").withStructuredOutput(classificationSchema);
 
-export async function classifyIntent(message: string): Promise<IntentClassification> {
-  return classifier.invoke([
+export async function classifyIntent(message: string): Promise<UserIntent> {
+  const { intent } = await classifier.invoke([
     { role: "system", content: INTENT_CLASSIFICATION_PROMPT },
     { role: "user", content: message },
   ]);
+  return intent;
 }

@@ -21,8 +21,7 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
 
   const runWorkflow = (message: string): ReturnType<UpsertContextGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
-    const checkpointer = ctx.checkpointService.getCheckpointer();
-    return new UpsertContextGraph(testUserId, checkpointer).run(message, threadId, ctx.coreClient, ctx.normalizer);
+    return new UpsertContextGraph(ctx.getGraphDeps()).run(message, threadId, testUserId);
   };
 
   beforeEach(async () => {

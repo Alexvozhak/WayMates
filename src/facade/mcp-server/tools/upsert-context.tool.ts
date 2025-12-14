@@ -16,9 +16,8 @@ export class UpsertContextTool extends BaseTool<McpUpsertContextParams, UpsertCo
   protected async executeImpl(params: McpUpsertContextParams, userId: UserId): Promise<UpsertContextResponse> {
     const threadId = `upsert_ctx_${userId}`;
 
-    const checkpointer = this.checkpointService.getCheckpointer();
-    const graph = new UpsertContextGraph(userId, checkpointer);
-    const response = await graph.run(params.message, threadId, this.coreClient, this.normalizer);
+    const graph = new UpsertContextGraph(this.graphDeps);
+    const response = await graph.run(params.message, threadId, userId);
 
     if (response.phase === PHASE.saved) {
       await this.checkpointService.delete(threadId);

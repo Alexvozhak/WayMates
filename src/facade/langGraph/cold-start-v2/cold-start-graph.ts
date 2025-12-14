@@ -32,11 +32,8 @@ import { coldStartPhaseSchema, NODE } from "./types.js";
 import type { ColdStartStateType, UserId } from "./state.js";
 import type { ColdStartPhase, ColdStartState } from "./types.js";
 import type { ColdStartResponse } from "../../../shared/schemas.js";
-import type { CoreClient } from "../../core-client.js";
-import type { Normalizer } from "../../services/normalizer.js";
-import type { UserService } from "../../services/user.service.js";
+import type { GraphDeps } from "../shared/types.js";
 import type { StateSnapshot } from "@langchain/langgraph";
-import type { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 
 export { PHASE } from "./state.js";
 
@@ -156,24 +153,20 @@ function extractInterruptPhase(snapshot: StateSnapshot): ColdStartPhase | undefi
 }
 
 export class ColdStartGraph {
-  private readonly userId: UserId;
   private readonly compiledGraph: CompiledGraph;
 
-  constructor(userId: UserId, checkpointer: PostgresSaver) {
-    this.userId = userId;
-    this.compiledGraph = createGraphBuilder().compile({ checkpointer });
+  constructor(private readonly deps: GraphDeps) {
+    this.compiledGraph = createGraphBuilder().compile({ checkpointer: deps.checkpointService.getCheckpointer() });
   }
 
   async run(
     message: string,
     threadId: string,
-    coreClient: CoreClient,
-    normalizer: Normalizer,
-    userService: UserService,
+    userId: UserId,
     cvText?: string,
   ): Promise<ColdStartResponse> {
     /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
-    const config = { configurable: { thread_id: threadId, coreClient, normalizer, userService } };
+    const config = { configurable: { thread_id: threadId, ...this.deps } };
     /* eslint-enable @typescript-eslint/naming-convention */
 
     const currentSnapshot = await this.compiledGraph.getState(config);
@@ -183,7 +176,7 @@ export class ColdStartGraph {
       ? await this.compiledGraph.invoke(new Command({ resume: message }), config)
       : await this.compiledGraph.invoke(
           {
-            userId: this.userId,
+            userId,
             userResponse: message,
             cvText,
           },

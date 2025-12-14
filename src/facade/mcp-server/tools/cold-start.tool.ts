@@ -22,16 +22,8 @@ export class ColdStartTool extends BaseTool<McpColdStartParams, ColdStartRespons
       };
     }
 
-    const checkpointer = this.checkpointService.getCheckpointer();
-    const graph = new ColdStartGraph(userId, checkpointer);
-    const response = await graph.run(
-      params.message,
-      threadId,
-      this.coreClient,
-      this.normalizer,
-      this.userService,
-      params.cvText,
-    );
+    const graph = new ColdStartGraph(this.graphDeps);
+    const response = await graph.run(params.message, threadId, userId, params.cvText);
 
     if (response.phase === "saved") {
       await this.checkpointService.delete(threadId);
