@@ -120,7 +120,6 @@ export type Token = z.infer<typeof tokenSchema>;
 // User state (for orchestrator routing)
 export const userStateSchema = z.object({
   hasContext: z.boolean().describe("User has at least 1 context"),
-  hasTrajectory: z.boolean().describe("User has >1 context (linked trajectory)"),
   hasGoal: z.boolean().describe("User has a Goal node"),
 });
 
@@ -934,7 +933,6 @@ export const telegramRegisterResponseSchema = z.object({
   token: tokenSchema.nullable(),
   sessionId: sessionIdSchema,
   isNewUser: z.boolean(),
-  hasStory: z.boolean(),
 });
 
 export type TelegramRegisterResponse = z.infer<typeof telegramRegisterResponseSchema>;
@@ -946,7 +944,6 @@ export type TelegramRegisterResponse = z.infer<typeof telegramRegisterResponseSc
 export const telegramLinkResponseSchema = z.object({
   userId: userIdSchema,
   sessionId: sessionIdSchema,
-  hasStory: z.boolean(),
   token: tokenSchema,
 });
 
@@ -1080,19 +1077,15 @@ export type UpsertTrailResponse = z.infer<typeof upsertTrailResponseSchema>;
 
 /**
  * Response from SearchGraph.
- * Multi-phase workflow for goal formation and search.
+ * Multi-phase workflow: explore → goal formation → search.
  */
 export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("checking_goal"), message: z.string() }),
+  z.object({ phase: z.literal("exploring"), message: z.string() }),
   z.object({
-    phase: z.literal("asking_with_goal"),
+    phase: z.literal("showing_exploration"),
     message: z.string(),
-    goal: goalSchema,
-    options: z.array(z.string()),
-  }),
-  z.object({
-    phase: z.literal("asking_no_goal"),
-    message: z.string(),
+    candidates: z.array(scoredMatchedCandidateSchema),
     options: z.array(z.string()),
   }),
   z.object({ phase: z.literal("extracting_goal"), message: z.string() }),
@@ -1118,17 +1111,15 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     candidates: z.array(matchedCandidateWithPathSchema),
     options: z.array(z.string()),
   }),
-  z.object({
-    phase: z.literal("confirming_goal"),
-    message: z.string(),
-    extractedGoal: targetContextSchema,
-  }),
   z.object({ phase: z.literal("setting_goal"), message: z.string() }),
+  z.object({ phase: z.literal("deleting_goal"), message: z.string() }),
   z.object({ phase: z.literal("searching"), message: z.string() }),
   z.object({
     phase: z.literal("showing_results"),
     message: z.string(),
     results: z.array(scoredMatchedCandidateSchema),
+    goal: goalSchema.optional(),
+    options: z.array(z.string()),
   }),
   z.object({ phase: z.literal("cancelled"), message: z.string() }),
   z.object({ phase: z.literal("failed"), message: z.string() }),

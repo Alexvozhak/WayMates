@@ -53,7 +53,8 @@ function isStoryRequiredCommand(ctx: BotContext): boolean {
 }
 
 function userHasStory(ctx: BotContext): boolean {
-  return ctx.session.status === "initialised" && ctx.session.hasStory;
+  // TODO: Replace with user.getState check when implementing ADR-030
+  return ctx.session.status === "initialised";
 }
 
 async function storyRequiredGuard(ctx: BotContext, next: () => Promise<void>): Promise<void> {

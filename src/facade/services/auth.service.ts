@@ -63,7 +63,6 @@ export class AuthService {
 
     if (existing) {
       const userId = userIdSchema.parse(existing.userId);
-      const hasStory = await this.userService.isColdStartCompleted(userId);
       const sessionId = await this.sessionService.create(userId);
       await this.userService.updateLastAuthAt(userId);
 
@@ -72,7 +71,6 @@ export class AuthService {
         token: null,
         sessionId,
         isNewUser: false,
-        hasStory,
       };
     }
 
@@ -88,7 +86,6 @@ export class AuthService {
       token,
       sessionId,
       isNewUser: true,
-      hasStory: false,
     };
   }
 
@@ -105,8 +102,7 @@ export class AuthService {
     if (existingTelegram) {
       if (existingTelegram.userId === user.userId) {
         const sessionId = await this.sessionService.create(userId);
-        const hasStory = await this.userService.isColdStartCompleted(userId);
-        return { userId: user.userId, sessionId, hasStory, token };
+        return { userId: user.userId, sessionId, token };
       }
       throw new InvalidTokenError("Telegram account already linked to another user");
     }
@@ -115,9 +111,8 @@ export class AuthService {
 
     const sessionId = await this.sessionService.create(userId);
     await this.userService.updateLastAuthAt(user.userId);
-    const hasStory = await this.userService.isColdStartCompleted(userId);
 
-    return { userId: user.userId, sessionId, hasStory, token };
+    return { userId: user.userId, sessionId, token };
   }
 
   private generateUserId(): UserId {

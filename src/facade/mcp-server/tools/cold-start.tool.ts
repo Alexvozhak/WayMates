@@ -14,14 +14,6 @@ export class ColdStartTool extends BaseTool<McpColdStartParams, ColdStartRespons
   protected async executeImpl(params: McpColdStartParams, userId: UserId): Promise<ColdStartResponse> {
     const threadId = `cold_start_${userId}`;
 
-    const alreadySaved = await this.userService.isColdStartCompleted(userId);
-    if (alreadySaved) {
-      return {
-        phase: "already_saved",
-        message: "Cold start already saved for this user.",
-      };
-    }
-
     const graph = new ColdStartGraph(this.graphDeps);
     const response = await graph.run(params.message, threadId, userId, params.cvText);
 

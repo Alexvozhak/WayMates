@@ -45,7 +45,6 @@ export type MySessionData =
   | {
       status: "initialised";
       token: string | null;
-      hasStory: boolean;
       pendingAction?: PendingAction;
     };
 

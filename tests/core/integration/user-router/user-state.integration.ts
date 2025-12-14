@@ -1,7 +1,7 @@
 /**
  * User State Integration Tests
  * Business rules:
- * - US1-US4: user.getState returns correct flags (hasContext, hasTrajectory, hasGoal)
+ * - US1-US3: user.getState returns correct flags (hasContext, hasGoal)
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
@@ -41,23 +41,21 @@ async function getUserState(userId: string) {
 
   return {
     hasContext: story.contexts.length > 0,
-    hasTrajectory: story.contexts.length > 1,
     hasGoal: goal !== null,
   };
 }
 
-describe("User State (US1-US4)", () => {
+describe("User State (US1-US3)", () => {
   it("US1: New user - all flags false", async () => {
     const userId = `usr_${uuidv7()}`;
 
     const state = await getUserState(userId);
 
     expect(state.hasContext).toBe(false);
-    expect(state.hasTrajectory).toBe(false);
     expect(state.hasGoal).toBe(false);
   });
 
-  it("US2: User with 1 context - hasContext=true, hasTrajectory=false", async () => {
+  it("US2: User with 1 context - hasContext=true", async () => {
     const userId = `usr_${uuidv7()}`;
     const contextId = `ctx_${uuidv7()}`;
 
@@ -75,46 +73,10 @@ describe("User State (US1-US4)", () => {
     const state = await getUserState(userId);
 
     expect(state.hasContext).toBe(true);
-    expect(state.hasTrajectory).toBe(false);
     expect(state.hasGoal).toBe(false);
   });
 
-  it("US3: User with 2+ contexts (trajectory) - hasTrajectory=true", async () => {
-    const userId = `usr_${uuidv7()}`;
-    const ctx1 = `ctx_${uuidv7()}`;
-    const ctx2 = `ctx_${uuidv7()}`;
-
-    await storyManager.upsertStory({
-      userId,
-      contexts: [
-        createTestContext({
-          contextId: ctx1,
-          position: "junior",
-          domains: ["backend"],
-          skills: ["python"],
-          createdAt: "2022-01-01T00:00:00Z",
-          nextContextId: ctx2,
-        }),
-        createTestContext({
-          contextId: ctx2,
-          position: "middle",
-          domains: ["backend"],
-          skills: ["python", "go"],
-          createdAt: "2023-01-01T00:00:00Z",
-          nextContextId: null,
-        }),
-      ],
-      trails: [],
-    });
-
-    const state = await getUserState(userId);
-
-    expect(state.hasContext).toBe(true);
-    expect(state.hasTrajectory).toBe(true);
-    expect(state.hasGoal).toBe(false);
-  });
-
-  it("US4: User with goal - hasGoal=true", async () => {
+  it("US3: User with goal - hasGoal=true", async () => {
     const userId = `usr_${uuidv7()}`;
     const contextId = `ctx_${uuidv7()}`;
 
@@ -139,7 +101,6 @@ describe("User State (US1-US4)", () => {
     const state = await getUserState(userId);
 
     expect(state.hasContext).toBe(true);
-    expect(state.hasTrajectory).toBe(false);
     expect(state.hasGoal).toBe(true);
   });
 });

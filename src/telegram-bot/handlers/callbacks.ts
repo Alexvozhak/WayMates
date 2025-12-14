@@ -12,9 +12,6 @@ export async function handleApproveCallback(ctx: BotContext): Promise<void> {
   const result = await ctx.services.mcpClient.callTool("cold_start", { message: "да", sessionId });
 
   if (result.phase === "saved") {
-    if (ctx.session.status === "initialised") {
-      ctx.session.hasStory = result.contexts.length > 0;
-    }
     await ctx.editMessageText(ctx.t("story-approved", { message: ctx.t("story-saved-success") }));
     return;
   }

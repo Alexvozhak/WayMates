@@ -62,6 +62,17 @@ Read vitest.config.ts
 - [ ] Понятен file structure
 - [ ] Проверены eslint constraints (max-lines, complexity)
 - [ ] Понятны integration points
+- [ ] **Проверены существующие паттерны** (grep по модулю)
+- [ ] **Проверены сигнатуры используемых функций** (Read перед вызовом)
+
+**Проверка паттернов перед кодом:**
+```bash
+# Error handling — какой паттерн в модуле?
+Grep "return.*failed|throw.*Error" path/to/module
+
+# Найти сигнатуру функции перед использованием
+Read path/to/file.ts  # найти export function xxx
+```
 
 ### 3. Реализация
 
@@ -319,3 +330,4 @@ function isValidResponse(data: unknown): data is ValidResponse {
 3. **Checkpoint после блока** — показать результат
 4. **Не спамить проверками** — lint/tsc после логического блока
 5. **Готовность к тестам** — код должен быть testable
+6. **Комментировать каждое изменение** — 2-3 предложения на русском: что, зачем, уверенность %

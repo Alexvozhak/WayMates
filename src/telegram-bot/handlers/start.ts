@@ -5,9 +5,10 @@ import type { BotContext } from "../types.js";
 
 export async function handleStart(ctx: BotContext): Promise<void> {
   try {
+    // TODO: Replace with user.getState check when implementing ADR-030
     const welcomeMsg = await ctx.services.welcomePresenter.format(
       {
-        hasStory: ctx.session.status === "initialised" ? ctx.session.hasStory : false,
+        hasStory: false,
         userName: ctx.from?.first_name,
       },
       ctx.from?.language_code,

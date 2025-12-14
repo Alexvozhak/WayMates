@@ -75,7 +75,6 @@ describe("SessionService Integration", () => {
       if (botCtx.session.status !== "initialised") throw new Error("unexpected");
       // token может быть null (существующий пользователь) или string (новый)
       expect(botCtx.session.token === null || typeof botCtx.session.token === "string").toBe(true);
-      expect(typeof botCtx.session.hasStory).toBe("boolean");
 
       // sessionId должен быть в Redis
       const cachedSessionId = await ctx.redis.get(`telegram:session:${TEST_USER_1}:sessionId`);
@@ -172,13 +171,12 @@ describe("SessionService Integration", () => {
      */
     it("SS-G4: does not overwrite initialised session on cache miss", async () => {
       const botCtx = createBotContext(TEST_USER_1);
-      botCtx.session = { status: "initialised", token: "existing_token", hasStory: true };
+      botCtx.session = { status: "initialised", token: "existing_token" };
 
       await service.getSessionId(botCtx);
 
       // Session не должна быть перезаписана
       expect(botCtx.session.token).toBe("existing_token");
-      expect(botCtx.session.hasStory).toBe(true);
     });
 
     /**

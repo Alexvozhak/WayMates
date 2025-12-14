@@ -1,7 +1,7 @@
 ---
 name: mvp-test
 description: Тестирование для MVP — написание тестов по бизнес-сценариям. Расширение подхода из test-cold-start. Фокус на ценности, не на coverage theater.
-model: opus
+model: sonnet
 ---
 
 # MVP Test — Подкоманда тестирования
@@ -39,30 +39,30 @@ Read vitest.config.ts
 
 ### Правило 4 вопросов (ПЕРЕД каждым тестом)
 
-| # | Вопрос | Если ДА |
-|---|--------|---------|
-| 1 | Гарантировано Zod? | **SKIP** — Zod уже валидирует |
-| 2 | Математическая гарантия? | **SKIP** — не может сломаться |
-| 3 | Проверяет бизнес-правило? | **KEEP** — ценный тест |
-| 4 | Упадёт при регрессии? | **KEEP** — защитный тест |
+| #   | Вопрос                    | Если ДА                       |
+| --- | ------------------------- | ----------------------------- |
+| 1   | Гарантировано Zod?        | **SKIP** — Zod уже валидирует |
+| 2   | Математическая гарантия?  | **SKIP** — не может сломаться |
+| 3   | Проверяет бизнес-правило? | **KEEP** — ценный тест        |
+| 4   | Упадёт при регрессии?     | **KEEP** — защитный тест      |
 
 ### Coverage Theater vs Ценные тесты
 
 ```typescript
 // ❌ Coverage Theater — бесполезный тест
-it('returns object with keys', () => {
+it("returns object with keys", () => {
   const result = getData();
-  expect(result).toBeDefined();        // Zod гарантирует
-  expect(result.id).toBeDefined();     // Zod гарантирует
+  expect(result).toBeDefined(); // Zod гарантирует
+  expect(result.id).toBeDefined(); // Zod гарантирует
 });
 
 // ✅ Ценный тест — проверяет бизнес-логику
-it('calculates penalty when skills excluded', () => {
+it("calculates penalty when skills excluded", () => {
   const result = calculateScore({
-    skills: ['typescript'],
-    excludedSkills: ['typescript']
+    skills: ["typescript"],
+    excludedSkills: ["typescript"],
   });
-  expect(result.penalty).toBe(0.3);    // Бизнес-правило!
+  expect(result.penalty).toBe(0.3); // Бизнес-правило!
 });
 ```
 
@@ -88,7 +88,7 @@ it('calculates penalty when skills excluded', () => {
  *
  * Тип теста: Unit
  */
-it('TC-RL1: blocks concurrent overflow', async () => {
+it("TC-RL1: blocks concurrent overflow", async () => {
   // Given
   const limiter = new Bottleneck({ maxConcurrent: 2 });
   const concurrent: number[] = [];
@@ -111,7 +111,7 @@ it('TC-RL1: blocks concurrent overflow', async () => {
   ]);
 
   // Then
-  expect(maxConcurrent).toBe(2);  // Бизнес-правило!
+  expect(maxConcurrent).toBe(2); // Бизнес-правило!
 });
 ```
 
@@ -142,22 +142,22 @@ tests/
 
 ### Naming Convention
 
-| Тип | Файл | Пример |
-|-----|------|--------|
-| Unit | `*.spec.ts` | `rate-limiter.spec.ts` |
+| Тип         | Файл               | Пример                  |
+| ----------- | ------------------ | ----------------------- |
+| Unit        | `*.spec.ts`        | `rate-limiter.spec.ts`  |
 | Integration | `*.integration.ts` | `search.integration.ts` |
-| E2E | `*.e2e.ts` | `cold-start.e2e.ts` |
+| E2E         | `*.e2e.ts`         | `cold-start.e2e.ts`     |
 
-### TC-* Нумерация
+### TC-\* Нумерация
 
-| Префикс | Модуль | Пример |
-|---------|--------|--------|
-| TC-RL | Rate Limiter | TC-RL1, TC-RL2 |
-| TC-UC | Upsert Context | TC-UC1, TC-UC2 |
-| TC-UT | Upsert Trail | TC-UT1, TC-UT2 |
-| TC-UPD | Update Context | TC-UPD1, TC-UPD2 |
-| TC-SM | Search Manager | TC-SM1, TC-SM2 |
-| TC-TG | Telegram Bot | TC-TG1, TC-TG2 |
+| Префикс | Модуль         | Пример           |
+| ------- | -------------- | ---------------- |
+| TC-RL   | Rate Limiter   | TC-RL1, TC-RL2   |
+| TC-UC   | Upsert Context | TC-UC1, TC-UC2   |
+| TC-UT   | Upsert Trail   | TC-UT1, TC-UT2   |
+| TC-UPD  | Update Context | TC-UPD1, TC-UPD2 |
+| TC-SM   | Search Manager | TC-SM1, TC-SM2   |
+| TC-TG   | Telegram Bot   | TC-TG1, TC-TG2   |
 
 ---
 
@@ -182,51 +182,53 @@ tests/
 
 ## 2. Test Cases
 
-| ID | Описание | Тип | Статус |
-|----|----------|-----|--------|
-| TC-XX1 | Описание теста | Unit | ✅ |
-| TC-XX2 | Описание теста | Integration | 🔴 |
+| ID     | Описание       | Тип         | Статус |
+| ------ | -------------- | ----------- | ------ |
+| TC-XX1 | Описание теста | Unit        | ✅     |
+| TC-XX2 | Описание теста | Integration | 🔴     |
 
 ---
 
 ## 3. Coverage Matrix
 
-| Функция | Unit | Integration | Статус |
-|---------|------|-------------|--------|
-| function1 | TC-XX1 | - | ✅ |
-| function2 | - | TC-XX2 | 🔴 |
+| Функция   | Unit   | Integration | Статус |
+| --------- | ------ | ----------- | ------ |
+| function1 | TC-XX1 | -           | ✅     |
+| function2 | -      | TC-XX2      | 🔴     |
 
 ---
 
 ## 4. Gaps
 
-| Gap | Приоритет | Описание |
-|-----|-----------|----------|
-| G01 | P0 | Нет теста на edge case X |
+| Gap | Приоритет | Описание                 |
+| --- | --------- | ------------------------ |
+| G01 | P0        | Нет теста на edge case X |
 ```
 
 ---
 
 ## 🚫 ЗАПРЕТЫ
 
-| # | Запрет | Почему |
-|---|--------|--------|
-| 1 | `toBeDefined()` без смысла | Coverage theater |
-| 2 | Тестировать Zod валидацию | Zod уже гарантирует |
-| 3 | "Flaky test" без доказательств | Прячет баги |
-| 4 | Skip без причины | Технический долг |
-| 5 | Тесты только для coverage % | Ценность важнее |
+| #   | Запрет                         | Почему              |
+| --- | ------------------------------ | ------------------- |
+| 1   | `toBeDefined()` без смысла     | Coverage theater    |
+| 2   | Тестировать Zod валидацию      | Zod уже гарантирует |
+| 3   | "Flaky test" без доказательств | Прячет баги         |
+| 4   | Skip без причины               | Технический долг    |
+| 5   | Тесты только для coverage %    | Ценность важнее     |
 
 ---
 
 ## 🔴 При падении теста — ПРОТОКОЛ
 
 **ЗАПРЕЩЕНО:**
+
 - ❌ Говорить "flaky test" без доказательств
 - ❌ Говорить "LLM non-deterministic" как объяснение
 - ❌ Пропускать тест без root cause analysis
 
 **ОБЯЗАТЕЛЬНО:**
+
 1. ЧИТАЙ ERROR MESSAGE дословно
 2. ЧИТАЙ STACK TRACE — файл и строка
 3. ЛОГИРУЙ state перед падением
@@ -235,6 +237,7 @@ tests/
 6. ИСПРАВЬ КОД (не тест, если баг в коде)
 
 **Если падает ИНОГДА:**
+
 1. Запусти 5 раз подряд
 2. Если >1 падение — это НЕ flaky, это баг
 3. Найди паттерн входных данных
@@ -276,7 +279,7 @@ tests/
 ## ✅ Критерии готовности тестов
 
 - [ ] JSDoc с Given/Then для каждого теста
-- [ ] TC-* нумерация
+- [ ] TC-\* нумерация
 - [ ] Правило 4 вопросов применено
 - [ ] Нет coverage theater
 - [ ] Все тесты проходят
@@ -292,15 +295,18 @@ tests/
 Тестирование завершено ✅
 
 ### Результаты
+
 - Модуль: upsert-context
 - Тестов: 12 (8 unit + 4 integration)
 - Coverage: 85% бизнес-сценариев
 - Время: ~45 сек
 
 ### Coverage документ
+
 - Создан: docs/facade/UPSERT-CONTEXT-COVERAGE.md
 
 ### Gaps (P2, не блокируют MVP)
+
 - G01: edge case с пустым массивом skills
 
 Возвращаемся к `/mvp-release`?
@@ -313,7 +319,7 @@ tests/
 ### Rate Limiter (Unit)
 
 ```typescript
-describe('Rate Limiter', () => {
+describe("Rate Limiter", () => {
   /**
    * TC-RL1: Per-user isolation
    *
@@ -321,10 +327,10 @@ describe('Rate Limiter', () => {
    * Каждый пользователь имеет свой лимитер,
    * один пользователь не блокирует другого.
    */
-  it('TC-RL1: isolates users', async () => {
+  it("TC-RL1: isolates users", async () => {
     // Given
-    const user1 = 'user-1' as UserId;
-    const user2 = 'user-2' as UserId;
+    const user1 = "user-1" as UserId;
+    const user2 = "user-2" as UserId;
 
     // When
     const limiter1 = getUserLimiter(user1);
@@ -339,14 +345,14 @@ describe('Rate Limiter', () => {
 ### LangGraph Agent (Integration)
 
 ```typescript
-describe('Upsert Context Agent', () => {
+describe("Upsert Context Agent", () => {
   /**
    * TC-UC1: Creates context from valid input
    *
    * Что тестируем:
    * Агент создаёт контекст в Neo4j из валидных данных.
    */
-  it('TC-UC1: creates context', async () => {
+  it("TC-UC1: creates context", async () => {
     // Given
     const input = createValidContextInput();
 
@@ -354,7 +360,7 @@ describe('Upsert Context Agent', () => {
     const result = await agent.run(input, threadId);
 
     // Then
-    expect(result.phase).toBe('completed');
+    expect(result.phase).toBe("completed");
     expect(result.contextId).toMatch(/^ctx_/);
 
     // Verify in DB

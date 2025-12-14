@@ -14,7 +14,6 @@ export type OmittableField = keyof Pick<UserContext, "birthYear" | "citizenships
 
 export async function cleanupColdStart(userId: UserId, threadId: string): Promise<void> {
   const ctx = FacadeTestContext.getInstance();
-  await ctx.userService.resetColdStartStatus(userId);
   await ctx.checkpointService.delete(threadId);
   await ctx.coreClient.client.story.deleteStory.mutate({ userId });
 }

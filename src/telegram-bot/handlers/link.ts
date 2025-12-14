@@ -28,7 +28,6 @@ async function performLinking(ctx: BotContext, token: string, telegramUserId: nu
     ctx.session = {
       status: "initialised",
       token: result.token,
-      hasStory: result.hasStory,
     };
 
     await ctx.services.sessionService.saveSessionId(telegramUserId, result.sessionId);

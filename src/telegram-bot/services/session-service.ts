@@ -21,7 +21,6 @@ export class SessionService {
     ctx.session = {
       status: "initialised",
       token: result.token,
-      hasStory: result.hasStory,
     };
 
     const cacheKey = `telegram:session:${telegramUserId}:sessionId`;
@@ -49,7 +48,6 @@ export class SessionService {
       ctx.session = {
         status: "initialised",
         token: result.token,
-        hasStory: result.hasStory,
       };
     }
 

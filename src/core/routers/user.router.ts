@@ -20,7 +20,6 @@ export const userRouter = t.router({
 
       return {
         hasContext: story.contexts.length > 0,
-        hasTrajectory: story.contexts.length > 1,
         hasGoal: goal !== null,
       };
     }),

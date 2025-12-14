@@ -10,7 +10,6 @@ import {
   mcpGetGoalParamsSchema,
   mcpGetStoryParamsSchema,
   mcpParseCvToTextParamsSchema,
-  mcpResetColdStartParamsSchema,
   mcpSearchByTargetParamsSchema,
   mcpSearchCareersParamsSchema,
   mcpSearchUserCareersParamsSchema,
@@ -32,7 +31,6 @@ import { DeleteTrailTool } from "./tools/delete-trail.tool.js";
 import { GetGoalTool } from "./tools/get-goal.tool.js";
 import { GetStoryTool } from "./tools/get-story.tool.js";
 import { ParseCvToTextTool } from "./tools/parse-cv-to-text.tool.js";
-import { ResetColdStartTool } from "./tools/reset-cold-start.tool.js";
 import { SearchByTargetTool } from "./tools/search-by-target.tool.js";
 import { SearchCareersTool } from "./tools/search-careers.tool.js";
 import { SearchUserCareersTool } from "./tools/search-user-careers.tool.js";
@@ -61,7 +59,6 @@ type ToolInstances = {
   auth: AuthTool;
   coldStart: ColdStartTool;
   converse: ConverseTool;
-  resetColdStart: ResetColdStartTool;
   getStory: GetStoryTool;
   searchCareers: SearchCareersTool;
   searchUserCareers: SearchUserCareersTool;
@@ -90,7 +87,6 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     auth: new AuthTool(deps.authService),
     coldStart: new ColdStartTool(toolDeps),
     converse: new ConverseTool(toolDeps),
-    resetColdStart: new ResetColdStartTool(toolDeps),
     getStory: new GetStoryTool(toolDeps),
     searchCareers: new SearchCareersTool(toolDeps),
     searchUserCareers: new SearchUserCareersTool(toolDeps),
@@ -151,22 +147,6 @@ function registerColdStartTool(server: FastMCP, tool: ColdStartTool): void {
     parameters: mcpColdStartParamsSchema,
     execute: async (args: unknown) => {
       const params = mcpColdStartParamsSchema.parse(args);
-      const result = await tool.execute(params);
-      if (result.ok) {
-        return JSON.stringify(result.value, null, 2);
-      }
-      throwToolError(result.error);
-    },
-  });
-}
-
-function registerResetColdStartTool(server: FastMCP, tool: ResetColdStartTool): void {
-  server.addTool({
-    name: "reset_cold_start",
-    description: "Reset cold start status and clear checkpoint. Allows user to restart career history import.",
-    parameters: mcpResetColdStartParamsSchema,
-    execute: async (args: unknown) => {
-      const params = mcpResetColdStartParamsSchema.parse(args);
       const result = await tool.execute(params);
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
@@ -415,7 +395,6 @@ function registerTools(server: FastMCP, tools: ToolInstances, authService: AuthS
   registerConverseTool(server, tools.converse);
   registerColdStartTool(server, tools.coldStart);
   registerParseCvToTextTool(server, tools.parseCvToText);
-  registerResetColdStartTool(server, tools.resetColdStart);
   registerGetStoryTool(server, tools.getStory);
   registerSearchCareersTool(server, tools.searchCareers);
   registerSearchUserCareersTool(server, tools.searchUserCareers);
@@ -430,10 +409,10 @@ export function createMcpServer(deps: FacadeServerDependencies): FastMCP {
     name: "waymates-facade",
     version: "3.2.0",
     instructions:
-      "WayMates MCP Server. Provides 19 tools for career operations: " +
+      "WayMates MCP Server. Provides 18 tools for career operations: " +
       "Main entry (converse), " +
       "Auth (auth, register_telegram, link_telegram), " +
-      "Cold Start (cold_start, parse_cv_to_text, reset_cold_start), " +
+      "Cold Start (cold_start, parse_cv_to_text), " +
       "Story (get_story), " +
       "Search (search_careers, search_user_careers, search_by_target), " +
       "Goals (set_goal, get_goal, delete_goal), " +

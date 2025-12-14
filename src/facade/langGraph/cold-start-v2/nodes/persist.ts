@@ -1,5 +1,5 @@
 import { AgentInvariantError } from "../../../errors.js";
-import { hasUserService } from "../../shared/types.js";
+import { hasConfigDeps } from "../../shared/types.js";
 import { PHASE } from "../state.js";
 
 import type { ColdStartStateType } from "../state.js";
@@ -19,10 +19,10 @@ export async function persistNode(
     throw new AgentInvariantError("persistNode", "collectedContexts/queue length mismatch");
   }
 
-  if (!hasUserService(config)) {
-    throw new AgentInvariantError("persistNode", "Missing coreClient, normalizer or userService");
+  if (!hasConfigDeps(config)) {
+    throw new AgentInvariantError("persistNode", "Missing coreClient or normalizer");
   }
-  const { coreClient, normalizer, userService } = config.configurable;
+  const { coreClient, normalizer } = config.configurable;
 
   const normalizedContexts = await Promise.all(
     collectedContexts.map((ctx) => normalizer.normalizeFullContext(ctx, userId)),
@@ -33,8 +33,6 @@ export async function persistNode(
     contexts: normalizedContexts,
     trails: collectedTrails,
   });
-
-  await userService.markColdStartCompleted(userId);
 
   return { phase: PHASE.saved };
 }

@@ -41,27 +41,6 @@ export class UserService {
     await this.postgres.query("DELETE FROM facade.users WHERE user_id = $1", [userId]);
   }
 
-  async isColdStartCompleted(userId: string): Promise<boolean> {
-    const result = await this.postgres.query<{ exists: boolean }>(
-      "SELECT EXISTS(SELECT 1 FROM facade.cold_start_completions WHERE user_id = $1) as exists",
-      [userId],
-    );
-    return result.rows[0]?.exists ?? false;
-  }
-
-  async markColdStartCompleted(userId: string): Promise<void> {
-    await this.postgres.query(
-      `INSERT INTO facade.cold_start_completions (user_id) VALUES ($1)
-       ON CONFLICT (user_id) DO UPDATE SET completed_at = NOW()`,
-      [userId],
-    );
-  }
-
-  async resetColdStartStatus(userId: string): Promise<boolean> {
-    const result = await this.postgres.query("DELETE FROM facade.cold_start_completions WHERE user_id = $1", [userId]);
-    return (result.rowCount ?? 0) > 0;
-  }
-
   async findByTelegramId(telegramUserId: number): Promise<{ userId: string } | null> {
     /* eslint-disable @typescript-eslint/naming-convention -- Database column */
     const result = await this.postgres.query<{ user_id: string }>(

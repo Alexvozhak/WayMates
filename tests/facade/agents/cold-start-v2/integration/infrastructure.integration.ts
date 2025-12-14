@@ -10,14 +10,13 @@ import { UserStories } from "../../../../core/helpers/user-stories.js";
 import { cleanupColdStart, generateStoryFromFixture } from "../../cold-start/helpers/cold-start-helpers.js";
 import { FacadeTestContext } from "../../../helpers/test-context.js";
 
-import type { ColdStartResponse, UserId } from "../../../../../src/shared/schemas.js";
+import type { UserId } from "../../../../../src/shared/schemas.js";
 import type { SessionId } from "../../../../../src/facade/mcp-server/result.js";
 
 const STORY_COMPLETION_TRIGGER = "\n\nГотово, это вся моя карьерная история.";
 
 describe("Cold-Start V2: Infrastructure (TC-I)", () => {
   let testSessionId: SessionId;
-  let coldStartTool: ColdStartTool;
   const testUserId: UserId = "usr_01933ec5-0008-0000-0000-000000000008";
   const threadId = `cold_start_v2_${testUserId}`;
 
@@ -26,22 +25,11 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
     return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId);
   };
 
-  const runTool = async (message: string): Promise<ColdStartResponse> => {
-    const result = await coldStartTool.execute({ sessionId: testSessionId, message });
-    if (!result.ok) {
-      console.error(`ColdStartTool error:`, JSON.stringify(result.error, null, 2));
-      throw new Error(`ColdStartTool failed: ${result.error.message}`);
-    }
-    return result.value;
-  };
-
   beforeEach(async () => {
     testSessionId = await setupSession(testUserId);
 
     await cleanupColdStart(testUserId, threadId);
     await cleanupUserFromNeo4j(testUserId);
-
-    coldStartTool = new ColdStartTool(getToolDeps());
 
     trackTestUser(testUserId);
   });
@@ -213,106 +201,15 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
     }
     console.log(`TC-I2 [3/5]: ✅ Workflow completed: ${savedResponse.contexts.length} contexts saved`);
 
-    console.log("TC-I2 [4/5]: Verifying checkpoint was deleted by handleSaved()");
+    console.log("TC-I2 [4/4]: Verifying checkpoint was deleted by handleSaved()");
     const ctx = FacadeTestContext.getInstance();
     const toolThreadId = `cold_start_${testUserId}`;
     const checkpointAfterSave = await ctx.checkpointService.getState(toolThreadId);
 
     expect(checkpointAfterSave).toBeNull();
-    console.log("TC-I2 [4/5]: ✅ Checkpoint deleted immediately by handleSaved()");
-
-    const isCompleted = await ctx.userService.isColdStartCompleted(testUserId);
-    expect(isCompleted).toBe(true);
-    console.log("TC-I2 [5/5]: ✅ Cold start marked as completed");
+    console.log("TC-I2 [4/4]: ✅ Checkpoint deleted immediately by handleSaved()");
 
     console.log("TC-I2: ✅ Checkpoint cleanup test passed — handleSaved() cleanup works correctly");
-  }, 300_000);
-
-  /**
-   * TC-I3: Repeated cold_start returns already_saved after completion (idempotency)
-   *
-   * Что тестируем:
-   * После успешного сохранения повторный вызов cold_start возвращает
-   * already_saved без дублирования данных.
-   *
-   * Given:
-   * - Full workflow до saved state
-   * - isColdStartCompleted === true
-   *
-   * Then:
-   * - Повторный вызов: phase === already_saved
-   * - Neo4j data не изменились
-   * - Нет дублирования contexts
-   *
-   * Тип теста: Integration (real LLM + PostgreSQL + Neo4j)
-   */
-  it("TC-I3: Repeated cold_start returns already_saved after completion (idempotency)", async () => {
-    const ctx = FacadeTestContext.getInstance();
-    const userStories = new UserStories();
-    const u1 = userStories.getStoryBy("U1");
-
-    const story = await generateStoryFromFixture(u1);
-    const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
-
-    console.log("TC-I3 [1/7]: Sending story → awaiting_plan_confirmation");
-    const planResponse = await runTool(storyWithTrigger);
-
-    if (planResponse.phase !== PHASE.awaiting_plan_confirmation) {
-      expect.fail(`Expected awaiting_plan_confirmation, got ${planResponse.phase}`);
-    }
-
-    console.log("TC-I3 [2/7]: Confirming plan → extraction");
-    const extractionResponse = await runTool("да, всё верно");
-
-    if (extractionResponse.phase === PHASE.awaiting_clarification) {
-      expect.fail("TC-I3 requires successful extraction without clarification");
-    }
-
-    if (extractionResponse.phase !== PHASE.awaiting_context_confirmation) {
-      expect.fail(`Expected awaiting_context_confirmation, got ${extractionResponse.phase}`);
-    }
-
-    let currentResponse = await runTool("да, верно");
-    while (currentResponse.phase === PHASE.awaiting_context_confirmation) {
-      console.log("TC-I3 [3/7]: Confirming context...");
-      currentResponse = await runTool("да, верно");
-    }
-
-    if (currentResponse.phase !== PHASE.awaiting_final_confirmation) {
-      expect.fail(`Expected awaiting_final_confirmation, got ${currentResponse.phase}`);
-    }
-
-    console.log("TC-I3 [4/7]: Final confirmation → saved");
-    const savedResponse = await runTool("сохрани");
-
-    expect(savedResponse.phase).toBe(PHASE.saved);
-
-    console.log("TC-I3 [5/7]: Verifying handleSaved() side effects...");
-
-    const storyInDb = await ctx.coreClient.client.story.getStory.query({ userId: testUserId });
-    expect(storyInDb, "handleSaved() не сохранил данные в Neo4j").not.toBeNull();
-    expect(storyInDb.contexts.length, "Neo4j: нет contexts").toBeGreaterThan(0);
-    console.log(`TC-I3: ✅ Neo4j contains ${storyInDb.contexts.length} context(s)`);
-
-    const isCompleted = await ctx.userService.isColdStartCompleted(testUserId);
-    expect(isCompleted, "handleSaved() не установил completion flag").toBe(true);
-    console.log("TC-I3: ✅ PostgreSQL cold_start_completions flag set");
-
-    const toolThreadId = `cold_start_${testUserId}`;
-    const checkpoint = await ctx.checkpointService.getState(toolThreadId);
-    expect(checkpoint, "handleSaved() не удалил checkpoint").toBeNull();
-    console.log("TC-I3: ✅ LangGraph checkpoint deleted");
-
-    console.log("TC-I3 [6/7]: Calling ColdStartTool AGAIN → expecting already_saved");
-    const repeatResponse = await runTool("любое сообщение");
-
-    expect(repeatResponse.phase).toBe("already_saved");
-    console.log("TC-I3: ✅ Repeated call returned already_saved");
-
-    console.log("TC-I3 [7/7]: Verifying Neo4j data unchanged after repeat...");
-    const storyAfterRepeat = await ctx.coreClient.client.story.getStory.query({ userId: testUserId });
-    expect(storyAfterRepeat.contexts.length).toBe(storyInDb.contexts.length);
-    console.log("TC-I3: ✅ Neo4j data unchanged - idempotency verified!");
   }, 300_000);
 
   /**
