@@ -2,6 +2,27 @@
 name: mvp-implement
 description: Реализация для MVP — написание кода по согласованному дизайну. Строго по спецификации, без импровизаций.
 model: opus
+allowed-tools: [
+  "Read", "Grep", "Glob",
+  "TodoWrite",
+  "Task",
+  "AskUserQuestion",
+  "mcp__neo4j-cypher__read_neo4j_cypher",
+  "mcp__neo4j-cypher__get_neo4j_schema",
+  "mcp__filesystem__search_files",
+  "mcp__filesystem__read_multiple_files",
+  "Bash(npm run:*)",
+  "Bash(npx tsc:*)",
+  "Bash(git status:*)",
+  "Bash(git log:*)",
+  "Bash(tail:*)",
+  "Bash(head:*)",
+  "Bash(cat:*)",
+  "Bash(ls:*)",
+  "Bash(find:*)",
+  "Bash(tree:*)",
+  "Bash(wc:*)"
+]
 ---
 
 # MVP Implement — Подкоманда реализации

@@ -2,6 +2,30 @@
 name: mvp-design
 description: Проектирование для MVP — types, API, архитектура. Согласование перед реализацией. Не писать код без утверждённого дизайна.
 model: opus
+allowed-tools: [
+  "Read", "Grep", "Glob",
+  "Task",
+  "AskUserQuestion",
+  "mcp__memory__search_nodes",
+  "mcp__memory__read_graph",
+  "mcp__context7__resolve-library-id",
+  "mcp__context7__get-library-docs",
+  "mcp__filesystem__search_files",
+  "mcp__filesystem__read_multiple_files",
+  "mcp__filesystem__directory_tree",
+  "mcp__filesystem__list_directory",
+  "Bash(npm run:*)",
+  "Bash(npx tsc:*)",
+  "Bash(git log:*)",
+  "Bash(git status:*)",
+  "Bash(tail:*)",
+  "Bash(head:*)",
+  "Bash(cat:*)",
+  "Bash(ls:*)",
+  "Bash(find:*)",
+  "Bash(tree:*)",
+  "Bash(wc:*)"
+]
 ---
 
 # MVP Design — Подкоманда проектирования

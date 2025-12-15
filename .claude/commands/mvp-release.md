@@ -2,6 +2,31 @@
 name: mvp-release
 description: Главная команда для работы над MVP релизом. Orchestrator для подкоманд research/design/implement/test. Гибридный режим — предлагает подкоманду, ждёт подтверждения.
 model: opus
+allowed-tools: [
+  "Read", "Grep", "Glob",
+  "TodoWrite",
+  "Task",
+  "SlashCommand",
+  "AskUserQuestion",
+  "WebSearch", "WebFetch",
+  "mcp__context7__resolve-library-id",
+  "mcp__context7__get-library-docs",
+  "mcp__memory__search_nodes",
+  "mcp__memory__read_graph",
+  "mcp__memory__create_entities",
+  "mcp__memory__add_observations",
+  "Bash(npm run:*)",
+  "Bash(npx tsc:*)",
+  "Bash(git status:*)",
+  "Bash(git log:*)",
+  "Bash(tail:*)",
+  "Bash(head:*)",
+  "Bash(cat:*)",
+  "Bash(ls:*)",
+  "Bash(find:*)",
+  "Bash(tree:*)",
+  "Bash(wc:*)"
+]
 ---
 
 # MVP Release — Главная команда

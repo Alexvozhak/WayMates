@@ -2,6 +2,30 @@
 name: mvp-research
 description: Ресерч для MVP — сравнение вариантов, выбор библиотек, best practices. Приходит с готовыми вариантами, не с голыми вопросами.
 model: opus
+allowed-tools: [
+  "Read", "Grep", "Glob",
+  "WebSearch", "WebFetch",
+  "Task",
+  "AskUserQuestion",
+  "mcp__context7__resolve-library-id",
+  "mcp__context7__get-library-docs",
+  "mcp__filesystem__search_files",
+  "mcp__filesystem__read_multiple_files",
+  "mcp__filesystem__directory_tree",
+  "mcp__filesystem__list_directory",
+  "Bash(npm run:*)",
+  "Bash(npm view:*)",
+  "Bash(npx tsc:*)",
+  "Bash(git log:*)",
+  "Bash(git status:*)",
+  "Bash(tail:*)",
+  "Bash(head:*)",
+  "Bash(cat:*)",
+  "Bash(ls:*)",
+  "Bash(find:*)",
+  "Bash(tree:*)",
+  "Bash(wc:*)"
+]
 ---
 
 # MVP Research — Подкоманда ресерча

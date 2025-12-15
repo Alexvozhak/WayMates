@@ -2,6 +2,29 @@
 name: mvp-test
 description: Тестирование для MVP — написание тестов по бизнес-сценариям. Расширение подхода из test-cold-start. Фокус на ценности, не на coverage theater.
 model: sonnet
+allowed-tools: [
+  "Read", "Grep", "Glob",
+  "TodoWrite",
+  "Task",
+  "AskUserQuestion",
+  "mcp__neo4j-cypher__read_neo4j_cypher",
+  "mcp__neo4j-cypher__get_neo4j_schema",
+  "mcp__context7__resolve-library-id",
+  "mcp__context7__get-library-docs",
+  "mcp__filesystem__search_files",
+  "mcp__filesystem__read_multiple_files",
+  "Bash(npm run:*)",
+  "Bash(npx tsc:*)",
+  "Bash(git status:*)",
+  "Bash(git log:*)",
+  "Bash(tail:*)",
+  "Bash(head:*)",
+  "Bash(cat:*)",
+  "Bash(ls:*)",
+  "Bash(find:*)",
+  "Bash(tree:*)",
+  "Bash(wc:*)"
+]
 ---
 
 # MVP Test — Подкоманда тестирования

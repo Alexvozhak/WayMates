@@ -105,75 +105,37 @@ AskUserQuestion({
 
 ---
 
-## Sub-Agents Architecture
+## Using Native Agents
 
-This project uses **4 specialized agents** for different development tasks. You **MUST proactively delegate** to appropriate agents - don't wait for explicit user requests.
+Claude Code provides built-in agents via the `Task` tool. Use them proactively when appropriate:
 
-### Agent Roles & Responsibilities
+| Agent | When to Use | Thoroughness |
+|-------|-------------|--------------|
+| **Explore** | Codebase exploration, finding patterns, answering "where/how" questions | `quick` / `medium` / `very thorough` |
+| **Plan** | Architecture planning (alternative to `/mvp-design` for smaller tasks) | - |
+| **Reviewer** | Code review for bugs, edge cases, DRY violations | - |
+| **QA** | Test coverage analysis, test failure investigation | - |
 
-| Agent | Role | When to Call (Proactively) | Model |
-|-------|------|---------------------------|-------|
-| **planner** | Architecture + requirements + type design | Planning features, architecture decisions | Opus |
-| **cypher-expert** | Neo4j Cypher queries, optimization, schema validation | Writing/changing Cypher, query performance issues | Sonnet |
-| **reviewer** | Bugs, edge cases, DRY, correctness | **Immediately** after code implementation | Sonnet |
-| **qa** | Test quality, coverage, failure analysis | After schema/Cypher changes, test failures | Sonnet |
+**Key example - Explore agent:**
+```typescript
+// ❌ DON'T: Manual grep/read for exploratory questions
+User: "Where are client errors handled?"
+You: Uses Grep + Read manually (wastes context)
 
-### Proactive Delegation Rules
-
-**CRITICAL**: Call agents automatically in these scenarios:
-
-```
-✅ Planning feature → planner (architecture + type schema)
-✅ Writing/modifying Cypher → cypher-expert (query design + optimization)
-✅ Code written → reviewer (bugs, edge cases, DRY)
-✅ Feature done → qa (test coverage, quality)
-✅ Schema/Cypher changed → qa (integration tests!)
-✅ Tests failing → qa (root cause analysis)
-✅ Query performance issues → cypher-expert (PROFILE analysis + optimization)
-✅ Refactoring → reviewer (DRY violations) + qa (tests still valid)
+// ✅ DO: Use Explore agent for codebase exploration
+User: "Where are client errors handled?"
+You: Task({
+  subagent_type: "Explore",
+  prompt: "Find where client errors are handled in the codebase",
+  description: "Explore error handling"
+})
 ```
 
-### Workflow Example
-
-```
-User: "Add flexible scoring for domains in current search"
-  ↓
-Claude: ✅ Calls planner
-  - Gets: Architecture design + TYPE SCHEMA + tech choice
-  ↓
-Claude: ✅ Calls cypher-expert (for scoring query design)
-  - Gets: Tested Cypher query + optimization notes
-  ↓
-Claude: Implements code STRICTLY according to type schema
-  ↓
-Claude: ✅ Calls reviewer (automatically)
-  - Gets: Bug report, DRY violations, edge cases
-  ↓
-Claude: Fixes critical issues
-  ↓
-Claude: ✅ Calls qa (automatically)
-  - Gets: Test coverage analysis
-  ↓
-Claude: Completes with tests
-```
-
-**Another example** (Cypher-focused task):
-
-```
-User: "Optimize the target search query - it's slow"
-  ↓
-Claude: ✅ Calls cypher-expert (immediately)
-  - Expert runs PROFILE via MCP
-  - Identifies missing index usage
-  - Provides optimized query with USING INDEX hint
-  ↓
-Claude: Updates query builder with optimized query
-  ↓
-Claude: ✅ Calls qa (verify no regressions)
-  - Runs integration tests
-  ↓
-Claude: Completes with performance improvement notes
-```
+**When to use Explore:**
+- Finding architectural patterns ("how does the codebase handle X?")
+- Understanding file organization ("where should I add Y?")
+- Cross-file analysis ("what files implement Z pattern?")
+- NOT for specific file/class/function lookups (use Grep/Glob directly)
 
 ---
 
@@ -184,15 +146,12 @@ Claude: Completes with performance improvement notes
 ### Workflow
 
 1. **User requests feature**
-2. **Call `planner`** → get TYPE SCHEMA + architecture
+2. **Design TYPE SCHEMA + architecture** using `EnterPlanMode` or `/mvp-design`
 3. **Review type schema with user** (if complex)
 4. **Implement STRICTLY according to schema**
-5. **Call `reviewer`** → check type compliance, bugs, DRY
-6. **Call `qa`** → ensure test coverage
+5. **Run mandatory checks** (lint + tsc + tests)
 
 ### Type Schema Format
-
-planner agent will provide:
 
 ```typescript
 // === TYPE SCHEMA ===
@@ -211,7 +170,7 @@ class CacheManager {
 
 ### Rules
 
-- **Never create types during implementation** - get them from planner first
+- **Design types FIRST** - use `/mvp-design` or `EnterPlanMode` for complex features
 - **Always check `.claude/context/project.md`** - type might exist
 - **Lock signatures before coding** - public API is contract
 - **Update type registry via Memory MCP** - track new types
@@ -230,10 +189,10 @@ The following MCP servers provide specialized capabilities:
 - Track discovered bugs and edge cases
 - Accumulate WayMates-specific conventions
 
-**Usage by agents:**
-- `planner` → store architectural decisions
-- `reviewer` → track tech debt
-- `qa` → save test patterns
+**Usage patterns:**
+- Store architectural decisions from planning sessions
+- Track tech debt discovered during code review
+- Save test patterns and coverage strategies
 
 ### 2. context7 (system-provided)
 
@@ -242,8 +201,9 @@ The following MCP servers provide specialized capabilities:
 - Resolve library names → Context7-compatible IDs
 - Get focused documentation by topic
 
-**Usage by agents:**
-- `planner` → research best practices (Neo4j patterns, Docker, TypeScript)
+**Usage patterns:**
+- Research best practices (Neo4j patterns, Docker, TypeScript)
+- Verify API usage during implementation
 
 **Example:**
 ```typescript
@@ -288,39 +248,37 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 
 ### 4. filesystem (`@modelcontextprotocol/server-filesystem`)
 
-**Purpose**: Direct file system access for reading/writing project files
+**Purpose**: Batch file operations for agents (vs single-file Read/Write/Edit tools)
 
 - **Allowed directory**: `/home/alex/projects/WayMatesRemote`
-- **Access level**: Full read/write
+- **Key tools**: `read_multiple_files`, `search_files`, `directory_tree`
 
-**When to use:**
-- **Reading multiple files** for analysis (architecture review, codebase exploration)
-- **Batch file operations** (renaming, moving, creating directory structures)
-- **Documentation updates** across multiple files
-- **Agent deep-dive analysis** when Read tool context is insufficient
+**When agents SHOULD use filesystem:**
 
-**Usage by agents:**
-- `planner` → read architecture docs, analyze codebase structure, update design documents
-- `reviewer` → read multiple source files for cross-file DRY analysis
-- `qa` → read test suites, analyze coverage patterns, update test plans
-- `cypher-expert` → read all query builders for consistency analysis
+| Agent | Use Case | Tools | Benefit |
+|-------|----------|-------|---------|
+| **planner** | Analyze existing types/patterns | `search_files` + `read_multiple_files` | See all `*-query-builder.ts` at once for consistency |
+| **reviewer** | Cross-file DRY analysis | `read_multiple_files` on related files | Find duplicated logic across 5-10 files in 1 call |
+| **qa** | Test coverage analysis | `search_files("*goals*.integration.ts")` | Find all related tests quickly |
+| **cypher-expert** | Query builder consistency | `search_files` + `read_multiple_files` | Check USING INDEX usage across all builders |
 
 **Examples:**
 ```typescript
-// Agent reads all query builders to analyze patterns
-mcp__filesystem__search_files({
-  path: "/home/alex/projects/WayMatesRemote/src/core",
+// Find + batch read all query builders (planner/cypher-expert)
+const files = await mcp__filesystem__search_files({
+  path: "src",
   pattern: "*-query-builder.ts"
 })
+const contents = await mcp__filesystem__read_multiple_files({ paths: files })
 
-// Agent updates architecture documentation
-mcp__filesystem__write_file({
-  path: "/home/alex/projects/WayMatesRemote/docs/decisions/ADR-005.md",
-  content: "# ADR-005: Discriminated Union Pattern..."
+// Get full project structure (planner)
+await mcp__filesystem__directory_tree({
+  path: ".",
+  excludePatterns: ["node_modules", ".git", "dist"]
 })
 ```
 
-**Note**: Prefer built-in Read/Write/Edit tools for single-file operations. Use filesystem for batch operations or agent deep analysis.
+**DON'T use for**: Single-file reads (use Read), single-file edits (use Edit), file writes (use Write).
 
 ---
 
@@ -420,20 +378,21 @@ For detailed project context, see **`.claude/context/project.md`**:
 
 Before completing any feature:
 
-1. ✅ **Type schema designed** (from planner)
-2. ✅ **Code reviewed** (by reviewer - bugs, DRY, edge cases)
-3. ✅ **Tests verified** (by qa - quality, coverage)
+1. ✅ **Type schema designed** (via `/mvp-design` or `EnterPlanMode`)
+2. ✅ **Implementation complete** (following type schema strictly)
+3. ✅ **Code quality checked** (complexity, DRY, edge cases)
 4. ✅ **Lint passed** (`npm run lint`)
 5. ✅ **TypeScript compiled** (`npx tsc --noEmit`)
 6. ✅ **Tests passed** (unit + integration if applicable)
+7. ✅ **Test coverage verified** (business scenarios, not coverage theater)
 
 ---
 
 ## Key Principle
 
-**Proactive delegation maintains quality without user micromanagement.**
+**Quality through systematic workflow, not manual checks.**
 
-You should automatically call appropriate agents based on triggers above. The user doesn't need to ask for code review or test analysis - you do it proactively as part of the workflow.
+Use MVP commands (`/mvp-release`, `/mvp-design`, `/mvp-implement`, `/mvp-test`) for structured development with built-in quality gates. The workflow enforces type-first design, code quality checks, and test coverage automatically.
 - фасад и core не должны иметь общие зависимости, чтобы их можно было легко разнести потом по разным репам
 - никаких doxygen комментариев, отладочных комментариев, временных комментариев.
 
@@ -449,7 +408,7 @@ You should automatically call appropriate agents based on triggers above. The us
 2. **Fix bug**: Use `/fix-bug` command (see `.claude/commands/fix-bug.md`)
    - Provides interactive bug selection with `AskUserQuestion` tool
    - Auto-loads relevant context (affected files, tests, git history, Memory Bank)
-   - Follows standard workflow with mandatory reviewer + qa checks
+   - Follows standard workflow with quality checks
    - Auto-updates bug status to RESOLVED + links commit
    - Runs quality gates (lint + tsc + integration tests)
 
@@ -484,7 +443,7 @@ You should automatically call appropriate agents based on triggers above. The us
 2. **Implement feature**: Use `/implement-feature` command (see `.claude/commands/implement-feature.md`)
    - Interactive feature selection from TODO list
    - Auto-updates status: TODO → IN_PROGRESS → DONE
-   - Full workflow: **planner** → **cypher-expert** → implementation → **reviewer** → **qa**
+   - Full workflow: planning → implementation → quality checks
    - Quality gates: lint + tsc + tests
    - Auto-updates registry with commit hash + implementation notes
 
@@ -494,15 +453,15 @@ You should automatically call appropriate agents based on triggers above. The us
   ↓
 /implement-feature → IN_PROGRESS (auto)
   ↓
-planner agent → TYPE SCHEMA + architecture
+Planning phase → TYPE SCHEMA + architecture (EnterPlanMode or /mvp-design)
   ↓
-cypher-expert agent → tested Cypher queries (if needed)
+Cypher design → query validation via neo4j-cypher MCP (if needed)
   ↓
-Implementation → follow type schema
+Implementation → follow type schema strictly
   ↓
-reviewer agent → bugs, DRY, edge cases
+Code quality check → complexity, DRY, edge cases
   ↓
-qa agent → test coverage
+Test coverage → business scenarios (not coverage theater)
   ↓
 Quality gates → lint + tsc + tests
   ↓
@@ -516,10 +475,10 @@ DONE status (auto) + commit hash + implementation notes
 
 **Principles**:
 - ✅ Use `/request-feature` for adding features (structured with ACs)
-- ✅ Use `/implement-feature` for implementation (automated workflow with planner)
+- ✅ Use `/implement-feature` for implementation (automated workflow)
 - ✅ Break large features into sub-tasks in Acceptance Criteria
 - ✅ Let `/sync-memory` handle archiving DONE features
-- ❌ Don't skip planner call - type schema is mandatory
+- ❌ Don't skip planning phase - type schema is mandatory
 - ❌ Don't manually move features to archive during coding
 
 ### Session Management

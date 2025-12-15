@@ -79,6 +79,7 @@ dist/
 
 # Environment files with credentials
 .env.prod
+.mcp.json
 
 # Dropbox sync folders
 todo-dropbox
