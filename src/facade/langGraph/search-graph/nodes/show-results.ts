@@ -8,7 +8,7 @@ import type { SearchStateType } from "../state.js";
 
 /**
  * Show results node: displays search results with current goal and waits for user decision.
- * User can refine goal, delete goal (return to explore), or finish.
+ * User can change goal, delete goal (return to explore), or finish.
  */
 export async function showResultsNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
   const userResponse = interrupt({
@@ -20,10 +20,10 @@ export async function showResultsNode(state: SearchStateType): Promise<Partial<S
   });
 
   const response = String(userResponse);
-  const intent = await parseUserIntent(response);
+  const parsed = await parseUserIntent(response);
 
   return {
     userResponse: response,
-    searchUserIntent: intent,
+    searchUserIntent: parsed.intent,
   };
 }

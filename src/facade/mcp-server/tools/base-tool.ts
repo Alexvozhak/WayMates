@@ -7,6 +7,7 @@ import type { UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 import type { GraphDeps } from "../../langGraph/shared/types.js";
 import type { CheckpointService } from "../../services/checkpoint.service.js";
+import type { DictionariesCache } from "../../services/dictionaries-cache.js";
 import type { Normalizer } from "../../services/normalizer.js";
 import type { SessionService } from "../../services/session.service.js";
 import type { UserService } from "../../services/user.service.js";
@@ -19,6 +20,7 @@ export type BaseToolDependencies = {
   session: SessionService;
   normalizer: Normalizer;
   coreClient: CoreClient;
+  cache: DictionariesCache;
   checkpointService: CheckpointService;
   userService: UserService;
 };
@@ -27,6 +29,7 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
   protected session: SessionService;
   protected normalizer: Normalizer;
   protected coreClient: CoreClient;
+  protected cache: DictionariesCache;
   protected checkpointService: CheckpointService;
   protected userService: UserService;
   private paramsSchema: ZodType;
@@ -35,6 +38,7 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
     this.session = deps.session;
     this.normalizer = deps.normalizer;
     this.coreClient = deps.coreClient;
+    this.cache = deps.cache;
     this.checkpointService = deps.checkpointService;
     this.userService = deps.userService;
     this.paramsSchema = paramsSchema;
@@ -44,6 +48,7 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
     return {
       coreClient: this.coreClient,
       normalizer: this.normalizer,
+      cache: this.cache,
       userService: this.userService,
       checkpointService: this.checkpointService,
     };

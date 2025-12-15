@@ -2,8 +2,10 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
 import { lastValue } from "../shared/state-utils.js";
 
+import type { CurrentSearchParamsWithFeedback, TargetSearchParamsWithFeedback } from "./types.js";
 import type {
   AdhocUserContext,
+  CurrentSearchParamsBase,
   Goal,
   MatchedCandidateWithPath,
   ScoredMatchedCandidate,
@@ -49,13 +51,14 @@ export const NODE = {
   delete_goal: "delete_goal",
   search: "search",
   show_results: "show_results",
+  apply_filters: "apply_filters",
   cancel: "cancel",
 } as const;
 /* eslint-enable @typescript-eslint/naming-convention */
 
 export type NodeName = (typeof NODE)[keyof typeof NODE];
 
-export type SearchUserIntent = "proceed" | "validate" | "clarify" | "save" | "change" | "refine" | "delete" | "cancel";
+export type SearchUserIntent = "proceed" | "validate" | "clarify" | "save" | "change" | "delete" | "filter" | "cancel";
 
 export const searchStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
@@ -70,6 +73,9 @@ export const searchStateAnnotation = Annotation.Root({
 
   existingGoal: Annotation<Goal | null>({ reducer: lastValue, default: () => null }),
   extractedGoal: Annotation<TargetContext | null>({ reducer: lastValue, default: () => null }),
+  targetSearchParams: Annotation<TargetSearchParamsWithFeedback | null>({ reducer: lastValue, default: () => null }),
+  currentSearchParams: Annotation<CurrentSearchParamsBase | null>({ reducer: lastValue, default: () => null }),
+  appliedFilters: Annotation<CurrentSearchParamsWithFeedback | null>({ reducer: lastValue, default: () => null }),
 
   clarifyRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   newPositionRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
@@ -87,8 +93,8 @@ export const MAX_CLARIFY_ROUNDS = 3;
 export const MAX_NEW_POSITION_ROUNDS = 2;
 
 export const OPTIONS = {
-  showExploration: ["proceed", "cancel"],
+  showExploration: ["proceed", "filter", "cancel"],
   showGoal: ["validate", "clarify", "save", "cancel"],
   askAfterValidate: ["save", "change", "cancel"],
-  showResults: ["refine", "delete", "cancel"],
+  showResults: ["change", "delete", "filter", "cancel"],
 };

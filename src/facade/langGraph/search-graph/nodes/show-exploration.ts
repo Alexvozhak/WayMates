@@ -19,10 +19,10 @@ export async function showExplorationNode(state: SearchStateType): Promise<Parti
   });
 
   const response = String(userResponse);
-  const intent = await parseUserIntent(response);
+  const parsed = await parseUserIntent(response);
 
   return {
     userResponse: response,
-    searchUserIntent: intent,
+    searchUserIntent: parsed.intent,
   };
 }

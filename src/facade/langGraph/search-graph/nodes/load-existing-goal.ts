@@ -5,7 +5,7 @@ import type { SearchStateType } from "../state.js";
 
 /**
  * Load existing goal node: copies existingGoal.targetCriteria to extractedGoal.
- * Used when user wants to refine their saved goal from show_results.
+ * Used when user wants to change their saved goal from show_results.
  */
 export function loadExistingGoalNode(state: SearchStateType): Partial<SearchStateType> {
   const { existingGoal } = state;

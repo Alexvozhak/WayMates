@@ -1,6 +1,7 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { z } from "zod";
 
+import { CONTEXT_FIELD_NAMES, contextFieldSchema, newContextReasonSchema } from "../../shared/schemas.js";
 import { getModel } from "../langGraph/shared-tools/models.js";
 
 import type { DictionariesCache } from "./dictionaries-cache.js";
@@ -23,6 +24,19 @@ const fuzzyMatchResultSchema = z.object({
 });
 
 export type FuzzyMatchResult = z.infer<typeof fuzzyMatchResultSchema>;
+
+const normalizeReasonsResultSchema = z.object({
+  normalized: z.array(newContextReasonSchema).describe("Array of matched canonical reason IDs from dictionary"),
+  rejected: z.array(z.string()).describe("Array of user inputs that couldn't be matched"),
+});
+
+const normalizeContextFieldsResultSchema = z.object({
+  normalized: z.array(contextFieldSchema).describe("Array of matched canonical context field names from enum"),
+  rejected: z.array(z.string()).describe("Array of user inputs that couldn't be matched"),
+});
+
+export type NormalizeReasonsResult = z.infer<typeof normalizeReasonsResultSchema>;
+export type NormalizeContextFieldsResult = z.infer<typeof normalizeContextFieldsResultSchema>;
 
 export type FuzzyModel = Runnable<BaseMessageLike[], FuzzyMatchResult>;
 
@@ -75,6 +89,67 @@ export class Normalizer {
 
   async normalizePlatform(platform: string, userId: UserId): Promise<string> {
     return this.normalizeTerm("platform", platform, userId);
+  }
+
+  async normalizeReasons(userInput: string[]): Promise<NormalizeReasonsResult> {
+    if (userInput.length === 0) {
+      return { normalized: [], rejected: [] };
+    }
+
+    const dict = await this.cache.getReasons();
+    const dictEntries = [...dict.values()].map((name) => `"${name}"`).join(", ");
+
+    const prompt = `You are a term normalization assistant for career transition reasons.
+
+Dictionary: ${dictEntries}
+
+Task: Normalize the following user inputs to canonical reason IDs from the dictionary above.
+User inputs: ${JSON.stringify(userInput)}
+
+Rules:
+- Handle typos (e.g., "company chnage" → "company_changed")
+- Handle natural language (e.g., "job changes" → "position_changed")
+- Handle case variations (e.g., "COMPANY_CHANGED" → "company_changed")
+- Return matched canonical IDs in "normalized" array
+- Return unmatched user inputs in "rejected" array (if similarity < 0.7)
+- NO hallucinations - only use provided dictionary
+
+Return: { normalized: string[], rejected: string[] }`;
+
+    const reasonsModel = getModel("deterministic").withStructuredOutput(normalizeReasonsResultSchema);
+    const result = await reasonsModel.invoke([new HumanMessage(prompt)]);
+
+    return result;
+  }
+
+  async normalizeContextFields(userInput: string[]): Promise<NormalizeContextFieldsResult> {
+    if (userInput.length === 0) {
+      return { normalized: [], rejected: [] };
+    }
+
+    const validFields = CONTEXT_FIELD_NAMES.map((f) => `"${f}"`).join(", ");
+
+    const prompt = `You are a term normalization assistant for context field names.
+
+Valid fields: ${validFields}
+
+Task: Normalize the following user inputs to canonical context field names from the list above.
+User inputs: ${JSON.stringify(userInput)}
+
+Rules:
+- Handle typos (e.g., "skilss" → "skills")
+- Handle natural language (e.g., "birth year" → "birthYear", "country" → "countryCode")
+- Handle case variations (e.g., "POSITION" → "position")
+- Return matched canonical names in "normalized" array
+- Return unmatched user inputs in "rejected" array (if similarity < 0.7)
+- NO hallucinations - only use provided valid fields
+
+Return: { normalized: string[], rejected: string[] }`;
+
+    const fieldsModel = getModel("deterministic").withStructuredOutput(normalizeContextFieldsResultSchema);
+    const result = await fieldsModel.invoke([new HumanMessage(prompt)]);
+
+    return result;
   }
 
   private async normalizeTargetField(

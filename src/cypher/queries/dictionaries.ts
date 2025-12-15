@@ -18,7 +18,7 @@ OPTIONAL MATCH (l:Language {verified: true})
 WITH skills, positions, domains, cities, industries, platforms, collect(l.canonicalName) AS languages
 OPTIONAL MATCH (r:Reason)
 WITH skills, positions, domains, cities, industries, platforms, languages,
-     collect(r.reasonId) AS reasons
+     collect(r.canonicalName) AS reasons
 RETURN {
   skill: skills,
   position: positions,

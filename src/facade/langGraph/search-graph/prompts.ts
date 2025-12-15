@@ -29,30 +29,37 @@ MODE RULES:
 Return only fields that can be extracted from user message.
 If nothing specific mentioned, at least extract position.`;
 
-export const USER_INTENT_PROMPT = `Classify user's intent from their response.
+export const USER_INTENT_PROMPT = `Classify user's intent from their response and extract optional filters.
 
 Intent classification:
 - PROCEED: User is ready to proceed, has decided, wants to move forward
 - VALIDATE: User wants to validate/check goal, see who achieved it, see trajectories
+  + Optional filters: excludedCreationReasons (array of strings), recencyThresholdMonths (number), limit (number)
 - CLARIFY: User wants to add details, refine current goal, specify more
 - SAVE: User confirms and wants to save the goal
 - CHANGE: User wants to change goal to something completely different
-- REFINE: User wants to adjust existing saved goal
 - DELETE: User wants to delete goal and explore again
+- FILTER: User wants to refine search results by excluding context fields, transition reasons, or adjusting parameters
+  + Optional filters: excludedContextFields (array of strings), excludedCreationReasons (array of strings), recencyThresholdMonths (number), limit (number)
 - CANCEL: User wants to cancel, stop, exit
 
 Examples:
-- "I've decided" → PROCEED
-- "yes, let's go" → PROCEED
-- "show me who achieved this" → VALIDATE
-- "add Germany to countries" → CLARIFY
-- "looks good, save it" → SAVE
-- "actually, I want to be a PM" → CHANGE
-- "adjust my goal" → REFINE
-- "delete my goal" → DELETE
-- "cancel" → CANCEL
+- "I've decided" → { intent: "proceed" }
+- "yes, let's go" → { intent: "proceed" }
+- "show me who achieved this" → { intent: "validate", filters: null }
+- "validate without job changes" → { intent: "validate", filters: { excludedCreationReasons: ["company_changed", "position_changed"], recencyThresholdMonths: null, limit: null } }
+- "show me last 12 months only" → { intent: "validate", filters: { excludedCreationReasons: null, recencyThresholdMonths: 12, limit: null } }
+- "validate, limit 10 results" → { intent: "validate", filters: { excludedCreationReasons: null, recencyThresholdMonths: null, limit: 10 } }
+- "add Germany to countries" → { intent: "clarify" }
+- "looks good, save it" → { intent: "save" }
+- "actually, I want to be a PM" → { intent: "change" }
+- "delete my goal" → { intent: "delete" }
+- "exclude industry" → { intent: "filter", filters: { excludedContextFields: ["industry"], excludedCreationReasons: null, recencyThresholdMonths: null, limit: null } }
+- "filter without birthYear and cityName" → { intent: "filter", filters: { excludedContextFields: ["birthYear", "cityName"], excludedCreationReasons: null, recencyThresholdMonths: null, limit: null } }
+- "no company changes" → { intent: "filter", filters: { excludedContextFields: null, excludedCreationReasons: ["company_changed"], recencyThresholdMonths: null, limit: null } }
+- "cancel" → { intent: "cancel" }
 
-Return the intent as a single word: proceed, validate, clarify, save, change, refine, delete, cancel`;
+Return: { intent, filters } where filters is null if not specified or intent is not "validate" or "filter"`;
 
 export const GOAL_CLARIFICATION_PROMPT = `Update the existing goal based on user's clarification.
 

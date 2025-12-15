@@ -455,10 +455,10 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       })),
     );
 
-    // Assert - Only pathfinder/waymate candidates returned (null filtered out by goal)
+    // Assert - candidateType is a label (pathfinder/waymate/null), not a filter
     expect(results.length).toBeGreaterThan(0);
     results.forEach((r) => {
-      expect(r.candidateType === "pathfinder" || r.candidateType === "waymate").toBe(true);
+      expect(r.candidateType === null || r.candidateType === "pathfinder" || r.candidateType === "waymate").toBe(true);
     });
 
     // Assert - If pathfinders exist, they should be properly detected

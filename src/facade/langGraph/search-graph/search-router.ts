@@ -12,10 +12,17 @@ export function routeAfterCheckGoal(state: SearchStateType): NodeName {
 export function routeAfterShowExploration(state: SearchStateType): NodeName {
   const { searchUserIntent } = state;
 
-  if (searchUserIntent === "cancel") {
-    return NODE.cancel;
+  switch (searchUserIntent) {
+    case "filter": {
+      return NODE.apply_filters;
+    }
+    case "cancel": {
+      return NODE.cancel;
+    }
+    default: {
+      return NODE.extract_goal;
+    }
   }
-  return NODE.extract_goal;
 }
 
 export function routeAfterShowGoal(state: SearchStateType): NodeName {
@@ -69,7 +76,10 @@ export function routeAfterShowResults(state: SearchStateType): NodeName {
   const { searchUserIntent } = state;
 
   switch (searchUserIntent) {
-    case "refine": {
+    case "filter": {
+      return NODE.apply_filters;
+    }
+    case "change": {
       return NODE.load_existing_goal;
     }
     case "delete": {
@@ -82,6 +92,10 @@ export function routeAfterShowResults(state: SearchStateType): NodeName {
       return NODE.cancel;
     }
   }
+}
+
+export function routeAfterApplyFilters(state: SearchStateType): NodeName {
+  return state.existingGoal ? NODE.search : NODE.explore;
 }
 
 /* eslint-disable @typescript-eslint/consistent-type-assertions -- LangGraph route map pattern */

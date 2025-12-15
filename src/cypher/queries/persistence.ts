@@ -335,25 +335,25 @@ RETURN { success: true } AS result;`;
  * List all reasons
  *
  * Returns:
- * - reason: Reason object (reasonId, description, patterns, examples, commonCombinations)
+ * - reason: Reason object (canonicalName, description, patterns, examples, commonCombinations)
  */
 export const LIST_REASONS_QUERY = `
 MATCH (r:Reason)
 RETURN {
-  reasonId: r.reasonId,
+  canonicalName: r.canonicalName,
   description: r.description,
   patterns: r.patterns,
   commonCombinations: r.commonCombinations,
   examples: r.examples
 } AS reason
-ORDER BY r.reasonId
+ORDER BY r.canonicalName
 `;
 
 /**
  * Create new reason
  *
  * Parameters:
- * - $reasonId: Reason ID (string)
+ * - $canonicalName: Reason canonical name (string)
  * - $description: Description (string)
  * - $patterns: Patterns (array)
  * - $examples: Examples (array)
@@ -363,7 +363,7 @@ ORDER BY r.reasonId
  * - r: Created Reason node
  */
 export const CREATE_REASON_QUERY = `
-MERGE (r:Reason {reasonId: $reasonId})
+MERGE (r:Reason {canonicalName: $canonicalName})
 SET r.description = $description,
     r.patterns = $patterns,
     r.examples = $examples,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { REASON_IDS } from "../../database/reasons.js";
+import { REASON_CANONICAL_NAMES } from "../../database/reasons.js";
 
 import type { ZodTypeAny } from "zod";
 
@@ -163,7 +163,7 @@ export type ResultError = z.infer<typeof resultErrorSchema>;
 // === DOMAIN ENTITIES ===
 // ==========================================
 
-export const newContextReasonSchema = z.enum(REASON_IDS);
+export const newContextReasonSchema = z.enum(REASON_CANONICAL_NAMES);
 
 export type NewContextReason = z.infer<typeof newContextReasonSchema>;
 
@@ -501,6 +501,51 @@ export const targetSearchParamsSchema = targetSearchParamsBaseSchema.extend({
 
 export type TargetSearchParams = z.infer<typeof targetSearchParamsSchema>;
 
+/**
+ * Available filters for SearchGraph UI (TargetSearchParams - showing_goal phase)
+ * Shows reasons user can exclude during target validation
+ * Array of reason IDs (Telegram Bot translates via system prompt)
+ */
+export const availableFiltersSchema = z.object({
+  reasons: z.array(newContextReasonSchema),
+});
+
+export type AvailableFilters = z.infer<typeof availableFiltersSchema>;
+
+/**
+ * Applied filters feedback (TargetSearchParams - asking_after_validate phase)
+ * Shows what filters were applied + rejected reasons (user input not matched)
+ * Omits targetContext (already shown in extractedGoal)
+ */
+export const appliedFiltersSchema = targetSearchParamsBaseSchema.omit({ targetContext: true }).extend({
+  rejectedReasons: z.array(z.string()).optional(),
+});
+
+export type AppliedFilters = z.infer<typeof appliedFiltersSchema>;
+
+/**
+ * Available filters for SearchGraph UI (CurrentSearchParams - showing_exploration/showing_results)
+ * Shows context fields user can exclude during explore/search
+ * Array of field IDs (Telegram Bot translates via system prompt)
+ */
+export const currentAvailableFiltersSchema = z.object({
+  contextFields: z.array(contextFieldSchema),
+});
+
+export type CurrentAvailableFilters = z.infer<typeof currentAvailableFiltersSchema>;
+
+/**
+ * Applied filters feedback (CurrentSearchParams - showing_exploration/showing_results after filter)
+ * Shows what filters were applied + rejected fields (user input not matched)
+ */
+export const currentAppliedFiltersSchema = currentSearchParamsBaseSchema.and(
+  z.object({
+    rejectedFields: z.array(z.string()).optional(),
+  }),
+);
+
+export type CurrentAppliedFilters = z.infer<typeof currentAppliedFiltersSchema>;
+
 // ==========================================
 // === STORY & GOAL OPERATIONS ===
 // ==========================================
@@ -737,7 +782,7 @@ export type Dictionaries = z.infer<typeof dictionariesSchema>;
 // All dictionary keys (for cache, getVerifiedDictionaries)
 export type DictionaryType = keyof Dictionaries;
 
-// User-extensible dictionaries (excluding reasons - different node schema)
+// User-extensible dictionaries (excluding reasons - predefined, not user-extensible)
 export type SimpleDictionaryType = Exclude<DictionaryType, "reasons">;
 
 // Runtime enum for addTerm + validation
@@ -1080,52 +1125,82 @@ export type UpsertTrailResponse = z.infer<typeof upsertTrailResponseSchema>;
  * Multi-phase workflow: explore → goal formation → search.
  */
 export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
-  z.object({ phase: z.literal("checking_goal"), message: z.string() }),
-  z.object({ phase: z.literal("exploring"), message: z.string() }),
+  z.object({ phase: z.literal("checking_goal") }),
+  z.object({ phase: z.literal("exploring") }),
   z.object({
     phase: z.literal("showing_exploration"),
-    message: z.string(),
     candidates: z.array(scoredMatchedCandidateSchema),
     options: z.array(z.string()),
+    currentFilters: currentAvailableFiltersSchema.optional(),
+    appliedCurrentFilters: currentAppliedFiltersSchema.optional(),
   }),
-  z.object({ phase: z.literal("extracting_goal"), message: z.string() }),
+  z.object({ phase: z.literal("extracting_goal") }),
   z.object({
     phase: z.literal("showing_goal"),
-    message: z.string(),
     extractedGoal: targetContextSchema,
     options: z.array(z.string()),
+    availableFilters: availableFiltersSchema.optional(),
   }),
   z.object({
     phase: z.literal("clarifying_goal"),
-    message: z.string(),
     extractedGoal: targetContextSchema,
   }),
   z.object({
     phase: z.literal("validating_goal"),
-    message: z.string(),
     candidates: z.array(matchedCandidateWithPathSchema),
   }),
   z.object({
     phase: z.literal("asking_after_validate"),
-    message: z.string(),
     candidates: z.array(matchedCandidateWithPathSchema),
     options: z.array(z.string()),
+    appliedFilters: appliedFiltersSchema.optional(),
   }),
-  z.object({ phase: z.literal("setting_goal"), message: z.string() }),
-  z.object({ phase: z.literal("deleting_goal"), message: z.string() }),
-  z.object({ phase: z.literal("searching"), message: z.string() }),
+  z.object({ phase: z.literal("setting_goal") }),
+  z.object({ phase: z.literal("deleting_goal") }),
+  z.object({ phase: z.literal("searching") }),
   z.object({
     phase: z.literal("showing_results"),
-    message: z.string(),
     results: z.array(scoredMatchedCandidateSchema),
     goal: goalSchema.optional(),
     options: z.array(z.string()),
+    availableFilters: availableFiltersSchema.optional(),
+    currentFilters: currentAvailableFiltersSchema.optional(),
+    appliedCurrentFilters: currentAppliedFiltersSchema.optional(),
   }),
-  z.object({ phase: z.literal("cancelled"), message: z.string() }),
-  z.object({ phase: z.literal("failed"), message: z.string() }),
+  z.object({ phase: z.literal("cancelled") }),
+  z.object({ phase: z.literal("failed") }),
 ]);
 
 export type SearchGraphResponse = z.infer<typeof searchGraphResponseSchema>;
+
+/**
+ * System message for guards, queries, and error responses.
+ * Used when no graph execution is needed (help, validation errors, etc.).
+ */
+export const systemMessageSchema = z.object({
+  phase: z.literal("system_message"),
+  content: z.string(),
+});
+
+export type SystemMessage = z.infer<typeof systemMessageSchema>;
+
+/**
+ * Union of all possible graph responses + system messages.
+ * Used for type-safe response handling in orchestrator.
+ *
+ * Note: Using z.union instead of z.discriminatedUnion because different graphs
+ * may share the same phase names (e.g., "awaiting_clarification" in multiple graphs).
+ */
+export const anyGraphResponseSchema = z.union([
+  coldStartResponseSchema,
+  upsertContextResponseSchema,
+  updateContextResponseSchema,
+  upsertTrailResponseSchema,
+  searchGraphResponseSchema,
+  systemMessageSchema,
+]);
+
+export type AnyGraphResponse = z.infer<typeof anyGraphResponseSchema>;
 
 // ==========================================
 // === MCP PARAMS SCHEMAS ===

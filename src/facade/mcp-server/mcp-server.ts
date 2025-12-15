@@ -42,6 +42,7 @@ import { UpsertTrailTool } from "./tools/upsert-trail.tool.js";
 import type { CoreClient } from "../core-client.js";
 import type { AuthService } from "../services/auth.service.js";
 import type { CheckpointService } from "../services/checkpoint.service.js";
+import type { DictionariesCache } from "../services/dictionaries-cache.js";
 import type { Normalizer } from "../services/normalizer.js";
 import type { SessionService } from "../services/session.service.js";
 import type { UserService } from "../services/user.service.js";
@@ -50,6 +51,7 @@ export type FacadeServerDependencies = {
   sessionMiddleware: SessionService;
   normalizer: Normalizer;
   coreClient: CoreClient;
+  cache: DictionariesCache;
   checkpointService: CheckpointService;
   userService: UserService;
   authService: AuthService;
@@ -79,6 +81,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     session: deps.sessionMiddleware,
     normalizer: deps.normalizer,
     coreClient: deps.coreClient,
+    cache: deps.cache,
     checkpointService: deps.checkpointService,
     userService: deps.userService,
   };

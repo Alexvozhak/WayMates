@@ -27,6 +27,7 @@ export function getToolDeps(): BaseToolDependencies {
     session: ctx.sessionService,
     normalizer: ctx.normalizer,
     coreClient: ctx.coreClient,
+    cache: ctx.cache,
     checkpointService: ctx.checkpointService,
     userService: ctx.userService,
   };

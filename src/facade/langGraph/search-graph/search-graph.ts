@@ -1,8 +1,10 @@
 import { Command, END, START, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
 
+import { CONTEXT_FIELD_NAMES } from "../../../shared/schemas.js";
 import { AgentInvariantError } from "../../errors.js";
 
+import { applyFiltersNode } from "./nodes/apply-filters.js";
 import { askAfterValidateNode } from "./nodes/ask-after-validate.js";
 import { cancelNode } from "./nodes/cancel.js";
 import { checkGoalNode } from "./nodes/check-goal.js";
@@ -21,17 +23,19 @@ import { validateGoalNode } from "./nodes/validate-goal.js";
 import { responseBuilders } from "./response-builders.js";
 import {
   buildRouteMap,
+  routeAfterApplyFilters,
   routeAfterAskAfterValidate,
   routeAfterCheckGoal,
   routeAfterShowExploration,
   routeAfterShowGoal,
   routeAfterShowResults,
 } from "./search-router.js";
-import { NODE, searchStateAnnotation } from "./state.js";
+import { NODE, PHASE, searchStateAnnotation } from "./state.js";
 
 import type { SearchPhase, SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
 import type { UserId } from "../../../shared/schemas.js";
+import type { DictionariesCache } from "../../services/dictionaries-cache.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 import type { GraphDeps } from "../shared/types.js";
 import type { StateSnapshot } from "@langchain/langgraph";
@@ -44,6 +48,51 @@ function stateToResponse(state: SearchStateType): SearchGraphResponse {
   const { phase } = state;
   return responseBuilders[phase](state);
 }
+
+/* eslint-disable complexity -- UI enrichment with phase-specific filters */
+async function enrichResponse(state: SearchStateType, cache: DictionariesCache): Promise<SearchGraphResponse> {
+  const baseResponse = stateToResponse(state);
+
+  // showing_goal: add availableFilters (reasons)
+  if (baseResponse.phase === "showing_goal" && state.phase === PHASE.showingGoal) {
+    const reasons = await cache.getReasons();
+    return {
+      ...baseResponse,
+      availableFilters: {
+        reasons: [...reasons.keys()],
+      },
+    };
+  }
+
+  // showing_exploration: add currentFilters + optionally appliedCurrentFilters
+  if (baseResponse.phase === "showing_exploration" && state.phase === PHASE.showingExploration) {
+    return {
+      ...baseResponse,
+      currentFilters: {
+        contextFields: CONTEXT_FIELD_NAMES,
+      },
+      ...(state.appliedFilters && { appliedCurrentFilters: state.appliedFilters }),
+    };
+  }
+
+  // showing_results: add both availableFilters (reasons) and currentFilters (contextFields)
+  if (baseResponse.phase === "showing_results" && state.phase === PHASE.showingResults) {
+    const reasons = await cache.getReasons();
+    return {
+      ...baseResponse,
+      availableFilters: {
+        reasons: [...reasons.keys()],
+      },
+      currentFilters: {
+        contextFields: CONTEXT_FIELD_NAMES,
+      },
+      ...(state.appliedFilters && { appliedCurrentFilters: state.appliedFilters }),
+    };
+  }
+
+  return baseResponse;
+}
+/* eslint-enable complexity */
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
 function createGraphBuilder() {
@@ -62,6 +111,7 @@ function createGraphBuilder() {
     .addNode(NODE.delete_goal, deleteGoalNode)
     .addNode(NODE.search, searchNode)
     .addNode(NODE.show_results, showResultsNode)
+    .addNode(NODE.apply_filters, applyFiltersNode)
     .addNode(NODE.cancel, cancelNode)
 
     .addEdge(START, NODE.load_context)
@@ -71,7 +121,7 @@ function createGraphBuilder() {
     .addConditionalEdges(
       NODE.show_exploration,
       routeAfterShowExploration,
-      buildRouteMap([NODE.extract_goal, NODE.cancel]),
+      buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.cancel]),
     )
     .addEdge(NODE.extract_goal, NODE.show_goal)
     .addConditionalEdges(
@@ -91,10 +141,11 @@ function createGraphBuilder() {
     .addConditionalEdges(
       NODE.show_results,
       routeAfterShowResults,
-      buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.cancel]),
+      buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.apply_filters, NODE.cancel]),
     )
     .addEdge(NODE.load_existing_goal, NODE.show_goal)
     .addEdge(NODE.delete_goal, NODE.explore)
+    .addConditionalEdges(NODE.apply_filters, routeAfterApplyFilters, buildRouteMap([NODE.explore, NODE.search]))
     .addEdge(NODE.cancel, END);
 }
 /* eslint-enable @typescript-eslint/explicit-function-return-type */
@@ -165,10 +216,10 @@ export class SearchGraph {
 
     if (interruptPhase) {
       const values = toSearchState(finalSnapshot.values);
-      return stateToResponse({ ...values, phase: interruptPhase });
+      return enrichResponse({ ...values, phase: interruptPhase }, this.deps.cache);
     }
 
-    return stateToResponse(result);
+    return enrichResponse(result, this.deps.cache);
   }
 }
 

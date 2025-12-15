@@ -7,7 +7,7 @@ import { cleanupUserGoal, runSearchGraph, setupUserWithGoal } from "../helpers/s
 import type { UserId } from "../../../../../src/shared/schemas.js";
 
 describe("SearchGraph Flow Integration (TC-SG)", () => {
-  const testUserId: UserId = "usr_01933ec5-0006-0000-0000-000000000006";
+  const testUserId: UserId = "usr_019a6ea7-18c0-743c-ade8-9ec8ca0ce3be";
   const threadId = `search_graph_${testUserId}`;
 
   beforeEach(async () => {
@@ -90,7 +90,7 @@ describe("SearchGraph Flow Integration (TC-SG)", () => {
   /**
    * TC-SG2: Existing user with goal → search directly
    *
-   * На вход: пользователь U6 с готовой целью "Backend Developer" в Neo4j.
+   * На вход: пользователь U6 с готовой целью position="senior" в Neo4j.
    * Проверяем: граф пропускает explore и загружает существующую цель.
    * Ожидаем: переход load_existing_goal → validate → search → showing_results.
    *
@@ -98,7 +98,7 @@ describe("SearchGraph Flow Integration (TC-SG)", () => {
    *
    * Given:
    * - User: testUserId (U6)
-   * - Goal: созданная через helper с targetContext.position = "Backend Developer"
+   * - Goal: созданная через helper с targetContext.position = ["senior"]
    *
    * Then:
    * - Phase: showing_results (NO exploring phase)
@@ -114,13 +114,38 @@ describe("SearchGraph Flow Integration (TC-SG)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Backend Developer"],
+          values: ["senior"],
         },
       },
     });
 
+    const savedGoal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
+    console.log("DEBUG TC-SG2: Goal saved?", savedGoal);
+
+    const userStory = await ctx.coreClient.client.story.getStory.query({ userId: testUserId });
+    console.log("DEBUG TC-SG2: User story loaded?", {
+      contextsCount: userStory.contexts.length,
+      positions: userStory.contexts.map((c) => c.position),
+      currentPosition: userStory.contexts.find((c) => c.nextContextId === null)?.position,
+    });
+
+    const directSearchResults = await ctx.coreClient.client.search.byUser.query({
+      userId: testUserId,
+      excludedContextFields: ["domains"],
+    });
+    console.log("DEBUG TC-SG2: Direct search.byUser results:", directSearchResults.length);
+    if (directSearchResults.length > 0) {
+      console.log("DEBUG TC-SG2: First result:", directSearchResults[0]);
+    }
+
     try {
       const response = await runSearchGraph("покажи результаты", threadId, testUserId);
+
+      console.log("DEBUG TC-SG2: Response phase:", response.phase);
+      console.log(
+        "DEBUG TC-SG2: Results count:",
+        response.phase === "showing_results" ? response.results.length : "N/A",
+      );
 
       expect(
         response.phase,
@@ -187,14 +212,14 @@ describe("SearchGraph Flow Integration (TC-SG)", () => {
   /**
    * TC-SG5: Delete goal → explore
    *
-   * На вход: пользователь с существующей целью, search results → delete.
+   * На вход: пользователь с существующей целью position="middle", search results → delete.
    * Проверяем: удаление цели возвращает пользователя к изучению.
    * Ожидаем: goal удалена из Neo4j, phase = showing_exploration.
    *
    * Инварианты: I4
    *
    * Given:
-   * - User: testUserId with existing goal "Data Scientist"
+   * - User: testUserId with existing goal position = ["middle"]
    * - Flow: showing_results → "delete"
    *
    * Then:
@@ -211,7 +236,7 @@ describe("SearchGraph Flow Integration (TC-SG)", () => {
       targetContext: {
         position: {
           mode: "desired",
-          values: ["Data Scientist"],
+          values: ["middle"],
         },
       },
     });

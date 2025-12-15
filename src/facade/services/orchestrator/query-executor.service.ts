@@ -45,7 +45,7 @@ export class QueryExecutor {
     if (!goal) {
       return createResponse("You don't have a goal set. Would you like to set one?");
     }
-    return createResponse("Your goal is set.", { phase: "goal_exists" });
+    return createResponse("Your goal is set.");
   }
 
   private async deleteGoal(userId: UserId): Promise<ConverseResponse> {

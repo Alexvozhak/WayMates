@@ -6,14 +6,14 @@ import type { Driver } from "neo4j-driver";
 
 const IMPORT_REASONS_QUERY = `
   UNWIND $reasons AS reason
-  MERGE (r:Reason {reasonId: reason.reasonId})
+  MERGE (r:Reason {canonicalName: reason.canonicalName})
   SET r.description = reason.description,
       r.createdAt = timestamp()
 `;
 
 async function importReasons(driver: Driver): Promise<void> {
-  const reasons = Object.entries(reasonsData).map(([reasonId, description]) => ({
-    reasonId,
+  const reasons = Object.entries(reasonsData).map(([canonicalName, description]) => ({
+    canonicalName,
     description,
   }));
 

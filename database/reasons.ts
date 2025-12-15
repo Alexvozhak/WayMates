@@ -6,8 +6,8 @@ function assertNonEmptyArray<T>(arr: T[], message: string): asserts arr is [T, .
   }
 }
 
-const reasonIds = Object.keys(reasonsData);
-assertNonEmptyArray(reasonIds, "reasons.json must have at least one reason");
+const reasonCanonicalNames = Object.keys(reasonsData);
+assertNonEmptyArray(reasonCanonicalNames, "reasons.json must have at least one reason");
 
-export const REASON_IDS = reasonIds;
-export type ReasonId = keyof typeof reasonsData;
+export const REASON_CANONICAL_NAMES = reasonCanonicalNames;
+export type ReasonCanonicalName = keyof typeof reasonsData;

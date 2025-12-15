@@ -9,27 +9,13 @@ import { createGraphResponse } from "./converse-response.js";
 import { type GraphIntent, type UserIntent, graphIntentSchema } from "./intent-classifier.js";
 
 import type { ConverseResponse } from "./converse-response.js";
-import type {
-  ColdStartResponse,
-  SearchGraphResponse,
-  UpdateContextResponse,
-  UpsertContextResponse,
-  UpsertTrailResponse,
-  UserId,
-} from "../../../shared/schemas.js";
+import type { AnyGraphResponse, UserId } from "../../../shared/schemas.js";
 import type { GraphDeps } from "../../langGraph/shared/types.js";
 
 const GRAPH_TYPES = ["cold_start", "upsert_context", "upsert_trail", "update_context", "search"] as const;
 type GraphType = (typeof GRAPH_TYPES)[number];
 
 type GraphInput = { type: GraphType; message: string; userId: UserId; intent: GraphIntent | null };
-
-type AnyGraphResponse =
-  | ColdStartResponse
-  | UpsertContextResponse
-  | UpdateContextResponse
-  | UpsertTrailResponse
-  | SearchGraphResponse;
 
 const INTENT_TO_GRAPH: Record<GraphIntent, GraphType> = {
   startStory: "cold_start",
@@ -67,7 +53,7 @@ export class GraphManager {
   private async cancel(graphType: GraphType, userId: UserId): Promise<ConverseResponse> {
     const threadId = `${graphType}_${userId}`;
     await this.deps.checkpointService.delete(threadId);
-    return createGraphResponse("Operation cancelled.", graphType, "cancelled");
+    return createGraphResponse({ phase: "cancelled" }, graphType);
   }
 
   private async run(input: GraphInput): Promise<ConverseResponse> {
@@ -78,7 +64,7 @@ export class GraphManager {
       await this.deps.checkpointService.delete(threadId);
     }
 
-    return createGraphResponse(result.message, input.type, result.phase);
+    return createGraphResponse(result, input.type);
   }
 
   private async findActiveGraph(userId: UserId): Promise<GraphType | null> {

@@ -189,12 +189,12 @@ describe("Dictionaries Integration", () => {
     // Business Rule: reasons.json contains 15 predefined reasons
     expect(dictionaries.reasons.length).toBe(15);
 
-    // Business Rule: Reasons are returned as reasonId strings
+    // Business Rule: Reasons are returned as canonicalName strings
     const sampleReason = dictionaries.reasons[0];
     expect(sampleReason).toBeDefined();
     expect(typeof sampleReason).toBe("string");
 
-    // Business Rule: Specific reason IDs from reasons.json must exist
+    // Business Rule: Specific reason canonical names from reasons.json must exist
     expect(dictionaries.reasons).toContain("position_changed");
     expect(dictionaries.reasons).toContain("started_working");
     expect(dictionaries.reasons).toContain("skill_learning");
@@ -206,7 +206,7 @@ describe("Dictionaries Integration", () => {
   it("D8: reasons contain all expected transition types for search filtering", async () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    const reasonIds = dictionaries.reasons;
+    const reasonCanonicalNames = dictionaries.reasons;
 
     // Business Rule: All critical transition types must exist for search filtering
     const criticalReasons = [
@@ -227,8 +227,8 @@ describe("Dictionaries Integration", () => {
       "other",
     ];
 
-    criticalReasons.forEach((reasonId) => {
-      expect(reasonIds).toContain(reasonId);
+    criticalReasons.forEach((canonicalName) => {
+      expect(reasonCanonicalNames).toContain(canonicalName);
     });
   });
 

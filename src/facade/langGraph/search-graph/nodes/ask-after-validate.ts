@@ -18,11 +18,11 @@ export async function askAfterValidateNode(state: SearchStateType): Promise<Part
   });
 
   const response = String(userResponse);
-  const intent = await parseUserIntent(response);
+  const parsed = await parseUserIntent(response);
 
   return {
     userResponse: response,
-    searchUserIntent: intent,
-    newPositionRound: intent === "change" ? newPositionRound + 1 : newPositionRound,
+    searchUserIntent: parsed.intent,
+    newPositionRound: parsed.intent === "change" ? newPositionRound + 1 : newPositionRound,
   };
 }

@@ -17,22 +17,18 @@ export class DictionariesCache {
   }
 
   async getSimple(type: SimpleDictionaryType): Promise<Map<string, string>> {
-    const key = `waymates:dict:${type}`;
-    const cached = await this.redis.get(key);
+    return this.getCached(`waymates:dict:${type}`, async () => {
+      const coreData = await this.coreClient.client.dictionaries.getVerified.query();
+      const items = coreData[type];
+      return new Map(items.map((name) => [name.toLowerCase(), name]));
+    });
+  }
 
-    if (cached) {
-      const cachedEntriesSchema = z.array(z.tuple([z.string(), z.string()]));
-      const entries = cachedEntriesSchema.parse(JSON.parse(cached));
-      return new Map(entries);
-    }
-
-    const coreData = await this.coreClient.client.dictionaries.getVerified.query();
-    const items = coreData[type];
-    const dict = new Map(items.map((name) => [name.toLowerCase(), name]));
-
-    await this.redis.setex(key, this.ttl, JSON.stringify([...dict.entries()]));
-
-    return dict;
+  async getReasons(): Promise<Map<string, string>> {
+    return this.getCached("waymates:dict:reasons", async () => {
+      const coreData = await this.coreClient.client.dictionaries.getVerified.query();
+      return new Map(coreData.reasons.map((canonicalName) => [canonicalName, canonicalName]));
+    });
   }
 
   async invalidate(type?: SimpleDictionaryType): Promise<void> {
@@ -45,5 +41,20 @@ export class DictionariesCache {
     if (keys.length > 0) {
       await this.redis.del(keys);
     }
+  }
+
+  private async getCached(key: string, fetcher: () => Promise<Map<string, string>>): Promise<Map<string, string>> {
+    const cached = await this.redis.get(key);
+
+    if (cached) {
+      const cachedEntriesSchema = z.array(z.tuple([z.string(), z.string()]));
+      const entries = cachedEntriesSchema.parse(JSON.parse(cached));
+      return new Map(entries);
+    }
+
+    const dict = await fetcher();
+    await this.redis.setex(key, this.ttl, JSON.stringify([...dict.entries()]));
+
+    return dict;
   }
 }

@@ -179,7 +179,6 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
        THEN 'waymate'
        ELSE null
      END AS candidateType
-WHERE candidateType IS NOT NULL
     `
     : `
 WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,

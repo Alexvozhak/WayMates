@@ -44,6 +44,7 @@ async function main(): Promise<void> {
     sessionMiddleware,
     normalizer,
     coreClient,
+    cache,
     checkpointService,
     userService,
     authService,
