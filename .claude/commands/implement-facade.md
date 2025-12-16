@@ -161,7 +161,7 @@ Read .claude/context/project.md
 4. **Type schema** → Zod → infer
 5. **Implement** → BaseTool pattern, DI
 6. **Tests** → **integration first**, unit если нужны моки
-7. **Quality gates** → `npm run lint && npx tsc --noEmit && npm test`
+7. **Quality gates** → `npm run lint:fix && npx tsc --noEmit && npm test`
 8. **Roadmap** → добавь решение
 
 **КРИТИЧНО**: Архитектура УЖЕ проработана. DON'T redesign, DO implement по диаграммам.
@@ -276,7 +276,7 @@ Fixtures - JSON в `data/trails/users/`, НЕ inline.
 
 **Перед commit**:
 ```bash
-npm run lint && npx tsc --noEmit && npm run test:unit
+npm run lint:fix && npx tsc --noEmit && npm run test:unit
 ```
 
 **После schema changes**:
@@ -289,7 +289,7 @@ npm run test:integration  # ОБЯЗАТЕЛЬНО
 ## 🆘 Если застрял
 
 **Проверь по порядку**:
-1. `npm run lint && npx tsc --noEmit` - чистые ли ошибки?
+1. `npm run lint:fix && npx tsc --noEmit` - чистые ли ошибки?
 2. Roadmap "Принятые решения" - решали ли это раньше?
 3. `grep` по `docs/architecture/facade/` - есть ли ответ?
 4. При конфликте docs → приоритет: roadmap > diagram > ADR > scenarios

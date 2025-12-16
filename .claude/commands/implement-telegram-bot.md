@@ -96,7 +96,7 @@ Read src/facade/mcp-server/schemas.ts
 - **CHECKPOINT** → показать файл → ждать ✅
 
 ### Phase 8: Quality Gates
-- `npm run lint` — без ошибок
+- `npm run lint:fix` — без ошибок
 - `npx tsc --noEmit` — без ошибок
 - **ФИНАЛЬНЫЙ CHECKPOINT** → ждать ✅
 
@@ -176,7 +176,7 @@ Read src/facade/mcp-server/schemas.ts
 
 **После КАЖДОЙ фазы:**
 ```bash
-npm run lint
+npm run lint:fix
 npx tsc --noEmit
 ```
 

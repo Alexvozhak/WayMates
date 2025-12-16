@@ -149,7 +149,7 @@ mcp__memory__create_relations({
 
 **linting.md** - ТОЛЬКО если results изменились:
 ```bash
-npm run lint
+npm run lint:fix
 npx tsc --noEmit
 # Сравнить с Current State в linting.md
 # Если изменения → обновить Current State + Historical Trends

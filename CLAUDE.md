@@ -314,7 +314,7 @@ await mcp__filesystem__directory_tree({
 
 ```bash
 # 1. Linter (MANDATORY - use project script, NOT npx eslint directly)
-npm run lint
+npm run lint:fix
 
 # 2. TypeScript compilation check (MANDATORY)
 npx tsc --noEmit
@@ -325,7 +325,7 @@ npm run test:integration             # After Cypher/schema changes
 ```
 
 **Important workflow rules:**
-- **Always use `npm run lint`** - project has custom ESLint config
+- **Always use `npm run lint:fix`** - project has custom ESLint config with auto-fix
 - **Fix ALL errors before proceeding** - warnings acceptable in skipped tests
 - **Run integration tests after schema/Cypher changes** - unit test mocks won't catch breaking changes
 
@@ -381,7 +381,7 @@ Before completing any feature:
 1. ✅ **Type schema designed** (via `/mvp-design` or `EnterPlanMode`)
 2. ✅ **Implementation complete** (following type schema strictly)
 3. ✅ **Code quality checked** (complexity, DRY, edge cases)
-4. ✅ **Lint passed** (`npm run lint`)
+4. ✅ **Lint passed** (`npm run lint:fix`)
 5. ✅ **TypeScript compiled** (`npx tsc --noEmit`)
 6. ✅ **Tests passed** (unit + integration if applicable)
 7. ✅ **Test coverage verified** (business scenarios, not coverage theater)

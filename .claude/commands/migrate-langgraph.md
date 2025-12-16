@@ -67,7 +67,7 @@ src/facade/langchain/shared/
 
 ```bash
 npx tsc --noEmit
-npm run lint
+npm run lint:fix
 ```
 
 ---
@@ -125,7 +125,7 @@ START → extract_trail → validate_trail → show_trail → parse_decision →
 
 ```bash
 npx tsc --noEmit
-npm run lint
+npm run lint:fix
 # Создать и запустить integration тест
 ```
 
@@ -168,7 +168,7 @@ src/facade/langchain/upsert-context-v2/
 
 ```bash
 npx tsc --noEmit
-npm run lint
+npm run lint:fix
 # Адаптировать и запустить tests/facade/agents/upsert-context/integration/
 ```
 
@@ -199,7 +199,7 @@ mergedContext: Annotation<UserContext | null>({ reducer: lastValue, default: () 
 
 ```bash
 npx tsc --noEmit
-npm run lint
+npm run lint:fix
 # Адаптировать и запустить tests/facade/agents/update-context/integration/
 ```
 
@@ -230,7 +230,7 @@ update-context-v2 → update-context
 
 ```bash
 npx tsc --noEmit
-npm run lint
+npm run lint:fix
 npm run test:integration
 ```
 
@@ -327,7 +327,7 @@ function createGraphBuilder() {
 npx tsc --noEmit
 
 # Lint
-npm run lint
+npm run lint:fix
 ```
 
 ---

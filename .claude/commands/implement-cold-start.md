@@ -140,7 +140,7 @@ export const collectorAgent = createAgent({
 export async function collectContexts(...) {...}
 ```
 
-**После каждого файла**: `npm run lint && npx tsc --noEmit`
+**После каждого файла**: `npm run lint:fix && npx tsc --noEmit`
 
 ## 📋 Сессия 2: ColdStartTool
 
@@ -221,7 +221,7 @@ export type ColdStartParams = z.infer<typeof coldStartParamsSchema>;
 **После КАЖДОГО изменения**:
 
 ```bash
-npm run lint         # 0 errors обязательно
+npm run lint:fix         # 0 errors обязательно
 npx tsc --noEmit    # 0 errors обязательно
 ```
 
@@ -266,7 +266,7 @@ npx tsc --noEmit    # 0 errors обязательно
 
 ```bash
 # Quality gates
-npm run lint && npx tsc --noEmit && npm run test:integration
+npm run lint:fix && npx tsc --noEmit && npm run test:integration
 
 # Commit
 git add -A

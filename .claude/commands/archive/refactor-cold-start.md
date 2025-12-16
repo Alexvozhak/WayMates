@@ -171,7 +171,7 @@
 - **CHECKPOINT** → подтвердить удаление → ждать ✅
 
 ### Phase 7: Quality Gates
-- `npm run lint` - без ошибок
+- `npm run lint:fix` - без ошибок
 - `npx tsc --noEmit` - без ошибок
 - Ревью агентом reviewer
 - QA агентом qa

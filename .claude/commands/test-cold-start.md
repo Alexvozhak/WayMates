@@ -214,7 +214,7 @@ import { something } from "./module"; // без .js
 **После КАЖДОЙ задачи:**
 
 ```bash
-npm run lint
+npm run lint:fix
 npx tsc --noEmit
 ```
 

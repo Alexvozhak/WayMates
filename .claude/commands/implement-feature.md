@@ -162,7 +162,7 @@ Task({ subagent_type: "qa", prompt: "Check overall test coverage" })
 
 **Always run** (unless user chose skip):
 ```bash
-npm run lint
+npm run lint:fix
 npx tsc --noEmit
 ```
 
@@ -208,7 +208,7 @@ if (taskFile.includes("Cypher") || taskFile.includes("query")) {
 
 1. **Run final quality checks**:
    ```bash
-   npm run lint
+   npm run lint:fix
    npx tsc --noEmit
    npm run test:integration  # if not skipped
    ```
@@ -360,7 +360,7 @@ Phase 4: Implementation
 Phase 5: Quality Gates (Final review mode)
 → Task(reviewer) → 2 issues found → fixed
 → Task(qa) → coverage adequate
-→ npm run lint → passed
+→ npm run lint:fix → passed
 → npx tsc --noEmit → passed
 
 Phase 6: Cypher (detected)

@@ -199,7 +199,7 @@ const graph = new StateGraph(ColdStartState)
 npx tsc --noEmit
 
 # Lint
-npm run lint
+npm run lint:fix
 ```
 
 ## Финальная проверка (5 прогонов)

@@ -146,7 +146,7 @@ WayMates — multi-service архитектура:
 
 ### Этап 6: Валидация
 
-- [ ] `npm run lint` — без ошибок
+- [ ] `npm run lint:fix` — без ошибок
 - [ ] `npx tsc --noEmit` — без ошибок
 - [ ] Запустить bot локально с `LOG_LEVEL=debug`
 - [ ] Проверить что логи выводятся в pino-pretty формате

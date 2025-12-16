@@ -306,7 +306,7 @@ LANGCHAIN_MAX_CLARIFICATION_ROUNDS=3
 7. ⏳ Обновить stateSchema (add clarificationRound, failed status)
 8. ⏳ Проверить shared-tools (no goto)
 9. ⏳ Добавить ENV config
-10. ⏳ Запустить `npm run lint` + `npx tsc --noEmit`
+10. ⏳ Запустить `npm run lint:fix` + `npx tsc --noEmit`
 11. ⏳ Запустить тесты
 
 ---

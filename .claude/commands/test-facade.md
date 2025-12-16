@@ -312,7 +312,7 @@ grep -r "export type YourType" src/
 **3. Проверь ESLint:**
 
 ```bash
-npm run lint -- tests/facade/integration/your-file.ts
+npm run lint:fix -- tests/facade/integration/your-file.ts
 ```
 
 **4. Проверь TypeScript:**
@@ -395,7 +395,7 @@ grep "import.*Redis" src/facade/index.ts            # Correct imports
 
 ```bash
 # 1. Lint без ошибок (ОБЯЗАТЕЛЬНО)
-npm run lint -- tests/facade/
+npm run lint:fix -- tests/facade/
 
 # 2. TypeScript компилируется (ОБЯЗАТЕЛЬНО)
 npx tsc --noEmit

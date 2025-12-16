@@ -163,7 +163,7 @@ const any: any = {}; // any тип
 **После каждого логического блока:**
 
 ```bash
-npm run lint
+npm run lint:fix
 npx tsc --noEmit
 ```
 

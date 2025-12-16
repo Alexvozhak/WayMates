@@ -11,7 +11,7 @@ allowed-tools: ["Read", "Edit", "Write", "Bash", "TodoWrite", "Glob", "Grep"]
 
 **Согласованный план**: `/home/alex/.claude/plans/compiled-crafting-lighthouse.md`
 
-**Критерий успеха**: `npm run lint` + `npx tsc --noEmit` + `npm run test:integration` проходят.
+**Критерий успеха**: `npm run lint:fix` + `npx tsc --noEmit` + `npm run test:integration` проходят.
 
 ---
 
@@ -144,7 +144,7 @@ export async function parseDecision<T extends ParseDecisionState>(
 5. **Фикс #6** — убрать fallback в show nodes
 6. **Проверки**:
    ```bash
-   npm run lint
+   npm run lint:fix
    npx tsc --noEmit
    npm run test:integration
    ```
@@ -208,7 +208,7 @@ export async function parseDecision<T extends ParseDecisionState>(
 npx tsc --noEmit
 
 # Lint
-npm run lint
+npm run lint:fix
 ```
 
 ## Финальная проверка

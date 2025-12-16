@@ -107,7 +107,7 @@ Read eslint.config.mjs
 npx tsc --noEmit
 
 # 2. Linter
-npm run lint
+npm run lint:fix
 ```
 
 **Если ошибки:**
@@ -266,7 +266,7 @@ const result = await ctx.services.mcpClient.callTool(
 
 ```bash
 npx tsc --noEmit
-npm run lint
+npm run lint:fix
 ```
 
 ### 2. Ручной Code Review (БЕЗ агентов)
@@ -313,7 +313,7 @@ npm run lint
 - [ ] Фаза 5 выполнена (error handling)
 - [ ] Фаза 6 выполнена (security)
 - [ ] `npx tsc --noEmit` проходит
-- [ ] `npm run lint` проходит
+- [ ] `npm run lint:fix` проходит
 - [ ] Self-review выполнен
 - [ ] Нет критических проблем
 

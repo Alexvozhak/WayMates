@@ -143,7 +143,7 @@ export function routeAfterValidation(state): string {
 7. `upsert-context-graph.ts` — добавить node и edges
 8. `response-builders.ts` — добавить builder
 
-**Проверка**: `npm run lint && npx tsc --noEmit`
+**Проверка**: `npm run lint:fix && npx tsc --noEmit`
 
 ### Phase 2: upsert-trail (12 файлов)
 
@@ -160,7 +160,7 @@ export function routeAfterValidation(state): string {
 11. `src/facade/mcp-server/schemas.ts` — params: `message` вместо `trail`
 12. `src/facade/mcp-server/tools/upsert-trail.tool.ts` — подключить graph
 
-**Проверка**: `npm run lint && npx tsc --noEmit`
+**Проверка**: `npm run lint:fix && npx tsc --noEmit`
 
 ---
 

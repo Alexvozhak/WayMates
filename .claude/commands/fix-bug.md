@@ -217,7 +217,7 @@ Automatically call qa agent:
 
 ```bash
 # MANDATORY - always run
-npm run lint
+npm run lint:fix
 npx tsc --noEmit
 
 # If logic changed
@@ -292,7 +292,7 @@ npm run test:integration
 ✅ **Quality checks**:
 - reviewer agent: PASSED ✓ ([N issues fixed])
 - qa agent: PASSED ✓
-- npm run lint: PASSED ✓
+- npm run lint:fix: PASSED ✓
 - npx tsc --noEmit: PASSED ✓
 - Integration tests: PASSED ✓ ([X/Y])
 
