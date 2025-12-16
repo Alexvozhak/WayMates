@@ -5,17 +5,15 @@ import type { UserIntent } from "./intent-classifier.js";
 import type { UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
-const ONBOARDING = `Let's start! Tell me about yourself:
-• Full career story — your complete trajectory
-• Quick search — find similar careers without saving profile`;
+/**
+ * System message codes for i18n translation in Telegram Bot.
+ * Facade returns codes, Telegram Bot translates via ctx.t(`guard-${code}`).
+ */
+type GuardMessageCode = "onboarding" | "help" | "cancel-no-active" | "goal-not-set" | "goal-not-set-delete";
 
-const HELP = `I can help you find your career path!
-
-• Tell me about yourself — I'll save your career story
-• Set a goal — Define where you want to go
-• Find similar — I'll show pathfinders who reached your goal
-
-Just write naturally and I'll understand what you need.`;
+function createGuardResponse(code: GuardMessageCode): ConverseResponse {
+  return createResponse(`guard-${code}`);
+}
 
 export class FlowGuardChecker {
   constructor(private readonly coreClient: CoreClient) {}
@@ -24,12 +22,12 @@ export class FlowGuardChecker {
   async check(intent: UserIntent, userId: UserId): Promise<ConverseResponse | null> {
     // Help
     if (intent === "help") {
-      return createResponse(HELP);
+      return createGuardResponse("help");
     }
 
     // Cancel without active graph (active graph handled in ConverseTool)
     if (intent === "cancel") {
-      return createResponse("No active operations to cancel.");
+      return createGuardResponse("cancel-no-active");
     }
 
     const state = await this.coreClient.client.user.getState.query({ userId });
@@ -38,17 +36,17 @@ export class FlowGuardChecker {
     if (!state.hasContext) {
       const isStart = intent === "startStory" || intent === "startAdhoc";
       if (!isStart) {
-        return createResponse(ONBOARDING);
+        return createGuardResponse("onboarding");
       }
       return null;
     }
 
     // Goal guards
     if (intent === "getGoal" && !state.hasGoal) {
-      return createResponse("You don't have a goal set yet.");
+      return createGuardResponse("goal-not-set");
     }
     if (intent === "deleteGoal" && !state.hasGoal) {
-      return createResponse("You don't have a goal to delete.");
+      return createGuardResponse("goal-not-set-delete");
     }
 
     return null;

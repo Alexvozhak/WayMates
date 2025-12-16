@@ -27,15 +27,14 @@ export async function formatResponse(
 ): Promise<string> {
   const { result, activeGraph } = converseResp;
 
-  // System messages (guards, queries, errors) — return as-is
+  // System messages (guards, queries, errors) — translate via LLM
   if (isSystemMessage(result)) {
-    return result.content;
+    return await services.systemMessagePresenter.format(result, languageCode);
   }
 
   // Graph responses — format via LLM
   switch (activeGraph) {
     case "search": {
-      // BasePresenter.format() accepts unknown, no cast needed
       return await services.searchGraphPresenter.format(result, languageCode);
     }
 
@@ -43,8 +42,8 @@ export async function formatResponse(
     case "upsert_context":
     case "update_context":
     case "upsert_trail": {
-      // LangGraphPresenter — universal for 4 graphs
-      return await services.langGraphPresenter.format(result, languageCode);
+      // CrudGraphPresenter — CRUD operations workflows
+      return await services.crudGraphPresenter.format(result, languageCode);
     }
 
     default: {

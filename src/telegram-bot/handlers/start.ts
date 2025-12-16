@@ -1,11 +1,9 @@
 import { PresenterError } from "../errors.js";
-import { logger } from "../logger.js";
 
 import type { BotContext } from "../types.js";
 
 export async function handleStart(ctx: BotContext): Promise<void> {
   try {
-    // TODO: Replace with user.getState check when implementing ADR-030
     const welcomeMsg = await ctx.services.welcomePresenter.format(
       {
         hasStory: false,
@@ -15,7 +13,7 @@ export async function handleStart(ctx: BotContext): Promise<void> {
     );
     await ctx.reply(welcomeMsg);
   } catch (error) {
-    logger.error({ err: error }, "Failed to generate welcome message");
+    ctx.services.logger.error({ err: error }, "Failed to generate welcome message");
     throw new PresenterError("Failed to generate welcome message", error instanceof Error ? error : undefined);
   }
 }

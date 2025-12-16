@@ -13,12 +13,13 @@ import { handleLink } from "./handlers/link.js";
 import { handleStart } from "./handlers/start.js";
 import { handleToken } from "./handlers/token.js";
 import { handleVoice } from "./handlers/voice.js";
-import { logger } from "./logger.js";
 import { createRateLimitMiddleware } from "./middleware/rate-limit.js";
 
 import type { BotEnv } from "./env.js";
 import type { BotContext, BotServices, MySessionData } from "./types.js";
+import type { BotError as GrammyBotError } from "grammy";
 import type { Redis } from "ioredis";
+import type { Logger } from "pino";
 
 async function sessionInitGuard(ctx: BotContext, next: () => Promise<void>): Promise<void> {
   if (ctx.session.status === "uninitialised") {
@@ -27,7 +28,13 @@ async function sessionInitGuard(ctx: BotContext, next: () => Promise<void>): Pro
   await next();
 }
 
-export function createBot(token: string, services: BotServices, redis: Redis, env: BotEnv): Bot<BotContext> {
+export function createBot(
+  token: string,
+  services: BotServices,
+  redis: Redis,
+  env: BotEnv,
+  logger: Logger,
+): Bot<BotContext> {
   const bot = new Bot<BotContext>(token);
 
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
@@ -72,22 +79,24 @@ export function createBot(token: string, services: BotServices, redis: Redis, en
   bot.on("message:text", handleConverse);
   bot.on("message:voice", handleVoice);
 
-  bot.catch(async (error) => {
-    const ctx = error.ctx;
-
-    if (error.error instanceof McpClientError && error.error.code) {
-      await ctx.reply(ctx.t(`error-${error.error.code}`));
-      return;
-    }
-
-    if (error.error instanceof BotError) {
-      await ctx.reply(`❌ ${error.error.message}`);
-      return;
-    }
-
-    logger.error({ err: error.error }, "Unhandled error");
-    await ctx.reply(ctx.t("error-generic"));
-  });
+  bot.catch((error) => handleGlobalError(error, logger));
 
   return bot;
+}
+
+async function handleGlobalError(error: GrammyBotError<BotContext>, logger: Logger): Promise<void> {
+  const ctx = error.ctx;
+
+  if (error.error instanceof McpClientError && error.error.code) {
+    await ctx.reply(ctx.t(`error-${error.error.code}`));
+    return;
+  }
+
+  if (error.error instanceof BotError) {
+    await ctx.reply(`❌ ${error.error.message}`);
+    return;
+  }
+
+  logger.error({ err: error.error }, "Unhandled error");
+  await ctx.reply(ctx.t("error-generic"));
 }

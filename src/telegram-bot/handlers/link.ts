@@ -1,3 +1,5 @@
+import { BotError } from "../errors.js";
+
 import type { BotContext } from "../types.js";
 
 export async function handleLink(ctx: BotContext): Promise<void> {
@@ -10,8 +12,7 @@ export async function handleLink(ctx: BotContext): Promise<void> {
 
   const telegramUserId = ctx.from?.id;
   if (!telegramUserId) {
-    await ctx.reply(ctx.t("link-no-telegram-id"));
-    return;
+    throw new BotError("Telegram user ID not found");
   }
 
   try {

@@ -5,6 +5,7 @@ export const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   FACADE_MCP_URL: z.string().url().default("http://localhost:3000/mcp"),
   FACADE_REQUEST_TIMEOUT_MS: z.coerce.number().min(1000).max(60_000).default(30_000),
+  REDIS_URL: z.string().url().default("redis://localhost:6379"),
   OPENAI_API_KEY: z.string().min(1),
   OPENAI_API_BASE: z.string().url().optional(),
   GROQ_API_KEY: z.string().min(1),

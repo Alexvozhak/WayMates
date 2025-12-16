@@ -1,17 +1,19 @@
 import pino from "pino";
 
-const isDevelopment = process.env.NODE_ENV === "development";
+export function createLogger(nodeEnv: string, logLevel?: string): pino.Logger {
+  const isDevelopment = nodeEnv === "development";
 
-const options: pino.LoggerOptions = {
-  level: process.env.LOG_LEVEL ?? "info",
-};
+  const options: pino.LoggerOptions = {
+    level: logLevel ?? "info",
+  };
 
-if (isDevelopment) {
-  options.transport = { target: "pino-pretty" };
+  if (isDevelopment) {
+    options.transport = { target: "pino-pretty" };
+  }
+
+  return pino(options);
 }
 
-export const logger = pino(options);
-
-export function createChildLogger(name: string): pino.Logger {
+export function createChildLogger(logger: pino.Logger, name: string): pino.Logger {
   return logger.child({ component: name });
 }

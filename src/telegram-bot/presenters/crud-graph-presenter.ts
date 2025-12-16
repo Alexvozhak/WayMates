@@ -1,10 +1,10 @@
 import { BasePresenter } from "./base-presenter.js";
 
 /**
- * Universal LLM-based formatter for ALL LangGraph workflows.
- * Handles both cold_start (multi-context) and standard LangGraph phases (update/upsert).
+ * LLM-based formatter for CRUD operation LangGraph workflows.
+ * Handles cold_start, upsert_context, update_context, upsert_trail.
  */
-export class LangGraphPresenter extends BasePresenter {
+export class CrudGraphPresenter extends BasePresenter {
   protected createPrompt(rawJson: string, language: string): string {
     return `You are a friendly career assistant in Telegram bot.
 

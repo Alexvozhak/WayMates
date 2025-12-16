@@ -2,6 +2,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import Bottleneck from "bottleneck";
 
 import type { LlmConfig } from "../types.js";
+import type { Logger } from "pino";
 
 /**
  * Base presenter with common LLM formatting logic.
@@ -11,13 +12,24 @@ import type { LlmConfig } from "../types.js";
 export abstract class BasePresenter {
   protected llm: ChatOpenAI;
   protected limiter: Bottleneck;
+  protected logger: Logger;
 
-  constructor(apiKey: string, llmConfig: LlmConfig, rpmLimit: number, maxConcurrent: number, baseUrl?: string) {
+  constructor(
+    apiKey: string,
+    llmConfig: LlmConfig,
+    rpmLimit: number,
+    maxConcurrent: number,
+    logger: Logger,
+    baseUrl?: string,
+  ) {
+    this.logger = logger;
+    const baseConfig = baseUrl ? { configuration: { baseURL: baseUrl } } : {};
+
     this.llm = new ChatOpenAI({
       modelName: llmConfig.model,
       temperature: llmConfig.temperature,
       openAIApiKey: apiKey,
-      ...(baseUrl && { configuration: { baseURL: baseUrl } }),
+      ...baseConfig,
     });
 
     /**
@@ -35,11 +47,11 @@ export abstract class BasePresenter {
     });
 
     this.limiter.on("failed", (error, jobInfo) => {
-      console.error("Presenter rate limit job failed:", error, jobInfo);
+      this.logger.error({ err: error, jobInfo }, "Presenter rate limit job failed");
     });
 
     this.limiter.on("retry", (message, jobInfo) => {
-      console.log("Presenter rate limit retry:", message, jobInfo);
+      this.logger.info({ message, jobInfo }, "Presenter rate limit retry");
     });
   }
 

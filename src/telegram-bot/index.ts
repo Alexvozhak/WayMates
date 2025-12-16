@@ -2,17 +2,19 @@ import { Redis } from "ioredis";
 
 import { createBot } from "./bot.js";
 import { validateEnv } from "./env.js";
-import { logger } from "./logger.js";
-import { LangGraphPresenter } from "./presenters/langgraph-presenter.js";
+import { createLogger } from "./logger.js";
+import { CrudGraphPresenter } from "./presenters/crud-graph-presenter.js";
 import { SearchGraphPresenter } from "./presenters/search-graph-presenter.js";
+import { SystemMessagePresenter } from "./presenters/system-message-presenter.js";
 import { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import { McpClient } from "./services/mcp-client.js";
 import { SessionService } from "./services/session-service.js";
 
 const env = validateEnv();
 
-const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
-const redis = new Redis(redisUrl);
+const logger = createLogger(env.NODE_ENV, process.env.LOG_LEVEL);
+
+const redis = new Redis(env.REDIS_URL);
 
 async function checkDependencies(): Promise<void> {
   try {
@@ -64,14 +66,25 @@ const searchGraphPresenter = new SearchGraphPresenter(
   llmConfig,
   env.TELEGRAM_PRESENTER_RPM_LIMIT,
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  logger,
   env.OPENAI_API_BASE,
 );
 
-const langGraphPresenter = new LangGraphPresenter(
+const crudGraphPresenter = new CrudGraphPresenter(
   env.OPENAI_API_KEY,
   llmConfig,
   env.TELEGRAM_PRESENTER_RPM_LIMIT,
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  logger,
+  env.OPENAI_API_BASE,
+);
+
+const systemMessagePresenter = new SystemMessagePresenter(
+  env.OPENAI_API_KEY,
+  llmConfig,
+  env.TELEGRAM_PRESENTER_RPM_LIMIT,
+  env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  logger,
   env.OPENAI_API_BASE,
 );
 
@@ -80,6 +93,7 @@ const welcomePresenter = new WelcomePresenter(
   llmConfig,
   env.TELEGRAM_PRESENTER_RPM_LIMIT,
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  logger,
   env.OPENAI_API_BASE,
 );
 
@@ -89,16 +103,19 @@ const bot = createBot(
     mcpClient,
     sessionService,
     searchGraphPresenter,
-    langGraphPresenter,
+    crudGraphPresenter,
+    systemMessagePresenter,
     welcomePresenter,
     openaiApiKey: env.OPENAI_API_KEY,
     openaiApiBase: env.OPENAI_API_BASE,
     groqApiKey: env.GROQ_API_KEY,
     botToken: env.TELEGRAM_BOT_TOKEN,
     feedbackChatId: env.FEEDBACK_CHAT_ID,
+    logger,
   },
   redis,
   env,
+  logger,
 );
 
 logger.info("Starting bot...");
