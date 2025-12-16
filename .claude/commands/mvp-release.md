@@ -2,31 +2,36 @@
 name: mvp-release
 description: Главная команда для работы над MVP релизом. Orchestrator для подкоманд research/design/implement/test. Гибридный режим — предлагает подкоманду, ждёт подтверждения.
 model: opus
-allowed-tools: [
-  "Read", "Grep", "Glob",
-  "TodoWrite",
-  "Task",
-  "SlashCommand",
-  "AskUserQuestion",
-  "WebSearch", "WebFetch",
-  "mcp__context7__resolve-library-id",
-  "mcp__context7__get-library-docs",
-  "mcp__memory__search_nodes",
-  "mcp__memory__read_graph",
-  "mcp__memory__create_entities",
-  "mcp__memory__add_observations",
-  "Bash(npm run:*)",
-  "Bash(npx tsc:*)",
-  "Bash(git status:*)",
-  "Bash(git log:*)",
-  "Bash(tail:*)",
-  "Bash(head:*)",
-  "Bash(cat:*)",
-  "Bash(ls:*)",
-  "Bash(find:*)",
-  "Bash(tree:*)",
-  "Bash(wc:*)"
-]
+allowed-tools:
+  [
+    "Read",
+    "Grep",
+    "Glob",
+    "TodoWrite",
+    "Task",
+    "SlashCommand",
+    "AskUserQuestion",
+    "WebSearch",
+    "WebFetch",
+    "mcp__context7__resolve-library-id",
+    "mcp__context7__get-library-docs",
+    "mcp__memory__search_nodes",
+    "mcp__memory__read_graph",
+    "mcp__memory__create_entities",
+    "mcp__memory__add_observations",
+    "Bash(npm run:*)",
+    "Bash(npx tsc:*)",
+    "Bash(git status:*)",
+    "Bash(git show:*)",
+    "Bash(git log:*)",
+    "Bash(tail:*)",
+    "Bash(head:*)",
+    "Bash(cat:*)",
+    "Bash(ls:*)",
+    "Bash(find:*)",
+    "Bash(tree:*)",
+    "Bash(wc:*)",
+  ]
 ---
 
 # MVP Release — Главная команда
@@ -65,6 +70,7 @@ Read .claude/routers/infrastructure/router.md
 ### 1. Определение текущего состояния
 
 После загрузки контекста:
+
 1. Проверь прогресс в MVP-RELEASE-PLAN.md (чеклисты)
 2. Определи текущую фазу и задачу
 3. **ОБЯЗАТЕЛЬНО** предложи пользователю через `AskUserQuestion`:
@@ -86,15 +92,16 @@ Read .claude/routers/infrastructure/router.md
 
 **Предлагай подкоманду, но жди подтверждения:**
 
-| Ситуация | Подкоманда | Триггер |
-|----------|------------|---------|
-| Новая технология, выбор библиотеки | `/mvp-research` | "Нужно выбрать...", "Как лучше..." |
-| Проектирование API, types, структуры | `/mvp-design` | "Спроектировать...", после research |
-| Написание кода по готовому дизайну | `/mvp-implement` | Дизайн согласован |
-| Написание/доработка тестов | `/mvp-test` | Фазы 1, 1.5, 2 |
-| ADR аудит, docs cleanup | Внутри mvp-release | Фаза 0 |
+| Ситуация                             | Подкоманда         | Триггер                             |
+| ------------------------------------ | ------------------ | ----------------------------------- |
+| Новая технология, выбор библиотеки   | `/mvp-research`    | "Нужно выбрать...", "Как лучше..."  |
+| Проектирование API, types, структуры | `/mvp-design`      | "Спроектировать...", после research |
+| Написание кода по готовому дизайну   | `/mvp-implement`   | Дизайн согласован                   |
+| Написание/доработка тестов           | `/mvp-test`        | Фазы 1, 1.5, 2                      |
+| ADR аудит, docs cleanup              | Внутри mvp-release | Фаза 0                              |
 
 **Формат предложения:**
+
 ```
 Для этой задачи рекомендую `/mvp-research`:
 - Причина: нужно сравнить Bottleneck vs p-limit
@@ -115,6 +122,7 @@ Read .claude/routers/infrastructure/router.md
 ```
 
 **Критерии перехода:**
+
 - research → design: Решение выбрано и согласовано
 - design → implement: Types/API утверждены пользователем
 - implement → test: Код написан, lint/tsc проходят
@@ -123,16 +131,16 @@ Read .claude/routers/infrastructure/router.md
 
 ## 📋 Фазы плана (краткий обзор)
 
-| Фаза | Scope | Подкоманды |
-|------|-------|------------|
-| 0 | Housekeeping (ADR, docs) | Внутри mvp-release |
-| 1 | Тесты Фасада | `/mvp-test` |
-| 1.5 | Тесты Core | `/mvp-test` |
-| 2 | Тесты Telegram | `/mvp-test` |
-| 3 | Repo Split | `/mvp-design` → `/mvp-implement` |
-| 4 | Production Readiness | `/mvp-research` → `/mvp-design` → `/mvp-implement` |
-| 5 | E2E Tests | `/mvp-research` → `/mvp-test` |
-| 6 | Deploy | `/mvp-research` → `/mvp-implement` |
+| Фаза | Scope                    | Подкоманды                                         |
+| ---- | ------------------------ | -------------------------------------------------- |
+| 0    | Housekeeping (ADR, docs) | Внутри mvp-release                                 |
+| 1    | Тесты Фасада             | `/mvp-test`                                        |
+| 1.5  | Тесты Core               | `/mvp-test`                                        |
+| 2    | Тесты Telegram           | `/mvp-test`                                        |
+| 3    | Repo Split               | `/mvp-design` → `/mvp-implement`                   |
+| 4    | Production Readiness     | `/mvp-research` → `/mvp-design` → `/mvp-implement` |
+| 5    | E2E Tests                | `/mvp-research` → `/mvp-test`                      |
+| 6    | Deploy                   | `/mvp-research` → `/mvp-implement`                 |
 
 ---
 
@@ -140,18 +148,18 @@ Read .claude/routers/infrastructure/router.md
 
 ### Категорически запрещено:
 
-| # | Запрет | Почему |
-|---|--------|--------|
-| 1 | Врать, додумывать | Неинформированные решения |
-| 2 | Стесняться признаваться в незнании | Лучше спросить/проверить |
-| 3 | Пытаться угодить | Честность важнее |
-| 4 | Раздувать проблему | MVP фокус |
-| 5 | Рефакторинг ради рефакторинга | Правило 4 вопросов |
-| 6 | Менять scope без спроса | Согласование обязательно |
-| 7 | Код без дизайна | Сначала согласовать API/types |
-| 8 | Удаление > 10 LOC без подтверждения | Риск потери кода |
-| 9 | Преждевременные решения без ресерча | Ошибочные выборы |
-| 10 | Оверинженеринг ("на будущее") | Пользователей ещё нет |
+| #   | Запрет                              | Почему                        |
+| --- | ----------------------------------- | ----------------------------- |
+| 1   | Врать, додумывать                   | Неинформированные решения     |
+| 2   | Стесняться признаваться в незнании  | Лучше спросить/проверить      |
+| 3   | Пытаться угодить                    | Честность важнее              |
+| 4   | Раздувать проблему                  | MVP фокус                     |
+| 5   | Рефакторинг ради рефакторинга       | Правило 4 вопросов            |
+| 6   | Менять scope без спроса             | Согласование обязательно      |
+| 7   | Код без дизайна                     | Сначала согласовать API/types |
+| 8   | Удаление > 10 LOC без подтверждения | Риск потери кода              |
+| 9   | Преждевременные решения без ресерча | Ошибочные выборы              |
+| 10  | Оверинженеринг ("на будущее")       | Пользователей ещё нет         |
 
 ### Правило 4 вопросов (перед предложением изменений):
 
@@ -183,12 +191,12 @@ Read .claude/routers/infrastructure/router.md
 
 ## 📝 Документация
 
-| Тип информации | Куда |
-|----------------|------|
-| Прогресс фаз | MVP-RELEASE-PLAN.md (чеклисты) |
+| Тип информации  | Куда                              |
+| --------------- | --------------------------------- |
+| Прогресс фаз    | MVP-RELEASE-PLAN.md (чеклисты)    |
 | Большое решение | ADR (с подтверждением готовности) |
-| Короткий Q&A | FAQ.md |
-| Итоги сессии | Memory MCP |
+| Короткий Q&A    | FAQ.md                            |
+| Итоги сессии    | Memory MCP                        |
 
 ---
 
@@ -196,18 +204,19 @@ Read .claude/routers/infrastructure/router.md
 
 При сравнении решений — **сортировка от лучшего к худшему**:
 
-```markdown
+````markdown
 ### Варианты (отсортированы по рекомендации)
 
-| # | Вариант | LOC | Ценность | Рациональность MVP | Best Practice |
-|---|---------|-----|----------|-------------------|---------------|
-| 1 | **Лучший** | ~15 | ✅ | ✅ | ✅ |
-| 2 | Средний | ~30 | ✅ | ⚠️ | ✅ |
-| 3 | Худший | ~60 | ⚠️ | ❌ | ❌ |
+| #   | Вариант    | LOC | Ценность | Рациональность MVP | Best Practice |
+| --- | ---------- | --- | -------- | ------------------ | ------------- |
+| 1   | **Лучший** | ~15 | ✅       | ✅                 | ✅            |
+| 2   | Средний    | ~30 | ✅       | ⚠️                 | ✅            |
+| 3   | Худший     | ~60 | ⚠️       | ❌                 | ❌            |
 
 **Рекомендация:** Вариант 1
 
 **Примеры кода (если нужно):**
+
 ```typescript
 // Вариант 1 (~15 LOC)
 const result = simple();
@@ -215,7 +224,9 @@ const result = simple();
 // Вариант 2 (~30 LOC)
 const result = medium({ config });
 ```
-```
+````
+
+````
 
 ---
 
@@ -239,7 +250,7 @@ mcp__memory__create_entities({
     ]
   }]
 })
-```
+````
 
 ---
 
@@ -249,7 +260,7 @@ mcp__memory__create_entities({
 2. **Принцип Парето** — 80% результата за 20% усилий
 3. **MVP фокус** — пользователей ещё нет, не оверинженерить
 4. **Полное погружение** — не приступать без понимания контекста
-5. **Sequential thinking** — для сложных решений использовать mcp__sequential-thinking
+5. **Sequential thinking** — для сложных решений использовать mcp\_\_sequential-thinking
 6. **Честность** — признавать незнание, не угадывать
 
 ---
@@ -268,12 +279,14 @@ mcp__memory__create_entities({
 ## ⚠️ Перед началом работы
 
 **Checklist:**
+
 - [ ] Загружен контекст (MVP-RELEASE-PLAN, FAQ, eslint, vitest)
 - [ ] Определена текущая фаза
 - [ ] Понятна задача сессии
 - [ ] Выбрана подкоманда (если нужно)
 
 **Если неуверен (<95%) — признайся и:**
+
 - Уточни у пользователя (бизнес-логика)
 - WebSearch/context7 (техническое)
 - Grep по проекту (существующий код)

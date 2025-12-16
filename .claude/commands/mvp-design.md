@@ -2,30 +2,34 @@
 name: mvp-design
 description: Проектирование для MVP — types, API, архитектура. Согласование перед реализацией. Не писать код без утверждённого дизайна.
 model: opus
-allowed-tools: [
-  "Read", "Grep", "Glob",
-  "Task",
-  "AskUserQuestion",
-  "mcp__memory__search_nodes",
-  "mcp__memory__read_graph",
-  "mcp__context7__resolve-library-id",
-  "mcp__context7__get-library-docs",
-  "mcp__filesystem__search_files",
-  "mcp__filesystem__read_multiple_files",
-  "mcp__filesystem__directory_tree",
-  "mcp__filesystem__list_directory",
-  "Bash(npm run:*)",
-  "Bash(npx tsc:*)",
-  "Bash(git log:*)",
-  "Bash(git status:*)",
-  "Bash(tail:*)",
-  "Bash(head:*)",
-  "Bash(cat:*)",
-  "Bash(ls:*)",
-  "Bash(find:*)",
-  "Bash(tree:*)",
-  "Bash(wc:*)"
-]
+allowed-tools:
+  [
+    "Read",
+    "Grep",
+    "Glob",
+    "Task",
+    "AskUserQuestion",
+    "mcp__memory__search_nodes",
+    "mcp__memory__read_graph",
+    "mcp__context7__resolve-library-id",
+    "mcp__context7__get-library-docs",
+    "mcp__filesystem__search_files",
+    "mcp__filesystem__read_multiple_files",
+    "mcp__filesystem__directory_tree",
+    "mcp__filesystem__list_directory",
+    "Bash(npm run:*)",
+    "Bash(npx tsc:*)",
+    "Bash(git log:*)",
+    "Bash(git status:*)",
+    "Bash(git show:*)",
+    "Bash(tail:*)",
+    "Bash(head:*)",
+    "Bash(cat:*)",
+    "Bash(ls:*)",
+    "Bash(find:*)",
+    "Bash(tree:*)",
+    "Bash(wc:*)",
+  ]
 ---
 
 # MVP Design — Подкоманда проектирования
@@ -63,6 +67,7 @@ Read .claude/routers/architecture/router.md
 ### 1. Понять требования
 
 **Входные данные (из research или от пользователя):**
+
 - Что именно проектируем?
 - Какие constraints (существующие types, patterns)?
 - Какой scope (один файл, модуль, cross-cutting)?
@@ -80,6 +85,7 @@ grep -r "export interface YourInterface" src/
 ```
 
 **Запрещено:**
+
 - ❌ Создавать типы без проверки существующих
 - ❌ Нарушать naming conventions проекта
 - ❌ Игнорировать eslint.config.mjs
@@ -88,10 +94,11 @@ grep -r "export interface YourInterface" src/
 
 **Обязательные элементы:**
 
-```markdown
+````markdown
 ## Design: [Название]
 
 ### Scope
+
 - Файл(ы): src/[path]/[name].ts
 - Exports: [список публичных exports]
 - Dependencies: [от чего зависит]
@@ -100,7 +107,7 @@ grep -r "export interface YourInterface" src/
 
 ```typescript
 // Переиспользуем существующие
-import type { UserId } from '../../shared/schemas.js';
+import type { UserId } from "../../shared/schemas.js";
 
 // Новые типы (если нужны)
 export type RateLimitConfig = {
@@ -114,6 +121,7 @@ export type UserLimiter = {
   limiter: Bottleneck;
 };
 ```
+````
 
 ### Public API
 
@@ -121,10 +129,7 @@ export type UserLimiter = {
 // Сигнатуры функций (без реализации)
 export function createGlobalLimiter(config: RateLimitConfig): Bottleneck;
 export function getUserLimiter(userId: UserId): Bottleneck;
-export async function rateLimitedCall<T>(
-  userId: UserId,
-  fn: () => Promise<T>
-): Promise<T>;
+export async function rateLimitedCall<T>(userId: UserId, fn: () => Promise<T>): Promise<T>;
 ```
 
 ### File Structure
@@ -139,9 +144,11 @@ src/shared/
 ```
 
 ### Integration Points
+
 - Где использовать: src/telegram-bot/services/nlp-parser.ts
 - Как подключать: `import { rateLimitedCall } from '../../shared/rate-limiter.js'`
-```
+
+````
 
 ### 4. Согласовать с пользователем
 
@@ -161,7 +168,7 @@ src/shared/
 3. Error handling: throw или return Result?
 
 Утверждаем дизайн?
-```
+````
 
 **Вопросы — через `AskUserQuestion`:**
 
@@ -196,7 +203,7 @@ src/shared/
 
 ## 📊 Формат дизайн-документа
 
-```markdown
+````markdown
 # Design: [Название модуля]
 
 ## 1. Scope
@@ -214,6 +221,7 @@ import type { UserId } from '...';
 // Новые
 export type NewType = { ... };
 ```
+````
 
 ## 3. Public API
 
@@ -241,6 +249,7 @@ src/module/
 ## 6. Integration
 
 **Где использовать:**
+
 - file1.ts: [как]
 - file2.ts: [как]
 
@@ -249,7 +258,8 @@ src/module/
 - [ ] Не более 60 LOC на функцию (eslint)
 - [ ] Глубина вложенности ≤ 2 (eslint)
 - [ ] Complexity ≤ 8 (eslint)
-```
+
+````
 
 ---
 
@@ -297,7 +307,7 @@ Scope для implement:
 1. Создать файл с types
 2. Реализовать functions по сигнатурам
 3. lint + tsc
-```
+````
 
 ---
 
@@ -305,10 +315,11 @@ Scope для implement:
 
 ### Пример 1: Rate Limiter
 
-```markdown
+````markdown
 # Design: Rate Limiter
 
 ## Scope
+
 - Файл: src/shared/rate-limiter.ts
 - LOC: ~40
 - Зависимости: bottleneck
@@ -316,8 +327,8 @@ Scope для implement:
 ## Types
 
 ```typescript
-import type { UserId } from './schemas.js';
-import Bottleneck from 'bottleneck';
+import type { UserId } from "./schemas.js";
+import Bottleneck from "bottleneck";
 
 export type RateLimitConfig = {
   maxConcurrent: number;
@@ -326,23 +337,22 @@ export type RateLimitConfig = {
   reservoirRefreshInterval?: number;
 };
 ```
+````
 
 ## Public API
 
 ```typescript
 export const globalLimiter: Bottleneck;
 export function getUserLimiter(userId: UserId): Bottleneck;
-export function rateLimitedCall<T>(
-  userId: UserId,
-  operation: string,
-  fn: () => Promise<T>
-): Promise<T>;
+export function rateLimitedCall<T>(userId: UserId, operation: string, fn: () => Promise<T>): Promise<T>;
 ```
 
 ## Integration
+
 - nlp-parser.ts: wrap LLM calls
 - llm-fuzzy-matcher.ts: wrap normalization
-```
+
+````
 
 ### Пример 2: Logger
 
@@ -364,7 +374,7 @@ export type LogContext = {
   userId?: string;
   operation?: string;
 };
-```
+````
 
 ## Public API
 
@@ -372,6 +382,7 @@ export type LogContext = {
 export const logger: Logger;
 export function createChildLogger(context: LogContext): Logger;
 ```
+
 ```
 
 ---
@@ -383,3 +394,4 @@ export function createChildLogger(context: LogContext): Logger;
 3. **LOC estimate** — для планирования
 4. **Eslint constraints** — учитывать при дизайне
 5. **Checkpoint обязателен** — пользователь должен утвердить
+```

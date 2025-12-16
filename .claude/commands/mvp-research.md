@@ -2,30 +2,35 @@
 name: mvp-research
 description: Ресерч для MVP — сравнение вариантов, выбор библиотек, best practices. Приходит с готовыми вариантами, не с голыми вопросами.
 model: opus
-allowed-tools: [
-  "Read", "Grep", "Glob",
-  "WebSearch", "WebFetch",
-  "Task",
-  "AskUserQuestion",
-  "mcp__context7__resolve-library-id",
-  "mcp__context7__get-library-docs",
-  "mcp__filesystem__search_files",
-  "mcp__filesystem__read_multiple_files",
-  "mcp__filesystem__directory_tree",
-  "mcp__filesystem__list_directory",
-  "Bash(npm run:*)",
-  "Bash(npm view:*)",
-  "Bash(npx tsc:*)",
-  "Bash(git log:*)",
-  "Bash(git status:*)",
-  "Bash(tail:*)",
-  "Bash(head:*)",
-  "Bash(cat:*)",
-  "Bash(ls:*)",
-  "Bash(find:*)",
-  "Bash(tree:*)",
-  "Bash(wc:*)"
-]
+allowed-tools:
+  [
+    "Read",
+    "Grep",
+    "Glob",
+    "WebSearch",
+    "WebFetch",
+    "Task",
+    "AskUserQuestion",
+    "mcp__context7__resolve-library-id",
+    "mcp__context7__get-library-docs",
+    "mcp__filesystem__search_files",
+    "mcp__filesystem__read_multiple_files",
+    "mcp__filesystem__directory_tree",
+    "mcp__filesystem__list_directory",
+    "Bash(npm run:*)",
+    "Bash(npm view:*)",
+    "Bash(npx tsc:*)",
+    "Bash(git log:*)",
+    "Bash(git status:*)",
+    "Bash(git show:*)",
+    "Bash(tail:*)",
+    "Bash(head:*)",
+    "Bash(cat:*)",
+    "Bash(ls:*)",
+    "Bash(find:*)",
+    "Bash(tree:*)",
+    "Bash(wc:*)",
+  ]
 ---
 
 # MVP Research — Подкоманда ресерча
@@ -63,11 +68,13 @@ Read docs/architecture/decisions/  # список ADRs
 ### 1. Понять задачу (НЕ ПРОПУСКАТЬ)
 
 **Перед началом ресерча:**
+
 - Что именно нужно решить?
 - Какие ограничения (бюджет, LOC, зависимости)?
 - Какие приоритеты сравнения?
 
 **Если неясно — спроси через AskUserQuestion:**
+
 ```
 Перед ресерчем уточню приоритеты:
 - Минимум LOC vs гибкость?
@@ -78,6 +85,7 @@ Read docs/architecture/decisions/  # список ADRs
 ### 2. Собрать контекст (ОБЯЗАТЕЛЬНО)
 
 **Checklist перед предложением:**
+
 - [ ] Проверил package.json (может уже есть?)
 - [ ] WebSearch по теме (текущие best practices 2024-2025)
 - [ ] context7 для документации библиотек
@@ -85,6 +93,7 @@ Read docs/architecture/decisions/  # список ADRs
 - [ ] Существующие ADR (есть ли похожие решения?)
 
 **Запрещено:**
+
 - ❌ Предлагать без проверки package.json
 - ❌ Выдумывать API без проверки docs
 - ❌ Советовать deprecated решения
@@ -113,6 +122,7 @@ Read docs/architecture/decisions/  # список ADRs
 ```
 
 **Правила:**
+
 - header: max 12 символов
 - options: 2-4 варианта
 - description: краткое обоснование
@@ -123,6 +133,7 @@ Read docs/architecture/decisions/  # список ADRs
 **Минимум 2, максимум 4 варианта.** Сортировка от лучшего к худшему.
 
 **Обязательные критерии:**
+
 - LOC (примерная оценка)
 - Ценность для пользователя
 - Рациональность для MVP
@@ -132,51 +143,59 @@ Read docs/architecture/decisions/  # список ADRs
 
 **Формат сравнения:**
 
-```markdown
+````markdown
 ## Ресерч: [Название задачи]
 
 ### Контекст
+
 - Задача: [что решаем]
 - Ограничения: [бюджет, зависимости]
 - Приоритеты: [что важнее]
 
 ### Проверка существующего
+
 - package.json: [есть/нет похожего]
 - Проект: [как делали раньше]
 - ADR: [связанные решения]
 
 ### Варианты (от лучшего к худшему)
 
-| # | Вариант | LOC | Ценность | MVP | Best Practice |
-|---|---------|-----|----------|-----|---------------|
-| 1 | **Рекомендую** | ~20 | ✅ | ✅ | ✅ npm 2M/week |
-| 2 | Альтернатива | ~35 | ✅ | ⚠️ | ✅ npm 500K/week |
-| 3 | Не рекомендую | ~80 | ⚠️ | ❌ | ❌ велосипед |
+| #   | Вариант        | LOC | Ценность | MVP | Best Practice    |
+| --- | -------------- | --- | -------- | --- | ---------------- |
+| 1   | **Рекомендую** | ~20 | ✅       | ✅  | ✅ npm 2M/week   |
+| 2   | Альтернатива   | ~35 | ✅       | ⚠️  | ✅ npm 500K/week |
+| 3   | Не рекомендую  | ~80 | ⚠️       | ❌  | ❌ велосипед     |
 
 ### Примеры кода
 
 ```typescript
 // Вариант 1: Рекомендуемый (~20 LOC)
-import { recommended } from 'lib';
+import { recommended } from "lib";
 const result = recommended({ simple: true });
 
 // Вариант 2: Альтернатива (~35 LOC)
-import { alternative } from 'other-lib';
-const config = { /* больше настроек */ };
+import { alternative } from "other-lib";
+const config = {
+  /* больше настроек */
+};
 const result = alternative(config);
 ```
+````
 
 ### Рекомендация
 
 **Вариант 1** потому что:
+
 1. Минимум LOC (20 vs 35 vs 80)
 2. Уже используется в проекте / популярен
 3. Покрывает 100% наших потребностей
 
 ### Риски и митигация
+
 - Риск: [если есть]
 - Митигация: [как решить]
-```
+
+````
 
 ---
 
@@ -207,20 +226,20 @@ const result = alternative(config);
     }
   ]
 }
-```
+````
 
 ---
 
 ## 🚫 ЗАПРЕТЫ
 
-| # | Запрет | Вместо этого |
-|---|--------|--------------|
-| 1 | Предлагать без проверки package.json | Сначала `grep "lib" package.json` |
-| 2 | Выдумывать API | context7 или WebFetch docs |
-| 3 | Рекомендовать deprecated | WebSearch "lib 2024 best practices" |
-| 4 | Голые вопросы | Прийти с вариантами |
-| 5 | Один вариант | Минимум 2 для сравнения |
-| 6 | Без LOC оценки | Всегда указывать ~LOC |
+| #   | Запрет                               | Вместо этого                        |
+| --- | ------------------------------------ | ----------------------------------- |
+| 1   | Предлагать без проверки package.json | Сначала `grep "lib" package.json`   |
+| 2   | Выдумывать API                       | context7 или WebFetch docs          |
+| 3   | Рекомендовать deprecated             | WebSearch "lib 2024 best practices" |
+| 4   | Голые вопросы                        | Прийти с вариантами                 |
+| 5   | Один вариант                         | Минимум 2 для сравнения             |
+| 6   | Без LOC оценки                       | Всегда указывать ~LOC               |
 
 ---
 
@@ -247,6 +266,7 @@ const result = alternative(config);
 Переходим к `/mvp-design`?
 
 Scope для design:
+
 - Файл: src/shared/[название].ts
 - Exports: [список функций]
 - Types: [какие типы нужны]
@@ -262,24 +282,27 @@ Scope для design:
 ## Ресерч: Rate Limiting для LLM calls
 
 ### Контекст
+
 - Задача: Ограничить LLM запросы (per-user + global)
 - Ограничения: минимум зависимостей, простой API
 - Приоритеты: надёжность > гибкость
 
 ### Проверка существующего
+
 - package.json: нет rate-limiting библиотек
 - Проект: LLM вызовы без ограничений
 - ADR: нет связанных
 
 ### Варианты
 
-| # | Вариант | LOC | Per-user | Global | npm/week |
-|---|---------|-----|----------|--------|----------|
-| 1 | **Bottleneck** | ~20 | ✅ | ✅ | 2M |
-| 2 | p-limit | ~15 | ❌ | ✅ | 50M |
-| 3 | Custom | ~60 | ✅ | ✅ | - |
+| #   | Вариант        | LOC | Per-user | Global | npm/week |
+| --- | -------------- | --- | -------- | ------ | -------- |
+| 1   | **Bottleneck** | ~20 | ✅       | ✅     | 2M       |
+| 2   | p-limit        | ~15 | ❌       | ✅     | 50M      |
+| 3   | Custom         | ~60 | ✅       | ✅     | -        |
 
 ### Рекомендация: Bottleneck
+
 - Per-user И global в одном пакете
 - Проверенное решение (2M downloads/week)
 - Простой API, хорошая документация
@@ -291,19 +314,21 @@ Scope для design:
 ## Ресерч: LLM Cost Tracking
 
 ### Контекст
+
 - Задача: Трекинг стоимости LLM вызовов
 - Ограничения: бюджет $0-40/месяц
 - Приоритеты: видимость costs > детальные traces
 
 ### Варианты
 
-| # | Вариант | Cost | Setup | Авто-трекинг |
-|---|---------|------|-------|--------------|
-| 1 | **LangSmith** | $39/мес | 2 env vars | ✅ |
-| 2 | PostgreSQL | $0 | ~100 LOC | ❌ ручной |
-| 3 | Grafana+OTel | $0 | ~200 LOC | ⚠️ частично |
+| #   | Вариант       | Cost    | Setup      | Авто-трекинг |
+| --- | ------------- | ------- | ---------- | ------------ |
+| 1   | **LangSmith** | $39/мес | 2 env vars | ✅           |
+| 2   | PostgreSQL    | $0      | ~100 LOC   | ❌ ручной    |
+| 3   | Grafana+OTel  | $0      | ~200 LOC   | ⚠️ частично  |
 
 ### Рекомендация: зависит от приоритета
+
 - Если важна скорость → LangSmith ($39)
 - Если важен бюджет → PostgreSQL (бесплатно, но 100 LOC)
 ```
