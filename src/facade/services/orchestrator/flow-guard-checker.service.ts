@@ -6,13 +6,21 @@ import type { UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
 /**
- * System message codes for i18n translation in Telegram Bot.
- * Facade returns codes, Telegram Bot translates via ctx.t(`guard-${code}`).
+ * Guard message hints for MCP clients.
+ * Facade returns informative hints (not full NLP), clients expand to natural language.
  */
-type GuardMessageCode = "onboarding" | "help" | "cancel-no-active" | "goal-not-set" | "goal-not-set-delete";
+const GUARD_MESSAGES = {
+  help: "Help: explain bot features - save career story, set goals, find similar professionals who reached your target",
+  onboarding: "Onboarding: offer two paths - full career story (complete trajectory) or quick search (no saving)",
+  cancelNoActive: "Info: no active operations to cancel",
+  goalNotSet: "Info: user has no career goal set yet",
+  goalNotSetDelete: "Error: cannot delete goal - user has no goal set",
+} as const;
+
+type GuardMessageCode = keyof typeof GUARD_MESSAGES;
 
 function createGuardResponse(code: GuardMessageCode): ConverseResponse {
-  return createResponse(`guard-${code}`);
+  return createResponse(GUARD_MESSAGES[code]);
 }
 
 export class FlowGuardChecker {
@@ -27,7 +35,7 @@ export class FlowGuardChecker {
 
     // Cancel without active graph (active graph handled in ConverseTool)
     if (intent === "cancel") {
-      return createGuardResponse("cancel-no-active");
+      return createGuardResponse("cancelNoActive");
     }
 
     const state = await this.coreClient.client.user.getState.query({ userId });
@@ -43,10 +51,10 @@ export class FlowGuardChecker {
 
     // Goal guards
     if (intent === "getGoal" && !state.hasGoal) {
-      return createGuardResponse("goal-not-set");
+      return createGuardResponse("goalNotSet");
     }
     if (intent === "deleteGoal" && !state.hasGoal) {
-      return createGuardResponse("goal-not-set-delete");
+      return createGuardResponse("goalNotSetDelete");
     }
 
     return null;

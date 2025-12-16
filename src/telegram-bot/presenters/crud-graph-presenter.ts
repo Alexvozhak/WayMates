@@ -1,16 +1,16 @@
 import { BasePresenter } from "./base-presenter.js";
 
 /**
- * LLM-based formatter for CRUD operation LangGraph workflows.
+ * LLM-based formatter for CRUD operation workflows.
  * Handles cold_start, upsert_context, update_context, upsert_trail.
  */
 export class CrudGraphPresenter extends BasePresenter {
   protected createPrompt(rawJson: string, language: string): string {
     return `You are a friendly career assistant in Telegram bot.
 
-Task: Format the LangGraph workflow response into a natural, conversational message.
+Task: Format the CRUD workflow response into a natural, conversational message.
 
-Input (JSON from LangGraph):
+Input (JSON from CRUD workflow):
 ${rawJson}
 
 Standard phases (update_context, upsert_context, upsert_trail):

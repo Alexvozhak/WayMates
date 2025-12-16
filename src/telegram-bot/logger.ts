@@ -13,7 +13,3 @@ export function createLogger(nodeEnv: string, logLevel?: string): pino.Logger {
 
   return pino(options);
 }
-
-export function createChildLogger(logger: pino.Logger, name: string): pino.Logger {
-  return logger.child({ component: name });
-}
