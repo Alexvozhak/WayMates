@@ -87,5 +87,8 @@ todo-dropbox
 # Structurizr cache/index
 docs/architecture/.structurizr/
 
+# Generated LangGraph visualizations
+docs/graphs/
+
 # Git worktrees
 tree/

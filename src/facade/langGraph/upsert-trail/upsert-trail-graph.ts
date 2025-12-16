@@ -40,7 +40,7 @@ function stateToResponse(state: UpsertTrailStateType): UpsertTrailResponse {
 }
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
-function createGraphBuilder() {
+export function createGraphBuilder() {
   return new StateGraph(upsertTrailStateAnnotation)
     .addNode(NODE.extract_trail, extractTrailNode)
     .addNode(NODE.validate_trail, validateTrailNode)

@@ -60,7 +60,7 @@ function stateToResponse(state: ColdStartStateType): ColdStartResponse {
 }
 
 /* eslint-disable max-lines-per-function, @typescript-eslint/explicit-function-return-type -- LangGraph builder requires fluent chaining */
-function createGraphBuilder() {
+export function createGraphBuilder() {
   return new StateGraph(coldStartStateAnnotation)
     .addNode(NODE.gather_story, gatherStoryNode)
     .addNode(NODE.parse_story_decision, parseStoryCompletionNode)
@@ -159,12 +159,7 @@ export class ColdStartGraph {
     this.compiledGraph = createGraphBuilder().compile({ checkpointer: deps.checkpointService.getCheckpointer() });
   }
 
-  async run(
-    message: string,
-    threadId: string,
-    userId: UserId,
-    cvText?: string,
-  ): Promise<ColdStartResponse> {
+  async run(message: string, threadId: string, userId: UserId, cvText?: string): Promise<ColdStartResponse> {
     /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
     const config = { configurable: { thread_id: threadId, ...this.deps } };
     /* eslint-enable @typescript-eslint/naming-convention */

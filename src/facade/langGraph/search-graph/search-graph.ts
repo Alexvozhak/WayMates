@@ -95,7 +95,7 @@ async function enrichResponse(state: SearchStateType, cache: DictionariesCache):
 /* eslint-enable complexity */
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
-function createGraphBuilder() {
+export function createGraphBuilder() {
   return new StateGraph(searchStateAnnotation)
     .addNode(NODE.load_context, loadContextNode)
     .addNode(NODE.check_goal, checkGoalNode)

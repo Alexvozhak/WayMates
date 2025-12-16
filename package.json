@@ -57,7 +57,8 @@
     "check": "npm run check:types && npm run check:lint && npm run check:tests",
     "check:types": "tsc --noEmit",
     "check:lint": "npm run lint -- --max-warnings 0",
-    "check:tests": "npm run test:integration"
+    "check:tests": "npm run test:integration",
+    "graph": "tsx scripts/visualize-graphs.ts"
   },
   "lint-staged": {
     "*.ts": [

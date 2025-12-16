@@ -40,7 +40,7 @@ function stateToResponse(state: UpsertContextStateType): UpsertContextResponse {
 }
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
-function createGraphBuilder() {
+export function createGraphBuilder() {
   return new StateGraph(upsertContextStateAnnotation)
     .addNode(NODE.extract_context, extractContextNode)
     .addNode(NODE.validate_context, validateContextNode)
