@@ -1,5 +1,6 @@
 import type { GoalPresenter } from "./presenters/goal-presenter.js";
 import type { LangGraphPresenter } from "./presenters/langgraph-presenter.js";
+import type { SearchGraphPresenter } from "./presenters/search-graph-presenter.js";
 import type { SearchPresenter } from "./presenters/search-presenter.js";
 import type { StoryPresenter } from "./presenters/story-presenter.js";
 import type { WelcomePresenter } from "./presenters/welcome-presenter.js";
@@ -17,16 +18,18 @@ export type LlmConfig = {
 export type BotServices = {
   mcpClient: McpClient;
   sessionService: SessionService;
-  searchPresenter: SearchPresenter;
+  searchGraphPresenter: SearchGraphPresenter;
   langGraphPresenter: LangGraphPresenter;
-  storyPresenter: StoryPresenter;
-  goalPresenter: GoalPresenter;
   welcomePresenter: WelcomePresenter;
   openaiApiKey: string;
   openaiApiBase: string | undefined;
   groqApiKey: string;
   botToken: string;
   feedbackChatId: string | undefined;
+  // DEPRECATED: Remove in Phase 4 after handlers migration
+  searchPresenter: SearchPresenter;
+  storyPresenter: StoryPresenter;
+  goalPresenter: GoalPresenter;
 };
 
 export type PendingAction =

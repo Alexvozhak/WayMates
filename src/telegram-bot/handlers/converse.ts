@@ -1,24 +1,30 @@
 import { formatResponse } from "../presenters/format-response.js";
-import { transcribeVoice } from "../services/whisper.js";
 
 import type { BotContext } from "../types.js";
 
 /**
- * Voice message handler.
- * Transcribes voice → calls converse → formats response.
+ * Unified handler for all user text messages.
+ * Replaces 14 command handlers + input-router.
+ *
+ * Flow:
+ * 1. Get sessionId from session
+ * 2. Call converse.tool with message
+ * 3. Format ConverseResponse via LLM
+ * 4. Reply to user
+ *
+ * Error handling: McpClientError is caught by global bot.catch()
  */
-export async function handleVoice(ctx: BotContext): Promise<void> {
-  const fileId = ctx.message?.voice?.file_id;
-  if (!fileId) {
+export async function handleConverse(ctx: BotContext): Promise<void> {
+  const message = ctx.message?.text;
+  if (!message) {
     return;
   }
 
-  const transcription = await transcribeVoice(ctx, fileId);
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
   const converseResp = await ctx.services.mcpClient.callTool("converse", {
     sessionId,
-    message: transcription,
+    message,
   });
 
   const formatted = await formatResponse(converseResp, ctx.from?.language_code ?? "en", ctx.services);

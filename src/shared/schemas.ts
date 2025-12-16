@@ -1202,6 +1202,17 @@ export const anyGraphResponseSchema = z.union([
 
 export type AnyGraphResponse = z.infer<typeof anyGraphResponseSchema>;
 
+/**
+ * Response from converse.tool MCP endpoint.
+ * Contains graph result + active graph name for routing.
+ */
+export const converseResponseSchema = z.object({
+  result: anyGraphResponseSchema,
+  activeGraph: z.string().optional(),
+});
+
+export type ConverseResponse = z.infer<typeof converseResponseSchema>;
+
 // ==========================================
 // === MCP PARAMS SCHEMAS ===
 // ==========================================

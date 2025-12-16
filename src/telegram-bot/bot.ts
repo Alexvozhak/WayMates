@@ -14,11 +14,11 @@ import { handleByTarget } from "./handlers/by-target.js";
 import { handleApproveCallback, handleCancelCallback, handleEditCallback } from "./handlers/callbacks.js";
 import { handleCancel } from "./handlers/cancel.js";
 import { handleContext } from "./handlers/context-router.js";
+import { handleConverse } from "./handlers/converse.js";
 import { handleFeedback } from "./handlers/feedback.js";
 import { handleGetStory } from "./handlers/get-story.js";
 import { handleGoal } from "./handlers/goal-router.js";
 import { handleHelp } from "./handlers/help.js";
-import { routeInput } from "./handlers/input-router.js";
 import {
   handleUpdateContextApprove,
   handleUpdateContextCancel,
@@ -162,11 +162,8 @@ export function createBot(token: string, services: BotServices, redis: Redis, en
   registerCommands(bot);
   registerCallbacks(bot);
 
-  bot.on("message:text", async (ctx) => {
-    const text = ctx.message?.text;
-    if (!text) return;
-    await routeInput(ctx, text);
-  });
+  // Unified text message handler — routes through converse.tool
+  bot.on("message:text", handleConverse);
   bot.on("message:voice", handleVoice);
 
   bot.catch(async (error) => {

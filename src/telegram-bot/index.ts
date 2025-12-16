@@ -5,6 +5,7 @@ import { validateEnv } from "./env.js";
 import { logger } from "./logger.js";
 import { GoalPresenter } from "./presenters/goal-presenter.js";
 import { LangGraphPresenter } from "./presenters/langgraph-presenter.js";
+import { SearchGraphPresenter } from "./presenters/search-graph-presenter.js";
 import { SearchPresenter } from "./presenters/search-presenter.js";
 import { StoryPresenter } from "./presenters/story-presenter.js";
 import { WelcomePresenter } from "./presenters/welcome-presenter.js";
@@ -66,6 +67,13 @@ const searchPresenter = new SearchPresenter(
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
   env.OPENAI_API_BASE,
 );
+const searchGraphPresenter = new SearchGraphPresenter(
+  env.OPENAI_API_KEY,
+  llmConfig,
+  env.TELEGRAM_PRESENTER_RPM_LIMIT,
+  env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
+  env.OPENAI_API_BASE,
+);
 const langGraphPresenter = new LangGraphPresenter(
   env.OPENAI_API_KEY,
   llmConfig,
@@ -100,16 +108,18 @@ const bot = createBot(
   {
     mcpClient,
     sessionService,
-    searchPresenter,
+    searchGraphPresenter,
     langGraphPresenter,
-    storyPresenter,
-    goalPresenter,
     welcomePresenter,
     openaiApiKey: env.OPENAI_API_KEY,
     openaiApiBase: env.OPENAI_API_BASE,
     groqApiKey: env.GROQ_API_KEY,
     botToken: env.TELEGRAM_BOT_TOKEN,
     feedbackChatId: env.FEEDBACK_CHAT_ID,
+    // DEPRECATED: Remove in Phase 4
+    searchPresenter,
+    storyPresenter,
+    goalPresenter,
   },
   redis,
   env,

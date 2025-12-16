@@ -1,21 +1,12 @@
-import { z } from "zod";
+export type { ConverseResponse } from "../../../shared/schemas.js";
+export { converseResponseSchema } from "../../../shared/schemas.js";
 
-import { anyGraphResponseSchema } from "../../../shared/schemas.js";
-
-export const converseResponseSchema = z.object({
-  result: anyGraphResponseSchema,
-  activeGraph: z.string().optional(),
-});
-
-export type ConverseResponse = z.infer<typeof converseResponseSchema>;
+import type { AnyGraphResponse, ConverseResponse } from "../../../shared/schemas.js";
 
 export function createResponse(content: string): ConverseResponse {
   return { result: { phase: "system_message", content } };
 }
 
-export function createGraphResponse(
-  result: z.infer<typeof anyGraphResponseSchema>,
-  activeGraph: string,
-): ConverseResponse {
+export function createGraphResponse(result: AnyGraphResponse, activeGraph: string): ConverseResponse {
   return { result, activeGraph };
 }

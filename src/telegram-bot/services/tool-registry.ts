@@ -2,12 +2,14 @@ import { z } from "zod";
 
 import {
   coldStartResponseSchema,
+  converseResponseSchema,
   deleteSuccessResponseSchema,
   getGoalResponseSchema,
   getStoryResponseSchema,
   matchedCandidateWithPathSchema,
   mcpAuthParamsSchema,
   mcpColdStartParamsSchema,
+  mcpConverseParamsSchema,
   mcpDeleteContextParamsSchema,
   mcpDeleteGoalParamsSchema,
   mcpDeleteTrailParamsSchema,
@@ -101,6 +103,10 @@ export const TOOL_REGISTRY = {
   link_telegram: {
     paramsSchema: mcpTelegramLinkParamsSchema,
     responseSchema: telegramLinkResponseSchema,
+  },
+  converse: {
+    paramsSchema: mcpConverseParamsSchema,
+    responseSchema: converseResponseSchema,
   },
 } as const;
 
