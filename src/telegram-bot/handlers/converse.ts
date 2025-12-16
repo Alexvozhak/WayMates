@@ -27,7 +27,7 @@ export async function handleConverse(ctx: BotContext): Promise<void> {
     message,
   });
 
-  const formatted = await formatResponse(converseResp, ctx.from?.language_code ?? "en", ctx.services);
+  const formatted = await formatResponse(converseResp, ctx.services, ctx.from?.language_code);
 
   await ctx.reply(formatted, { parse_mode: "Markdown" });
 }

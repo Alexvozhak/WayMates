@@ -54,11 +54,6 @@ export class SessionService {
     return result.sessionId;
   }
 
-  async clearSessionCache(userId: number): Promise<void> {
-    const cacheKey = `telegram:session:${userId}:sessionId`;
-    await this.redis.del(cacheKey);
-  }
-
   async saveSessionId(userId: number, sessionId: string): Promise<void> {
     const cacheKey = `telegram:session:${userId}:sessionId`;
     await this.redis.setex(cacheKey, 1800, sessionId);

@@ -14,7 +14,7 @@ function isSystemMessage(result: ConverseResponse["result"]): result is SystemMe
  * Dispatches to the correct presenter based on activeGraph.
  *
  * @param converseResp - Response from converse.tool
- * @param languageCode - User language code (ru/en)
+ * @param languageCode - User language code (ru/en), defaults to "en" in BasePresenter
  * @param services - Bot services (presenters)
  * @returns Formatted markdown text
  *
@@ -22,8 +22,8 @@ function isSystemMessage(result: ConverseResponse["result"]): result is SystemMe
  */
 export async function formatResponse(
   converseResp: ConverseResponse,
-  languageCode: string,
   services: BotServices,
+  languageCode?: string,
 ): Promise<string> {
   const { result, activeGraph } = converseResp;
 

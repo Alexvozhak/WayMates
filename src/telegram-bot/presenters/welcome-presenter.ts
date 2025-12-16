@@ -10,14 +10,14 @@ export class WelcomePresenter extends BasePresenter {
 
 User just started conversation. Greet them warmly and explain:
 - Platform helps find career paths based on similar professionals
-- Available commands: /story, /by_target, /by_current, /by_adhoc
+- Just send a message describing your career goal or current position
 
 Input (JSON with user context):
 ${rawJson}
 
 Rules:
-- If JSON has hasStory=true: suggest search commands (/by_target, /by_current, /by_adhoc)
-- If JSON has hasStory=false: suggest starting with /story to collect career history
+- Explain that user can simply write their career questions or goals in natural language
+- No commands needed - just conversational messages
 - If userName is present: use it in greeting naturally
 - IMPORTANT: Respond in ${language}
 - Tone: friendly, concise (3-4 sentences)

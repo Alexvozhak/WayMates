@@ -4,7 +4,7 @@ export async function handleLink(ctx: BotContext): Promise<void> {
   const token = ctx.message?.text?.replace("/link", "").trim();
 
   if (!token) {
-    await showLinkUsage(ctx);
+    await ctx.reply(ctx.t("link-usage"));
     return;
   }
 
@@ -14,14 +14,6 @@ export async function handleLink(ctx: BotContext): Promise<void> {
     return;
   }
 
-  await performLinking(ctx, token, telegramUserId);
-}
-
-async function showLinkUsage(ctx: BotContext): Promise<void> {
-  await ctx.reply(ctx.t("link-usage"));
-}
-
-async function performLinking(ctx: BotContext, token: string, telegramUserId: number): Promise<void> {
   try {
     const result = await ctx.services.mcpClient.callTool("link_telegram", { token, telegramUserId });
 

@@ -194,32 +194,6 @@ describe("SessionService Integration", () => {
     });
   });
 
-  describe("clearSessionCache", () => {
-    /**
-     * SS-C1: Удаление sessionId из Redis
-     *
-     * Given: sessionId в Redis
-     * When: Вызываем clearSessionCache
-     * Then: Ключ удалён из Redis
-     */
-    it("SS-C1: deletes sessionId from Redis", async () => {
-      const ctx = TelegramTestContext.getInstance();
-
-      // Pre-populate cache
-      await ctx.redis.setex(`telegram:session:${TEST_USER_1}:sessionId`, 1800, "session_to_delete");
-
-      // Verify it's there
-      const before = await ctx.redis.get(`telegram:session:${TEST_USER_1}:sessionId`);
-      expect(before).toBe("session_to_delete");
-
-      await service.clearSessionCache(TEST_USER_1);
-
-      // Verify deleted
-      const after = await ctx.redis.get(`telegram:session:${TEST_USER_1}:sessionId`);
-      expect(after).toBeNull();
-    });
-  });
-
   describe("saveSessionId", () => {
     /**
      * SS-S1: Сохранение sessionId в Redis с TTL

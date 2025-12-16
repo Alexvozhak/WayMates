@@ -21,7 +21,7 @@ export async function handleVoice(ctx: BotContext): Promise<void> {
     message: transcription,
   });
 
-  const formatted = await formatResponse(converseResp, ctx.from?.language_code ?? "en", ctx.services);
+  const formatted = await formatResponse(converseResp, ctx.services, ctx.from?.language_code);
 
   await ctx.reply(formatted, { parse_mode: "Markdown" });
 }

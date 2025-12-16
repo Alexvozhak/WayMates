@@ -45,7 +45,7 @@ export abstract class BasePresenter {
 
   async format(rawData: unknown, languageCode?: string): Promise<string> {
     const rawJson = JSON.stringify(rawData);
-    const language = this.mapLanguageCode(languageCode ?? "en");
+    const language = this.mapLanguageCode(languageCode);
     const prompt = this.createPrompt(rawJson, language);
 
     // Rate-limited LLM call via Bottleneck
@@ -60,7 +60,7 @@ export abstract class BasePresenter {
    */
   protected abstract createPrompt(rawJson: string, language: string): string;
 
-  protected mapLanguageCode(code: string): string {
+  protected mapLanguageCode(code?: string): string {
     const languageMap: Record<string, string> = {
       ru: "Russian",
       en: "English",
@@ -69,6 +69,6 @@ export abstract class BasePresenter {
       es: "Spanish",
     };
 
-    return languageMap[code] ?? "English";
+    return languageMap[code ?? "en"] ?? "English";
   }
 }

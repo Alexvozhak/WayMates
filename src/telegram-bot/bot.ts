@@ -27,12 +27,6 @@ async function sessionInitGuard(ctx: BotContext, next: () => Promise<void>): Pro
   await next();
 }
 
-function registerCommands(bot: Bot<BotContext>): void {
-  bot.command("start", handleStart);
-  bot.command("link", handleLink);
-  bot.command("token", handleToken);
-}
-
 export function createBot(token: string, services: BotServices, redis: Redis, env: BotEnv): Bot<BotContext> {
   const bot = new Bot<BotContext>(token);
 
@@ -69,7 +63,10 @@ export function createBot(token: string, services: BotServices, redis: Redis, en
   // Rate limiting for user spam protection
   bot.use(createRateLimitMiddleware(env.USER_RATE_LIMIT_WINDOW_MS, env.USER_RATE_LIMIT_MAX_REQUESTS));
 
-  registerCommands(bot);
+  // Register commands
+  bot.command("start", handleStart);
+  bot.command("link", handleLink);
+  bot.command("token", handleToken);
 
   // Unified text message handler — routes through converse.tool
   bot.on("message:text", handleConverse);
