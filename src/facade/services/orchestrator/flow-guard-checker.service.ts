@@ -6,22 +6,24 @@ import type { UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
 /**
- * Guard message hints for MCP clients.
- * Facade returns informative hints (not full NLP), clients expand to natural language.
+ * System messages for flow guards - full English NLP.
+ * Client LLMs translate to user's language (no expansion needed).
  */
-const GUARD_MESSAGES = {
-  help: "Help: explain bot features - save career story, set goals, find similar professionals who reached your target",
-  onboarding: "Onboarding: offer two paths - full career story (complete trajectory) or quick search (no saving)",
-  cancelNoActive: "Info: no active operations to cancel",
-  goalNotSet: "Info: user has no career goal set yet",
-  goalNotSetDelete: "Error: cannot delete goal - user has no goal set",
-} as const;
+const helpMessage = `I can help you find your career path!
 
-type GuardMessageCode = keyof typeof GUARD_MESSAGES;
+• Tell me about yourself — I'll save your career story
+• Set a goal — Define where you want to go
+• Find similar — I'll show pathfinders who reached your goal
 
-function createGuardResponse(code: GuardMessageCode): ConverseResponse {
-  return createResponse(GUARD_MESSAGES[code]);
-}
+Just write naturally and I'll understand what you need.`;
+
+const onboardingMessage = `Let's start! Tell me about yourself:
+• Full career story — your complete trajectory
+• Quick search — find similar careers without saving profile`;
+
+const cancelNoActiveMessage = "No active operations to cancel.";
+const goalNotSetMessage = "You don't have a goal set yet.";
+const goalNotSetDeleteMessage = "You have no goal to delete.";
 
 export class FlowGuardChecker {
   constructor(private readonly coreClient: CoreClient) {}
@@ -30,12 +32,12 @@ export class FlowGuardChecker {
   async check(intent: UserIntent, userId: UserId): Promise<ConverseResponse | null> {
     // Help
     if (intent === "help") {
-      return createGuardResponse("help");
+      return createResponse(helpMessage);
     }
 
     // Cancel without active graph (active graph handled in ConverseTool)
     if (intent === "cancel") {
-      return createGuardResponse("cancelNoActive");
+      return createResponse(cancelNoActiveMessage);
     }
 
     const state = await this.coreClient.client.user.getState.query({ userId });
@@ -44,17 +46,17 @@ export class FlowGuardChecker {
     if (!state.hasContext) {
       const isStart = intent === "startStory" || intent === "startAdhoc";
       if (!isStart) {
-        return createGuardResponse("onboarding");
+        return createResponse(onboardingMessage);
       }
       return null;
     }
 
     // Goal guards
     if (intent === "getGoal" && !state.hasGoal) {
-      return createGuardResponse("goalNotSet");
+      return createResponse(goalNotSetMessage);
     }
     if (intent === "deleteGoal" && !state.hasGoal) {
-      return createGuardResponse("goalNotSetDelete");
+      return createResponse(goalNotSetDeleteMessage);
     }
 
     return null;

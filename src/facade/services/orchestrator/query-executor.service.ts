@@ -7,25 +7,23 @@ import type { UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
 /**
- * Query message hints for MCP clients.
- * Facade returns informative hints (not full NLP), clients expand to natural language.
+ * System messages for query operations - full English NLP.
+ * Client LLMs translate to user's language (no expansion needed).
  */
-const QUERY_MESSAGES = {
-  storyEmpty: "Info: user has no saved career story, suggest sharing their background",
-  goalNotSet: "Info: user has no career goal set, ask if they want to set one",
-  goalExists: "Info: user has active career goal",
-  goalDeleted: "Success: career goal deleted",
-  goalDeleteFailed: "Error: no goal to delete",
-  contextDeleted: "Success: current career position deleted",
-  contextDeleteFailed: "Error: no current context to delete",
-  trailDeleteUsage: "Info: to delete a trail, use get_story to find trail ID, then delete_trail tool",
-} as const;
+const storyEmptyMessage = "You don't have a saved story yet. Tell me about yourself!";
+const goalNotSetMessage = "You don't have a goal set. Would you like to set one?";
+const goalExistsMessage = "Your goal is set.";
+const goalDeletedMessage = "Goal deleted.";
+const goalDeleteFailedMessage = "No goal to delete.";
+const contextDeletedMessage = "Current context deleted.";
+const contextDeleteFailedMessage = "No context to delete.";
+const trailDeleteUsageMessage = "To delete a trail, use get_story to find trail ID, then delete_trail tool.";
 
 /**
- * Creates story stats hint with dynamic data.
+ * Creates story stats message with dynamic data.
  */
-function createStoryStatsHint(contexts: number, trails: number): string {
-  return `Info: show user story stats - ${contexts} positions, ${trails} learning trails`;
+function createStoryStatsMessage(contexts: number, trails: number): string {
+  return `Your story: ${contexts} positions, ${trails} trails.`;
 }
 
 export class QueryExecutor {
@@ -46,7 +44,7 @@ export class QueryExecutor {
         return this.deleteContext(userId);
       }
       case "deleteTrail": {
-        return createResponse(QUERY_MESSAGES.trailDeleteUsage);
+        return createResponse(trailDeleteUsageMessage);
       }
       default: {
         return null;
@@ -57,33 +55,33 @@ export class QueryExecutor {
   private async getStory(userId: UserId): Promise<ConverseResponse> {
     const story = await this.coreClient.client.story.getStory.query({ userId });
     if (story.contexts.length === 0) {
-      return createResponse(QUERY_MESSAGES.storyEmpty);
+      return createResponse(storyEmptyMessage);
     }
-    return createResponse(createStoryStatsHint(story.contexts.length, story.trails.length));
+    return createResponse(createStoryStatsMessage(story.contexts.length, story.trails.length));
   }
 
   private async getGoal(userId: UserId): Promise<ConverseResponse> {
     const goal = await this.coreClient.client.goal.getByUser.query({ userId });
     if (!goal) {
-      return createResponse(QUERY_MESSAGES.goalNotSet);
+      return createResponse(goalNotSetMessage);
     }
-    return createResponse(QUERY_MESSAGES.goalExists);
+    return createResponse(goalExistsMessage);
   }
 
   private async deleteGoal(userId: UserId): Promise<ConverseResponse> {
     const result = await this.coreClient.client.goal.delete.mutate({ userId });
     if (!result.success) {
-      return createResponse(QUERY_MESSAGES.goalDeleteFailed);
+      return createResponse(goalDeleteFailedMessage);
     }
-    return createResponse(QUERY_MESSAGES.goalDeleted);
+    return createResponse(goalDeletedMessage);
   }
 
   private async deleteContext(userId: UserId): Promise<ConverseResponse> {
     const currentContext = await loadCurrentContext(this.coreClient, userId);
     if (!currentContext) {
-      return createResponse(QUERY_MESSAGES.contextDeleteFailed);
+      return createResponse(contextDeleteFailedMessage);
     }
     await this.coreClient.client.context.delete.mutate({ userId, contextId: currentContext.contextId });
-    return createResponse(QUERY_MESSAGES.contextDeleted);
+    return createResponse(contextDeletedMessage);
   }
 }
