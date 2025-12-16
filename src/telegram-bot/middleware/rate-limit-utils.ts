@@ -3,34 +3,29 @@ import type { BotContext } from "../types.js";
 /**
  * Classifies operations as heavy (rate limited) or light (not rate limited).
  *
+ * After Phase 4 refactoring:
+ * - All text messages route through converse.tool (heavy operation)
+ * - Voice messages require transcription + converse (heavy operation)
+ * - Only /start and /token are light operations
+ *
  * Heavy operations:
- * - Commands that invoke MCP tools or LLM processing
+ * - All text messages (unified converse handler)
  * - Voice messages (transcription + processing)
- * - Text input with pending action (routes to LLM via input-router)
+ * - /link command (MCP call)
  *
  * Light operations:
- * - Simple commands (/start, /help, /token)
- * - Callback queries (inline keyboard buttons)
+ * - /start command (welcome message)
+ * - /token command (shows token from session)
+ * - Callback queries (legacy, if any remain)
  */
 export function isHeavyOperation(ctx: BotContext): boolean {
   const text = ctx.message?.text;
 
-  // Heavy commands (invoke MCP tools or LLM)
+  // Light commands (no MCP or LLM)
   if (text) {
-    const heavyCommands = [
-      "/story",
-      "/by_target",
-      "/by_current",
-      "/by_adhoc",
-      "/link",
-      "/cancel",
-      "/context",
-      "/trail",
-      "/goal",
-    ];
-
-    if (heavyCommands.some((cmd) => text.startsWith(cmd))) {
-      return true;
+    const lightCommands = ["/start", "/token"];
+    if (lightCommands.some((cmd) => text.startsWith(cmd))) {
+      return false;
     }
   }
 
@@ -39,8 +34,8 @@ export function isHeavyOperation(ctx: BotContext): boolean {
     return true;
   }
 
-  // Text with pending action (routes to LLM via input-router)
-  if (ctx.session.status === "initialised" && ctx.session.pendingAction) {
+  // All other text messages route through converse (heavy)
+  if (text) {
     return true;
   }
 

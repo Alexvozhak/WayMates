@@ -3,11 +3,8 @@ import { Redis } from "ioredis";
 import { createBot } from "./bot.js";
 import { validateEnv } from "./env.js";
 import { logger } from "./logger.js";
-import { GoalPresenter } from "./presenters/goal-presenter.js";
 import { LangGraphPresenter } from "./presenters/langgraph-presenter.js";
 import { SearchGraphPresenter } from "./presenters/search-graph-presenter.js";
-import { SearchPresenter } from "./presenters/search-presenter.js";
-import { StoryPresenter } from "./presenters/story-presenter.js";
 import { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import { McpClient } from "./services/mcp-client.js";
 import { SessionService } from "./services/session-service.js";
@@ -56,17 +53,12 @@ try {
 }
 
 const sessionService = new SessionService(mcpClient, redis);
+
 const llmConfig = {
   model: env.FORMATTER_LLM_MODEL,
   temperature: env.FORMATTER_LLM_TEMPERATURE,
 };
-const searchPresenter = new SearchPresenter(
-  env.OPENAI_API_KEY,
-  llmConfig,
-  env.TELEGRAM_PRESENTER_RPM_LIMIT,
-  env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
-  env.OPENAI_API_BASE,
-);
+
 const searchGraphPresenter = new SearchGraphPresenter(
   env.OPENAI_API_KEY,
   llmConfig,
@@ -74,6 +66,7 @@ const searchGraphPresenter = new SearchGraphPresenter(
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
   env.OPENAI_API_BASE,
 );
+
 const langGraphPresenter = new LangGraphPresenter(
   env.OPENAI_API_KEY,
   llmConfig,
@@ -81,20 +74,7 @@ const langGraphPresenter = new LangGraphPresenter(
   env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
   env.OPENAI_API_BASE,
 );
-const storyPresenter = new StoryPresenter(
-  env.OPENAI_API_KEY,
-  llmConfig,
-  env.TELEGRAM_PRESENTER_RPM_LIMIT,
-  env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
-  env.OPENAI_API_BASE,
-);
-const goalPresenter = new GoalPresenter(
-  env.OPENAI_API_KEY,
-  llmConfig,
-  env.TELEGRAM_PRESENTER_RPM_LIMIT,
-  env.TELEGRAM_PRESENTER_MAX_CONCURRENT,
-  env.OPENAI_API_BASE,
-);
+
 const welcomePresenter = new WelcomePresenter(
   env.OPENAI_API_KEY,
   llmConfig,
@@ -116,10 +96,6 @@ const bot = createBot(
     groqApiKey: env.GROQ_API_KEY,
     botToken: env.TELEGRAM_BOT_TOKEN,
     feedbackChatId: env.FEEDBACK_CHAT_ID,
-    // DEPRECATED: Remove in Phase 4
-    searchPresenter,
-    storyPresenter,
-    goalPresenter,
   },
   redis,
   env,
