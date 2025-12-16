@@ -22,7 +22,7 @@ export async function searchNode(
   }
   const { coreClient } = config.configurable;
 
-  // Apply filters from currentSearchParams or use defaults
+  // Apply filters from currentSearchParams or use strict defaults
   const params = currentSearchParams ?? {
     excludedContextFields: [],
     excludedCreationReasons: [],
