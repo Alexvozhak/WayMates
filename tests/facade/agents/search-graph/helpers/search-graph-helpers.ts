@@ -14,6 +14,7 @@ import type { SearchStateType } from "../../../../../src/facade/langGraph/search
 import type { CoreClient } from "../../../../../src/facade/core-client.js";
 import type { CreateGoalInput, CurrentSearchParamsBase, UserId } from "../../../../../src/shared/schemas.js";
 import type { GraphDeps } from "../../../../../src/facade/langGraph/shared/types.js";
+import type { UserIntent } from "../../../../../src/facade/services/orchestrator/intent-classifier.js";
 
 /**
  * Test user ID from fixtures (U1).
@@ -61,19 +62,21 @@ export async function cleanupUserGoal(coreClient: CoreClient, userId: UserId): P
  * - Type guard (typeof === 'object') instead of cast (TypeScript inference)
  * - Partial<SearchStateType> for type-safe state overrides
  *
+ * @param intent - Pre-parsed intent (e.g., GRAPH_INTENT.startAdhoc) or null for LLM parsing
  * @param initialStateOverrides - State fields to inject (e.g., currentSearchParams, existingGoal, adhocContext)
  * @example
  * // Inject relaxed filters
- * runSearchGraphWithInitialState(deps, msg, tid, uid, { currentSearchParams: RELAXED_FILTERS })
+ * runSearchGraphWithInitialState(deps, msg, tid, uid, null, { currentSearchParams: RELAXED_FILTERS })
  *
- * // Inject adhoc context
- * runSearchGraphWithInitialState(deps, msg, tid, uid, { adhocContext: { position: "senior" } })
+ * // Adhoc mode with pre-parsed intent
+ * runSearchGraphWithInitialState(deps, msg, tid, uid, { type: "start_adhoc" }, { currentSearchParams: RELAXED_FILTERS })
  */
 export async function runSearchGraphWithInitialState(
   deps: GraphDeps,
   message: string,
   threadId: string,
   userId: UserId,
+  intent: UserIntent | null = null,
   initialStateOverrides?: Partial<SearchStateType>,
 ): Promise<SearchGraphResponse> {
   const graph = new SearchGraph(deps);
@@ -100,22 +103,25 @@ export async function runSearchGraphWithInitialState(
     });
   }
 
-  const response = await graph.run(message, threadId, userId, null);
+  const response = await graph.run(message, threadId, userId, intent);
   vi.restoreAllMocks();
   return response;
 }
 
 /**
  * Convenience helper: run SearchGraph with relaxed filters (most common test case).
- * Shorthand for `runSearchGraphWithInitialState(deps, msg, tid, uid, { currentSearchParams: RELAXED_FILTERS })`.
+ * Shorthand for `runSearchGraphWithInitialState(deps, msg, tid, uid, intent, { currentSearchParams: RELAXED_FILTERS })`.
+ *
+ * @param intent - Pre-parsed intent (e.g., GRAPH_INTENT.startAdhoc) or null for LLM parsing
  */
 export async function runSearchGraphWithRelaxedFilters(
   deps: GraphDeps,
   message: string,
   threadId: string,
   userId: UserId,
+  intent: UserIntent | null = null,
 ): Promise<SearchGraphResponse> {
-  return runSearchGraphWithInitialState(deps, message, threadId, userId, {
+  return runSearchGraphWithInitialState(deps, message, threadId, userId, intent, {
     currentSearchParams: RELAXED_FILTERS,
   });
 }

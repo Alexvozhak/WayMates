@@ -12,7 +12,7 @@ beforeAll(async () => {
   await TelegramTestContext.initialize();
 
   console.log("[Telegram Setup] Loading fixtures via Core tRPC...");
-  const storiesToLoad: UserKey[] = ["U1", "U2", "U3"];
+  const storiesToLoad: UserKey[] = ["U1", "U2", "U3", "U8", "U10", "U11"];
   await loadFixturesViaTRPC(storiesToLoad);
 
   console.log("[Telegram Setup] Telegram infrastructure ready ✓");

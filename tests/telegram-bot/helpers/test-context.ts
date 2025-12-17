@@ -1,6 +1,8 @@
+import { Pool } from "pg";
 import { Redis } from "ioredis";
 
 import { CoreClient } from "../../../src/facade/core-client.js";
+import { CheckpointService } from "../../../src/facade/services/checkpoint.service.js";
 import { McpClient } from "../../../src/telegram-bot/services/mcp-client.js";
 
 import { getTestEnv } from "./test-env.js";
@@ -29,7 +31,19 @@ export class TelegramTestContext {
       port: env.REDIS_PORT,
     });
 
-    TelegramTestContext.instance = new TelegramTestContext(mcpClient, coreClient, redis, env);
+    console.log("[Telegram Setup] Creating PostgreSQL pool for checkpoints...");
+    const pgPool = new Pool({
+      host: env.POSTGRES_HOST,
+      port: env.POSTGRES_PORT,
+      user: env.POSTGRES_USER,
+      password: env.POSTGRES_PASSWORD,
+      database: env.POSTGRES_DB,
+    });
+
+    console.log("[Telegram Setup] Creating checkpoint service...");
+    const checkpointService = await CheckpointService.create(pgPool);
+
+    TelegramTestContext.instance = new TelegramTestContext(mcpClient, coreClient, redis, checkpointService, env);
 
     return TelegramTestContext.instance;
   }
@@ -44,12 +58,20 @@ export class TelegramTestContext {
   public readonly mcpClient: McpClient;
   public readonly coreClient: CoreClient;
   public readonly redis: Redis;
+  public readonly checkpointService: CheckpointService;
   public readonly env: TelegramTestEnv;
 
-  private constructor(mcpClient: McpClient, coreClient: CoreClient, redis: Redis, env: TelegramTestEnv) {
+  private constructor(
+    mcpClient: McpClient,
+    coreClient: CoreClient,
+    redis: Redis,
+    checkpointService: CheckpointService,
+    env: TelegramTestEnv,
+  ) {
     this.mcpClient = mcpClient;
     this.coreClient = coreClient;
     this.redis = redis;
+    this.checkpointService = checkpointService;
     this.env = env;
   }
 

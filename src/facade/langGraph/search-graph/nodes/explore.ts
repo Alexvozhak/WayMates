@@ -31,6 +31,11 @@ export async function exploreNode(
     pathLimit: DEFAULT_LIMIT,
   };
 
+  // DEBUG: Log what we're sending to Core
+  console.log("[EXPLORE NODE] Mode:", adhocContext ? "ADHOC" : "BY_USER");
+  console.log("[EXPLORE NODE] adhocContext:", JSON.stringify(adhocContext));
+  console.log("[EXPLORE NODE] params:", JSON.stringify(params));
+
   const results = adhocContext
     ? await coreClient.client.search.adhoc.query({
         userId,
@@ -41,6 +46,14 @@ export async function exploreNode(
         userId,
         ...params,
       });
+
+  // DEBUG: Check what Core returns
+  console.log("[EXPLORE NODE] results count:", results.length);
+  if (results.length > 0) {
+    console.log("[EXPLORE NODE] first result sample:", JSON.stringify(results[0], null, 2));
+  } else {
+    console.log("[EXPLORE NODE] NO RESULTS - check Core search.adhoc logic");
+  }
 
   return {
     explorationResults: results,

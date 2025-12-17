@@ -24,19 +24,44 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
   }
 
   protected async executeImpl(params: McpConverseParams, userId: UserId): Promise<ConverseResponse> {
+    console.log("[CONVERSE TOOL] message:", params.message);
+    console.log("[CONVERSE TOOL] userId:", userId);
+
     const intent = await classifyIntent(params.message);
+    console.log("[CONVERSE TOOL] classified intent:", JSON.stringify(intent));
 
     // 1. Active graph — resume or cancel
-    const activeResult = await this.graphManager.executeActiveGraph(intent, params.message, userId);
-    if (activeResult) return activeResult;
+    try {
+      console.log("[CONVERSE TOOL] calling executeActiveGraph...");
+      const activeResult = await this.graphManager.executeActiveGraph(intent, params.message, userId);
+      console.log("[CONVERSE TOOL] activeResult:", activeResult ? "found" : "null");
+      if (activeResult) return activeResult;
+    } catch (error) {
+      console.error("[CONVERSE TOOL] executeActiveGraph ERROR:", error);
+      throw error;
+    }
 
     // 2. Guards — help, cancel, onboarding, state checks
-    const guardResult = await this.flowGuardChecker.check(intent, userId);
-    if (guardResult) return guardResult;
+    try {
+      console.log("[CONVERSE TOOL] calling flowGuardChecker...");
+      const guardResult = await this.flowGuardChecker.check(intent, userId);
+      console.log("[CONVERSE TOOL] guardResult:", guardResult ? "found" : "null");
+      if (guardResult) return guardResult;
+    } catch (error) {
+      console.error("[CONVERSE TOOL] flowGuardChecker ERROR:", error);
+      throw error;
+    }
 
     // 3. New graph — cold_start, upsert_context, update_context, upsert_trail, search
-    const graphResult = await this.graphManager.executeNewGraph(intent, params.message, userId);
-    if (graphResult) return graphResult;
+    try {
+      console.log("[CONVERSE TOOL] executing new graph...");
+      const graphResult = await this.graphManager.executeNewGraph(intent, params.message, userId);
+      console.log("[CONVERSE TOOL] graphResult phase:", graphResult?.result?.phase);
+      if (graphResult) return graphResult;
+    } catch (error) {
+      console.error("[CONVERSE TOOL] executeNewGraph ERROR:", error);
+      throw error;
+    }
 
     // 4. Query — getStory, getGoal, deleteGoal, deleteContext, deleteTrail
     const queryResult = await this.queryExecutor.execute(intent, userId);

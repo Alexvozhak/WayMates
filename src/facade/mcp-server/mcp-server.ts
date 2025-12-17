@@ -132,12 +132,18 @@ function registerConverseTool(server: FastMCP, tool: ConverseTool): void {
       "Supports: onboarding, search, goal management, context/trail updates, help, cancel.",
     parameters: mcpConverseParamsSchema,
     execute: async (args: unknown) => {
-      const params = mcpConverseParamsSchema.parse(args);
-      const result = await tool.execute(params);
-      if (result.ok) {
-        return JSON.stringify(result.value, null, 2);
+      try {
+        const params = mcpConverseParamsSchema.parse(args);
+        const result = await tool.execute(params);
+        if (result.ok) {
+          return JSON.stringify(result.value, null, 2);
+        }
+        console.error("[converse.tool] Tool returned error result:", JSON.stringify(result.error, null, 2));
+        throwToolError(result.error);
+      } catch (error) {
+        console.error("[converse.tool] Exception during execution:", error);
+        throw error;
       }
-      throwToolError(result.error);
     },
   });
 }

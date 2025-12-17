@@ -42,7 +42,16 @@ export class McpClient {
 
       const result = CallToolResultSchema.parse(rawResult);
       const content = TextContentSchema.parse(result.content[0]);
+
+      // DEBUG: Log raw response before JSON parse (helps debug FastMCP errors)
+      if (!content.text.trim().startsWith("{")) {
+        console.error(`[MCP Client] Non-JSON response from tool '${toolName}':`, content.text.slice(0, 500));
+      }
+
       const data = JSON.parse(content.text);
+
+      // DEBUG: Log parsed data before validation
+      console.log(`[MCP Client DEBUG] Parsed data from '${toolName}':`, JSON.stringify(data, null, 2).slice(0, 1000));
 
       const validatedResponse = tool.responseSchema.parse(data);
       return validatedResponse;

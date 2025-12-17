@@ -109,6 +109,14 @@ export class SearchManager {
 
     const rankedStrictFields = await this.selectivity.rankStrictFields(strictFields, referenceContext);
 
+    // DEBUG: Log search parameters
+    console.log("[SEARCH.ADHOC] referenceContext:", JSON.stringify(referenceContext));
+    console.log("[SEARCH.ADHOC] excludedContextFields:", excludedContextFields);
+    console.log("[SEARCH.ADHOC] strictFields:", strictFields);
+    console.log("[SEARCH.ADHOC] rankedStrictFields:", rankedStrictFields);
+    console.log("[SEARCH.ADHOC] goalPositions:", goalPositions);
+    console.log("[SEARCH.ADHOC] filterByCurrentContext:", filterByCurrentContext);
+
     const query = buildCurrentSearchQuery(
       goalPositions,
       rankedStrictFields,
@@ -130,8 +138,20 @@ export class SearchManager {
       goalPositions,
     };
 
+    // DEBUG: Log Cypher query parameters
+    console.log("[SEARCH.ADHOC] queryParams:", JSON.stringify(queryParams, null, 2));
+
     return this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);
+
+      // DEBUG: Log results count
+      console.log("[SEARCH.ADHOC] Neo4j returned records:", result.records.length);
+      if (result.records.length > 0) {
+        console.log("[SEARCH.ADHOC] First record sample:", JSON.stringify(result.records[0].toObject(), null, 2));
+      } else {
+        console.log("[SEARCH.ADHOC] NO RECORDS - Cypher query returned empty result");
+        console.log("[SEARCH.ADHOC] Query used:", query.substring(0, 500));
+      }
 
       return result.records.map((record) => scoredMatchedCandidateSchema.parse(record.toObject()));
     });

@@ -53,6 +53,10 @@ function stateToResponse(state: SearchStateType): SearchGraphResponse {
 async function enrichResponse(state: SearchStateType, cache: DictionariesCache): Promise<SearchGraphResponse> {
   const baseResponse = stateToResponse(state);
 
+  // DEBUG: Check baseResponse before enrichment
+  console.log("[ENRICH RESPONSE] phase:", baseResponse.phase);
+  console.log("[ENRICH RESPONSE] baseResponse keys:", Object.keys(baseResponse));
+
   // showing_goal: add availableFilters (reasons)
   if (baseResponse.phase === "showing_goal" && state.phase === PHASE.showingGoal) {
     const reasons = await cache.getReasons();
