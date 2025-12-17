@@ -274,11 +274,11 @@ const userContextSchemaBase = z.object({
   domains: z.array(z.string()).min(1).describe("Work domains"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
   industry: z.string().describe("Company industry"),
-  companySize: z.string().describe("Company size"),
+  companySize: z.string().optional().describe("Company size (optional for synthetic users)"),
   countryCode: z.string().describe("Location country code"),
   cityName: z.string().describe("Location city name"),
   citizenships: z.array(z.string()),
-  birthYear: z.number().min(1950).describe("Birth year"),
+  birthYear: z.number().min(1950).optional().describe("Birth year (optional for synthetic users)"),
   educationLevel: educationLevelSchema.nullable().optional().describe("Education level"),
 
   // Salary (EITHER exact OR range, mutually exclusive)
