@@ -117,6 +117,7 @@
     "axios": "^1.13.1",
     "better-sqlite3": "^12.4.1",
     "bottleneck": "^2.19.5",
+    "csv-parse": "^6.1.0",
     "dynamic-time-warping": "^1.0.0",
     "express": "^5.1.0",
     "fastmcp": "^3.25.4",
