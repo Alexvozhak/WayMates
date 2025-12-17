@@ -61,9 +61,12 @@
     "graph": "tsx scripts/visualize-graphs.ts"
   },
   "lint-staged": {
-    "*.ts": [
+    "!(poc)/**/*.ts": [
       "prettier --write",
       "eslint --fix"
+    ],
+    "poc/**/*.ts": [
+      "prettier --write"
     ]
   },
   "keywords": [],
