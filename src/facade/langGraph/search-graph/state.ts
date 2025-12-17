@@ -79,6 +79,7 @@ export const searchStateAnnotation = Annotation.Root({
   // Context for search: either from DB (userContext) or extracted from message (adhocContext)
   userContext: Annotation<UserContext | null>({ reducer: lastValue, default: () => null }),
   adhocContext: Annotation<AdhocUserContext | null>({ reducer: lastValue, default: () => null }),
+  userTrajectory: Annotation<UserContext[]>({ reducer: lastValue, default: () => [] }),
 
   existingGoal: Annotation<Goal | null>({ reducer: lastValue, default: () => null }),
   extractedGoal: Annotation<TargetContext | null>({ reducer: lastValue, default: () => null }),
@@ -88,10 +89,12 @@ export const searchStateAnnotation = Annotation.Root({
 
   clarifyRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   newPositionRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
+  clarificationText: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 
   explorationResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
   validationResults: Annotation<MatchedCandidateWithPath[]>({ reducer: lastValue, default: () => [] }),
   searchResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
+  chartUrl: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 
   searchUserIntent: Annotation<SearchUserIntent | null>({ reducer: lastValue, default: () => null }),
 });

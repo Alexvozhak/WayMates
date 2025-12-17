@@ -43,6 +43,13 @@ const envSchema = z.object({
   CV_PARSER_MAX_FILE_SIZE_MB: z.coerce.number().int().positive().default(10),
   CV_PARSER_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(4000),
   CV_PARSER_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.1),
+  // Cloudflare R2 Configuration (optional - chart service can be disabled)
+  R2_ACCOUNT_ID: z.string().min(1).optional(),
+  R2_ACCESS_KEY_ID: z.string().min(1).optional(),
+  R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  R2_BUCKET_NAME: z.string().min(1).optional(),
+  R2_PUBLIC_URL: z.string().url().optional(),
+  R2_TTL_DAYS: z.coerce.number().int().positive().default(30),
 });
 /* eslint-enable @typescript-eslint/naming-convention */
 

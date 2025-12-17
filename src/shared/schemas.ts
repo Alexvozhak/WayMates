@@ -1212,6 +1212,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     phase: z.literal("showing_results"),
     results: z.array(scoredMatchedCandidateSchema),
     goal: goalSchema.optional(),
+    chartUrl: z.string().url().optional(),
     options: z.array(z.string()),
     availableFilters: availableFiltersSchema.optional(),
     currentFilters: currentAvailableFiltersSchema.optional(),

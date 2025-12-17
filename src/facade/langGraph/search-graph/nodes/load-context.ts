@@ -50,5 +50,8 @@ export async function loadContextNode(
   const story = await coreClient.client.story.getStory.query({ userId: state.userId });
   const userContext = story.contexts.find((ctx) => ctx.nextContextId === null) ?? null;
 
-  return { userContext };
+  return {
+    userContext,
+    userTrajectory: story.contexts,
+  };
 }
