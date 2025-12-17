@@ -36,6 +36,7 @@ Intent classification:
 - VALIDATE: User wants to validate/check goal, see who achieved it, see trajectories
   + Optional filters: excludedCreationReasons (array of strings), recencyThresholdMonths (number), limit (number)
 - CLARIFY: User wants to add details, refine current goal, specify more
+  + clarificationText: user's full message (what they want to add/change)
 - SAVE: User confirms and wants to save the goal
 - CHANGE: User wants to change goal to something completely different
 - DELETE: User wants to delete goal and explore again
@@ -51,7 +52,7 @@ Examples:
 - "validate without job changes" → { intent: "validate", filters: { excludedCreationReasons: ["company_changed", "position_changed"], recencyThresholdMonths: null, limit: null } }
 - "show me last 12 months only" → { intent: "validate", filters: { excludedCreationReasons: null, recencyThresholdMonths: 12, limit: null } }
 - "validate, limit 10 results" → { intent: "validate", filters: { excludedCreationReasons: null, recencyThresholdMonths: null, limit: 10 } }
-- "add Germany to countries" → { intent: "clarify" }
+- "add Germany to countries" → { intent: "clarify", clarificationText: "add Germany to countries" }
 - "looks good, save it" → { intent: "save" }
 - "actually, I want to be a PM" → { intent: "change" }
 - "delete my goal" → { intent: "delete" }
@@ -63,7 +64,9 @@ Examples:
 - "what's the weather?" → { intent: "unknown" }
 - "maybe" → { intent: "unknown" }
 
-Return: { intent, filters } where filters is null if not specified or intent is not "validate" or "filter"`;
+Return: { intent, clarificationText, filters }
+- clarificationText: required for "clarify" intent, empty string otherwise
+- filters: required for "validate" or "filter" intents, null otherwise`;
 
 export const GOAL_CLARIFICATION_PROMPT = `Update the existing goal based on user's clarification.
 
@@ -73,9 +76,16 @@ Current goal:
 User wants to change/add:
 {userMessage}
 
-Apply the user's clarification to the current goal structure.
-Preserve existing fields unless explicitly changed.
-Return the complete updated goal.`;
+IMPORTANT MERGE RULES:
+1. If user mentions a field → update it with the new value
+2. If user does NOT mention a field → KEEP the existing value (copy from current goal)
+3. NEVER return null for fields that exist in current goal
+4. Return the COMPLETE goal with ALL fields from current goal
+
+Example:
+Current: { position: ["PM"] }
+User: "add Germany"
+Result: { position: ["PM"], countries: ["DE"] }  // position PRESERVED + countries ADDED`;
 
 export const ADHOC_CONTEXT_EXTRACTION_PROMPT = `Extract user's career context from their message for quick search.
 

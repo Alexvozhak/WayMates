@@ -40,9 +40,12 @@ export async function showResultsNode(state: SearchStateType): Promise<Partial<S
   const response = String(userResponse);
   const parsed = await parseUserIntent(response);
 
+  const clarificationText = parsed.intent === "clarify" ? parsed.clarificationText : null;
+
   return {
     userResponse: response,
     searchUserIntent: parsed.intent,
+    clarificationText,
     chartUrl: chartUrl ?? null,
   };
 }

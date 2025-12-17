@@ -120,7 +120,11 @@ export function createGraphBuilder() {
 
     .addEdge(START, NODE.load_context)
     .addEdge(NODE.load_context, NODE.check_goal)
-    .addConditionalEdges(NODE.check_goal, routeAfterCheckGoal, buildRouteMap([NODE.search, NODE.explore]))
+    .addConditionalEdges(
+      NODE.check_goal,
+      routeAfterCheckGoal,
+      buildRouteMap([NODE.search, NODE.explore, NODE.load_existing_goal]),
+    )
     .addEdge(NODE.explore, NODE.show_exploration)
     .addConditionalEdges(
       NODE.show_exploration,
@@ -138,7 +142,7 @@ export function createGraphBuilder() {
     .addConditionalEdges(
       NODE.ask_after_validate,
       routeAfterAskAfterValidate,
-      buildRouteMap([NODE.set_goal, NODE.extract_goal, NODE.cancel]),
+      buildRouteMap([NODE.set_goal, NODE.extract_goal, NODE.clarify_goal, NODE.cancel, NODE.ask_after_validate]),
     )
     .addEdge(NODE.set_goal, NODE.search)
     .addEdge(NODE.search, NODE.show_results)

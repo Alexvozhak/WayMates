@@ -29,6 +29,7 @@ export async function extractGoalNode(state: SearchStateType): Promise<Partial<S
 
   return {
     extractedGoal,
+    userResponse: "", // Clear to ensure show_goal does interrupt
     phase: PHASE.showingGoal,
     messages: messages.length === 0 ? [new HumanMessage(userResponse)] : messages,
   };

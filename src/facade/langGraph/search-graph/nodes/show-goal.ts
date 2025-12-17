@@ -11,11 +11,12 @@ import type { SearchStateType } from "../state.js";
 import type { TargetSearchParamsWithFeedback } from "../types.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
+/* eslint-disable complexity -- multiple intent paths (validate with filters, clarify with text) */
 export async function showGoalNode(
   state: SearchStateType,
   config: LangGraphRunnableConfig,
 ): Promise<Partial<SearchStateType>> {
-  const { extractedGoal } = state;
+  const { extractedGoal, userResponse: stateUserResponse } = state;
 
   if (!extractedGoal) {
     throw new AgentInvariantError(NODE.show_goal, "extractedGoal must exist before showing");
@@ -26,12 +27,17 @@ export async function showGoalNode(
   }
   const { normalizer } = config.configurable;
 
-  const userResponse = interrupt({
-    type: "show_goal",
-    extractedGoal,
-    options: OPTIONS.showGoal,
-    phase: PHASE.showingGoal,
-  });
+  // Conditional interrupt: use state.userResponse if available (from check_goal flow),
+  // otherwise interrupt for user input (from clarify_goal/extract_goal flow)
+  const userResponse =
+    stateUserResponse && stateUserResponse !== ""
+      ? stateUserResponse
+      : interrupt({
+          type: "show_goal",
+          extractedGoal,
+          options: OPTIONS.showGoal,
+          phase: PHASE.showingGoal,
+        });
 
   const response = String(userResponse);
   const parsed = await parseUserIntent(response);
@@ -57,9 +63,14 @@ export async function showGoalNode(
     };
   }
 
+  // Handle clarificationText for clarify intent
+  const clarificationText = parsed.intent === "clarify" ? parsed.clarificationText : null;
+
   return {
-    userResponse: response,
+    userResponse: "", // Clear to ensure next show_goal does interrupt
     searchUserIntent: parsed.intent,
     targetSearchParams,
+    clarificationText,
   };
 }
+/* eslint-enable complexity */

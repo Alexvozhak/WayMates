@@ -4,7 +4,7 @@ import type { NodeName, SearchStateType } from "./state.js";
 
 export function routeAfterCheckGoal(state: SearchStateType): NodeName {
   if (state.existingGoal) {
-    return NODE.search;
+    return NODE.load_existing_goal;
   }
   return NODE.explore;
 }
@@ -47,10 +47,8 @@ export function routeAfterShowGoal(state: SearchStateType): NodeName {
     case "cancel": {
       return NODE.cancel;
     }
-    case "unknown": {
-      return NODE.show_goal;
-    }
     default: {
+      // Unknown/unrecognized intent → proceed with saving goal (default behavior)
       return NODE.set_goal;
     }
   }
@@ -62,6 +60,12 @@ export function routeAfterAskAfterValidate(state: SearchStateType): NodeName {
   switch (searchUserIntent) {
     case "save": {
       return NODE.set_goal;
+    }
+    case "clarify": {
+      if (state.clarifyRound >= MAX_CLARIFY_ROUNDS) {
+        return NODE.set_goal;
+      }
+      return NODE.clarify_goal;
     }
     case "change": {
       if (state.newPositionRound >= MAX_NEW_POSITION_ROUNDS) {
@@ -87,6 +91,9 @@ export function routeAfterShowResults(state: SearchStateType): NodeName {
   switch (searchUserIntent) {
     case "filter": {
       return NODE.apply_filters;
+    }
+    case "clarify": {
+      return NODE.load_existing_goal;
     }
     case "change": {
       return NODE.load_existing_goal;

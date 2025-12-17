@@ -82,7 +82,17 @@ export class Normalizer {
       this.normalizeTargetField("domain", context.domains, userId),
     ]);
 
-    return this.removeUndefinedFields({ position, skills, domains });
+    const result: TargetContext = { position, skills, domains };
+
+    if (context.countries) {
+      result.countries = context.countries;
+    }
+
+    if (context.languages) {
+      result.languages = context.languages;
+    }
+
+    return this.removeUndefinedFields(result);
   }
 
   async normalizeSkill(skill: string, userId: UserId): Promise<string> {

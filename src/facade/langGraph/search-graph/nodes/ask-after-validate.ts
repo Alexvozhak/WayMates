@@ -20,9 +20,12 @@ export async function askAfterValidateNode(state: SearchStateType): Promise<Part
   const response = String(userResponse);
   const parsed = await parseUserIntent(response);
 
+  const clarificationText = parsed.intent === "clarify" ? parsed.clarificationText : null;
+
   return {
     userResponse: response,
     searchUserIntent: parsed.intent,
     newPositionRound: parsed.intent === "change" ? newPositionRound + 1 : newPositionRound,
+    clarificationText,
   };
 }
