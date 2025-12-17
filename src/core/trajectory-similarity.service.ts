@@ -13,31 +13,17 @@ export class TrajectorySimilarityService {
    * NOTE: Synchronous because DTW is pure CPU-bound computation (no I/O)
    *
    * Performance optimizations:
-   * - Durations calculated once (not 6 times)
-   * - StepWithDuration wrappers created once (not 4 times)
+   * - StepWithDuration wrappers created once (not separately)
    * - DTW computed once for Shape+Stability (not twice)
    */
   computeDTWMetrics(userTrajectory: UserContext[], candidateTrajectory: UserContext[]): DTWMetrics {
-    // 1. Calculate durations once (used by all 3 metrics)
-    const userDurations = this.calculateDurationMonths(userTrajectory);
-    const candidateDurations = this.calculateDurationMonths(candidateTrajectory);
+    // 1. Create StepWithDuration wrappers once (for Shape + Stability)
+    const userSteps = this.calculateStepsWithDuration(userTrajectory);
+    const candidateSteps = this.calculateStepsWithDuration(candidateTrajectory);
 
-    // 2. Create StepWithDuration wrappers once (for Shape + Stability)
-    const userSteps: StepWithDuration[] = userTrajectory.map((ctx, i) => ({
-      context: ctx,
-      duration: userDurations[i]!,
-    }));
-    const candidateSteps: StepWithDuration[] = candidateTrajectory.map((ctx, i) => ({
-      context: ctx,
-      duration: candidateDurations[i]!,
-    }));
-
-    // 3. Compute DTW once (for Shape + Stability metrics)
-    const dtw = new DynamicTimeWarping(
-      userSteps,
-      candidateSteps,
-      (a: StepWithDuration, b: StepWithDuration) =>
-        this.trajectoryDistance(a.context, b.context, a.duration, b.duration),
+    // 2. Compute DTW once (for Shape + Stability metrics)
+    const dtw = new DynamicTimeWarping(userSteps, candidateSteps, (a: StepWithDuration, b: StepWithDuration) =>
+      this.trajectoryDistance(a.context, b.context, a.duration, b.duration),
     );
 
     const distance = dtw.getDistance();
@@ -54,7 +40,9 @@ export class TrajectorySimilarityService {
     // User trajectory is always baseline
     const stabilityScore = userTrajectory.length / pathLength;
 
-    // 5. Compute Tempo (separate DTW on derivatives)
+    // 4. Compute Tempo (separate DTW on derivatives)
+    const userDurations = userSteps.map((step) => step.duration);
+    const candidateDurations = candidateSteps.map((step) => step.duration);
     const tempoSimilarity = this.computeTempoSimilarity(
       userDurations,
       candidateDurations,
@@ -82,9 +70,7 @@ export class TrajectorySimilarityService {
     const userDeriv = this.derivative(userDurations);
     const candidateDeriv = this.derivative(candidateDurations);
 
-    const dtw = new DynamicTimeWarping(userDeriv, candidateDeriv, (a: number, b: number) =>
-      Math.abs(a - b),
-    );
+    const dtw = new DynamicTimeWarping(userDeriv, candidateDeriv, (a: number, b: number) => Math.abs(a - b));
 
     const distance = dtw.getDistance();
     const pathLength = dtw.getPath().length;
@@ -123,13 +109,13 @@ export class TrajectorySimilarityService {
   }
 
   /**
-   * Calculate duration in months for each context
-   * Last context duration = from createdAt to Date.now()
+   * Create StepWithDuration array from trajectory
+   * Calculates duration (in months) for each context using 30-day month approximation
    *
-   * NOTE: Uses 30-day month approximation for simplicity.
-   * Sufficient precision for DTW metrics (relative comparison).
+   * Duration: time from this context to next (or to now if last context)
+   * Validates chronological order: throws if contexts out of order
    */
-  private calculateDurationMonths(trajectory: UserContext[]): number[] {
+  private calculateStepsWithDuration(trajectory: UserContext[]): StepWithDuration[] {
     const MILLISECONDS_PER_30_DAY_MONTH = 1000 * 60 * 60 * 24 * 30;
     const now = new Date();
 
@@ -145,7 +131,8 @@ export class TrajectorySimilarityService {
         );
       }
 
-      return Math.round((next.getTime() - created.getTime()) / MILLISECONDS_PER_30_DAY_MONTH);
+      const duration = Math.round((next.getTime() - created.getTime()) / MILLISECONDS_PER_30_DAY_MONTH);
+      return { context: ctx, duration };
     });
   }
 
@@ -162,8 +149,11 @@ export class TrajectorySimilarityService {
       const isFirst = i === 0;
       const isLast = i === arr.length - 1;
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       if (isFirst) return arr[1]! - arr[0]!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       if (isLast) return arr[i]! - arr[i - 1]!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return (arr[i + 1]! - arr[i - 1]!) / 2;
     });
   }
@@ -203,12 +193,7 @@ export class TrajectorySimilarityService {
    * - Domains: Jaccard distance (1 - similarity)
    * - Reasons: Jaccard distance (1 - similarity)
    */
-  private trajectoryDistance(
-    stepA: UserContext,
-    stepB: UserContext,
-    durationA: number,
-    durationB: number,
-  ): number {
+  private trajectoryDistance(stepA: UserContext, stepB: UserContext, durationA: number, durationB: number): number {
     // 1. Position difference (0 = same position, 1 = different)
     const positionDiff = stepA.position === stepB.position ? 0 : 1;
 

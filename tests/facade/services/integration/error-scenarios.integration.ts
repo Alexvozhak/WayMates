@@ -6,12 +6,8 @@ import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-too
 import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type {
-  McpSearchCareersParams,
-  McpUpdateContextParams,
-  AdhocUserContext,
-  ContextField,
-} from "../../../../src/shared/schemas.js";
+import type { McpSearchCareersParams } from "../../../../src/facade/mcp-server/tools/search-careers.tool.js";
+import type { McpUpdateContextParams, AdhocUserContext, ContextField } from "../../../../src/shared/schemas.js";
 
 const createFacadeSearchParams = (
   sessionId: SessionId,
@@ -47,8 +43,8 @@ describe("Error Handling Integration Tests", () => {
 
   // Business rule: Invalid session format rejected early (before DB access).
   // UX: Client validation prevents malformed requests; backend enforces contract.
-  // Middleware logic: invalid format → Redis GET returns null → session_expired.
-  it("EH1: Invalid session format - session_expired error", async () => {
+  // Schema validation: invalid format → Zod rejects → validation_error.
+  it("EH1: Invalid session format - validation_error", async () => {
     const tool = new SearchCareersTool(getToolDeps());
 
     const invalidSession = "not_a_valid_session_id";
@@ -58,7 +54,7 @@ describe("Error Handling Integration Tests", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error.code).toBe("session_expired");
+      expect(result.error.code).toBe("validation_error");
     }
   });
 

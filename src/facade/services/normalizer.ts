@@ -58,7 +58,9 @@ export class Normalizer {
       this.normalizeOptionalTerms("domain", context.domains, userId),
     ]);
 
-    return this.removeUndefinedFields({ position, cityName, industry, skills, domains });
+    // Pass-through fields that don't need normalization (ISO codes: countryCode, languages)
+    // Normalized fields override pass-through values
+    return this.removeUndefinedFields({ ...context, position, cityName, industry, skills, domains });
   }
 
   async normalizeFullContext(context: UserContext, userId: UserId): Promise<UserContext> {

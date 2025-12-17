@@ -1,4 +1,4 @@
-import { adhocUserContextSchema } from "../../../../shared/schemas.js";
+import { adhocContextBase, makeNullable } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
 import { hasConfigDeps } from "../../shared/types.js";
@@ -10,7 +10,10 @@ import type { AdhocUserContext } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
-const extractor = getModel("extraction").withStructuredOutput(adhocUserContextSchema);
+// LLM extraction schema: makeNullable wrapper for OpenAI Structured Output compatibility
+// ADR-031: makeNullable applied locally, not exported from schemas
+const extractableAdhocSchema = makeNullable(adhocContextBase);
+const extractor = getModel("extraction").withStructuredOutput(extractableAdhocSchema);
 
 async function extractAdhocContext(message: string): Promise<AdhocUserContext | null> {
   const extracted = await extractor.invoke([

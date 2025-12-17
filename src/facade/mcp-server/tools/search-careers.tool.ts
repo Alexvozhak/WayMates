@@ -1,10 +1,48 @@
-import { mcpSearchCareersParamsSchema } from "../../../shared/schemas.js";
+import { z } from "zod";
+
+import {
+  adhocContextBase,
+  contextFieldSchema,
+  newContextReasonSchema,
+  sessionIdSchema,
+} from "../../../shared/schemas.js";
 import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { McpSearchCareersParams, ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
+import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
+
+/**
+ * MCP params schema for search_careers tool.
+ * Internal facade type (isolated from shared per ADR-031).
+ *
+ * Structure:
+ * - sessionId: auth mapping (interface concern)
+ * - referenceContext: adhocContextBase (domain fields)
+ * - search filters: excludedContextFields, limit, pathLimit, etc.
+ */
+export const mcpSearchCareersParamsSchema = z
+  .object({
+    sessionId: sessionIdSchema,
+    referenceContext: adhocContextBase,
+    excludedContextFields: z
+      .array(contextFieldSchema)
+      .default([])
+      .refine((fields) => !fields.includes("skills"), {
+        message: "Cannot exclude 'skills' - required for ranking candidates",
+      }),
+    excludedCreationReasons: z.array(newContextReasonSchema).default([]),
+    recencyThresholdMonths: z.number().min(1).optional(),
+    limit: z.number().min(1).max(100).default(20),
+    pathLimit: z.number().min(1).max(100).default(20),
+  })
+  .transform((data) => ({
+    ...data,
+    pathLimit: Math.min(data.pathLimit, data.limit),
+  }));
+
+export type McpSearchCareersParams = z.infer<typeof mcpSearchCareersParamsSchema>;
 
 export class SearchCareersTool extends BaseTool<McpSearchCareersParams, ScoredMatchedCandidate[]> {
   constructor(deps: BaseToolDependencies) {
@@ -17,14 +55,20 @@ export class SearchCareersTool extends BaseTool<McpSearchCareersParams, ScoredMa
       throw new ValidationError("At least one field is required in reference context");
     }
 
-    const normalized = await this.normalizer.normalizeAdhocContext(params.referenceContext, userId);
+    // 1. Normalize user input (fuzzy matching, dictionary lookup)
+    const normalizedPartial = await this.normalizer.normalizeAdhocContext(params.referenceContext, userId);
+
+    // 2. Validation (ADR-031 Правило 3: validation после normalizer)
+    // Ensures all fields match schema (min length, array constraints)
+    // Throws ZodError if invalid (caught by MCP error handler)
+    const validated = adhocContextBase.parse(normalizedPartial);
 
     const { sessionId: _sessionId, referenceContext: _ref, ...searchParams } = params;
 
     return this.coreClient.client.search.adhoc.query({
       userId,
       ...searchParams,
-      referenceContext: normalized,
+      referenceContext: validated,
     });
   }
 }

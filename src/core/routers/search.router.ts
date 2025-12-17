@@ -5,7 +5,7 @@ import {
   matchedCandidateWithPathSchema,
   scoredMatchedCandidateSchema,
   targetSearchParamsSchema,
-  userSearchParamsSchema,
+  userSearchParamsBaseSchema,
 } from "../../shared/schemas.js";
 
 import { publicProcedure, t } from "./trpc.js";
@@ -19,7 +19,7 @@ export const searchRouter = t.router({
     }),
 
   byUser: publicProcedure
-    .input(userSearchParamsSchema)
+    .input(userSearchParamsBaseSchema)
     .output(z.array(scoredMatchedCandidateSchema))
     .query(async ({ ctx, input }) => {
       return ctx.searchManager.searchByUser(input);

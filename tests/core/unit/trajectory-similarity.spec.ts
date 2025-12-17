@@ -21,7 +21,7 @@ import type { UserContext } from "../../../src/shared/schemas.js";
 type PrivateMethods = {
   computeJaccardDistance: (setA: Set<string>, setB: Set<string>) => number;
   derivative: (series: number[]) => number[];
-  calculateDurationMonths: (trajectory: UserContext[]) => number[];
+  calculateStepsWithDuration: (trajectory: UserContext[]) => { context: UserContext; duration: number }[];
   validatePathLength: (pathLength: number, userTrajectoryLength: number, candidateTrajectoryLength: number) => void;
   trajectoryDistance: (stepA: UserContext, stepB: UserContext, durationA: number, durationB: number) => number;
 };
@@ -40,7 +40,7 @@ describe("TrajectorySimilarityService", () => {
     userStories = new UserStories();
   });
 
-  describe("TC-TS1: Date.now() зависимость в calculateDurationMonths", () => {
+  describe("TC-TS1: Date.now() зависимость в calculateStepsWithDuration", () => {
     /**
      * TC-TS1: Duration последнего контекста зависит от текущей даты
      *
@@ -59,7 +59,8 @@ describe("TrajectorySimilarityService", () => {
     it("TC-TS1: duration последнего контекста зависит от Date.now()", () => {
       const u10 = userStories.getStoryBy("U10");
 
-      const durations = privateMethods.calculateDurationMonths(u10.contexts);
+      const steps = privateMethods.calculateStepsWithDuration(u10.contexts);
+      const durations = steps.map((step) => step.duration);
 
       // Первые два duration стабильны
       expect(durations[0]).toBe(12); // 2022-01-01 → 2023-01-01
@@ -340,7 +341,7 @@ describe("TrajectorySimilarityService", () => {
      * TC-TS8: Non-chronological contexts → throw
      *
      * Что тестируем:
-     * calculateDurationMonths проверяет что контексты упорядочены по времени.
+     * calculateStepsWithDuration проверяет что контексты упорядочены по времени.
      *
      * Бизнес-правило:
      * Траектория должна быть хронологической (first job → current).
@@ -349,7 +350,7 @@ describe("TrajectorySimilarityService", () => {
       const u10 = userStories.getStoryBy("U10");
       const reversed = u10.contexts.toReversed(); // 2025 → 2023 → 2022
 
-      expect(() => privateMethods.calculateDurationMonths(reversed)).toThrow("chronologically ordered");
+      expect(() => privateMethods.calculateStepsWithDuration(reversed)).toThrow("chronologically ordered");
     });
   });
 });

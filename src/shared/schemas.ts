@@ -55,6 +55,11 @@ function makeFieldNullable(schema: ZodTypeAny): z.ZodNullable<ZodTypeAny> {
  * @example
  * const extractionSchema = makeNullable(userContextSchemaBase);
  * // Root is object, all fields become T | null
+ *
+ * ⚠️ FACADE-SPECIFIC UTILITY (temporary location)
+ * Used only in Facade LangGraph agents (extract-goal, clarify-goal).
+ * TODO (Phase 2): Move to facade/utils/llm-schemas.ts
+ * See: ADR-031-type-layering-strategy.md
  */
 export function makeNullable<T extends z.ZodObject<z.ZodRawShape>>(schema: T): z.ZodObject<z.ZodRawShape> {
   const unwrapped = unwrapSchema(schema);
@@ -72,6 +77,19 @@ export function makeNullable<T extends z.ZodObject<z.ZodRawShape>>(schema: T): z
   }
 
   return z.object(newShape);
+}
+
+/**
+ * Apply pathLimit transform: clamp pathLimit to limit.
+ * Used in search params schemas to ensure pathLimit <= limit.
+ *
+ * @internal Helper for DRY - reduces 5 transform duplications to 1
+ */
+function withPathLimitTransform<T extends z.ZodTypeAny>(schema: T): z.ZodEffects<T> {
+  return schema.transform((data: z.infer<T>) => ({
+    ...data,
+    pathLimit: Math.min(data.pathLimit, data.limit),
+  }));
 }
 
 // ==========================================
@@ -302,14 +320,45 @@ const userContextSchemaBase = z.object({
 });
 
 /**
- * Adhoc context extraction schema for quick search.
- * Uses makeNullable() for OpenAI Structured Output compatibility.
- * All fields from userContextSchemaBase made nullable (T | null).
+ * Adhoc context base schema for search reference context.
+ * Contains subset of userContext fields used for adhoc search.
  *
- * Note: Type safety is partially lost due to Zod's recursive wrapper,
- * but runtime behavior is correct. Future: explicit schema with all ContextField values.
+ * Design (ADR-031):
+ * - Uses .pick().partial() for all optional fields (Правило 4)
+ * - Runtime type matches normalizer output (partial object with .optional())
+ * - LLM extraction wraps with makeNullable() locally (not exported)
+ *
+ * Fields:
+ * - position, domains, skills, industry, cityName: normalized by Normalizer
+ * - countryCode, languages: pass-through (ISO codes don't need normalization)
+ *
+ * Used by:
+ * - adhocSearchParamsSchema (Core API)
+ * - Facade MCP tools (search-careers.tool.ts inline)
+ * - load-context.ts (LLM extraction via makeNullable wrapper)
  */
-export const adhocUserContextSchema = makeNullable(userContextSchemaBase);
+export const adhocContextBase = userContextSchemaBase
+  .pick({
+    position: true,
+    domains: true,
+    skills: true,
+    industry: true,
+    cityName: true,
+    countryCode: true,
+    languages: true,
+  })
+  .partial();
+
+export type AdhocContextBase = z.infer<typeof adhocContextBase>;
+
+/**
+ * LLM extraction schema for adhoc context.
+ * Wraps adhocContextBase with makeNullable for OpenAI Structured Output compatibility.
+ *
+ * Note: Used by SearchGraph state (AdhocUserContext type). For new code prefer
+ * adhocContextBase with local makeNullable wrapper (ADR-031 Правило 2).
+ */
+export const adhocUserContextSchema = makeNullable(adhocContextBase);
 
 export type AdhocUserContext = z.infer<typeof adhocUserContextSchema>;
 
@@ -451,27 +500,19 @@ export const userSearchParamsRawSchema = z.object({
  * Validated base schema WITH pathLimit auto-clamped to limit
  * Exported for reuse in Facade (replace userId with sessionId)
  */
-export const userSearchParamsBaseSchema = userSearchParamsRawSchema.transform((data) => ({
-  ...data,
-  pathLimit: Math.min(data.pathLimit, data.limit),
-}));
+export const userSearchParamsBaseSchema = withPathLimitTransform(userSearchParamsRawSchema);
 
 /**
- * User search parameters (Mode 2: search by user's current context)
- * Flat structure with inverse field filtering logic
+ * User search parameters for Core API (Mode 2: search by user's current context).
+ * Base schema with userId (domain concern).
  */
-export const userSearchParamsSchema = userSearchParamsBaseSchema;
+export type UserSearchParams = z.infer<typeof userSearchParamsBaseSchema>;
 
-export type UserSearchParams = z.infer<typeof userSearchParamsSchema>;
-
-export const adhocSearchParamsSchema = userSearchParamsRawSchema
-  .extend({
-    referenceContext: adhocUserContextSchema,
-  })
-  .transform((data) => ({
-    ...data,
-    pathLimit: Math.min(data.pathLimit, data.limit),
-  }));
+export const adhocSearchParamsSchema = withPathLimitTransform(
+  userSearchParamsRawSchema.extend({
+    referenceContext: adhocContextBase,
+  }),
+);
 
 export type AdhocSearchParams = z.infer<typeof adhocSearchParamsSchema>;
 
@@ -479,10 +520,7 @@ export type AdhocSearchParams = z.infer<typeof adhocSearchParamsSchema>;
  * Current search parameters (without userId/sessionId) — for Telegram NLP extraction
  * User's context fetched from DB automatically by Core API
  */
-export const currentSearchParamsBaseSchema = userSearchParamsRawSchema.omit({ userId: true }).transform((data) => ({
-  ...data,
-  pathLimit: Math.min(data.pathLimit, data.limit),
-}));
+export const currentSearchParamsBaseSchema = withPathLimitTransform(userSearchParamsRawSchema.omit({ userId: true }));
 
 export type CurrentSearchParamsBase = z.infer<typeof currentSearchParamsBaseSchema>;
 
@@ -1241,35 +1279,14 @@ export const mcpGetStoryParamsSchema = z.object({
 export type McpGetStoryParams = z.infer<typeof mcpGetStoryParamsSchema>;
 
 /**
- * Params for search_careers MCP tool (adhoc search).
- * Search candidates by reference context (without user story).
- */
-export const mcpSearchCareersParamsSchema = userSearchParamsRawSchema
-  .omit({ userId: true })
-  .extend({
-    referenceContext: adhocUserContextSchema,
-    sessionId: sessionIdSchema,
-  })
-  .transform((data) => ({
-    ...data,
-    pathLimit: Math.min(data.pathLimit, data.limit),
-  }));
-
-export type McpSearchCareersParams = z.infer<typeof mcpSearchCareersParamsSchema>;
-
-/**
  * Params for search_user_careers MCP tool.
  * Search candidates using authenticated user's story.
  */
-export const mcpSearchUserCareersParamsSchema = userSearchParamsRawSchema
-  .omit({ userId: true })
-  .extend({
+export const mcpSearchUserCareersParamsSchema = withPathLimitTransform(
+  userSearchParamsRawSchema.omit({ userId: true }).extend({
     sessionId: sessionIdSchema,
-  })
-  .transform((data) => ({
-    ...data,
-    pathLimit: Math.min(data.pathLimit, data.limit),
-  }));
+  }),
+);
 
 export type McpSearchUserCareersParams = z.infer<typeof mcpSearchUserCareersParamsSchema>;
 
