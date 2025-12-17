@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+// @ts-nocheck
 
 import { readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
