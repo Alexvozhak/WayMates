@@ -58,7 +58,16 @@ export const NODE = {
 
 export type NodeName = (typeof NODE)[keyof typeof NODE];
 
-export type SearchUserIntent = "proceed" | "validate" | "clarify" | "save" | "change" | "delete" | "filter" | "cancel";
+export type SearchUserIntent =
+  | "proceed"
+  | "validate"
+  | "clarify"
+  | "save"
+  | "change"
+  | "delete"
+  | "filter"
+  | "cancel"
+  | "unknown";
 
 export const searchStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),

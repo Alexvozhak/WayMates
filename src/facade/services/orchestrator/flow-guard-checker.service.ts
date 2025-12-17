@@ -25,6 +25,22 @@ const cancelNoActiveMessage = "No active operations to cancel.";
 const goalNotSetMessage = "You don't have a goal set yet.";
 const goalNotSetDeleteMessage = "You have no goal to delete.";
 
+const unknownMessage = `I didn't understand that command. Here's what I can do:
+
+Search:
+• Quick search — "I'm a junior backend developer"
+• Find careers — "show career paths"
+
+Profile:
+• Tell story — "tell my career story"
+• Add context — "add new position"
+
+Goal:
+• Set goal — "I want to become a senior engineer"
+• View goal — "show my goal"
+
+Type "help" for more options.`;
+
 export class FlowGuardChecker {
   constructor(private readonly coreClient: CoreClient) {}
 
@@ -33,6 +49,11 @@ export class FlowGuardChecker {
     // Help
     if (intent === "help") {
       return createResponse(helpMessage);
+    }
+
+    // Unknown — unclear or garbage input
+    if (intent === "unknown") {
+      return createResponse(unknownMessage);
     }
 
     // Cancel without active graph (active graph handled in ConverseTool)

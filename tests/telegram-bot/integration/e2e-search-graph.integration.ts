@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll, afterEach } from "vitest";
 
 import { TelegramTestContext } from "../helpers/test-context.js";
 
-import type { SessionId } from "../../../src/shared/schemas.js";
+import type { SessionId, UserId } from "../../../src/shared/schemas.js";
 
 /**
  * E2E тест SearchGraph через Telegram Bot MCP.
@@ -25,7 +25,7 @@ import type { SessionId } from "../../../src/shared/schemas.js";
  */
 describe("E2E: SearchGraph via Telegram Bot MCP", () => {
   let testSessionId: SessionId;
-  let testUserId: UserId;  // Real userId from registration (UUIDv7)
+  let testUserId: UserId; // Real userId from registration (UUIDv7)
   const TEST_TELEGRAM_USER_ID = 999999;
 
   beforeAll(async () => {
@@ -36,7 +36,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
       telegramUserId: TEST_TELEGRAM_USER_ID,
     });
     testSessionId = registerResult.sessionId;
-    testUserId = registerResult.userId;  // Store for cleanup
+    testUserId = registerResult.userId; // Store for cleanup
 
     console.log(`[E2E Setup] Registered user: ${testUserId}`);
 
@@ -49,7 +49,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
         sessionId: testSessionId,
       });
       console.log(`[E2E Setup] Cancelled active graph (if any)`);
-    } catch (error) {
+    } catch {
       console.log(`[E2E Setup] No active graph to cancel (fresh start)`);
     }
 
@@ -84,9 +84,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     });
 
     console.log(`[E2E Turn 1] Response phase: ${turn1.result.phase}`);
-    expect(turn1.result.phase, "Turn 1: startAdhoc intent MUST trigger exploration phase").toBe(
-      "showing_exploration",
-    );
+    expect(turn1.result.phase, "Turn 1: startAdhoc intent MUST trigger exploration phase").toBe("showing_exploration");
 
     if (turn1.result.phase !== "showing_exploration") {
       expect.fail("Type guard failed after strict assertion");
@@ -123,7 +121,10 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
       "Turn 2: With relaxed filters (excludes geo/industry), MUST return candidates matching junior backend",
     ).toBeGreaterThanOrEqual(2);
 
-    expect(turn2.result.appliedCurrentFilters, "Turn 2: appliedCurrentFilters MUST be present after filter intent").toBeDefined();
+    expect(
+      turn2.result.appliedCurrentFilters,
+      "Turn 2: appliedCurrentFilters MUST be present after filter intent",
+    ).toBeDefined();
 
     const excludedFields = turn2.result.appliedCurrentFilters?.excludedContextFields ?? [];
     console.log(`[E2E Turn 2] Excluded fields: ${excludedFields.join(", ")}`);
@@ -175,9 +176,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     });
 
     console.log(`[E2E Turn 4] Response phase: ${turn4.result.phase}`);
-    expect(turn4.result.phase, "Turn 4: save intent MUST persist goal and show search results").toBe(
-      "showing_results",
-    );
+    expect(turn4.result.phase, "Turn 4: save intent MUST persist goal and show search results").toBe("showing_results");
 
     if (turn4.result.phase !== "showing_results") {
       expect.fail("Type guard failed after strict assertion");
@@ -188,9 +187,10 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
       turn4.result.results.length,
       "Turn 4: With relaxed filters + middle backend goal, MUST return pathfinders (U3, U8, U10, U11)",
     ).toBeGreaterThanOrEqual(2);
-    expect(turn4.result.results.length, "Turn 4: Results should not exceed expected pathfinders count").toBeLessThanOrEqual(
-      5,
-    );
+    expect(
+      turn4.result.results.length,
+      "Turn 4: Results should not exceed expected pathfinders count",
+    ).toBeLessThanOrEqual(5);
 
     // Verify goal persisted to Neo4j
     const savedGoal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
@@ -213,9 +213,10 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
           return isMiddle && isBackend;
         }) ?? false;
 
-      expect(hasMiddleBackend, `Candidate ${result.userId} MUST have middle backend in trajectory to be a pathfinder`).toBe(
-        true,
-      );
+      expect(
+        hasMiddleBackend,
+        `Candidate ${result.userId} MUST have middle backend in trajectory to be a pathfinder`,
+      ).toBe(true);
     }
   }
 

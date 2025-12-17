@@ -42,6 +42,7 @@ Intent classification:
 - FILTER: User wants to refine search results by excluding context fields, transition reasons, or adjusting parameters
   + Optional filters: excludedContextFields (array of strings), excludedCreationReasons (array of strings), recencyThresholdMonths (number), limit (number)
 - CANCEL: User wants to cancel, stop, exit
+- UNKNOWN: Message is unclear, garbage, or doesn't match any intent above
 
 Examples:
 - "I've decided" → { intent: "proceed" }
@@ -58,6 +59,9 @@ Examples:
 - "filter without birthYear and cityName" → { intent: "filter", filters: { excludedContextFields: ["birthYear", "cityName"], excludedCreationReasons: null, recencyThresholdMonths: null, limit: null } }
 - "no company changes" → { intent: "filter", filters: { excludedContextFields: null, excludedCreationReasons: ["company_changed"], recencyThresholdMonths: null, limit: null } }
 - "cancel" → { intent: "cancel" }
+- "asdfghjkl" → { intent: "unknown" }
+- "what's the weather?" → { intent: "unknown" }
+- "maybe" → { intent: "unknown" }
 
 Return: { intent, filters } where filters is null if not specified or intent is not "validate" or "filter"`;
 

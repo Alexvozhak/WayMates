@@ -19,6 +19,9 @@ export function routeAfterShowExploration(state: SearchStateType): NodeName {
     case "cancel": {
       return NODE.cancel;
     }
+    case "unknown": {
+      return NODE.show_exploration;
+    }
     default: {
       return NODE.extract_goal;
     }
@@ -44,6 +47,9 @@ export function routeAfterShowGoal(state: SearchStateType): NodeName {
     case "cancel": {
       return NODE.cancel;
     }
+    case "unknown": {
+      return NODE.show_goal;
+    }
     default: {
       return NODE.set_goal;
     }
@@ -66,6 +72,9 @@ export function routeAfterAskAfterValidate(state: SearchStateType): NodeName {
     case "cancel": {
       return NODE.cancel;
     }
+    case "unknown": {
+      return NODE.ask_after_validate;
+    }
     default: {
       return NODE.set_goal;
     }
@@ -87,6 +96,9 @@ export function routeAfterShowResults(state: SearchStateType): NodeName {
     }
     case "cancel": {
       return NODE.cancel;
+    }
+    case "unknown": {
+      return NODE.show_results;
     }
     default: {
       return NODE.cancel;

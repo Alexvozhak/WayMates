@@ -1,14 +1,15 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { interrupt } from "@langchain/langgraph";
 
-import { targetContextSchema } from "../../../../shared/schemas.js";
+import { makeNullable, targetContextSchema } from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { GOAL_CLARIFICATION_PROMPT } from "../prompts.js";
 import { PHASE } from "../state.js";
 
 import type { SearchStateType } from "../state.js";
 
-const clarificationModel = getModel("extraction").withStructuredOutput(targetContextSchema.partial());
+const clarifiableGoalSchema = makeNullable(targetContextSchema);
+const clarificationModel = getModel("extraction").withStructuredOutput(clarifiableGoalSchema);
 
 export async function clarifyGoalNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
   const { extractedGoal, messages, clarifyRound } = state;
@@ -23,10 +24,7 @@ export async function clarifyGoalNode(state: SearchStateType): Promise<Partial<S
   const response = String(userResponse);
   const currentGoalJson = JSON.stringify(extractedGoal ?? {});
 
-  const prompt = GOAL_CLARIFICATION_PROMPT.replace("{currentGoal}", currentGoalJson).replace(
-    "{userMessage}",
-    response,
-  );
+  const prompt = GOAL_CLARIFICATION_PROMPT.replace("{currentGoal}", currentGoalJson).replace("{userMessage}", response);
 
   const updated = await clarificationModel.invoke([
     { role: "system", content: prompt },

@@ -17,7 +17,7 @@ const intentWithFiltersSchema = z.object({
       filters: currentSearchParamsModificationSchema.nullable(),
     }),
     z.object({
-      intent: z.enum(["proceed", "clarify", "save", "change", "delete", "cancel"]),
+      intent: z.enum(["proceed", "clarify", "save", "change", "delete", "cancel", "unknown"]),
       filters: z.null(),
     }),
   ]),

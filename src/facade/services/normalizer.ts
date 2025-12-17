@@ -154,7 +154,7 @@ Return: { normalized: string[], rejected: string[] }`;
 
   private async normalizeTargetField(
     type: SimpleDictionaryType,
-    field: FieldFilter | undefined,
+    field: FieldFilter | null | undefined,
     userId: UserId,
   ): Promise<FieldFilter | undefined> {
     if (!field) return undefined;

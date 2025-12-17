@@ -20,6 +20,7 @@ export const NON_GRAPH_INTENT = {
   deleteTrail: "deleteTrail",
   cancel: "cancel",
   help: "help",
+  unknown: "unknown",
 } as const;
 
 export const graphIntentSchema = z.enum([
@@ -40,6 +41,7 @@ export const nonGraphIntentSchema = z.enum([
   NON_GRAPH_INTENT.deleteTrail,
   NON_GRAPH_INTENT.cancel,
   NON_GRAPH_INTENT.help,
+  NON_GRAPH_INTENT.unknown,
 ]);
 
 export type GraphIntent = z.infer<typeof graphIntentSchema>;
@@ -63,6 +65,7 @@ const intentDescriptions: ReadonlyMap<UserIntent, string> = new Map([
   ["search", "wants to find similar careers"],
   ["cancel", "wants to cancel current operation"],
   ["help", "needs help with commands"],
+  ["unknown", "unclear message or doesn't match any intent"],
 ]);
 
 function buildIntentList(): string {
@@ -75,7 +78,7 @@ const INTENT_CLASSIFICATION_PROMPT = `Classify user intent from their message.
 Intent types:
 ${buildIntentList()}
 
-If user message is unclear or doesn't match any intent, classify as "help".`;
+CRITICAL: If message is unclear, garbage, or doesn't match any intent, classify as "unknown".`;
 
 const classificationSchema = z.object({ intent: userIntentSchema });
 const classifier = getModel("deterministic").withStructuredOutput(classificationSchema);

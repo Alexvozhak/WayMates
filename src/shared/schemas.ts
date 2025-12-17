@@ -301,9 +301,14 @@ const userContextSchemaBase = z.object({
     .describe("Personal reflection on this transition: emotions, insights, lessons learned (max 200 chars)"),
 });
 
-// Use partial() instead of makeNullable() to avoid checkpoint serialization issues
-// partial() makes fields optional (T | undefined) while makeNullable() makes them (T | null)
-// Checkpoints preserve undefined correctly but convert null inconsistently
+/**
+ * Adhoc context extraction schema for quick search.
+ * Uses makeNullable() for OpenAI Structured Output compatibility.
+ * All fields from userContextSchemaBase made nullable (T | null).
+ *
+ * Note: Type safety is partially lost due to Zod's recursive wrapper,
+ * but runtime behavior is correct. Future: explicit schema with all ContextField values.
+ */
 export const adhocUserContextSchema = makeNullable(userContextSchemaBase);
 
 export type AdhocUserContext = z.infer<typeof adhocUserContextSchema>;
@@ -367,16 +372,16 @@ export type FieldFilter = z.infer<typeof fieldFilterSchema>;
  * Target context for search criteria
  * Uses FieldFilter discriminated union pattern
  *
- * IMPORTANT: Uses .nullable() instead of .optional() for OpenAI structured output compatibility.
- * OpenAI API does not support .optional() fields in structured outputs.
- * See: https://platform.openai.com/docs/guides/structured-outputs
+ * Business type uses .optional() for tests and type safety.
+ * LLM extraction applies makeNullable() wrapper locally for OpenAI compatibility.
+ * See extract-goal.ts, clarify-goal.ts for makeNullable() usage.
  */
 export const targetContextSchema = z.object({
-  position: fieldFilterSchema.nullable().describe("Target position filter"),
-  countries: fieldFilterSchema.nullable().describe("Target countries filter"),
-  domains: fieldFilterSchema.nullable().describe("Target work domains filter"),
-  skills: fieldFilterSchema.nullable().describe("Target skills filter"),
-  languages: fieldFilterSchema.nullable().describe("Target languages filter"),
+  position: fieldFilterSchema.optional().describe("Target position filter"),
+  countries: fieldFilterSchema.optional().describe("Target countries filter"),
+  domains: fieldFilterSchema.optional().describe("Target work domains filter"),
+  skills: fieldFilterSchema.optional().describe("Target skills filter"),
+  languages: fieldFilterSchema.optional().describe("Target languages filter"),
 });
 
 export type TargetContext = z.infer<typeof targetContextSchema>;
