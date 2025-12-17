@@ -30,31 +30,99 @@ function buildStyles(): string {
 }
 
 /**
- * Build JavaScript for chart interactions.
+ * Build field config and trace builders JavaScript.
  */
-function buildScript(data: ChartPageData, title: string): string {
-  return `<script>
-    const chartData = ${JSON.stringify(data)};
+ 
+function buildTraceFunctions(): string {
+  return `const GOAL_STAR_COLOR = '#fbbf24';
+    function getFieldConfig(field) {
+      const configs = { position: { label: 'Грейд', levels: ['junior', 'middle', 'senior', 'lead'] }, domains: { label: 'Домен', levels: [] }, cityName: { label: 'Город', levels: [] }, industry: { label: 'Индустрия', levels: [] }, salaryExact: { label: 'Зарплата', levels: [] } };
+      return configs[field] || { label: field, levels: [] };
+    }
+    function buildTracesForField(field, xaxisId, yaxisId) {
+      const traces = []; const config = getFieldConfig(field); const levels = config.levels;
+      for (const traj of chartData.trajectories) {
+        const x = traj.points.map(p => new Date(p.timestamp)); const rawValues = traj.points.map(p => p.values[field]); const y = levels.length > 0 ? rawValues.map(v => v === null ? null : levels.indexOf(v)) : rawValues; const hasMatchedContext = traj.matchedContextIndex !== undefined && traj.matchedContextIndex >= 0;
+        if (hasMatchedContext && traj.candidateType === 'pathfinder') {
+          const matchedIdx = traj.matchedContextIndex;
+          if (matchedIdx > 0) { traces.push({ x: x.slice(0, matchedIdx + 1), y: y.slice(0, matchedIdx + 1), mode: 'lines+markers', name: traj.label + ' (путь к цели)', line: { color: traj.color, width: traj.width, shape: 'hv' }, marker: { size: 6, color: traj.color }, legendgroup: traj.label, showlegend: field === chartData.selectedFields[0], xaxis: xaxisId, yaxis: yaxisId }); }
+          traces.push({ x: [x[matchedIdx]], y: [y[matchedIdx]], mode: 'markers', name: traj.label + ' ⭐', marker: { symbol: 'star', size: 20, color: GOAL_STAR_COLOR, line: { color: traj.color, width: 2 } }, legendgroup: traj.label, showlegend: false, hovertemplate: '🎯 Достиг цели<br>%{x|%Y-%m-%d}<extra></extra>', xaxis: xaxisId, yaxis: yaxisId });
+          if (matchedIdx < x.length - 1) { traces.push({ x: x.slice(matchedIdx), y: y.slice(matchedIdx), mode: 'lines+markers', name: traj.label + ' (после)', line: { color: traj.color, width: traj.width, shape: 'hv' }, marker: { size: 6, color: traj.color }, opacity: 0.4, legendgroup: traj.label, showlegend: false, xaxis: xaxisId, yaxis: yaxisId }); }
+        } else {
+          const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : traj.candidateType === 'pathfinder' ? ' (Pathfinder)' : '';
+          traces.push({ x: x, y: y, mode: 'lines+markers', name: traj.label + badge, line: { color: traj.color, width: traj.width, shape: 'hv' }, marker: { size: 6, color: traj.color }, legendgroup: traj.label, showlegend: field === chartData.selectedFields[0], xaxis: xaxisId, yaxis: yaxisId });
+        }
+      }
+      return traces;
+    }
+    function buildAllTraces(fields) {
+      const allTraces = []; fields.forEach((field, index) => { const xaxisId = index === 0 ? 'x' : 'x' + (index + 1); const yaxisId = index === 0 ? 'y' : 'y' + (index + 1); allTraces.push(...buildTracesForField(field, xaxisId, yaxisId)); });
+      return allTraces;
+    }`;
+}
 
-    function renderChart() {
-      const traces = [];
-      // TODO: Build Plotly traces from trajectories
-      const layout = {
-        title: '${title}',
-        showlegend: true,
-        hovermode: 'closest'
-      };
+/**
+ * Build layout generator JavaScript.
+ */
+function buildLayoutFunction(title: string): string {
+  return `
+    function buildLayout(fields) {
+      const numFields = fields.length;
+      const subplotHeight = 0.85 / numFields;
+      const gap = 0.05 / Math.max(numFields - 1, 1);
+      const layout = { title: '${title}', showlegend: true, hovermode: 'closest', height: 300 + numFields * 200 };
+
+      fields.forEach((field, index) => {
+        const config = getFieldConfig(field);
+        const yaxisKey = index === 0 ? 'yaxis' : 'yaxis' + (index + 1);
+        const xaxisKey = index === 0 ? 'xaxis' : 'xaxis' + (index + 1);
+        const domainTop = 0.95 - index * (subplotHeight + gap);
+        const domainBottom = domainTop - subplotHeight;
+
+        layout[yaxisKey] = {
+          title: config.label, domain: [domainBottom, domainTop], anchor: index === 0 ? 'x' : 'x' + (index + 1),
+          tickmode: config.levels.length > 0 ? 'array' : 'auto',
+          tickvals: config.levels.length > 0 ? config.levels.map((_, i) => i) : undefined,
+          ticktext: config.levels.length > 0 ? config.levels : undefined,
+        };
+        layout[xaxisKey] = {
+          title: index === numFields - 1 ? (chartData.locale === 'ru' ? 'Дата' : 'Date') : '',
+          type: 'date', anchor: index === 0 ? 'y' : 'y' + (index + 1),
+        };
+      });
+      return layout;
+    }`;
+}
+
+/**
+ * Build render and event handling JavaScript.
+ */
+function buildRenderFunction(): string {
+  return `
+    function renderChart(selectedFields) {
+      const fields = selectedFields && selectedFields.length > 0 ? selectedFields : chartData.selectedFields;
+      const traces = buildAllTraces(fields);
+      const layout = buildLayout(fields);
       Plotly.newPlot('main-chart', traces, layout);
     }
 
     document.getElementById('apply-btn').addEventListener('click', () => {
-      const selected = Array.from(document.querySelectorAll('.checkboxes input:checked'))
-        .map(input => input.value);
-      // TODO: Filter and re-render chart
-      renderChart();
+      const selected = Array.from(document.querySelectorAll('.checkboxes input:checked')).map(input => input.value);
+      renderChart(selected);
     });
 
-    renderChart();
+    renderChart();`;
+}
+
+/**
+ * Build complete JavaScript for chart interactions.
+ */
+function buildScript(data: ChartPageData, title: string): string {
+  return `<script>
+    const chartData = ${JSON.stringify(data)};
+    ${buildTraceFunctions()}
+    ${buildLayoutFunction(title)}
+    ${buildRenderFunction()}
   </script>`;
 }
 
