@@ -1,130 +1,93 @@
+import { AgentInvariantError } from "../../errors.js";
+import { buildRouteMap } from "../shared/routing.js";
+
 import { MAX_CLARIFY_ROUNDS, MAX_NEW_POSITION_ROUNDS, NODE, PHASE } from "./state.js";
 
-import type { NodeName, SearchStateType } from "./state.js";
+import type { NodeName, SearchPhase, SearchStateType, SearchUserIntent } from "./state.js";
+
+type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
+
+// =============================================================================
+// SOURCE OF TRUTH: допустимые destinations для каждой фазы
+// =============================================================================
+
+// prettier-ignore
+const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
+  [PHASE.showingExploration,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showingGoal,          buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.askingAfterValidate,  buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showingResults,       buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
+]);
+
+// Static route maps (not phase-dependent)
+export const CHECK_GOAL_ROUTE_MAP = buildRouteMap([NODE.search, NODE.explore, NODE.load_existing_goal]);
+export const APPLY_FILTERS_ROUTE_MAP = buildRouteMap([NODE.explore, NODE.search]);
+
+// =============================================================================
+// ROUTES: маппинг intent → node (фабрика с state-dependent параметрами)
+// =============================================================================
+
+type RouteFlags = {
+  canClarify: boolean;
+  canChangePosition: boolean;
+};
+
+function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, RouteMap>> {
+  const { canClarify, canChangePosition } = flags;
+
+  // prettier-ignore
+  return {
+    [PHASE.showingExploration]: { proceed: NODE.extract_goal, filter: NODE.apply_filters, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showingGoal]:        { validate: NODE.validate_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, save: NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.askingAfterValidate]:{ save: NODE.set_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, change: canChangePosition ? NODE.extract_goal : NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showingResults]:     { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.load_existing_goal, delete: NODE.delete_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+  } satisfies Partial<Record<SearchPhase, RouteMap>>;
+}
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+export function availableNodesByPhase(phase: SearchPhase): Partial<Record<NodeName, NodeName>> {
+  const map = PARSE_INTENT_ROUTE_MAPS.get(phase);
+  if (!map) throw new AgentInvariantError("availableNodesByPhase", `No route map for phase: ${phase}`);
+  return map;
+}
+
+// Combined destinations for parse_search_intent (routes to all phase-specific nodes)
+export const PARSE_INTENT_ALL_DESTINATIONS = {
+  ...availableNodesByPhase(PHASE.showingExploration),
+  ...availableNodesByPhase(PHASE.showingGoal),
+  ...availableNodesByPhase(PHASE.askingAfterValidate),
+  ...availableNodesByPhase(PHASE.showingResults),
+};
+
+export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
+  const { phase, clarifyRound, newPositionRound, searchUserIntent } = state;
+
+  if (phase === PHASE.failed) return NODE.cancel;
+  if (!searchUserIntent) throw new AgentInvariantError("routeAfterParseSearchIntent", "searchUserIntent missing");
+
+  const flags: RouteFlags = {
+    canClarify: clarifyRound < MAX_CLARIFY_ROUNDS,
+    canChangePosition: newPositionRound < MAX_NEW_POSITION_ROUNDS,
+  };
+
+  const routes = createIntentRoutes(flags);
+  const phaseRoutes = routes[phase];
+  const defaultRoute = phase === PHASE.showingGoal ? NODE.set_goal : NODE.cancel;
+
+  return phaseRoutes?.[searchUserIntent] ?? defaultRoute;
+}
 
 export function routeAfterCheckGoal(state: SearchStateType): NodeName {
-  if (state.existingGoal) {
-    return NODE.load_existing_goal;
-  }
-  return NODE.explore;
-}
-
-export function routeAfterShowExploration(state: SearchStateType): NodeName {
-  const { searchUserIntent } = state;
-
-  switch (searchUserIntent) {
-    case "filter": {
-      return NODE.apply_filters;
-    }
-    case "cancel": {
-      return NODE.cancel;
-    }
-    case "unknown": {
-      return NODE.show_exploration;
-    }
-    default: {
-      return NODE.extract_goal;
-    }
-  }
-}
-
-export function routeAfterShowGoal(state: SearchStateType): NodeName {
-  const { searchUserIntent } = state;
-
-  switch (searchUserIntent) {
-    case "validate": {
-      return NODE.validate_goal;
-    }
-    case "clarify": {
-      if (state.clarifyRound >= MAX_CLARIFY_ROUNDS) {
-        return NODE.set_goal;
-      }
-      return NODE.clarify_goal;
-    }
-    case "save": {
-      return NODE.set_goal;
-    }
-    case "cancel": {
-      return NODE.cancel;
-    }
-    default: {
-      // Unknown/unrecognized intent → proceed with saving goal (default behavior)
-      return NODE.set_goal;
-    }
-  }
-}
-
-export function routeAfterAskAfterValidate(state: SearchStateType): NodeName {
-  const { searchUserIntent } = state;
-
-  switch (searchUserIntent) {
-    case "save": {
-      return NODE.set_goal;
-    }
-    case "clarify": {
-      if (state.clarifyRound >= MAX_CLARIFY_ROUNDS) {
-        return NODE.set_goal;
-      }
-      return NODE.clarify_goal;
-    }
-    case "change": {
-      if (state.newPositionRound >= MAX_NEW_POSITION_ROUNDS) {
-        return NODE.set_goal;
-      }
-      return NODE.extract_goal;
-    }
-    case "cancel": {
-      return NODE.cancel;
-    }
-    case "unknown": {
-      return NODE.ask_after_validate;
-    }
-    default: {
-      return NODE.set_goal;
-    }
-  }
-}
-
-export function routeAfterShowResults(state: SearchStateType): NodeName {
-  const { searchUserIntent } = state;
-
-  switch (searchUserIntent) {
-    case "filter": {
-      return NODE.apply_filters;
-    }
-    case "clarify": {
-      return NODE.load_existing_goal;
-    }
-    case "change": {
-      return NODE.load_existing_goal;
-    }
-    case "delete": {
-      return NODE.delete_goal;
-    }
-    case "cancel": {
-      return NODE.cancel;
-    }
-    case "unknown": {
-      return NODE.show_results;
-    }
-    default: {
-      return NODE.cancel;
-    }
-  }
+  return state.existingGoal ? NODE.load_existing_goal : NODE.explore;
 }
 
 export function routeAfterApplyFilters(state: SearchStateType): NodeName {
   return state.existingGoal ? NODE.search : NODE.explore;
 }
 
-/* eslint-disable @typescript-eslint/consistent-type-assertions -- LangGraph route map pattern */
-export function buildRouteMap(routing: NodeName[]): Record<NodeName, NodeName> {
-  const entries = routing.map((n) => [n, n] as const);
-  const record: Partial<Record<NodeName, NodeName>> = Object.fromEntries(entries);
-  return record as Record<NodeName, NodeName>;
-}
-/* eslint-enable @typescript-eslint/consistent-type-assertions */
-
-export function isTerminalPhase(phase: SearchStateType["phase"]): boolean {
+export function isTerminalPhase(phase: SearchPhase): boolean {
   return phase === PHASE.showingResults || phase === PHASE.cancelled || phase === PHASE.failed;
 }

@@ -2,15 +2,13 @@ import { interrupt } from "@langchain/langgraph";
 
 import { OPTIONS, PHASE } from "../state.js";
 
-import { parseUserIntent } from "./parse-intent.js";
-
 import type { SearchStateType } from "../state.js";
 
 /**
  * Show exploration node: displays all candidates and waits for user decision.
- * User can either proceed to set a goal or cancel.
+ * User can either proceed to set a goal, apply filters, or cancel.
  */
-export async function showExplorationNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
+export function showExplorationNode(state: SearchStateType): Partial<SearchStateType> {
   const userResponse = interrupt({
     type: "show_exploration",
     candidates: state.explorationResults,
@@ -18,11 +16,8 @@ export async function showExplorationNode(state: SearchStateType): Promise<Parti
     phase: PHASE.showingExploration,
   });
 
-  const response = String(userResponse);
-  const parsed = await parseUserIntent(response);
-
   return {
-    userResponse: response,
-    searchUserIntent: parsed.intent,
+    userResponse: String(userResponse),
+    phase: PHASE.showingExploration,
   };
 }

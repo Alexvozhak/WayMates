@@ -1,4 +1,5 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
+import { z } from "zod";
 
 import { lastValue } from "../shared/state-utils.js";
 
@@ -16,6 +17,25 @@ import type {
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
+export const searchPhaseSchema = z.enum([
+  "checking_goal",
+  "exploring",
+  "showing_exploration",
+  "extracting_goal",
+  "showing_goal",
+  "clarifying_goal",
+  "validating_goal",
+  "asking_after_validate",
+  "setting_goal",
+  "deleting_goal",
+  "searching",
+  "showing_results",
+  "cancelled",
+  "failed",
+]);
+
+export type SearchPhase = z.infer<typeof searchPhaseSchema>;
+
 export const PHASE = {
   checkingGoal: "checking_goal",
   exploring: "exploring",
@@ -31,9 +51,7 @@ export const PHASE = {
   showingResults: "showing_results",
   cancelled: "cancelled",
   failed: "failed",
-} as const;
-
-export type SearchPhase = (typeof PHASE)[keyof typeof PHASE];
+} as const satisfies Record<string, SearchPhase>;
 
 /* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
 export const NODE = {
@@ -41,6 +59,8 @@ export const NODE = {
   check_goal: "check_goal",
   explore: "explore",
   show_exploration: "show_exploration",
+  parse_search_intent: "parse_search_intent",
+  clarify_intent: "clarify_intent",
   extract_goal: "extract_goal",
   show_goal: "show_goal",
   clarify_goal: "clarify_goal",

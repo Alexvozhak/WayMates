@@ -1,5 +1,5 @@
 import { getModel } from "../../shared-tools/models.js";
-import { decisionSchema } from "../state.js";
+import { decisionSchema } from "../types.js";
 
 import type { ColdStartStateType } from "../state.js";
 import type { BaseMessage } from "@langchain/core/messages";

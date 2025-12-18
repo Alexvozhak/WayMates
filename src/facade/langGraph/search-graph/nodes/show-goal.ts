@@ -1,76 +1,44 @@
 import { interrupt } from "@langchain/langgraph";
 
 import { AgentInvariantError } from "../../../errors.js";
-import { hasConfigDeps } from "../../shared/types.js";
 import { NODE, OPTIONS, PHASE } from "../state.js";
-import { DEFAULT_LIMIT, MAX_LIMIT, MIN_LIMIT, MIN_RECENCY_THRESHOLD_MONTHS } from "../types.js";
-
-import { parseUserIntent } from "./parse-intent.js";
 
 import type { SearchStateType } from "../state.js";
-import type { TargetSearchParamsWithFeedback } from "../types.js";
-import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
-/* eslint-disable complexity -- multiple intent paths (validate with filters, clarify with text) */
-export async function showGoalNode(
-  state: SearchStateType,
-  config: LangGraphRunnableConfig,
-): Promise<Partial<SearchStateType>> {
+/**
+ * Show goal node: displays extracted goal and waits for user decision.
+ * User can validate, clarify, save, or cancel.
+ *
+ * Conditional interrupt: skips interrupt if userResponse already exists
+ * (from load_existing_goal flow where initial message should be used).
+ */
+export function showGoalNode(state: SearchStateType): Partial<SearchStateType> {
   const { extractedGoal, userResponse: stateUserResponse } = state;
 
   if (!extractedGoal) {
     throw new AgentInvariantError(NODE.show_goal, "extractedGoal must exist before showing");
   }
 
-  if (!hasConfigDeps(config)) {
-    throw new AgentInvariantError(NODE.show_goal, "Missing dependencies");
-  }
-  const { normalizer } = config.configurable;
-
-  // Conditional interrupt: use state.userResponse if available (from check_goal flow),
+  // Conditional interrupt: use state.userResponse if available (from load_existing_goal),
   // otherwise interrupt for user input (from clarify_goal/extract_goal flow)
-  const userResponse =
-    stateUserResponse && stateUserResponse !== ""
-      ? stateUserResponse
-      : interrupt({
-          type: "show_goal",
-          extractedGoal,
-          options: OPTIONS.showGoal,
-          phase: PHASE.showingGoal,
-        });
+  const hasExistingResponse = stateUserResponse && stateUserResponse !== "";
 
-  const response = String(userResponse);
-  const parsed = await parseUserIntent(response);
-
-  // Handle filters for validate intent
-  let targetSearchParams: TargetSearchParamsWithFeedback | null = null;
-
-  if (parsed.intent === "validate" && parsed.filters) {
-    const { normalized, rejected } = await normalizer.normalizeReasons(parsed.filters.excludedCreationReasons ?? []);
-
-    const limit = parsed.filters.limit ? Math.min(Math.max(parsed.filters.limit, MIN_LIMIT), MAX_LIMIT) : DEFAULT_LIMIT;
-
-    const recencyThresholdMonths = parsed.filters.recencyThresholdMonths
-      ? Math.max(parsed.filters.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
-      : undefined;
-
-    targetSearchParams = {
-      targetContext: extractedGoal,
-      excludedCreationReasons: normalized,
-      recencyThresholdMonths,
-      limit,
-      rejectedReasons: rejected,
+  if (hasExistingResponse) {
+    return {
+      userResponse: stateUserResponse,
+      phase: PHASE.showingGoal,
     };
   }
 
-  // Handle clarificationText for clarify intent
-  const clarificationText = parsed.intent === "clarify" ? parsed.clarificationText : null;
+  const userResponse = interrupt({
+    type: "show_goal",
+    extractedGoal,
+    options: OPTIONS.showGoal,
+    phase: PHASE.showingGoal,
+  });
 
   return {
-    userResponse: "", // Clear to ensure next show_goal does interrupt
-    searchUserIntent: parsed.intent,
-    targetSearchParams,
-    clarificationText,
+    userResponse: String(userResponse),
+    phase: PHASE.showingGoal,
   };
 }
-/* eslint-enable complexity */

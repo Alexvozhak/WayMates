@@ -1,15 +1,16 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
-import { z } from "zod";
+
+import { lastValue } from "../shared/state-utils.js";
 
 import { PHASE } from "./types.js";
 
-import type { ColdStartPhase, CurrentEntityContext } from "./types.js";
+import type { ColdStartPhase, CurrentEntityContext, ParsedDecision } from "./types.js";
 import type { ContextAgenda, MissingField, Trail, UserContext, UserId } from "../../../shared/schemas.js";
 import type { ExtractableContext, ExtractableTrail } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 export { PHASE } from "./types.js";
-export type { ColdStartPhase, CurrentEntityContext } from "./types.js";
+export type { ColdStartPhase, CurrentEntityContext, ParsedDecision } from "./types.js";
 export type {
   ContextAgenda,
   ContextAgendaBase,
@@ -18,18 +19,6 @@ export type {
   UserContext,
   UserId,
 } from "../../../shared/schemas.js";
-
-export const decisionSchema = z.object({
-  intent: z
-    .enum(["approve", "edit", "cancel", "continue"])
-    .describe("User intent: approve/edit/cancel for confirmations, continue for story telling"),
-  editTarget: z.string().describe("What to edit if intent is 'edit', empty string otherwise"),
-  editInstructions: z.string().describe("How to edit if intent is 'edit', empty string otherwise"),
-});
-
-export type ParsedDecision = z.infer<typeof decisionSchema>;
-
-const lastValue = <T>(_: T, y: T): T => y;
 
 export const coldStartStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),

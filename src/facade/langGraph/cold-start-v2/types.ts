@@ -28,7 +28,8 @@ export const NODE = {
   parse_plan_decision: "parse_plan_decision",
   extract_context: "extract_context",
   validate_context: "validate_context",
-  clarify: "clarify",
+  clarify_fields: "clarify_fields",
+  clarify_intent: "clarify_intent",
   show_context: "show_context",
   parse_context_decision: "parse_context_decision",
   edit_context: "edit_context",
@@ -49,15 +50,27 @@ export const currentEntityContextSchema = z.object({
 
 export type CurrentEntityContext = z.infer<typeof currentEntityContextSchema>;
 
+export const decisionSchema = z.object({
+  intent: z.enum(["approve", "edit", "cancel", "continue", "unknown"]),
+  editTarget: z.string(),
+  editInstructions: z.string(),
+});
+
+export type ParsedDecision = z.infer<typeof decisionSchema>;
+
 export const coldStartStateSchema = z.object({
   messages: MessagesZodState.shape.messages,
 
   phase: coldStartPhaseSchema.default("story_gathering"),
 
   queue: z.array(contextAgendaSchema).default([]),
+  currentContextIndex: z.number().default(0),
 
   collectedContexts: z.array(userContextSchema).default([]),
   collectedTrails: z.array(trailSchema).default([]),
+
+  pendingContext: z.unknown().nullable().default(null),
+  pendingTrails: z.array(z.unknown()).default([]),
 
   missingFields: z.array(missingFieldSchema).default([]),
   clarificationRound: z.number().default(0),
@@ -66,12 +79,11 @@ export const coldStartStateSchema = z.object({
 
   userId: z.string(),
 
-  userResponse: z
-    .string()
-    .optional()
-    .describe("User response after interrupt - Agent parses NLP and decides next tool"),
+  userResponse: z.string().default(""),
 
-  cvText: z.string().optional().describe("Parsed anonymized text from PDF resume if provided"),
+  cvText: z.string().optional(),
+
+  parsedDecision: decisionSchema.nullable().default(null),
 });
 
 export type ColdStartState = z.infer<typeof coldStartStateSchema>;

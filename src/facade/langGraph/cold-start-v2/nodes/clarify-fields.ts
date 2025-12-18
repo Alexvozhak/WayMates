@@ -6,11 +6,11 @@ import { PHASE } from "../state.js";
 
 import type { ColdStartStateType } from "../state.js";
 
-export function clarifyNode(state: ColdStartStateType): Partial<ColdStartStateType> {
+export function clarifyFieldsNode(state: ColdStartStateType): Partial<ColdStartStateType> {
   const { missingFields, currentEntityContext } = state;
 
   if (!currentEntityContext) {
-    throw new AgentInvariantError("clarifyNode", "currentEntityContext must be set before clarification");
+    throw new AgentInvariantError("clarifyFieldsNode", "currentEntityContext must be set before clarification");
   }
 
   const questions = missingFields.map((mf) => ({

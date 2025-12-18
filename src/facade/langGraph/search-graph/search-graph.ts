@@ -2,18 +2,19 @@ import { Command, END, START, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
 
 import { CONTEXT_FIELD_NAMES } from "../../../shared/schemas.js";
-import { AgentInvariantError } from "../../errors.js";
 
 import { applyFiltersNode } from "./nodes/apply-filters.js";
 import { askAfterValidateNode } from "./nodes/ask-after-validate.js";
 import { cancelNode } from "./nodes/cancel.js";
 import { checkGoalNode } from "./nodes/check-goal.js";
 import { clarifyGoalNode } from "./nodes/clarify-goal.js";
+import { clarifyIntentNode } from "./nodes/clarify-intent.js";
 import { deleteGoalNode } from "./nodes/delete-goal.js";
 import { exploreNode } from "./nodes/explore.js";
 import { extractGoalNode } from "./nodes/extract-goal.js";
 import { loadContextNode } from "./nodes/load-context.js";
 import { loadExistingGoalNode } from "./nodes/load-existing-goal.js";
+import { parseSearchIntentNode } from "./nodes/parse-search-intent.js";
 import { searchNode } from "./nodes/search.js";
 import { setGoalNode } from "./nodes/set-goal.js";
 import { showExplorationNode } from "./nodes/show-exploration.js";
@@ -22,15 +23,14 @@ import { showResultsNode } from "./nodes/show-results.js";
 import { validateGoalNode } from "./nodes/validate-goal.js";
 import { responseBuilders } from "./response-builders.js";
 import {
-  buildRouteMap,
+  APPLY_FILTERS_ROUTE_MAP,
+  CHECK_GOAL_ROUTE_MAP,
+  PARSE_INTENT_ALL_DESTINATIONS,
   routeAfterApplyFilters,
-  routeAfterAskAfterValidate,
   routeAfterCheckGoal,
-  routeAfterShowExploration,
-  routeAfterShowGoal,
-  routeAfterShowResults,
+  routeAfterParseSearchIntent,
 } from "./search-router.js";
-import { NODE, PHASE, searchStateAnnotation } from "./state.js";
+import { NODE, PHASE, searchPhaseSchema, searchStateAnnotation } from "./state.js";
 
 import type { SearchPhase, SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
@@ -41,7 +41,7 @@ import type { GraphDeps } from "../shared/types.js";
 import type { StateSnapshot } from "@langchain/langgraph";
 
 const interruptValueSchema = z.object({
-  phase: z.string().optional(),
+  phase: searchPhaseSchema.optional(),
 });
 
 function stateToResponse(state: SearchStateType): SearchGraphResponse {
@@ -100,11 +100,14 @@ async function enrichResponse(state: SearchStateType, cache: DictionariesCache):
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
 export function createGraphBuilder() {
+  // prettier-ignore
   return new StateGraph(searchStateAnnotation)
     .addNode(NODE.load_context, loadContextNode)
     .addNode(NODE.check_goal, checkGoalNode)
     .addNode(NODE.explore, exploreNode)
     .addNode(NODE.show_exploration, showExplorationNode)
+    .addNode(NODE.parse_search_intent, parseSearchIntentNode)
+    .addNode(NODE.clarify_intent, clarifyIntentNode)
     .addNode(NODE.extract_goal, extractGoalNode)
     .addNode(NODE.show_goal, showGoalNode)
     .addNode(NODE.clarify_goal, clarifyGoalNode)
@@ -120,40 +123,28 @@ export function createGraphBuilder() {
 
     .addEdge(START, NODE.load_context)
     .addEdge(NODE.load_context, NODE.check_goal)
-    .addConditionalEdges(
-      NODE.check_goal,
-      routeAfterCheckGoal,
-      buildRouteMap([NODE.search, NODE.explore, NODE.load_existing_goal]),
-    )
+    .addConditionalEdges(NODE.check_goal, routeAfterCheckGoal, CHECK_GOAL_ROUTE_MAP)
+
+    // show_* nodes → parse_search_intent
     .addEdge(NODE.explore, NODE.show_exploration)
-    .addConditionalEdges(
-      NODE.show_exploration,
-      routeAfterShowExploration,
-      buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.cancel]),
-    )
+    .addEdge(NODE.show_exploration, NODE.parse_search_intent)
     .addEdge(NODE.extract_goal, NODE.show_goal)
-    .addConditionalEdges(
-      NODE.show_goal,
-      routeAfterShowGoal,
-      buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.cancel]),
-    )
-    .addEdge(NODE.clarify_goal, NODE.show_goal)
+    .addEdge(NODE.show_goal, NODE.parse_search_intent)
     .addEdge(NODE.validate_goal, NODE.ask_after_validate)
-    .addConditionalEdges(
-      NODE.ask_after_validate,
-      routeAfterAskAfterValidate,
-      buildRouteMap([NODE.set_goal, NODE.extract_goal, NODE.clarify_goal, NODE.cancel, NODE.ask_after_validate]),
-    )
+    .addEdge(NODE.ask_after_validate, NODE.parse_search_intent)
     .addEdge(NODE.set_goal, NODE.search)
     .addEdge(NODE.search, NODE.show_results)
-    .addConditionalEdges(
-      NODE.show_results,
-      routeAfterShowResults,
-      buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.apply_filters, NODE.cancel]),
-    )
+    .addEdge(NODE.show_results, NODE.parse_search_intent)
+
+    // parse_search_intent → unified routing (dispatches by phase)
+    .addConditionalEdges(NODE.parse_search_intent, routeAfterParseSearchIntent, PARSE_INTENT_ALL_DESTINATIONS)
+
+    // Other edges
+    .addEdge(NODE.clarify_intent, NODE.parse_search_intent)
+    .addEdge(NODE.clarify_goal, NODE.show_goal)
     .addEdge(NODE.load_existing_goal, NODE.show_goal)
     .addEdge(NODE.delete_goal, NODE.explore)
-    .addConditionalEdges(NODE.apply_filters, routeAfterApplyFilters, buildRouteMap([NODE.explore, NODE.search]))
+    .addConditionalEdges(NODE.apply_filters, routeAfterApplyFilters, APPLY_FILTERS_ROUTE_MAP)
     .addEdge(NODE.cancel, END);
 }
 /* eslint-enable @typescript-eslint/explicit-function-return-type */
@@ -165,13 +156,6 @@ function isSearchState(values: unknown): values is SearchStateType {
   return "phase" in values && "userId" in values;
 }
 
-function toSearchState(values: unknown): SearchStateType {
-  if (!isSearchState(values)) {
-    throw new AgentInvariantError("toSearchState", "Invalid state values from graph");
-  }
-  return values;
-}
-
 function extractInterruptPhase(snapshot: StateSnapshot): SearchPhase | undefined {
   const task = snapshot.tasks[0];
   if (!task) return undefined;
@@ -180,12 +164,9 @@ function extractInterruptPhase(snapshot: StateSnapshot): SearchPhase | undefined
   if (!interrupt) return undefined;
 
   const parsed = interruptValueSchema.safeParse(interrupt.value);
-  if (!parsed.success) return undefined;
+  if (!parsed.success) return;
 
-  const phaseValue = parsed.data.phase;
-  if (!phaseValue) return undefined;
-  /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- LangGraph interrupt phase is untyped */
-  return phaseValue as SearchPhase;
+  return parsed.data.phase;
 }
 
 export class SearchGraph {
@@ -222,9 +203,8 @@ export class SearchGraph {
     const finalSnapshot = await this.compiledGraph.getState(config);
     const interruptPhase = extractInterruptPhase(finalSnapshot);
 
-    if (interruptPhase) {
-      const values = toSearchState(finalSnapshot.values);
-      return enrichResponse({ ...values, phase: interruptPhase }, this.deps.cache);
+    if (interruptPhase && isSearchState(finalSnapshot.values)) {
+      return enrichResponse({ ...finalSnapshot.values, phase: interruptPhase }, this.deps.cache);
     }
 
     return enrichResponse(result, this.deps.cache);

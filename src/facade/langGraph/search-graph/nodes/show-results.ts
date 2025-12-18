@@ -3,18 +3,19 @@ import { interrupt } from "@langchain/langgraph";
 import { generateTrajectoryChart, isChartServiceEnabled } from "../../../../chart/index.js";
 import { OPTIONS, PHASE } from "../state.js";
 
-import { parseUserIntent } from "./parse-intent.js";
-
 import type { SearchStateType } from "../state.js";
 
 /**
  * Show results node: displays search results with current goal and waits for user decision.
- * User can change goal, delete goal (return to explore), or finish.
+ * User can change goal, delete goal (return to explore), apply filters, or cancel.
  */
 export async function showResultsNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
   let chartUrl: string | undefined;
 
-  if (isChartServiceEnabled() && state.searchResults.length > 0 && state.userTrajectory.length > 0) {
+  const hasDataForChart = state.searchResults.length > 0 && state.userTrajectory.length > 0;
+  const shouldGenerateChart = isChartServiceEnabled() && hasDataForChart;
+
+  if (shouldGenerateChart) {
     try {
       const result = await generateTrajectoryChart({
         userTrajectory: state.userTrajectory,
@@ -37,15 +38,9 @@ export async function showResultsNode(state: SearchStateType): Promise<Partial<S
     phase: PHASE.showingResults,
   });
 
-  const response = String(userResponse);
-  const parsed = await parseUserIntent(response);
-
-  const clarificationText = parsed.intent === "clarify" ? parsed.clarificationText : null;
-
   return {
-    userResponse: response,
-    searchUserIntent: parsed.intent,
-    clarificationText,
+    userResponse: String(userResponse),
+    phase: PHASE.showingResults,
     chartUrl: chartUrl ?? null,
   };
 }
