@@ -10,6 +10,16 @@ function isSystemMessage(result: ConverseResponse["result"]): result is SystemMe
 }
 
 /**
+ * Extract chartUrl from result if present (showing_results phase).
+ */
+function extractChartUrl(result: ConverseResponse["result"]): string | undefined {
+  if ("chartUrl" in result && typeof result.chartUrl === "string") {
+    return result.chartUrl;
+  }
+  return undefined;
+}
+
+/**
  * Router for formatting ConverseResponse.
  * Dispatches to the correct presenter based on activeGraph.
  *
@@ -35,7 +45,15 @@ export async function formatResponse(
   // Graph responses — format via LLM
   switch (activeGraph) {
     case "search": {
-      return await services.searchGraphPresenter.format(result, languageCode);
+      let formatted = await services.searchGraphPresenter.format(result, languageCode);
+
+      // Append chart link if present (guaranteed display, not relying on LLM)
+      const chartUrl = extractChartUrl(result);
+      if (chartUrl) {
+        formatted += `\n\n📊 [Открыть график траекторий](${chartUrl})`;
+      }
+
+      return formatted;
     }
 
     case "cold_start":

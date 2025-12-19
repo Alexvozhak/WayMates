@@ -155,18 +155,21 @@ const html = generateChartHtml(chartData);
 // === SAVE TO FILE ===
 // ==========================================
 
-const outputPath = "poc/chart-output-v1.html";
+const outputPath = "poc/chart-output.html";
 fs.writeFileSync(outputPath, html, "utf-8");
 
 console.log(`\n✅ Chart generated successfully!`);
-console.log(`   Output: ${outputPath} (в репозитории, не в /tmp)`);
+console.log(`   Output: ${outputPath}`);
 console.log(`   Size: ${(html.length / 1024).toFixed(2)} KB`);
 
-console.log("\n📊 Визуализация включает:");
-console.log("   ✅ Controls (checkboxes для выбора аспектов)");
+console.log("\n📊 Features:");
+console.log("   ✅ Controls (aspect + candidate checkboxes)");
 console.log("   ✅ Main chart (Plotly multi-subplot)");
-console.log("   ✅ Overlap Timeline (штриховые полоски совпадений)");
-console.log("   ✅ Metrics table (DTW scores)");
+console.log("   ✅ Overlap Timeline (integrated as subplot)");
+console.log("   ✅ Spider chart (DTW metrics)");
+console.log("   ✅ Metrics table");
+console.log("   ✅ Export PNG button");
+console.log("   ✅ Connection lines toggle");
 
 console.log("\n🔗 Открыть в браузере:");
 console.log(`   open ${outputPath}`);
