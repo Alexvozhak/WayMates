@@ -1,3 +1,5 @@
+import { type Labels, getLabels } from "../config/labels.js";
+
 import { renderControls, renderMetricsTable, renderOverlapTimeline } from "./template-parts.js";
 
 import type { ChartableField, Locale, OverlapSummary, ProcessedTrajectory, SimilarityMetrics } from "../types.js";
@@ -10,6 +12,7 @@ export type ChartPageData = {
   overlapSummaries: OverlapSummary[];
   timeRange: { minTime: number; maxTime: number };
   locale: Locale;
+  labels: Labels;
 };
 
 /**
@@ -46,8 +49,9 @@ function buildStyles(): string {
 
 function buildTraceFunctions(): string {
   return `const GOAL_STAR_COLOR = '#fbbf24';
+    const L = chartData.labels;
     function getFieldConfig(field) {
-      const configs = { position: { label: 'Грейд', levels: ['junior', 'middle', 'senior', 'lead'] }, domains: { label: 'Домен', levels: [] }, cityName: { label: 'Город', levels: [] }, industry: { label: 'Индустрия', levels: [] }, salaryExact: { label: 'Зарплата', levels: [] } };
+      const configs = { position: { label: 'Grade', levels: ['junior', 'middle', 'senior', 'lead'] }, domains: { label: 'Domain', levels: [] }, cityName: { label: 'City', levels: [] }, industry: { label: 'Industry', levels: [] }, salaryExact: { label: 'Salary', levels: [] } };
       return configs[field] || { label: field, levels: [] };
     }
     function buildTracesForField(field, xaxisId, yaxisId) {
@@ -56,11 +60,11 @@ function buildTraceFunctions(): string {
         const x = traj.points.map(p => new Date(p.timestamp)); const rawValues = traj.points.map(p => p.values[field]); const y = levels.length > 0 ? rawValues.map(v => v === null ? null : levels.indexOf(v)) : rawValues; const hasMatchedContext = traj.matchedContextIndex !== undefined && traj.matchedContextIndex >= 0;
         if (hasMatchedContext && traj.candidateType === 'pathfinder') {
           const matchedIdx = traj.matchedContextIndex;
-          if (matchedIdx > 0) { traces.push({ x: x.slice(0, matchedIdx + 1), y: y.slice(0, matchedIdx + 1), mode: 'lines+markers', name: traj.label + ' (путь к цели)', line: { color: traj.color, width: traj.width, shape: 'hv' }, marker: { size: 6, color: traj.color }, legendgroup: traj.label, showlegend: field === chartData.selectedFields[0], xaxis: xaxisId, yaxis: yaxisId }); }
-          traces.push({ x: [x[matchedIdx]], y: [y[matchedIdx]], mode: 'markers', name: traj.label + ' ⭐', marker: { symbol: 'star', size: 20, color: GOAL_STAR_COLOR, line: { color: traj.color, width: 2 } }, legendgroup: traj.label, showlegend: false, hovertemplate: '🎯 Достиг цели<br>%{x|%Y-%m-%d}<extra></extra>', xaxis: xaxisId, yaxis: yaxisId });
-          if (matchedIdx < x.length - 1) { traces.push({ x: x.slice(matchedIdx), y: y.slice(matchedIdx), mode: 'lines+markers', name: traj.label + ' (после)', line: { color: traj.color, width: traj.width, shape: 'hv' }, marker: { size: 6, color: traj.color }, opacity: 0.4, legendgroup: traj.label, showlegend: false, xaxis: xaxisId, yaxis: yaxisId }); }
+          if (matchedIdx > 0) { traces.push({ x: x.slice(0, matchedIdx + 1), y: y.slice(0, matchedIdx + 1), mode: 'lines+markers', name: traj.label + ' (' + L.pathToGoal + ')', line: { color: traj.color, width: traj.width, shape: 'hv' }, marker: { size: 6, color: traj.color }, legendgroup: traj.label, showlegend: field === chartData.selectedFields[0], xaxis: xaxisId, yaxis: yaxisId }); }
+          traces.push({ x: [x[matchedIdx]], y: [y[matchedIdx]], mode: 'markers', name: traj.label + ' ⭐', marker: { symbol: 'star', size: 20, color: GOAL_STAR_COLOR, line: { color: traj.color, width: 2 } }, legendgroup: traj.label, showlegend: false, hovertemplate: L.reachedGoal + '<br>%{x|%Y-%m-%d}<extra></extra>', xaxis: xaxisId, yaxis: yaxisId });
+          if (matchedIdx < x.length - 1) { traces.push({ x: x.slice(matchedIdx), y: y.slice(matchedIdx), mode: 'lines+markers', name: traj.label + ' (' + L.afterGoal + ')', line: { color: traj.color, width: traj.width, shape: 'hv' }, marker: { size: 6, color: traj.color }, opacity: 0.4, legendgroup: traj.label, showlegend: false, xaxis: xaxisId, yaxis: yaxisId }); }
         } else {
-          const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : traj.candidateType === 'pathfinder' ? ' (Pathfinder)' : '';
+          const badge = traj.candidateType === 'waymate' ? ' (' + L.waymate + ')' : traj.candidateType === 'pathfinder' ? ' (' + L.pathfinder + ')' : '';
           traces.push({ x: x, y: y, mode: 'lines+markers', name: traj.label + badge, line: { color: traj.color, width: traj.width, shape: 'hv' }, marker: { size: 6, color: traj.color }, legendgroup: traj.label, showlegend: field === chartData.selectedFields[0], xaxis: xaxisId, yaxis: yaxisId });
         }
       }
@@ -97,7 +101,7 @@ function buildLayoutFunction(title: string): string {
           ticktext: config.levels.length > 0 ? config.levels : undefined,
         };
         layout[xaxisKey] = {
-          title: index === numFields - 1 ? (chartData.locale === 'ru' ? 'Дата' : 'Date') : '',
+          title: index === numFields - 1 ? L.dateAxis : '',
           type: 'date', anchor: index === 0 ? 'y' : 'y' + (index + 1),
         };
       });
@@ -172,13 +176,16 @@ function buildHtmlTemplate(
 /**
  * Generate complete HTML page with Plotly chart.
  */
-export function generateChartHtml(data: ChartPageData): string {
+export function generateChartHtml(data: Omit<ChartPageData, "labels"> & { labels?: Labels }): string {
   const { trajectories, fields, selectedFields, metrics, overlapSummaries, timeRange, locale } = data;
+  const labels = data.labels ?? getLabels(locale);
 
-  const title = locale === "ru" ? "Сравнение карьерных траекторий" : "Career Trajectory Comparison";
+  const title = labels.chartTitle;
   const controls = renderControls(fields, selectedFields, locale);
   const overlapTimeline = overlapSummaries.length > 0 ? renderOverlapTimeline(overlapSummaries, timeRange, locale) : "";
   const metricsTable = metrics.length > 0 ? renderMetricsTable(metrics, trajectories, locale) : "";
 
-  return buildHtmlTemplate(title, controls, overlapTimeline, metricsTable, data, locale);
+  const fullData: ChartPageData = { ...data, labels };
+
+  return buildHtmlTemplate(title, controls, overlapTimeline, metricsTable, fullData, locale);
 }

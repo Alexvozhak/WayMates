@@ -1,13 +1,15 @@
 import { ASPECT_CONFIGS } from "../config/aspect-configs.js";
+import { getLabels } from "../config/labels.js";
 
 import type { ChartableField, Locale, OverlapSummary, ProcessedTrajectory, SimilarityMetrics } from "../types.js";
 
 /**
  * Get label for candidate type badge.
  */
-function getCandidateTypeLabel(type: "pathfinder" | "waymate" | null): string {
-  if (type === "pathfinder") return "Pathfinder";
-  if (type === "waymate") return "Waymate";
+function getCandidateTypeLabel(type: "pathfinder" | "waymate" | null, locale: Locale): string {
+  const labels = getLabels(locale);
+  if (type === "pathfinder") return labels.pathfinder;
+  if (type === "waymate") return labels.waymate;
   return "—";
 }
 
@@ -15,8 +17,9 @@ function getCandidateTypeLabel(type: "pathfinder" | "waymate" | null): string {
  * Render field selection controls (checkboxes).
  */
 export function renderControls(fields: ChartableField[], selected: ChartableField[], locale: Locale): string {
-  const title = locale === "ru" ? "Выберите аспекты для сравнения" : "Select aspects to compare";
-  const applyButton = locale === "ru" ? "Применить" : "Apply";
+  const labels = getLabels(locale);
+  const title = labels.selectAspects;
+  const applyButton = labels.applyButton;
 
   const checkboxes = fields
     .map((field) => {
@@ -46,11 +49,9 @@ export function renderMetricsTable(
   trajectories: ProcessedTrajectory[],
   locale: Locale,
 ): string {
-  const title = locale === "ru" ? "📊 Метрики схожести траекторий" : "📊 Trajectory Similarity Metrics";
-  const headers =
-    locale === "ru"
-      ? ["№", "Тип", "Траектория", "Темп", "Стабильность", "Итого"]
-      : ["#", "Type", "Shape", "Tempo", "Stability", "Total"];
+  const labels = getLabels(locale);
+  const title = labels.metricsTitle;
+  const headers = labels.metricsHeaders;
 
   const sortedMetrics = metrics.toSorted((a, b) => b.overall - a.overall);
 
@@ -59,7 +60,7 @@ export function renderMetricsTable(
       const traj = trajectories.find((t) => t.id === metric.candidateId);
       if (!traj) return "";
 
-      const typeLabel = getCandidateTypeLabel(metric.candidateType);
+      const typeLabel = getCandidateTypeLabel(metric.candidateType, locale);
       const shape = metric.perField.position ? `${Math.round(metric.perField.position * 100)}%` : "—";
       const tempo = metric.perField.domains ? `${Math.round(metric.perField.domains * 100)}%` : "—";
       const stability = metric.perField.cityName ? `${Math.round(metric.perField.cityName * 100)}%` : "—";
@@ -99,9 +100,10 @@ export function renderOverlapTimeline(
   timeRange: { minTime: number; maxTime: number },
   locale: Locale,
 ): string {
-  const title = locale === "ru" ? "🎯 Совпадение пути" : "🎯 Path Overlap";
-  const totalLabel = locale === "ru" ? "Σ дней" : "Total";
-  const longestLabel = locale === "ru" ? "max" : "longest";
+  const labels = getLabels(locale);
+  const title = labels.overlapTitle;
+  const totalLabel = labels.totalDays;
+  const longestLabel = labels.longestStreak;
 
   const rangeDuration = timeRange.maxTime - timeRange.minTime;
   if (rangeDuration <= 0) return "";

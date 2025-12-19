@@ -5,9 +5,8 @@ import { getR2Config, R2StorageService } from "./services/r2-storage.js";
 import { generateChartHtml } from "./templates/chart-html.js";
 import { ChartGenerationError } from "./types.js";
 
-import type { ScoredMatchedCandidate, UserContext } from "../shared/schemas.js";
-import type { ChartPageData } from "./templates/chart-html.js";
 import type { ChartableField, GenerateChartInput, GenerateChartOutput, Locale } from "./types.js";
+import type { ScoredMatchedCandidate, UserContext } from "../shared/schemas.js";
 
 export type { ChartableField, GenerateChartInput, GenerateChartOutput } from "./types.js";
 export { CHARTABLE_FIELDS } from "./types.js";
@@ -67,7 +66,7 @@ async function buildAndUploadChart(params: ChartParams): Promise<GenerateChartOu
     maxTime: Math.max(...allTimestamps),
   };
 
-  const chartData: ChartPageData = {
+  const chartData = {
     trajectories,
     fields: params.fields,
     selectedFields: params.fields,
