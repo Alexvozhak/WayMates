@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { targetSearchParamsBaseSchema } from "../../../shared/schemas.js";
+import { contextFieldSchema, newContextReasonSchema, targetSearchParamsBaseSchema } from "../../../shared/schemas.js";
 
 import type { CurrentSearchParamsBase } from "../../../shared/schemas.js";
 
@@ -15,7 +15,7 @@ export type CurrentSearchParamsWithFeedback = CurrentSearchParamsBase & {
 };
 
 export const targetSearchParamsModificationSchema = z.object({
-  excludedCreationReasons: z.array(z.string()).nullable(),
+  excludedCreationReasons: z.array(newContextReasonSchema).nullable(),
   recencyThresholdMonths: z.number().nullable(),
   limit: z.number().nullable(),
 });
@@ -23,8 +23,8 @@ export const targetSearchParamsModificationSchema = z.object({
 export type TargetSearchParamsModification = z.infer<typeof targetSearchParamsModificationSchema>;
 
 export const currentSearchParamsModificationSchema = z.object({
-  excludedContextFields: z.array(z.string()).nullable(),
-  excludedCreationReasons: z.array(z.string()).nullable(),
+  excludedContextFields: z.array(contextFieldSchema).nullable(),
+  excludedCreationReasons: z.array(newContextReasonSchema).nullable(),
   recencyThresholdMonths: z.number().nullable(),
   limit: z.number().nullable(),
 });

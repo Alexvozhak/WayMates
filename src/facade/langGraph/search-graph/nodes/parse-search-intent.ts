@@ -40,6 +40,19 @@ function extractClarificationText(parsed: ParsedIntent): string | null {
   return parsed.clarificationText;
 }
 
+function shouldKeepUserResponse(intent: ParsedIntent["intent"]): boolean {
+  return intent === "proceed" || intent === "filter";
+}
+
+function computeNewPositionRound(
+  phase: SearchStateType["phase"],
+  intent: ParsedIntent["intent"],
+  currentRound: number,
+): number {
+  const isChangeAfterValidate = phase === PHASE.asking_after_validate && intent === "change";
+  return isChangeAfterValidate ? currentRound + 1 : currentRound;
+}
+
 /**
  * Parse search intent node: classifies user response and extracts intent-specific data.
  */
@@ -61,19 +74,18 @@ export async function parseSearchIntentNode(
     ? await buildTargetSearchParams(parsed, extractedGoal, config.configurable.normalizer)
     : null;
 
-  // Increment newPositionRound for ask_after_validate + change
-  const updatedRound =
-    phase === PHASE.asking_after_validate && parsed.intent === "change" ? newPositionRound + 1 : newPositionRound;
+  const updatedRound = computeNewPositionRound(phase, parsed.intent, newPositionRound);
 
-  // Don't clear userResponse for 'proceed' - extract_goal needs it
-  // Clear for other intents to prevent re-interpretation
-  const shouldClearResponse = parsed.intent !== "proceed";
-
-  return {
+  const stateUpdate: Partial<SearchStateType> = {
     searchUserIntent: parsed.intent,
     targetSearchParams,
     clarificationText: extractClarificationText(parsed),
     newPositionRound: updatedRound,
-    ...(shouldClearResponse && { userResponse: "" }),
   };
+
+  if (!shouldKeepUserResponse(parsed.intent)) {
+    stateUpdate.userResponse = "";
+  }
+
+  return stateUpdate;
 }

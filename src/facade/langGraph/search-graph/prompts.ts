@@ -100,8 +100,8 @@ export type AdhocExtractionDictionaries = {
  */
 export function buildAdhocExtractionPrompt(dicts: AdhocExtractionDictionaries): string {
   const hints: string[] = [];
-  if (dicts.positions.length > 0) hints.push(`KNOWN POSITIONS (seniority levels): ${dicts.positions.join(", ")}`);
-  if (dicts.domains.length > 0) hints.push(`KNOWN DOMAINS: ${dicts.domains.join(", ")}`);
+  if (dicts.positions.length > 0) hints.push(`KNOWN POSITIONS (seniority levels ONLY): ${dicts.positions.join(", ")}`);
+  if (dicts.domains.length > 0) hints.push(`KNOWN DOMAINS (technical specialization): ${dicts.domains.join(", ")}`);
   if (dicts.skills.length > 0) hints.push(`KNOWN SKILLS: ${dicts.skills.join(", ")}`);
 
   const dictsSection = hints.length > 0 ? `\n${hints.join("\n")}\n` : "";
@@ -111,9 +111,12 @@ export function buildAdhocExtractionPrompt(dicts: AdhocExtractionDictionaries): 
 This is NOT about what they WANT, but about what they HAVE now.
 ${dictsSection}
 CONTEXT STRUCTURE:
-- position: seniority/role level (find best semantic match from KNOWN POSITIONS)
+- position: ONLY the seniority/role level (junior, middle, senior, lead, etc.)
+  IMPORTANT: If user says "backend developer", position is the SENIORITY part only (e.g., "junior")
 - company: current company name if mentioned
-- domains: work field/industry (find best semantic match from KNOWN DOMAINS)
+- domains: TECHNICAL SPECIALIZATION area (backend, frontend, mobile, devops, etc.)
+  IMPORTANT: Words like "backend", "frontend", "fullstack" are DOMAINS, not positions!
+  Example: "junior backend developer" → position: "junior", domains: ["backend"]
 - skills: technical skills (find best semantic match from KNOWN SKILLS)
 - countryCode: where they work (2-letter ISO code)
 - languages: languages they speak/use at work (2-letter ISO codes)
@@ -121,7 +124,9 @@ CONTEXT STRUCTURE:
 
 EXTRACTION RULES:
 - Focus on CURRENT situation, not goals
-- Find the best semantic match from dictionaries for position, domains, skills
+- POSITION = seniority only (junior/middle/senior/lead/etc.)
+- DOMAIN = technical specialization (backend/frontend/mobile/devops/data/etc.)
+- Find the best semantic match from dictionaries
 - Extract only what's explicitly stated
 - Don't infer or guess missing information
 

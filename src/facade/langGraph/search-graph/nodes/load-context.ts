@@ -1,12 +1,13 @@
-import { adhocContextBase, makeNullable } from "../../../../shared/schemas.js";
+import { adhocContextBase } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
+import { makeNullable } from "../../../utils/llm-schemas.js";
 import { hasConfigDeps } from "../../shared/types.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildAdhocExtractionPrompt } from "../prompts.js";
 import { NODE } from "../state.js";
 
-import type { AdhocUserContext } from "../../../../shared/schemas.js";
+import type { AdhocContextBase } from "../../../../shared/schemas.js";
 import type { DictionariesCache } from "../../shared/types.js";
 import type { AdhocExtractionDictionaries } from "../prompts.js";
 import type { SearchStateType } from "../state.js";
@@ -32,7 +33,7 @@ async function loadAdhocDictionaries(cache: DictionariesCache): Promise<AdhocExt
 async function extractAdhocContext(
   message: string,
   dicts: AdhocExtractionDictionaries,
-): Promise<AdhocUserContext | null> {
+): Promise<AdhocContextBase | null> {
   const prompt = buildAdhocExtractionPrompt(dicts);
   const extracted = await extractor.invoke([
     { role: "system", content: prompt },

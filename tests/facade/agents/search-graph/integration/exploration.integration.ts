@@ -79,4 +79,78 @@ describe("SearchGraph: Exploration (TC-SG-EX)", () => {
 
     console.log("TC-SG-EX1: ✅ Explore → proceed → extract_goal");
   }, 180_000);
+
+  /**
+   * TC-SG-EX2: Filter intent → apply_filters → explore (no goal)
+   *
+   * Что тестируем:
+   * Пользователь без цели применяет фильтры в exploration phase.
+   * apply_filters node ДОЛЖЕН вернуть в explore (не в search).
+   *
+   * Инвариант: I13 — apply_filters БЕЗ цели → explore
+   *
+   * Given:
+   * - User: U1 (без goal в Neo4j)
+   *
+   * Flow:
+   * - Turn 1: "ищу работу" → explore → showing_exploration
+   * - Turn 2: "покажи без учёта города и страны" → apply_filters → explore
+   *
+   * Then:
+   * - Turn 1: phase = showing_exploration
+   * - Turn 2: phase = showing_exploration (NOT showing_results!)
+   * - Turn 2: appliedCurrentFilters.excludedContextFields contains geo fields
+   *
+   * Тип теста: Integration (multi-turn, real LLM)
+   */
+  it("TC-SG-EX2: filter intent → apply_filters → explore (no goal)", async () => {
+    const ctx = FacadeTestContext.getInstance();
+
+    // Pre-check: no goal
+    const goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
+    expect(goal, "Goal must be absent before test").toBeNull();
+
+    // Turn 1: Initial exploration (with relaxed filters for stable results)
+    const turn1 = await runGraph("ищу работу");
+    expect(turn1.phase, "Turn 1: User without goal MUST start with exploration").toBe(PHASE.showing_exploration);
+
+    if (turn1.phase !== PHASE.showing_exploration) {
+      expect.fail("Type guard failed after strict assertion");
+    }
+
+    console.log(`TC-SG-EX2 [1/2]: ✅ Exploration started (${turn1.candidates.length} candidates)`);
+
+    // Turn 2: Apply filter intent → should stay in exploration (not search)
+    // KEY INVARIANT: without goal, apply_filters routes back to explore
+    const turn2 = await runGraph("покажи без учёта города и страны");
+
+    expect(
+      turn2.phase,
+      "Turn 2: Filter intent without goal MUST return to exploration (not search). " +
+        "Invariant I13: apply_filters БЕЗ цели → explore",
+    ).toBe(PHASE.showing_exploration);
+
+    if (turn2.phase !== PHASE.showing_exploration) {
+      expect.fail("Type guard failed after strict assertion");
+    }
+
+    // Verify filter was applied (appliedCurrentFilters exists and contains geo fields)
+    expect(
+      turn2.appliedCurrentFilters,
+      "Turn 2: appliedCurrentFilters MUST be present after filter intent",
+    ).toBeDefined();
+
+    const excludedFields = turn2.appliedCurrentFilters?.excludedContextFields ?? [];
+    const hasGeoExcluded =
+      excludedFields.some((f) => f.toLowerCase().includes("city")) ||
+      excludedFields.some((f) => f.toLowerCase().includes("country"));
+
+    expect(
+      hasGeoExcluded,
+      `Turn 2: LLM MUST extract geo fields from filter message, got: ${JSON.stringify(excludedFields)}`,
+    ).toBe(true);
+
+    console.log(`TC-SG-EX2 [2/2]: ✅ Filter applied → exploration (${turn2.candidates.length} candidates)`);
+    console.log(`  Excluded fields: ${excludedFields.join(", ")}`);
+  }, 180_000);
 });
