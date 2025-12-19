@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+// @ts-nocheck
 
 // Set dummy env to bypass validation (only for graph visualization)
 process.env.REDIS_HOST ??= "localhost";

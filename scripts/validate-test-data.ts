@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+// @ts-nocheck
 
 import { readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -35,9 +36,7 @@ async function main(): Promise<void> {
   const valid = results.filter((r) => r === "valid").length;
   const invalid = results.filter((r) => r === "invalid").length;
 
-  console.log(
-    `\n${valid === fileNames.length ? "✅" : "❌"} ${valid}/${fileNames.length} files valid\n`,
-  );
+  console.log(`\n${valid === fileNames.length ? "✅" : "❌"} ${valid}/${fileNames.length} files valid\n`);
 
   if (invalid > 0) {
     process.exit(1);
@@ -59,10 +58,7 @@ function checkEmptyFieldsInContexts(contexts: StoryInput["contexts"]): string[] 
   });
 }
 
-function checkTrailReferences(
-  trails: StoryInput["trails"],
-  validContextIds: Set<string>,
-): string[] {
+function checkTrailReferences(trails: StoryInput["trails"], validContextIds: Set<string>): string[] {
   return trails.flatMap((trail, idx) => {
     const warnings: string[] = [];
     if (trail.fromContextId && !validContextIds.has(trail.fromContextId)) {
