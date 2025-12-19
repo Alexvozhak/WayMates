@@ -13,6 +13,7 @@
 **Проблема:** Conditional interrupt — когда нужен interrupt только в одних случаях, а в других использовать state.
 
 **Решение:**
+
 ```typescript
 // ❌ НЕПРАВИЛЬНО: falsy value ("") считается как отсутствие
 const response = stateUserResponse || interrupt({...});
@@ -24,12 +25,14 @@ const response = stateUserResponse && stateUserResponse !== ""
 ```
 
 **Почему это важно:**
+
 - State reducer `lastValue` сохраняет значения между вызовами
 - `userResponse` default = `""` (пустая строка)
 - Если node возвращает `userResponse: ""`, следующий node видит `""`
 - `"" || interrupt()` всегда вызовет interrupt (falsy value)
 
 **Паттерн очистки userResponse:**
+
 ```typescript
 // Nodes которые ИСПОЛЬЗУЮТ userResponse должны ОЧИСТИТЬ его для следующих
 export function extractGoalNode(state) {
@@ -40,12 +43,13 @@ export function extractGoalNode(state) {
   return {
     extractedGoal,
     userResponse: "", // ← Обязательно очистить!
-    phase: PHASE.showingGoal
+    phase: PHASE.showingGoal,
   };
 }
 ```
 
 **Когда НЕ очищать:**
+
 - Если следующий node должен получить userResponse (например, load_existing_goal → show_goal)
 - Если делаешь interrupt (значение будет перезаписано)
 
@@ -58,6 +62,7 @@ export function extractGoalNode(state) {
 **Причина:** routing функция возвращает destination, которого НЕТ в buildRouteMap.
 
 **Пример проблемы:**
+
 ```typescript
 // search-router.ts
 export function routeAfterShowGoal(state) {
@@ -78,24 +83,29 @@ export function routeAfterShowGoal(state) {
 ```
 
 **Решение:**
+
 ```typescript
 // ВАРИАНТ 1: Добавить в buildRouteMap
-buildRouteMap([NODE.validate_goal, NODE.set_goal, NODE.cancel, NODE.show_goal])
+buildRouteMap([NODE.validate_goal, NODE.set_goal, NODE.cancel, NODE.show_goal]);
 
 // ВАРИАНТ 2 (предпочтительнее): Не роутить обратно в тот же node
 export function routeAfterShowGoal(state) {
   switch (state.searchUserIntent) {
-    case "validate": return NODE.validate_goal;
-    default: return NODE.set_goal; // ← unknown идёт в default
+    case "validate":
+      return NODE.validate_goal;
+    default:
+      return NODE.set_goal; // ← unknown идёт в default
   }
 }
 ```
 
 **Почему Вариант 2 лучше:**
+
 - Избегает infinite loops (show_goal → show_goal → show_goal...)
 - LLM может вернуть unexpected intent → default должен быть safe fallback
 
 **Правило:**
+
 ```
 buildRouteMap destinations === ВСЕ возможные return values из routing функции
 ```
@@ -107,6 +117,7 @@ buildRouteMap destinations === ВСЕ возможные return values из rout
 **Проблема:** Zod optional fields требуют ОТСУТСТВИЯ поля, не `null`.
 
 **Ошибка:**
+
 ```typescript
 // Zod schema
 const targetContextSchema = z.object({
@@ -124,6 +135,7 @@ return {
 ```
 
 **Почему это происходит:**
+
 ```typescript
 // Helper только фильтрует undefined, НЕ null
 private removeUndefinedFields<T>(obj: T): T {
@@ -134,6 +146,7 @@ private removeUndefinedFields<T>(obj: T): T {
 ```
 
 **Решение:**
+
 ```typescript
 // ❌ НЕПРАВИЛЬНО: pass-through может быть null
 return this.removeUndefinedFields({
@@ -141,7 +154,7 @@ return this.removeUndefinedFields({
   skills,
   domains,
   countries: context.countries, // может быть null
-  languages: context.languages  // может быть null
+  languages: context.languages, // может быть null
 });
 
 // ✅ ПРАВИЛЬНО: явная проверка
@@ -159,6 +172,7 @@ return this.removeUndefinedFields(result);
 ```
 
 **Правило:**
+
 ```
 Optional Zod field: ОТСУТСТВИЕ поля (undefined), НЕ null
 ```
@@ -170,6 +184,7 @@ Optional Zod field: ОТСУТСТВИЕ поля (undefined), НЕ null
 **Принцип:** Multi-turn тесты требуют последовательных вызовов + type guards.
 
 **Паттерн:**
+
 ```typescript
 it("TC-SG-VC2: new goal → clarify → save", async () => {
   // Turn 1: начальное сообщение
@@ -190,9 +205,7 @@ it("TC-SG-VC2: new goal → clarify → save", async () => {
 
   // Проверяем extractedGoal через type guard
   const positionValues = turn2.extractedGoal?.position?.values ?? [];
-  expect(positionValues.some(v =>
-    v.toLowerCase().includes("manager")
-  )).toBe(true);
+  expect(positionValues.some((v) => v.toLowerCase().includes("manager"))).toBe(true);
 
   // Turn 3: clarify
   const turn3 = await runGraph("добавь Германию");
@@ -201,12 +214,14 @@ it("TC-SG-VC2: new goal → clarify → save", async () => {
 ```
 
 **Важно:**
+
 1. **Type guards обязательны:** После `expect(...).toBe(PHASE.x)` нужен `if` для TypeScript
 2. **Гибкая проверка значений:** LLM может нормализовать по-разному ("manager", "product manager", "PM")
 3. **Timeout:** ~60 sec на turn с LLM вызовом
 4. **Complexity ESLint:** Multi-turn функции имеют высокую complexity — игнорировать через `/* eslint-disable complexity */`
 
 **Fixture Matching:**
+
 ```typescript
 // ❌ Жёсткий match: может упасть из-за geo/личных полей
 await runSearchGraph("найти работу", threadId, userId);
@@ -216,16 +231,22 @@ await runSearchGraphWithRelaxedFilters(deps, "найти работу", threadId
 ```
 
 **Relaxed filters:**
+
 ```typescript
 const RELAXED_FILTERS = {
   excludedContextFields: [
-    "birthYear", "cityName", "countryCode", "gender",
-    "languages", "platforms", "yearsOfExperience"
+    "birthYear",
+    "cityName",
+    "countryCode",
+    "gender",
+    "languages",
+    "platforms",
+    "yearsOfExperience",
   ],
   excludedCreationReasons: [],
   recencyThresholdMonths: undefined,
   limit: 10,
-  pathLimit: 10
+  pathLimit: 10,
 };
 ```
 
@@ -236,16 +257,18 @@ const RELAXED_FILTERS = {
 **Проблема:** LLM может вернуть unexpected intent для одного и того же сообщения.
 
 **Примеры:**
+
 ```typescript
-parseUserIntent("покажи результаты")
+parseUserIntent("покажи результаты");
 // Может вернуть: "proceed" | "save" | "unknown"
 
-parseUserIntent("проверить")
+parseUserIntent("проверить");
 // Ожидаем: "validate"
 // Может вернуть: "unknown" (если prompt неоднозначен)
 ```
 
 **Решение в routing:**
+
 ```typescript
 // ❌ НЕПРАВИЛЬНО: unknown возвращает в show_goal (infinite loop)
 case "unknown": return NODE.show_goal;
@@ -258,11 +281,13 @@ default: {
 ```
 
 **Правило:**
+
 ```
 Default routing = safe fallback для unexpected интентов
 ```
 
 **Улучшение prompts:**
+
 - Добавить больше примеров в USER_INTENT_PROMPT
 - Явно указать синонимы ("проверить" = "validate", "покажи цель" = "validate")
 - Использовать few-shot examples
@@ -272,6 +297,7 @@ Default routing = safe fallback для unexpected интентов
 ### 6. Debugging: Временный Logging
 
 **Паттерн:**
+
 ```typescript
 // 1. Добавить debug logging
 console.log(`[SHOW_GOAL] stateUserResponse="${stateUserResponse}"`);
@@ -287,11 +313,13 @@ OPENROUTER_API_KEY=... npx vitest tests/.../test.ts -t "TC-X" --run
 ```
 
 **Где логировать:**
+
 - State values перед routing
 - Intent classification результаты
 - userResponse до/после использования
 
 **Где НЕ логировать:**
+
 - LLM responses (слишком verbose)
 - Database queries (использовать neo4j-cypher MCP для проверки)
 
@@ -301,15 +329,16 @@ OPENROUTER_API_KEY=... npx vitest tests/.../test.ts -t "TC-X" --run
 
 **Ключевое различие:**
 
-| Aspect | Adhoc Context | Target Context (Goal) |
-|--------|---------------|----------------------|
-| Что это | Где user СЕЙЧАС | Куда user ХОЧЕТ |
-| Используется в | exploration (search.adhoc) | validation, final search |
-| Извлекается | load-context (один раз) | extract_goal → clarify_goal (multi-turn) |
-| Может обновляться | ❌ Нет (read-only после extraction) | ✅ Да (через clarify) |
-| Очищается после | load-context (`userResponse: ""`) | НЕ очищается (используется в show_goal) |
+| Aspect            | Adhoc Context                       | Target Context (Goal)                    |
+| ----------------- | ----------------------------------- | ---------------------------------------- |
+| Что это           | Где user СЕЙЧАС                     | Куда user ХОЧЕТ                          |
+| Используется в    | exploration (search.adhoc)          | validation, final search                 |
+| Извлекается       | load-context (один раз)             | extract_goal → clarify_goal (multi-turn) |
+| Может обновляться | ❌ Нет (read-only после extraction) | ✅ Да (через clarify)                    |
+| Очищается после   | load-context (`userResponse: ""`)   | НЕ очищается (используется в show_goal)  |
 
 **Семантика "добавь Германию":**
+
 ```typescript
 // После validation user видит:
 // "5 senior backend: Москва, USA, Германия, Франция, Испания"
@@ -324,6 +353,7 @@ OPENROUTER_API_KEY=... npx vitest tests/.../test.ts -t "TC-X" --run
 ```
 
 **Правило:**
+
 ```
 Clarify обновляет TARGET (куда хочу), не ADHOC (где сейчас)
 ```
@@ -333,13 +363,11 @@ Clarify обновляет TARGET (куда хочу), не ADHOC (где сей
 ### 8. Исключения и Invariant Errors
 
 **AgentInvariantError vs обычные errors:**
+
 ```typescript
 // Используется для НАРУШЕНИЯ КОНТРАКТА между nodes
 if (!extractedGoal) {
-  throw new AgentInvariantError(
-    NODE.show_goal,
-    "extractedGoal must exist before showing"
-  );
+  throw new AgentInvariantError(NODE.show_goal, "extractedGoal must exist before showing");
 }
 
 // НЕ для business logic errors (используй return)
@@ -351,11 +379,13 @@ if (candidates.length === 0) {
 ```
 
 **Где бросать AgentInvariantError:**
+
 - Missing required state fields
 - Config deps не переданы
 - Routing в несуществующий node
 
 **Где НЕ бросать:**
+
 - LLM вернул null/unexpected value → обработать gracefully
 - Database query вернул 0 результатов → normal business flow
 - User cancelled → использовать phase: PHASE.cancelled
@@ -384,6 +414,7 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 ```
 
 **Когда использовать:**
+
 - Перед добавлением нового Cypher query в query-builder
 - После schema migration
 - Для отладки "0 results" багов
@@ -393,6 +424,7 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 ### 10. Git Workflow для LangGraph Changes
 
 **Типичный workflow этой сессии:**
+
 ```bash
 # 1. Найден баг: normalizer null vs undefined
 # Файл: src/facade/services/normalizer.ts
@@ -415,6 +447,7 @@ npm run test:integration
 ```
 
 **Коммит структура:**
+
 ```
 feat(search-graph): fix null handling + clarify flow support
 
@@ -449,11 +482,13 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ## 📋 Checklist: Debugging Routing Issues
 
 1. **Добавить временный logging:**
+
    ```typescript
    console.log(`[NODE_NAME] state.field="${state.field}"`);
    ```
 
 2. **Запустить ОДИН failing test:**
+
    ```bash
    npx vitest path/to/test.ts -t "TC-ID" --run
    ```
@@ -511,10 +546,10 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 ```typescript
 // ❌ LLM может вернуть что угодно ("Information Technology", "IT", "Tech")
-excludedContextFields: z.array(z.string())
+excludedContextFields: z.array(z.string());
 
 // ✅ LLM видит только допустимые: ["countryCode", "cityName", "birthYear", "languages"]
-excludedContextFields: z.array(contextFieldSchema)
+excludedContextFields: z.array(contextFieldSchema);
 ```
 
 **Универсально**: Любой LLM extraction с ограниченным набором значений → enum schema.
@@ -547,6 +582,7 @@ expect(response.phase).toBe(PHASE.showing_exploration);
 **Проблема**: Тест ожидает candidates, но LLM extraction не матчит fixtures.
 
 **Паттерн проверки**:
+
 ```bash
 # Что в fixtures?
 cat fixtures/U3.json | jq '.contexts[0] | {position, domains}'
@@ -571,6 +607,7 @@ console.log("[load_context] adhoc extraction:", { extracted, normalized });
 ```
 
 **Workflow**:
+
 1. Добавить debug logging
 2. Запустить тест
 3. Проанализировать output
@@ -599,8 +636,12 @@ console.log("[load_context] adhoc extraction:", { extracted, normalized });
 14. **Edge Cases**: Graceful handling → проверяй инварианты, не конкретный LLM output
 15. **Fixtures**: Проверяй matching ПЕРЕД написанием теста
 16. **Debug Logs**: Временные → добавил, понял, удалил
-
----
+17. **Intent Prompts**: Описывай СЕМАНТИКУ ответа (brief, slang, informal), не hardcode примеры слов
+18. **LLM Test Stability**: После фикса flaky теста — прогони 5 раз до первого fail, не один раз
+19. **Test Output**: Не использовать `tail` при запуске интеграционных тестов — теряется контекст ошибок
+20. **Named Conditions**: Если в условии 2+ проверки — выноси в именованную константу (`const isEmpty = !value || value.trim() === ""`)
+21. **Semantic Field Dependencies**: При тестировании missing fields через omit — используй НЕЗАВИСИМЫЕ поля (см. #21 ниже)
+22. **Multi-Phase State**: В multi-turn тестах используй ОДНУ переменную currentResponse, обновляя её на каждом шаге
 
 ## 🔗 Связанные Документы
 

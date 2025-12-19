@@ -10,7 +10,10 @@ import type {
 import type { ContextAgenda } from "../../../../../src/facade/langGraph/cold-start-v2/state.js";
 import type { FixtureData } from "./unpacking-prompt.js";
 
-export type OmittableField = keyof Pick<UserContext, "birthYear" | "citizenships" | "educationLevel">;
+export type OmittableField = keyof Pick<
+  UserContext,
+  "domains" | "position" | "birthYear" | "citizenships" | "educationLevel"
+>;
 
 export async function cleanupColdStart(userId: UserId, threadId: string): Promise<void> {
   const ctx = FacadeTestContext.getInstance();

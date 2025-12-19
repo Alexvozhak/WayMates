@@ -21,7 +21,7 @@ OPTIONAL FIELDS:
 
 FORMAT RULES:
 - If date not mentioned: use current date
-- If field not mentioned: use reasonable defaults based on context
+- If field not mentioned or unclear: return null (NEVER empty string "")
 - Return all fields that can be extracted or inferred`;
 
 export const CONTEXT_EDIT_PROMPT = `Apply corrections to career context.

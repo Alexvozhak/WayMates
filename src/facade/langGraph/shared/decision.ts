@@ -30,12 +30,20 @@ export function createDecisionRoutes<T extends string>(nodes: {
   };
 }
 
-export const CONFIRMATION_PROMPT = `Classify user intent. Response may be in any language.
+export const CONFIRMATION_PROMPT = `Classify user intent from their response. Response may be in any language.
 
-APPROVE: User confirms, agrees, accepts, or wants to proceed/save.
-EDIT: User wants to change, modify, or correct something.
-CANCEL: User wants to stop, cancel, or abort completely.
-UNKNOWN: Cannot determine intent with confidence.`;
+IMPORTANT: User responses are often very brief — a single word, abbreviation, slang, or informal expression.
+Casual affirmations, colloquial agreements, and shorthand approvals are common.
+
+APPROVE: User expresses agreement, confirmation, or willingness to proceed.
+This includes any form of positive acknowledgment — formal or informal, verbose or terse.
+
+EDIT: User wants to change, modify, correct, or update something.
+This includes disagreement followed by a correction or new value (rejection + alternative = EDIT).
+
+CANCEL: User explicitly wants to stop, cancel, abort, or exit completely.
+
+UNKNOWN: Intent genuinely unclear or ambiguous. Use sparingly — prefer APPROVE for casual positive responses.`;
 
 const intentParser = getModel("deterministic").withStructuredOutput(decisionSchema);
 

@@ -198,6 +198,11 @@ Return: { normalized: string[], rejected: string[] }`;
   }
 
   private async normalizeTerm(type: SimpleDictionaryType, value: string, userId: UserId): Promise<string> {
+    const isEmpty = !value || value.trim() === "";
+    if (isEmpty) {
+      return "";
+    }
+
     const dict = await this.cache.getSimple(type);
     const normalized = value.toLowerCase();
 
