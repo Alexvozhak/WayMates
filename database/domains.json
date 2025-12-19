@@ -8,5 +8,7 @@
   "management": "management",
   "saas": "saas",
   "fintech": "fintech",
-  "ai": "ai"
+  "ai": "ai",
+  "qa": "qa",
+  "security": "security"
 }

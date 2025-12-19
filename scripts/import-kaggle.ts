@@ -88,9 +88,7 @@ async function main() {
 
   // 1. Load enriched data
   console.log("[1/3] Loading enriched data...");
-  const enrichedData: EnrichedPerson[] = JSON.parse(
-    readFileSync("/home/alex/projects/WayMatesRemote-kaggle/data/kaggle-enriched.json", "utf-8"),
-  );
+  const enrichedData: EnrichedPerson[] = JSON.parse(readFileSync("data/kaggle-enriched.json", "utf-8"));
   console.log(
     `✓ Loaded ${enrichedData.length} persons with ${enrichedData.reduce((sum, p) => sum + p.contexts.length, 0)} contexts\n`,
   );
