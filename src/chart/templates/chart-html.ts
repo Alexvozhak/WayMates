@@ -1,12 +1,14 @@
-import { renderControls, renderMetricsTable } from "./template-parts.js";
+import { renderControls, renderMetricsTable, renderOverlapTimeline } from "./template-parts.js";
 
-import type { ChartableField, Locale, ProcessedTrajectory, SimilarityMetrics } from "../types.js";
+import type { ChartableField, Locale, OverlapSummary, ProcessedTrajectory, SimilarityMetrics } from "../types.js";
 
 export type ChartPageData = {
   trajectories: ProcessedTrajectory[];
   fields: ChartableField[];
   selectedFields: ChartableField[];
   metrics: SimilarityMetrics[];
+  overlapSummaries: OverlapSummary[];
+  timeRange: { minTime: number; maxTime: number };
   locale: Locale;
 };
 
@@ -22,6 +24,15 @@ function buildStyles(): string {
     #apply-btn { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
     #apply-btn:hover { background: #2563eb; }
     #main-chart { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    #overlap-timeline { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    #overlap-timeline h4 { margin: 0 0 15px 0; }
+    .overlap-container { display: flex; flex-direction: column; gap: 8px; }
+    .overlap-row { display: grid; grid-template-columns: 60px 1fr 100px; align-items: center; gap: 10px; height: 24px; }
+    .overlap-label { font-weight: 600; font-size: 13px; text-align: right; }
+    .overlap-track { position: relative; height: 8px; background: #e5e7eb; border-radius: 4px; }
+    .overlap-bar { position: absolute; height: 100%; border-radius: 4px; opacity: 0.8; background-image: repeating-linear-gradient(90deg, transparent, transparent 4px, rgba(255,255,255,0.3) 4px, rgba(255,255,255,0.3) 8px); }
+    .overlap-stats { font-size: 12px; color: #6b7280; }
+    .overlap-legend { margin-top: 10px; font-size: 11px; color: #9ca3af; text-align: right; }
     #metrics { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     #metrics table { width: 100%; border-collapse: collapse; }
     #metrics th, #metrics td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
@@ -32,7 +43,7 @@ function buildStyles(): string {
 /**
  * Build field config and trace builders JavaScript.
  */
- 
+
 function buildTraceFunctions(): string {
   return `const GOAL_STAR_COLOR = '#fbbf24';
     function getFieldConfig(field) {
@@ -132,6 +143,7 @@ function buildScript(data: ChartPageData, title: string): string {
 function buildHtmlTemplate(
   title: string,
   controls: string,
+  overlapTimeline: string,
   metricsTable: string,
   data: ChartPageData,
   locale: Locale,
@@ -150,6 +162,7 @@ function buildHtmlTemplate(
 <body>
   ${controls}
   <div id="main-chart"></div>
+  ${overlapTimeline}
   ${metricsTable}
   ${script}
 </body>
@@ -160,11 +173,12 @@ function buildHtmlTemplate(
  * Generate complete HTML page with Plotly chart.
  */
 export function generateChartHtml(data: ChartPageData): string {
-  const { trajectories, fields, selectedFields, metrics, locale } = data;
+  const { trajectories, fields, selectedFields, metrics, overlapSummaries, timeRange, locale } = data;
 
   const title = locale === "ru" ? "Сравнение карьерных траекторий" : "Career Trajectory Comparison";
   const controls = renderControls(fields, selectedFields, locale);
+  const overlapTimeline = overlapSummaries.length > 0 ? renderOverlapTimeline(overlapSummaries, timeRange, locale) : "";
   const metricsTable = metrics.length > 0 ? renderMetricsTable(metrics, trajectories, locale) : "";
 
-  return buildHtmlTemplate(title, controls, metricsTable, data, locale);
+  return buildHtmlTemplate(title, controls, overlapTimeline, metricsTable, data, locale);
 }

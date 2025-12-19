@@ -1,0 +1,60 @@
+{
+  "userId": "usr_chart-demo-user",
+  "contexts": [
+    {
+      "contextId": "ctx_user_01",
+      "previousContextId": null,
+      "nextContextId": "ctx_user_02",
+      "createdAt": "2023-01-15T00:00:00Z",
+      "creationReason": ["started_working"],
+      "position": "junior",
+      "industry": "tech",
+      "companySize": "startup",
+      "domains": ["frontend"],
+      "skills": ["react", "typescript"],
+      "countryCode": "de",
+      "cityName": "berlin",
+      "birthYear": 1995,
+      "educationLevel": "BACHELOR",
+      "citizenships": ["de"],
+      "languages": ["en", "de"]
+    },
+    {
+      "contextId": "ctx_user_02",
+      "previousContextId": "ctx_user_01",
+      "nextContextId": "ctx_user_03",
+      "createdAt": "2023-07-01T00:00:00Z",
+      "creationReason": ["position_changed"],
+      "position": "middle",
+      "industry": "tech",
+      "companySize": "scaleup",
+      "domains": ["frontend"],
+      "skills": ["react", "typescript", "nextjs"],
+      "countryCode": "de",
+      "cityName": "berlin",
+      "birthYear": 1995,
+      "educationLevel": "BACHELOR",
+      "citizenships": ["de"],
+      "languages": ["en", "de"]
+    },
+    {
+      "contextId": "ctx_user_03",
+      "previousContextId": "ctx_user_02",
+      "nextContextId": null,
+      "createdAt": "2024-01-15T00:00:00Z",
+      "creationReason": ["position_changed"],
+      "position": "senior",
+      "industry": "tech",
+      "companySize": "scaleup",
+      "domains": ["frontend"],
+      "skills": ["react", "typescript", "nextjs", "architecture"],
+      "countryCode": "de",
+      "cityName": "berlin",
+      "birthYear": 1995,
+      "educationLevel": "BACHELOR",
+      "citizenships": ["de"],
+      "languages": ["en", "de"]
+    }
+  ],
+  "trails": []
+}

@@ -1,19 +1,19 @@
 /**
- * Chart Service Smoke Test - Phase 0: Local HTML (без R2)
+ * Chart Service Smoke Test - Full test with Overlap Timeline
  *
- * Цель: Проверить HTML генерацию и структуру до настройки R2
+ * Цель: Проверить HTML генерацию с Overlap Timeline visualization
  *
  * Шаги:
- * 1. Загрузить фикстуры U1, U2, U3
+ * 1. Загрузить фикстуры U1, U2, U3 из tests/core/fixtures/
  * 2. Создать моки ScoredMatchedCandidate
- * 3. Вызвать transformToTrajectories + calculateSimilarity + generateChartHtml
+ * 3. Вызвать transformToTrajectories + calculateSimilarity + calculateAllOverlapSummaries
  * 4. Сохранить в /tmp/chart-test.html
  * 5. Открыть в браузере для проверки
  */
 
 import fs from "node:fs";
 import { transformToTrajectories } from "../src/chart/services/data-transformer.js";
-import { calculateSimilarity } from "../src/chart/services/overlap-calculator.js";
+import { calculateAllOverlapSummaries, calculateSimilarity } from "../src/chart/services/overlap-calculator.js";
 import { generateChartHtml } from "../src/chart/templates/chart-html.js";
 import { DEFAULT_FIELDS } from "../src/chart/config/aspect-configs.js";
 
@@ -28,7 +28,7 @@ const U1 = JSON.parse(fs.readFileSync("tests/core/fixtures/U1.json", "utf-8"));
 const U2 = JSON.parse(fs.readFileSync("tests/core/fixtures/U2.json", "utf-8"));
 const U3 = JSON.parse(fs.readFileSync("tests/core/fixtures/U3.json", "utf-8"));
 
-console.log("✅ Loaded fixtures:");
+console.log("✅ Loaded fixtures from tests/core/fixtures/:");
 console.log(`   U1: ${U1.contexts.length} contexts (${U1.userId})`);
 console.log(`   U2: ${U2.contexts.length} contexts (${U2.userId})`);
 console.log(`   U3: ${U3.contexts.length} contexts (${U3.userId})`);
@@ -106,6 +106,35 @@ for (const metric of metrics) {
 }
 
 // ==========================================
+// === CALCULATE OVERLAP SUMMARIES ===
+// ==========================================
+
+console.log("\n⏳ Calculating full overlap periods...");
+const userTraj = trajectories[0]!;
+const candidateTrajs = trajectories.slice(1);
+const overlapSummaries = calculateAllOverlapSummaries(userTraj, candidateTrajs, DEFAULT_FIELDS);
+
+console.log(`✅ Calculated overlap summaries for ${overlapSummaries.length} candidates:`);
+for (const summary of overlapSummaries) {
+  console.log(`   - ${summary.candidateLabel}: ${summary.periods.length} periods`);
+  console.log(`     └─ Total: ${summary.totalDays} days, Longest streak: ${summary.longestStreakDays} days`);
+}
+
+// ==========================================
+// === CALCULATE TIME RANGE ===
+// ==========================================
+
+const allTimestamps = trajectories.flatMap((t) => t.points.map((p) => p.timestamp));
+const timeRange = {
+  minTime: Math.min(...allTimestamps),
+  maxTime: Math.max(...allTimestamps),
+};
+
+console.log(
+  `\n✅ Time range: ${new Date(timeRange.minTime).toISOString().split("T")[0]} → ${new Date(timeRange.maxTime).toISOString().split("T")[0]}`,
+);
+
+// ==========================================
 // === GENERATE HTML ===
 // ==========================================
 
@@ -115,6 +144,8 @@ const chartData: ChartPageData = {
   fields: DEFAULT_FIELDS,
   selectedFields: DEFAULT_FIELDS,
   metrics,
+  overlapSummaries,
+  timeRange,
   locale: "ru",
 };
 
@@ -124,23 +155,19 @@ const html = generateChartHtml(chartData);
 // === SAVE TO FILE ===
 // ==========================================
 
-const outputPath = "/tmp/chart-test.html";
+const outputPath = "poc/chart-output-v1.html";
 fs.writeFileSync(outputPath, html, "utf-8");
 
 console.log(`\n✅ Chart generated successfully!`);
-console.log(`   Output: ${outputPath}`);
+console.log(`   Output: ${outputPath} (в репозитории, не в /tmp)`);
 console.log(`   Size: ${(html.length / 1024).toFixed(2)} KB`);
 
-console.log("\n📊 Next steps:");
-console.log("   1. Open in browser:");
-console.log(`      open ${outputPath}`);
-console.log("      firefox ${outputPath}");
-console.log("\n   2. Check:");
-console.log("      ✅ Controls (checkboxes) display");
-console.log("      ✅ Metrics table at bottom");
-console.log("      ✅ CSS styles work");
-console.log("      ❌ Chart WILL NOT render (Plotly traces TODO)");
-console.log("\n   3. After verifying structure:");
-console.log("      → Implement Plotly traces generation (chart-html.ts)");
-console.log("      → Re-run this script");
-console.log("      → See working chart! 🎉");
+console.log("\n📊 Визуализация включает:");
+console.log("   ✅ Controls (checkboxes для выбора аспектов)");
+console.log("   ✅ Main chart (Plotly multi-subplot)");
+console.log("   ✅ Overlap Timeline (штриховые полоски совпадений)");
+console.log("   ✅ Metrics table (DTW scores)");
+
+console.log("\n🔗 Открыть в браузере:");
+console.log(`   open ${outputPath}`);
+console.log(`   firefox ${outputPath}`);

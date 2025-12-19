@@ -58,6 +58,29 @@ export type OverlapPeriod = {
   value: string | number;
 };
 
+/**
+ * Full overlap period - when ALL selected fields match between user and candidate.
+ * Used for Overlap Timeline visualization.
+ */
+export type FullOverlapPeriod = {
+  candidateId: string;
+  startTime: number;
+  endTime: number;
+};
+
+/**
+ * Summary of full overlap for a candidate.
+ * Displayed in the Overlap Timeline section.
+ */
+export type OverlapSummary = {
+  candidateId: string;
+  candidateLabel: string;
+  candidateColor: string;
+  periods: FullOverlapPeriod[];
+  totalDays: number;
+  longestStreakDays: number;
+};
+
 export type SimilarityMetrics = {
   candidateId: string;
   candidateType: "pathfinder" | "waymate" | null;

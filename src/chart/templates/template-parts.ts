@@ -1,6 +1,6 @@
 import { ASPECT_CONFIGS } from "../config/aspect-configs.js";
 
-import type { ChartableField, Locale, ProcessedTrajectory, SimilarityMetrics } from "../types.js";
+import type { ChartableField, Locale, OverlapSummary, ProcessedTrajectory, SimilarityMetrics } from "../types.js";
 
 /**
  * Get label for candidate type badge.
@@ -86,6 +86,57 @@ export function renderMetricsTable(
         </thead>
         <tbody>${rows}</tbody>
       </table>
+    </div>
+  `;
+}
+
+/**
+ * Render Overlap Timeline section.
+ * Shows horizontal dashed bars for full overlap periods, aligned with chart X-axis.
+ */
+export function renderOverlapTimeline(
+  summaries: OverlapSummary[],
+  timeRange: { minTime: number; maxTime: number },
+  locale: Locale,
+): string {
+  const title = locale === "ru" ? "🎯 Совпадение пути" : "🎯 Path Overlap";
+  const totalLabel = locale === "ru" ? "Σ дней" : "Total";
+  const longestLabel = locale === "ru" ? "max" : "longest";
+
+  const rangeDuration = timeRange.maxTime - timeRange.minTime;
+  if (rangeDuration <= 0) return "";
+
+  const rows = summaries
+    .map((summary) => {
+      const bars = summary.periods
+        .map((period) => {
+          const leftPct = ((period.startTime - timeRange.minTime) / rangeDuration) * 100;
+          const widthPct = ((period.endTime - period.startTime) / rangeDuration) * 100;
+          return `<div class="overlap-bar" style="left:${leftPct.toFixed(1)}%;width:${widthPct.toFixed(1)}%;background:${summary.candidateColor};"></div>`;
+        })
+        .join("");
+
+      const statsText =
+        summary.totalDays > 0 ? `${summary.totalDays}d (${longestLabel}: ${summary.longestStreakDays}d)` : "—";
+
+      return `
+        <div class="overlap-row">
+          <div class="overlap-label" style="color:${summary.candidateColor};">${summary.candidateLabel}</div>
+          <div class="overlap-track">${bars}</div>
+          <div class="overlap-stats">${statsText}</div>
+        </div>`;
+    })
+    .join("");
+
+  return `
+    <div id="overlap-timeline">
+      <h4>${title}</h4>
+      <div class="overlap-container">
+        ${rows}
+      </div>
+      <div class="overlap-legend">
+        <span>${totalLabel}</span> / <span>${longestLabel}</span>
+      </div>
     </div>
   `;
 }

@@ -1,6 +1,6 @@
 import { DEFAULT_FIELDS } from "./config/aspect-configs.js";
 import { transformToTrajectories } from "./services/data-transformer.js";
-import { calculateSimilarity } from "./services/overlap-calculator.js";
+import { calculateAllOverlapSummaries, calculateSimilarity } from "./services/overlap-calculator.js";
 import { getR2Config, R2StorageService } from "./services/r2-storage.js";
 import { generateChartHtml } from "./templates/chart-html.js";
 import { ChartGenerationError } from "./types.js";
@@ -55,11 +55,25 @@ async function buildAndUploadChart(params: ChartParams): Promise<GenerateChartOu
     calculateSimilarity(trajectories[index + 1]!, candidate),
   );
 
+  // Calculate full overlap summaries for Overlap Timeline
+  const userTraj = trajectories[0]!;
+  const candidateTrajs = trajectories.slice(1);
+  const overlapSummaries = calculateAllOverlapSummaries(userTraj, candidateTrajs, params.fields);
+
+  // Calculate time range for Overlap Timeline alignment
+  const allTimestamps = trajectories.flatMap((t) => t.points.map((p) => p.timestamp));
+  const timeRange = {
+    minTime: Math.min(...allTimestamps),
+    maxTime: Math.max(...allTimestamps),
+  };
+
   const chartData: ChartPageData = {
     trajectories,
     fields: params.fields,
     selectedFields: params.fields,
     metrics,
+    overlapSummaries,
+    timeRange,
     locale: params.locale,
   };
 
