@@ -15,6 +15,7 @@ import type { StoryInput, UserContext } from "../src/shared/schemas.js";
 
 type EnrichedContext = {
   position: string;
+  role: string;
   domains: string[];
   skills: string[];
   industry: string | null;
@@ -52,6 +53,7 @@ function buildUserContexts(enrichedContexts: EnrichedContext[]): UserContext[] {
       createdAt: enriched.createdAt,
       creationReason: enriched.creationReason as ("started_working" | "company_changed" | "location_changed")[],
       position: enriched.position,
+      role: enriched.role,
       domains: enriched.domains,
       skills: enriched.skills,
       industry: enriched.industry!,
