@@ -50,7 +50,8 @@ export class Normalizer {
   ) {}
 
   async normalizeAdhocContext(context: AdhocContextBase, userId: UserId): Promise<AdhocContextBase> {
-    const [position, cityName, industry, skills, domains] = await Promise.all([
+    const [role, position, cityName, industry, skills, domains] = await Promise.all([
+      this.normalizeOptionalTerm("role", context.role, userId),
       this.normalizeOptionalTerm("position", context.position, userId),
       this.normalizeOptionalTerm("city", context.cityName, userId),
       this.normalizeOptionalTerm("industry", context.industry, userId),
@@ -60,11 +61,12 @@ export class Normalizer {
 
     // Pass-through fields that don't need normalization (ISO codes: countryCode, languages)
     // Normalized fields override pass-through values
-    return this.removeUndefinedFields({ ...context, position, cityName, industry, skills, domains });
+    return this.removeUndefinedFields({ ...context, role, position, cityName, industry, skills, domains });
   }
 
   async normalizeFullContext(context: UserContext, userId: UserId): Promise<UserContext> {
-    const [position, cityName, industry, skills, domains] = await Promise.all([
+    const [role, position, cityName, industry, skills, domains] = await Promise.all([
+      this.normalizeTerm("role", context.role, userId),
       this.normalizeTerm("position", context.position, userId),
       this.normalizeTerm("city", context.cityName, userId),
       this.normalizeTerm("industry", context.industry, userId),
@@ -72,17 +74,18 @@ export class Normalizer {
       this.normalizeTerms("domain", context.domains, userId),
     ]);
 
-    return { ...context, position, cityName, industry, skills, domains };
+    return { ...context, role, position, cityName, industry, skills, domains };
   }
 
   async normalizeTargetContext(context: TargetContext, userId: UserId): Promise<TargetContext> {
-    const [position, skills, domains] = await Promise.all([
+    const [role, position, skills, domains] = await Promise.all([
+      this.normalizeTargetField("role", context.role, userId),
       this.normalizeTargetField("position", context.position, userId),
       this.normalizeTargetField("skill", context.skills, userId),
       this.normalizeTargetField("domain", context.domains, userId),
     ]);
 
-    const result: TargetContext = { position, skills, domains };
+    const result: TargetContext = { role, position, skills, domains };
 
     if (context.countries) {
       result.countries = context.countries;

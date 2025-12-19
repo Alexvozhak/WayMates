@@ -25,7 +25,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "de"
-      ]
+      ],
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-cc83f8f90e1c",
@@ -53,7 +54,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "de"
-      ]
+      ],
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-d0bac10f7e5d",
@@ -84,7 +86,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "de"
-      ]
+      ],
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-d771b6fe0251",
@@ -115,7 +118,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "de"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": []

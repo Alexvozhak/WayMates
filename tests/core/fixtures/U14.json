@@ -23,7 +23,8 @@
       "citizenships": [
         "de"
       ],
-      "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d73"
+      "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d73",
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d73",
@@ -49,7 +50,8 @@
       "citizenships": [
         "de"
       ],
-      "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d74"
+      "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d74",
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d74",
@@ -76,7 +78,8 @@
       "educationLevel": "MASTER",
       "citizenships": [
         "de"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": [

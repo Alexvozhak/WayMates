@@ -58,6 +58,7 @@ export function buildOptionalMatchRelationships(contextVar: string): string {
 
   return `
 OPTIONAL MATCH (${contextVar})-[:HAS_POSITION]->(${prefix}Position:Position)
+OPTIONAL MATCH (${contextVar})-[:HAS_ROLE]->(${prefix}Role:Role)
 OPTIONAL MATCH (${contextVar})-[:IN_WORK_DOMAIN]->(${prefix}WorkDomain:WorkDomain)
 OPTIONAL MATCH (${contextVar})-[:USES_SKILL]->(${prefix}Skill:Skill)
 OPTIONAL MATCH (${contextVar})-[:IN_INDUSTRY]->(${prefix}Industry:Industry)

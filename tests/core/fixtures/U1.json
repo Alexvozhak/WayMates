@@ -27,7 +27,8 @@
       ],
       "languages": [
         "en"
-      ]
+      ],
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18be-770d-85a1-f28efbd4e3a5",
@@ -55,7 +56,8 @@
       ],
       "languages": [
         "en"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": []

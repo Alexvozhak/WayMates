@@ -24,7 +24,8 @@
       "salaryMax": 80000,
       "citizenships": [
         "us"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": []

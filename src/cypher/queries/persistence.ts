@@ -29,6 +29,7 @@ MERGE (context:Context {contextId: $ctx.contextId})
 SET context.createdAt = $ctx.createdAt,
     context.updatedAt = timestamp(),
     context.position = $ctx.position,
+    context.role = $ctx.role,
     context.domains = $ctx.domains,
     context.skills = $ctx.skills,
     context.industry = $ctx.industry,
@@ -59,6 +60,11 @@ CALL {
   WITH context
   OPTIONAL MATCH (context)-[r:HAS_POSITION]->() DELETE r
   RETURN count(*) AS _del_pos
+}
+CALL {
+  WITH context
+  OPTIONAL MATCH (context)-[r:HAS_ROLE]->() DELETE r
+  RETURN count(*) AS _del_role
 }
 CALL {
   WITH context
@@ -98,6 +104,7 @@ CALL {
 
 WITH context, user,
      $ctx.position AS position,
+     $ctx.role AS role,
      $ctx.industry AS industry,
      $ctx.domains AS work_domains,
      $ctx.skills AS skills,
@@ -109,6 +116,10 @@ WITH context, user,
 MERGE (p:Position {canonicalName: position})
 ON CREATE SET p.verified = false, p.createdAt = timestamp(), p.createdBy = "user"
 MERGE (context)-[:HAS_POSITION]->(p)
+
+MERGE (r:Role {canonicalName: role})
+ON CREATE SET r.verified = false, r.createdAt = timestamp(), r.createdBy = "user"
+MERGE (context)-[:HAS_ROLE]->(r)
 
 MERGE (i:Industry {canonicalName: industry})
 ON CREATE SET i.verified = false, i.createdAt = timestamp(), i.createdBy = "user"
@@ -246,11 +257,12 @@ export const GET_USER_STORY_QUERY = `CALL {
 CALL {
   MATCH (user:User {userId: $userId})-[:HAS_CONTEXT]->(context:Context)
   OPTIONAL MATCH (context)-[:HAS_POSITION]->(p:Position)
+  OPTIONAL MATCH (context)-[:HAS_ROLE]->(r:Role)
   OPTIONAL MATCH (context)-[:IN_WORK_DOMAIN]->(wd:WorkDomain)
   OPTIONAL MATCH (context)-[:USES_SKILL]->(s:Skill)
   OPTIONAL MATCH (context)-[:CITIZEN_OF]->(cit:Country)
   OPTIONAL MATCH (context)-[:SPEAKS_FLUENT]->(lang:Language)
-  WITH context, p.canonicalName AS position, collect(DISTINCT wd.canonicalName) AS domains, collect(DISTINCT s.canonicalName) AS skills, collect(DISTINCT cit.name) AS citizenships, collect(DISTINCT lang.code) AS languages
+  WITH context, p.canonicalName AS position, r.canonicalName AS role, collect(DISTINCT wd.canonicalName) AS domains, collect(DISTINCT s.canonicalName) AS skills, collect(DISTINCT cit.name) AS citizenships, collect(DISTINCT lang.code) AS languages
   WITH context {
     .contextId,
     .previousContextId,
@@ -268,6 +280,7 @@ CALL {
     .salaryMax,
     .feedback,
     position: position,
+    role: role,
     domains: domains,
     skills: skills,
     citizenships: citizenships,

@@ -48,7 +48,14 @@ function extractPrefix(contextVar: string): string {
 export function buildWithCollect(contextVar: string, preserveVars: string[] = []): string {
   const prefix = extractPrefix(contextVar);
 
-  const baseVars = [contextVar, `${prefix}Position`, `${prefix}Industry`, `${prefix}City`, `${prefix}Country`];
+  const baseVars = [
+    contextVar,
+    `${prefix}Position`,
+    `${prefix}Role`,
+    `${prefix}Industry`,
+    `${prefix}City`,
+    `${prefix}Country`,
+  ];
 
   const allVars = [...preserveVars, ...baseVars].join(", ");
 

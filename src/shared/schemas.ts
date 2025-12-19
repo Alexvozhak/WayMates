@@ -193,8 +193,9 @@ const userContextSchemaBase = z.object({
     .array(newContextReasonSchema)
     .min(1)
     .describe("Reasons for context creation (always required, use 'started_working' for first job)"),
-  position: z.string().min(1).describe("Position title"),
-  domains: z.array(z.string()).min(1).describe("Work domains"),
+  position: z.string().min(1).describe("Position title (seniority level)"),
+  role: z.string().min(1).describe("Profession type: developer, qa, devops, sysadmin, analyst, etc."),
+  domains: z.array(z.string()).min(1).describe("Work domains (technical areas)"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
   industry: z.string().describe("Company industry"),
   companySize: z.string().optional().describe("Company size (optional for synthetic users)"),
@@ -263,6 +264,7 @@ const userContextSchemaBase = z.object({
 export const adhocContextBase = userContextSchemaBase
   .pick({
     position: true,
+    role: true,
     domains: true,
     skills: true,
     industry: true,
@@ -342,6 +344,7 @@ export type FieldFilter = z.infer<typeof fieldFilterSchema>;
  */
 export const targetContextSchema = z.object({
   position: fieldFilterSchema.optional().describe("Target position filter"),
+  role: fieldFilterSchema.optional().describe("Target role filter (profession type)"),
   countries: fieldFilterSchema.optional().describe("Target countries filter"),
   domains: fieldFilterSchema.optional().describe("Target work domains filter"),
   skills: fieldFilterSchema.optional().describe("Target skills filter"),
@@ -360,6 +363,7 @@ export type TargetContext = z.infer<typeof targetContextSchema>;
 export const contextFieldSchema = z.enum(
   [
     "position",
+    "role",
     "domains",
     "skills",
     "industry",
@@ -734,6 +738,7 @@ export type MatchedCandidateWithPath = z.infer<typeof matchedCandidateWithPathSc
 export const dictionariesSchema = z.object({
   skill: z.array(z.string()),
   position: z.array(z.string()),
+  role: z.array(z.string()),
   domain: z.array(z.string()),
   city: z.array(z.string()),
   industry: z.array(z.string()),
@@ -754,6 +759,7 @@ export type SimpleDictionaryType = Exclude<DictionaryType, "reasons">;
 const simpleDictionaryTypes = [
   "skill",
   "position",
+  "role",
   "domain",
   "city",
   "industry",

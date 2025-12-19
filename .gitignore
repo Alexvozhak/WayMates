@@ -92,3 +92,6 @@ docs/graphs/
 
 # Git worktrees
 tree/
+
+# Generated chart HTML outputs
+poc/*.html

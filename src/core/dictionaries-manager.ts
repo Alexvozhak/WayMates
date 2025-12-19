@@ -1,8 +1,4 @@
-import {
-  addSimpleTermQuery,
-  addSkillQuery,
-  getVerifiedDictionariesQuery,
-} from "../cypher/index.js";
+import { addSimpleTermQuery, addSkillQuery, getVerifiedDictionariesQuery } from "../cypher/index.js";
 import { dictionariesSchema } from "../shared/schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";
@@ -57,6 +53,7 @@ export class DictionariesManager {
     return {
       skill: [],
       position: [],
+      role: [],
       domain: [],
       city: [],
       industry: [],

@@ -1,7 +1,6 @@
 {
   "backend": "backend",
   "frontend": "frontend",
-  "devops": "devops",
   "data-engineering": "data-engineering",
   "mobile": "mobile",
   "architecture": "architecture",
@@ -9,6 +8,5 @@
   "saas": "saas",
   "fintech": "fintech",
   "ai": "ai",
-  "qa": "qa",
   "security": "security"
 }

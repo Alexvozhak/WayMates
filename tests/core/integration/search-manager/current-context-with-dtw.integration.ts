@@ -5,18 +5,13 @@
 
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/shared-driver.js";
-import {
-  FixtureSearchManager,
-  createUserSearchParams,
-} from "../../helpers/fixture-search-manager.js";
+import { FixtureSearchManager, createUserSearchParams } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 
 function validateDtwFormula(
   userId: string,
   result: {
-    dtwMetrics?:
-      | { shapeSimilarity: number; tempoSimilarity: number; stabilityScore: number }
-      | undefined;
+    dtwMetrics?: { shapeSimilarity: number; tempoSimilarity: number; stabilityScore: number } | undefined;
     dtwTotal?: number | null | undefined;
   },
 ) {
@@ -127,9 +122,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     const dataManager = new UserStories();
     const u10 = dataManager.getStoryBy("U10");
 
-    console.log(
-      "[DT2] Searching from U10 for different domain trajectories (U12 Frontend, U13 Data Science)",
-    );
+    console.log("[DT2] Searching from U10 for different domain trajectories (U12 Frontend, U13 Data Science)");
 
     const results = await searchManager.searchByUser(
       createUserSearchParams(u10.userId, {
@@ -233,7 +226,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
     const results = await searchManager.searchByUser(
       createUserSearchParams(u10.userId, {
-        excludedContextFields: ["birthYear", "countryCode", "cityName"],
+        excludedContextFields: ["birthYear", "countryCode", "cityName", "role"],
       }),
     );
 

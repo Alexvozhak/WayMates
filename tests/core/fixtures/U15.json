@@ -21,7 +21,8 @@
       "birthYear": 1992,
       "citizenships": [
         "us"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": [

@@ -12,6 +12,7 @@ const FALLBACK_SELECTIVITY = 1_000_000;
 export class SelectivityService {
   private readonly explainPatterns: Record<ContextField, string> = {
     position: "MATCH (c:Context {position: $fieldValue})",
+    role: "MATCH (c:Context)-[:HAS_ROLE]->(r:Role {canonicalName: $fieldValue})",
     domains: "MATCH (c:Context) WHERE ANY(d IN $fieldValue WHERE d IN c.domains)",
     skills: "MATCH (c:Context) WHERE ANY(s IN $fieldValue WHERE s IN c.skills)",
     industry: "MATCH (c:Context {industry: $fieldValue})",
@@ -52,6 +53,7 @@ export class SelectivityService {
   private getContextFieldValue(context: AdhocContextBase, field: ContextField): unknown {
     const fieldMap: Record<ContextField, unknown> = {
       position: context.position,
+      role: context.role,
       domains: context.domains,
       skills: context.skills,
       industry: context.industry,

@@ -24,7 +24,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "fr"
-      ]
+      ],
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18bf-744a-afe5-1ab27557130c",
@@ -49,7 +50,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "fr"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": []

@@ -305,34 +305,15 @@ FORMAT RULES (STRICT):
 ${buildContextExtractionRules(!!cvText)}
 
 ═══════════════════════════════════════════════════
-REQUIRED FIELDS (must extract):
+CAREER MODEL (3 distinct dimensions):
 ═══════════════════════════════════════════════════
-- position: Job level (e.g., "junior", "middle", "senior", "lead")
-- domains: Work areas (e.g., ["frontend", "backend", "devops"]) - min 1
-- skills: Technical skills (e.g., ["react", "typescript"]) - min 1
-- industry: Company's industry (e.g., "tech", "fintech", "e-commerce")
-- companySize: Approximate size (e.g., "startup", "50-200", "1000+")
-- countryCode: ISO 3166-1 alpha-2 lowercase (e.g., "us", "de", "ru")
-- cityName: City name lowercase (e.g., "berlin", "moscow")
-- citizenships: Citizenship codes lowercase (e.g., ["ru", "de"])
-- birthYear: Year of birth (e.g., 1990)
-- creationReason: started_working | got_promoted | changed_position | changed_company |
-  changed_industry | changed_domain | got_fired | burnout | relocation |
-  education_upgrade | career_restart | management_transition | tech_shift
-
-═══════════════════════════════════════════════════
-OPTIONAL FIELDS (include ONLY if explicitly mentioned):
-═══════════════════════════════════════════════════
-- educationLevel: NONE | HIGH_SCHOOL | ASSOCIATE | BACHELOR | MASTER | DOCTORATE | PROFESSIONAL
-- salaryExact: Exact annual salary in USD (OR use salaryMin/salaryMax for range)
-- salaryMin/salaryMax: Salary range bounds in USD
-- languages: ISO 639-1 lowercase for B2+ proficiency (e.g., ["en", "de"])
-- feedback: Personal reflection on this transition (max 200 chars)
+- ROLE: Profession type (WHAT you do)
+- POSITION: Seniority level (HOW experienced)
+- DOMAINS: Technical area (WHICH field)
 
 EXTRACTION RULES:
-- Extract ONLY explicitly mentioned information - do NOT infer or guess
-- For first job, use creationReason: ["started_working"]
-- If skill/domain not explicitly stated, do NOT add it`;
+- Extract ONLY explicitly mentioned information
+- Return null for fields not mentioned`;
 }
 
 export function trailExtractionPrompt(messages: BaseMessage[], trailPreview: string): string {

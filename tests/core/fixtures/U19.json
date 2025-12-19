@@ -24,7 +24,8 @@
       "citizenships": [
         "ru"
       ],
-      "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d20"
+      "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d20",
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d20",
@@ -51,7 +52,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": [

@@ -27,6 +27,11 @@ const STRICT_CONDITION_GENERATORS: Record<ContextField, (prefix: string, searchi
     ELSE ${prefix}Position.canonicalName = ${searchingVar}.position
   END`,
 
+  role: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.role IS NULL THEN true
+    ELSE ${prefix}Role.canonicalName = ${searchingVar}.role
+  END`,
+
   domains: (prefix, searchingVar) => `CASE
     WHEN ${searchingVar}.domains IS NULL THEN true
     ELSE all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)

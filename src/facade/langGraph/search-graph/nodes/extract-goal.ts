@@ -27,7 +27,8 @@ export async function extractGoalNode(
   }
   const { cache } = config.configurable;
 
-  const [positions, domains, skills, industries] = await Promise.all([
+  const [roles, positions, domains, skills, industries] = await Promise.all([
+    cache.getSimple("role"),
     cache.getSimple("position"),
     cache.getSimple("domain"),
     cache.getSimple("skill"),
@@ -35,6 +36,7 @@ export async function extractGoalNode(
   ]);
 
   const prompt = buildGoalExtractionPrompt({
+    roles: [...roles.values()],
     positions: [...positions.values()],
     domains: [...domains.values()],
     skills: [...skills.values()],

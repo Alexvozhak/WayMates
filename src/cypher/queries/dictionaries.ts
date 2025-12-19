@@ -6,22 +6,25 @@ OPTIONAL MATCH (s:Skill {verified: true})
 WITH collect(s.canonicalName) AS skills
 OPTIONAL MATCH (p:Position {verified: true})
 WITH skills, collect(p.canonicalName) AS positions
+OPTIONAL MATCH (r:Role {verified: true})
+WITH skills, positions, collect(r.canonicalName) AS roles
 OPTIONAL MATCH (d:WorkDomain {verified: true})
-WITH skills, positions, collect(d.canonicalName) AS domains
+WITH skills, positions, roles, collect(d.canonicalName) AS domains
 OPTIONAL MATCH (c:City {verified: true})
-WITH skills, positions, domains, collect(c.canonicalName) AS cities
+WITH skills, positions, roles, domains, collect(c.canonicalName) AS cities
 OPTIONAL MATCH (i:Industry {verified: true})
-WITH skills, positions, domains, cities, collect(i.canonicalName) AS industries
+WITH skills, positions, roles, domains, cities, collect(i.canonicalName) AS industries
 OPTIONAL MATCH (pl:Platform {verified: true})
-WITH skills, positions, domains, cities, industries, collect(pl.canonicalName) AS platforms
+WITH skills, positions, roles, domains, cities, industries, collect(pl.canonicalName) AS platforms
 OPTIONAL MATCH (l:Language {verified: true})
-WITH skills, positions, domains, cities, industries, platforms, collect(l.canonicalName) AS languages
-OPTIONAL MATCH (r:Reason)
-WITH skills, positions, domains, cities, industries, platforms, languages,
-     collect(r.canonicalName) AS reasons
+WITH skills, positions, roles, domains, cities, industries, platforms, collect(l.canonicalName) AS languages
+OPTIONAL MATCH (rs:Reason)
+WITH skills, positions, roles, domains, cities, industries, platforms, languages,
+     collect(rs.canonicalName) AS reasons
 RETURN {
   skill: skills,
   position: positions,
+  role: roles,
   domain: domains,
   city: cities,
   industry: industries,
@@ -60,6 +63,7 @@ RETURN t.canonicalName AS canonicalName
 function getLabelForSimpleType(type: SimpleDictionaryType): string {
   const labelMap: Record<SimpleDictionaryType, string> = {
     position: "Position",
+    role: "Role",
     domain: "WorkDomain",
     city: "City",
     industry: "Industry",

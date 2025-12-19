@@ -9,6 +9,7 @@ CREATE CONSTRAINT reason_canonical_name_unique IF NOT EXISTS FOR (r:Reason) REQU
 CREATE CONSTRAINT goal_user_id_unique IF NOT EXISTS FOR (g:Goal) REQUIRE g.userId IS UNIQUE;
 
 // Dictionary constraints (canonicalName for normalization)
+CREATE CONSTRAINT role_canonical_name_unique IF NOT EXISTS FOR (r:Role) REQUIRE r.canonicalName IS UNIQUE;
 CREATE CONSTRAINT position_canonical_name_unique IF NOT EXISTS FOR (p:Position) REQUIRE p.canonicalName IS UNIQUE;
 CREATE CONSTRAINT industry_canonical_name_unique IF NOT EXISTS FOR (i:Industry) REQUIRE i.canonicalName IS UNIQUE;
 CREATE CONSTRAINT work_domain_canonical_name_unique IF NOT EXISTS FOR (wd:WorkDomain) REQUIRE wd.canonicalName IS UNIQUE;

@@ -60,6 +60,7 @@ export function toExtractableContext(ctx: UserContext): ExtractableContext {
     createdAt: ctx.createdAt,
     creationReason: ctx.creationReason,
     position: ctx.position,
+    role: ctx.role,
     domains: ctx.domains,
     skills: ctx.skills,
     industry: ctx.industry,

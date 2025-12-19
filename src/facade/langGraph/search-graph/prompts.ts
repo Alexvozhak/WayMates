@@ -1,4 +1,5 @@
 export type GoalExtractionDictionaries = {
+  roles: string[];
   positions: string[];
   domains: string[];
   skills: string[];
@@ -11,6 +12,7 @@ export type GoalExtractionDictionaries = {
  */
 export function buildGoalExtractionPrompt(dicts: GoalExtractionDictionaries): string {
   const hints: string[] = [];
+  if (dicts.roles.length > 0) hints.push(`KNOWN ROLES: ${dicts.roles.join(", ")}`);
   if (dicts.positions.length > 0) hints.push(`KNOWN POSITIONS: ${dicts.positions.join(", ")}`);
   if (dicts.domains.length > 0) hints.push(`KNOWN DOMAINS: ${dicts.domains.join(", ")}`);
   if (dicts.industries.length > 0) hints.push(`KNOWN INDUSTRIES: ${dicts.industries.join(", ")}`);
@@ -18,37 +20,16 @@ export function buildGoalExtractionPrompt(dicts: GoalExtractionDictionaries): st
 
   const dictsSection = hints.length > 0 ? `\n${hints.join("\n")}\n` : "";
 
-  return `Extract career goal from user's natural language description.
-Response may be in any language.
-
-The goal describes what position/role the user wants to achieve.
+  return `Extract career goal from user's message. Response may be in any language.
 ${dictsSection}
-GOAL STRUCTURE:
-- position: target seniority/role level from KNOWN POSITIONS
-  - mode: "desired" (want these) or "undesired" (avoid these)
-- countries: target countries (2-letter ISO codes)
-  - mode: "desired" (want to work there) or "undesired" (want to avoid)
-- domains: work domains/technical areas from KNOWN DOMAINS
-  - mode: "desired" or "undesired"
-- skills: required skills from KNOWN SKILLS
-  - mode: "desired" or "undesired"
-- languages: working languages (2-letter ISO codes)
-  - mode: "desired" or "undesired"
+IMPORTANT - distinguish these 3 fields:
+- role: profession type (WHAT you do) — map to KNOWN ROLES
+- position: seniority level (HOW experienced) — map to KNOWN POSITIONS
+- domains: technical area (WHICH field) — map to KNOWN DOMAINS
 
-EXTRACTION RULES:
-- Position: find the best semantic match from KNOWN POSITIONS for the role user describes
-- Domains: find the best semantic match from KNOWN DOMAINS for the field/industry user mentions
-- Skills: find the best semantic match from KNOWN SKILLS for capabilities user mentions
-- Countries: extract if user mentions geography preferences
-- Languages: extract if user mentions language requirements
+MODE: "desired" by default, "undesired" if user says "not", "avoid", "except"
 
-MODE RULES:
-- Default mode is "desired" unless user explicitly says "not", "avoid", "except"
-- "anywhere except Russia" → countries: { mode: "undesired", values: ["RU"] }
-- "want to work in Germany" → countries: { mode: "desired", values: ["DE"] }
-
-Return only fields that can be extracted from user message.
-If nothing specific mentioned, at least extract position.`;
+Return null for fields not mentioned.`;
 }
 
 export const USER_INTENT_PROMPT = `Classify user's intent. Response may be in any language.
@@ -77,18 +58,13 @@ Current goal:
 User wants to change/add:
 {userMessage}
 
-IMPORTANT MERGE RULES:
-1. If user mentions a field → update it with the new value
-2. If user does NOT mention a field → KEEP the existing value (copy from current goal)
-3. NEVER return null for fields that exist in current goal
-4. Return the COMPLETE goal with ALL fields from current goal
-
-Example:
-Current: { position: ["PM"] }
-User: "add Germany"
-Result: { position: ["PM"], countries: ["DE"] }  // position PRESERVED + countries ADDED`;
+MERGE RULES:
+- If user mentions a field → update it
+- If user does NOT mention a field → KEEP existing value
+- Return the COMPLETE goal with ALL fields`;
 
 export type AdhocExtractionDictionaries = {
+  roles: string[];
   positions: string[];
   domains: string[];
   skills: string[];
@@ -100,35 +76,19 @@ export type AdhocExtractionDictionaries = {
  */
 export function buildAdhocExtractionPrompt(dicts: AdhocExtractionDictionaries): string {
   const hints: string[] = [];
-  if (dicts.positions.length > 0) hints.push(`KNOWN POSITIONS (seniority levels ONLY): ${dicts.positions.join(", ")}`);
-  if (dicts.domains.length > 0) hints.push(`KNOWN DOMAINS (technical specialization): ${dicts.domains.join(", ")}`);
+  if (dicts.roles.length > 0) hints.push(`KNOWN ROLES: ${dicts.roles.join(", ")}`);
+  if (dicts.positions.length > 0) hints.push(`KNOWN POSITIONS: ${dicts.positions.join(", ")}`);
+  if (dicts.domains.length > 0) hints.push(`KNOWN DOMAINS: ${dicts.domains.join(", ")}`);
   if (dicts.skills.length > 0) hints.push(`KNOWN SKILLS: ${dicts.skills.join(", ")}`);
 
   const dictsSection = hints.length > 0 ? `\n${hints.join("\n")}\n` : "";
 
-  return `Extract user's CURRENT career context from their message. Response may be in any language.
-
-This is NOT about what they WANT, but about what they HAVE now.
+  return `Extract user's CURRENT career context (not goals). Response may be in any language.
 ${dictsSection}
-CONTEXT STRUCTURE:
-- position: ONLY the seniority/role level (junior, middle, senior, lead, etc.)
-  IMPORTANT: If user says "backend developer", position is the SENIORITY part only (e.g., "junior")
-- company: current company name if mentioned
-- domains: TECHNICAL SPECIALIZATION area (backend, frontend, mobile, devops, etc.)
-  IMPORTANT: Words like "backend", "frontend", "fullstack" are DOMAINS, not positions!
-  Example: "junior backend developer" → position: "junior", domains: ["backend"]
-- skills: technical skills (find best semantic match from KNOWN SKILLS)
-- countryCode: where they work (2-letter ISO code)
-- languages: languages they speak/use at work (2-letter ISO codes)
-- yearsOfExperience: total years in career if mentioned
+IMPORTANT - distinguish these 3 fields:
+- role: profession type (WHAT you do) — map to KNOWN ROLES
+- position: seniority level (HOW experienced) — map to KNOWN POSITIONS
+- domains: technical area (WHICH field) — map to KNOWN DOMAINS
 
-EXTRACTION RULES:
-- Focus on CURRENT situation, not goals
-- POSITION = seniority only (junior/middle/senior/lead/etc.)
-- DOMAIN = technical specialization (backend/frontend/mobile/devops/data/etc.)
-- Find the best semantic match from dictionaries
-- Extract only what's explicitly stated
-- Don't infer or guess missing information
-
-Return null for fields not mentioned in the message.`;
+Return null for fields not mentioned.`;
 }

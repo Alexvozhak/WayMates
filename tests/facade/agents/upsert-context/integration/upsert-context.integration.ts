@@ -56,7 +56,7 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
     const fullContextInput = `
 Я работаю senior backend developer в fintech компании в Москве с марта 2023.
 Стек: Python, PostgreSQL, Redis.
-Домены: payments, api-development.
+Домены: backend, payments, api-development.
 Компания средняя (100-500 человек).
 Мне 30 лет, гражданство РФ.
     `.trim();
@@ -77,11 +77,17 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
     }
 
     const ctx = extractionResponse.context;
-    console.log(`TC-UC-E1 [1/3]: ✅ Extracted: position="${ctx.position}", skills=${ctx.skills.length}`);
+    console.log(
+      `TC-UC-E1 [1/3]: ✅ Extracted: position="${ctx.position}", role="${ctx.role}", industry="${ctx.industry}", domains=${JSON.stringify(ctx.domains)}`,
+    );
 
-    expect(ctx.position.toLowerCase()).toContain("backend");
+    // Input: "senior backend developer в fintech"
+    // position = seniority (senior), role = profession (developer), industry = fintech, domains = [backend, ...]
+    expect(ctx.position).toContain("senior");
+    expect(ctx.role).toBe("developer");
+    expect(ctx.industry).toContain("fintech");
+    expect(ctx.domains.some((d) => d.includes("backend"))).toBe(true);
     expect(ctx.skills.length).toBeGreaterThan(0);
-    expect(ctx.domains.length).toBeGreaterThan(0);
 
     console.log("TC-UC-E1 [2/3]: Confirming → saved");
     const savedResponse = await runWorkflow("да, всё верно");

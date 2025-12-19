@@ -1039,6 +1039,7 @@ describe("StoryManager Integration Tests", () => {
           createdAt: "2025-12-01T00:00:00Z",
           creationReason: ["position_changed"],
           position: "senior",
+          role: "developer",
           industry: "tech",
           companySize: "midsize",
           domains: ["backend", "devops", "platform"],

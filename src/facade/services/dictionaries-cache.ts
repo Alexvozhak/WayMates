@@ -2,9 +2,14 @@ import { z } from "zod";
 
 import { config } from "../env.js";
 
-import type { SimpleDictionaryType } from "../../shared/schemas.js";
+import type { Dictionaries, SimpleDictionaryType } from "../../shared/schemas.js";
 import type { CoreClient } from "../core-client.js";
 import type { Redis } from "ioredis";
+
+/**
+ * Subset of dictionaries used for LLM extraction prompts.
+ */
+export type ExtractionDictionaries = Pick<Dictionaries, "role" | "position" | "domain" | "skill" | "industry">;
 
 export class DictionariesCache {
   private readonly ttl: number;
@@ -29,6 +34,28 @@ export class DictionariesCache {
       const coreData = await this.coreClient.client.dictionaries.getVerified.query();
       return new Map(coreData.reasons.map((canonicalName) => [canonicalName, canonicalName]));
     });
+  }
+
+  /**
+   * Load all dictionaries for LLM extraction prompts.
+   * Returns string arrays ready to inject into KNOWN_* hints.
+   */
+  async getForExtraction(): Promise<ExtractionDictionaries> {
+    const [role, position, domain, skill, industry] = await Promise.all([
+      this.getSimple("role"),
+      this.getSimple("position"),
+      this.getSimple("domain"),
+      this.getSimple("skill"),
+      this.getSimple("industry"),
+    ]);
+
+    return {
+      role: [...role.values()],
+      position: [...position.values()],
+      domain: [...domain.values()],
+      skill: [...skill.values()],
+      industry: [...industry.values()],
+    };
   }
 
   async invalidate(type?: SimpleDictionaryType): Promise<void> {

@@ -17,13 +17,15 @@ const extractableAdhocSchema = makeNullable(adhocContextBase);
 const extractor = getModel("extraction").withStructuredOutput(extractableAdhocSchema);
 
 async function loadAdhocDictionaries(cache: DictionariesCache): Promise<AdhocExtractionDictionaries> {
-  const [positions, domains, skills] = await Promise.all([
+  const [roles, positions, domains, skills] = await Promise.all([
+    cache.getSimple("role"),
     cache.getSimple("position"),
     cache.getSimple("domain"),
     cache.getSimple("skill"),
   ]);
 
   return {
+    roles: [...roles.values()],
     positions: [...positions.values()],
     domains: [...domains.values()],
     skills: [...skills.values()],

@@ -23,7 +23,8 @@
       "salaryExact": 70000,
       "citizenships": [
         "us"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": []

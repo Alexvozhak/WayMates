@@ -1,0 +1,13 @@
+{
+  "developer": "developer",
+  "qa": "qa",
+  "devops": "devops",
+  "sysadmin": "sysadmin",
+  "analyst": "analyst",
+  "data-engineer": "data-engineer",
+  "data-scientist": "data-scientist",
+  "architect": "architect",
+  "secops": "secops",
+  "designer": "designer",
+  "dba": "dba"
+}

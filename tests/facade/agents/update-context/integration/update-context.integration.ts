@@ -22,6 +22,7 @@ function createTestContext(contextId: string): UserContext {
     createdAt: new Date().toISOString(),
     creationReason: ["started_working"],
     position: "backend developer",
+    role: "developer",
     industry: "fintech",
     skills: ["python", "postgresql"],
     domains: ["payments"],

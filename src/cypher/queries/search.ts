@@ -70,7 +70,7 @@ RETURN searchingUser.currentContextId AS currentContextId
  *
  * Returns variables in scope:
  * - matchedUser, matchedContext
- * - matchedPosition, matchedIndustry, matchedCity, matchedCountry
+ * - matchedPosition, matchedRole, matchedIndustry, matchedCity, matchedCountry
  * - matchedDomains (array), matchedSkills (array)
  *
  * @param filterByCurrentContext - If true, filters by currentContextId (searchByUser). If false, searches all contexts (searchAdhoc, searchByTarget)
@@ -164,7 +164,7 @@ export function buildCurrentSearchQuery(
     ? `
 OPTIONAL MATCH (matchedUser)-[:HAS_GOAL]->(candidateGoal:Goal)
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      timeSinceMatchedMonths, contextMatchScore,
      CASE
        // Pathfinder: candidate achieved user's desired position
@@ -181,7 +181,7 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
      END AS candidateType
     `
     : `
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      timeSinceMatchedMonths, contextMatchScore,
      null AS candidateType
     `;
@@ -191,13 +191,14 @@ ${buildMatchedContextBase(filterByCurrentContext)}
 
 ${whereClause}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
 ${buildExcludedReasonsFilter("matchedContext", [
   "matchedUser",
   "matchedContext",
   "matchedPosition",
+  "matchedRole",
   "matchedDomains",
   "matchedSkills",
   "matchedLanguages",
@@ -207,7 +208,7 @@ ${buildExcludedReasonsFilter("matchedContext", [
   "timeSinceMatchedMonths",
 ])}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      ${
        skipSkillsPenalty
          ? "0.0 AS contextMatchScore"
@@ -236,7 +237,7 @@ CALL {
   }) AS extraSkillsWithPenalty
 }
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      reduce(positiveScore = 0.0, matched IN matchedSkillsWithWeights |
        positiveScore + matched.weight
      ) AS skillsPositiveScore,
@@ -244,7 +245,7 @@ WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills
        penaltyScore + extra.penalty
      ) AS skillsPenaltyScore
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      CASE
        WHEN (skillsPositiveScore - skillsPenaltyScore) < 0 THEN 0.0
        ELSE (skillsPositiveScore - skillsPenaltyScore)
@@ -400,21 +401,21 @@ ${buildMatchedContextBase(false)}
 
 ${whereClause}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
 // Phase 2-3: Get FULL trajectory from user's current context
-${buildFullTrajectoryFromUser("matchedUser", ["matchedContext", "matchedPosition", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceMatchedMonths"])}
+${buildFullTrajectoryFromUser("matchedUser", ["matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceMatchedMonths"])}
 
 ${buildUnwindPath("matchedPathNodes", "matchedPathContext")}
 
 ${buildOptionalMatchRelationships("matchedPathContext")}
 
-${buildWithCollect("matchedPathContext", ["matchedUser", "matchedContext", "matchedPosition", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceMatchedMonths"])}
+${buildWithCollect("matchedPathContext", ["matchedUser", "matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceMatchedMonths"])}
 
 ORDER BY matchedPathContext.createdAt ASC
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
      collect(${buildContextMapProjection("matchedPath")}) AS trajectory
 
 // Phase 4: Collect trails for this user
@@ -445,7 +446,7 @@ CALL {
   RETURN collect(trail) AS trails
 }
 
-WITH matchedUser, matchedContext, matchedPosition, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      timeSinceMatchedMonths, trajectory, trails
 ${excludedReasonsCheck}
 

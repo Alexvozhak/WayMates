@@ -26,7 +26,8 @@
       "citizenships": [
         "ru"
       ],
-      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-d86cefe91b07"
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-d86cefe91b07",
+      "role": "analyst"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-d86cefe91b07",
@@ -57,7 +58,8 @@
       "citizenships": [
         "ru"
       ],
-      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-df04ddd77920"
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-df04ddd77920",
+      "role": "analyst"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-df04ddd77920",
@@ -91,7 +93,8 @@
       "educationLevel": "BACHELOR",
       "citizenships": [
         "ru"
-      ]
+      ],
+      "role": "analyst"
     }
   ],
   "trails": [

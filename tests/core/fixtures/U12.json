@@ -26,7 +26,8 @@
       "citizenships": [
         "ru"
       ],
-      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078"
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078",
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078",
@@ -57,7 +58,8 @@
       "citizenships": [
         "ru"
       ],
-      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a"
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a",
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a",
@@ -90,7 +92,8 @@
       "citizenships": [
         "ru"
       ],
-      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81"
+      "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81",
+      "role": "developer"
     },
     {
       "contextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81",
@@ -129,7 +132,8 @@
       "citizenships": [
         "ru",
         "de"
-      ]
+      ],
+      "role": "developer"
     }
   ],
   "trails": [

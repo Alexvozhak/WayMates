@@ -10,6 +10,7 @@ export function createTestContext(overrides: Partial<UserContext> = {}): UserCon
     createdAt: "2025-01-01T00:00:00Z",
     creationReason: ["started_working"],
     position: "Junior Developer",
+    role: "developer",
     domains: ["Backend"],
     skills: ["javascript"],
     industry: "tech",
