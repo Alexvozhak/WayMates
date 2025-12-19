@@ -34,7 +34,7 @@ export async function clarifyGoalNode(state: SearchStateType): Promise<Partial<S
     extractedGoal: updated,
     clarifyRound: clarifyRound + 1,
     userResponse: "", // Clear to ensure show_goal does interrupt
-    phase: PHASE.showingGoal,
+    phase: PHASE.showing_goal,
     messages: [...messages, new HumanMessage(clarificationText)],
   };
 }

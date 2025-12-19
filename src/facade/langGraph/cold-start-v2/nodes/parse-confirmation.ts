@@ -5,12 +5,12 @@ import type { ColdStartStateType } from "../state.js";
 
 const intentParser = getModel("deterministic").withStructuredOutput(decisionSchema);
 
-const CONFIRMATION_PROMPT = `Classify user intent.
+const CONFIRMATION_PROMPT = `Classify user intent. Response may be in any language.
 
-APPROVE: User confirms, agrees to proceed.
-EDIT: User wants to change or modify something.
-CANCEL: User wants to stop completely.
-UNKNOWN: Cannot determine intent.`;
+APPROVE: User confirms, agrees, accepts, or wants to proceed/save.
+EDIT: User wants to change, modify, or correct something.
+CANCEL: User wants to stop, cancel, or abort completely.
+UNKNOWN: Cannot determine intent with confidence.`;
 
 export async function parseConfirmationNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {
   const { userResponse } = state;

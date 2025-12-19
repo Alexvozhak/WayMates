@@ -1,22 +1,47 @@
 import { HumanMessage } from "@langchain/core/messages";
 
 import { makeNullable, targetContextSchema } from "../../../../shared/schemas.js";
+import { AgentInvariantError } from "../../../errors.js";
+import { hasConfigDeps } from "../../shared/types.js";
 import { getModel } from "../../shared-tools/models.js";
-import { GOAL_EXTRACTION_PROMPT } from "../prompts.js";
-import { PHASE } from "../state.js";
+import { buildGoalExtractionPrompt } from "../prompts.js";
+import { NODE, PHASE } from "../state.js";
 
 import type { TargetContext } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
+import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
 const extractableGoalSchema = makeNullable(targetContextSchema);
 
 const extractionModel = getModel("extraction").withStructuredOutput(extractableGoalSchema);
 
-export async function extractGoalNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
+export async function extractGoalNode(
+  state: SearchStateType,
+  config: LangGraphRunnableConfig,
+): Promise<Partial<SearchStateType>> {
   const { messages, userResponse } = state;
 
+  if (!hasConfigDeps(config)) {
+    throw new AgentInvariantError(NODE.extract_goal, "Missing cache dependency");
+  }
+  const { cache } = config.configurable;
+
+  const [positions, domains, skills, industries] = await Promise.all([
+    cache.getSimple("position"),
+    cache.getSimple("domain"),
+    cache.getSimple("skill"),
+    cache.getSimple("industry"),
+  ]);
+
+  const prompt = buildGoalExtractionPrompt({
+    positions: [...positions.values()],
+    domains: [...domains.values()],
+    skills: [...skills.values()],
+    industries: [...industries.values()],
+  });
+
   const extracted = await extractionModel.invoke([
-    { role: "system", content: GOAL_EXTRACTION_PROMPT },
+    { role: "system", content: prompt },
     { role: "user", content: userResponse },
   ]);
 
@@ -30,7 +55,7 @@ export async function extractGoalNode(state: SearchStateType): Promise<Partial<S
   return {
     extractedGoal,
     userResponse: "", // Clear to ensure show_goal does interrupt
-    phase: PHASE.showingGoal,
+    phase: PHASE.showing_goal,
     messages: messages.length === 0 ? [new HumanMessage(userResponse)] : messages,
   };
 }

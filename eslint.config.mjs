@@ -57,6 +57,11 @@ export default [
           selector: 'property',
           format: null,
           modifiers: ['requiresQuotes']
+        },
+        {
+          // Allow snake_case for Zod enum .Values (phases, intents, node names)
+          selector: 'property',
+          format: ['camelCase', 'snake_case', 'UPPER_CASE'],
         }
       ],
 

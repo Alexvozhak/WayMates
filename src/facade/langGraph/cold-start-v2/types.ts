@@ -19,7 +19,6 @@ export type ColdStartPhase = z.infer<typeof coldStartPhaseSchema>;
 /** Alias for coldStartPhaseSchema.Values for shorter access: PHASE.failed */
 export const PHASE = coldStartPhaseSchema.Values;
 
-/* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
 export const NODE = {
   gather_story: "gather_story",
   parse_story_decision: "parse_story_decision",
@@ -39,7 +38,6 @@ export const NODE = {
   persist: "persist",
   cancel: "cancel",
 } as const;
-/* eslint-enable @typescript-eslint/naming-convention */
 
 export type NodeName = (typeof NODE)[keyof typeof NODE];
 

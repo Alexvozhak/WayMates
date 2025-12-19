@@ -56,20 +56,24 @@ export async function parseSearchIntentNode(
   const parsed = await parseUserIntent(userResponse);
 
   // Build targetSearchParams for showing_goal + validate
-  const canBuildTargetParams = phase === PHASE.showingGoal && extractedGoal && hasConfigDeps(config);
+  const canBuildTargetParams = phase === PHASE.showing_goal && extractedGoal && hasConfigDeps(config);
   const targetSearchParams = canBuildTargetParams
     ? await buildTargetSearchParams(parsed, extractedGoal, config.configurable.normalizer)
     : null;
 
   // Increment newPositionRound for ask_after_validate + change
   const updatedRound =
-    phase === PHASE.askingAfterValidate && parsed.intent === "change" ? newPositionRound + 1 : newPositionRound;
+    phase === PHASE.asking_after_validate && parsed.intent === "change" ? newPositionRound + 1 : newPositionRound;
+
+  // Don't clear userResponse for 'proceed' - extract_goal needs it
+  // Clear for other intents to prevent re-interpretation
+  const shouldClearResponse = parsed.intent !== "proceed";
 
   return {
     searchUserIntent: parsed.intent,
     targetSearchParams,
     clarificationText: extractClarificationText(parsed),
     newPositionRound: updatedRound,
-    userResponse: "",
+    ...(shouldClearResponse && { userResponse: "" }),
   };
 }

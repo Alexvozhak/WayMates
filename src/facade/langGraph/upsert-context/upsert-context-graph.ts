@@ -1,9 +1,14 @@
 import { Command, END, START, StateGraph } from "@langchain/langgraph";
-import { z } from "zod";
 
-import { AgentInvariantError } from "../../errors.js";
+import { createInterruptPhaseExtractor } from "../shared/interrupt-utils.js";
+import { isGraphState } from "../shared/state-utils.js";
 
-import { routeAfterDecision, routeAfterValidation } from "./context-router.js";
+import {
+  DECISION_ROUTE_MAP,
+  routeAfterDecision,
+  routeAfterValidation,
+  VALIDATION_ROUTE_MAP,
+} from "./context-router.js";
 import { cancelNode } from "./nodes/cancel.js";
 import { clarifyNode } from "./nodes/clarify.js";
 import { editContextNode } from "./nodes/edit-context.js";
@@ -13,26 +18,14 @@ import { persistContextNode } from "./nodes/persist-context.js";
 import { showContextNode } from "./nodes/show-context.js";
 import { validateContextNode } from "./nodes/validate-context.js";
 import { responseBuilders } from "./response-builders.js";
-import { NODE, PHASE, upsertContextStateAnnotation } from "./state.js";
+import { NODE, phaseSchema, upsertContextStateAnnotation } from "./state.js";
 
-import type { UpsertContextPhase, UpsertContextStateType } from "./state.js";
+import type { UpsertContextStateType } from "./state.js";
 import type { UpsertContextResponse } from "./types.js";
 import type { UserId } from "../../../shared/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
-import type { StateSnapshot } from "@langchain/langgraph";
 
-const interruptValueSchema = z.object({
-  phase: z
-    .enum([
-      PHASE.extracting,
-      PHASE.awaitingClarification,
-      PHASE.awaitingConfirmation,
-      PHASE.saved,
-      PHASE.cancelled,
-      PHASE.failed,
-    ])
-    .optional(),
-});
+const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);
 
 function stateToResponse(state: UpsertContextStateType): UpsertContextResponse {
   const { phase } = state;
@@ -53,19 +46,10 @@ export function createGraphBuilder() {
 
     .addEdge(START, NODE.extract_context)
     .addEdge(NODE.extract_context, NODE.validate_context)
-    .addConditionalEdges(NODE.validate_context, routeAfterValidation, {
-      [NODE.clarify]: NODE.clarify,
-      [NODE.show_context]: NODE.show_context,
-      [NODE.cancel]: NODE.cancel,
-    })
+    .addConditionalEdges(NODE.validate_context, routeAfterValidation, VALIDATION_ROUTE_MAP)
     .addEdge(NODE.clarify, NODE.extract_context)
     .addEdge(NODE.show_context, NODE.parse_decision)
-    .addConditionalEdges(NODE.parse_decision, routeAfterDecision, {
-      [NODE.persist_context]: NODE.persist_context,
-      [NODE.edit_context]: NODE.edit_context,
-      [NODE.cancel]: NODE.cancel,
-      [NODE.show_context]: NODE.show_context,
-    })
+    .addConditionalEdges(NODE.parse_decision, routeAfterDecision, DECISION_ROUTE_MAP)
     .addEdge(NODE.edit_context, NODE.validate_context)
     .addEdge(NODE.persist_context, END)
     .addEdge(NODE.cancel, END);
@@ -73,31 +57,6 @@ export function createGraphBuilder() {
 /* eslint-enable @typescript-eslint/explicit-function-return-type */
 
 type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
-
-function isUpsertContextState(values: unknown): values is UpsertContextStateType {
-  if (!values || typeof values !== "object") return false;
-  return "phase" in values && "userId" in values;
-}
-
-function toUpsertContextState(values: unknown): UpsertContextStateType {
-  if (!isUpsertContextState(values)) {
-    throw new AgentInvariantError("toUpsertContextState", "Invalid state values from graph");
-  }
-  return values;
-}
-
-function extractInterruptPhase(snapshot: StateSnapshot): UpsertContextPhase | undefined {
-  const task = snapshot.tasks[0];
-  if (!task) return undefined;
-
-  const interrupt = task.interrupts[0];
-  if (!interrupt) return undefined;
-
-  const parsed = interruptValueSchema.safeParse(interrupt.value);
-  if (!parsed.success) return undefined;
-
-  return parsed.data.phase;
-}
 
 export class UpsertContextGraph {
   private readonly compiledGraph: CompiledGraph;
@@ -107,9 +66,7 @@ export class UpsertContextGraph {
   }
 
   async run(message: string, threadId: string, userId: UserId): Promise<UpsertContextResponse> {
-    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
     const config = { configurable: { thread_id: threadId, ...this.deps } };
-    /* eslint-enable @typescript-eslint/naming-convention */
 
     const currentSnapshot = await this.compiledGraph.getState(config);
     const hasPendingInterrupt = currentSnapshot.tasks.length > 0;
@@ -127,9 +84,8 @@ export class UpsertContextGraph {
     const finalSnapshot = await this.compiledGraph.getState(config);
     const interruptPhase = extractInterruptPhase(finalSnapshot);
 
-    if (interruptPhase) {
-      const values = toUpsertContextState(finalSnapshot.values);
-      return stateToResponse({ ...values, phase: interruptPhase });
+    if (interruptPhase && isGraphState<UpsertContextStateType>(finalSnapshot.values)) {
+      return stateToResponse({ ...finalSnapshot.values, phase: interruptPhase });
     }
 
     return stateToResponse(result);

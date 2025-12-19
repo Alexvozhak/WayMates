@@ -44,6 +44,6 @@ export async function exploreNode(
 
   return {
     explorationResults: results,
-    phase: PHASE.showingExploration,
+    phase: PHASE.showing_exploration,
   };
 }

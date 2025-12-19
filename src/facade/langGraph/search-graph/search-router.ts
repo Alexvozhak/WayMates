@@ -13,10 +13,10 @@ type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 
 // prettier-ignore
 const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
-  [PHASE.showingExploration,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showingGoal,          buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.askingAfterValidate,  buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showingResults,       buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_exploration,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_goal,          buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.asking_after_validate,  buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_results,       buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
 ]);
 
 // Static route maps (not phase-dependent)
@@ -37,10 +37,10 @@ function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, Rout
 
   // prettier-ignore
   return {
-    [PHASE.showingExploration]: { proceed: NODE.extract_goal, filter: NODE.apply_filters, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.showingGoal]:        { validate: NODE.validate_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, save: NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.askingAfterValidate]:{ save: NODE.set_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, change: canChangePosition ? NODE.extract_goal : NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.showingResults]:     { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.load_existing_goal, delete: NODE.delete_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showing_exploration]: { proceed: NODE.extract_goal, filter: NODE.apply_filters, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showing_goal]:        { validate: NODE.validate_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, save: NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.asking_after_validate]:{ save: NODE.set_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, change: canChangePosition ? NODE.extract_goal : NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showing_results]:     { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.load_existing_goal, delete: NODE.delete_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
   } satisfies Partial<Record<SearchPhase, RouteMap>>;
 }
 
@@ -56,10 +56,10 @@ export function availableNodesByPhase(phase: SearchPhase): Partial<Record<NodeNa
 
 // Combined destinations for parse_search_intent (routes to all phase-specific nodes)
 export const PARSE_INTENT_ALL_DESTINATIONS = {
-  ...availableNodesByPhase(PHASE.showingExploration),
-  ...availableNodesByPhase(PHASE.showingGoal),
-  ...availableNodesByPhase(PHASE.askingAfterValidate),
-  ...availableNodesByPhase(PHASE.showingResults),
+  ...availableNodesByPhase(PHASE.showing_exploration),
+  ...availableNodesByPhase(PHASE.showing_goal),
+  ...availableNodesByPhase(PHASE.asking_after_validate),
+  ...availableNodesByPhase(PHASE.showing_results),
 };
 
 export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
@@ -75,7 +75,7 @@ export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
 
   const routes = createIntentRoutes(flags);
   const phaseRoutes = routes[phase];
-  const defaultRoute = phase === PHASE.showingGoal ? NODE.set_goal : NODE.cancel;
+  const defaultRoute = phase === PHASE.showing_goal ? NODE.set_goal : NODE.cancel;
 
   return phaseRoutes?.[searchUserIntent] ?? defaultRoute;
 }
@@ -89,5 +89,5 @@ export function routeAfterApplyFilters(state: SearchStateType): NodeName {
 }
 
 export function isTerminalPhase(phase: SearchPhase): boolean {
-  return phase === PHASE.showingResults || phase === PHASE.cancelled || phase === PHASE.failed;
+  return phase === PHASE.showing_results || phase === PHASE.cancelled || phase === PHASE.failed;
 }

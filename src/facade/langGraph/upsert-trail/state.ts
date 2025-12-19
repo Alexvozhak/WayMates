@@ -1,25 +1,18 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
+import { PHASE } from "../shared/phases.js";
 import { lastValue } from "../shared/state-utils.js";
 
 import type { ContextId, MissingField, Trail, UserId } from "../../../shared/schemas.js";
 import type { ParsedDecision } from "../shared/decision.js";
+import type { SimpleConfirmationPhase } from "../shared/phases.js";
 import type { ExtractableTrail } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
-export const PHASE = {
-  extracting: "extracting",
-  awaitingClarification: "awaiting_clarification",
-  awaitingConfirmation: "awaiting_confirmation",
-  saved: "saved",
-  cancelled: "cancelled",
-  failed: "failed",
-} as const;
-
-export type UpsertTrailPhase = (typeof PHASE)[keyof typeof PHASE];
+export type UpsertTrailPhase = SimpleConfirmationPhase;
 
 /** Node names in upsert-trail graph - single source of truth for graph topology */
-/* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
+
 export const NODE = {
   extract_trail: "extract_trail",
   validate_trail: "validate_trail",
@@ -30,7 +23,6 @@ export const NODE = {
   persist_trail: "persist_trail",
   cancel: "cancel",
 } as const;
-/* eslint-enable @typescript-eslint/naming-convention */
 
 export type NodeName = (typeof NODE)[keyof typeof NODE];
 
@@ -52,3 +44,5 @@ export const upsertTrailStateAnnotation = Annotation.Root({
 });
 
 export type UpsertTrailStateType = typeof upsertTrailStateAnnotation.State;
+
+export { PHASE, simpleConfirmationPhaseSchema as phaseSchema } from "../shared/phases.js";

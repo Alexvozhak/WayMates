@@ -1,24 +1,16 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
+import { PHASE } from "../shared/phases.js";
 import { lastValue } from "../shared/state-utils.js";
 
 import type { MissingField, UserContext, UserId } from "../../../shared/schemas.js";
 import type { ParsedDecision } from "../shared/decision.js";
+import type { SimpleConfirmationPhase } from "../shared/phases.js";
 import type { ExtractableContext } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
-export const PHASE = {
-  extracting: "extracting",
-  awaitingClarification: "awaiting_clarification",
-  awaitingConfirmation: "awaiting_confirmation",
-  saved: "saved",
-  cancelled: "cancelled",
-  failed: "failed",
-} as const;
+export type UpsertContextPhase = SimpleConfirmationPhase;
 
-export type UpsertContextPhase = (typeof PHASE)[keyof typeof PHASE];
-
-/* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
 export const NODE = {
   extract_context: "extract_context",
   validate_context: "validate_context",
@@ -29,7 +21,6 @@ export const NODE = {
   persist_context: "persist_context",
   cancel: "cancel",
 } as const;
-/* eslint-enable @typescript-eslint/naming-convention */
 
 export type NodeName = (typeof NODE)[keyof typeof NODE];
 
@@ -49,3 +40,5 @@ export const upsertContextStateAnnotation = Annotation.Root({
 });
 
 export type UpsertContextStateType = typeof upsertContextStateAnnotation.State;
+
+export { PHASE, simpleConfirmationPhaseSchema as phaseSchema } from "../shared/phases.js";

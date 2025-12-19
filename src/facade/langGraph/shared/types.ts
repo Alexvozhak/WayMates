@@ -30,3 +30,5 @@ export function hasUserService(config: LangGraphRunnableConfig): config is Confi
   const c = config.configurable;
   return !!c && "coreClient" in c && "normalizer" in c && "userService" in c;
 }
+
+export { type DictionariesCache } from "../../services/dictionaries-cache.js";

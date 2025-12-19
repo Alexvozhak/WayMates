@@ -50,9 +50,9 @@ describe("SearchGraph: Exploration (TC-SG-EX)", () => {
 
     // Turn 1: Initial exploration
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase, "Turn 1: User without goal MUST start with exploration").toBe(PHASE.showingExploration);
+    expect(turn1.phase, "Turn 1: User without goal MUST start with exploration").toBe(PHASE.showing_exploration);
 
-    if (turn1.phase !== PHASE.showingExploration) {
+    if (turn1.phase !== PHASE.showing_exploration) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -62,9 +62,11 @@ describe("SearchGraph: Exploration (TC-SG-EX)", () => {
 
     // Turn 2: User proceeds (готов сформулировать цель)
     const turn2 = await runGraph("хочу стать senior frontend разработчиком");
-    expect(turn2.phase, "Turn 2: After exploration, user message MUST trigger goal extraction").toBe(PHASE.showingGoal);
+    expect(turn2.phase, "Turn 2: After exploration, user message MUST trigger goal extraction").toBe(
+      PHASE.showing_goal,
+    );
 
-    if (turn2.phase !== PHASE.showingGoal) {
+    if (turn2.phase !== PHASE.showing_goal) {
       expect.fail("Type guard failed after strict assertion");
     }
 

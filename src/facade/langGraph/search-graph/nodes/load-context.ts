@@ -3,21 +3,39 @@ import { AgentInvariantError } from "../../../errors.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
 import { hasConfigDeps } from "../../shared/types.js";
 import { getModel } from "../../shared-tools/models.js";
-import { ADHOC_CONTEXT_EXTRACTION_PROMPT } from "../prompts.js";
+import { buildAdhocExtractionPrompt } from "../prompts.js";
 import { NODE } from "../state.js";
 
 import type { AdhocUserContext } from "../../../../shared/schemas.js";
+import type { DictionariesCache } from "../../shared/types.js";
+import type { AdhocExtractionDictionaries } from "../prompts.js";
 import type { SearchStateType } from "../state.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
-// LLM extraction schema: makeNullable wrapper for OpenAI Structured Output compatibility
-// ADR-031: makeNullable applied locally, not exported from schemas
 const extractableAdhocSchema = makeNullable(adhocContextBase);
 const extractor = getModel("extraction").withStructuredOutput(extractableAdhocSchema);
 
-async function extractAdhocContext(message: string): Promise<AdhocUserContext | null> {
+async function loadAdhocDictionaries(cache: DictionariesCache): Promise<AdhocExtractionDictionaries> {
+  const [positions, domains, skills] = await Promise.all([
+    cache.getSimple("position"),
+    cache.getSimple("domain"),
+    cache.getSimple("skill"),
+  ]);
+
+  return {
+    positions: [...positions.values()],
+    domains: [...domains.values()],
+    skills: [...skills.values()],
+  };
+}
+
+async function extractAdhocContext(
+  message: string,
+  dicts: AdhocExtractionDictionaries,
+): Promise<AdhocUserContext | null> {
+  const prompt = buildAdhocExtractionPrompt(dicts);
   const extracted = await extractor.invoke([
-    { role: "system", content: ADHOC_CONTEXT_EXTRACTION_PROMPT },
+    { role: "system", content: prompt },
     { role: "user", content: message },
   ]);
 
@@ -36,10 +54,11 @@ export async function loadContextNode(
   if (!hasConfigDeps(config)) {
     throw new AgentInvariantError(NODE.load_context, "Config deps required");
   }
-  const { coreClient, normalizer } = config.configurable;
+  const { coreClient, normalizer, cache } = config.configurable;
 
   if (state.intent === GRAPH_INTENT.startAdhoc) {
-    const extracted = await extractAdhocContext(state.userResponse);
+    const dicts = await loadAdhocDictionaries(cache);
+    const extracted = await extractAdhocContext(state.userResponse, dicts);
     const adhocContext = extracted ? await normalizer.normalizeAdhocContext(extracted, state.userId) : null;
 
     // Clear userResponse after extraction to prevent show_exploration

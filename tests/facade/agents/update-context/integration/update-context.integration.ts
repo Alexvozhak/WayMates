@@ -100,8 +100,8 @@ describe("Update-Context: Integration Tests (TC-UPD)", () => {
       expect.fail(`Expected awaiting_confirmation, got failed: ${extractionResponse.message}`);
     }
 
-    expect(extractionResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    expect(extractionResponse.phase).toBe(PHASE.awaiting_confirmation);
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`Unexpected phase: ${extractionResponse.phase}`);
     }
 
@@ -158,7 +158,7 @@ describe("Update-Context: Integration Tests (TC-UPD)", () => {
     console.log("TC-UPD-M1 [1/1]: Sending message without updates → failed");
     const response = await runWorkflow(noUpdateMessage);
 
-    if (response.phase === PHASE.awaitingConfirmation) {
+    if (response.phase === PHASE.awaiting_confirmation) {
       console.log("TC-UPD-M1: LLM extracted updates anyway:");
       console.log("  before:", response.before.position, response.before.salaryExact);
       console.log("  after:", response.after.position, response.after.salaryExact);
@@ -201,8 +201,8 @@ describe("Update-Context: Integration Tests (TC-UPD)", () => {
       expect.fail(`Expected awaiting_confirmation, got failed: ${extractionResponse.message}`);
     }
 
-    expect(extractionResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    expect(extractionResponse.phase).toBe(PHASE.awaiting_confirmation);
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`Unexpected phase: ${extractionResponse.phase}`);
     }
 
@@ -243,7 +243,7 @@ describe("Update-Context: Integration Tests (TC-UPD)", () => {
     console.log("TC-UPD-DEC1 [1/2]: Getting to awaiting_confirmation");
     const extractionResponse = await runWorkflow(updateRequest);
 
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`TC-UPD-DEC1: Expected awaiting_confirmation, got ${extractionResponse.phase}`);
     }
 
@@ -281,7 +281,7 @@ describe("Update-Context: Integration Tests (TC-UPD)", () => {
     console.log("TC-UPD-E3 [1/3]: Getting to awaiting_confirmation");
     const extractionResponse = await runWorkflow(updateRequest);
 
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`TC-UPD-E3: Expected awaiting_confirmation, got ${extractionResponse.phase}`);
     }
 
@@ -291,8 +291,8 @@ describe("Update-Context: Integration Tests (TC-UPD)", () => {
     console.log("TC-UPD-E3 [2/3]: Sending edit request");
     const editResponse = await runWorkflow("нет, зарплата 280000");
 
-    expect(editResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (editResponse.phase !== PHASE.awaitingConfirmation) {
+    expect(editResponse.phase).toBe(PHASE.awaiting_confirmation);
+    if (editResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`Expected awaiting_confirmation after edit, got: ${editResponse.phase}`);
     }
 

@@ -56,7 +56,7 @@ export function mergeContextNode(state: UpdateContextStateType): Partial<UpdateC
     }
 
     return {
-      phase: PHASE.awaitingClarification,
+      phase: PHASE.awaiting_clarification,
       missingFields: missing,
       clarificationRound: nextRound,
       validationErrors: [],
@@ -68,6 +68,6 @@ export function mergeContextNode(state: UpdateContextStateType): Partial<UpdateC
     validationErrors: [],
     missingFields: [],
     clarificationRound: 0,
-    phase: PHASE.awaitingConfirmation,
+    phase: PHASE.awaiting_confirmation,
   };
 }

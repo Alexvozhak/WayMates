@@ -13,18 +13,18 @@ export const responseBuilders: Record<UpsertContextPhase, ResponseBuilder> = {
     message: "Processing your request...",
   }),
 
-  [PHASE.awaitingClarification]: (state) => ({
-    phase: PHASE.awaitingClarification,
+  [PHASE.awaiting_clarification]: (state) => ({
+    phase: PHASE.awaiting_clarification,
     message: "Please provide the missing information.",
     missingFields: state.missingFields,
   }),
 
-  [PHASE.awaitingConfirmation]: (state) => {
+  [PHASE.awaiting_confirmation]: (state) => {
     if (!state.validatedContext) {
-      throw new InvalidStateError(PHASE.awaitingConfirmation, "validatedContext is missing");
+      throw new InvalidStateError(PHASE.awaiting_confirmation, "validatedContext is missing");
     }
     return {
-      phase: PHASE.awaitingConfirmation,
+      phase: PHASE.awaiting_confirmation,
       message: "Please confirm the position details.",
       context: state.validatedContext,
     };

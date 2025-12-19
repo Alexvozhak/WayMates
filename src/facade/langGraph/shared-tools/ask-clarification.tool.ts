@@ -36,14 +36,13 @@ export const askClarificationTool = tool(
       update: {
         userResponse: String(userMessage),
         clarificationRound: clarificationRound + 1,
-        /* eslint-disable @typescript-eslint/naming-convention -- LangChain API */
+
         messages: [
           new ToolMessage({
             content: `Пользователь ответил: "${userMessage}". Используй эти данные для повторного вызова process_entity_batch с тем же contextIndex.`,
             tool_call_id: toolCallId,
           }),
         ],
-        /* eslint-enable @typescript-eslint/naming-convention */
       },
     });
   },

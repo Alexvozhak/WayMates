@@ -19,7 +19,7 @@ export function clarifyNode(state: UpdateContextStateType): Partial<UpdateContex
     type: "clarification",
     message: "Please provide missing information for context updates:",
     questions,
-    phase: PHASE.awaitingClarification,
+    phase: PHASE.awaiting_clarification,
   });
 
   const response = String(userResponse);
@@ -27,6 +27,6 @@ export function clarifyNode(state: UpdateContextStateType): Partial<UpdateContex
   return {
     userResponse: response,
     messages: [new HumanMessage(response)],
-    phase: PHASE.awaitingClarification,
+    phase: PHASE.awaiting_clarification,
   };
 }

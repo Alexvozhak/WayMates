@@ -22,23 +22,44 @@ function extractPrefix(contextVar: string): string {
  * - Uses canonical variables after aggregation (matchedPosition, matchedDomains, etc.)
  */
 const STRICT_CONDITION_GENERATORS: Record<ContextField, (prefix: string, searchingVar: string) => string> = {
-  position: (prefix, searchingVar) => `${prefix}Position.canonicalName = ${searchingVar}.position`,
+  position: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.position IS NULL THEN true
+    ELSE ${prefix}Position.canonicalName = ${searchingVar}.position
+  END`,
 
-  domains: (prefix, searchingVar) => `all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)`,
+  domains: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.domains IS NULL THEN true
+    ELSE all(d IN ${searchingVar}.domains WHERE d IN ${prefix}Domains)
+  END`,
 
   skills: () => {
     throw new Error("Skills cannot be in strict conditions. Use penalty-based scoring instead.");
   },
 
-  industry: (prefix, searchingVar) => `${prefix}Industry.canonicalName = ${searchingVar}.industry`,
+  industry: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.industry IS NULL THEN true
+    ELSE ${prefix}Industry.canonicalName = ${searchingVar}.industry
+  END`,
 
-  countryCode: (prefix, searchingVar) => `${prefix}Country.name = ${searchingVar}.countryCode`,
+  countryCode: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.countryCode IS NULL THEN true
+    ELSE ${prefix}Country.name = ${searchingVar}.countryCode
+  END`,
 
-  cityName: (prefix, searchingVar) => `${prefix}City.canonicalName = ${searchingVar}.cityName`,
+  cityName: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.cityName IS NULL THEN true
+    ELSE ${prefix}City.canonicalName = ${searchingVar}.cityName
+  END`,
 
-  companySize: (prefix, searchingVar) => `${prefix}Context.companySize = ${searchingVar}.companySize`,
+  companySize: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.companySize IS NULL THEN true
+    ELSE ${prefix}Context.companySize = ${searchingVar}.companySize
+  END`,
 
-  birthYear: (prefix, searchingVar) => `${prefix}Context.birthYear = ${searchingVar}.birthYear`,
+  birthYear: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.birthYear IS NULL THEN true
+    ELSE ${prefix}Context.birthYear = ${searchingVar}.birthYear
+  END`,
 
   educationLevel: (prefix, searchingVar) => `CASE
     WHEN ${searchingVar}.educationLevel IS NULL THEN true

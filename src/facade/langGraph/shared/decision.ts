@@ -3,26 +3,39 @@ import { z } from "zod";
 import { getModel } from "../shared-tools/models.js";
 
 export const decisionSchema = z.object({
-  intent: z.enum(["approve", "edit", "cancel"]),
-  editTarget: z.string(),
-  editInstructions: z.string(),
+  intent: z
+    .enum(["approve", "edit", "cancel", "unknown"])
+    .describe("User intent: approve/edit/cancel, or unknown if unclear"),
+  editTarget: z.string().describe("What to edit if intent is 'edit', empty string otherwise"),
+  editInstructions: z.string().describe("How to edit if intent is 'edit', empty string otherwise"),
 });
 
 export type ParsedDecision = z.infer<typeof decisionSchema>;
 
-export const CONFIRMATION_PROMPT = `Parse the user's intent from their response.
+/**
+ * Creates decision routes table for simple confirmation graphs.
+ * Standard mapping: approve→persist, edit→edit, cancel→cancel, unknown→show (retry)
+ */
+export function createDecisionRoutes<T extends string>(nodes: {
+  persist: T;
+  edit: T;
+  cancel: T;
+  show: T;
+}): Record<ParsedDecision["intent"], T> {
+  return {
+    approve: nodes.persist,
+    edit: nodes.edit,
+    cancel: nodes.cancel,
+    unknown: nodes.show,
+  };
+}
 
-Intent classification:
-- APPROVE: User confirms, agrees, or accepts (yes, ok, correct, approve, save, confirm, done, looks good, да, подтверждаю, согласен, верно, давай, норм, пойдёт, сохрани, etc.)
-- EDIT: User wants to change something (edit, change, fix, modify, add, remove, update, изменить, поправить, измени, добавь, убери, etc.)
-- CANCEL: User wants to stop or abort (no, cancel, stop, abort, exit, quit, nevermind, нет, отмена, стоп, выход, etc.)
+export const CONFIRMATION_PROMPT = `Classify user intent. Response may be in any language.
 
-Note: User may respond in any language. Map their response to the correct intent.
-
-Return JSON:
-- intent: "approve", "edit", or "cancel"
-- editTarget: what to edit if intent is "edit", empty string otherwise
-- editInstructions: how to edit if intent is "edit", empty string otherwise`;
+APPROVE: User confirms, agrees, accepts, or wants to proceed/save.
+EDIT: User wants to change, modify, or correct something.
+CANCEL: User wants to stop, cancel, or abort completely.
+UNKNOWN: Cannot determine intent with confidence.`;
 
 const intentParser = getModel("deterministic").withStructuredOutput(decisionSchema);
 

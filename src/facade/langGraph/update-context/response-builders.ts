@@ -13,21 +13,21 @@ export const responseBuilders: Record<UpdateContextPhase, ResponseBuilder> = {
     message: "Processing your request...",
   }),
 
-  [PHASE.awaitingClarification]: (state) => ({
-    phase: PHASE.awaitingClarification,
+  [PHASE.awaiting_clarification]: (state) => ({
+    phase: PHASE.awaiting_clarification,
     message: "Please provide the missing information.",
     missingFields: state.missingFields,
   }),
 
-  [PHASE.awaitingConfirmation]: (state) => {
+  [PHASE.awaiting_confirmation]: (state) => {
     if (!state.currentContext) {
-      throw new InvalidStateError(PHASE.awaitingConfirmation, "currentContext is missing");
+      throw new InvalidStateError(PHASE.awaiting_confirmation, "currentContext is missing");
     }
     if (!state.mergedContext) {
-      throw new InvalidStateError(PHASE.awaitingConfirmation, "mergedContext is missing");
+      throw new InvalidStateError(PHASE.awaiting_confirmation, "mergedContext is missing");
     }
     return {
-      phase: PHASE.awaitingConfirmation,
+      phase: PHASE.awaiting_confirmation,
       message: "Please confirm the changes.",
       before: state.currentContext,
       after: state.mergedContext,

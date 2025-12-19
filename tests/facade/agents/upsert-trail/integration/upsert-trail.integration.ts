@@ -73,15 +73,15 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
     console.log("TC-UT-E1 [1/3]: Sending full trail → awaiting_confirmation");
     const extractionResponse = await runWorkflow(fullTrailInput);
 
-    if (extractionResponse.phase === PHASE.awaitingClarification) {
+    if (extractionResponse.phase === PHASE.awaiting_clarification) {
       console.log("TC-UT-E1: Got clarification, missing:", extractionResponse.missingFields);
       expect.fail(
         `Expected awaiting_confirmation, got clarification for: ${JSON.stringify(extractionResponse.missingFields)}`,
       );
     }
 
-    expect(extractionResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    expect(extractionResponse.phase).toBe(PHASE.awaiting_confirmation);
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`Unexpected phase: ${extractionResponse.phase}`);
     }
 
@@ -132,15 +132,15 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
     console.log("TC-UT-E2 [1/2]: Sending minimal trail → awaiting_confirmation");
     const extractionResponse = await runWorkflow(minimalInput);
 
-    if (extractionResponse.phase === PHASE.awaitingClarification) {
+    if (extractionResponse.phase === PHASE.awaiting_clarification) {
       console.log("TC-UT-E2: Got clarification for:", extractionResponse.missingFields);
       expect.fail(
         `Expected awaiting_confirmation for minimal trail, got clarification: ${JSON.stringify(extractionResponse.missingFields)}`,
       );
     }
 
-    expect(extractionResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    expect(extractionResponse.phase).toBe(PHASE.awaiting_confirmation);
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`Unexpected phase: ${extractionResponse.phase}`);
     }
 
@@ -178,7 +178,7 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
     console.log("TC-UT-CL1 [1/1]: Sending incomplete trail (no skill) → awaiting_clarification");
     const response = await runWorkflow(incompleteInput);
 
-    if (response.phase === PHASE.awaitingConfirmation) {
+    if (response.phase === PHASE.awaiting_confirmation) {
       console.log("TC-UT-CL1: LLM filled all fields:");
       console.log("  skill:", response.trail.skill);
       console.log("  platform:", response.trail.platform);
@@ -187,8 +187,8 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
       );
     }
 
-    expect(response.phase).toBe(PHASE.awaitingClarification);
-    if (response.phase !== PHASE.awaitingClarification) {
+    expect(response.phase).toBe(PHASE.awaiting_clarification);
+    if (response.phase !== PHASE.awaiting_clarification) {
       expect.fail(`Unexpected phase: ${response.phase}`);
     }
 
@@ -223,7 +223,7 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
     console.log("TC-UT-DEC1 [1/2]: Getting to awaiting_confirmation");
     const extractionResponse = await runWorkflow(fullTrailInput);
 
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`TC-UT-DEC1: Expected awaiting_confirmation, got ${extractionResponse.phase}`);
     }
 
@@ -262,7 +262,7 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
     console.log("TC-UT-E3 [1/3]: Getting to awaiting_confirmation");
     const extractionResponse = await runWorkflow(fullTrailInput);
 
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`TC-UT-E3: Expected awaiting_confirmation, got ${extractionResponse.phase}`);
     }
 
@@ -272,8 +272,8 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
     console.log("TC-UT-E3 [2/3]: Sending edit request");
     const editResponse = await runWorkflow("измени платформу на Udemy");
 
-    expect(editResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (editResponse.phase !== PHASE.awaitingConfirmation) {
+    expect(editResponse.phase).toBe(PHASE.awaiting_confirmation);
+    if (editResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`Expected awaiting_confirmation after edit, got: ${editResponse.phase}`);
     }
 

@@ -17,7 +17,7 @@ export function showContextNode(state: UpsertContextStateType): Partial<UpsertCo
     context: validatedContext,
     errors: validationErrors,
     options: ["approve", "edit", "cancel"],
-    phase: PHASE.awaitingConfirmation,
+    phase: PHASE.awaiting_confirmation,
   });
 
   return { userResponse: String(userResponse) };

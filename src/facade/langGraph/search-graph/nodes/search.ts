@@ -45,6 +45,6 @@ export async function searchNode(
 
   return {
     searchResults: results,
-    phase: PHASE.showingResults,
+    phase: PHASE.showing_results,
   };
 }

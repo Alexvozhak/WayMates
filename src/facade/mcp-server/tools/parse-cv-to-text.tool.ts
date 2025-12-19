@@ -86,7 +86,7 @@ Output ONLY the anonymized markdown, no meta-commentary.`;
             },
             {
               type: "image_url",
-              // eslint-disable-next-line @typescript-eslint/naming-convention
+
               image_url: {
                 url: `data:application/pdf;base64,${params.fileBuffer}`,
               },
@@ -95,7 +95,7 @@ Output ONLY the anonymized markdown, no meta-commentary.`;
         },
       ],
       temperature: config.CV_PARSER_TEMPERATURE,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
+
       max_tokens: config.CV_PARSER_MAX_OUTPUT_TOKENS,
     });
 

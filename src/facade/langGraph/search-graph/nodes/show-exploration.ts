@@ -13,11 +13,11 @@ export function showExplorationNode(state: SearchStateType): Partial<SearchState
     type: "show_exploration",
     candidates: state.explorationResults,
     options: OPTIONS.showExploration,
-    phase: PHASE.showingExploration,
+    phase: PHASE.showing_exploration,
   });
 
   return {
     userResponse: String(userResponse),
-    phase: PHASE.showingExploration,
+    phase: PHASE.showing_exploration,
   };
 }

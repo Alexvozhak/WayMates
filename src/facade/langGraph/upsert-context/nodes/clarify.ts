@@ -19,7 +19,7 @@ export function clarifyNode(state: UpsertContextStateType): Partial<UpsertContex
     type: "clarification",
     message: "Please provide missing information:",
     questions,
-    phase: PHASE.awaitingClarification,
+    phase: PHASE.awaiting_clarification,
   });
 
   const response = String(userResponse);
@@ -27,6 +27,6 @@ export function clarifyNode(state: UpsertContextStateType): Partial<UpsertContex
   return {
     userResponse: response,
     messages: [...messages, new HumanMessage(response)],
-    phase: PHASE.awaitingClarification,
+    phase: PHASE.awaiting_clarification,
   };
 }

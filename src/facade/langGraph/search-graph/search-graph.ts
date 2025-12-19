@@ -2,6 +2,7 @@ import { Command, END, START, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
 
 import { CONTEXT_FIELD_NAMES } from "../../../shared/schemas.js";
+import { isGraphState } from "../shared/state-utils.js";
 
 import { applyFiltersNode } from "./nodes/apply-filters.js";
 import { askAfterValidateNode } from "./nodes/ask-after-validate.js";
@@ -53,12 +54,8 @@ function stateToResponse(state: SearchStateType): SearchGraphResponse {
 async function enrichResponse(state: SearchStateType, cache: DictionariesCache): Promise<SearchGraphResponse> {
   const baseResponse = stateToResponse(state);
 
-  // DEBUG: Check baseResponse before enrichment
-  console.log("[ENRICH RESPONSE] phase:", baseResponse.phase);
-  console.log("[ENRICH RESPONSE] baseResponse keys:", Object.keys(baseResponse));
-
   // showing_goal: add availableFilters (reasons)
-  if (baseResponse.phase === "showing_goal" && state.phase === PHASE.showingGoal) {
+  if (baseResponse.phase === "showing_goal" && state.phase === PHASE.showing_goal) {
     const reasons = await cache.getReasons();
     return {
       ...baseResponse,
@@ -69,7 +66,7 @@ async function enrichResponse(state: SearchStateType, cache: DictionariesCache):
   }
 
   // showing_exploration: add currentFilters + optionally appliedCurrentFilters
-  if (baseResponse.phase === "showing_exploration" && state.phase === PHASE.showingExploration) {
+  if (baseResponse.phase === "showing_exploration" && state.phase === PHASE.showing_exploration) {
     return {
       ...baseResponse,
       currentFilters: {
@@ -80,7 +77,7 @@ async function enrichResponse(state: SearchStateType, cache: DictionariesCache):
   }
 
   // showing_results: add both availableFilters (reasons) and currentFilters (contextFields)
-  if (baseResponse.phase === "showing_results" && state.phase === PHASE.showingResults) {
+  if (baseResponse.phase === "showing_results" && state.phase === PHASE.showing_results) {
     const reasons = await cache.getReasons();
     return {
       ...baseResponse,
@@ -151,11 +148,6 @@ export function createGraphBuilder() {
 
 type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
 
-function isSearchState(values: unknown): values is SearchStateType {
-  if (!values || typeof values !== "object") return false;
-  return "phase" in values && "userId" in values;
-}
-
 function extractInterruptPhase(snapshot: StateSnapshot): SearchPhase | undefined {
   const task = snapshot.tasks[0];
   if (!task) return undefined;
@@ -182,9 +174,7 @@ export class SearchGraph {
     userId: UserId,
     intent: UserIntent | null,
   ): Promise<SearchGraphResponse> {
-    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
     const config = { configurable: { thread_id: threadId, ...this.deps } };
-    /* eslint-enable @typescript-eslint/naming-convention */
 
     const currentSnapshot = await this.compiledGraph.getState(config);
     const hasPendingInterrupt = currentSnapshot.tasks.length > 0;
@@ -203,7 +193,7 @@ export class SearchGraph {
     const finalSnapshot = await this.compiledGraph.getState(config);
     const interruptPhase = extractInterruptPhase(finalSnapshot);
 
-    if (interruptPhase && isSearchState(finalSnapshot.values)) {
+    if (interruptPhase && isGraphState<SearchStateType>(finalSnapshot.values)) {
       return enrichResponse({ ...finalSnapshot.values, phase: interruptPhase }, this.deps.cache);
     }
 

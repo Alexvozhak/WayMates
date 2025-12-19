@@ -36,11 +36,11 @@ export async function validateGoalNode(
   const candidates = await coreClient.client.search.byTarget.query({
     userId,
     ...params,
-    targetContext: normalized, // Override with normalized version
+    targetContext: normalized,
   });
 
   return {
     validationResults: candidates,
-    phase: PHASE.askingAfterValidate,
+    phase: PHASE.asking_after_validate,
   };
 }

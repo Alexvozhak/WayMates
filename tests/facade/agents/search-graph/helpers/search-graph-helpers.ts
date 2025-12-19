@@ -4,12 +4,12 @@ import { Command } from "@langchain/langgraph";
 
 import { AgentInvariantError } from "../../../../../src/facade/errors.js";
 import { SearchGraph } from "../../../../../src/facade/langGraph/search-graph/search-graph.js";
-import {
-  DEFAULT_LIMIT,
-  DEFAULT_RECENCY_THRESHOLD_MONTHS,
-} from "../../../../../src/facade/langGraph/search-graph/types.js";
+import { DEFAULT_LIMIT } from "../../../../../src/facade/langGraph/search-graph/types.js";
 
-import type { SearchGraphResponse } from "../../../../../src/facade/langGraph/search-graph/types.js";
+import type {
+  SearchGraphResponse,
+  TargetSearchParamsWithFeedback,
+} from "../../../../../src/facade/langGraph/search-graph/types.js";
 import type { SearchStateType } from "../../../../../src/facade/langGraph/search-graph/state.js";
 import type { CoreClient } from "../../../../../src/facade/core-client.js";
 import type { CreateGoalInput, CurrentSearchParamsBase, UserId } from "../../../../../src/shared/schemas.js";
@@ -25,6 +25,12 @@ import type { UserIntent } from "../../../../../src/facade/services/orchestrator
 export const TEST_USER_ID: UserId = "usr_019a6ea7-18be-770d-85a1-ea515ab10d65";
 
 /**
+ * Relaxed recency threshold for test fixtures.
+ * Fixtures have contexts from 2022, so 12 months is too restrictive.
+ */
+const TEST_RECENCY_THRESHOLD_MONTHS = 120;
+
+/**
  * Relaxed filters for test fixtures matching.
  * Excludes geo/personal fields that vary across fixtures (countryCode, cityName, birthYear, languages).
  * Allows matching on core professional fields (position, domains, industry, etc).
@@ -32,9 +38,21 @@ export const TEST_USER_ID: UserId = "usr_019a6ea7-18be-770d-85a1-ea515ab10d65";
 export const RELAXED_FILTERS: CurrentSearchParamsBase = {
   excludedContextFields: ["countryCode", "cityName", "birthYear", "languages"],
   excludedCreationReasons: [],
-  recencyThresholdMonths: DEFAULT_RECENCY_THRESHOLD_MONTHS,
+  recencyThresholdMonths: TEST_RECENCY_THRESHOLD_MONTHS,
   limit: DEFAULT_LIMIT,
   pathLimit: DEFAULT_LIMIT,
+};
+
+/**
+ * Relaxed target search params for validate_goal.
+ * Uses extended recency threshold for test fixtures (2022 data).
+ */
+export const RELAXED_TARGET_FILTERS: TargetSearchParamsWithFeedback = {
+  targetContext: {},
+  excludedCreationReasons: [],
+  recencyThresholdMonths: TEST_RECENCY_THRESHOLD_MONTHS,
+  limit: DEFAULT_LIMIT,
+  rejectedReasons: [],
 };
 
 /**
@@ -110,7 +128,10 @@ export async function runSearchGraphWithInitialState(
 
 /**
  * Convenience helper: run SearchGraph with relaxed filters (most common test case).
- * Shorthand for `runSearchGraphWithInitialState(deps, msg, tid, uid, intent, { currentSearchParams: RELAXED_FILTERS })`.
+ * Shorthand for `runSearchGraphWithInitialState(deps, msg, tid, uid, intent, { currentSearchParams, targetSearchParams })`.
+ *
+ * Injects both currentSearchParams (for adhoc search) and targetSearchParams (for validate_goal).
+ * Both use extended recency threshold (120 months) to work with test fixtures from 2022.
  *
  * @param intent - Pre-parsed intent (e.g., GRAPH_INTENT.startAdhoc) or null for LLM parsing
  */
@@ -123,5 +144,6 @@ export async function runSearchGraphWithRelaxedFilters(
 ): Promise<SearchGraphResponse> {
   return runSearchGraphWithInitialState(deps, message, threadId, userId, intent, {
     currentSearchParams: RELAXED_FILTERS,
+    targetSearchParams: RELAXED_TARGET_FILTERS,
   });
 }

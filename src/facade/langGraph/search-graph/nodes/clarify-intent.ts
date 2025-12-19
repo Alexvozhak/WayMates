@@ -6,10 +6,10 @@ import { NODE, OPTIONS, PHASE } from "../state.js";
 import type { SearchPhase, SearchStateType } from "../state.js";
 
 const PHASE_OPTIONS = new Map<SearchPhase, string[]>([
-  [PHASE.showingExploration, OPTIONS.showExploration],
-  [PHASE.showingGoal, OPTIONS.showGoal],
-  [PHASE.askingAfterValidate, OPTIONS.askAfterValidate],
-  [PHASE.showingResults, OPTIONS.showResults],
+  [PHASE.showing_exploration, OPTIONS.showExploration],
+  [PHASE.showing_goal, OPTIONS.showGoal],
+  [PHASE.asking_after_validate, OPTIONS.askAfterValidate],
+  [PHASE.showing_results, OPTIONS.showResults],
 ]);
 
 export function clarifyIntentNode(state: SearchStateType): Partial<SearchStateType> {

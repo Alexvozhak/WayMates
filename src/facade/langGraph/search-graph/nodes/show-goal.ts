@@ -26,7 +26,7 @@ export function showGoalNode(state: SearchStateType): Partial<SearchStateType> {
   if (hasExistingResponse) {
     return {
       userResponse: stateUserResponse,
-      phase: PHASE.showingGoal,
+      phase: PHASE.showing_goal,
     };
   }
 
@@ -34,11 +34,11 @@ export function showGoalNode(state: SearchStateType): Partial<SearchStateType> {
     type: "show_goal",
     extractedGoal,
     options: OPTIONS.showGoal,
-    phase: PHASE.showingGoal,
+    phase: PHASE.showing_goal,
   });
 
   return {
     userResponse: String(userResponse),
-    phase: PHASE.showingGoal,
+    phase: PHASE.showing_goal,
   };
 }

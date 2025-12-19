@@ -14,11 +14,11 @@ export function askAfterValidateNode(state: SearchStateType): Partial<SearchStat
     candidates: state.validationResults,
     message: "Based on these trajectories, is this the goal you want?",
     options: OPTIONS.askAfterValidate,
-    phase: PHASE.askingAfterValidate,
+    phase: PHASE.asking_after_validate,
   });
 
   return {
     userResponse: String(userResponse),
-    phase: PHASE.askingAfterValidate,
+    phase: PHASE.asking_after_validate,
   };
 }

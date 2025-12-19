@@ -37,7 +37,7 @@ export function validateTrailNode(state: UpsertTrailStateType): Partial<UpsertTr
     }
 
     return {
-      phase: PHASE.awaitingClarification,
+      phase: PHASE.awaiting_clarification,
       missingFields: missing,
       clarificationRound: nextRound,
       validationErrors: [],
@@ -49,6 +49,6 @@ export function validateTrailNode(state: UpsertTrailStateType): Partial<UpsertTr
     validationErrors: [],
     missingFields: [],
     clarificationRound: 0,
-    phase: PHASE.awaitingConfirmation,
+    phase: PHASE.awaiting_confirmation,
   };
 }

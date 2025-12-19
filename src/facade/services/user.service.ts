@@ -24,12 +24,12 @@ export class UserService {
 
   async findByToken(token: string): Promise<{ userId: string } | null> {
     const tokenHash = hashToken(token);
-    /* eslint-disable @typescript-eslint/naming-convention -- Database column */
+
     const result = await this.postgres.query<{ user_id: string }>(
       "SELECT user_id FROM facade.users WHERE token_hash = $1",
       [tokenHash],
     );
-    /* eslint-enable @typescript-eslint/naming-convention */
+
     return result.rows[0] ? { userId: result.rows[0].user_id } : null;
   }
 
@@ -42,12 +42,11 @@ export class UserService {
   }
 
   async findByTelegramId(telegramUserId: number): Promise<{ userId: string } | null> {
-    /* eslint-disable @typescript-eslint/naming-convention -- Database column */
     const result = await this.postgres.query<{ user_id: string }>(
       "SELECT user_id FROM facade.users WHERE telegram_user_id = $1",
       [telegramUserId],
     );
-    /* eslint-enable @typescript-eslint/naming-convention */
+
     if (!result.rows[0]) return null;
     return { userId: result.rows[0].user_id };
   }

@@ -78,9 +78,9 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
       turn1.phase,
       "Turn 1: User with existing goal asking about goal MUST show goal for review. " +
         "If this fails, check: (1) load_existing_goal routing, (2) show_goal node",
-    ).toBe(PHASE.showingGoal);
+    ).toBe(PHASE.showing_goal);
 
-    if (turn1.phase !== PHASE.showingGoal) {
+    if (turn1.phase !== PHASE.showing_goal) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -93,14 +93,14 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
     console.log("Turn 1: ✅ Existing goal loaded and shown");
 
     // Turn 2: User wants to validate (see who achieved this goal)
-    const turn2 = await runGraph("проверить");
+    const turn2 = await runGraph("покажи кто достиг такой цели");
     expect(
       turn2.phase,
       "Turn 2: 'validate' intent MUST trigger validation with by_target search. " +
-        "If this fails, check: (1) parseUserIntent, (2) routeAfterShowGoal",
-    ).toBe(PHASE.askingAfterValidate);
+        "If this fails, check: (1) parseUserIntent, (2) routeAfterParseSearchIntent",
+    ).toBe(PHASE.asking_after_validate);
 
-    if (turn2.phase !== PHASE.askingAfterValidate) {
+    if (turn2.phase !== PHASE.asking_after_validate) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -119,9 +119,9 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
       turn3.phase,
       "Turn 3: 'save' intent after validation MUST persist goal and show search results. " +
         "If this fails, check: (1) routeAfterAskAfterValidate, (2) set_goal, (3) search node",
-    ).toBe(PHASE.showingResults);
+    ).toBe(PHASE.showing_results);
 
-    if (turn3.phase !== PHASE.showingResults) {
+    if (turn3.phase !== PHASE.showing_results) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -177,7 +177,7 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
 
     // Turn 1: start exploration
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase).toBe(PHASE.showingExploration);
+    expect(turn1.phase).toBe(PHASE.showing_exploration);
     console.log("Turn 1: ✅ Exploration started");
 
     // Turn 2: express initial goal
@@ -186,9 +186,9 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
       turn2.phase,
       "Turn 2: Goal expression MUST trigger extraction and show_goal. " +
         "If this fails, check: (1) routeAfterShowExploration, (2) extract_goal node",
-    ).toBe(PHASE.showingGoal);
+    ).toBe(PHASE.showing_goal);
 
-    if (turn2.phase !== PHASE.showingGoal) {
+    if (turn2.phase !== PHASE.showing_goal) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -215,9 +215,9 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
       "Turn 3: Clarify with text MUST extract clarificationText, update goal, and show. " +
         "If this fails, check: (1) parseUserIntent extracts clarificationText, " +
         "(2) show-goal passes it to state, (3) clarify_goal uses it",
-    ).toBe(PHASE.showingGoal);
+    ).toBe(PHASE.showing_goal);
 
-    if (turn3.phase !== PHASE.showingGoal) {
+    if (turn3.phase !== PHASE.showing_goal) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -236,9 +236,9 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
 
     // Turn 4: save the clarified goal
     const turn4 = await runGraph("сохрани");
-    expect(turn4.phase, "Turn 4: 'save' intent MUST persist goal and show search results").toBe(PHASE.showingResults);
+    expect(turn4.phase, "Turn 4: 'save' intent MUST persist goal and show search results").toBe(PHASE.showing_results);
 
-    if (turn4.phase !== PHASE.showingResults) {
+    if (turn4.phase !== PHASE.showing_results) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -258,35 +258,38 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
   /* eslint-enable complexity */
 
   /**
-   * TC-SG-VC3 (NEW): Validation → Clarify → Re-validate
+   * TC-SG-VC3 (NEW): Show goal → Validation → Clarify → Re-validate
    *
    * Что тестируем:
-   * User увидел validation результаты и хочет уточнить цель (добавить фильтр).
+   * User с существующей целью сначала видит цель для review.
+   * После validate — видит candidates.
    * Clarify intent после validation обновляет extractedGoal через clarify_goal.
    * Повторная validation использует обновлённую цель.
    *
    * Бизнес-ценность:
-   * - User видит кто достиг цели (validation)
+   * - User с целью сначала видит её для review
+   * - Может запросить validation (кто достиг цели)
    * - Решает сузить поиск (добавить страну)
-   * - Уточняет цель БЕЗ отмены validation flow
    * - Видит новую validation с фильтром
    *
    * Given:
    * - User: U1 с goal { position: [\"senior\"], domains: [\"backend\"] }
    *
    * Flow:
-   * - Turn 1: \"проверить\" → validate_goal → ask_after_validate (показ candidates)
-   * - Turn 2: \"добавь Германию\" → clarify intent → clarify_goal → showing_goal (updated)
-   * - Turn 3: \"проверить снова\" → validate_goal → ask_after_validate (filtered candidates)
+   * - Turn 1: "проверить" → showing_goal (new: show goal first for review)
+   * - Turn 2: "проверить" → validate_goal → asking_after_validate (candidates)
+   * - Turn 3: "добавь Германию" → clarify_goal → showing_goal (updated)
+   * - Turn 4: "проверить снова" → validate_goal → asking_after_validate (filtered)
    *
    * Then:
-   * - Turn 1: phase = asking_after_validate, candidates.length > 0
-   * - Turn 2: phase = showing_goal, extractedGoal.countries contains Germany variant
-   * - Turn 3: phase = asking_after_validate, candidates all from Germany (or fewer total)
+   * - Turn 1: phase = showing_goal (goal review first)
+   * - Turn 2: phase = asking_after_validate, candidates.length > 0
+   * - Turn 3: phase = showing_goal, extractedGoal.countries contains Germany variant
+   * - Turn 4: phase = asking_after_validate, candidates <= turn2 count
    *
    * Тип теста: Integration (multi-turn, real LLM, Neo4j)
    */
-  it("TC-SG-VC3: validation → clarify → re-validate", async () => {
+  it("TC-SG-VC3: show goal → validation → clarify → re-validate", async () => {
     const ctx = FacadeTestContext.getInstance();
 
     // Setup: create goal (senior backend)
@@ -301,70 +304,80 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
     const goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
     expect(goal, "Goal must exist before test").not.toBeNull();
 
-    // Turn 1: User wants to validate (see who achieved this goal)
+    // Turn 1: User with goal sees goal for review first
     const turn1 = await runGraph("проверить");
     expect(
       turn1.phase,
-      "Turn 1: 'validate' intent MUST trigger validation. " +
-        "If this fails, check: (1) parseUserIntent, (2) routeAfterShowGoal",
-    ).toBe(PHASE.askingAfterValidate);
+      "Turn 1: User with goal MUST see goal for review first. " +
+        "If this fails, check: (1) routeAfterCheckGoal, (2) load_existing_goal → show_goal edge",
+    ).toBe(PHASE.showing_goal);
 
-    if (turn1.phase !== PHASE.askingAfterValidate) {
+    console.log("Turn 1: ✅ Goal shown for review");
+
+    // Turn 2: Now validate (from showing_goal phase)
+    const turn2 = await runGraph("покажи примеры людей с такой карьерой");
+    expect(
+      turn2.phase,
+      "Turn 2: 'validate' intent from showing_goal MUST trigger validation. " +
+        "If this fails, check: (1) parseUserIntent, (2) routeAfterParseSearchIntent",
+    ).toBe(PHASE.asking_after_validate);
+
+    if (turn2.phase !== PHASE.asking_after_validate) {
       expect.fail("Type guard failed after strict assertion");
     }
 
     expect(
-      turn1.candidates.length,
-      "Turn 1: Validation MUST return candidates (fixtures have senior backend)",
+      turn2.candidates.length,
+      "Turn 2: Validation MUST return candidates (fixtures have senior backend)",
     ).toBeGreaterThan(0);
 
-    const turn1Count = turn1.candidates.length;
-    console.log(`Turn 1: ✅ Validation (${turn1Count} candidates)`);
+    const turn2Count = turn2.candidates.length;
+    console.log(`Turn 2: ✅ Validation (${turn2Count} candidates)`);
 
-    // Turn 2: User wants to clarify goal (add country filter)
-    const turn2 = await runGraph("добавь Германию");
+    // Turn 3: User wants to clarify goal (add country filter)
+    const turn3 = await runGraph("добавь Германию");
     expect(
-      turn2.phase,
-      "Turn 2: 'clarify' intent MUST update goal via clarify_goal. " +
+      turn3.phase,
+      "Turn 3: 'clarify' intent MUST update goal via clarify_goal. " +
         "If this fails, check: (1) ask-after-validate extracts clarificationText, " +
-        "(2) routeAfterAskAfterValidate routes to clarify_goal",
-    ).toBe(PHASE.showingGoal);
+        "(2) routeAfterParseSearchIntent routes to clarify_goal",
+    ).toBe(PHASE.showing_goal);
 
-    if (turn2.phase !== PHASE.showingGoal) {
+    if (turn3.phase !== PHASE.showing_goal) {
       expect.fail("Type guard failed after strict assertion");
     }
 
     // Verify countries were added
-    const countryValues = turn2.extractedGoal?.countries?.values ?? [];
+    const countryValues = turn3.extractedGoal?.countries?.values ?? [];
     const hasGermany = countryValues.some(
       (v) =>
         v.toLowerCase().includes("germany") || v.toLowerCase().includes("de") || v.toLowerCase().includes("германия"),
     );
     expect(
       hasGermany,
-      `Turn 2: Countries MUST contain Germany variant after clarification, got: ${JSON.stringify(countryValues)}`,
+      `Turn 3: Countries MUST contain Germany variant after clarification, got: ${JSON.stringify(countryValues)}`,
     ).toBe(true);
 
-    console.log(`Turn 2: ✅ Goal clarified (countries: ${countryValues.join(", ")})`);
+    console.log(`Turn 3: ✅ Goal clarified (countries: ${countryValues.join(", ")})`);
 
-    // Turn 3: User wants to re-validate with new goal
-    const turn3 = await runGraph("проверить снова");
-    expect(turn3.phase, "Turn 3: Re-validation MUST work with updated goal").toBe(PHASE.askingAfterValidate);
+    // Turn 4: User wants to re-validate with updated goal (Germany already in extractedGoal from Turn 3)
+    const turn4 = await runGraph("покажи ещё раз кто достиг такой цели");
+    expect(turn4.phase, "Turn 4: Re-validation MUST work with updated goal").toBe(PHASE.asking_after_validate);
 
-    if (turn3.phase !== PHASE.askingAfterValidate) {
+    if (turn4.phase !== PHASE.asking_after_validate) {
       expect.fail("Type guard failed after strict assertion");
     }
 
     // Verify validation uses country filter (fewer or same candidates)
-    expect(turn3.candidates.length, "Turn 3: Re-validation MUST return candidates").toBeGreaterThan(0);
+    expect(turn4.candidates.length, "Turn 4: Re-validation MUST return candidates").toBeGreaterThan(0);
 
-    const turn3Count = turn3.candidates.length;
+    const turn4Count = turn4.candidates.length;
     expect(
-      turn3Count,
-      `Turn 3: Re-validation with Germany filter SHOULD return fewer or equal candidates. ` +
-        `Before: ${turn1Count}, After: ${turn3Count}`,
-    ).toBeLessThanOrEqual(turn1Count);
+      turn4Count,
+      `Turn 4: Re-validation with Germany filter SHOULD return fewer or equal candidates. ` +
+        `Before: ${turn2Count}, After: ${turn4Count}`,
+    ).toBeLessThanOrEqual(turn2Count);
 
-    console.log(`Turn 3: ✅ Re-validation with filter (${turn3Count} candidates, was ${turn1Count})`);
-  }, 240_000); // 4 min for 3-turn flow
+    console.log(`Turn 4: ✅ Re-validation with filter (${turn4Count} candidates, was ${turn2Count})`);
+  }, 300_000); // 5 min for 4-turn flow
 });

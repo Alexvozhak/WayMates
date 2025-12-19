@@ -64,15 +64,15 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
     console.log("TC-UC-E1 [1/3]: Sending full context → awaiting_confirmation");
     const extractionResponse = await runWorkflow(fullContextInput);
 
-    if (extractionResponse.phase === PHASE.awaitingClarification) {
+    if (extractionResponse.phase === PHASE.awaiting_clarification) {
       console.log("TC-UC-E1: Got clarification, missing:", extractionResponse.missingFields);
       expect.fail(
         `Expected awaiting_confirmation, got clarification for: ${JSON.stringify(extractionResponse.missingFields)}`,
       );
     }
 
-    expect(extractionResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    expect(extractionResponse.phase).toBe(PHASE.awaiting_confirmation);
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`Unexpected phase: ${extractionResponse.phase}`);
     }
 
@@ -125,13 +125,13 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
     console.log("TC-UC-CL1 [1/1]: Sending minimal context → awaiting_clarification");
     const response = await runWorkflow(incompleteInput);
 
-    if (response.phase === PHASE.awaitingConfirmation) {
+    if (response.phase === PHASE.awaiting_confirmation) {
       console.log("TC-UC-CL1: LLM filled all fields, context:", response.context.position);
       expect.fail("Expected clarification but LLM filled all required fields");
     }
 
-    expect(response.phase).toBe(PHASE.awaitingClarification);
-    if (response.phase !== PHASE.awaitingClarification) {
+    expect(response.phase).toBe(PHASE.awaiting_clarification);
+    if (response.phase !== PHASE.awaiting_clarification) {
       expect.fail(`Unexpected phase: ${response.phase}`);
     }
 
@@ -167,7 +167,7 @@ Senior frontend developer в e-commerce, Берлин, TypeScript, React.
     console.log("TC-UC-DEC1 [1/2]: Getting to awaiting_confirmation");
     const extractionResponse = await runWorkflow(fullContextInput);
 
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`TC-UC-DEC1: Expected awaiting_confirmation, got ${extractionResponse.phase}`);
     }
 
@@ -207,7 +207,7 @@ Python, Spark, Airflow. Домен: data-engineering.
     console.log("TC-UC-DEC3 [1/2]: Getting to awaiting_confirmation");
     const extractionResponse = await runWorkflow(fullContextInput);
 
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`TC-UC-DEC3: Expected awaiting_confirmation, got ${extractionResponse.phase}`);
     }
 
@@ -244,7 +244,7 @@ Backend developer в fintech, Москва, Python, FastAPI.
     console.log("TC-UC-E3 [1/3]: Getting to awaiting_confirmation");
     const extractionResponse = await runWorkflow(fullContextInput);
 
-    if (extractionResponse.phase !== PHASE.awaitingConfirmation) {
+    if (extractionResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`TC-UC-E3: Expected awaiting_confirmation, got ${extractionResponse.phase}`);
     }
 
@@ -254,8 +254,8 @@ Backend developer в fintech, Москва, Python, FastAPI.
     console.log("TC-UC-E3 [2/3]: Sending edit request");
     const editResponse = await runWorkflow("измени позицию на lead backend developer");
 
-    expect(editResponse.phase).toBe(PHASE.awaitingConfirmation);
-    if (editResponse.phase !== PHASE.awaitingConfirmation) {
+    expect(editResponse.phase).toBe(PHASE.awaiting_confirmation);
+    if (editResponse.phase !== PHASE.awaiting_confirmation) {
       expect.fail(`Expected awaiting_confirmation after edit, got: ${editResponse.phase}`);
     }
 

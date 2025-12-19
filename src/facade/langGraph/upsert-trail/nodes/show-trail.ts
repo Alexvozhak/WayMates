@@ -12,7 +12,7 @@ export function showTrailNode(state: UpsertTrailStateType): Partial<UpsertTrailS
     trail: validatedTrail,
     errors: validationErrors,
     options: ["approve", "edit", "cancel"],
-    phase: PHASE.awaitingConfirmation,
+    phase: PHASE.awaiting_confirmation,
   });
 
   return { userResponse: String(userResponse) };

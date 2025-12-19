@@ -36,24 +36,8 @@ export const searchPhaseSchema = z.enum([
 
 export type SearchPhase = z.infer<typeof searchPhaseSchema>;
 
-export const PHASE = {
-  checkingGoal: "checking_goal",
-  exploring: "exploring",
-  showingExploration: "showing_exploration",
-  extractingGoal: "extracting_goal",
-  showingGoal: "showing_goal",
-  clarifyingGoal: "clarifying_goal",
-  validatingGoal: "validating_goal",
-  askingAfterValidate: "asking_after_validate",
-  settingGoal: "setting_goal",
-  deletingGoal: "deleting_goal",
-  searching: "searching",
-  showingResults: "showing_results",
-  cancelled: "cancelled",
-  failed: "failed",
-} as const satisfies Record<string, SearchPhase>;
+export const PHASE = searchPhaseSchema.Values;
 
-/* eslint-disable @typescript-eslint/naming-convention -- node names must match LangGraph API (snake_case) */
 export const NODE = {
   load_context: "load_context",
   check_goal: "check_goal",
@@ -74,7 +58,6 @@ export const NODE = {
   apply_filters: "apply_filters",
   cancel: "cancel",
 } as const;
-/* eslint-enable @typescript-eslint/naming-convention */
 
 export type NodeName = (typeof NODE)[keyof typeof NODE];
 
@@ -92,7 +75,7 @@ export type SearchUserIntent =
 export const searchStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),
-  phase: Annotation<SearchPhase>({ reducer: lastValue, default: () => PHASE.checkingGoal }),
+  phase: Annotation<SearchPhase>({ reducer: lastValue, default: () => PHASE.checking_goal }),
   userResponse: Annotation<string>({ reducer: lastValue, default: () => "" }),
   intent: Annotation<UserIntent | null>({ reducer: lastValue, default: () => null }),
 

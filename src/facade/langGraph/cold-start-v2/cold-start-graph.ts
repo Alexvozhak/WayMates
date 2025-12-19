@@ -91,9 +91,7 @@ export class ColdStartGraph {
   }
 
   async run(message: string, threadId: string, userId: UserId, cvText?: string): Promise<ColdStartResponse> {
-    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
     const config = { configurable: { thread_id: threadId, ...this.deps } };
-    /* eslint-enable @typescript-eslint/naming-convention */
 
     const currentSnapshot = await this.compiledGraph.getState(config);
     const hasPendingInterrupt = currentSnapshot.tasks.length > 0;

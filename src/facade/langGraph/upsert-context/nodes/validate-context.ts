@@ -37,7 +37,7 @@ export function validateContextNode(state: UpsertContextStateType): Partial<Upse
     }
 
     return {
-      phase: PHASE.awaitingClarification,
+      phase: PHASE.awaiting_clarification,
       missingFields: missing,
       clarificationRound: nextRound,
       validationErrors: [],
@@ -49,6 +49,6 @@ export function validateContextNode(state: UpsertContextStateType): Partial<Upse
     validationErrors: [],
     missingFields: [],
     clarificationRound: 0,
-    phase: PHASE.awaitingConfirmation,
+    phase: PHASE.awaiting_confirmation,
   };
 }

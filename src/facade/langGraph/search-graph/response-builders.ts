@@ -15,66 +15,66 @@ function requireExtractedGoal(state: SearchStateType, phase: string): NonNullabl
 }
 
 export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
-  [PHASE.checkingGoal]: () => ({
-    phase: PHASE.checkingGoal,
+  [PHASE.checking_goal]: () => ({
+    phase: PHASE.checking_goal,
   }),
 
   [PHASE.exploring]: () => ({
     phase: PHASE.exploring,
   }),
 
-  [PHASE.showingExploration]: (state) => ({
-    phase: PHASE.showingExploration,
+  [PHASE.showing_exploration]: (state) => ({
+    phase: PHASE.showing_exploration,
     candidates: state.explorationResults,
     options: OPTIONS.showExploration,
   }),
 
-  [PHASE.extractingGoal]: () => ({
-    phase: PHASE.extractingGoal,
+  [PHASE.extracting_goal]: () => ({
+    phase: PHASE.extracting_goal,
   }),
 
-  [PHASE.showingGoal]: (state) => {
-    const extractedGoal = requireExtractedGoal(state, PHASE.showingGoal);
+  [PHASE.showing_goal]: (state) => {
+    const extractedGoal = requireExtractedGoal(state, PHASE.showing_goal);
     return {
-      phase: PHASE.showingGoal,
+      phase: PHASE.showing_goal,
       extractedGoal,
       options: OPTIONS.showGoal,
     };
   },
 
-  [PHASE.clarifyingGoal]: (state) => {
-    const extractedGoal = requireExtractedGoal(state, PHASE.clarifyingGoal);
+  [PHASE.clarifying_goal]: (state) => {
+    const extractedGoal = requireExtractedGoal(state, PHASE.clarifying_goal);
     return {
-      phase: PHASE.clarifyingGoal,
+      phase: PHASE.clarifying_goal,
       extractedGoal,
     };
   },
 
-  [PHASE.validatingGoal]: (state) => ({
-    phase: PHASE.validatingGoal,
+  [PHASE.validating_goal]: (state) => ({
+    phase: PHASE.validating_goal,
     candidates: state.validationResults,
   }),
 
-  [PHASE.askingAfterValidate]: (state) => ({
-    phase: PHASE.askingAfterValidate,
+  [PHASE.asking_after_validate]: (state) => ({
+    phase: PHASE.asking_after_validate,
     candidates: state.validationResults,
     options: OPTIONS.askAfterValidate,
   }),
 
-  [PHASE.settingGoal]: () => ({
-    phase: PHASE.settingGoal,
+  [PHASE.setting_goal]: () => ({
+    phase: PHASE.setting_goal,
   }),
 
-  [PHASE.deletingGoal]: () => ({
-    phase: PHASE.deletingGoal,
+  [PHASE.deleting_goal]: () => ({
+    phase: PHASE.deleting_goal,
   }),
 
   [PHASE.searching]: () => ({
     phase: PHASE.searching,
   }),
 
-  [PHASE.showingResults]: (state) => ({
-    phase: PHASE.showingResults,
+  [PHASE.showing_results]: (state) => ({
+    phase: PHASE.showing_results,
     results: state.searchResults,
     goal: state.existingGoal ?? undefined,
     options: OPTIONS.showResults,

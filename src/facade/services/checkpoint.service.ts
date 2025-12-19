@@ -20,9 +20,7 @@ export class CheckpointService {
   }
 
   async getState(threadId: string): Promise<Record<string, unknown> | null> {
-    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
     const tuple = await this.checkpointer.getTuple({ configurable: { thread_id: threadId } });
-    /* eslint-enable @typescript-eslint/naming-convention */
 
     if (!tuple?.checkpoint?.channel_values) {
       return null;
@@ -32,9 +30,7 @@ export class CheckpointService {
   }
 
   async hasPendingInterrupt(threadId: string): Promise<boolean> {
-    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
     const tuple = await this.checkpointer.getTuple({ configurable: { thread_id: threadId } });
-    /* eslint-enable @typescript-eslint/naming-convention */
 
     if (!tuple) {
       return false;

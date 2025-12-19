@@ -35,12 +35,12 @@ export async function showResultsNode(state: SearchStateType): Promise<Partial<S
     goal: state.existingGoal,
     chartUrl,
     options: OPTIONS.showResults,
-    phase: PHASE.showingResults,
+    phase: PHASE.showing_results,
   });
 
   return {
     userResponse: String(userResponse),
-    phase: PHASE.showingResults,
+    phase: PHASE.showing_results,
     chartUrl: chartUrl ?? null,
   };
 }

@@ -1,7 +1,7 @@
 import { Command, END, START, StateGraph } from "@langchain/langgraph";
-import { z } from "zod";
 
-import { AgentInvariantError } from "../../errors.js";
+import { createInterruptPhaseExtractor } from "../shared/interrupt-utils.js";
+import { isGraphState } from "../shared/state-utils.js";
 
 import { cancelNode } from "./nodes/cancel.js";
 import { clarifyNode } from "./nodes/clarify.js";
@@ -12,27 +12,15 @@ import { parseDecisionNode } from "./nodes/parse-decision.js";
 import { persistUpdateNode } from "./nodes/persist-update.js";
 import { showUpdateNode } from "./nodes/show-update.js";
 import { responseBuilders } from "./response-builders.js";
-import { NODE, PHASE, updateContextStateAnnotation } from "./state.js";
-import { routeAfterDecision, routeAfterMerge } from "./update-router.js";
+import { NODE, phaseSchema, updateContextStateAnnotation } from "./state.js";
+import { DECISION_ROUTE_MAP, MERGE_ROUTE_MAP, routeAfterDecision, routeAfterMerge } from "./update-router.js";
 
-import type { UpdateContextPhase, UpdateContextStateType } from "./state.js";
+import type { UpdateContextStateType } from "./state.js";
 import type { UpdateContextResponse } from "./types.js";
 import type { UserContext, UserId } from "../../../shared/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
-import type { StateSnapshot } from "@langchain/langgraph";
 
-const interruptValueSchema = z.object({
-  phase: z
-    .enum([
-      PHASE.extracting,
-      PHASE.awaitingClarification,
-      PHASE.awaitingConfirmation,
-      PHASE.saved,
-      PHASE.cancelled,
-      PHASE.failed,
-    ])
-    .optional(),
-});
+const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);
 
 function stateToResponse(state: UpdateContextStateType): UpdateContextResponse {
   const { phase } = state;
@@ -53,19 +41,10 @@ export function createGraphBuilder() {
 
     .addEdge(START, NODE.extract_updates)
     .addEdge(NODE.extract_updates, NODE.merge_context)
-    .addConditionalEdges(NODE.merge_context, routeAfterMerge, {
-      [NODE.clarify]: NODE.clarify,
-      [NODE.show_update]: NODE.show_update,
-      [NODE.cancel]: NODE.cancel,
-    })
+    .addConditionalEdges(NODE.merge_context, routeAfterMerge, MERGE_ROUTE_MAP)
     .addEdge(NODE.clarify, NODE.extract_updates)
     .addEdge(NODE.show_update, NODE.parse_decision)
-    .addConditionalEdges(NODE.parse_decision, routeAfterDecision, {
-      [NODE.persist_update]: NODE.persist_update,
-      [NODE.edit_update]: NODE.edit_update,
-      [NODE.cancel]: NODE.cancel,
-      [NODE.show_update]: NODE.show_update,
-    })
+    .addConditionalEdges(NODE.parse_decision, routeAfterDecision, DECISION_ROUTE_MAP)
     .addEdge(NODE.edit_update, NODE.merge_context)
     .addEdge(NODE.persist_update, END)
     .addEdge(NODE.cancel, END);
@@ -73,31 +52,6 @@ export function createGraphBuilder() {
 /* eslint-enable @typescript-eslint/explicit-function-return-type */
 
 type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
-
-function isUpdateContextState(values: unknown): values is UpdateContextStateType {
-  if (!values || typeof values !== "object") return false;
-  return "phase" in values && "userId" in values;
-}
-
-function toUpdateContextState(values: unknown): UpdateContextStateType {
-  if (!isUpdateContextState(values)) {
-    throw new AgentInvariantError("toUpdateContextState", "Invalid state values from graph");
-  }
-  return values;
-}
-
-function extractInterruptPhase(snapshot: StateSnapshot): UpdateContextPhase | undefined {
-  const task = snapshot.tasks[0];
-  if (!task) return undefined;
-
-  const interrupt = task.interrupts[0];
-  if (!interrupt) return undefined;
-
-  const parsed = interruptValueSchema.safeParse(interrupt.value);
-  if (!parsed.success) return undefined;
-
-  return parsed.data.phase;
-}
 
 export class UpdateContextGraph {
   private readonly compiledGraph: CompiledGraph;
@@ -112,9 +66,7 @@ export class UpdateContextGraph {
     userId: UserId,
     currentContext: UserContext,
   ): Promise<UpdateContextResponse> {
-    /* eslint-disable @typescript-eslint/naming-convention -- LangGraph API */
     const config = { configurable: { thread_id: threadId, ...this.deps } };
-    /* eslint-enable @typescript-eslint/naming-convention */
 
     const currentSnapshot = await this.compiledGraph.getState(config);
     const hasPendingInterrupt = currentSnapshot.tasks.length > 0;
@@ -133,9 +85,8 @@ export class UpdateContextGraph {
     const finalSnapshot = await this.compiledGraph.getState(config);
     const interruptPhase = extractInterruptPhase(finalSnapshot);
 
-    if (interruptPhase) {
-      const values = toUpdateContextState(finalSnapshot.values);
-      return stateToResponse({ ...values, phase: interruptPhase });
+    if (interruptPhase && isGraphState<UpdateContextStateType>(finalSnapshot.values)) {
+      return stateToResponse({ ...finalSnapshot.values, phase: interruptPhase });
     }
 
     return stateToResponse(result);

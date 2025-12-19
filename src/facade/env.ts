@@ -6,7 +6,7 @@ import { z } from "zod";
  *
  * Note: env vars use UPPER_SNAKE_CASE by convention, hence the eslint-disable.
  */
-/* eslint-disable @typescript-eslint/naming-convention */
+
 const envSchema = z.object({
   REDIS_HOST: z.string().min(1, "REDIS_HOST is required"),
   REDIS_PORT: z.coerce.number().int().positive("REDIS_PORT must be a positive integer"),
@@ -51,7 +51,6 @@ const envSchema = z.object({
   R2_PUBLIC_URL: z.string().url().optional(),
   R2_TTL_DAYS: z.coerce.number().int().positive().default(30),
 });
-/* eslint-enable @typescript-eslint/naming-convention */
 
 export type FacadeEnv = z.infer<typeof envSchema>;
 
