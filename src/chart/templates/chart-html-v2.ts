@@ -47,6 +47,10 @@ function buildStyles(): string {
     #metrics table { width: 100%; border-collapse: collapse; }
     #metrics th, #metrics td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
     #metrics th { background: #f3f4f6; font-weight: 600; }
+    #charts-row { display: flex; gap: 20px; margin-bottom: 20px; }
+    #main-chart-container { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    #spider-chart-container { width: 350px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    #spider-chart-container h4 { margin: 0 0 10px 0; font-size: 14px; color: #374151; }
   </style>`;
 }
 
@@ -89,6 +93,7 @@ function buildTraceFunctions(): string {
 
         if (hasMatchedContext && traj.candidateType === 'pathfinder') {
           const matchedIdx = traj.matchedContextIndex;
+          // Path before goal (solid line)
           if (matchedIdx > 0) {
             traces.push({
               x: x.slice(0, matchedIdx + 1),
@@ -105,18 +110,8 @@ function buildTraceFunctions(): string {
               yaxis: yaxisId
             });
           }
-          traces.push({
-            x: [x[matchedIdx]],
-            y: [y[matchedIdx]],
-            mode: 'markers',
-            name: traj.label + ' ⭐',
-            marker: { symbol: 'star', size: 20, color: GOAL_STAR_COLOR, line: { color: traj.color, width: 2 } },
-            legendgroup: traj.label,
-            showlegend: false,
-            hovertemplate: '🎯 Goal reached<br>%{x|%Y-%m-%d}<extra></extra>',
-            xaxis: xaxisId,
-            yaxis: yaxisId
-          });
+          // NO star here - vertical line + single star added via shapes/annotations
+          // Path after goal (faded)
           if (matchedIdx < x.length - 1) {
             traces.push({
               x: x.slice(matchedIdx),
@@ -328,6 +323,64 @@ function buildOverlapFunctions(): string {
       });
 
       return shapes;
+    }
+
+    // Build vertical goal marker lines + star annotation for pathfinders
+    function buildGoalMarkerShapesAndAnnotations(enabledCandidates) {
+      const shapes = [];
+      const annotations = [];
+
+      chartData.trajectories.forEach(traj => {
+        // Only for enabled pathfinders with matchedContextIndex
+        if (traj.candidateType !== 'pathfinder') return;
+        if (!enabledCandidates.includes(traj.id)) return;
+        if (traj.matchedContextIndex === undefined || traj.matchedContextIndex < 0) return;
+
+        const matchedIdx = traj.matchedContextIndex;
+        const matchedDate = traj.points[matchedIdx].timestamp;
+
+        // Vertical dashed line through all subplots
+        shapes.push({
+          type: 'line',
+          x0: matchedDate,
+          x1: matchedDate,
+          y0: 0.02,  // bottom (overlap area)
+          y1: 0.95,  // top
+          xref: 'x',
+          yref: 'paper',
+          line: { color: traj.color, width: 2, dash: 'dot' },
+          opacity: 0.7
+        });
+
+        // Star annotation at top of the line
+        annotations.push({
+          x: matchedDate,
+          y: 0.97,
+          xref: 'x',
+          yref: 'paper',
+          text: '⭐',
+          showarrow: false,
+          font: { size: 20 },
+          xanchor: 'center',
+          yanchor: 'bottom',
+          hovertext: traj.label + ' reached goal'
+        });
+
+        // Label below star
+        annotations.push({
+          x: matchedDate,
+          y: 0.96,
+          xref: 'x',
+          yref: 'paper',
+          text: traj.label,
+          showarrow: false,
+          font: { size: 10, color: traj.color },
+          xanchor: 'center',
+          yanchor: 'top'
+        });
+      });
+
+      return { shapes, annotations };
     }`;
 }
 
@@ -463,6 +516,94 @@ function buildRenderFunction(): string {
       });
     }
 
+    // Build spider chart traces for DTW metrics (triangular radar)
+    function buildSpiderTraces(enabledCandidates) {
+      const traces = [];
+      const axes = ['Shape', 'Tempo', 'Stability', 'Shape']; // Close the triangle
+
+      // User reference (perfect match = 1.0 for all metrics)
+      const userTraj = chartData.trajectories[0];
+      traces.push({
+        type: 'scatterpolar',
+        r: [1, 1, 1, 1], // User is the reference (100% similarity with themselves)
+        theta: axes,
+        fill: 'toself',
+        fillcolor: userTraj.color + '20', // Very light fill
+        mode: 'lines+markers',
+        name: userTraj.label + ' (reference)',
+        line: { color: userTraj.color, width: 2, dash: 'dash' },
+        marker: { size: 5, color: userTraj.color },
+        hovertemplate: '%{theta}: 100%<extra>' + userTraj.label + '</extra>'
+      });
+
+      // Add each enabled candidate
+      chartData.metrics.forEach((metric, idx) => {
+        if (!enabledCandidates.includes(metric.candidateId)) return;
+
+        const traj = chartData.trajectories.find(t => t.id === metric.candidateId);
+        if (!traj) return;
+
+        const shape = metric.perField.position || 0;
+        const tempo = metric.perField.domains || 0;
+        const stability = metric.perField.cityName || 0;
+
+        traces.push({
+          type: 'scatterpolar',
+          r: [shape, tempo, stability, shape], // Close the triangle
+          theta: axes,
+          fill: 'toself',
+          fillcolor: traj.color + '30', // 30 = ~19% opacity
+          mode: 'lines+markers',
+          name: traj.label,
+          line: { color: traj.color, width: 2 },
+          marker: { size: 6, color: traj.color },
+          hovertemplate: '%{theta}: %{r:.0%}<extra>' + traj.label + '</extra>'
+        });
+      });
+
+      return traces;
+    }
+
+    function renderSpiderChart(enabledCandidates) {
+      const traces = buildSpiderTraces(enabledCandidates);
+
+      if (traces.length <= 1) {
+        document.getElementById('spider-chart').innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">No DTW data</p>';
+        return;
+      }
+
+      const layout = {
+        polar: {
+          radialaxis: {
+            visible: true,
+            range: [0, 1],
+            tickmode: 'array',
+            tickvals: [0.25, 0.5, 0.75, 1],
+            ticktext: ['25%', '50%', '75%', '100%'],
+            tickfont: { size: 11, color: '#374151' },
+            gridcolor: '#9ca3af',
+            linecolor: '#6b7280'
+          },
+          angularaxis: {
+            tickfont: { size: 12, color: '#1f2937' },
+            gridcolor: '#9ca3af'
+          },
+          bgcolor: '#f9fafb'
+        },
+        showlegend: true,
+        legend: { x: 0.5, xanchor: 'center', y: -0.18, orientation: 'h', font: { size: 11 } },
+        margin: { t: 20, b: 70, l: 50, r: 50 },
+        height: 350,
+        dragmode: false // Disable zoom/pan
+      };
+
+      Plotly.newPlot('spider-chart', traces, layout, {
+        responsive: true,
+        displayModeBar: false,
+        staticPlot: true // No interactions (no scaling)
+      });
+    }
+
     function renderChart() {
       const fields = getSelectedFields();
       const enabledCandidates = getEnabledCandidates();
@@ -492,6 +633,11 @@ function buildRenderFunction(): string {
         layout.shapes = buildConnectionShapes(fields, enabledCandidates, overlapDomain);
       }
 
+      // Add goal marker vertical lines + star annotations for pathfinders
+      const goalMarkers = buildGoalMarkerShapesAndAnnotations(enabledCandidates);
+      layout.shapes = [...(layout.shapes || []), ...goalMarkers.shapes];
+      layout.annotations = [...(layout.annotations || []), ...goalMarkers.annotations];
+
       // Add annotations for overlap stats
       addOverlapAnnotations(layout, window.overlapSummaries, window.enabledCandidateIndices);
 
@@ -510,6 +656,9 @@ function buildRenderFunction(): string {
 
       // Update metrics table visibility
       updateMetricsTable(enabledCandidates);
+
+      // Update spider chart
+      renderSpiderChart(enabledCandidates);
     }
 
     // Auto-recalculate on any checkbox change (no Apply button needed)
@@ -681,7 +830,15 @@ function buildHtmlTemplate(
 </head>
 <body>
   ${controls}
-  <div id="main-chart"></div>
+  <div id="charts-row">
+    <div id="main-chart-container">
+      <div id="main-chart"></div>
+    </div>
+    <div id="spider-chart-container">
+      <h4>🕸️ DTW Similarity</h4>
+      <div id="spider-chart"></div>
+    </div>
+  </div>
   ${metricsTable}
   ${script}
 </body>
