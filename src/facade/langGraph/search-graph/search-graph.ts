@@ -1,7 +1,7 @@
 import { Command, END, START, StateGraph } from "@langchain/langgraph";
-import { z } from "zod";
 
 import { CONTEXT_FIELD_NAMES } from "../../../shared/schemas.js";
+import { createInterruptPhaseExtractor } from "../shared/interrupt-utils.js";
 import { isGraphState } from "../shared/state-utils.js";
 
 import { applyFiltersNode } from "./nodes/apply-filters.js";
@@ -33,17 +33,14 @@ import {
 } from "./search-router.js";
 import { NODE, PHASE, searchPhaseSchema, searchStateAnnotation } from "./state.js";
 
-import type { SearchPhase, SearchStateType } from "./state.js";
+import type { SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
 import type { UserId } from "../../../shared/schemas.js";
 import type { DictionariesCache } from "../../services/dictionaries-cache.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 import type { GraphDeps } from "../shared/types.js";
-import type { StateSnapshot } from "@langchain/langgraph";
 
-const interruptValueSchema = z.object({
-  phase: searchPhaseSchema.optional(),
-});
+const extractInterruptPhase = createInterruptPhaseExtractor(searchPhaseSchema);
 
 function stateToResponse(state: SearchStateType): SearchGraphResponse {
   const { phase } = state;
@@ -147,19 +144,6 @@ export function createGraphBuilder() {
 /* eslint-enable @typescript-eslint/explicit-function-return-type */
 
 type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
-
-function extractInterruptPhase(snapshot: StateSnapshot): SearchPhase | undefined {
-  const task = snapshot.tasks[0];
-  if (!task) return undefined;
-
-  const interrupt = task.interrupts[0];
-  if (!interrupt) return undefined;
-
-  const parsed = interruptValueSchema.safeParse(interrupt.value);
-  if (!parsed.success) return;
-
-  return parsed.data.phase;
-}
 
 export class SearchGraph {
   private readonly compiledGraph: CompiledGraph;

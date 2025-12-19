@@ -6,7 +6,8 @@ import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { BaseToolDependencies } from "../../../../src/facade/mcp-server/tools/base-tool.js";
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
-import type { McpSearchUserCareersParams, UserId } from "../../../../src/shared/schemas.js";
+import type { McpSearchUserCareersParams } from "../../../../src/facade/mcp-server/tools/search-user-careers.tool.js";
+import type { UserId } from "../../../../src/shared/schemas.js";
 
 describe("SearchUserCareersTool Integration Tests", () => {
   let tool: SearchUserCareersTool;

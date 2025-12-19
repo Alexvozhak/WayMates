@@ -5,7 +5,7 @@ import { lastValue } from "../shared/state-utils.js";
 
 import type { CurrentSearchParamsWithFeedback, TargetSearchParamsWithFeedback } from "./types.js";
 import type {
-  AdhocUserContext,
+  AdhocContextBase,
   CurrentSearchParamsBase,
   Goal,
   MatchedCandidateWithPath,
@@ -81,7 +81,7 @@ export const searchStateAnnotation = Annotation.Root({
 
   // Context for search: either from DB (userContext) or extracted from message (adhocContext)
   userContext: Annotation<UserContext | null>({ reducer: lastValue, default: () => null }),
-  adhocContext: Annotation<AdhocUserContext | null>({ reducer: lastValue, default: () => null }),
+  adhocContext: Annotation<AdhocContextBase | null>({ reducer: lastValue, default: () => null }),
   userTrajectory: Annotation<UserContext[]>({ reducer: lastValue, default: () => [] }),
 
   existingGoal: Annotation<Goal | null>({ reducer: lastValue, default: () => null }),

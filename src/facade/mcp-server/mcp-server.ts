@@ -11,7 +11,6 @@ import {
   mcpGetStoryParamsSchema,
   mcpParseCvToTextParamsSchema,
   mcpSearchByTargetParamsSchema,
-  mcpSearchUserCareersParamsSchema,
   mcpSetGoalParamsSchema,
   mcpTelegramLinkParamsSchema,
   mcpTelegramRegisterParamsSchema,
@@ -32,7 +31,7 @@ import { GetStoryTool } from "./tools/get-story.tool.js";
 import { ParseCvToTextTool } from "./tools/parse-cv-to-text.tool.js";
 import { SearchByTargetTool } from "./tools/search-by-target.tool.js";
 import { mcpSearchCareersParamsSchema, SearchCareersTool } from "./tools/search-careers.tool.js";
-import { SearchUserCareersTool } from "./tools/search-user-careers.tool.js";
+import { mcpSearchUserCareersParamsSchema, SearchUserCareersTool } from "./tools/search-user-careers.tool.js";
 import { SetGoalTool } from "./tools/set-goal.tool.js";
 import { UpdateContextTool } from "./tools/update-context.tool.js";
 import { UpsertContextTool } from "./tools/upsert-context.tool.js";

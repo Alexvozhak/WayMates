@@ -6,7 +6,7 @@ import { getModel } from "../langGraph/shared-tools/models.js";
 
 import type { DictionariesCache } from "./dictionaries-cache.js";
 import type {
-  AdhocUserContext,
+  AdhocContextBase,
   FieldFilter,
   SimpleDictionaryType,
   TargetContext,
@@ -49,7 +49,7 @@ export class Normalizer {
     private readonly fuzzyModel: FuzzyModel = defaultFuzzyModel,
   ) {}
 
-  async normalizeAdhocContext(context: AdhocUserContext, userId: UserId): Promise<AdhocUserContext> {
+  async normalizeAdhocContext(context: AdhocContextBase, userId: UserId): Promise<AdhocContextBase> {
     const [position, cityName, industry, skills, domains] = await Promise.all([
       this.normalizeOptionalTerm("position", context.position, userId),
       this.normalizeOptionalTerm("city", context.cityName, userId),

@@ -2,83 +2,6 @@ import { z } from "zod";
 
 import { REASON_CANONICAL_NAMES } from "../../database/reasons.js";
 
-import type { ZodTypeAny } from "zod";
-
-// ==========================================
-// === ZOD UTILITIES ===
-// ==========================================
-
-function unwrapSchema(schema: ZodTypeAny): ZodTypeAny {
-  if (schema instanceof z.ZodOptional) {
-    return unwrapSchema(schema.unwrap());
-  }
-  if (schema instanceof z.ZodDefault) {
-    return unwrapSchema(schema.removeDefault());
-  }
-  return schema;
-}
-
-/**
- * Internal: recursively makes fields nullable (for nested objects)
- */
-function makeFieldNullable(schema: ZodTypeAny): z.ZodNullable<ZodTypeAny> {
-  const unwrapped = unwrapSchema(schema);
-
-  if (unwrapped instanceof z.ZodObject) {
-    /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Zod shape is Record<string, ZodTypeAny> at runtime */
-    const shape = unwrapped.shape as Record<string, ZodTypeAny>;
-    const newShape: Record<string, z.ZodNullable<ZodTypeAny>> = {};
-
-    for (const [key, value] of Object.entries(shape)) {
-      newShape[key] = makeFieldNullable(value);
-    }
-
-    return z.object(newShape).nullable();
-  }
-
-  if (unwrapped instanceof z.ZodArray) {
-    return unwrapped.nullable();
-  }
-
-  return unwrapped.nullable();
-}
-
-/**
- * Transforms a Zod object schema making all fields nullable at all levels.
- * Used for OpenAI Structured Output which requires:
- * - Root type MUST be "object" (not nullable)
- * - All fields MUST be nullable (not optional)
- *
- * Handles: ZodObject (recursive), ZodArray, ZodEnum, primitives
- * Does NOT handle: ZodUnion, ZodIntersection, ZodEffects
- *
- * @example
- * const extractionSchema = makeNullable(userContextSchemaBase);
- * // Root is object, all fields become T | null
- *
- * ⚠️ FACADE-SPECIFIC UTILITY (temporary location)
- * Used only in Facade LangGraph agents (extract-goal, clarify-goal).
- * TODO (Phase 2): Move to facade/utils/llm-schemas.ts
- * See: ADR-031-type-layering-strategy.md
- */
-export function makeNullable<T extends z.ZodObject<z.ZodRawShape>>(schema: T): z.ZodObject<z.ZodRawShape> {
-  const unwrapped = unwrapSchema(schema);
-
-  if (!(unwrapped instanceof z.ZodObject)) {
-    throw new TypeError("makeNullable requires a ZodObject schema at root level");
-  }
-
-  /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Zod shape is Record<string, ZodTypeAny> at runtime */
-  const shape = unwrapped.shape as Record<string, ZodTypeAny>;
-  const newShape: Record<string, z.ZodNullable<ZodTypeAny>> = {};
-
-  for (const [key, value] of Object.entries(shape)) {
-    newShape[key] = makeFieldNullable(value);
-  }
-
-  return z.object(newShape);
-}
-
 /**
  * Apply pathLimit transform: clamp pathLimit to limit.
  * Used in search params schemas to ensure pathLimit <= limit.
@@ -343,24 +266,16 @@ export const adhocContextBase = userContextSchemaBase
     domains: true,
     skills: true,
     industry: true,
+    companySize: true,
     cityName: true,
     countryCode: true,
+    birthYear: true,
+    educationLevel: true,
     languages: true,
   })
   .partial();
 
 export type AdhocContextBase = z.infer<typeof adhocContextBase>;
-
-/**
- * LLM extraction schema for adhoc context.
- * Wraps adhocContextBase with makeNullable for OpenAI Structured Output compatibility.
- *
- * Note: Used by SearchGraph state (AdhocUserContext type). For new code prefer
- * adhocContextBase with local makeNullable wrapper (ADR-031 Правило 2).
- */
-export const adhocUserContextSchema = makeNullable(adhocContextBase);
-
-export type AdhocUserContext = z.infer<typeof adhocUserContextSchema>;
 
 // Schema with salary validation
 export const userContextSchema = userContextSchemaBase.refine(
@@ -1278,18 +1193,6 @@ export const mcpGetStoryParamsSchema = z.object({
 });
 
 export type McpGetStoryParams = z.infer<typeof mcpGetStoryParamsSchema>;
-
-/**
- * Params for search_user_careers MCP tool.
- * Search candidates using authenticated user's story.
- */
-export const mcpSearchUserCareersParamsSchema = withPathLimitTransform(
-  userSearchParamsRawSchema.omit({ userId: true }).extend({
-    sessionId: sessionIdSchema,
-  }),
-);
-
-export type McpSearchUserCareersParams = z.infer<typeof mcpSearchUserCareersParamsSchema>;
 
 /**
  * Params for set_goal MCP tool.

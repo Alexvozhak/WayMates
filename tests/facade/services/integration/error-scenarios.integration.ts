@@ -7,11 +7,11 @@ import { UserStories } from "../../../core/helpers/user-stories.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { McpSearchCareersParams } from "../../../../src/facade/mcp-server/tools/search-careers.tool.js";
-import type { McpUpdateContextParams, AdhocUserContext, ContextField } from "../../../../src/shared/schemas.js";
+import type { McpUpdateContextParams, AdhocContextBase, ContextField } from "../../../../src/shared/schemas.js";
 
 const createFacadeSearchParams = (
   sessionId: SessionId,
-  referenceContext: AdhocUserContext,
+  referenceContext: AdhocContextBase,
   overrides?: Partial<{
     limit: number;
     pathLimit: number;

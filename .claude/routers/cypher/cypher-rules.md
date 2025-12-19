@@ -95,19 +95,15 @@ WITH context, citizenships, languages  // ❌ languages = undefined!
 
 ## 3. Null Safety
 
-**Правило**: Всегда `coalesce($array, [])` для параметров-массивов.
+**Правило**: `coalesce($array, [])` для параметров, `CASE WHEN IS NULL` для optional properties.
 
-**✅ Правильно**:
 ```cypher
-WHERE ANY(item IN coalesce($arrayParam, []) WHERE condition)
-```
+-- Parameters
+WHERE ANY(item IN coalesce($arrayParam, []) WHERE ...)
 
-**❌ Неправильно**:
-```cypher
-WHERE ANY(item IN $arrayParam WHERE condition)  // ❌ если null → error
+-- Optional node properties (null → null → false в WHERE!)
+WHERE CASE WHEN ctx.domains IS NULL THEN true ELSE all(d IN ctx.domains WHERE d IN $target) END
 ```
-
-**Почему**: Cypher не может итерировать по null, нужен fallback на пустой массив.
 
 ---
 
@@ -296,31 +292,3 @@ MATCH (c)-[:HAS_POSITION]->(p:Position)  // ❌ Если u не найден, c 
 
 **Почему**: Null propagation от OPTIONAL MATCH сломает последующие обязательные MATCH.
 
----
-
-## Quick Reference Checklist
-
-Перед submit query, проверь:
-
-- [ ] ✅ Map projection: `node { .property, computed: value }`
-- [ ] ✅ WITH scope: все нужные переменные в WITH
-- [ ] ✅ Null safety: `coalesce($array, [])`
-- [ ] ✅ Bounded patterns: `*0..N` (не `*`)
-- [ ] ✅ Parameters: `$param` (не literals)
-- [ ] ✅ Index hints: только если PROFILE показывает нужно
-- [ ] ✅ DISTINCT: в aggregations где нужны unique values
-- [ ] ✅ Business logic: проверил фильтры в `business-logic.md`
-- [ ] ✅ Integer params: `toInteger($limit)` для LIMIT/SKIP
-- [ ] ✅ UNWIND: используй вместо FOREACH если нужен WHERE
-- [ ] ✅ Variable names: нет конфликтов (node ≠ alias)
-- [ ] ✅ MATCH order: обязательные MATCH перед OPTIONAL MATCH
-
----
-
-## Когда обновлять
-
-- ✅ Найден новый Neo4j best practice (универсальный)
-- ✅ Исправлен WayMates баг → адаптируй урок в checklist-style
-- ✅ `/reflect cypher` предложил добавить правило
-- ❌ НЕ добавляй WayMates naming rules (они в conventions.md)
-- ❌ НЕ дублируй bug tracking (он в bugs-registry.md)

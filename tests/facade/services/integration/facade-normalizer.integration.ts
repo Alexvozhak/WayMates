@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 
 import { FacadeTestContext } from "../../helpers/test-context.js";
 
-import type { AdhocUserContext, TargetContext } from "../../../../src/shared/schemas.js";
+import type { AdhocContextBase, TargetContext } from "../../../../src/shared/schemas.js";
 
 describe("Facade Normalizer Integration Tests", () => {
   let ctx: FacadeTestContext;
@@ -15,7 +15,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: Exact matches (Python, React) skip expensive LLM call (cost + latency optimization).
   // Cache-first strategy: 95% of terms are exact matches, so LLM is only fallback tier.
   it("FN1: Exact match bypasses LLM - cache hit returns canonical", async () => {
-    const context: AdhocUserContext = {
+    const context: AdhocContextBase = {
       position: "Junior",
       skills: ["Python", "React"],
     };
@@ -30,7 +30,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: 2-tier normalization catches typos when exact match fails (Pyton → Python via LLM).
   // Prevents duplicate skills in database while maintaining user input fidelity.
   it("FN2: Fuzzy match via LLM - typo corrected to canonical", async () => {
-    const context: AdhocUserContext = {
+    const context: AdhocContextBase = {
       skills: ["Pyton"],
     };
 
@@ -43,7 +43,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Admin reviews unverified terms asynchronously; immediate user flow is not blocked.
   it("FN3: Save unverified term - unknown skill created with verified=false", async () => {
     const unknownSkill = "QuantumHyperLang";
-    const context: AdhocUserContext = {
+    const context: AdhocContextBase = {
       skills: [unknownSkill],
     };
 
@@ -56,7 +56,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Skills without complexity don't participate in weighted scoring until admin assigns value.
   it("FN4: Skills complexity=null - new skill created with null complexity", async () => {
     const newSkill = "BrandNewSkill123";
-    const context: AdhocUserContext = {
+    const context: AdhocContextBase = {
       skills: [newSkill],
     };
 
@@ -73,7 +73,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: Multiple fields (skills, domains) normalized in parallel for performance.
   // Parallel Promise.all avoids sequential LLM calls (3 skills = 3 concurrent vs 3× latency).
   it("FN5: Parallel normalization - multiple terms normalized concurrently", async () => {
-    const context: AdhocUserContext = {
+    const context: AdhocContextBase = {
       skills: ["Python", "React", "TypeScript"],
       domains: ["Frontend", "Backend"],
     };
@@ -87,7 +87,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: Full context normalization (all 5 fields) maintains field semantics.
   // Each field (position, skills, domains, industry, cityName) normalized independently.
   it("FN6: Full UserContext - all fields normalized correctly", async () => {
-    const context: AdhocUserContext = {
+    const context: AdhocContextBase = {
       position: "senior",
       skills: ["Python"],
       domains: ["Backend"],
@@ -124,7 +124,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: Empty context is valid (user hasn't filled profile yet or skipped fields).
   // Normalization gracefully handles partial data without throwing errors.
   it("FN8: Empty context - returns empty normalized context", async () => {
-    const context: AdhocUserContext = {};
+    const context: AdhocContextBase = {};
 
     const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0108-0000-0000-000000000008");
 

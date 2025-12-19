@@ -5,11 +5,11 @@ import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-too
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { McpSearchCareersParams } from "../../../../src/facade/mcp-server/tools/search-careers.tool.js";
-import type { AdhocUserContext, ContextField, UserId } from "../../../../src/shared/schemas.js";
+import type { AdhocContextBase, ContextField, UserId } from "../../../../src/shared/schemas.js";
 
 const createFacadeSearchParams = (
   sessionId: SessionId,
-  referenceContext: AdhocUserContext,
+  referenceContext: AdhocContextBase,
   overrides?: Partial<{
     limit: number;
     pathLimit: number;

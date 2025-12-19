@@ -1,7 +1,8 @@
 import { HumanMessage } from "@langchain/core/messages";
 
-import { makeNullable, targetContextSchema } from "../../../../shared/schemas.js";
+import { targetContextSchema } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
+import { makeNullable } from "../../../utils/llm-schemas.js";
 import { hasConfigDeps } from "../../shared/types.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildGoalExtractionPrompt } from "../prompts.js";
