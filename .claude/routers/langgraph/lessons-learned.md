@@ -2,7 +2,7 @@
 
 > Практические знания из реальной разработки SearchGraph
 
-Последнее обновление: 2025-12-18
+Последнее обновление: 2025-12-19
 
 ---
 
@@ -472,6 +472,115 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 ---
 
+### 11. LLM Prompt: Explicit Examples > Descriptions
+
+**Проблема**: Описание "domains: work field/industry" недостаточно — LLM путает что куда класть.
+
+**Решение**: **Один конкретный пример решает проблему лучше чем параграф описания.**
+
+```
+❌ Плохо: "domains: TECHNICAL SPECIALIZATION area (backend, frontend, mobile)"
+
+✅ Хорошо:
+"Example: 'junior backend developer' → position: 'junior', domains: ['backend']"
+```
+
+**Почему работает**: LLM pattern-matcher. Один example создаёт чёткий шаблон для извлечения.
+
+**Универсально**: Если LLM путает куда класть данные — добавь explicit example в prompt.
+
+---
+
+### 12. Тесты находят баги в коде, НЕ подгоняются под код
+
+**Антипаттерн**: Тест падает → меняем assertion под текущее поведение.
+
+**Правильно**: Тест падает → исследуем ПОЧЕМУ → часто это баг в бизнес-коде.
+
+**Пример**: E2E тест вернул 0 candidates. Вместо "смягчим assertion" — нашли баг в prompt.
+
+**Правило**: Тест — контракт. Если реальность не соответствует контракту, исправляй реальность.
+
+---
+
+### 13. Schema Enums для LLM Structured Output
+
+**Проблема**: `z.array(z.string())` — LLM не знает допустимые значения, выдумывает.
+
+**Решение**: `z.array(z.enum([...]))` — LLM видит enum values в JSON schema.
+
+```typescript
+// ❌ LLM может вернуть что угодно ("Information Technology", "IT", "Tech")
+excludedContextFields: z.array(z.string())
+
+// ✅ LLM видит только допустимые: ["countryCode", "cityName", "birthYear", "languages"]
+excludedContextFields: z.array(contextFieldSchema)
+```
+
+**Универсально**: Любой LLM extraction с ограниченным набором значений → enum schema.
+
+---
+
+### 14. Graceful Handling vs Strict Assertion
+
+**Контекст**: Тесты на unknown/gibberish input.
+
+**Антипаттерн**: `expect(intent).toBe("unknown")` — LLM непредсказуем с gibberish.
+
+**Правильно**: Проверяем инварианты системы, не конкретный output LLM.
+
+```typescript
+// ❌ Хрупко — LLM может интерпретировать gibberish как угодно
+expect(response.intent).toBe("unknown");
+
+// ✅ Устойчиво — проверяем что система НЕ упала и осталась в валидной фазе
+expect(response.phase).not.toBe("failed");
+expect(response.phase).toBe(PHASE.showing_exploration);
+```
+
+**Правило**: Для edge cases проверяй инварианты (не падает, фаза валидна), не конкретный output.
+
+---
+
+### 15. Fixtures Matching: Проверяй ДО теста
+
+**Проблема**: Тест ожидает candidates, но LLM extraction не матчит fixtures.
+
+**Паттерн проверки**:
+```bash
+# Что в fixtures?
+cat fixtures/U3.json | jq '.contexts[0] | {position, domains}'
+# → {"position": "junior", "domains": ["backend"]}
+
+# Что извлёк LLM?
+# → {"position": "junior backend developer", "domains": ["Information Technology"]}
+# ❌ Не матчит!
+```
+
+**Правило**: Перед E2E тестом убедись что expected LLM extraction → matches fixtures.
+
+---
+
+### 16. Debug через Production Code → Потом удалить
+
+**Паттерн**: Добавь `console.log` в production code временно.
+
+```typescript
+// Временно в load-context.ts
+console.log("[load_context] adhoc extraction:", { extracted, normalized });
+```
+
+**Workflow**:
+1. Добавить debug logging
+2. Запустить тест
+3. Проанализировать output
+4. **ОБЯЗАТЕЛЬНО удалить** debug logging после понимания проблемы
+5. Альтернатива: LangSmith tracing (`LANGSMITH_TRACING=true`)
+
+**Правило**: Debug logs — временные. Не коммитить в production.
+
+---
+
 ## 🎓 Главные Уроки
 
 1. **State management**: Очищай userResponse после использования, иначе следующий interrupt не сработает
@@ -484,6 +593,12 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 8. **Errors**: AgentInvariantError для contract violations, НЕ для business logic
 9. **Validation**: Используй neo4j-cypher MCP для проверки queries ДО тестов
 10. **Workflow**: Тест пишем ПЕРВЫМ, фиксим код, прогоняем, коммитим
+11. **LLM Prompts**: Explicit example > verbose description (LLM = pattern-matcher)
+12. **Test Philosophy**: Тесты находят баги в коде, не подгоняются под код
+13. **Schema Typing**: Enum schemas для LLM extraction (z.enum, не z.string)
+14. **Edge Cases**: Graceful handling → проверяй инварианты, не конкретный LLM output
+15. **Fixtures**: Проверяй matching ПЕРЕД написанием теста
+16. **Debug Logs**: Временные → добавил, понял, удалил
 
 ---
 
