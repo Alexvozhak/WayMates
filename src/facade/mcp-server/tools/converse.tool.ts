@@ -2,7 +2,7 @@ import { mcpConverseParamsSchema } from "../../../shared/schemas.js";
 import { createSystemMessage } from "../../services/orchestrator/converse-response.js";
 import { FlowGuardChecker } from "../../services/orchestrator/flow-guard-checker.service.js";
 import { GraphManager } from "../../services/orchestrator/graph-manager.service.js";
-import { classifyIntent } from "../../services/orchestrator/intent-classifier.js";
+import { classifyIntent, NON_GRAPH_INTENT } from "../../services/orchestrator/intent-classifier.js";
 import { QueryExecutor } from "../../services/orchestrator/query-executor.service.js";
 
 import { BaseTool } from "./base-tool.js";
@@ -10,6 +10,7 @@ import { BaseTool } from "./base-tool.js";
 import type { BaseToolDependencies } from "./base-tool.js";
 import type { McpConverseParams, UserId } from "../../../shared/schemas.js";
 import type { ConverseResponse } from "../../services/orchestrator/converse-response.js";
+import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 
 export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> {
   private readonly graphManager: GraphManager;
@@ -34,14 +35,35 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     const guardResult = await this.flowGuardChecker.check(intent, userId);
     if (guardResult) return guardResult;
 
-    // 3. Query — getStory, getGoal, deleteGoal, deleteContext, deleteTrail
+    // 3. Project info — investor, tech, user documentation
+    const docContent = await this.getProjectInfo(intent);
+    if (docContent) return createSystemMessage(docContent);
+
+    // 4. Query — getStory, getGoal, deleteGoal, deleteContext, deleteTrail
     const queryResult = await this.queryExecutor.execute(intent, userId);
     if (queryResult) return queryResult;
 
-    // 4. Graph — cold_start, upsert_context, update_context, upsert_trail, search
+    // 5. Graph — cold_start, upsert_context, update_context, upsert_trail, search
     const graphResult = await this.graphManager.executeNewGraph(intent, params.message, userId);
     if (graphResult) return graphResult;
 
     return createSystemMessage("I didn't understand. Try 'help' for available commands.");
+  }
+
+  private async getProjectInfo(intent: UserIntent): Promise<string | null> {
+    switch (intent) {
+      case NON_GRAPH_INTENT.projectInvestor: {
+        return this.documentary.getInvestorPitch();
+      }
+      case NON_GRAPH_INTENT.projectTech: {
+        return this.documentary.getTechOverview();
+      }
+      case NON_GRAPH_INTENT.projectUser: {
+        return this.documentary.getUserInfo();
+      }
+      default: {
+        return null;
+      }
+    }
   }
 }

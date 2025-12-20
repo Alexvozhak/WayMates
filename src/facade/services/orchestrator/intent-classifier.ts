@@ -20,6 +20,9 @@ export const NON_GRAPH_INTENT = {
   deleteTrail: "deleteTrail",
   cancel: "cancel",
   help: "help",
+  projectInvestor: "projectInvestor",
+  projectTech: "projectTech",
+  projectUser: "projectUser",
   unknown: "unknown",
 } as const;
 
@@ -41,6 +44,9 @@ export const nonGraphIntentSchema = z.enum([
   NON_GRAPH_INTENT.deleteTrail,
   NON_GRAPH_INTENT.cancel,
   NON_GRAPH_INTENT.help,
+  NON_GRAPH_INTENT.projectInvestor,
+  NON_GRAPH_INTENT.projectTech,
+  NON_GRAPH_INTENT.projectUser,
   NON_GRAPH_INTENT.unknown,
 ]);
 
@@ -65,6 +71,9 @@ const intentDescriptions: ReadonlyMap<UserIntent, string> = new Map([
   ["search", "wants to find similar careers"],
   ["cancel", "wants to cancel current operation"],
   ["help", "needs help with commands"],
+  ["projectInvestor", "asks about WayMates business value, investment, accelerator, startup pitch"],
+  ["projectTech", "asks about WayMates architecture, tech stack, code quality, engineering"],
+  ["projectUser", "asks what WayMates offers, how to use it, features for end users"],
   ["unknown", "unclear message or doesn't match any intent"],
 ]);
 

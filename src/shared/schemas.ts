@@ -78,6 +78,7 @@ export const errorCodeSchema = z.enum([
   "internal_error",
   "postgres_connection_failed",
   "postgres_query_failed",
+  "document_not_found",
 ]);
 
 export const errorResponseSchema = z.object({
@@ -201,7 +202,7 @@ const userContextSchemaBase = z.object({
   companySize: z.string().nullable().default(null).describe("Company size (optional for synthetic users)"),
   countryCode: z.string().describe("Location country code"),
   cityName: z.string().describe("Location city name"),
-  citizenships: z.array(z.string()),
+  citizenships: z.array(z.string()).describe("Nationality/passport countries (differs from work location countryCode)"),
   birthYear: z.number().min(1950).nullable().default(null).describe("Birth year (optional for synthetic users)"),
   educationLevel: educationLevelSchema.nullable().default(null).describe("Education level"),
 

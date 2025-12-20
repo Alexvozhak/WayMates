@@ -3,6 +3,7 @@ import { Redis } from "ioredis";
 import { CoreClient } from "../../../src/facade/core-client.js";
 import { CheckpointService } from "../../../src/facade/services/checkpoint.service.js";
 import { DictionariesCache } from "../../../src/facade/services/dictionaries-cache.js";
+import { DocumentaryService } from "../../../src/facade/services/documentary.service.js";
 import { Normalizer } from "../../../src/facade/services/normalizer.js";
 import { PostgresService } from "../../../src/facade/services/postgres.service.js";
 import { SessionService } from "../../../src/facade/services/session.service.js";
@@ -60,6 +61,9 @@ export class FacadeTestContext {
     console.log("[Facade Setup] Creating session service...");
     const sessionService = new SessionService(redis);
 
+    console.log("[Facade Setup] Creating documentary service...");
+    const documentary = new DocumentaryService("./docs/presentation");
+
     FacadeTestContext.instance = new FacadeTestContext(
       coreClient,
       redis,
@@ -69,6 +73,7 @@ export class FacadeTestContext {
       checkpointService,
       userService,
       sessionService,
+      documentary,
     );
 
     return FacadeTestContext.instance;
@@ -89,6 +94,7 @@ export class FacadeTestContext {
   public readonly checkpointService: CheckpointService;
   public readonly userService: UserService;
   public readonly sessionService: SessionService;
+  public readonly documentary: DocumentaryService;
 
   private constructor(
     coreClient: CoreClient,
@@ -99,6 +105,7 @@ export class FacadeTestContext {
     checkpointService: CheckpointService,
     userService: UserService,
     sessionService: SessionService,
+    documentary: DocumentaryService,
   ) {
     this.coreClient = coreClient;
     this.redis = redis;
@@ -108,6 +115,7 @@ export class FacadeTestContext {
     this.checkpointService = checkpointService;
     this.userService = userService;
     this.sessionService = sessionService;
+    this.documentary = documentary;
   }
 
   getGraphDeps(): GraphDeps {

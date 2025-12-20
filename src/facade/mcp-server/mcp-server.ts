@@ -41,6 +41,7 @@ import type { CoreClient } from "../core-client.js";
 import type { AuthService } from "../services/auth.service.js";
 import type { CheckpointService } from "../services/checkpoint.service.js";
 import type { DictionariesCache } from "../services/dictionaries-cache.js";
+import type { DocumentaryService } from "../services/documentary.service.js";
 import type { Normalizer } from "../services/normalizer.js";
 import type { SessionService } from "../services/session.service.js";
 import type { UserService } from "../services/user.service.js";
@@ -53,6 +54,7 @@ export type FacadeServerDependencies = {
   checkpointService: CheckpointService;
   userService: UserService;
   authService: AuthService;
+  documentary: DocumentaryService;
 };
 
 type ToolInstances = {
@@ -82,6 +84,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     cache: deps.cache,
     checkpointService: deps.checkpointService,
     userService: deps.userService,
+    documentary: deps.documentary,
   };
 
   return {

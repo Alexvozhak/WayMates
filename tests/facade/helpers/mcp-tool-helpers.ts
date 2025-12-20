@@ -30,5 +30,6 @@ export function getToolDeps(): BaseToolDependencies {
     cache: ctx.cache,
     checkpointService: ctx.checkpointService,
     userService: ctx.userService,
+    documentary: ctx.documentary,
   };
 }

@@ -6,6 +6,7 @@ import { createMcpServer } from "./mcp-server/mcp-server.js";
 import { AuthService } from "./services/auth.service.js";
 import { CheckpointService } from "./services/checkpoint.service.js";
 import { DictionariesCache } from "./services/dictionaries-cache.js";
+import { DocumentaryService } from "./services/documentary.service.js";
 import { Normalizer } from "./services/normalizer.js";
 import { PostgresService } from "./services/postgres.service.js";
 import { SessionService } from "./services/session.service.js";
@@ -39,6 +40,7 @@ async function main(): Promise<void> {
 
   const cache = new DictionariesCache(redis, coreClient);
   const normalizer = new Normalizer(cache, coreClient);
+  const documentary = new DocumentaryService(config.DOCS_PATH);
 
   const server = createMcpServer({
     sessionMiddleware,
@@ -48,6 +50,7 @@ async function main(): Promise<void> {
     checkpointService,
     userService,
     authService,
+    documentary,
   });
 
   if (config.FACADE_TRANSPORT === "http") {

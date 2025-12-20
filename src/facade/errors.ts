@@ -137,3 +137,11 @@ export class ValidationError extends FacadeError {
 export function throwToolError(error: ErrorResponse): never {
   throw new ToolExecutionError(error);
 }
+
+export class DocumentNotFoundError extends FacadeError {
+  override readonly errorCode = "document_not_found";
+
+  constructor(docType: string) {
+    super(`Document "${docType}" not available`);
+  }
+}

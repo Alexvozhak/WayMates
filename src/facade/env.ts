@@ -22,7 +22,7 @@ const envSchema = z.object({
   // LLM configuration (OpenRouter-compatible, auto-picked by ChatOpenAI)
   OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required (use OpenRouter key)"),
   OPENAI_API_BASE: z.string().url().default("https://openrouter.ai/api/v1"),
-  LANGCHAIN_MODEL_NAME: z.string().default("google/gemini-2.0-flash"),
+  LANGCHAIN_MODEL_NAME: z.string().default("openai/gpt-4o-mini"),
   LANGCHAIN_TEMP_DETERMINISTIC: z.coerce.number().min(0).max(1).default(0),
   LANGCHAIN_TEMP_EXTRACTION: z.coerce.number().min(0).max(1).default(0.2),
   LANGCHAIN_TEMP_PLANNING: z.coerce.number().min(0).max(1).default(0.1),
@@ -43,6 +43,8 @@ const envSchema = z.object({
   CV_PARSER_MAX_FILE_SIZE_MB: z.coerce.number().int().positive().default(10),
   CV_PARSER_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(4000),
   CV_PARSER_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.1),
+  // Documentary MCP configuration
+  DOCS_PATH: z.string().default("./docs/presentation"),
   // Cloudflare R2 Configuration (optional - chart service can be disabled)
   R2_ACCOUNT_ID: z.string().min(1).optional(),
   R2_ACCESS_KEY_ID: z.string().min(1).optional(),
