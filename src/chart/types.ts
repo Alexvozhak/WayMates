@@ -94,6 +94,12 @@ export type SimilarityMetrics = {
 
 export type Locale = "ru" | "en";
 
+/**
+ * Goal values for horizontal goal line visualization.
+ * Maps chartable fields to their target values.
+ */
+export type GoalValues = Partial<Record<ChartableField, string | number | null>>;
+
 export type GenerateChartInput = {
   userTrajectory: UserContext[];
   candidates: ScoredMatchedCandidate[];
@@ -102,6 +108,7 @@ export type GenerateChartInput = {
   maxFields?: number;
   locale?: Locale;
   existingGoal?: boolean; // for pathfinder star visualization
+  goalValues?: GoalValues; // target values for goal line on each aspect
 };
 
 export type GenerateChartOutput = {

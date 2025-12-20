@@ -135,6 +135,20 @@ console.log(
 );
 
 // ==========================================
+// === DEFINE GOAL VALUES ===
+// ==========================================
+
+// User's goal: Middle position in frontend domain (matches U2 pathfinder)
+const goalValues = {
+  position: "middle", // extracted grade — matches where pathfinder is
+  domains: "frontend", // target domain — matches pathfinder's domain
+};
+
+console.log("\n🎯 Goal values (for horizontal lines):");
+console.log(`   position: ${goalValues.position} (pathfinder reached this)`);
+console.log(`   domains: ${goalValues.domains}`);
+
+// ==========================================
 // === GENERATE HTML ===
 // ==========================================
 
@@ -147,6 +161,7 @@ const chartData: ChartPageData = {
   overlapSummaries,
   timeRange,
   locale: "ru",
+  goalValues, // horizontal goal lines on each aspect
 };
 
 const html = generateChartHtml(chartData);
@@ -165,6 +180,8 @@ console.log(`   Size: ${(html.length / 1024).toFixed(2)} KB`);
 console.log("\n📊 Features:");
 console.log("   ✅ Controls (aspect + candidate checkboxes)");
 console.log("   ✅ Main chart (Plotly multi-subplot)");
+console.log("   ✅ Goal horizontal lines (dashed gold)");
+console.log("   ✅ Pathfinder stars (only if goal exists)");
 console.log("   ✅ Overlap Timeline (integrated as subplot)");
 console.log("   ✅ Spider chart (DTW metrics)");
 console.log("   ✅ Metrics table");

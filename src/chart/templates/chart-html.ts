@@ -11,7 +11,14 @@
  * - Dynamic recalculation on checkbox change
  */
 
-import type { ChartableField, Locale, OverlapSummary, ProcessedTrajectory, SimilarityMetrics } from "../types.js";
+import type {
+  ChartableField,
+  GoalValues,
+  Locale,
+  OverlapSummary,
+  ProcessedTrajectory,
+  SimilarityMetrics,
+} from "../types.js";
 
 export type ChartPageData = {
   trajectories: ProcessedTrajectory[];
@@ -21,6 +28,7 @@ export type ChartPageData = {
   overlapSummaries: OverlapSummary[];
   timeRange: { minTime: number; maxTime: number };
   locale: Locale;
+  goalValues: GoalValues; // target values for goal horizontal lines (empty {} if no goal)
 };
 
 /**
@@ -158,6 +166,49 @@ function buildTraceFunctions(): string {
         allTraces.push(...buildTracesForField(field, xaxisId, yaxisId, enabledCandidates));
       });
       return allTraces;
+    }
+
+    // Check if goal is defined (non-empty goalValues)
+    function hasGoal() {
+      return chartData.goalValues && Object.keys(chartData.goalValues).length > 0;
+    }
+
+    // Build horizontal goal line traces for each field with goal value
+    function buildGoalLineTraces(fields) {
+      if (!hasGoal()) return [];
+
+      const traces = [];
+      const minTime = chartData.timeRange.minTime;
+      const maxTime = chartData.timeRange.maxTime;
+
+      fields.forEach((field, index) => {
+        const goalValue = chartData.goalValues[field];
+        if (goalValue === null || goalValue === undefined) return;
+
+        const config = getFieldConfig(field);
+        const levels = config.levels;
+        const xaxisId = index === 0 ? 'x' : 'x' + (index + 1);
+        const yaxisId = index === 0 ? 'y' : 'y' + (index + 1);
+
+        // For categorical fields with levels, use index; otherwise use raw value
+        const yValue = levels.length > 0 ? levels.indexOf(goalValue) : goalValue;
+        if (yValue === -1) return; // goal value not in levels
+
+        traces.push({
+          x: [new Date(minTime), new Date(maxTime)],
+          y: [yValue, yValue],
+          mode: 'lines',
+          name: 'Goal: ' + goalValue,
+          line: { color: GOAL_STAR_COLOR, width: 2, dash: 'dash' },
+          legendgroup: 'goal',
+          showlegend: index === 0, // only show in legend once
+          hovertemplate: '<b>🎯 Goal: ' + goalValue + '</b><extra></extra>',
+          xaxis: xaxisId,
+          yaxis: yaxisId
+        });
+      });
+
+      return traces;
     }`;
 }
 
@@ -326,9 +377,13 @@ function buildOverlapFunctions(): string {
     }
 
     // Build vertical goal marker lines + star annotation for pathfinders
+    // Only shows if user has a goal defined
     function buildGoalMarkerShapesAndAnnotations(enabledCandidates) {
       const shapes = [];
       const annotations = [];
+
+      // No goal = no stars
+      if (!hasGoal()) return { shapes, annotations };
 
       chartData.trajectories.forEach(traj => {
         // Only for enabled pathfinders with matchedContextIndex
@@ -618,6 +673,9 @@ function buildRenderFunction(): string {
 
       const traces = buildAllTraces(fields, enabledCandidates);
 
+      // Build goal line traces (horizontal dashed lines for target values)
+      const goalLineTraces = buildGoalLineTraces(fields);
+
       // Build layout first to get overlapAxisNum and overlapDomain
       const { layout, overlapAxisNum, overlapDomain } = buildLayout(fields, enabledCandidates);
       const overlapYaxisId = 'y' + overlapAxisNum;
@@ -626,7 +684,7 @@ function buildRenderFunction(): string {
       const overlapTraces = buildOverlapTraces(fields, overlapYaxisId, enabledCandidates);
 
       // Combine traces
-      const allTraces = [...traces, ...overlapTraces];
+      const allTraces = [...traces, ...goalLineTraces, ...overlapTraces];
 
       // Add connection line shapes if enabled
       if (showConnectionLines) {

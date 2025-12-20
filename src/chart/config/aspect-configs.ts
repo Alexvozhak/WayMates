@@ -8,7 +8,7 @@ import type { AspectConfig, ChartableField } from "../types.js";
  * @param position - Job title
  * @returns Grade level or "middle" (default)
  */
-function extractGrade(position: string): string {
+export function extractGrade(position: string): string {
   const lower = position.toLowerCase();
 
   const leadKeywords = ["lead", "principal", "staff"];

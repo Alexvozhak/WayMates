@@ -1,6 +1,6 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { generateTrajectoryChart, isChartServiceEnabled } from "../../../../chart/index.js";
+import { extractGoalValues, generateTrajectoryChart, isChartServiceEnabled } from "../../../../chart/index.js";
 import { OPTIONS, PHASE } from "../state.js";
 
 import type { SearchStateType } from "../state.js";
@@ -17,11 +17,13 @@ export async function showResultsNode(state: SearchStateType): Promise<Partial<S
 
   if (shouldGenerateChart) {
     try {
+      const goalValues = extractGoalValues(state.existingGoal);
       const result = await generateTrajectoryChart({
         userTrajectory: state.userTrajectory,
         candidates: state.searchResults.slice(0, 5),
         locale: "ru",
         existingGoal: Boolean(state.existingGoal),
+        goalValues,
       });
       chartUrl = result.chartUrl;
     } catch (error) {
