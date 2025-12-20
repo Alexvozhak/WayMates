@@ -9,241 +9,218 @@ import type {
   TrajectoryPoint,
 } from "../types.js";
 
+const MS_PER_DAY = 86_400_000;
+
+type Interval = { start: number; end: number };
+
 /**
- * Check and add overlap if values match and periods intersect.
+ * Calculates overlap periods and similarity metrics between user and candidate trajectories.
+ * Handles both per-field overlaps and full (all-fields) overlaps.
  */
-function checkAndAddOverlap(
-  userPoint: TrajectoryPoint,
-  userNext: TrajectoryPoint,
-  candPoint: TrajectoryPoint,
-  candNext: TrajectoryPoint,
-  userValue: string | number,
-  candidateId: string,
-  field: ChartableField,
-  overlaps: OverlapPeriod[],
-): void {
-  const candValue = candPoint.values[field];
-  if (candValue !== userValue) return;
+export class OverlapCalculator {
+  constructor(
+    private readonly userTrajectory: ProcessedTrajectory,
+    private readonly candidateTrajectories: ProcessedTrajectory[],
+    private readonly fields: ChartableField[],
+  ) {}
 
-  const overlapStart = Math.max(userPoint.timestamp, candPoint.timestamp);
-  const overlapEnd = Math.min(userNext.timestamp, candNext.timestamp);
+  /**
+   * Calculate overlap summaries for all candidates.
+   */
+  calculateOverlapSummaries(): OverlapSummary[] {
+    return this.candidateTrajectories.map((candidate) => this.calculateSummaryForCandidate(candidate));
+  }
 
-  if (overlapStart < overlapEnd) {
-    overlaps.push({
-      candidateId,
+  /**
+   * Calculate similarity metrics using DTW data from scored candidates.
+   */
+  calculateSimilarityMetrics(scoredCandidates: ScoredMatchedCandidate[]): SimilarityMetrics[] {
+    return this.candidateTrajectories.map((trajectory, index) => {
+      const scored = scoredCandidates[index];
+      if (!scored) {
+        return this.createEmptyMetrics(trajectory);
+      }
+      return this.createMetricsFromDtw(trajectory, scored);
+    });
+  }
+
+  private calculateSummaryForCandidate(candidate: ProcessedTrajectory): OverlapSummary {
+    const periods = this.findFullOverlapPeriods(candidate);
+    const { totalMs, longestMs } = this.aggregatePeriodDurations(periods);
+
+    return {
+      candidateId: candidate.id,
+      candidateLabel: candidate.label,
+      candidateColor: candidate.color,
+      periods,
+      totalDays: Math.round(totalMs / MS_PER_DAY),
+      longestStreakDays: Math.round(longestMs / MS_PER_DAY),
+    };
+  }
+
+  private findFullOverlapPeriods(candidate: ProcessedTrajectory): FullOverlapPeriod[] {
+    if (this.fields.length === 0) return [];
+
+    const fieldIntervals = this.buildFieldIntervalsMap(candidate);
+    const intersected = this.intersectAllFieldIntervals(fieldIntervals);
+
+    return intersected.map(({ start, end }) => ({
+      candidateId: candidate.id,
+      startTime: start,
+      endTime: end,
+    }));
+  }
+
+  private buildFieldIntervalsMap(candidate: ProcessedTrajectory): Map<ChartableField, Interval[]> {
+    const map = new Map<ChartableField, Interval[]>();
+
+    for (const field of this.fields) {
+      const overlaps = this.findFieldOverlaps(candidate, field);
+      const intervals = overlaps.map((o) => ({ start: o.startTime, end: o.endTime }));
+      map.set(field, intervals);
+    }
+
+    return map;
+  }
+
+  private intersectAllFieldIntervals(fieldIntervals: Map<ChartableField, Interval[]>): Interval[] {
+    const firstField = this.fields[0]!;
+    let result = fieldIntervals.get(firstField) ?? [];
+
+    for (let i = 1; i < this.fields.length; i++) {
+      const nextIntervals = fieldIntervals.get(this.fields[i]!) ?? [];
+      result = this.intersectIntervalArrays(result, nextIntervals);
+      if (result.length === 0) break;
+    }
+
+    return result;
+  }
+
+  private findFieldOverlaps(candidate: ProcessedTrajectory, field: ChartableField): OverlapPeriod[] {
+    const overlaps: OverlapPeriod[] = [];
+    const userPoints = this.userTrajectory.points;
+
+    for (let ui = 0; ui < userPoints.length - 1; ui++) {
+      const userPoint = userPoints[ui]!;
+      const userNext = userPoints[ui + 1]!;
+      const userValue = userPoint.values[field];
+
+      if (userValue === null || userValue === undefined) continue;
+
+      const candidateOverlaps = this.findCandidateOverlaps(candidate, userPoint, userNext, userValue, field);
+      overlaps.push(...candidateOverlaps);
+    }
+
+    return overlaps;
+  }
+
+  private findCandidateOverlaps(
+    candidate: ProcessedTrajectory,
+    userPoint: TrajectoryPoint,
+    userNext: TrajectoryPoint,
+    userValue: string | number,
+    field: ChartableField,
+  ): OverlapPeriod[] {
+    const overlaps: OverlapPeriod[] = [];
+    const candPoints = candidate.points;
+
+    for (let ci = 0; ci < candPoints.length - 1; ci++) {
+      const overlap = this.checkOverlap(userPoint, userNext, candPoints[ci]!, candPoints[ci + 1]!, userValue, field);
+      if (overlap) {
+        overlaps.push({ ...overlap, candidateId: candidate.id });
+      }
+    }
+
+    return overlaps;
+  }
+
+  private checkOverlap(
+    userPoint: TrajectoryPoint,
+    userNext: TrajectoryPoint,
+    candPoint: TrajectoryPoint,
+    candNext: TrajectoryPoint,
+    userValue: string | number,
+    field: ChartableField,
+  ): Omit<OverlapPeriod, "candidateId"> | null {
+    const candValue = candPoint.values[field];
+    if (candValue !== userValue) return null;
+
+    const overlapStart = Math.max(userPoint.timestamp, candPoint.timestamp);
+    const overlapEnd = Math.min(userNext.timestamp, candNext.timestamp);
+
+    if (overlapStart >= overlapEnd) return null;
+
+    return {
       field,
       startTime: overlapStart,
       endTime: overlapEnd,
       value: userValue,
-    });
+    };
   }
-}
 
-/**
- * Find overlaps for a single field between user and candidate points.
- */
-function findFieldOverlaps(
-  field: ChartableField,
-  userPoints: TrajectoryPoint[],
-  candPoints: TrajectoryPoint[],
-  candidateId: string,
-): OverlapPeriod[] {
-  const overlaps: OverlapPeriod[] = [];
+  private intersectIntervalArrays(a: Interval[], b: Interval[]): Interval[] {
+    return a.flatMap((ia) => this.findIntersectionsForInterval(ia, b));
+  }
 
-  for (let userIndex = 0; userIndex < userPoints.length - 1; userIndex++) {
-    const userPoint = userPoints[userIndex]!;
-    const userNext = userPoints[userIndex + 1]!;
-    const userValue = userPoint.values[field];
+  private findIntersectionsForInterval(interval: Interval, others: Interval[]): Interval[] {
+    const intersections: Interval[] = [];
 
-    if (userValue === null || userValue === undefined) {
-      continue;
+    for (const other of others) {
+      const intersection = this.intersectTwoIntervals(interval, other);
+      if (intersection) {
+        intersections.push(intersection);
+      }
     }
 
-    for (let candIndex = 0; candIndex < candPoints.length - 1; candIndex++) {
-      checkAndAddOverlap(
-        userPoint,
-        userNext,
-        candPoints[candIndex]!,
-        candPoints[candIndex + 1]!,
-        userValue,
-        candidateId,
-        field,
-        overlaps,
-      );
+    return intersections;
+  }
+
+  private intersectTwoIntervals(a: Interval, b: Interval): Interval | null {
+    const start = Math.max(a.start, b.start);
+    const end = Math.min(a.end, b.end);
+    return start < end ? { start, end } : null;
+  }
+
+  private aggregatePeriodDurations(periods: FullOverlapPeriod[]): { totalMs: number; longestMs: number } {
+    let totalMs = 0;
+    let longestMs = 0;
+
+    for (const period of periods) {
+      const duration = period.endTime - period.startTime;
+      totalMs += duration;
+      if (duration > longestMs) longestMs = duration;
     }
+
+    return { totalMs, longestMs };
   }
 
-  return overlaps;
-}
-
-/**
- * Find overlap periods where user and candidate had same field values.
- * Overlaps indicate shared career experiences (same city, domain, etc).
- */
-export function findOverlapPeriods(
-  user: ProcessedTrajectory,
-  candidate: ProcessedTrajectory,
-  fields: ChartableField[],
-): OverlapPeriod[] {
-  const overlaps: OverlapPeriod[] = [];
-
-  for (const field of fields) {
-    const fieldOverlaps = findFieldOverlaps(field, user.points, candidate.points, candidate.id);
-    overlaps.push(...fieldOverlaps);
-  }
-
-  return overlaps;
-}
-
-/**
- * Calculate similarity metrics for candidate.
- * Uses DTW metrics if available, otherwise returns placeholder.
- */
-export function calculateSimilarity(
-  candidate: ProcessedTrajectory,
-  scoredCandidate: ScoredMatchedCandidate,
-): SimilarityMetrics {
-  const { dtwMetrics, candidateType } = scoredCandidate;
-
-  if (!dtwMetrics) {
+  private createEmptyMetrics(trajectory: ProcessedTrajectory): SimilarityMetrics {
     return {
-      candidateId: candidate.id,
-      candidateType,
+      candidateId: trajectory.id,
+      candidateType: trajectory.candidateType,
       perField: {},
       overall: 0,
     };
   }
 
-  const { shapeSimilarity, tempoSimilarity, stabilityScore } = dtwMetrics;
+  private createMetricsFromDtw(trajectory: ProcessedTrajectory, scored: ScoredMatchedCandidate): SimilarityMetrics {
+    const { dtwMetrics, candidateType } = scored;
 
-  return {
-    candidateId: candidate.id,
-    candidateType,
-    perField: {
-      position: shapeSimilarity,
-      domains: tempoSimilarity,
-      cityName: stabilityScore,
-    },
-    overall: shapeSimilarity + tempoSimilarity + stabilityScore,
-  };
-}
-
-// ==========================================
-// === FULL OVERLAP (ALL FIELDS MATCH) ===
-// ==========================================
-
-const MS_PER_DAY = 86_400_000;
-
-/**
- * Intersect two time intervals.
- * Returns null if no intersection.
- */
-function intersectIntervals(
-  a: { start: number; end: number },
-  b: { start: number; end: number },
-): { start: number; end: number } | null {
-  const start = Math.max(a.start, b.start);
-  const end = Math.min(a.end, b.end);
-  return start < end ? { start, end } : null;
-}
-
-/**
- * Build time intervals for each field from per-field overlaps.
- */
-function buildFieldIntervals(
-  overlaps: OverlapPeriod[],
-  fields: ChartableField[],
-): Map<ChartableField, { start: number; end: number }[]> {
-  const fieldIntervals = new Map<ChartableField, { start: number; end: number }[]>();
-  for (const field of fields) {
-    fieldIntervals.set(field, []);
-  }
-  for (const overlap of overlaps) {
-    const intervals = fieldIntervals.get(overlap.field);
-    if (intervals) {
-      intervals.push({ start: overlap.startTime, end: overlap.endTime });
+    if (!dtwMetrics) {
+      return this.createEmptyMetrics(trajectory);
     }
+
+    const { shapeSimilarity, tempoSimilarity, stabilityScore } = dtwMetrics;
+
+    return {
+      candidateId: trajectory.id,
+      candidateType,
+      perField: {
+        position: shapeSimilarity,
+        domains: tempoSimilarity,
+        cityName: stabilityScore,
+      },
+      overall: shapeSimilarity + tempoSimilarity + stabilityScore,
+    };
   }
-  return fieldIntervals;
-}
-
-/**
- * Find full overlap periods where ALL selected fields match simultaneously.
- * Returns periods where user and candidate had identical values for all fields.
- */
-// eslint-disable-next-line complexity
-export function findFullOverlapPeriods(
-  user: ProcessedTrajectory,
-  candidate: ProcessedTrajectory,
-  fields: ChartableField[],
-): FullOverlapPeriod[] {
-  if (fields.length === 0) return [];
-
-  const perFieldOverlaps = findOverlapPeriods(user, candidate, fields);
-  const fieldIntervals = buildFieldIntervals(perFieldOverlaps, fields);
-  const firstField = fields[0]!;
-  let result = fieldIntervals.get(firstField) ?? [];
-
-  for (let i = 1; i < fields.length; i++) {
-    const nextIntervals = fieldIntervals.get(fields[i]!) ?? [];
-    const intersected: { start: number; end: number }[] = [];
-
-    /* eslint-disable max-depth */
-    for (const a of result) {
-      for (const b of nextIntervals) {
-        const inter = intersectIntervals(a, b);
-        if (inter) intersected.push(inter);
-      }
-    }
-    /* eslint-enable max-depth */
-    result = intersected;
-    if (result.length === 0) break;
-  }
-
-  return result.map(({ start, end }) => ({
-    candidateId: candidate.id,
-    startTime: start,
-    endTime: end,
-  }));
-}
-
-/**
- * Calculate overlap summary for a candidate.
- * Computes total days and longest streak from full overlap periods.
- */
-export function calculateOverlapSummary(
-  candidate: ProcessedTrajectory,
-  fullPeriods: FullOverlapPeriod[],
-): OverlapSummary {
-  let totalMs = 0;
-  let longestMs = 0;
-
-  for (const period of fullPeriods) {
-    const duration = period.endTime - period.startTime;
-    totalMs += duration;
-    if (duration > longestMs) longestMs = duration;
-  }
-
-  return {
-    candidateId: candidate.id,
-    candidateLabel: candidate.label,
-    candidateColor: candidate.color,
-    periods: fullPeriods,
-    totalDays: Math.round(totalMs / MS_PER_DAY),
-    longestStreakDays: Math.round(longestMs / MS_PER_DAY),
-  };
-}
-
-/**
- * Calculate overlap summaries for all candidates.
- */
-export function calculateAllOverlapSummaries(
-  user: ProcessedTrajectory,
-  candidates: ProcessedTrajectory[],
-  fields: ChartableField[],
-): OverlapSummary[] {
-  return candidates.map((candidate) => {
-    const fullPeriods = findFullOverlapPeriods(user, candidate, fields);
-    return calculateOverlapSummary(candidate, fullPeriods);
-  });
 }

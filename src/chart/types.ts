@@ -105,7 +105,6 @@ export type GenerateChartInput = {
   candidates: ScoredMatchedCandidate[];
   selectedFields?: ChartableField[];
   maxCandidates?: number;
-  maxFields?: number;
   locale?: Locale;
   existingGoal?: boolean; // for pathfinder star visualization
   goalValues?: GoalValues; // target values for goal line on each aspect
