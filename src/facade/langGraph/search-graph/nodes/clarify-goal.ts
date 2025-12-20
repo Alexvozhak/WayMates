@@ -2,15 +2,13 @@ import { HumanMessage } from "@langchain/core/messages";
 
 import { targetContextSchema } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
-import { makeNullable } from "../../../utils/llm-schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { GOAL_CLARIFICATION_PROMPT } from "../prompts.js";
 import { NODE, PHASE } from "../state.js";
 
 import type { SearchStateType } from "../state.js";
 
-const clarifiableGoalSchema = makeNullable(targetContextSchema);
-const clarificationModel = getModel("extraction").withStructuredOutput(clarifiableGoalSchema);
+const clarificationModel = getModel("extraction").withStructuredOutput(targetContextSchema);
 
 export async function clarifyGoalNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
   const { extractedGoal, messages, clarifyRound, clarificationText } = state;
@@ -32,7 +30,7 @@ export async function clarifyGoalNode(state: SearchStateType): Promise<Partial<S
   ]);
 
   return {
-    extractedGoal: updated,
+    extractedGoal: targetContextSchema.parse(updated),
     clarifyRound: clarifyRound + 1,
     userResponse: "", // Clear to ensure show_goal does interrupt
     phase: PHASE.showing_goal,

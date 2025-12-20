@@ -83,7 +83,7 @@ export const errorCodeSchema = z.enum([
 export const errorResponseSchema = z.object({
   code: errorCodeSchema,
   message: z.string(),
-  details: z.record(z.unknown()).optional().describe("Additional error context for debugging"),
+  details: z.record(z.unknown()).nullable().describe("Additional error context for debugging"),
 });
 
 export type ErrorCode = z.infer<typeof errorCodeSchema>;
@@ -134,8 +134,8 @@ export type LanguageCode = z.infer<typeof languageCodeSchema>;
 
 export const scheduleSchema = z.object({
   // Note: .nullable() required for OpenAI Structured Output API compatibility
-  sessionsPerWeek: z.number().describe("Sessions per week").nullable().optional(),
-  hoursPerSession: z.number().describe("Hours per session").nullable().optional(),
+  sessionsPerWeek: z.number().describe("Sessions per week").nullable(),
+  hoursPerSession: z.number().describe("Hours per session").nullable(),
 });
 
 /**
@@ -148,26 +148,26 @@ export const trailSchemaBase = z.object({
   platform: z.string().min(1).describe("Learning platform used"),
 
   // OPTIONAL metrics (не всегда известны при extraction)
-  // Note: .nullable() required for OpenAI Structured Output API compatibility
-  totalDurationWeeks: z.number().describe("Total duration in weeks").nullable().optional(),
-  schedule: scheduleSchema.nullable().optional(),
-  costUsd: z.number().describe("Cost in USD").nullable().optional(),
+  // Note: .nullable().default(null) for fixtures compatibility
+  totalDurationWeeks: z.number().describe("Total duration in weeks").nullable().default(null),
+  schedule: scheduleSchema.nullable().default(null),
+  costUsd: z.number().describe("Cost in USD").nullable().default(null),
   ratingCourse: z
     .union([z.number().min(1).max(5), z.null()])
-    .optional()
+    .default(null)
     .describe("Course rating 1-5"),
   ratingPlatform: z
     .union([z.number().min(1).max(5), z.null()])
-    .optional()
+    .default(null)
     .describe("Platform rating 1-5"),
   ratingSchedule: z
     .union([z.number().min(1).max(5), z.null()])
-    .optional()
+    .default(null)
     .describe("Schedule rating 1-5"),
 
-  courseName: z.string().describe("Course name").nullable().optional(),
-  courseLink: z.string().describe("Course URL").nullable().optional(),
-  userFeedback: z.string().describe("User feedback").nullable().optional(),
+  courseName: z.string().describe("Course name").nullable().default(null),
+  courseLink: z.string().describe("Course URL").nullable().default(null),
+  userFeedback: z.string().describe("User feedback").nullable().default(null),
 });
 
 export const trailSchema = trailSchemaBase.extend({
@@ -183,8 +183,8 @@ export const trailSchema = trailSchemaBase.extend({
 // Base schema without refine (for .omit() and .partial() compatibility)
 const userContextSchemaBase = z.object({
   contextId: z.string(),
-  previousContextId: contextIdSchema.nullable().optional(),
-  nextContextId: contextIdSchema.nullable().optional(),
+  previousContextId: contextIdSchema.nullable().default(null),
+  nextContextId: contextIdSchema.nullable().default(null),
   createdAt: z
     .string()
     .regex(new RegExp(ISO_8601_DATETIME_PATTERN), "Must be ISO 8601 format")
@@ -198,19 +198,19 @@ const userContextSchemaBase = z.object({
   domains: z.array(z.string()).min(1).describe("Work domains (technical areas)"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
   industry: z.string().describe("Company industry"),
-  companySize: z.string().optional().describe("Company size (optional for synthetic users)"),
+  companySize: z.string().nullable().default(null).describe("Company size (optional for synthetic users)"),
   countryCode: z.string().describe("Location country code"),
   cityName: z.string().describe("Location city name"),
   citizenships: z.array(z.string()),
-  birthYear: z.number().min(1950).optional().describe("Birth year (optional for synthetic users)"),
-  educationLevel: educationLevelSchema.nullable().optional().describe("Education level"),
+  birthYear: z.number().min(1950).nullable().default(null).describe("Birth year (optional for synthetic users)"),
+  educationLevel: educationLevelSchema.nullable().default(null).describe("Education level"),
 
   // Salary (EITHER exact OR range, mutually exclusive)
   salaryExact: z
     .number()
     .min(0)
     .nullable()
-    .optional()
+    .default(null)
     .describe(
       "Exact salary in USD. Use if willing to disclose precise amount. Mutually exclusive with salaryMin/salaryMax.",
     ),
@@ -218,13 +218,13 @@ const userContextSchemaBase = z.object({
     .number()
     .min(0)
     .nullable()
-    .optional()
+    .default(null)
     .describe("Salary range minimum in USD. For privacy, specify range instead of exact. Use with salaryMax."),
   salaryMax: z
     .number()
     .min(0)
     .nullable()
-    .optional()
+    .default(null)
     .describe("Salary range maximum in USD. For privacy, specify range instead of exact. Use with salaryMin."),
 
   // Languages (B2+ proficiency)
@@ -232,14 +232,15 @@ const userContextSchemaBase = z.object({
   languages: z
     .array(languageCodeSchema)
     .nullable()
-    .optional()
+    .default(null)
     .describe("Languages with B2+ proficiency (if present → work-ready level)"),
 
   // User feedback/reflection on this career transition
   feedback: z
     .string()
     .max(200)
-    .nullish()
+    .nullable()
+    .default(null)
     .describe("Personal reflection on this transition: emotions, insights, lessons learned (max 200 chars)"),
 });
 
@@ -249,7 +250,7 @@ const userContextSchemaBase = z.object({
  *
  * Design (ADR-031):
  * - Uses .pick().partial() for all optional fields (Правило 4)
- * - Runtime type matches normalizer output (partial object with .optional())
+ * - Runtime type matches normalizer output (partial object with .nullable())
  * - LLM extraction wraps with makeNullable() locally (not exported)
  *
  * Fields:
@@ -261,21 +262,19 @@ const userContextSchemaBase = z.object({
  * - Facade MCP tools (search-careers.tool.ts inline)
  * - load-context.ts (LLM extraction via makeNullable wrapper)
  */
-export const adhocContextBase = userContextSchemaBase
-  .pick({
-    position: true,
-    role: true,
-    domains: true,
-    skills: true,
-    industry: true,
-    companySize: true,
-    cityName: true,
-    countryCode: true,
-    birthYear: true,
-    educationLevel: true,
-    languages: true,
-  })
-  .partial();
+export const adhocContextBase = z.object({
+  position: z.string().nullable().default(null),
+  role: z.string().nullable().default(null),
+  domains: z.array(z.string()).nullable().default(null),
+  skills: z.array(z.string()).nullable().default(null),
+  industry: z.string().nullable().default(null),
+  companySize: z.string().nullable().default(null),
+  cityName: z.string().nullable().default(null),
+  countryCode: z.string().nullable().default(null),
+  birthYear: z.number().min(1950).nullable().default(null),
+  educationLevel: educationLevelSchema.nullable().default(null),
+  languages: z.array(languageCodeSchema).nullable().default(null),
+});
 
 export type AdhocContextBase = z.infer<typeof adhocContextBase>;
 
@@ -338,17 +337,17 @@ export type FieldFilter = z.infer<typeof fieldFilterSchema>;
  * Target context for search criteria
  * Uses FieldFilter discriminated union pattern
  *
- * Business type uses .optional() for tests and type safety.
+ * Business type uses .nullable() for tests and type safety.
  * LLM extraction applies makeNullable() wrapper locally for OpenAI compatibility.
  * See extract-goal.ts, clarify-goal.ts for makeNullable() usage.
  */
 export const targetContextSchema = z.object({
-  position: fieldFilterSchema.optional().describe("Target position filter"),
-  role: fieldFilterSchema.optional().describe("Target role filter (profession type)"),
-  countries: fieldFilterSchema.optional().describe("Target countries filter"),
-  domains: fieldFilterSchema.optional().describe("Target work domains filter"),
-  skills: fieldFilterSchema.optional().describe("Target skills filter"),
-  languages: fieldFilterSchema.optional().describe("Target languages filter"),
+  position: fieldFilterSchema.nullable().default(null).describe("Target position filter"),
+  role: fieldFilterSchema.nullable().default(null).describe("Target role filter (profession type)"),
+  countries: fieldFilterSchema.nullable().default(null).describe("Target countries filter"),
+  domains: fieldFilterSchema.nullable().default(null).describe("Target work domains filter"),
+  skills: fieldFilterSchema.nullable().default(null).describe("Target skills filter"),
+  languages: fieldFilterSchema.nullable().default(null).describe("Target languages filter"),
 });
 
 export type TargetContext = z.infer<typeof targetContextSchema>;
@@ -405,7 +404,12 @@ export const userSearchParamsRawSchema = z.object({
     .array(newContextReasonSchema)
     .default([])
     .describe("Exclude candidates with these transition reasons (backward path filter in Cypher)"),
-  recencyThresholdMonths: z.number().min(1).optional().describe("Filter by recency (months since last update)"),
+  recencyThresholdMonths: z
+    .number()
+    .min(1)
+    .nullable()
+    .default(null)
+    .describe("Filter by recency (months since last update)"),
   limit: z.number().min(1).max(100).default(20).describe("Maximum number of results to return (pre-filter before DTW)"),
   pathLimit: z
     .number()
@@ -454,7 +458,12 @@ export const targetSearchParamsBaseSchema = z.object({
     .array(newContextReasonSchema)
     .default([])
     .describe("Exclude candidates with these transition reasons (backward path filter)"),
-  recencyThresholdMonths: z.number().min(1).optional().describe("Filter by recency (months since last update)"),
+  recencyThresholdMonths: z
+    .number()
+    .min(1)
+    .nullable()
+    .default(null)
+    .describe("Filter by recency (months since last update)"),
   limit: z.number().min(1).max(100).default(20).describe("Maximum number of results to return"),
 });
 
@@ -487,7 +496,7 @@ export type AvailableFilters = z.infer<typeof availableFiltersSchema>;
  * Omits targetContext (already shown in extractedGoal)
  */
 export const appliedFiltersSchema = targetSearchParamsBaseSchema.omit({ targetContext: true }).extend({
-  rejectedReasons: z.array(z.string()).optional(),
+  rejectedReasons: z.array(z.string()).nullable(),
 });
 
 export type AppliedFilters = z.infer<typeof appliedFiltersSchema>;
@@ -509,7 +518,7 @@ export type CurrentAvailableFilters = z.infer<typeof currentAvailableFiltersSche
  */
 export const currentAppliedFiltersSchema = currentSearchParamsBaseSchema.and(
   z.object({
-    rejectedFields: z.array(z.string()).optional(),
+    rejectedFields: z.array(z.string()).nullable(),
   }),
 );
 
@@ -772,7 +781,7 @@ export const simpleDictionaryTypeSchema = z.enum(simpleDictionaryTypes);
 export const addTermInputSchema = z.object({
   type: simpleDictionaryTypeSchema,
   canonicalName: z.string().min(1),
-  complexity: z.number().int().min(0).max(100).nullish(),
+  complexity: z.number().int().min(0).max(100).nullable().default(null),
   verified: z.boolean(),
   createdBy: z.string().min(1),
 });
@@ -1102,15 +1111,15 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     phase: z.literal("showing_exploration"),
     candidates: z.array(scoredMatchedCandidateSchema),
     options: z.array(z.string()),
-    currentFilters: currentAvailableFiltersSchema.optional(),
-    appliedCurrentFilters: currentAppliedFiltersSchema.optional(),
+    currentFilters: currentAvailableFiltersSchema.nullable(),
+    appliedCurrentFilters: currentAppliedFiltersSchema.nullable(),
   }),
   z.object({ phase: z.literal("extracting_goal") }),
   z.object({
     phase: z.literal("showing_goal"),
     extractedGoal: targetContextSchema,
     options: z.array(z.string()),
-    availableFilters: availableFiltersSchema.optional(),
+    availableFilters: availableFiltersSchema.nullable(),
   }),
   z.object({
     phase: z.literal("clarifying_goal"),
@@ -1124,7 +1133,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     phase: z.literal("asking_after_validate"),
     candidates: z.array(matchedCandidateWithPathSchema),
     options: z.array(z.string()),
-    appliedFilters: appliedFiltersSchema.optional(),
+    appliedFilters: appliedFiltersSchema.nullable(),
   }),
   z.object({ phase: z.literal("setting_goal") }),
   z.object({ phase: z.literal("deleting_goal") }),
@@ -1132,12 +1141,12 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("showing_results"),
     results: z.array(scoredMatchedCandidateSchema),
-    goal: goalSchema.optional(),
-    chartUrl: z.string().url().optional(),
+    goal: goalSchema.nullable(),
+    chartUrl: z.string().url().nullable(),
     options: z.array(z.string()),
-    availableFilters: availableFiltersSchema.optional(),
-    currentFilters: currentAvailableFiltersSchema.optional(),
-    appliedCurrentFilters: currentAppliedFiltersSchema.optional(),
+    availableFilters: availableFiltersSchema.nullable(),
+    currentFilters: currentAvailableFiltersSchema.nullable(),
+    appliedCurrentFilters: currentAppliedFiltersSchema.nullable(),
   }),
   z.object({ phase: z.literal("cancelled") }),
   z.object({ phase: z.literal("failed") }),
@@ -1180,7 +1189,7 @@ export type AnyGraphResponse = z.infer<typeof anyGraphResponseSchema>;
  */
 export const converseResponseSchema = z.object({
   result: anyGraphResponseSchema,
-  activeGraph: z.string().optional(),
+  activeGraph: z.string().nullable(),
 });
 
 export type ConverseResponse = z.infer<typeof converseResponseSchema>;
@@ -1194,7 +1203,7 @@ export type ConverseResponse = z.infer<typeof converseResponseSchema>;
  * Returns user's career story (contexts + trails).
  */
 export const mcpGetStoryParamsSchema = z.object({
-  targetUserId: userIdSchema.optional(),
+  targetUserId: userIdSchema.nullable(),
   sessionId: sessionIdSchema,
 });
 
@@ -1233,7 +1242,7 @@ export type McpUpdateContextParams = z.infer<typeof mcpUpdateContextParamsSchema
  * Returns user's goal or null if not set.
  */
 export const mcpGetGoalParamsSchema = z.object({
-  targetUserId: userIdSchema.optional(),
+  targetUserId: userIdSchema.nullable(),
   sessionId: sessionIdSchema,
 });
 
@@ -1305,7 +1314,7 @@ export type McpConverseParams = z.infer<typeof mcpConverseParamsSchema>;
 export const mcpColdStartParamsSchema = z.object({
   message: z.string().min(1).describe("User message (career history or confirmation)"),
   sessionId: sessionIdSchema,
-  cvText: z.string().optional().describe("Parsed anonymized text from PDF resume if provided"),
+  cvText: z.string().nullable().describe("Parsed anonymized text from PDF resume if provided"),
 });
 
 export type McpColdStartParams = z.infer<typeof mcpColdStartParamsSchema>;
@@ -1334,7 +1343,7 @@ export const mcpUpsertTrailParamsSchema = z.object({
     ),
   fromContextId: contextIdSchema
     .nullable()
-    .optional()
+    .nullable()
     .describe("Source context ID if trail originates from a specific context"),
   sessionId: sessionIdSchema,
 });
@@ -1357,7 +1366,7 @@ export type McpDeleteTrailParams = z.infer<typeof mcpDeleteTrailParamsSchema>;
  * Authenticates user via token.
  */
 export const mcpAuthParamsSchema = z.object({
-  token: tokenSchema.optional(),
+  token: tokenSchema.nullable(),
 });
 
 export type McpAuthParams = z.infer<typeof mcpAuthParamsSchema>;

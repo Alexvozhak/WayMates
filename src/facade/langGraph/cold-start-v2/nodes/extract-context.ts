@@ -57,7 +57,7 @@ async function extractContextData(
   agenda: ContextAgenda,
   queue: ContextAgenda[],
   contextIndex: number,
-  cvText?: string,
+  cvText: string | null,
 ): Promise<ExtractableContext> {
   const prompt = contextExtractionPrompt(messages, agenda.preview, cvText);
   const extracted = await contextExtractionModel.invoke([new HumanMessage(prompt)]);

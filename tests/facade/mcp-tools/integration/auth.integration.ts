@@ -41,7 +41,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-1: Register returns token + sessionId + warning and creates DB record", async () => {
-    const result = await authTool.execute({});
+    const result = await authTool.execute({ token: null });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -61,7 +61,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-2: Authenticate with valid token returns sessionId", async () => {
-    const registerResult = await authTool.execute({});
+    const registerResult = await authTool.execute({ token: null });
     expect(registerResult.ok).toBe(true);
     if (!registerResult.ok) return;
     if (!isRegisterResult(registerResult.value)) return;
@@ -88,7 +88,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-3: Single Active Session - new auth revokes previous session", async () => {
-    const registerResult = await authTool.execute({});
+    const registerResult = await authTool.execute({ token: null });
     expect(registerResult.ok).toBe(true);
     if (!registerResult.ok) return;
     if (!isRegisterResult(registerResult.value)) return;
@@ -136,7 +136,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-5: Session created by auth is valid for other tools", async () => {
-    const registerResult = await authTool.execute({});
+    const registerResult = await authTool.execute({ token: null });
     expect(registerResult.ok).toBe(true);
     if (!registerResult.ok) return;
     if (!isRegisterResult(registerResult.value)) return;
@@ -151,7 +151,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-6: authenticate() works multiple times with same token", async () => {
-    const registerResult = await authTool.execute({});
+    const registerResult = await authTool.execute({ token: null });
     expect(registerResult.ok).toBe(true);
     if (!registerResult.ok) return;
     if (!isRegisterResult(registerResult.value)) return;

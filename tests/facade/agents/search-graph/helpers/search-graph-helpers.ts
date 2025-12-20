@@ -5,6 +5,7 @@ import { Command } from "@langchain/langgraph";
 import { AgentInvariantError } from "../../../../../src/facade/errors.js";
 import { SearchGraph } from "../../../../../src/facade/langGraph/search-graph/search-graph.js";
 import { DEFAULT_LIMIT } from "../../../../../src/facade/langGraph/search-graph/types.js";
+import { targetContextSchema } from "../../../../../src/shared/schemas.js";
 
 import type {
   SearchGraphResponse,
@@ -48,7 +49,7 @@ export const RELAXED_FILTERS: CurrentSearchParamsBase = {
  * Uses extended recency threshold for test fixtures (2022 data).
  */
 export const RELAXED_TARGET_FILTERS: TargetSearchParamsWithFeedback = {
-  targetContext: {},
+  targetContext: targetContextSchema.parse({}),
   excludedCreationReasons: [],
   recencyThresholdMonths: TEST_RECENCY_THRESHOLD_MONTHS,
   limit: DEFAULT_LIMIT,

@@ -3,8 +3,8 @@ export { converseResponseSchema } from "../../../shared/schemas.js";
 
 import type { AnyGraphResponse, ConverseResponse } from "../../../shared/schemas.js";
 
-export function createResponse(content: string): ConverseResponse {
-  return { result: { phase: "system_message", content } };
+export function createSystemMessage(content: string): ConverseResponse {
+  return { result: { phase: "system_message", content }, activeGraph: null };
 }
 
 export function createGraphResponse(result: AnyGraphResponse, activeGraph: string): ConverseResponse {

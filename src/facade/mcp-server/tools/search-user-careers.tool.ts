@@ -23,7 +23,7 @@ export const mcpSearchUserCareersParamsSchema = z
         message: "Cannot exclude 'skills' - required for ranking candidates",
       }),
     excludedCreationReasons: z.array(newContextReasonSchema).default([]),
-    recencyThresholdMonths: z.number().min(1).optional(),
+    recencyThresholdMonths: z.number().min(1).nullable().default(null),
     limit: z.number().min(1).max(100).default(20),
     pathLimit: z.number().min(1).max(100).default(20),
   })
@@ -40,15 +40,12 @@ export class SearchUserCareersTool extends BaseTool<McpSearchUserCareersParams, 
   }
 
   protected async executeImpl(params: McpSearchUserCareersParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
-    // userId extracted from sessionId by BaseTool
-    // Remove sessionId before passing to Core API
-    const { sessionId: _, ...coreParams } = params;
+    const { sessionId: _, recencyThresholdMonths, ...coreParams } = params;
 
-    const result = await this.coreClient.client.search.byUser.query({
+    return this.coreClient.client.search.byUser.query({
       userId,
       ...coreParams,
+      recencyThresholdMonths: recencyThresholdMonths ?? null,
     });
-
-    return result;
   }
 }

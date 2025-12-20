@@ -48,7 +48,7 @@ export async function applyFiltersNode(
 
   const recencyThresholdMonths = parsed.filters.recencyThresholdMonths
     ? Math.max(parsed.filters.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
-    : undefined;
+    : null;
 
   return {
     searchUserIntent: parsed.intent,

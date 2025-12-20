@@ -19,6 +19,18 @@ import { driver } from "../../helpers/drivers/shared-driver.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 import { validateAllPaths } from "../../helpers/path-validator.js";
+import { targetContextSchema, targetSearchParamsSchema } from "../../../../src/shared/schemas.js";
+
+import type { UserId, TargetContext } from "../../../../src/shared/schemas.js";
+
+const createTargetParams = (userId: UserId, targetContext: TargetContext) =>
+  targetSearchParamsSchema.parse({
+    userId,
+    targetContext,
+    excludedCreationReasons: [],
+    recencyThresholdMonths: null,
+    limit: 20,
+  });
 
 describe("Target Search (TG1-TG7)", () => {
   // Business rule: Desired position filter matches ONLY candidates with exact position.
@@ -31,17 +43,17 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG1] Searching for position: Middle (desired mode)");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        position: {
-          mode: "desired",
-          values: ["middle"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 10,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          position: {
+            mode: "desired",
+            values: ["middle"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG1] Results count:", results.length);
     console.log(
@@ -74,17 +86,17 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG2] Excluding position: Junior (undesired mode)");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        position: {
-          mode: "undesired",
-          values: ["junior"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 10,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          position: {
+            mode: "undesired",
+            values: ["junior"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG2] Results count:", results.length);
     console.log(
@@ -118,17 +130,17 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG3] Searching for domains: Frontend (desired mode)");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        domains: {
-          mode: "desired",
-          values: ["frontend"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 20,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          domains: {
+            mode: "desired",
+            values: ["frontend"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG3] Results count:", results.length);
     console.log(
@@ -168,17 +180,17 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG4] Excluding domains: Frontend (undesired mode)");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        domains: {
-          mode: "undesired",
-          values: ["frontend"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 20,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          domains: {
+            mode: "undesired",
+            values: ["frontend"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG4] Results count:", results.length);
     console.log(
@@ -216,17 +228,17 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG5] Searching for skills: python (desired mode)");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        skills: {
-          mode: "desired",
-          values: ["python"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 20,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          skills: {
+            mode: "desired",
+            values: ["python"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG5] Results count:", results.length);
     console.log(
@@ -265,17 +277,17 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG6] Excluding skills: python (undesired mode)");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        skills: {
-          mode: "undesired",
-          values: ["python"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 20,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          skills: {
+            mode: "undesired",
+            values: ["python"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG6] Results count:", results.length);
     console.log(
@@ -316,25 +328,25 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG7] Combined: Junior + Backend + NOT python");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        position: {
-          mode: "desired",
-          values: ["junior"],
-        },
-        domains: {
-          mode: "desired",
-          values: ["backend"],
-        },
-        skills: {
-          mode: "undesired",
-          values: ["python"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 20,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          position: {
+            mode: "desired",
+            values: ["junior"],
+          },
+          domains: {
+            mode: "desired",
+            values: ["backend"],
+          },
+          skills: {
+            mode: "undesired",
+            values: ["python"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG7] Results count:", results.length);
     console.log(
@@ -381,17 +393,17 @@ describe("Target Search (TG1-TG7)", () => {
     console.log("[TG-LANG-1] Searching for languages: ['en', 'fr'] (desired mode, OR logic)");
     const u3 = dataManager.getStoryBy("U3");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        languages: {
-          mode: "desired",
-          values: ["en", "fr"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 10,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          languages: {
+            mode: "desired",
+            values: ["en", "fr"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG-LANG-1] Results count:", results.length);
     console.log(
@@ -432,17 +444,17 @@ describe("Target Search (TG1-TG7)", () => {
     console.log("[TG-LANG-2] Searching for undesired languages: ['en'] (exclude ALL with 'en')");
     const u3 = dataManager.getStoryBy("U3");
 
-    const results = await searchManager.searchByTarget({
-      userId: u3.userId,
-      targetContext: {
-        languages: {
-          mode: "undesired",
-          values: ["en"],
-        },
-      },
-      excludedCreationReasons: [],
-      limit: 10,
-    });
+    const results = await searchManager.searchByTarget(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          languages: {
+            mode: "undesired",
+            values: ["en"],
+          },
+        }),
+      ),
+    );
 
     console.log("[TG-LANG-2] Results count:", results.length);
     console.log(

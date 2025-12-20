@@ -1,5 +1,5 @@
 import { mcpConverseParamsSchema } from "../../../shared/schemas.js";
-import { createResponse } from "../../services/orchestrator/converse-response.js";
+import { createSystemMessage } from "../../services/orchestrator/converse-response.js";
 import { FlowGuardChecker } from "../../services/orchestrator/flow-guard-checker.service.js";
 import { GraphManager } from "../../services/orchestrator/graph-manager.service.js";
 import { classifyIntent } from "../../services/orchestrator/intent-classifier.js";
@@ -42,6 +42,6 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     const graphResult = await this.graphManager.executeNewGraph(intent, params.message, userId);
     if (graphResult) return graphResult;
 
-    return createResponse("I didn't understand. Try 'help' for available commands.");
+    return createSystemMessage("I didn't understand. Try 'help' for available commands.");
   }
 }

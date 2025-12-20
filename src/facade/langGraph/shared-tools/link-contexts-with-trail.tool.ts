@@ -85,11 +85,11 @@ export const linkContextsWithTrailTool = tool(
       const fromId: string = fromContext.contextId;
       const toId: string = toContext.contextId;
 
-      return {
+      return trailSchema.parse({
         ...extracted,
         fromContextId: fromId,
         toContextId: toId,
-      };
+      });
     } catch (error) {
       console.error("Failed to link contexts with trail:", error);
       return null;
@@ -101,7 +101,7 @@ export const linkContextsWithTrailTool = tool(
     schema: z.object({
       fromContext: userContextSchemaBase.describe("The starting career position"),
       toContext: userContextSchemaBase.describe("The target career position"),
-      text: z.string().optional().describe("Additional text describing the transition"),
+      text: z.string().nullable().describe("Additional text describing the transition"),
     }),
   },
 );

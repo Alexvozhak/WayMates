@@ -27,6 +27,8 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     phase: PHASE.showing_exploration,
     candidates: state.explorationResults,
     options: OPTIONS.showExploration,
+    currentFilters: null, // enrichResponse() adds from CONTEXT_FIELD_NAMES
+    appliedCurrentFilters: state.appliedFilters,
   }),
 
   [PHASE.extracting_goal]: () => ({
@@ -39,6 +41,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
       phase: PHASE.showing_goal,
       extractedGoal,
       options: OPTIONS.showGoal,
+      availableFilters: null, // enrichResponse() adds from cache.getReasons()
     };
   },
 
@@ -59,6 +62,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     phase: PHASE.asking_after_validate,
     candidates: state.validationResults,
     options: OPTIONS.askAfterValidate,
+    appliedFilters: state.targetSearchParams,
   }),
 
   [PHASE.setting_goal]: () => ({
@@ -76,8 +80,12 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
   [PHASE.showing_results]: (state) => ({
     phase: PHASE.showing_results,
     results: state.searchResults,
-    goal: state.existingGoal ?? undefined,
+    goal: state.existingGoal,
+    chartUrl: state.chartUrl,
     options: OPTIONS.showResults,
+    availableFilters: null, // enrichResponse() adds from cache.getReasons()
+    currentFilters: null, // enrichResponse() adds from CONTEXT_FIELD_NAMES
+    appliedCurrentFilters: state.appliedFilters,
   }),
 
   [PHASE.cancelled]: () => ({

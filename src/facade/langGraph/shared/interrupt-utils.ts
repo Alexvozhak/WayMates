@@ -8,17 +8,17 @@ import type { StateSnapshot } from "@langchain/langgraph";
  */
 export function createInterruptPhaseExtractor<P extends string>(
   phaseSchema: z.ZodEnum<[P, ...P[]]>,
-): (snapshot: StateSnapshot) => P | undefined {
-  const schema = z.object({ phase: phaseSchema.optional() });
+): (snapshot: StateSnapshot) => P | null {
+  const schema = z.object({ phase: phaseSchema.nullable() });
 
   return (snapshot) => {
     const task = snapshot.tasks[0];
-    if (!task) return;
+    if (!task) return null;
 
     const interrupt = task.interrupts[0];
-    if (!interrupt) return;
+    if (!interrupt) return null;
 
     const parsed = schema.safeParse(interrupt.value);
-    return parsed.success ? parsed.data.phase : undefined;
+    return parsed.success ? (parsed.data.phase ?? null) : null;
   };
 }

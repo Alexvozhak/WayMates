@@ -19,13 +19,7 @@ export class FixtureSearchManager {
     const pathCollector = new PathCollectorService(db);
     const goalsManager = new GoalsManager(db);
 
-    this.searchManager = new SearchManager(
-      db,
-      selectivity,
-      trajectorySimilarity,
-      pathCollector,
-      goalsManager,
-    );
+    this.searchManager = new SearchManager(db, selectivity, trajectorySimilarity, pathCollector, goalsManager);
     this.storyManager = new StoryManager(db);
   }
 
@@ -38,14 +32,12 @@ export class FixtureSearchManager {
   }
 }
 
-export const createUserSearchParams = (
-  userId: string,
-  overrides?: Partial<UserSearchParams>,
-): UserSearchParams => ({
+export const createUserSearchParams = (userId: string, overrides?: Partial<UserSearchParams>): UserSearchParams => ({
   userId,
   limit: 10,
   pathLimit: 10,
   excludedContextFields: [],
   excludedCreationReasons: [],
+  recencyThresholdMonths: null,
   ...overrides,
 });

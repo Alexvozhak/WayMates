@@ -11,6 +11,7 @@ import { FixtureSearchManager, createUserSearchParams } from "../../helpers/fixt
 import { UserStories } from "../../helpers/user-stories.js";
 import { GoalsManager } from "../../../../src/core/goals-manager.js";
 import { DatabaseContext } from "../../../../src/core/database-context.js";
+import { targetContextSchema } from "../../../../src/shared/schemas.js";
 
 describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   // Business rule: setGoal creates goal and returns userId
@@ -29,16 +30,10 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     const userId = await goalsManager.setGoal({
       userId: u3.userId,
-      targetContext: {
-        position: {
-          mode: "desired",
-          values: ["middle"],
-        },
-        domains: {
-          mode: "desired",
-          values: ["backend"],
-        },
-      },
+      targetContext: targetContextSchema.parse({
+        position: { mode: "desired", values: ["middle"] },
+        domains: { mode: "desired", values: ["backend"] },
+      }),
     });
 
     expect(userId).toBe(u3.userId);
@@ -67,12 +62,12 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     await goalsManager.setGoal({
       userId: u3.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: {
           mode: "desired",
           values: ["senior"],
         },
-      },
+      }),
     });
 
     console.log("[GM2] Testing getUserGoal for existing user");
@@ -99,12 +94,12 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     await goalsManager.setGoal({
       userId: u3.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: {
           mode: "desired",
           values: ["middle"],
         },
-      },
+      }),
     });
 
     const goal1 = await goalsManager.getUserGoal(u3.userId);
@@ -119,7 +114,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     await goalsManager.setGoal({
       userId: u3.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: {
           mode: "desired",
           values: ["senior"],
@@ -128,7 +123,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
           mode: "desired",
           values: ["backend"],
         },
-      },
+      }),
     });
 
     const goal2 = await goalsManager.getUserGoal(u3.userId);
@@ -160,12 +155,12 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     await goalsManager.setGoal({
       userId: u3.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         skills: {
           mode: "desired",
           values: ["python"],
         },
-      },
+      }),
     });
 
     console.log("[GM4] Goal created, now deleting...");
@@ -247,12 +242,12 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     await goalsManager.setGoal({
       userId: u1.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: {
           mode: "desired",
           values: ["senior"],
         },
-      },
+      }),
     });
 
     const searchParams = createUserSearchParams(u1.userId, {
@@ -316,22 +311,22 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     await goalsManager.setGoal({
       userId: u1.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: {
           mode: "desired",
           values: ["senior"],
         },
-      },
+      }),
     });
 
     await goalsManager.setGoal({
       userId: u2.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: {
           mode: "desired",
           values: ["senior"],
         },
-      },
+      }),
     });
 
     const results = await searchManager.searchByUser(
@@ -374,12 +369,12 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     await goalsManager.setGoal({
       userId: u1.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: {
           mode: "desired",
           values: ["senior"],
         },
-      },
+      }),
     });
 
     const searchParams = createUserSearchParams(u1.userId, {
@@ -430,12 +425,12 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     await goalsManager.setGoal({
       userId: u10.userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: {
           mode: "desired",
           values: ["senior"],
         },
-      },
+      }),
     });
 
     const results = await searchManager.searchByUser(

@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 
 import { FacadeTestContext } from "../../helpers/test-context.js";
-
-import type { AdhocContextBase, TargetContext } from "../../../../src/shared/schemas.js";
+import { adhocContextBase, targetContextSchema } from "../../../../src/shared/schemas.js";
 
 describe("Facade Normalizer Integration Tests", () => {
   let ctx: FacadeTestContext;
@@ -15,10 +14,10 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: Exact matches (Python, React) skip expensive LLM call (cost + latency optimization).
   // Cache-first strategy: 95% of terms are exact matches, so LLM is only fallback tier.
   it("FN1: Exact match bypasses LLM - cache hit returns canonical", async () => {
-    const context: AdhocContextBase = {
+    const context = adhocContextBase.parse({
       position: "Junior",
       skills: ["Python", "React"],
-    };
+    });
 
     const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0101-0000-0000-000000000001");
 
@@ -30,9 +29,9 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: 2-tier normalization catches typos when exact match fails (Pyton → Python via LLM).
   // Prevents duplicate skills in database while maintaining user input fidelity.
   it("FN2: Fuzzy match via LLM - typo corrected to canonical", async () => {
-    const context: AdhocContextBase = {
+    const context = adhocContextBase.parse({
       skills: ["Pyton"],
-    };
+    });
 
     const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0102-0000-0000-000000000002");
 
@@ -43,9 +42,9 @@ describe("Facade Normalizer Integration Tests", () => {
   // Admin reviews unverified terms asynchronously; immediate user flow is not blocked.
   it("FN3: Save unverified term - unknown skill created with verified=false", async () => {
     const unknownSkill = "QuantumHyperLang";
-    const context: AdhocContextBase = {
+    const context = adhocContextBase.parse({
       skills: [unknownSkill],
-    };
+    });
 
     const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0103-0000-0000-000000000003");
 
@@ -56,9 +55,9 @@ describe("Facade Normalizer Integration Tests", () => {
   // Skills without complexity don't participate in weighted scoring until admin assigns value.
   it("FN4: Skills complexity=null - new skill created with null complexity", async () => {
     const newSkill = "BrandNewSkill123";
-    const context: AdhocContextBase = {
+    const context = adhocContextBase.parse({
       skills: [newSkill],
-    };
+    });
 
     const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0104-0000-0000-000000000004");
 
@@ -73,10 +72,10 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: Multiple fields (skills, domains) normalized in parallel for performance.
   // Parallel Promise.all avoids sequential LLM calls (3 skills = 3 concurrent vs 3× latency).
   it("FN5: Parallel normalization - multiple terms normalized concurrently", async () => {
-    const context: AdhocContextBase = {
+    const context = adhocContextBase.parse({
       skills: ["Python", "React", "TypeScript"],
       domains: ["Frontend", "Backend"],
-    };
+    });
 
     const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0105-0000-0000-000000000005");
 
@@ -87,13 +86,13 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: Full context normalization (all 5 fields) maintains field semantics.
   // Each field (position, skills, domains, industry, cityName) normalized independently.
   it("FN6: Full UserContext - all fields normalized correctly", async () => {
-    const context: AdhocContextBase = {
+    const context = adhocContextBase.parse({
       position: "senior",
       skills: ["Python"],
       domains: ["Backend"],
       industry: "Fintech",
       cityName: "Berlin",
-    };
+    });
 
     const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0106-0000-0000-000000000006");
 
@@ -107,10 +106,10 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: TargetContext preserves FieldFilter mode (desired/undesired) while normalizing values.
   // Mode is business logic (include/exclude); values require normalization (typos, case).
   it("FN7: TargetContext normalization - mode preserved, values normalized", async () => {
-    const context: TargetContext = {
+    const context = targetContextSchema.parse({
       position: { mode: "desired", values: ["Senior"] },
       skills: { mode: "undesired", values: ["Python", "React"] },
-    };
+    });
 
     const result = await ctx.normalizer.normalizeTargetContext(context, "usr_01933ec5-0107-0000-0000-000000000007");
 
@@ -124,7 +123,7 @@ describe("Facade Normalizer Integration Tests", () => {
   // Business rule: Empty context is valid (user hasn't filled profile yet or skipped fields).
   // Normalization gracefully handles partial data without throwing errors.
   it("FN8: Empty context - returns empty normalized context", async () => {
-    const context: AdhocContextBase = {};
+    const context = adhocContextBase.parse({});
 
     const result = await ctx.normalizer.normalizeAdhocContext(context, "usr_01933ec5-0108-0000-0000-000000000008");
 

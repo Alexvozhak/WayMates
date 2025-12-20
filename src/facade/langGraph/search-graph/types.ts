@@ -36,6 +36,6 @@ export const MIN_LIMIT = 1;
 export const MAX_LIMIT = 100;
 export const DEFAULT_LIMIT = 20;
 export const MIN_RECENCY_THRESHOLD_MONTHS = 1;
-export const DEFAULT_RECENCY_THRESHOLD_MONTHS = 12;
+export const DEFAULT_RECENCY_THRESHOLD_MONTHS = null; // No filter by default (explore-first)
 
 export type { SearchGraphResponse } from "../../../shared/schemas.js";

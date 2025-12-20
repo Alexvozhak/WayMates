@@ -19,11 +19,8 @@ import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/shared-driver.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
-import type {
-  AdhocSearchParams,
-  ContextField,
-  UserContext,
-} from "../../../../src/shared/schemas.js";
+import { adhocContextBase } from "../../../../src/shared/schemas.js";
+import type { AdhocSearchParams, AdhocContextBase, ContextField, UserContext } from "../../../../src/shared/schemas.js";
 
 /**
  * Creates default searchAdhoc parameters with ability to override
@@ -36,7 +33,7 @@ import type {
  */
 const createAdhocSearchParams = (
   userId: string,
-  referenceContext: Partial<UserContext>,
+  referenceContext: AdhocContextBase,
   overrides?: Partial<{
     limit: number;
     pathLimit: number;
@@ -51,6 +48,7 @@ const createAdhocSearchParams = (
   pathLimit: 10,
   excludedContextFields: ["languages"],
   excludedCreationReasons: [],
+  recencyThresholdMonths: null,
   ...overrides,
 });
 
@@ -71,7 +69,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       skills: u1Context.skills,
     });
 
-    const params = createAdhocSearchParams(u1.userId, u1Context);
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context));
     const results = await searchManager.searchAdhoc(params);
 
     console.log("[AC1] Results count:", results.length);
@@ -126,7 +124,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     });
 
     // Note: skills are ALWAYS included in scoring (penalties) to rank candidates
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "languages"],
     });
     const results = await searchManager.searchAdhoc(params);
@@ -157,9 +155,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
       const referenceSkills = new Set(u1Context.skills);
       const extraSkills = u4Result.matchedContext.skills.filter((s) => !referenceSkills.has(s));
-      const missingSkills = u1Context.skills.filter(
-        (s) => !u4Result.matchedContext.skills.includes(s),
-      );
+      const missingSkills = u1Context.skills.filter((s) => !u4Result.matchedContext.skills.includes(s));
 
       console.log("[AC2] U4 skill penalty breakdown:", {
         referenceSkills: u1Context.skills,
@@ -203,15 +199,13 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       geo: `${u1Context.countryCode}/${u1Context.cityName}`,
     });
 
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["countryCode", "cityName", "birthYear", "languages"],
     });
     const results = await searchManager.searchAdhoc(params);
 
     console.log("[AC3] Results count:", results.length);
-    console.log("[AC3] Countries found:", [
-      ...new Set(results.map((r) => r.matchedContext.countryCode)),
-    ]);
+    console.log("[AC3] Countries found:", [...new Set(results.map((r) => r.matchedContext.countryCode))]);
 
     const u2 = dataManager.getStoryBy("U2");
     const u6 = dataManager.getStoryBy("U6");
@@ -242,7 +236,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       companySize: u1Context.companySize,
     });
 
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: [
         "domains",
         "skills",
@@ -275,9 +269,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(backendResults.length).toBeGreaterThanOrEqual(2);
     console.log(`[AC4] Backend results count: ${backendResults.length} (expected >= 2)`);
 
-    const hasBackendCandidate = results.some(
-      (r) => r.userId === u3.userId || r.userId === u7.userId,
-    );
+    const hasBackendCandidate = results.some((r) => r.userId === u3.userId || r.userId === u7.userId);
     expect(hasBackendCandidate).toBe(true);
   });
 
@@ -298,7 +290,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       u1.contexts.map((c) => c.creationReason),
     );
 
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: [
         "domains",
         "skills",
@@ -358,7 +350,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[AC6] Reference context createdAt:", u1Context.createdAt);
     console.log("[AC6] Expected: U1, U2 (fresh); NOT U3, U4 (> 6 months old)");
 
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "languages"],
       recencyThresholdMonths: 6,
     });
@@ -412,7 +404,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[AC7] Expected: U1 (BACHELOR), U2 (BACHELOR)");
     console.log("[AC7] NOT expected: U14 (MASTER)");
 
-    const params = createAdhocSearchParams(u1.userId, u1Context);
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context));
     const results = await searchManager.searchAdhoc(params);
 
     console.log("[AC7] Results count:", results.length);
@@ -453,7 +445,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[AC8] Reference education:", u1Context.educationLevel);
     console.log("[AC8] Expected: U14 (MASTER), U16 (HIGH_SCHOOL), U15 (null)");
 
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: [
         "educationLevel",
         "position",
@@ -502,21 +494,11 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u14 = dataManager.getStoryBy("U14");
 
     console.log("[AC9] Reference education:", u15Context.educationLevel);
-    console.log(
-      "[AC9] Expected: Find candidates with ANY education level (BACHELOR, MASTER, HIGH_SCHOOL, null)",
-    );
+    console.log("[AC9] Expected: Find candidates with ANY education level (BACHELOR, MASTER, HIGH_SCHOOL, null)");
 
     // ADR-011: Skills excluded → penalty=0 (U14 with [react] has same score as U15 with [python])
-    const params = createAdhocSearchParams(u15.userId, u15Context, {
-      excludedContextFields: [
-        "position",
-        "domains",
-        "skills",
-        "companySize",
-        "countryCode",
-        "cityName",
-        "birthYear",
-      ],
+    const params = createAdhocSearchParams(u15.userId, adhocContextBase.parse(u15Context), {
+      excludedContextFields: ["position", "domains", "skills", "companySize", "countryCode", "cityName", "birthYear"],
     });
     const results = await searchManager.searchAdhoc(params);
 
@@ -553,7 +535,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u17 = dataManager.getStoryBy("U17");
     const u17Context = u17.contexts[0]!;
 
-    const params = createAdhocSearchParams(u1.userId, u17Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u17Context), {
       excludedContextFields: [
         "position",
         "domains",
@@ -597,7 +579,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u18 = dataManager.getStoryBy("U18");
     const u18Context = u18.contexts[0]!;
 
-    const params = createAdhocSearchParams(u1.userId, u18Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u18Context), {
       excludedContextFields: [
         "position",
         "domains",
@@ -641,7 +623,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
 
-    const params = createAdhocSearchParams(u1.userId, u1Context);
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context));
     const results = await searchManager.searchAdhoc(params);
 
     console.log("[AC12] Results count:", results.length);
@@ -675,7 +657,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
 
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
     const results = await searchManager.searchAdhoc(params);
@@ -711,7 +693,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u4 = dataManager.getStoryBy("U4");
     const u4Context = u4.contexts[0]!;
 
-    const params = createAdhocSearchParams(u4.userId, u4Context, {
+    const params = createAdhocSearchParams(u4.userId, adhocContextBase.parse(u4Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
     const results = await searchManager.searchAdhoc(params);
@@ -747,15 +729,8 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
 
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
-      excludedContextFields: [
-        "languages",
-        "birthYear",
-        "countryCode",
-        "cityName",
-        "domains",
-        "skills",
-      ],
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
+      excludedContextFields: ["languages", "birthYear", "countryCode", "cityName", "domains", "skills"],
     });
     const results = await searchManager.searchAdhoc(params);
 
@@ -786,7 +761,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u3 = dataManager.getStoryBy("U3");
     const u3Context = u3.contexts[0]!;
 
-    const params = createAdhocSearchParams(u3.userId, u3Context, {
+    const params = createAdhocSearchParams(u3.userId, adhocContextBase.parse(u3Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
     const results = await searchManager.searchAdhoc(params);
@@ -822,7 +797,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
 
-    const params = createAdhocSearchParams(u1.userId, u1Context, {
+    const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
     const results = await searchManager.searchAdhoc(params);
@@ -844,7 +819,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
     // Verify null languages are returned correctly (backward compatibility)
     const u3 = dataManager.getStoryBy("U3");
-    const u3Params = createAdhocSearchParams(u3.userId, u3.contexts[0]!, {
+    const u3Params = createAdhocSearchParams(u3.userId, adhocContextBase.parse(u3.contexts[0]!), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
     const u3Results = await searchManager.searchAdhoc(u3Params);
@@ -877,7 +852,7 @@ describe("Partial Context Tests (AC13-AC15)", () => {
 
     console.log("[AC13] Searching with minimal context:", partialContext);
 
-    const params = createAdhocSearchParams("test_user", partialContext, {
+    const params = createAdhocSearchParams("test_user", adhocContextBase.parse(partialContext), {
       excludedContextFields: [],
     });
     const results = await searchManager.searchAdhoc(params);
@@ -934,7 +909,7 @@ describe("Partial Context Tests (AC13-AC15)", () => {
 
     console.log("[AC14] Searching with skills-only context:", partialContext);
 
-    const params = createAdhocSearchParams("test_user", partialContext, {
+    const params = createAdhocSearchParams("test_user", adhocContextBase.parse(partialContext), {
       excludedContextFields: [
         "position",
         "domains",
@@ -951,9 +926,7 @@ describe("Partial Context Tests (AC13-AC15)", () => {
     const results = await searchManager.searchAdhoc(params);
 
     console.log("[AC14] Results count:", results.length);
-    console.log("[AC14] Position diversity:", [
-      ...new Set(results.map((r) => r.matchedContext.position)),
-    ]);
+    console.log("[AC14] Position diversity:", [...new Set(results.map((r) => r.matchedContext.position))]);
 
     // Business assertion: Finds candidates with Python (any level)
     expect(results.length).toBeGreaterThan(0);
@@ -989,7 +962,7 @@ describe("Partial Context Tests (AC13-AC15)", () => {
 
     console.log("[AC15] Searching with no geo constraints:", partialContext);
 
-    const params = createAdhocSearchParams("test_user", partialContext, {
+    const params = createAdhocSearchParams("test_user", adhocContextBase.parse(partialContext), {
       excludedContextFields: [
         "industry",
         "countryCode",
@@ -1004,9 +977,7 @@ describe("Partial Context Tests (AC13-AC15)", () => {
     const results = await searchManager.searchAdhoc(params);
 
     console.log("[AC15] Results count:", results.length);
-    console.log("[AC15] Countries found:", [
-      ...new Set(results.map((r) => r.matchedContext.countryCode)),
-    ]);
+    console.log("[AC15] Countries found:", [...new Set(results.map((r) => r.matchedContext.countryCode))]);
 
     // Business assertion: Finds Senior Backend from multiple countries
     expect(results.length).toBeGreaterThan(0);

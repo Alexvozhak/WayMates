@@ -37,6 +37,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
       pathLimit: 5,
       excludedContextFields: [],
       excludedCreationReasons: [],
+      recencyThresholdMonths: null,
     };
 
     const result = await tool.execute(params);
@@ -57,6 +58,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
       pathLimit: 5,
       excludedContextFields: [],
       excludedCreationReasons: [],
+      recencyThresholdMonths: null,
     };
 
     const result = await tool.execute(params);
@@ -80,6 +82,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
       pathLimit: 5,
       excludedContextFields: [],
       excludedCreationReasons: [],
+      recencyThresholdMonths: null,
     };
 
     const result = await tool.execute(params);
@@ -99,6 +102,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
       pathLimit: 5,
       excludedContextFields: ["industry"],
       excludedCreationReasons: [],
+      recencyThresholdMonths: null,
     };
 
     const result = await tool.execute(params);
@@ -118,6 +122,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
       pathLimit: 5,
       excludedContextFields: [],
       excludedCreationReasons: ["stopped_working"], // Career break/layoff (valid from reasons.json)
+      recencyThresholdMonths: null,
     };
 
     const result = await tool.execute(params);

@@ -4,6 +4,7 @@ import { SearchCareersTool } from "../../../../src/facade/mcp-server/tools/searc
 import { UpdateContextTool } from "../../../../src/facade/mcp-server/tools/update-context.tool.js";
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 import { UserStories } from "../../../core/helpers/user-stories.js";
+import { adhocContextBase } from "../../../../src/shared/schemas.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { McpSearchCareersParams } from "../../../../src/facade/mcp-server/tools/search-careers.tool.js";
@@ -25,6 +26,7 @@ const createFacadeSearchParams = (
   pathLimit: 10,
   excludedContextFields: [],
   excludedCreationReasons: [],
+  recencyThresholdMonths: null,
   ...overrides,
 });
 
@@ -48,7 +50,7 @@ describe("Error Handling Integration Tests", () => {
     const tool = new SearchCareersTool(getToolDeps());
 
     const invalidSession = "not_a_valid_session_id";
-    const params = createFacadeSearchParams(invalidSession, { position: "senior" });
+    const params = createFacadeSearchParams(invalidSession, adhocContextBase.parse({ position: "senior" }));
 
     const result = await tool.execute(params);
 
@@ -64,7 +66,7 @@ describe("Error Handling Integration Tests", () => {
     const tool = new SearchCareersTool(getToolDeps());
 
     const expiredSession: SessionId = "sess_00000000000000000000000000000000";
-    const params = createFacadeSearchParams(expiredSession, { position: "senior" });
+    const params = createFacadeSearchParams(expiredSession, adhocContextBase.parse({ position: "senior" }));
 
     const result = await tool.execute(params);
 
@@ -79,9 +81,12 @@ describe("Error Handling Integration Tests", () => {
   it("EH4: LLM timeout - normalization_failed error (simulated via mock)", async () => {
     const tool = new SearchCareersTool(getToolDeps());
 
-    const params = createFacadeSearchParams(testSessionId, {
-      skills: ["NonExistentSkillThatWillLikelyFail123456789"],
-    });
+    const params = createFacadeSearchParams(
+      testSessionId,
+      adhocContextBase.parse({
+        skills: ["NonExistentSkillThatWillLikelyFail123456789"],
+      }),
+    );
 
     const result = await tool.execute(params);
 
@@ -93,7 +98,7 @@ describe("Error Handling Integration Tests", () => {
   it("EH5: Core API connection error - core_api_error (requires Core down)", async () => {
     const tool = new SearchCareersTool(getToolDeps());
 
-    const params = createFacadeSearchParams(testSessionId, { position: "senior" });
+    const params = createFacadeSearchParams(testSessionId, adhocContextBase.parse({ position: "senior" }));
 
     const result = await tool.execute(params);
 
@@ -106,7 +111,7 @@ describe("Error Handling Integration Tests", () => {
     const tool = new SearchCareersTool(getToolDeps());
 
     const invalidSession: SessionId = "sess_11111111111111111111111111111111";
-    const params = createFacadeSearchParams(invalidSession, { position: "senior" });
+    const params = createFacadeSearchParams(invalidSession, adhocContextBase.parse({ position: "senior" }));
 
     const result = await tool.execute(params);
 
@@ -145,8 +150,8 @@ describe("Error Handling Integration Tests", () => {
     const sessionId2 = await setupSession(u2.userId);
     const tool2 = new SearchCareersTool(deps);
 
-    const params1 = createFacadeSearchParams(sessionId1, { position: "junior" });
-    const params2 = createFacadeSearchParams(sessionId2, { position: "senior" });
+    const params1 = createFacadeSearchParams(sessionId1, adhocContextBase.parse({ position: "junior" }));
+    const params2 = createFacadeSearchParams(sessionId2, adhocContextBase.parse({ position: "senior" }));
 
     const [result1, result2] = await Promise.all([tool1.execute(params1), tool2.execute(params2)]);
 
@@ -162,9 +167,12 @@ describe("Error Handling Integration Tests", () => {
   it("EH10: Cyrillic input normalization - handles non-Latin gracefully", async () => {
     const tool = new SearchCareersTool(getToolDeps());
 
-    const params = createFacadeSearchParams(testSessionId, {
-      skills: ["питон", "реакт"],
-    });
+    const params = createFacadeSearchParams(
+      testSessionId,
+      adhocContextBase.parse({
+        skills: ["питон", "реакт"],
+      }),
+    );
 
     const result = await tool.execute(params);
 

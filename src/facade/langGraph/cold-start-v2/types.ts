@@ -73,13 +73,13 @@ export const coldStartStateSchema = z.object({
   missingFields: z.array(missingFieldSchema).default([]),
   clarificationRound: z.number().default(0),
 
-  currentEntityContext: currentEntityContextSchema.optional(),
+  currentEntityContext: currentEntityContextSchema.nullable().default(null),
 
   userId: z.string(),
 
   userResponse: z.string().default(""),
 
-  cvText: z.string().optional(),
+  cvText: z.string().nullable().default(null),
 
   parsedDecision: decisionSchema.nullable().default(null),
 });

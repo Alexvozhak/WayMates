@@ -90,7 +90,7 @@ export class ColdStartGraph {
     this.compiledGraph = createGraphBuilder().compile({ checkpointer: deps.checkpointService.getCheckpointer() });
   }
 
-  async run(message: string, threadId: string, userId: UserId, cvText?: string): Promise<ColdStartResponse> {
+  async run(message: string, threadId: string, userId: UserId, cvText: string | null): Promise<ColdStartResponse> {
     const config = { configurable: { thread_id: threadId, ...this.deps } };
 
     const currentSnapshot = await this.compiledGraph.getState(config);

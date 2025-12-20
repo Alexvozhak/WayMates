@@ -2,19 +2,15 @@ import { HumanMessage } from "@langchain/core/messages";
 
 import { targetContextSchema } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
-import { makeNullable } from "../../../utils/llm-schemas.js";
 import { hasConfigDeps } from "../../shared/types.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildGoalExtractionPrompt } from "../prompts.js";
 import { NODE, PHASE } from "../state.js";
 
-import type { TargetContext } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
-const extractableGoalSchema = makeNullable(targetContextSchema);
-
-const extractionModel = getModel("extraction").withStructuredOutput(extractableGoalSchema);
+const extractionModel = getModel("extraction").withStructuredOutput(targetContextSchema);
 
 export async function extractGoalNode(
   state: SearchStateType,
@@ -48,12 +44,7 @@ export async function extractGoalNode(
     { role: "user", content: userResponse },
   ]);
 
-  // Convert null to undefined for OpenAI structured output compatibility
-  // makeNullable() returns T | null, but targetContextSchema expects T | undefined
-  // Filter out null fields (LLM may return { position: {...}, domains: null, ... })
-  const extractedGoal: TargetContext | null = extracted
-    ? Object.fromEntries(Object.entries(extracted).filter(([, v]) => v != null))
-    : null;
+  const extractedGoal = extracted ? targetContextSchema.parse(extracted) : null;
 
   return {
     extractedGoal,

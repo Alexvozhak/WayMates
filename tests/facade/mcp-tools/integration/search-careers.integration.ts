@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SearchCareersTool } from "../../../../src/facade/mcp-server/tools/search-careers.tool.js";
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { adhocContextBase } from "../../../../src/shared/schemas.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { McpSearchCareersParams } from "../../../../src/facade/mcp-server/tools/search-careers.tool.js";
@@ -23,6 +24,7 @@ const createFacadeSearchParams = (
   pathLimit: 5,
   excludedContextFields: [],
   excludedCreationReasons: [],
+  recencyThresholdMonths: null,
   ...overrides,
 });
 
@@ -44,11 +46,14 @@ describe("SearchCareersTool Integration Tests", () => {
   // Business rule: Adhoc search allows users to explore careers without predefined goal (exploratory mode).
   // Flow: validate session → normalize user input (typos, case) → query Core → return ranked candidates.
   it("SC1: Full flow with normalization - returns scored candidates", async () => {
-    const params = createFacadeSearchParams(testSessionId, {
-      position: "junior",
-      skills: ["React"],
-      domains: ["Frontend"],
-    });
+    const params = createFacadeSearchParams(
+      testSessionId,
+      adhocContextBase.parse({
+        position: "junior",
+        skills: ["React"],
+        domains: ["Frontend"],
+      }),
+    );
 
     const result = await tool.execute(params);
 
@@ -63,7 +68,7 @@ describe("SearchCareersTool Integration Tests", () => {
   // Prevents unauthorized search queries; error code helps client distinguish auth vs data issues.
   it("SC2: Invalid session rejected - returns error", async () => {
     const invalidSession: SessionId = "sess_00000000000000000000000000000000";
-    const params = createFacadeSearchParams(invalidSession, { position: "junior" });
+    const params = createFacadeSearchParams(invalidSession, adhocContextBase.parse({ position: "junior" }));
 
     const result = await tool.execute(params);
 
@@ -76,7 +81,7 @@ describe("SearchCareersTool Integration Tests", () => {
   // Business rule: User input quality varies (typos common during mobile/rushed entry).
   // Normalization layer ensures "Pyton" searches return Python results, not empty/wrong matches.
   it("SC3: Typos normalized before Core - LLM corrects misspellings", async () => {
-    const params = createFacadeSearchParams(testSessionId, { skills: ["Pyton"] });
+    const params = createFacadeSearchParams(testSessionId, adhocContextBase.parse({ skills: ["Pyton"] }));
 
     const result = await tool.execute(params);
 
@@ -89,10 +94,13 @@ describe("SearchCareersTool Integration Tests", () => {
   // Business rule: No matches for unrealistic criteria is valid business outcome (empty array, not error).
   // Users might search for niche/future tech; empty results prompt them to refine search.
   it("SC4: Empty results valid - unrealistic criteria returns empty array", async () => {
-    const params = createFacadeSearchParams(testSessionId, {
-      position: "Intern",
-      skills: ["QuantumHyperLang"],
-    });
+    const params = createFacadeSearchParams(
+      testSessionId,
+      adhocContextBase.parse({
+        position: "Intern",
+        skills: ["QuantumHyperLang"],
+      }),
+    );
 
     const result = await tool.execute(params);
 
@@ -105,7 +113,7 @@ describe("SearchCareersTool Integration Tests", () => {
   // Business rule: Cold start scenario - users often provide only position/skill (minimal onboarding friction).
   // Partial context still produces valuable results; system doesn't force complete profile upfront.
   it("SC5: Minimal context - works with only one field", async () => {
-    const params = createFacadeSearchParams(testSessionId, { position: "junior" });
+    const params = createFacadeSearchParams(testSessionId, adhocContextBase.parse({ position: "junior" }));
 
     const result = await tool.execute(params);
 

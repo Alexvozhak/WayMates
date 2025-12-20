@@ -5,10 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/shared-driver.js";
-import {
-  FixtureSearchManager,
-  createUserSearchParams,
-} from "../../helpers/fixture-search-manager.js";
+import { FixtureSearchManager, createUserSearchParams } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 
 describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
@@ -30,7 +27,7 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
       previousContextId: u4Context.previousContextId,
     });
 
-    expect(u4Context.previousContextId).toBeUndefined();
+    expect(u4Context.previousContextId).toBeNull();
 
     const results = await searchManager.searchByUser(
       createUserSearchParams(u4.userId, {
@@ -101,9 +98,7 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
     );
 
     console.log("[UN4] Results count:", results.length);
-    console.log("[UN4] Countries found:", [
-      ...new Set(results.map((r) => r.matchedContext.countryCode)),
-    ]);
+    console.log("[UN4] Countries found:", [...new Set(results.map((r) => r.matchedContext.countryCode))]);
 
     // U7 should be in results (Junior, current context matches U4)
     // U1/U2/U6 current context is Middle (not Junior), so they won't match
@@ -113,8 +108,6 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
     // U7 is from gb/london, U4 is from us/seattle
     const internationalResults = results.filter((r) => r.matchedContext.countryCode !== "us");
     expect(internationalResults.length).toBeGreaterThanOrEqual(1);
-    console.log(
-      `[UN4] International results count: ${internationalResults.length} (expected >= 1)`,
-    );
+    console.log(`[UN4] International results count: ${internationalResults.length} (expected >= 1)`);
   });
 });

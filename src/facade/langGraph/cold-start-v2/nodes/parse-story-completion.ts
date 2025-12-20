@@ -10,7 +10,7 @@ function serializeMessages(messages: BaseMessage[]): string {
   return messages.map((m) => `${m.type}: ${m.content}`).join("\n");
 }
 
-function buildStoryCompletionPrompt(cvText?: string, conversationText?: string): string {
+function buildStoryCompletionPrompt(cvText: string | null, conversationText: string | null): string {
   const cvSection = cvText
     ? `
 ═══════════════════════════════════════════════════
@@ -76,7 +76,7 @@ Return structured JSON with:
 export async function parseStoryCompletionNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {
   const { userResponse, cvText, messages } = state;
 
-  const conversationText = messages.length > 0 ? serializeMessages(messages) : undefined;
+  const conversationText = messages.length > 0 ? serializeMessages(messages) : null;
   const prompt = buildStoryCompletionPrompt(cvText, conversationText);
 
   const parsedDecision = await intentParser.invoke([

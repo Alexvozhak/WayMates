@@ -3,10 +3,12 @@ import { Redis } from "ioredis";
 
 import { CoreClient } from "../../../src/facade/core-client.js";
 import { CheckpointService } from "../../../src/facade/services/checkpoint.service.js";
+import { SessionService } from "../../../src/facade/services/session.service.js";
 import { McpClient } from "../../../src/telegram-bot/services/mcp-client.js";
 
 import { getTestEnv } from "./test-env.js";
 
+import type { SessionId, UserId } from "../../../src/shared/schemas.js";
 import type { TelegramTestEnv } from "./test-env.js";
 
 export class TelegramTestContext {
@@ -43,7 +45,17 @@ export class TelegramTestContext {
     console.log("[Telegram Setup] Creating checkpoint service...");
     const checkpointService = await CheckpointService.create(pgPool);
 
-    TelegramTestContext.instance = new TelegramTestContext(mcpClient, coreClient, redis, checkpointService, env);
+    console.log("[Telegram Setup] Creating session service...");
+    const sessionService = new SessionService(redis);
+
+    TelegramTestContext.instance = new TelegramTestContext(
+      mcpClient,
+      coreClient,
+      redis,
+      checkpointService,
+      sessionService,
+      env,
+    );
 
     return TelegramTestContext.instance;
   }
@@ -59,6 +71,7 @@ export class TelegramTestContext {
   public readonly coreClient: CoreClient;
   public readonly redis: Redis;
   public readonly checkpointService: CheckpointService;
+  public readonly sessionService: SessionService;
   public readonly env: TelegramTestEnv;
 
   private constructor(
@@ -66,13 +79,19 @@ export class TelegramTestContext {
     coreClient: CoreClient,
     redis: Redis,
     checkpointService: CheckpointService,
+    sessionService: SessionService,
     env: TelegramTestEnv,
   ) {
     this.mcpClient = mcpClient;
     this.coreClient = coreClient;
     this.redis = redis;
     this.checkpointService = checkpointService;
+    this.sessionService = sessionService;
     this.env = env;
+  }
+
+  async createSessionForUser(userId: UserId): Promise<SessionId> {
+    return this.sessionService.create(userId);
   }
 
   async cleanup(): Promise<void> {

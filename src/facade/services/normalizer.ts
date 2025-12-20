@@ -61,7 +61,7 @@ export class Normalizer {
 
     // Pass-through fields that don't need normalization (ISO codes: countryCode, languages)
     // Normalized fields override pass-through values
-    return this.removeUndefinedFields({ ...context, role, position, cityName, industry, skills, domains });
+    return this.removeNullishFields({ ...context, role, position, cityName, industry, skills, domains });
   }
 
   async normalizeFullContext(context: UserContext, userId: UserId): Promise<UserContext> {
@@ -85,17 +85,14 @@ export class Normalizer {
       this.normalizeTargetField("domain", context.domains, userId),
     ]);
 
-    const result: TargetContext = { role, position, skills, domains };
-
-    if (context.countries) {
-      result.countries = context.countries;
-    }
-
-    if (context.languages) {
-      result.languages = context.languages;
-    }
-
-    return this.removeUndefinedFields(result);
+    return {
+      role,
+      position,
+      skills,
+      domains,
+      languages: context.languages ?? null,
+      countries: context.countries ?? null,
+    };
   }
 
   async normalizeSkill(skill: string, userId: UserId): Promise<string> {
@@ -171,8 +168,8 @@ Return: { normalized: string[], rejected: string[] }`;
     type: SimpleDictionaryType,
     field: FieldFilter | null | undefined,
     userId: UserId,
-  ): Promise<FieldFilter | undefined> {
-    if (!field) return undefined;
+  ): Promise<FieldFilter | null> {
+    if (!field) return null;
 
     const values = await this.normalizeTerms(type, field.values, userId);
     return { mode: field.mode, values };
@@ -184,19 +181,19 @@ Return: { normalized: string[], rejected: string[] }`;
 
   private async normalizeOptionalTerm(
     type: SimpleDictionaryType,
-    value: string | undefined,
+    value: string | null | undefined,
     userId: UserId,
-  ): Promise<string | undefined> {
-    if (!value) return undefined;
+  ): Promise<string | null> {
+    if (!value) return null;
     return this.normalizeTerm(type, value, userId);
   }
 
   private async normalizeOptionalTerms(
     type: SimpleDictionaryType,
-    values: string[] | undefined,
+    values: string[] | null | undefined,
     userId: UserId,
-  ): Promise<string[] | undefined> {
-    if (!values) return undefined;
+  ): Promise<string[] | null> {
+    if (!values) return null;
     return this.normalizeTerms(type, values, userId);
   }
 
@@ -252,8 +249,9 @@ Rules:
     return dict.get(result.canonical.toLowerCase()) ?? null;
   }
 
-  private removeUndefinedFields<T extends Record<string, unknown>>(obj: T): T {
+  private removeNullishFields<T extends Record<string, unknown>>(obj: T): T {
+    // Remove null, undefined, and empty strings (LLM often returns "" for missing values)
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Object.fromEntries loses type information, cast to original type is safe here
-    return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined)) as T;
+    return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v != null && v !== "")) as T;
   }
 }

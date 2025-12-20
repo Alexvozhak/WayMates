@@ -2,61 +2,40 @@ import { z } from "zod";
 
 import type { ZodTypeAny } from "zod";
 
-function unwrapSchema(schema: ZodTypeAny): ZodTypeAny {
-  if (schema instanceof z.ZodOptional) {
-    return unwrapSchema(schema.unwrap());
+/**
+ * Makes a single field nullable.
+ * - Already nullable → return as-is
+ * - Optional → unwrap and make nullable
+ * - Otherwise → make nullable
+ */
+function toNullable(field: ZodTypeAny): z.ZodNullable<ZodTypeAny> {
+  if (field instanceof z.ZodNullable) {
+    return field;
   }
-  if (schema instanceof z.ZodDefault) {
-    return unwrapSchema(schema.removeDefault());
+  if (field instanceof z.ZodOptional) {
+    return field.unwrap().nullable();
   }
-  return schema;
-}
-
-function makeFieldNullable(schema: ZodTypeAny): z.ZodNullable<ZodTypeAny> {
-  const unwrapped = unwrapSchema(schema);
-
-  if (unwrapped instanceof z.ZodObject) {
-    /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Zod shape is Record<string, ZodTypeAny> at runtime */
-    const shape = unwrapped.shape as Record<string, ZodTypeAny>;
-    const newShape: Record<string, z.ZodNullable<ZodTypeAny>> = {};
-
-    for (const [key, value] of Object.entries(shape)) {
-      newShape[key] = makeFieldNullable(value);
-    }
-
-    return z.object(newShape).nullable();
-  }
-
-  if (unwrapped instanceof z.ZodArray) {
-    return unwrapped.nullable();
-  }
-
-  return unwrapped.nullable();
+  return field.nullable();
 }
 
 /**
- * Transforms a Zod object schema making all fields nullable at all levels.
+ * Transforms a Zod object schema making all top-level fields nullable.
  *
- * Used for OpenAI Structured Output which requires:
- * - Root type MUST be "object" (not nullable)
- * - All fields MUST be nullable (not optional)
+ * Used for LLM extraction schemas where all fields can be null
+ * (LLM returns null for fields it couldn't extract).
  *
- * Handles: ZodObject (recursive), ZodArray, ZodEnum, primitives
- * Does NOT handle: ZodUnion, ZodIntersection, ZodEffects
+ * Example:
+ *   const base = z.object({ name: z.string(), age: z.number() });
+ *   const nullable = makeNullable(base);
+ *   // → { name: string | null, age: number | null }
  */
 export function makeNullable<T extends z.ZodObject<z.ZodRawShape>>(schema: T): z.ZodObject<z.ZodRawShape> {
-  const unwrapped = unwrapSchema(schema);
-
-  if (!(unwrapped instanceof z.ZodObject)) {
-    throw new TypeError("makeNullable requires a ZodObject schema at root level");
-  }
-
   /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Zod shape is Record<string, ZodTypeAny> at runtime */
-  const shape = unwrapped.shape as Record<string, ZodTypeAny>;
+  const shape = schema.shape as Record<string, ZodTypeAny>;
   const newShape: Record<string, z.ZodNullable<ZodTypeAny>> = {};
 
   for (const [key, value] of Object.entries(shape)) {
-    newShape[key] = makeFieldNullable(value);
+    newShape[key] = toNullable(value);
   }
 
   return z.object(newShape);

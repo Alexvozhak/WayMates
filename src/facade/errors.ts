@@ -37,6 +37,7 @@ export abstract class FacadeError extends Error {
     return {
       code: this.errorCode,
       message: this.getPublicMessage(),
+      details: null,
     };
   }
 

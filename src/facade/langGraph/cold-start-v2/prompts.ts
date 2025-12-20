@@ -213,7 +213,7 @@ IMPORTANT RULES
 5. Use progress.current from response to track sequential collection
 `;
 
-export function planningPrompt(messages: BaseMessage[], cvText?: string): string {
+export function planningPrompt(messages: BaseMessage[], cvText: string | null): string {
   const messagesText = serializeMessages(messages);
 
   return `Analyze career history and create a collection plan.
@@ -285,7 +285,7 @@ function buildContextExtractionRules(hasCv: boolean): string {
 - DO NOT invent data - extract ONLY what is explicitly mentioned`;
 }
 
-export function contextExtractionPrompt(messages: BaseMessage[], preview: string, cvText?: string): string {
+export function contextExtractionPrompt(messages: BaseMessage[], preview: string, cvText: string | null): string {
   const text = serializeMessages(messages);
   const cvSection = cvText
     ? `\n═══════════════════════════════════════════════════

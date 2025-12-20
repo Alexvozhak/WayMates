@@ -4,6 +4,7 @@ import { GetGoalTool } from "../../../../src/facade/mcp-server/tools/get-goal.to
 import { SetGoalTool } from "../../../../src/facade/mcp-server/tools/set-goal.tool.js";
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
 import { UserStories } from "../../../core/helpers/user-stories.js";
+import { targetContextSchema } from "../../../../src/shared/schemas.js";
 
 import type { BaseToolDependencies } from "../../../../src/facade/mcp-server/tools/base-tool.js";
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
@@ -37,16 +38,17 @@ describe("GetGoalTool Integration Tests", () => {
   it("GG1: Retrieve saved goal - returns user's target context", async () => {
     const setParams: McpSetGoalParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python"] },
-      },
+      }),
     };
 
     await setTool.execute(setParams);
 
     const getParams: McpGetGoalParams = {
       sessionId: testSessionId,
+      targetUserId: null,
     };
 
     const result = await getTool.execute(getParams);
@@ -66,6 +68,7 @@ describe("GetGoalTool Integration Tests", () => {
 
     const params: McpGetGoalParams = {
       sessionId: newSession,
+      targetUserId: null,
     };
 
     const result = await getTool.execute(params);

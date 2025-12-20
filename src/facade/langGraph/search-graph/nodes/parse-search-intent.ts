@@ -23,7 +23,7 @@ async function buildTargetSearchParams(
   const limit = parsed.filters.limit ? Math.min(Math.max(parsed.filters.limit, MIN_LIMIT), MAX_LIMIT) : DEFAULT_LIMIT;
   const recencyThresholdMonths = parsed.filters.recencyThresholdMonths
     ? Math.max(parsed.filters.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
-    : undefined;
+    : null;
 
   return {
     targetContext: extractedGoal,

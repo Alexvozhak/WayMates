@@ -22,7 +22,7 @@ describe("Cold-Start V2: Data Persistence (TC-D)", () => {
   const threadId = `cold_start_${testUserId}`;
 
   const runTool = async (message: string): Promise<ColdStartResponse> => {
-    const result = await coldStartTool.execute({ sessionId: testSessionId, message });
+    const result = await coldStartTool.execute({ sessionId: testSessionId, message, cvText: null });
     if (!result.ok) {
       console.error(`ColdStartTool error:`, JSON.stringify(result.error, null, 2));
       throw new Error(`ColdStartTool failed: ${result.error.message}`);

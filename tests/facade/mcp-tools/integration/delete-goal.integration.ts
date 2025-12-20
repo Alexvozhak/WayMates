@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { DeleteGoalTool } from "../../../../src/facade/mcp-server/tools/delete-goal.tool.js";
 import { SetGoalTool } from "../../../../src/facade/mcp-server/tools/set-goal.tool.js";
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { targetContextSchema } from "../../../../src/shared/schemas.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { McpDeleteGoalParams, McpSetGoalParams, UserId } from "../../../../src/shared/schemas.js";
@@ -30,9 +31,9 @@ describe("DeleteGoalTool Integration Tests", () => {
   it("DG1: Delete existing goal - removes goal successfully", async () => {
     const setParams: McpSetGoalParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
-      },
+      }),
     };
     await setTool.execute(setParams);
 

@@ -87,7 +87,7 @@ export class GraphManager {
     switch (input.type) {
       case "cold_start": {
         const graph = new ColdStartGraph(this.deps);
-        return graph.run(input.message, threadId, input.userId);
+        return graph.run(input.message, threadId, input.userId, null);
       }
 
       case "upsert_context": {

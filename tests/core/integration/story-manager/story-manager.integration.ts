@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 import { StoryManager } from "../../../../src/core/story-manager.js";
 import { DatabaseContext } from "../../../../src/core/database-context.js";
 import { withReadSession, withWriteSession } from "../../../../src/core/neo4j.js";
-import { storyInputSchema } from "../../../../src/shared/schemas.js";
+import { storyInputSchema, userContextSchema } from "../../../../src/shared/schemas.js";
 import { type UserKey, UserStories } from "../../helpers/user-stories.js";
 import { driver } from "../../helpers/drivers/story-manager-driver.js";
 
@@ -456,7 +456,8 @@ describe("StoryManager Integration Tests", () => {
         }),
       );
 
-      const props = result.records[0]!.get("c").properties;
+      // Parse through schema to normalize Neo4j undefined → null
+      const props = userContextSchema.parse(result.records[0]!.get("c").properties);
 
       expect(props.position).toBe("Tech Lead");
       expect(props.skills).toEqual(["TypeScript", "Leadership"]);
@@ -1036,6 +1037,7 @@ describe("StoryManager Integration Tests", () => {
         context: {
           contextId: newContextId,
           previousContextId: currentContextId,
+          nextContextId: null,
           createdAt: "2025-12-01T00:00:00Z",
           creationReason: ["position_changed"],
           position: "senior",
@@ -1048,7 +1050,12 @@ describe("StoryManager Integration Tests", () => {
           cityName: "moscow",
           birthYear: 1998,
           educationLevel: "BACHELOR",
+          languages: null,
           citizenships: ["ru"],
+          salaryExact: null,
+          salaryMin: null,
+          salaryMax: null,
+          feedback: null,
         },
       });
 

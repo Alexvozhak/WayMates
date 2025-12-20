@@ -17,7 +17,7 @@ describe("Cold-Start V2: CV Upload (TC-P5..P12)", () => {
   const testUserId: UserId = "usr_01933ec5-0002-0000-0000-000000000001";
   const threadId = `cold_start_v2_cv_${testUserId}`;
 
-  const runWorkflow = (message: string, cvText?: string): ReturnType<ColdStartGraph["run"]> => {
+  const runWorkflow = (message: string, cvText: string | null = null): ReturnType<ColdStartGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
     return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, cvText);
   };

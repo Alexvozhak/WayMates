@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SearchByTargetTool } from "../../../../src/facade/mcp-server/tools/search-by-target.tool.js";
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { targetContextSchema } from "../../../../src/shared/schemas.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { McpSearchByTargetParams, UserId } from "../../../../src/shared/schemas.js";
@@ -26,11 +27,12 @@ describe("SearchByTargetTool Integration Tests", () => {
   it("SBT1: Full flow with normalization - returns candidates matching target", async () => {
     const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python", "React"] },
-      },
+      }),
       excludedCreationReasons: [],
+      recencyThresholdMonths: null,
       limit: 20,
     };
 
@@ -48,10 +50,11 @@ describe("SearchByTargetTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params: McpSearchByTargetParams = {
       sessionId: invalidSession,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
-      },
+      }),
       excludedCreationReasons: [],
+      recencyThresholdMonths: null,
       limit: 20,
     };
 
@@ -68,10 +71,11 @@ describe("SearchByTargetTool Integration Tests", () => {
   it("SBT3: Typos normalized before Core - LLM corrects target criteria", async () => {
     const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         skills: { mode: "desired", values: ["Pyton"] },
-      },
+      }),
       excludedCreationReasons: [],
+      recencyThresholdMonths: null,
       limit: 20,
     };
 
@@ -88,11 +92,12 @@ describe("SearchByTargetTool Integration Tests", () => {
   it("SBT4: Undesired mode filters - excludes candidates with undesired values", async () => {
     const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "undesired", values: ["Intern"] },
         skills: { mode: "desired", values: ["Python"] },
-      },
+      }),
       excludedCreationReasons: [],
+      recencyThresholdMonths: null,
       limit: 20,
     };
 

@@ -13,6 +13,7 @@ import { DatabaseFixture } from "../../helpers/database-fixture.js";
 import { createTestContext } from "../../helpers/test-data-factory.js";
 import { v7 as uuidv7 } from "uuid";
 import type { Driver } from "neo4j-driver";
+import { targetContextSchema } from "../../../../src/shared/schemas.js";
 
 let driver: Driver;
 let db: DatabaseContext;
@@ -93,9 +94,9 @@ describe("User State (US1-US3)", () => {
 
     await goalsManager.setGoal({
       userId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
-      },
+      }),
     });
 
     const state = await getUserState(userId);

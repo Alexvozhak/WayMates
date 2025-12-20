@@ -33,7 +33,7 @@ export const mcpSearchCareersParamsSchema = z
         message: "Cannot exclude 'skills' - required for ranking candidates",
       }),
     excludedCreationReasons: z.array(newContextReasonSchema).default([]),
-    recencyThresholdMonths: z.number().min(1).optional(),
+    recencyThresholdMonths: z.number().min(1).nullable().default(null),
     limit: z.number().min(1).max(100).default(20),
     pathLimit: z.number().min(1).max(100).default(20),
   })
@@ -63,11 +63,12 @@ export class SearchCareersTool extends BaseTool<McpSearchCareersParams, ScoredMa
     // Throws ZodError if invalid (caught by MCP error handler)
     const validated = adhocContextBase.parse(normalizedPartial);
 
-    const { sessionId: _sessionId, referenceContext: _ref, ...searchParams } = params;
+    const { sessionId: _sessionId, referenceContext: _ref, recencyThresholdMonths, ...searchParams } = params;
 
     return this.coreClient.client.search.adhoc.query({
       userId,
       ...searchParams,
+      recencyThresholdMonths: recencyThresholdMonths ?? null,
       referenceContext: validated,
     });
   }

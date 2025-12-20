@@ -22,7 +22,7 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
 
   const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
-    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId);
+    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, null);
   };
 
   beforeEach(async () => {
@@ -157,7 +157,7 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
     const coldStartTool = new ColdStartTool(getToolDeps());
 
     const runTool = async (message: string) => {
-      const result = await coldStartTool.execute({ sessionId: testSessionId, message });
+      const result = await coldStartTool.execute({ sessionId: testSessionId, message, cvText: null });
       if (!result.ok) {
         console.error("TC-I2 error details:", JSON.stringify(result.error, null, 2));
         expect.fail(`ColdStartTool error: ${result.error.message}`);

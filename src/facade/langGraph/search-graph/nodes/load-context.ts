@@ -1,7 +1,6 @@
 import { adhocContextBase } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
-import { makeNullable } from "../../../utils/llm-schemas.js";
 import { hasConfigDeps } from "../../shared/types.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildAdhocExtractionPrompt } from "../prompts.js";
@@ -13,8 +12,7 @@ import type { AdhocExtractionDictionaries } from "../prompts.js";
 import type { SearchStateType } from "../state.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
-const extractableAdhocSchema = makeNullable(adhocContextBase);
-const extractor = getModel("extraction").withStructuredOutput(extractableAdhocSchema);
+const extractor = getModel("extraction").withStructuredOutput(adhocContextBase);
 
 async function loadAdhocDictionaries(cache: DictionariesCache): Promise<AdhocExtractionDictionaries> {
   const [roles, positions, domains, skills] = await Promise.all([
@@ -47,7 +45,7 @@ async function extractAdhocContext(
   const hasAnyField = Object.values(extracted).some((v) => v != null);
   if (!hasAnyField) return null;
 
-  return extracted;
+  return adhocContextBase.parse(extracted);
 }
 
 export async function loadContextNode(

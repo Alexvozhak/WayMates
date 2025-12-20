@@ -8,6 +8,7 @@ import {
   setupUserWithGoal,
   TEST_USER_ID,
 } from "../helpers/search-graph-helpers.js";
+import { targetContextSchema } from "../../../../../src/shared/schemas.js";
 
 import type { UserId } from "../../../../../src/shared/schemas.js";
 
@@ -63,10 +64,10 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
     // Setup: create goal (senior backend)
     await setupUserWithGoal(ctx.coreClient, {
       userId: testUserId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         domains: { mode: "desired", values: ["backend"] },
-      },
+      }),
     });
 
     const goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
@@ -295,10 +296,10 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
     // Setup: create goal (senior backend)
     await setupUserWithGoal(ctx.coreClient, {
       userId: testUserId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         domains: { mode: "desired", values: ["backend"] },
-      },
+      }),
     });
 
     const goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });

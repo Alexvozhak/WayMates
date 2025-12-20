@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SetGoalTool } from "../../../../src/facade/mcp-server/tools/set-goal.tool.js";
 import { cleanupSession, getToolDeps, setupSession } from "../../helpers/mcp-tool-helpers.js";
+import { targetContextSchema } from "../../../../src/shared/schemas.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { McpSetGoalParams, UserId } from "../../../../src/shared/schemas.js";
@@ -26,11 +27,11 @@ describe("SetGoalTool Integration Tests", () => {
   it("SG1: Full flow with normalization - creates goal and returns goalId", async () => {
     const params: McpSetGoalParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python", "React"] },
         domains: { mode: "desired", values: ["Backend"] },
-      },
+      }),
     };
 
     const result = await tool.execute(params);
@@ -48,9 +49,9 @@ describe("SetGoalTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params: McpSetGoalParams = {
       sessionId: invalidSession,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
-      },
+      }),
     };
 
     const result = await tool.execute(params);
@@ -66,9 +67,9 @@ describe("SetGoalTool Integration Tests", () => {
   it("SG3: Typos normalized before saving - LLM corrects target criteria", async () => {
     const params: McpSetGoalParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         skills: { mode: "desired", values: ["Pyton"] },
-      },
+      }),
     };
 
     const result = await tool.execute(params);
@@ -84,9 +85,9 @@ describe("SetGoalTool Integration Tests", () => {
   it("SG4: Idempotent goal updates - overwrites previous goal for same user", async () => {
     const firstGoal: McpSetGoalParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["junior"] },
-      },
+      }),
     };
 
     const firstResult = await tool.execute(firstGoal);
@@ -94,10 +95,10 @@ describe("SetGoalTool Integration Tests", () => {
 
     const secondGoal: McpSetGoalParams = {
       sessionId: testSessionId,
-      targetContext: {
+      targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python"] },
-      },
+      }),
     };
 
     const secondResult = await tool.execute(secondGoal);

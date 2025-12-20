@@ -26,7 +26,7 @@ export const coldStartStateAnnotation = Annotation.Root({
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),
   phase: Annotation<ColdStartPhase>({ reducer: lastValue, default: () => PHASE.story_gathering }),
   userResponse: Annotation<string>({ reducer: lastValue, default: () => "" }),
-  cvText: Annotation<string | undefined>({ reducer: lastValue }),
+  cvText: Annotation<string | null>({ reducer: lastValue, default: () => null }),
   parsedDecision: Annotation<ParsedDecision | null>({ reducer: lastValue, default: () => null }),
 
   queue: Annotation<ContextAgenda[]>({ reducer: lastValue, default: () => [] }),

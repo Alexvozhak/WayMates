@@ -110,7 +110,7 @@ export class SearchManager {
         userId,
         limit,
         excludedContextFields,
-        ...(recencyThresholdMonths !== undefined && { recencyThresholdMonths }),
+        ...(recencyThresholdMonths != null && { recencyThresholdMonths }),
       },
       filterByCurrentContext,
     );

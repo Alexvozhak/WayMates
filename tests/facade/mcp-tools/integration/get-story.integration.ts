@@ -29,6 +29,7 @@ describe("GetStoryTool Integration Tests", () => {
   it("GS1: Retrieve own story - returns full profile with contexts and trails", async () => {
     const params: McpGetStoryParams = {
       sessionId: testSessionId,
+      targetUserId: null,
     };
 
     const result = await tool.execute(params);
@@ -50,6 +51,7 @@ describe("GetStoryTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_00000000000000000000000000000000";
     const params: McpGetStoryParams = {
       sessionId: invalidSession,
+      targetUserId: null,
     };
 
     const result = await tool.execute(params);
@@ -86,6 +88,7 @@ describe("GetStoryTool Integration Tests", () => {
 
     const params: McpGetStoryParams = {
       sessionId: newSessionId,
+      targetUserId: null,
     };
 
     const result = await newTool.execute(params);

@@ -91,6 +91,7 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
     return {
       code: "internal_error",
       message: "An unexpected error occurred.",
+      details: null,
     };
   }
 }

@@ -106,30 +106,35 @@ describe("Dictionaries Integration", () => {
     await dictionariesManager.addTerm({
       type: "position",
       canonicalName: `test-position-${timestamp}`,
+      complexity: null,
       verified: true,
       createdBy: "test-user",
     });
     await dictionariesManager.addTerm({
       type: "domain",
       canonicalName: `test-domain-${timestamp}`,
+      complexity: null,
       verified: true,
       createdBy: "test-user",
     });
     await dictionariesManager.addTerm({
       type: "city",
       canonicalName: `test-city-${timestamp}`,
+      complexity: null,
       verified: true,
       createdBy: "test-user",
     });
     await dictionariesManager.addTerm({
       type: "industry",
       canonicalName: `test-industry-${timestamp}`,
+      complexity: null,
       verified: true,
       createdBy: "test-user",
     });
     await dictionariesManager.addTerm({
       type: "platform",
       canonicalName: `test-platform-${timestamp}`,
+      complexity: null,
       verified: true,
       createdBy: "test-user",
     });
