@@ -128,9 +128,9 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
    * Тип теста: Unit (no LLM, no DB)
    */
   describe("TC-V2: Missing required fields → awaiting_clarification", () => {
-    it("returns awaiting_clarification when birthYear is null", () => {
+    it("returns awaiting_clarification when role is empty", () => {
       const context = toExtractableContext(U1.contexts[0]!);
-      context.birthYear = null;
+      context.role = "";
 
       const state = createMockState({ pendingContext: context });
 
@@ -187,7 +187,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
 
     it("increments clarificationRound on each validation failure", () => {
       const context = toExtractableContext(U1.contexts[0]!);
-      context.birthYear = null;
+      context.role = "";
 
       const state = createMockState({
         pendingContext: context,
@@ -262,7 +262,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
   describe("TC-E7: Max clarification attempts → failed", () => {
     it("returns failed when clarificationRound exceeds MAX_CLARIFICATION_ROUNDS (3)", () => {
       const context = toExtractableContext(U1.contexts[0]!);
-      context.birthYear = null;
+      context.role = "";
 
       const state = createMockState({
         pendingContext: context,
@@ -276,7 +276,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
 
     it("returns awaiting_clarification when clarificationRound is exactly 2", () => {
       const context = toExtractableContext(U1.contexts[0]!);
-      context.birthYear = null;
+      context.role = "";
 
       const state = createMockState({
         pendingContext: context,
@@ -329,7 +329,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
     });
 
     it("extracts field name from validation error", () => {
-      const invalidContext = { ...U1.contexts[0]!, birthYear: null };
+      const invalidContext = { ...U1.contexts[0]!, role: "" };
       const validation = userContextSchema.safeParse(invalidContext);
 
       const missingFields = extractMissingFields(validation, "Backend Dev", "context");
@@ -396,7 +396,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
 
     it("returns success: false for invalid context", () => {
       const context = toExtractableContext(U1.contexts[0]!);
-      context.birthYear = null;
+      context.role = "";
       const agenda = createAgendaFromContext(U1.contexts[0]!);
 
       const result = validateAndCollectMissing(context, [], agenda);

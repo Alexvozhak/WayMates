@@ -1,39 +1,20 @@
 import { adhocContextBase } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
+import { loadExtractionDicts } from "../../shared/dictionary-hints.js";
 import { hasConfigDeps } from "../../shared/types.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildAdhocExtractionPrompt } from "../prompts.js";
 import { NODE } from "../state.js";
 
 import type { AdhocContextBase } from "../../../../shared/schemas.js";
-import type { DictionariesCache } from "../../shared/types.js";
-import type { AdhocExtractionDictionaries } from "../prompts.js";
+import type { ExtractionDictionaries } from "../../shared/dictionary-hints.js";
 import type { SearchStateType } from "../state.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
 const extractor = getModel("extraction").withStructuredOutput(adhocContextBase);
 
-async function loadAdhocDictionaries(cache: DictionariesCache): Promise<AdhocExtractionDictionaries> {
-  const [roles, positions, domains, skills] = await Promise.all([
-    cache.getSimple("role"),
-    cache.getSimple("position"),
-    cache.getSimple("domain"),
-    cache.getSimple("skill"),
-  ]);
-
-  return {
-    roles: [...roles.values()],
-    positions: [...positions.values()],
-    domains: [...domains.values()],
-    skills: [...skills.values()],
-  };
-}
-
-async function extractAdhocContext(
-  message: string,
-  dicts: AdhocExtractionDictionaries,
-): Promise<AdhocContextBase | null> {
+async function extractAdhocContext(message: string, dicts: ExtractionDictionaries): Promise<AdhocContextBase | null> {
   const prompt = buildAdhocExtractionPrompt(dicts);
   const extracted = await extractor.invoke([
     { role: "system", content: prompt },
@@ -58,7 +39,7 @@ export async function loadContextNode(
   const { coreClient, normalizer, cache } = config.configurable;
 
   if (state.intent === GRAPH_INTENT.startAdhoc) {
-    const dicts = await loadAdhocDictionaries(cache);
+    const dicts = await loadExtractionDicts(cache);
     const extracted = await extractAdhocContext(state.userResponse, dicts);
     const adhocContext = extracted ? await normalizer.normalizeAdhocContext(extracted, state.userId) : null;
 

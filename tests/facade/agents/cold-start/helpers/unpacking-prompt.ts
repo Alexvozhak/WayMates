@@ -1,4 +1,7 @@
+import { userContextSchemaBase } from "../../../../../src/shared/schemas.js";
+
 import type { Trail, UserContext } from "../../../../../src/shared/schemas.js";
+import type { ZodTypeAny } from "zod";
 
 export type FixtureData = {
   userId: string;
@@ -7,101 +10,44 @@ export type FixtureData = {
   trails: Trail[];
 };
 
+const FIELD_DESCRIPTIONS = Object.entries(userContextSchemaBase.shape)
+  .map(([k, v]) => {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- accessing Zod internal _def
+    const desc = (v as ZodTypeAny)._def.description as string | undefined;
+    return desc ? `- ${k}: ${desc}` : null;
+  })
+  .filter(Boolean)
+  .join("\n");
+
 export function buildUnpackingPrompt(fixture: FixtureData): string {
   const fixtureJson = JSON.stringify(fixture, null, 2);
 
-  return `Ты помогаешь пользователю рассказать свою карьерную историю на основе структурированных данных.
+  return `Преобразуй JSON в рассказ от первого лица про карьерную историю.
 
-## Входные данные
+Каждое непустое поле из JSON должно быть упомянуто в тексте.
 
-JSON с контекстами (contexts) и тропами (trails) пользователя.
+## Описания полей
 
-## Задача
-
-Преобразовать JSON в естественный рассказ от первого лица про карьерную историю.
-
----
+${FIELD_DESCRIPTIONS}
 
 ## Правила
 
-### Язык и стиль
-- От первого лица: "Я работал...", "Я перешёл...", "Я начинал..."
-- Естественный язык: как будто человек рассказывает другу
-- Хронологический порядок: от старого контекста к новому (по createdAt)
+- От первого лица
+- Начни с представления: гражданство, образование, год рождения (если есть)
+- Каждое непустое поле → упоминание в тексте (включая citizenships!)
+- Не выдумывай данные которых нет в JSON
+- Не упоминай технические ID
+- Даты: "в 2022 году" вместо ISO формата
 
-### Что включать для каждого контекста
+## trails (тропы обучения)
 
-Включай в рассказ ТОЛЬКО те поля, которые ЯВНО присутствуют в JSON:
+Вплети trails между соответствующими контекстами (fromContextId → toContextId).
 
-1. position → позицию: junior, middle, senior
-2. domains → домены: frontend, backend, devops, qa
-3. skills → навыки: ключевые технологии
-4. cityName, countryCode → локацию: город и страна
-5. industry → индустрию: tech, finance (если есть в JSON)
-6. creationReason → причины смены: зачем сменил работу/позицию
-7. birthYear → год рождения: "Мне X лет" (ТОЛЬКО если birthYear есть в JSON!)
-8. educationLevel → образование (ТОЛЬКО если есть в JSON!)
-9. citizenships → гражданство (ТОЛЬКО если есть в JSON!)
+## Формат
 
-**КРИТИЧЕСКИ ВАЖНО**:
-- НЕ выдумывай данные которых нет в JSON!
-- Если поля нет в JSON — НЕ упоминай его в рассказе вообще
-- Пример: если birthYear отсутствует — НЕ пиши "родился в X году"
-
-### Как вплетать trails (тропы)
-
-Trails - это обучающие активности между карьерными позициями.
-
-**Связь**: trail.fromContextId -> trail.toContextId
-
-**Формат вплетения**:
-- "Между [предыдущей] и [следующей] позицией я прошёл курс [courseName] на [platform], изучал [skill]"
-- "Для перехода на [позицию] я прошёл обучение: [описание trail]"
-- Если есть totalDurationWeeks: "курс занял X недель"
-- Если есть costUsd: "заплатил $X"
-
-**Пример**:
-"Чтобы перейти с middle на senior, я прошёл курс System Design на Coursera. Это заняло 8 недель."
-
-### Что НЕ упоминать
-
-- Технические ID: contextId, userId, trailId
-- Даты в ISO формате: вместо "2022-01-01T00:00:00Z" пиши "в 2022 году"
-- Структурные данные: не называй поля JSON
+Только текст, без JSON, без markdown.
 
 ---
-
-## Особые случаи
-
-### Множественные домены
-domains: ["frontend", "backend"]
--> "Я работал fullstack разработчиком"
-
-### Смена страны
-cityName: "Berlin", countryCode: "de"
--> "Переехал в Берлин, Германия"
-
-### Множественные причины смены
-creationReason: ["position_changed", "company_changed"]
--> "Сменил компанию и одновременно повысился"
-
-### Trail ведёт к первому контексту (fromContextId: null)
--> "До первой работы я прошёл курс X, чтобы подготовиться"
-
-### Несколько trails к одному контексту
--> Перечисли все: "Для перехода я прошёл: курс A и курс B"
-
----
-
-## Формат вывода
-
-ТОЛЬКО текст, без JSON, без markdown.
-Абзацы разделяй пустой строкой.
-3-6 абзацев в зависимости от количества контекстов.
-
----
-
-## JSON для преобразования
 
 \`\`\`json
 ${fixtureJson}

@@ -57,9 +57,10 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
   // eslint-disable-next-line complexity -- integration test with multiple workflow steps
   it("TC-E4: Context correction via edit flow", async () => {
     const userStories = new UserStories();
-    const u1 = userStories.getStoryBy("U1");
+    // U15: citizenships ["ru"] ≠ countryCode "us" — forces LLM to mention both
+    const u15 = userStories.getStoryBy("U15");
 
-    const story = await generateStoryFromFixture(u1);
+    const story = await generateStoryFromFixture(u15);
     const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
 
     console.log("TC-E4 [1/6]: Sending story → awaiting_plan_confirmation");
@@ -271,7 +272,7 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
    * Все строковые поля в lowercase (System Prompt requirement).
    *
    * Given:
-   * - U1 fixture → awaiting_plan_confirmation → confirm plan
+   * - U15 fixture (citizenships ≠ countryCode) → awaiting_plan_confirmation → confirm plan
    * - Extraction успешно (awaiting_context_confirmation)
    *
    * Then:
@@ -285,9 +286,10 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
    */
   it("TC-E1: Context extraction (skills, domains, position)", async () => {
     const userStories = new UserStories();
-    const u1 = userStories.getStoryBy("U1");
+    // U15: citizenships ["ru"] ≠ countryCode "us" — forces LLM to mention both
+    const u15 = userStories.getStoryBy("U15");
 
-    const story = await generateStoryFromFixture(u1);
+    const story = await generateStoryFromFixture(u15);
     const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
 
     console.log("TC-E1 [1/3]: Sending story → awaiting_plan_confirmation");
@@ -302,9 +304,9 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
     const extractionResponse = await runWorkflow("да, всё верно");
 
     if (extractionResponse.phase === PHASE.awaiting_clarification) {
-      console.log(
-        `TC-E1: ⚠️ Clarification needed for: ${extractionResponse.missingFields.map((f) => f.field).join(", ")}`,
-      );
+      console.log("TC-E1: ❌ CLARIFICATION NEEDED");
+      console.log("TC-E1: Missing fields:", JSON.stringify(extractionResponse.missingFields, null, 2));
+      console.log("TC-E1: Expected: citizenships from U1 fixture = ['de']");
       expect.fail("TC-E1 requires successful extraction without clarification");
     }
 
@@ -387,6 +389,9 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
     let currentResponse = await runWorkflow("да, всё верно");
 
     if (currentResponse.phase === PHASE.awaiting_clarification) {
+      console.log("TC-E2: ❌ CLARIFICATION NEEDED");
+      console.log("TC-E2: Missing fields:", JSON.stringify(currentResponse.missingFields, null, 2));
+      console.log("TC-E2: Expected: citizenships from U10 fixture = ['ru']");
       expect.fail("TC-E2 requires successful extraction without clarification");
     }
 
@@ -457,6 +462,12 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
     const story = await generateStoryFromFixture(u10);
     const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
 
+    console.log("TC-E3: === GENERATED STORY ===");
+    console.log(story);
+    console.log("TC-E3: === EXPECTED FROM FIXTURE ===");
+    console.log("citizenships:", JSON.stringify(u10.contexts[0]?.citizenships));
+    console.log("TC-E3: =========================");
+
     console.log("TC-E3 [1/4]: Sending U10 story → awaiting_plan_confirmation");
     const planResponse = await runWorkflow(storyWithTrigger);
 
@@ -472,6 +483,9 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
     let currentResponse = await runWorkflow("да, всё верно");
 
     if (currentResponse.phase === PHASE.awaiting_clarification) {
+      console.log("TC-E3: ❌ CLARIFICATION NEEDED");
+      console.log("TC-E3: Missing fields:", JSON.stringify(currentResponse.missingFields, null, 2));
+      console.log("TC-E3: Expected: citizenships from U10 fixture = ['ru']");
       expect.fail("TC-E3 requires successful extraction without clarification");
     }
 
@@ -497,8 +511,15 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
       seenContextIds.add(ctxId);
 
       console.log(`TC-E3: Context ${current}/${total}: "${currentResponse.entity.position}" (${ctxId})`);
+      console.log(`TC-E3: citizenships = ${JSON.stringify(currentResponse.entity.citizenships)}`);
 
       currentResponse = await runWorkflow("да, верно");
+    }
+
+    // Debug: что получили после всех контекстов
+    if (currentResponse.phase === PHASE.awaiting_clarification) {
+      console.log("TC-E3: ❌ AFTER LOOP - CLARIFICATION NEEDED");
+      console.log("TC-E3: Missing fields:", JSON.stringify(currentResponse.missingFields, null, 2));
     }
 
     // Should reach final confirmation
@@ -537,9 +558,10 @@ describe("Cold-Start V2: Extraction (TC-E)", () => {
    */
   it("TC-E5: Trail correction attempt (negative test)", async () => {
     const userStories = new UserStories();
-    const u10 = userStories.getStoryBy("U10"); // Has trails
+    // U15: citizenships ["ru"] ≠ countryCode "us" + has 1 trail
+    const u15 = userStories.getStoryBy("U15");
 
-    const story = await generateStoryFromFixture(u10);
+    const story = await generateStoryFromFixture(u15);
     const storyWithTrigger = story + STORY_COMPLETION_TRIGGER;
 
     console.log("TC-E5 [1/4]: Sending story with trails → awaiting_plan_confirmation");

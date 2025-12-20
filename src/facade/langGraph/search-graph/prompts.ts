@@ -1,3 +1,7 @@
+import { buildDictionaryHints } from "../shared/dictionary-hints.js";
+
+import type { ExtractionDictionaries } from "../shared/dictionary-hints.js";
+
 export type GoalExtractionDictionaries = {
   roles: string[];
   positions: string[];
@@ -63,25 +67,12 @@ MERGE RULES:
 - If user does NOT mention a field → KEEP existing value
 - Return the COMPLETE goal with ALL fields`;
 
-export type AdhocExtractionDictionaries = {
-  roles: string[];
-  positions: string[];
-  domains: string[];
-  skills: string[];
-};
-
 /**
  * Builds adhoc context extraction prompt with injected dictionaries.
  * Dictionaries help LLM map user input to canonical values.
  */
-export function buildAdhocExtractionPrompt(dicts: AdhocExtractionDictionaries): string {
-  const hints: string[] = [];
-  if (dicts.roles.length > 0) hints.push(`KNOWN ROLES: ${dicts.roles.join(", ")}`);
-  if (dicts.positions.length > 0) hints.push(`KNOWN POSITIONS: ${dicts.positions.join(", ")}`);
-  if (dicts.domains.length > 0) hints.push(`KNOWN DOMAINS: ${dicts.domains.join(", ")}`);
-  if (dicts.skills.length > 0) hints.push(`KNOWN SKILLS: ${dicts.skills.join(", ")}`);
-
-  const dictsSection = hints.length > 0 ? `\n${hints.join("\n")}\n` : "";
+export function buildAdhocExtractionPrompt(dicts: ExtractionDictionaries): string {
+  const dictsSection = buildDictionaryHints(dicts);
 
   return `Extract user's CURRENT career context (not goals). Response may be in any language.
 ${dictsSection}

@@ -280,12 +280,18 @@ function buildContextExtractionRules(hasCv: boolean): string {
 
   return `${cvMergeNote}- All terms: lowercase-kebab-case (e.g., "machine-learning", "data-science")
 - cityName: lowercase (e.g., "berlin", "san-francisco")
-- countryCode/citizenships: lowercase ISO 3166-1 alpha-2 (e.g., "de", "ru")
-- languages: lowercase ISO 639-1 (e.g., "en", "de")
+- countryCode: residence country, ISO alpha-2 (e.g., "de", "ru")
+- citizenships: nationality/passport countries array, ISO alpha-2 (e.g., ["de"], ["ru", "il"])
+- languages: B2+ proficiency languages, ISO 639-1 (e.g., ["en", "de"])
 - DO NOT invent data - extract ONLY what is explicitly mentioned`;
 }
 
-export function contextExtractionPrompt(messages: BaseMessage[], preview: string, cvText: string | null): string {
+export function contextExtractionPrompt(
+  messages: BaseMessage[],
+  preview: string,
+  cvText: string | null,
+  dictHints = "",
+): string {
   const text = serializeMessages(messages);
   const cvSection = cvText
     ? `\n═══════════════════════════════════════════════════
@@ -295,7 +301,7 @@ ${cvText}\n`
     : "";
 
   return `Extract career context for: "${preview}"
-
+${dictHints}
 CONVERSATION:
 ${text}
 ${cvSection}
@@ -307,12 +313,13 @@ ${buildContextExtractionRules(!!cvText)}
 ═══════════════════════════════════════════════════
 CAREER MODEL (3 distinct dimensions):
 ═══════════════════════════════════════════════════
-- ROLE: Profession type (WHAT you do)
-- POSITION: Seniority level (HOW experienced)
-- DOMAINS: Technical area (WHICH field)
+- ROLE: Profession type (WHAT you do) — map to KNOWN ROLES
+- POSITION: Seniority level (HOW experienced) — map to KNOWN POSITIONS
+- DOMAINS: Technical area (WHICH field) — map to KNOWN DOMAINS
 
 EXTRACTION RULES:
 - Extract ONLY explicitly mentioned information
+- Map user terms to KNOWN values when possible
 - Return null for fields not mentioned`;
 }
 
