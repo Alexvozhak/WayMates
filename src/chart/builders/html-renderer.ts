@@ -72,7 +72,7 @@ export class HtmlRenderer {
 
   private buildStyles(): string {
     return `<style>
-    body { font-family: system-ui, -apple-system, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; background: #f9fafb; }
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 95%; margin: 0 auto; padding: 20px; background: #f9fafb; }
     #controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .controls-row { display: flex; gap: 30px; flex-wrap: wrap; align-items: flex-start; }
     .control-group { flex: 1; min-width: 150px; }
@@ -84,7 +84,7 @@ export class HtmlRenderer {
     .buttons-group { display: flex; gap: 10px; align-items: flex-end; padding-bottom: 5px; }
     #export-btn { background: #10b981; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
     #export-btn:hover { background: #059669; }
-    #main-chart { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    #main-chart { }
     #metrics { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     #metrics table { width: 100%; border-collapse: collapse; }
     #metrics th, #metrics td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
@@ -252,7 +252,6 @@ export class HtmlRenderer {
     }`;
   }
 
-   
   private buildTraceBuilders(): string {
     return `
     function buildTracesForField(field, xaxisId, yaxisId, enabledCandidates) {
@@ -451,7 +450,7 @@ export class HtmlRenderer {
         showlegend: true, legend: { x: 1.02, y: 1, xanchor: 'left' },
         hovermode: 'closest',
         height: 300 + numFields * 160 + Math.max(candidates.length, 2) * 40,
-        margin: { r: 150, t: 60 }, annotations: [], shapes: []
+        margin: { l: 150, r: 150, t: 60 }, annotations: [], shapes: []
       };
 
       fields.forEach((field, index) => {
