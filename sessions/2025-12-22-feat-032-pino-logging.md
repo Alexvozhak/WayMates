@@ -34,8 +34,12 @@
 
 ### 6. Vitest Config Fix
 - Добавлен `env: loadEnv()` в `integration-search-read-only` и `integration-goals`
-- Причина: singleton `config = loadEnv()` в core/env.ts валидируется при импорте
-- Без env vars тесты падали с "NEO4J_URI: Required"
+- **Dynamic imports в globalSetup** — ESM импорты выполняются ДО top-level кода
+- Решение: `await import()` внутри `setup()` после загрузки env
+- Это НЕ антипаттерн — правильное решение для lazy loading с условиями
+
+### 7. Документация
+- Создан `docs/business/DEBUGGING-LOGS.md` — как отлаживать по логам
 
 ---
 
