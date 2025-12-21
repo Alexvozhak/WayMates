@@ -3,6 +3,8 @@ import { tool } from "langchain";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
+import { logger } from "../../logger.js";
+
 import { extractableContextSchema } from "./extraction-models.js";
 import { getModel } from "./models.js";
 
@@ -24,8 +26,6 @@ const contextExtractionModel = getModel("extraction").withStructuredOutput(extra
  */
 export const extractSingleContextTool = tool(
   async ({ text }: { text: string }): Promise<ExtractableContext | null> => {
-    console.log(`🔧 extract_single_context called with ${text.length} chars`);
-
     const prompt = `Extract ONE career position from the following text.
 
 TEXT:
@@ -68,7 +68,7 @@ Return null if no career position found.`;
         createdAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.error("Failed to extract single context:", error);
+      logger.error({ err: error }, "Failed to extract single context");
       return null;
     }
   },

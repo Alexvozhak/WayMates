@@ -2,6 +2,7 @@ import { Redis } from "ioredis";
 
 import { CoreClient } from "./core-client.js";
 import { config } from "./env.js";
+import { logger } from "./logger.js";
 import { createMcpServer } from "./mcp-server/mcp-server.js";
 import { AuthService } from "./services/auth.service.js";
 import { CheckpointService } from "./services/checkpoint.service.js";
@@ -62,12 +63,12 @@ async function main(): Promise<void> {
         port: config.FACADE_HTTP_PORT,
       },
     });
-    console.log(`🚀 WayMates Facade MCP Server (HTTP) listening on port ${config.FACADE_HTTP_PORT}`);
+    logger.info({ port: config.FACADE_HTTP_PORT }, "WayMates Facade MCP Server (HTTP) started");
   } else {
     await server.start({
       transportType: "stdio",
     });
-    console.log("🚀 WayMates Facade MCP Server (stdio) started successfully");
+    logger.info("WayMates Facade MCP Server (stdio) started");
   }
 }
 

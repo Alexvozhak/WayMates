@@ -2,6 +2,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import Bottleneck from "bottleneck";
 
 import { config } from "../../env.js";
+import { logger } from "../../logger.js";
 
 import type { BaseLanguageModelInput } from "@langchain/core/language_models/base";
 import type { AIMessageChunk } from "@langchain/core/messages";
@@ -22,11 +23,11 @@ const bottleneck = new Bottleneck({
 });
 
 bottleneck.on("failed", (error, jobInfo) => {
-  console.error("Facade rate limit job failed:", error, jobInfo);
+  logger.error({ err: error, jobInfo }, "Facade rate limit job failed");
 });
 
 bottleneck.on("retry", (message, jobInfo) => {
-  console.log("Facade rate limit retry:", message, jobInfo);
+  logger.warn({ message, jobInfo }, "Facade rate limit retry");
 });
 
 export class RateLimitedChatOpenAI extends ChatOpenAI {

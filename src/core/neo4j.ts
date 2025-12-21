@@ -1,25 +1,20 @@
 import neo4j from "neo4j-driver";
 
+import { config } from "./env.js";
+
 import type { Driver, ManagedTransaction } from "neo4j-driver";
 
-type Credentials = {
-  uri: string;
-  user: string;
-  password: string;
-};
-
 export function createDriver(options?: { uri?: string }): Driver {
-  const { uri, user, password } = getCredentials(options?.uri);
+  const uri = options?.uri ?? config.NEO4J_URI;
+  const { NEO4J_USER: user, NEO4J_PASSWORD: password, NEO4J_MAX_POOL_SIZE: maxPoolSize } = config;
 
-  const maxPoolSize = process.env.NEO4J_MAX_POOL_SIZE ? Number.parseInt(process.env.NEO4J_MAX_POOL_SIZE, 10) : 50;
-
-  const config: neo4j.Config = {
+  const driverConfig: neo4j.Config = {
     encrypted: false,
     disableLosslessIntegers: true,
     maxConnectionPoolSize: maxPoolSize,
   };
 
-  const driver = neo4j.driver(uri, neo4j.auth.basic(user, password), config);
+  const driver = neo4j.driver(uri, neo4j.auth.basic(user, password), driverConfig);
   return driver;
 }
 
@@ -66,16 +61,4 @@ export async function withDriver<T>(fn: (driver: Driver) => Promise<T>): Promise
   } finally {
     await driver.close();
   }
-}
-
-function getCredentials(uriOverride?: string): Credentials {
-  const uri = uriOverride ?? process.env.NEO4J_URI;
-  const user = process.env.NEO4J_USER;
-  const password = process.env.NEO4J_PASSWORD;
-
-  if (!uri || !user || !password) {
-    throw new Error("Missing required environment variables: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD");
-  }
-
-  return { uri, user, password };
 }

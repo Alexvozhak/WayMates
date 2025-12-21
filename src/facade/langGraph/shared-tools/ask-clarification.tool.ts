@@ -19,18 +19,12 @@ export const askClarificationTool = tool(
     const { toolCallId, state } = runtime;
     const { missingFields, currentEntityContext, clarificationRound } = state;
 
-    console.log(
-      `🔧 ask_clarification: asking for ${missingFields.length} missing fields (round ${clarificationRound + 1})`,
-    );
-
     const userMessage = interrupt({
       type: "clarification",
       message: "Уточните следующие поля:",
       missingFields,
       currentEntity: currentEntityContext?.preview,
     });
-
-    console.log("📥 ask_clarification: user responded:", userMessage);
 
     return new Command({
       update: {

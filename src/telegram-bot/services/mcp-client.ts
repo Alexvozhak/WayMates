@@ -4,6 +4,7 @@ import { CallToolResultSchema, TextContentSchema } from "@modelcontextprotocol/s
 
 import packageJson from "../../../package.json" with { type: "json" };
 import { McpClientError } from "../errors.js";
+import { logger } from "../logger-instance.js";
 
 import { TOOL_REGISTRY } from "./tool-registry.js";
 
@@ -43,16 +44,11 @@ export class McpClient {
       const result = CallToolResultSchema.parse(rawResult);
       const content = TextContentSchema.parse(result.content[0]);
 
-      // DEBUG: Log raw response before JSON parse (helps debug FastMCP errors)
       if (!content.text.trim().startsWith("{")) {
-        console.error(`[MCP Client] Non-JSON response from tool '${toolName}':`, content.text.slice(0, 500));
+        logger.error({ toolName, response: content.text.slice(0, 500) }, "Non-JSON response from MCP tool");
       }
 
       const data = JSON.parse(content.text);
-
-      // DEBUG: Log parsed data before validation
-      console.log(`[MCP Client DEBUG] Parsed data from '${toolName}':`, JSON.stringify(data, null, 2).slice(0, 1000));
-
       const validatedResponse = tool.responseSchema.parse(data);
       return validatedResponse;
     } catch (error) {

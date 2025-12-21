@@ -60,11 +60,6 @@ export class GraphManager {
     const threadId = `${input.type}_${input.userId}`;
     const result = await this.executeGraph(input, threadId);
 
-    // DEBUG: Check result before wrapping
-    console.log("[GRAPH MANAGER] graph type:", input.type);
-    console.log("[GRAPH MANAGER] result phase:", result.phase);
-    console.log("[GRAPH MANAGER] result keys:", Object.keys(result));
-
     if (TERMINAL_PHASES.has(result.phase)) {
       await this.deps.checkpointService.delete(threadId);
     }
@@ -111,11 +106,7 @@ export class GraphManager {
 
       case "search": {
         const graph = new SearchGraph(this.deps);
-        const searchResult = await graph.run(input.message, threadId, input.userId, input.intent);
-        console.log("[EXECUTE GRAPH] search result phase:", searchResult.phase);
-        console.log("[EXECUTE GRAPH] search result keys:", Object.keys(searchResult));
-        console.log("[EXECUTE GRAPH] search result JSON:", JSON.stringify(searchResult, null, 2));
-        return searchResult;
+        return graph.run(input.message, threadId, input.userId, input.intent);
       }
     }
   }

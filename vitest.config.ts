@@ -102,6 +102,7 @@ export default defineConfig(() => {
             setupFiles: ["./tests/core/helpers/drivers/shared-driver.ts"],
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
+            env: loadEnv("test", process.cwd(), ""),
           },
         },
         // Goals CRUD tests (sequential, isolated data reload per test)
@@ -119,6 +120,7 @@ export default defineConfig(() => {
             setupFiles: ["./tests/core/helpers/drivers/goals-driver.ts"],
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
+            env: loadEnv("test", process.cwd(), ""),
           },
         },
         // Dictionaries tests (sequential, write operations)

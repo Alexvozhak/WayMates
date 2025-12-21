@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 
 import { createHTTPHandler } from "@trpc/server/adapters/standalone";
 
+import { logger } from "./logger.js";
 import { appRouter } from "./routers/app.router.js";
 
 import type { CoreContext } from "./routers/trpc.js";
@@ -27,5 +28,5 @@ export function startTRPCServer(context: CoreContext, port: number, host: string
   const server = createTRPCServer(context);
 
   server.listen(port, host);
-  console.log(`🚀 WayMates Core tRPC Server listening on ${host}:${port}`);
+  logger.info({ host, port }, "WayMates Core tRPC Server started");
 }

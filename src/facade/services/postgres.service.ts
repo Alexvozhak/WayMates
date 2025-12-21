@@ -1,6 +1,7 @@
 import pg from "pg";
 
 import { PostgresConnectionError } from "../errors.js";
+import { logger } from "../logger.js";
 
 import type { QueryResult, QueryResultRow } from "pg";
 
@@ -9,7 +10,7 @@ export class PostgresService {
     const pool = new pg.Pool(poolConfig);
 
     pool.on("error", (err) => {
-      console.error("Unexpected error on idle PostgreSQL client", err);
+      logger.error({ err }, "Unexpected error on idle PostgreSQL client");
     });
 
     try {

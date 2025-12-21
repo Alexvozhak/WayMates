@@ -3,6 +3,7 @@ import { tool } from "langchain";
 import { z } from "zod";
 
 import { trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
+import { logger } from "../../logger.js";
 
 import { getModel } from "./models.js";
 
@@ -66,11 +67,9 @@ export const linkContextsWithTrailTool = tool(
   }): Promise<Trail | null> => {
     // CRITICAL: Validate contextIds BEFORE extraction to prevent waste
     if (!fromContext.contextId || !toContext.contextId) {
-      console.warn("Cannot link contexts without IDs");
+      logger.warn("Cannot link contexts without IDs");
       return null;
     }
-
-    console.log(`🔧 link_contexts_with_trail: ${fromContext.position} → ${toContext.position}`);
 
     const prompt = buildTransitionPrompt(fromContext, toContext, text);
 
@@ -91,7 +90,7 @@ export const linkContextsWithTrailTool = tool(
         toContextId: toId,
       });
     } catch (error) {
-      console.error("Failed to link contexts with trail:", error);
+      logger.error({ err: error }, "Failed to link contexts with trail");
       return null;
     }
   },

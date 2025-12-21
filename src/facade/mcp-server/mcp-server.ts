@@ -19,6 +19,7 @@ import {
   mcpUpsertTrailParamsSchema,
 } from "../../shared/schemas.js";
 import { throwToolError } from "../errors.js";
+import { logger } from "../logger.js";
 
 import { AuthTool } from "./tools/auth.tool.js";
 import { ColdStartTool } from "./tools/cold-start.tool.js";
@@ -139,10 +140,10 @@ function registerConverseTool(server: FastMCP, tool: ConverseTool): void {
         if (result.ok) {
           return JSON.stringify(result.value, null, 2);
         }
-        console.error("[converse.tool] Tool returned error result:", JSON.stringify(result.error, null, 2));
+        logger.error({ error: result.error }, "[converse.tool] Tool returned error result");
         throwToolError(result.error);
       } catch (error) {
-        console.error("[converse.tool] Exception during execution:", error);
+        logger.error({ err: error }, "[converse.tool] Exception during execution");
         throw error;
       }
     },

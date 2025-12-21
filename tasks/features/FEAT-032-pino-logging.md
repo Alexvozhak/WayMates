@@ -1,9 +1,10 @@
 # FEAT-032: Pino Structured Logging
 
-**Статус:** PENDING
+**Статус:** ✅ DONE
 **Приоритет:** P1
 **Зависимости:** Нет
 **Блокирует:** Repo Split (Фаза 3)
+**Реализовано:** 2025-12-22
 
 ---
 
@@ -13,30 +14,31 @@
 
 ---
 
-## Текущее состояние
+## Реализовано
 
-| Модуль | Pino | console.* | requestId |
-|--------|------|-----------|-----------|
-| telegram-bot | ✅ `logger.ts` | — | ❌ |
-| facade | ❌ | 24 вызова | ❌ |
-| core | ❌ | ? | ❌ |
-
----
-
-## Scope
-
-### 1. Shared Logger (`src/shared/logger.ts`)
+### 1. Shared Env Architecture (`src/shared/env/`)
 
 ```typescript
-// Factory для создания logger с service name
-export function createLogger(service: string): Logger
+// base.ts — общие переменные для всех модулей
+export const baseEnvSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+});
 
-// Child logger с requestId для correlation
-export function createRequestLogger(
-  baseLogger: Logger,
-  requestId: string,
-  userId?: string
-): Logger
+// utils.ts — factory для создания env loader
+export function createEnvLoader<T>(schema: T, serviceName: string): () => z.infer<T>
+```
+
+**Модули расширяют базовую схему:**
+- `telegram-bot/env.ts` → `baseEnvSchema.extend({ TELEGRAM_BOT_TOKEN, ... })`
+- `facade/env.ts` → `baseEnvSchema.extend({ REDIS_HOST, CORE_API_URL, ... })`
+- `core/env.ts` → `baseEnvSchema.extend({ NEO4J_URI, CORE_PORT, ... })` (NEW)
+
+### 2. Shared Logger (`src/shared/logger.ts`)
+
+```typescript
+export function createLogger(service: ServiceName, config: LoggerConfig): Logger
+export function createRequestLogger(baseLogger: Logger, fields: RequestFields): Logger
 ```
 
 **Конфигурация:**
@@ -45,75 +47,39 @@ export function createRequestLogger(
 - Prod: JSON stdout
 - Redaction: password, token, apiKey
 
-### 2. Telegram Bot
+### 3. Module Loggers
 
-- [x] `logger.ts` уже есть (перенести в shared)
-- [ ] Генерировать `requestId` в handlers
-- [ ] Передавать `requestId` в MCP params
-- [ ] ~5 файлов, ~20 строк
-
-### 3. Facade
-
-- [ ] Заменить 24 `console.*` на `logger.*`
-- [ ] Читать `requestId` из MCP params
-- [ ] Child logger в BaseTool
-- [ ] ~10 файлов, ~40 строк
-
-### 4. Core
-
-- [ ] Создать `src/core/logger.ts`
-- [ ] Логировать tRPC methods (INFO)
-- [ ] Логировать slow queries >500ms (WARN)
-- [ ] ~3 файла, ~15 строк
-
----
-
-## Принцип логирования
-
-**Логируй ГРАНИЦЫ, не внутренности:**
-
-| Level | Что логировать | Где |
-|-------|----------------|-----|
-| INFO | User action, tool start/end, API call | Границы модулей |
-| WARN | Slow query, rate limit, retry | Проблемы |
-| ERROR | Exceptions, failures | Ошибки |
-| DEBUG | Cache hit/miss, internal state | Отладка (off в prod) |
-
-**Обязательные поля:**
-- `requestId` — correlation между модулями
-- `userId` — кто делает запрос
-- `durationMs` — сколько заняло
-
----
-
-## Как будем использовать логи
-
-**Claude Code workflow:**
-1. Получаем feedback/error
-2. Ищем по requestId: `docker logs facade | jq 'select(.requestId == "abc")'`
-3. Видим полный trace запроса через все модули
-4. Определяем причину
-
-**Production:**
-- JSON в stdout → Railway logs
-- Поиск через Railway UI или CLI
+| Модуль | Logger Singleton | console.* |
+|--------|------------------|-----------|
+| telegram-bot | `logger-instance.ts` | ✅ 0 |
+| facade | `logger.ts` | ✅ 0 |
+| core | `logger.ts` | ✅ 0 |
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] `src/shared/logger.ts` с factory functions
-- [ ] Telegram: requestId генерируется и передаётся
-- [ ] Facade: 0 console.* вызовов
-- [ ] Core: slow queries логируются
-- [ ] requestId прокидывается telegram → facade → core
-- [ ] `npm run lint` — 0 errors
-- [ ] `npx tsc --noEmit` — 0 errors
+- [x] `src/shared/logger.ts` с factory functions
+- [x] `src/shared/env/` с base schema + createEnvLoader
+- [x] Facade: 0 console.* вызовов
+- [x] Core: env.ts создан, console.* заменены
+- [x] Telegram: logger мигрирован в shared
+- [x] `npm run lint` — 0 errors
+- [x] `npx tsc --noEmit` — 0 errors
+- [x] vitest.config.ts: добавлен `env: loadEnv()` в integration-* проекты
 
 ---
 
-## Оценка
+## Отложено (P1)
 
-**LOC:** ~80
-**Файлов:** ~20
-**Время:** 2-3 часа
+- [ ] requestId генерация в telegram handlers
+- [ ] requestId propagation через MCP params
+- [ ] slow queries logging (>500ms) в Core
+
+---
+
+## Статистика
+
+**LOC:** ~122 (новый код)
+**Файлов:** 8 новых + 16 обновлённых
+**console.* заменено:** ~28 вызовов

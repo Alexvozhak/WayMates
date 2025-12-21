@@ -19,19 +19,19 @@
 
 import { loadEnv } from "vite";
 
-import { createDriver } from "./src/core/neo4j.js";
-import { DatabaseFixture } from "./tests/core/helpers/database-fixture.js";
-import { importStories } from "./tests/core/helpers/import-stories.js";
-import { UserStories } from "./tests/core/helpers/user-stories.js";
-
 import type { Driver } from "neo4j-driver";
 
 export async function setup(): Promise<void> {
   console.log("[Global Setup] Starting global setup for integration tests...");
 
-  // Load .env.test into process.env
-  const env = loadEnv("test", process.cwd(), "");
-  Object.assign(process.env, env);
+  // Load .env.test BEFORE dynamic imports that use config singletons
+  Object.assign(process.env, loadEnv("test", process.cwd(), ""));
+
+  // Dynamic imports AFTER env is loaded
+  const { createDriver } = await import("./src/core/neo4j.js");
+  const { DatabaseFixture } = await import("./tests/core/helpers/database-fixture.js");
+  const { importStories } = await import("./tests/core/helpers/import-stories.js");
+  const { UserStories } = await import("./tests/core/helpers/user-stories.js");
 
   const driver: Driver = createDriver();
   const dbFixture = new DatabaseFixture(driver);

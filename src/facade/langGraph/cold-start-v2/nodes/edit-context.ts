@@ -2,6 +2,7 @@ import { HumanMessage } from "@langchain/core/messages";
 
 import { userContextSchema } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
+import { logger } from "../../../logger.js";
 import { contextCorrectionModel } from "../../shared-tools/extraction-models.js";
 import { contextCorrectionPrompt } from "../prompts.js";
 import { PHASE } from "../state.js";
@@ -44,7 +45,7 @@ export async function editContextNode(state: ColdStartStateType): Promise<Partia
 
   const parseResult = userContextSchema.safeParse(mergedContext);
   if (!parseResult.success) {
-    console.error("[editContextNode] LLM returned invalid context:", parseResult.error.flatten());
+    logger.error({ zodErrors: parseResult.error.flatten() }, "[editContextNode] LLM returned invalid context");
     return { phase: PHASE.failed };
   }
 

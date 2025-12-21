@@ -1,6 +1,7 @@
 import { interrupt } from "@langchain/langgraph";
 
 import { extractGoalValues, generateTrajectoryChart, isChartServiceEnabled } from "../../../../chart/index.js";
+import { logger } from "../../../logger.js";
 import { OPTIONS, PHASE } from "../state.js";
 
 import type { SearchStateType } from "../state.js";
@@ -27,7 +28,7 @@ export async function showResultsNode(state: SearchStateType): Promise<Partial<S
       });
       chartUrl = result.chartUrl;
     } catch (error) {
-      console.error("Chart generation failed:", error);
+      logger.error({ err: error }, "Chart generation failed");
     }
   }
 

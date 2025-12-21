@@ -2,6 +2,8 @@ import { HumanMessage } from "@langchain/core/messages";
 import { tool } from "langchain";
 import { z } from "zod";
 
+import { logger } from "../../logger.js";
+
 import { extractableTrailSchema } from "./extraction-models.js";
 import { getModel } from "./models.js";
 
@@ -24,8 +26,6 @@ const trailExtractionModel = getModel("extraction").withStructuredOutput(extract
  */
 export const extractSingleTrailTool = tool(
   async ({ text }: { text: string }): Promise<ExtractableTrail | null> => {
-    console.log(`🔧 extract_single_trail called with ${text.length} chars`);
-
     const prompt = `Extract ONE career transition (trail) from the following text.
 
 TEXT:
@@ -56,7 +56,7 @@ Return null if no transition found.`;
 
       return extracted;
     } catch (error) {
-      console.error("Failed to extract single trail:", error);
+      logger.error({ err: error }, "Failed to extract single trail");
       return null;
     }
   },
