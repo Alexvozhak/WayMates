@@ -205,8 +205,9 @@ Senior frontend developer в e-commerce, Берлин, TypeScript, React.
    */
   it("TC-UC-DEC3: Russian approve variants", async () => {
     const fullContextInput = `
-Data engineer в стартапе, Санкт-Петербург.
+Data engineer в стартапе, Санкт-Петербург с февраля 2023.
 Python, Spark, Airflow. Домен: data-engineering.
+Компания маленькая (до 50 человек). Отрасль: tech.
 Мне 32 года, гражданство РФ.
     `.trim();
 
