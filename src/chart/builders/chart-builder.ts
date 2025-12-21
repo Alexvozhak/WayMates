@@ -6,6 +6,7 @@ import { HtmlRenderer } from "./html-renderer.js";
 import type { ScoredMatchedCandidate, UserContext } from "../../shared/schemas.js";
 import type {
   ChartableField,
+  DynamicLevels,
   GoalValues,
   Locale,
   OverlapSummary,
@@ -33,6 +34,7 @@ export class ChartBuilder {
   private readonly overlapSummaries: OverlapSummary[];
   private readonly metrics: SimilarityMetrics[];
   private readonly timeRange: TimeRange;
+  private readonly dynamicLevels: DynamicLevels;
 
   constructor(private readonly input: ChartBuildInput) {
     this.trajectories = this.transformTrajectories();
@@ -40,6 +42,7 @@ export class ChartBuilder {
     this.overlapSummaries = summaries;
     this.metrics = metrics;
     this.timeRange = this.calculateTimeRange();
+    this.dynamicLevels = this.calculateDynamicLevels();
   }
 
   /**
@@ -54,6 +57,7 @@ export class ChartBuilder {
       timeRange: this.timeRange,
       locale: this.input.locale,
       goalValues: this.input.goalValues,
+      dynamicLevels: this.dynamicLevels,
     });
 
     return renderer.render();
@@ -90,4 +94,27 @@ export class ChartBuilder {
       maxTime: Math.max(...allTimestamps),
     };
   }
+
+  /* eslint-disable max-depth -- collecting values from nested structure */
+  private calculateDynamicLevels(): DynamicLevels {
+    const levels: DynamicLevels = {};
+
+    for (const field of this.input.fields) {
+      const uniqueValues = new Set<string>();
+
+      for (const traj of this.trajectories) {
+        for (const point of traj.points) {
+          const value = point.values[field];
+          if (value !== null && value !== undefined && typeof value === "string") {
+            uniqueValues.add(value);
+          }
+        }
+      }
+
+      levels[field] = [...uniqueValues].toSorted();
+    }
+
+    return levels;
+  }
+  /* eslint-enable max-depth */
 }

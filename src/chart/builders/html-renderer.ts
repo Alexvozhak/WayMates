@@ -2,6 +2,7 @@ import { GOAL_STAR_COLOR } from "../config/colors.js";
 
 import type {
   ChartableField,
+  DynamicLevels,
   GoalValues,
   Locale,
   OverlapSummary,
@@ -17,10 +18,12 @@ export type ChartRenderData = {
   timeRange: { minTime: number; maxTime: number };
   locale: Locale;
   goalValues: GoalValues;
+  dynamicLevels: DynamicLevels;
 };
 
 const FIELD_LABELS: Record<ChartableField, string> = {
   position: "Grade",
+  role: "Role",
   domains: "Domain",
   cityName: "City",
   industry: "Industry",
@@ -196,6 +199,7 @@ export class HtmlRenderer {
       overlapSummaries: this.data.overlapSummaries,
       timeRange: this.data.timeRange,
       goalValues: this.data.goalValues,
+      dynamicLevels: this.data.dynamicLevels,
     });
 
     return `<script>
@@ -218,14 +222,16 @@ export class HtmlRenderer {
   private buildPlotlyHelpers(): string {
     return `
     function getFieldConfig(field) {
-      const configs = {
-        position: { label: 'Grade', levels: ['junior', 'middle', 'senior', 'lead'] },
-        domains: { label: 'Domain', levels: [] },
-        cityName: { label: 'City', levels: [] },
-        industry: { label: 'Industry', levels: [] },
-        salaryExact: { label: 'Salary', levels: [] }
+      const labels = {
+        position: 'Grade',
+        role: 'Role',
+        domains: 'Domain',
+        cityName: 'City',
+        industry: 'Industry',
+        salaryExact: 'Salary'
       };
-      return configs[field] || { label: field, levels: [] };
+      const levels = chartData.dynamicLevels[field] || [];
+      return { label: labels[field] || field, levels };
     }
 
     function hasGoal() {
@@ -246,7 +252,7 @@ export class HtmlRenderer {
     }`;
   }
 
-  // eslint-disable-next-line max-lines-per-function -- JS string generation
+   
   private buildTraceBuilders(): string {
     return `
     function buildTracesForField(field, xaxisId, yaxisId, enabledCandidates) {
@@ -261,42 +267,15 @@ export class HtmlRenderer {
         const rawValues = traj.points.map(p => p.values[field]);
         const y = levels.length > 0 ? rawValues.map(v => v === null ? null : levels.indexOf(v)) : rawValues;
         const text = rawValues.map(v => v === null ? '—' : String(v));
-        const hasMatchedContext = traj.matchedContextIndex !== undefined && traj.matchedContextIndex >= 0;
-
-        if (hasMatchedContext && traj.candidateType === 'pathfinder') {
-          const matchedIdx = traj.matchedContextIndex;
-          if (matchedIdx > 0) {
-            traces.push({
-              x: x.slice(0, matchedIdx + 1), y: y.slice(0, matchedIdx + 1), text: text.slice(0, matchedIdx + 1),
-              mode: 'lines+markers', name: traj.label + ' (path to goal)',
-              line: { color: traj.color, width: traj.width, shape: 'hv' },
-              marker: { size: 6, color: traj.color }, legendgroup: traj.label,
-              showlegend: field === chartData.selectedFields[0],
-              hovertemplate: '<b>%{text}</b><br>%{x|%Y-%m-%d}<extra>' + traj.label + '</extra>',
-              xaxis: xaxisId, yaxis: yaxisId
-            });
-          }
-          if (matchedIdx < x.length - 1) {
-            traces.push({
-              x: x.slice(matchedIdx), y: y.slice(matchedIdx), text: text.slice(matchedIdx),
-              mode: 'lines+markers', name: traj.label + ' (after)',
-              line: { color: traj.color, width: traj.width, shape: 'hv' },
-              marker: { size: 6, color: traj.color }, opacity: 0.4, legendgroup: traj.label,
-              showlegend: false, hovertemplate: '<b>%{text}</b><br>%{x|%Y-%m-%d}<extra>' + traj.label + '</extra>',
-              xaxis: xaxisId, yaxis: yaxisId
-            });
-          }
-        } else {
-          const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : traj.candidateType === 'pathfinder' ? ' (Pathfinder)' : '';
-          traces.push({
-            x, y, text, mode: 'lines+markers', name: traj.label + badge,
-            line: { color: traj.color, width: traj.width, shape: 'hv' },
-            marker: { size: 6, color: traj.color }, legendgroup: traj.label,
-            showlegend: field === chartData.selectedFields[0],
-            hovertemplate: '<b>%{text}</b><br>%{x|%Y-%m-%d}<extra>' + traj.label + '</extra>',
-            xaxis: xaxisId, yaxis: yaxisId
-          });
-        }
+        const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : traj.candidateType === 'pathfinder' ? ' (Pathfinder)' : '';
+        traces.push({
+          x, y, text, mode: 'lines+markers', name: traj.label + badge,
+          line: { color: traj.color, width: traj.width, shape: 'hv' },
+          marker: { size: 6, color: traj.color }, legendgroup: traj.label,
+          showlegend: field === chartData.selectedFields[0],
+          hovertemplate: '<b>%{text}</b><br>%{x|%Y-%m-%d}<extra>' + traj.label + '</extra>',
+          xaxis: xaxisId, yaxis: yaxisId
+        });
       }
       return traces;
     }
@@ -330,10 +309,10 @@ export class HtmlRenderer {
 
         traces.push({
           x: [new Date(minTime), new Date(maxTime)], y: [yValue, yValue],
-          mode: 'lines', name: 'Goal: ' + goalValue,
+          mode: 'lines', name: 'Ваша цель',
           line: { color: GOAL_STAR_COLOR, width: 2, dash: 'dash' },
           legendgroup: 'goal', showlegend: index === 0,
-          hovertemplate: '<b>Goal: ' + goalValue + '</b><extra></extra>',
+          hovertemplate: '<b>Цель: ' + goalValue + '</b><extra></extra>',
           xaxis: xaxisId, yaxis: yaxisId
         });
       });

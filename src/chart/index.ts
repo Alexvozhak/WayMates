@@ -1,3 +1,9 @@
+/**
+ * Chart Service — Career Trajectory Visualization
+ *
+ * @see docs/facade/CHART-SERVICE-DESIGN.md — терминология, бизнес-смысл, FAQ
+ */
+
 import { ChartBuilder } from "./builders/chart-builder.js";
 import { DEFAULT_FIELDS, extractGrade } from "./config/aspect-configs.js";
 import { getR2Config, R2StorageService } from "./services/r2-storage.js";

@@ -43,7 +43,14 @@ export const ASPECT_CONFIGS: Record<ChartableField, AspectConfig> = {
     field: "position",
     labels: { ru: "Грейд", en: "Grade" },
     extractValue: (ctx: UserContext) => extractGrade(ctx.position),
-    getLevels: () => ["junior", "middle", "senior", "lead"],
+    getLevels: () => [], // dynamic
+  },
+
+  role: {
+    field: "role",
+    labels: { ru: "Роль", en: "Role" },
+    extractValue: (ctx: UserContext) => ctx.role ?? null,
+    getLevels: () => [], // dynamic
   },
 
   domains: {
@@ -79,4 +86,4 @@ export const ASPECT_CONFIGS: Record<ChartableField, AspectConfig> = {
  * Default fields to display on chart (all except salary).
  * User can toggle via checkboxes in HTML.
  */
-export const DEFAULT_FIELDS: ChartableField[] = ["position", "domains", "cityName", "industry"];
+export const DEFAULT_FIELDS: ChartableField[] = ["position", "role", "domains", "cityName", "industry"];

@@ -10,6 +10,7 @@ import type { ScoredMatchedCandidate, UserContext } from "../shared/schemas.js";
  */
 const CHARTABLE_FIELDS = [
   "position", // → extract grade (junior/middle/senior/lead)
+  "role", // → role/function
   "domains", // → first domain
   "cityName", // → city
   "industry", // → industry
@@ -99,6 +100,13 @@ export type Locale = "ru" | "en";
  * Maps chartable fields to their target values.
  */
 export type GoalValues = Partial<Record<ChartableField, string | number | null>>;
+
+/**
+ * Dynamic levels for each chartable field.
+ * Collected from User + Candidates data at runtime.
+ * Used for Y-axis tick labels and Goal Line positioning.
+ */
+export type DynamicLevels = Partial<Record<ChartableField, string[]>>;
 
 export type GenerateChartInput = {
   userTrajectory: UserContext[];
