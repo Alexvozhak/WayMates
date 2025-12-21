@@ -66,6 +66,22 @@ export default defineConfig(() => {
             env: loadEnv("test", process.cwd(), ""),
           },
         },
+        // Facade unit tests with LLM (no infrastructure, longer timeout)
+        {
+          test: {
+            name: "facade-unit-llm",
+            include: ["tests/facade/services/unit/**/*.spec.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: false,
+                singleThread: true, // Sequential to avoid rate limit issues
+              },
+            },
+            testTimeout: 30_000, // 30s for LLM calls
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
         // Read-only search tests (parallel execution, shared globalSetup data)
         {
           test: {

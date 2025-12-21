@@ -36,7 +36,7 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     if (guardResult) return guardResult;
 
     // 3. Project info — investor, tech, user documentation
-    const docContent = await this.getProjectInfo(intent);
+    const docContent = await this.getProjectInfo(intent, params.message);
     if (docContent) return createSystemMessage(docContent);
 
     // 4. Query — getStory, getGoal, deleteGoal, deleteContext, deleteTrail
@@ -50,16 +50,16 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     return createSystemMessage("I didn't understand. Try 'help' for available commands.");
   }
 
-  private async getProjectInfo(intent: UserIntent): Promise<string | null> {
+  private async getProjectInfo(intent: UserIntent, question: string): Promise<string | null> {
     switch (intent) {
       case NON_GRAPH_INTENT.projectInvestor: {
-        return this.documentary.getInvestorPitch();
+        return this.documentary.answerInvestorQuestion(question);
       }
       case NON_GRAPH_INTENT.projectTech: {
-        return this.documentary.getTechOverview();
+        return this.documentary.answerTechQuestion(question);
       }
       case NON_GRAPH_INTENT.projectUser: {
-        return this.documentary.getUserInfo();
+        return this.documentary.answerUserQuestion(question);
       }
       default: {
         return null;
