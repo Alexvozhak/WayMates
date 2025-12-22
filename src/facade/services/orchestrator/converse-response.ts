@@ -1,12 +1,12 @@
 export type { ConverseResponse } from "../../../shared/schemas.js";
 export { converseResponseSchema } from "../../../shared/schemas.js";
 
-import type { AnyGraphResponse, ConverseResponse } from "../../../shared/schemas.js";
+import type { ConverseResponse } from "../../../shared/schemas.js";
 
-export function createSystemMessage(content: string): ConverseResponse {
-  return { result: { phase: "system_message", content }, activeGraph: null };
-}
-
-export function createGraphResponse(result: AnyGraphResponse, activeGraph: string): ConverseResponse {
-  return { result, activeGraph };
+export function createNlpResponse(message: string): ConverseResponse {
+  return {
+    result: { phase: "system_message" },
+    message,
+    activeGraph: null,
+  };
 }

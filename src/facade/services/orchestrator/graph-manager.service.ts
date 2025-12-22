@@ -1,15 +1,16 @@
 import { ColdStartGraph } from "../../langGraph/cold-start-v2/cold-start-graph.js";
 import { SearchGraph } from "../../langGraph/search-graph/search-graph.js";
+import { PHASE } from "../../langGraph/shared/phases.js";
+import { getModel } from "../../langGraph/shared-tools/models.js";
 import { UpdateContextGraph } from "../../langGraph/update-context/update-context-graph.js";
 import { UpsertContextGraph } from "../../langGraph/upsert-context/upsert-context-graph.js";
 import { UpsertTrailGraph } from "../../langGraph/upsert-trail/upsert-trail-graph.js";
+import { NlpFormatter } from "../nlp-formatter/index.js";
 
 import { loadCurrentContext } from "./context-utils.js";
-import { createGraphResponse } from "./converse-response.js";
 import { type GraphIntent, type UserIntent, graphIntentSchema } from "./intent-classifier.js";
 
-import type { ConverseResponse } from "./converse-response.js";
-import type { AnyGraphResponse, UserId } from "../../../shared/schemas.js";
+import type { AnyGraphResponse, ConverseResponse, UserId } from "../../../shared/schemas.js";
 import type { GraphDeps } from "../../langGraph/shared/types.js";
 
 const GRAPH_TYPES = ["cold_start", "upsert_context", "upsert_trail", "update_context", "search"] as const;
@@ -30,7 +31,11 @@ const INTENT_TO_GRAPH: Record<GraphIntent, GraphType> = {
 const TERMINAL_PHASES = new Set(["saved", "cancelled", "failed"]);
 
 export class GraphManager {
-  constructor(private readonly deps: GraphDeps) {}
+  private readonly nlpFormatter: NlpFormatter;
+
+  constructor(private readonly deps: GraphDeps) {
+    this.nlpFormatter = new NlpFormatter(getModel("agent"));
+  }
 
   async executeActiveGraph(intent: UserIntent, message: string, userId: UserId): Promise<ConverseResponse | null> {
     const activeGraphType = await this.findActiveGraph(userId);
@@ -53,7 +58,10 @@ export class GraphManager {
   private async cancel(graphType: GraphType, userId: UserId): Promise<ConverseResponse> {
     const threadId = `${graphType}_${userId}`;
     await this.deps.checkpointService.delete(threadId);
-    return createGraphResponse({ phase: "cancelled" }, graphType);
+
+    const result = { phase: PHASE.cancelled };
+    const message = await this.nlpFormatter.format(result, graphType);
+    return { result, message, activeGraph: graphType };
   }
 
   private async run(input: GraphInput): Promise<ConverseResponse> {
@@ -64,7 +72,8 @@ export class GraphManager {
       await this.deps.checkpointService.delete(threadId);
     }
 
-    return createGraphResponse(result, input.type);
+    const message = await this.nlpFormatter.format(result, input.type);
+    return { result, message, activeGraph: input.type };
   }
 
   private async findActiveGraph(userId: UserId): Promise<GraphType | null> {

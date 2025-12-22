@@ -1,4 +1,4 @@
-import { createSystemMessage } from "./converse-response.js";
+import { createNlpResponse } from "./converse-response.js";
 
 import type { ConverseResponse } from "./converse-response.js";
 import type { UserIntent } from "./intent-classifier.js";
@@ -48,17 +48,17 @@ export class FlowGuardChecker {
   async check(intent: UserIntent, userId: UserId): Promise<ConverseResponse | null> {
     // Help
     if (intent === "help") {
-      return createSystemMessage(helpMessage);
+      return createNlpResponse(helpMessage);
     }
 
     // Unknown — unclear or garbage input
     if (intent === "unknown") {
-      return createSystemMessage(unknownMessage);
+      return createNlpResponse(unknownMessage);
     }
 
     // Cancel without active graph (active graph handled in ConverseTool)
     if (intent === "cancel") {
-      return createSystemMessage(cancelNoActiveMessage);
+      return createNlpResponse(cancelNoActiveMessage);
     }
 
     const state = await this.coreClient.client.user.getState.query({ userId });
@@ -67,17 +67,17 @@ export class FlowGuardChecker {
     if (!state.hasContext) {
       const isStart = intent === "startStory" || intent === "startAdhoc";
       if (!isStart) {
-        return createSystemMessage(onboardingMessage);
+        return createNlpResponse(onboardingMessage);
       }
       return null;
     }
 
     // Goal guards
     if (intent === "getGoal" && !state.hasGoal) {
-      return createSystemMessage(goalNotSetMessage);
+      return createNlpResponse(goalNotSetMessage);
     }
     if (intent === "deleteGoal" && !state.hasGoal) {
-      return createSystemMessage(goalNotSetDeleteMessage);
+      return createNlpResponse(goalNotSetDeleteMessage);
     }
 
     return null;

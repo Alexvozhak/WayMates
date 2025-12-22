@@ -1,5 +1,5 @@
 import { loadCurrentContext } from "./context-utils.js";
-import { createSystemMessage } from "./converse-response.js";
+import { createNlpResponse } from "./converse-response.js";
 
 import type { ConverseResponse } from "./converse-response.js";
 import type { UserIntent } from "./intent-classifier.js";
@@ -44,7 +44,7 @@ export class QueryExecutor {
         return this.deleteContext(userId);
       }
       case "deleteTrail": {
-        return createSystemMessage(trailDeleteUsageMessage);
+        return createNlpResponse(trailDeleteUsageMessage);
       }
       default: {
         return null;
@@ -55,33 +55,33 @@ export class QueryExecutor {
   private async getStory(userId: UserId): Promise<ConverseResponse> {
     const story = await this.coreClient.client.story.getStory.query({ userId });
     if (story.contexts.length === 0) {
-      return createSystemMessage(storyEmptyMessage);
+      return createNlpResponse(storyEmptyMessage);
     }
-    return createSystemMessage(createStoryStatsMessage(story.contexts.length, story.trails.length));
+    return createNlpResponse(createStoryStatsMessage(story.contexts.length, story.trails.length));
   }
 
   private async getGoal(userId: UserId): Promise<ConverseResponse> {
     const goal = await this.coreClient.client.goal.getByUser.query({ userId });
     if (!goal) {
-      return createSystemMessage(goalNotSetMessage);
+      return createNlpResponse(goalNotSetMessage);
     }
-    return createSystemMessage(goalExistsMessage);
+    return createNlpResponse(goalExistsMessage);
   }
 
   private async deleteGoal(userId: UserId): Promise<ConverseResponse> {
     const result = await this.coreClient.client.goal.delete.mutate({ userId });
     if (!result.success) {
-      return createSystemMessage(goalDeleteFailedMessage);
+      return createNlpResponse(goalDeleteFailedMessage);
     }
-    return createSystemMessage(goalDeletedMessage);
+    return createNlpResponse(goalDeletedMessage);
   }
 
   private async deleteContext(userId: UserId): Promise<ConverseResponse> {
     const currentContext = await loadCurrentContext(this.coreClient, userId);
     if (!currentContext) {
-      return createSystemMessage(contextDeleteFailedMessage);
+      return createNlpResponse(contextDeleteFailedMessage);
     }
     await this.coreClient.client.context.delete.mutate({ userId, contextId: currentContext.contextId });
-    return createSystemMessage(contextDeletedMessage);
+    return createNlpResponse(contextDeletedMessage);
   }
 }

@@ -5,8 +5,6 @@ import { initSentry } from "../shared/sentry.js";
 import { createBot } from "./bot.js";
 import { config } from "./env.js";
 import { logger } from "./logger-instance.js";
-import { CrudGraphPresenter } from "./presenters/crud-graph-presenter.js";
-import { SearchGraphPresenter } from "./presenters/search-graph-presenter.js";
 import { SystemMessagePresenter } from "./presenters/system-message-presenter.js";
 import { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import { McpClient } from "./services/mcp-client.js";
@@ -61,24 +59,6 @@ const llmConfig = {
   temperature: config.FORMATTER_LLM_TEMPERATURE,
 };
 
-const searchGraphPresenter = new SearchGraphPresenter(
-  config.OPENAI_API_KEY,
-  llmConfig,
-  config.TELEGRAM_PRESENTER_RPM_LIMIT,
-  config.TELEGRAM_PRESENTER_MAX_CONCURRENT,
-  logger,
-  config.OPENAI_API_BASE,
-);
-
-const crudGraphPresenter = new CrudGraphPresenter(
-  config.OPENAI_API_KEY,
-  llmConfig,
-  config.TELEGRAM_PRESENTER_RPM_LIMIT,
-  config.TELEGRAM_PRESENTER_MAX_CONCURRENT,
-  logger,
-  config.OPENAI_API_BASE,
-);
-
 const systemMessagePresenter = new SystemMessagePresenter(
   config.OPENAI_API_KEY,
   llmConfig,
@@ -102,8 +82,6 @@ const bot = createBot(
   {
     mcpClient,
     sessionService,
-    searchGraphPresenter,
-    crudGraphPresenter,
     systemMessagePresenter,
     welcomePresenter,
     openaiApiKey: config.OPENAI_API_KEY,

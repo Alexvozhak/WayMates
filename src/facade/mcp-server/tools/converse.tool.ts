@@ -1,5 +1,5 @@
 import { mcpConverseParamsSchema } from "../../../shared/schemas.js";
-import { createSystemMessage } from "../../services/orchestrator/converse-response.js";
+import { createNlpResponse } from "../../services/orchestrator/converse-response.js";
 import { FlowGuardChecker } from "../../services/orchestrator/flow-guard-checker.service.js";
 import { GraphManager } from "../../services/orchestrator/graph-manager.service.js";
 import { classifyIntent, NON_GRAPH_INTENT } from "../../services/orchestrator/intent-classifier.js";
@@ -37,7 +37,7 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
 
     // 3. Project info — investor, tech, user documentation
     const docContent = await this.getProjectInfo(intent, params.message);
-    if (docContent) return createSystemMessage(docContent);
+    if (docContent) return createNlpResponse(docContent);
 
     // 4. Query — getStory, getGoal, deleteGoal, deleteContext, deleteTrail
     const queryResult = await this.queryExecutor.execute(intent, userId);
@@ -47,7 +47,7 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     const graphResult = await this.graphManager.executeNewGraph(intent, params.message, userId);
     if (graphResult) return graphResult;
 
-    return createSystemMessage("I didn't understand. Try 'help' for available commands.");
+    return createNlpResponse("I didn't understand. Try 'help' for available commands.");
   }
 
   private async getProjectInfo(intent: UserIntent, question: string): Promise<string | null> {

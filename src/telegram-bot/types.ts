@@ -1,6 +1,4 @@
 import type { SessionId, UserId } from "../shared/schemas.js";
-import type { CrudGraphPresenter } from "./presenters/crud-graph-presenter.js";
-import type { SearchGraphPresenter } from "./presenters/search-graph-presenter.js";
 import type { SystemMessagePresenter } from "./presenters/system-message-presenter.js";
 import type { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import type { McpClient } from "./services/mcp-client.js";
@@ -18,8 +16,6 @@ export type LlmConfig = {
 export type BotServices = {
   mcpClient: McpClient;
   sessionService: SessionService;
-  searchGraphPresenter: SearchGraphPresenter;
-  crudGraphPresenter: CrudGraphPresenter;
   systemMessagePresenter: SystemMessagePresenter;
   welcomePresenter: WelcomePresenter;
   openaiApiKey: string;

@@ -1169,7 +1169,6 @@ export type SearchGraphResponse = z.infer<typeof searchGraphResponseSchema>;
  */
 export const systemMessageSchema = z.object({
   phase: z.literal("system_message"),
-  content: z.string(),
 });
 
 export type SystemMessage = z.infer<typeof systemMessageSchema>;
@@ -1194,10 +1193,14 @@ export type AnyGraphResponse = z.infer<typeof anyGraphResponseSchema>;
 
 /**
  * Response from converse.tool MCP endpoint.
- * Contains graph result + active graph name for routing.
+ * Contains:
+ * - result: structured graph data (for UI, buttons, machine processing)
+ * - message: full NLP text (ready for display, needs translation only)
+ * - activeGraph: graph name for routing
  */
 export const converseResponseSchema = z.object({
   result: anyGraphResponseSchema,
+  message: z.string(),
   activeGraph: z.string().nullable(),
 });
 
