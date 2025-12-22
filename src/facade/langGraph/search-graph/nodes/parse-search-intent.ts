@@ -39,8 +39,14 @@ function extractClarificationText(parsed: ParsedIntent): string | null {
   return parsed.clarificationText;
 }
 
+function extractAdvisorQuestion(parsed: ParsedIntent): string | null {
+  if (parsed.intent !== "ask") return null;
+  if (!("question" in parsed)) return null;
+  return parsed.question;
+}
+
 function shouldKeepUserResponse(intent: ParsedIntent["intent"]): boolean {
-  return intent === "proceed" || intent === "filter";
+  return intent === "proceed" || intent === "filter" || intent === "ask";
 }
 
 function computeNewPositionRound(
@@ -56,7 +62,7 @@ function computeNewPositionRound(
  * Parse search intent node: classifies user response and extracts intent-specific data.
  */
 export const parseSearchIntentNode = withLogging<SearchStateType>(
-  "parse_search_intent",
+  NODE.parse_search_intent,
   async (state, _config, { normalizer }) => {
     const { userResponse, phase, extractedGoal, newPositionRound } = state;
 
@@ -77,6 +83,7 @@ export const parseSearchIntentNode = withLogging<SearchStateType>(
       searchUserIntent: parsed.intent,
       targetSearchParams,
       clarificationText: extractClarificationText(parsed),
+      advisorQuestion: extractAdvisorQuestion(parsed),
       newPositionRound: updatedRound,
     };
 

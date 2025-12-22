@@ -13,20 +13,25 @@ import { clarifyIntentNode } from "./nodes/clarify-intent.js";
 import { deleteGoalNode } from "./nodes/delete-goal.js";
 import { exploreNode } from "./nodes/explore.js";
 import { extractGoalNode } from "./nodes/extract-goal.js";
+import { generateAnswerNode } from "./nodes/generate-answer.js";
 import { loadContextNode } from "./nodes/load-context.js";
 import { loadExistingGoalNode } from "./nodes/load-existing-goal.js";
+import { parseAdvisorIntentNode } from "./nodes/parse-advisor-intent.js";
 import { parseSearchIntentNode } from "./nodes/parse-search-intent.js";
 import { searchNode } from "./nodes/search.js";
 import { setGoalNode } from "./nodes/set-goal.js";
+import { showAnswerNode } from "./nodes/show-answer.js";
 import { showExplorationNode } from "./nodes/show-exploration.js";
 import { showGoalNode } from "./nodes/show-goal.js";
 import { showResultsNode } from "./nodes/show-results.js";
 import { validateGoalNode } from "./nodes/validate-goal.js";
 import { responseBuilders } from "./response-builders.js";
 import {
+  ADVISOR_ROUTE_MAP,
   APPLY_FILTERS_ROUTE_MAP,
   CHECK_GOAL_ROUTE_MAP,
   PARSE_INTENT_ALL_DESTINATIONS,
+  routeAfterAdvisor,
   routeAfterApplyFilters,
   routeAfterCheckGoal,
   routeAfterParseSearchIntent,
@@ -113,6 +118,9 @@ export function createGraphBuilder() {
     .addNode(NODE.search, searchNode)
     .addNode(NODE.show_results, showResultsNode)
     .addNode(NODE.apply_filters, applyFiltersNode)
+    .addNode(NODE.generate_answer, generateAnswerNode)
+    .addNode(NODE.show_answer, showAnswerNode)
+    .addNode(NODE.parse_advisor_intent, parseAdvisorIntentNode)
     .addNode(NODE.cancel, cancelNode)
 
     .addEdge(START, NODE.load_context)
@@ -139,6 +147,12 @@ export function createGraphBuilder() {
     .addEdge(NODE.load_existing_goal, NODE.show_goal)
     .addEdge(NODE.delete_goal, NODE.explore)
     .addConditionalEdges(NODE.apply_filters, routeAfterApplyFilters, APPLY_FILTERS_ROUTE_MAP)
+
+    // Advisor flow: generate_answer → show_answer → parse_advisor_intent → (ask: loop, done: END)
+    .addEdge(NODE.generate_answer, NODE.show_answer)
+    .addEdge(NODE.show_answer, NODE.parse_advisor_intent)
+    .addConditionalEdges(NODE.parse_advisor_intent, routeAfterAdvisor, ADVISOR_ROUTE_MAP)
+
     .addEdge(NODE.cancel, END);
 }
 /* eslint-enable @typescript-eslint/explicit-function-return-type */

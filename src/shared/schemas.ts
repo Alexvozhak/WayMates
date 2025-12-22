@@ -1149,6 +1149,11 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     currentFilters: currentAvailableFiltersSchema.nullable(),
     appliedCurrentFilters: currentAppliedFiltersSchema.nullable(),
   }),
+  z.object({
+    phase: z.literal("advising"),
+    answerText: z.string(),
+    options: z.array(z.string()),
+  }),
   z.object({ phase: z.literal("cancelled") }),
   z.object({ phase: z.literal("failed") }),
 ]);

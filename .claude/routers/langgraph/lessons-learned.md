@@ -642,6 +642,7 @@ console.log("[load_context] adhoc extraction:", { extracted, normalized });
 20. **Named Conditions**: Если в условии 2+ проверки — выноси в именованную константу (`const isEmpty = !value || value.trim() === ""`)
 21. **Semantic Field Dependencies**: При тестировании missing fields через omit — используй НЕЗАВИСИМЫЕ поля (см. #21 ниже)
 22. **Multi-Phase State**: В multi-turn тестах используй ОДНУ переменную currentResponse, обновляя её на каждом шаге
+23. **Two-Node Pattern**: interrupt() прерывает, return не достигается → state пустой. Решение: generate_* (бизнес → state) → show_* (interrupt)
 
 ## 🔗 Связанные Документы
 

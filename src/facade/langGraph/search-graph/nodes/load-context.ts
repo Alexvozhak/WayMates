@@ -3,6 +3,7 @@ import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.j
 import { loadExtractionDicts } from "../../shared/dictionary-hints.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildAdhocExtractionPrompt } from "../prompts.js";
+import { NODE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { AdhocContextBase } from "../../../../shared/schemas.js";
@@ -27,7 +28,7 @@ async function extractAdhocContext(message: string, dicts: ExtractionDictionarie
 }
 
 export const loadContextNode = withLogging<SearchStateType>(
-  "load_context",
+  NODE.load_context,
   async (state, _config, { coreClient, normalizer, cache }) => {
     if (state.intent === GRAPH_INTENT.startAdhoc) {
       const dicts = await loadExtractionDicts(cache);

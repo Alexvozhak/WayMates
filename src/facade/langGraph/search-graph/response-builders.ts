@@ -88,6 +88,12 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     appliedCurrentFilters: state.appliedFilters,
   }),
 
+  [PHASE.advising]: (state) => ({
+    phase: PHASE.advising,
+    answerText: state.currentAnswer ?? "",
+    options: OPTIONS.advising,
+  }),
+
   [PHASE.cancelled]: () => ({
     phase: PHASE.cancelled,
   }),

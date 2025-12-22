@@ -16,12 +16,13 @@ const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, No
   [PHASE.showing_exploration,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_goal,          buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.clarify_intent, NODE.cancel])],
   [PHASE.asking_after_validate,  buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_results,       buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_results,       buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
 ]);
 
 // Static route maps (not phase-dependent)
 export const CHECK_GOAL_ROUTE_MAP = buildRouteMap([NODE.search, NODE.explore, NODE.load_existing_goal]);
 export const APPLY_FILTERS_ROUTE_MAP = buildRouteMap([NODE.explore, NODE.search]);
+export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.cancel]);
 
 // =============================================================================
 // ROUTES: маппинг intent → node (фабрика с state-dependent параметрами)
@@ -40,7 +41,7 @@ function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, Rout
     [PHASE.showing_exploration]: { proceed: NODE.extract_goal, filter: NODE.apply_filters, cancel: NODE.cancel, unknown: NODE.clarify_intent },
     [PHASE.showing_goal]:        { validate: NODE.validate_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, save: NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
     [PHASE.asking_after_validate]:{ save: NODE.set_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, change: canChangePosition ? NODE.extract_goal : NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.showing_results]:     { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.load_existing_goal, delete: NODE.delete_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showing_results]:     { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.load_existing_goal, delete: NODE.delete_goal, ask: NODE.generate_answer, cancel: NODE.cancel, unknown: NODE.clarify_intent },
   } satisfies Partial<Record<SearchPhase, RouteMap>>;
 }
 
@@ -86,6 +87,10 @@ export function routeAfterCheckGoal(state: SearchStateType): NodeName {
 
 export function routeAfterApplyFilters(state: SearchStateType): NodeName {
   return state.existingGoal ? NODE.search : NODE.explore;
+}
+
+export function routeAfterAdvisor(state: SearchStateType): NodeName {
+  return state.advisorIntent === "ask" ? NODE.generate_answer : NODE.cancel;
 }
 
 export function isTerminalPhase(phase: SearchPhase): boolean {

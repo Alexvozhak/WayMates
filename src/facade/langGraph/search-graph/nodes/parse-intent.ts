@@ -22,6 +22,11 @@ const intentWithFiltersSchema = z.object({
       filters: z.null(),
     }),
     z.object({
+      intent: z.literal("ask"),
+      question: z.string(),
+      filters: z.null(),
+    }),
+    z.object({
       intent: z.enum(["proceed", "save", "change", "delete", "cancel", "unknown"]),
       filters: z.null(),
     }),

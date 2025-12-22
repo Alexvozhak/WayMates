@@ -30,6 +30,7 @@ export const searchPhaseSchema = z.enum([
   "deleting_goal",
   "searching",
   "showing_results",
+  "advising",
   "cancelled",
   "failed",
 ]);
@@ -56,6 +57,9 @@ export const NODE = {
   search: "search",
   show_results: "show_results",
   apply_filters: "apply_filters",
+  generate_answer: "generate_answer",
+  show_answer: "show_answer",
+  parse_advisor_intent: "parse_advisor_intent",
   cancel: "cancel",
 } as const;
 
@@ -69,8 +73,11 @@ export type SearchUserIntent =
   | "change"
   | "delete"
   | "filter"
+  | "ask"
   | "cancel"
   | "unknown";
+
+export type AdvisorIntent = "ask" | "done";
 
 export const searchStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
@@ -100,6 +107,11 @@ export const searchStateAnnotation = Annotation.Root({
   chartUrl: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 
   searchUserIntent: Annotation<SearchUserIntent | null>({ reducer: lastValue, default: () => null }),
+
+  // Advisor mode state
+  advisorIntent: Annotation<AdvisorIntent | null>({ reducer: lastValue, default: () => null }),
+  advisorQuestion: Annotation<string | null>({ reducer: lastValue, default: () => null }),
+  currentAnswer: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 });
 
 export type SearchStateType = typeof searchStateAnnotation.State;
@@ -112,4 +124,5 @@ export const OPTIONS = {
   showGoal: ["validate", "clarify", "save", "cancel"],
   askAfterValidate: ["save", "change", "cancel"],
   showResults: ["change", "delete", "filter", "cancel"],
+  advising: ["ask more", "done"],
 };

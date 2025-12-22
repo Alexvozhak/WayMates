@@ -6,7 +6,7 @@ import { withLogging } from "../with-logging.js";
 import type { SearchStateType } from "../state.js";
 
 export const validateGoalNode = withLogging<SearchStateType>(
-  "validate_goal",
+  NODE.validate_goal,
   async (state, _config, { coreClient, normalizer }) => {
     const { extractedGoal, existingGoal, userId, targetSearchParams } = state;
 

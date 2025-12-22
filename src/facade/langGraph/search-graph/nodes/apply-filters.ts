@@ -8,7 +8,7 @@ import { parseUserIntent } from "./parse-intent.js";
 import type { SearchStateType } from "../state.js";
 
 export const applyFiltersNode = withLogging<SearchStateType>(
-  "apply_filters",
+  NODE.apply_filters,
   async (state, _config, { normalizer }) => {
     const { userResponse } = state;
 
