@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SearchUserCareersTool } from "../../../../src/facade/mcp-server/tools/search-user-careers.tool.js";
@@ -33,6 +35,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   it("SUC1: Full flow - returns candidates based on user's stored context", async () => {
     const params: McpSearchUserCareersParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       limit: 10,
       pathLimit: 5,
       excludedContextFields: [],
@@ -54,6 +57,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_00000000-0000-7000-8000-000000000000";
     const params: McpSearchUserCareersParams = {
       sessionId: invalidSession,
+      requestId: randomUUID(),
       limit: 10,
       pathLimit: 5,
       excludedContextFields: [],
@@ -78,6 +82,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
 
     const params: McpSearchUserCareersParams = {
       sessionId: emptySession,
+      requestId: randomUUID(),
       limit: 10,
       pathLimit: 5,
       excludedContextFields: [],
@@ -98,6 +103,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   it("SUC4: Field exclusion applied - respects excludedContextFields parameter", async () => {
     const params: McpSearchUserCareersParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       limit: 10,
       pathLimit: 5,
       excludedContextFields: ["industry"],
@@ -118,6 +124,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   it("SUC5: Creation reason filtering - respects excludedCreationReasons parameter", async () => {
     const params: McpSearchUserCareersParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       limit: 10,
       pathLimit: 5,
       excludedContextFields: [],

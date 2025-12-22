@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { DeleteContextTool } from "../../../../src/facade/mcp-server/tools/delete-context.tool.js";
@@ -50,6 +52,7 @@ describe("DeleteContextTool Integration Tests", () => {
     const deleteParams: McpDeleteContextParams = {
       sessionId: testSessionId,
       contextId,
+      requestId: randomUUID(),
     };
 
     const result = await deleteTool.execute(deleteParams);
@@ -67,6 +70,7 @@ describe("DeleteContextTool Integration Tests", () => {
     const params: McpDeleteContextParams = {
       sessionId: invalidSession,
       contextId: "ctx_01933ec5-c5f0-7a57-af82-87199be6cbbb",
+      requestId: randomUUID(),
     };
 
     const result = await deleteTool.execute(params);
@@ -83,6 +87,7 @@ describe("DeleteContextTool Integration Tests", () => {
     const params: McpDeleteContextParams = {
       sessionId: testSessionId,
       contextId: "ctx_01933ec5-c5f0-7a57-af82-87199be6cccc",
+      requestId: randomUUID(),
     };
 
     const result = await deleteTool.execute(params);

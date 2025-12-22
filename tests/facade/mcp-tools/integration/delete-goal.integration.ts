@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { DeleteGoalTool } from "../../../../src/facade/mcp-server/tools/delete-goal.tool.js";
@@ -31,6 +33,7 @@ describe("DeleteGoalTool Integration Tests", () => {
   it("DG1: Delete existing goal - removes goal successfully", async () => {
     const setParams: McpSetGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
       }),
@@ -39,6 +42,7 @@ describe("DeleteGoalTool Integration Tests", () => {
 
     const deleteParams: McpDeleteGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
     };
 
     const result = await deleteTool.execute(deleteParams);
@@ -52,6 +56,7 @@ describe("DeleteGoalTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_00000000-0000-7000-8000-000000000000";
     const params: McpDeleteGoalParams = {
       sessionId: invalidSession,
+      requestId: randomUUID(),
     };
 
     const result = await deleteTool.execute(params);
@@ -67,6 +72,7 @@ describe("DeleteGoalTool Integration Tests", () => {
   it("DG3: Idempotent delete - deleting non-existent goal succeeds", async () => {
     const params: McpDeleteGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
     };
 
     const result = await deleteTool.execute(params);

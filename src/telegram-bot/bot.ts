@@ -16,6 +16,7 @@ import { handleStart } from "./handlers/start.js";
 import { handleToken } from "./handlers/token.js";
 import { handleVoice } from "./handlers/voice.js";
 import { createRateLimitMiddleware } from "./middleware/rate-limit.js";
+import { timingMiddleware } from "./middleware/timing.js";
 
 import type { BotEnv } from "./env.js";
 import type { BotContext, BotServices, MySessionData } from "./types.js";
@@ -67,6 +68,7 @@ export function createBot(
     await next();
   });
 
+  bot.use(timingMiddleware);
   bot.use(sessionInitGuard);
 
   // Rate limiting for user spam protection

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { GetGoalTool } from "../../../../src/facade/mcp-server/tools/get-goal.tool.js";
@@ -38,6 +40,7 @@ describe("GetGoalTool Integration Tests", () => {
   it("GG1: Retrieve saved goal - returns user's target context", async () => {
     const setParams: McpSetGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python"] },
@@ -48,6 +51,7 @@ describe("GetGoalTool Integration Tests", () => {
 
     const getParams: McpGetGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetUserId: null,
     };
 
@@ -68,6 +72,7 @@ describe("GetGoalTool Integration Tests", () => {
 
     const params: McpGetGoalParams = {
       sessionId: newSession,
+      requestId: randomUUID(),
       targetUserId: null,
     };
 

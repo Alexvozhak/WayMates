@@ -39,4 +39,5 @@ export type BotContext = Context &
   HydrateFlavor<Context> &
   SessionFlavor<MySessionData> & {
     services: BotServices;
+    requestId: string;
   };

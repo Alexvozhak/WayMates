@@ -8,7 +8,7 @@ import type { BotContext } from "../types.js";
  *
  * Flow:
  * 1. Get sessionId from session
- * 2. Call converse.tool with message
+ * 2. Call converse.tool with message + requestId (from timing middleware)
  * 3. Format ConverseResponse via LLM
  * 4. Reply to user
  *
@@ -25,6 +25,7 @@ export async function handleConverse(ctx: BotContext): Promise<void> {
   const converseResp = await ctx.services.mcpClient.callTool("converse", {
     sessionId,
     message,
+    requestId: ctx.requestId,
   });
 
   const formatted = await formatResponse(converseResp, ctx.services, ctx.from?.language_code);

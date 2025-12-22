@@ -18,14 +18,20 @@ export function createWithLogging<NodeEnum extends Record<string, string>>() {
   return function withLogging<S extends StateWithUserId>(
     nodeName: NodeEnum[keyof NodeEnum],
     fn: NodeFn<S>,
-  ): (state: S, config: LangGraphRunnableConfig) => Partial<S> | Promise<Partial<S>> {
-    return (state: S, config: LangGraphRunnableConfig) => {
+  ): (state: S, config: LangGraphRunnableConfig) => Promise<Partial<S>> {
+    return async (state: S, config: LangGraphRunnableConfig) => {
       if (!hasConfigDeps(config)) {
         throw new AgentInvariantError(nodeName, "Config deps required");
       }
       const deps = config.configurable;
+      const start = Date.now();
       deps.logger.info({ node: nodeName, userId: state.userId }, `Executing ${nodeName}`);
-      return fn(state, config, deps);
+
+      const result = await fn(state, config, deps);
+
+      const durationMs = Date.now() - start;
+      deps.logger.info({ node: nodeName, durationMs }, `Completed ${nodeName}`);
+      return result;
     };
   };
 }

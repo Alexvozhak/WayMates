@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeAll, afterEach } from "vitest";
 
 import { AuthService } from "../../../../src/facade/services/auth.service.js";
@@ -29,7 +31,7 @@ describe("Auth Tool Integration Tests", () => {
     ctx = FacadeTestContext.getInstance();
     sessionMiddleware = new SessionService(ctx.redis);
     authService = new AuthService(sessionMiddleware, ctx.userService);
-    authTool = new AuthTool(authService);
+    authTool = new AuthTool(authService, ctx.logger);
   });
 
   afterEach(async () => {
@@ -46,7 +48,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-1: Register returns token + sessionId + warning and creates DB record", async () => {
-    const result = await authTool.execute({ token: null });
+    const result = await authTool.execute({ token: null, requestId: randomUUID() });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -66,7 +68,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-2: Authenticate with valid token returns sessionId", async () => {
-    const registerResult = await authTool.execute({ token: null });
+    const registerResult = await authTool.execute({ token: null, requestId: randomUUID() });
     expect(registerResult.ok).toBe(true);
     if (!registerResult.ok) return;
     if (!isRegisterResult(registerResult.value)) return;
@@ -77,7 +79,7 @@ describe("Auth Tool Integration Tests", () => {
     const userId = await sessionMiddleware.validate(firstSessionId);
     createdUserIds.push(userId);
 
-    const authResult = await authTool.execute({ token });
+    const authResult = await authTool.execute({ token, requestId: randomUUID() });
 
     expect(authResult.ok).toBe(true);
     if (!authResult.ok) return;
@@ -93,7 +95,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-3: Single Active Session - new auth revokes previous session", async () => {
-    const registerResult = await authTool.execute({ token: null });
+    const registerResult = await authTool.execute({ token: null, requestId: randomUUID() });
     expect(registerResult.ok).toBe(true);
     if (!registerResult.ok) return;
     if (!isRegisterResult(registerResult.value)) return;
@@ -110,7 +112,7 @@ describe("Auth Tool Integration Tests", () => {
     const pointerKeyBefore = await ctx.redis.get(`user:currentSession:${userId}`);
     expect(pointerKeyBefore).toBe(firstSessionId);
 
-    const authResult = await authTool.execute({ token });
+    const authResult = await authTool.execute({ token, requestId: randomUUID() });
     expect(authResult.ok).toBe(true);
     if (!authResult.ok) return;
 
@@ -131,7 +133,7 @@ describe("Auth Tool Integration Tests", () => {
   it("AUTH-4: Invalid token returns error code invalid_token", async () => {
     const fakeToken = "00000000-0000-7000-8000-000000000000";
 
-    const result = await authTool.execute({ token: fakeToken });
+    const result = await authTool.execute({ token: fakeToken, requestId: randomUUID() });
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -141,7 +143,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-5: Session created by auth is valid for other tools", async () => {
-    const registerResult = await authTool.execute({ token: null });
+    const registerResult = await authTool.execute({ token: null, requestId: randomUUID() });
     expect(registerResult.ok).toBe(true);
     if (!registerResult.ok) return;
     if (!isRegisterResult(registerResult.value)) return;
@@ -156,7 +158,7 @@ describe("Auth Tool Integration Tests", () => {
   });
 
   it("AUTH-6: authenticate() works multiple times with same token", async () => {
-    const registerResult = await authTool.execute({ token: null });
+    const registerResult = await authTool.execute({ token: null, requestId: randomUUID() });
     expect(registerResult.ok).toBe(true);
     if (!registerResult.ok) return;
     if (!isRegisterResult(registerResult.value)) return;
@@ -170,7 +172,7 @@ describe("Auth Tool Integration Tests", () => {
     // Wait and re-authenticate
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const authResult = await authTool.execute({ token });
+    const authResult = await authTool.execute({ token, requestId: randomUUID() });
     expect(authResult.ok).toBe(true);
     if (!authResult.ok) return;
 

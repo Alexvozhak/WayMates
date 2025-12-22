@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
+import { randomUUID } from "node:crypto";
+
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 
 import { SessionService } from "../../../src/telegram-bot/services/session-service.js";
@@ -27,12 +29,13 @@ const TEST_USER_2 = 999002;
 
 /**
  * Creates minimal BotContext for testing.
- * SessionService only uses: ctx.from?.id and ctx.session
+ * SessionService only uses: ctx.from?.id, ctx.session, ctx.requestId
  */
 function createBotContext(userId?: number): BotContext {
   return {
     from: userId ? { id: userId } : undefined,
     session: { status: "uninitialised" },
+    requestId: randomUUID(),
   } as BotContext;
 }
 

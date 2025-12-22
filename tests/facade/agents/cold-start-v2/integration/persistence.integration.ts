@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { PHASE } from "../../../../../src/facade/langGraph/cold-start-v2/cold-start-graph.js";
@@ -22,7 +24,12 @@ describe("Cold-Start V2: Data Persistence (TC-D)", () => {
   const threadId = `cold_start_${testUserId}`;
 
   const runTool = async (message: string): Promise<ColdStartResponse> => {
-    const result = await coldStartTool.execute({ sessionId: testSessionId, message, cvText: null });
+    const result = await coldStartTool.execute({
+      sessionId: testSessionId,
+      requestId: randomUUID(),
+      message,
+      cvText: null,
+    });
     if (!result.ok) {
       console.error(`ColdStartTool error:`, JSON.stringify(result.error, null, 2));
       throw new Error(`ColdStartTool failed: ${result.error.message}`);

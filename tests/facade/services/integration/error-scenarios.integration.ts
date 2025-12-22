@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SearchCareersTool } from "../../../../src/facade/mcp-server/tools/search-careers.tool.js";
@@ -21,6 +23,7 @@ const createFacadeSearchParams = (
   }>,
 ): McpSearchCareersParams => ({
   sessionId,
+  requestId: randomUUID(),
   referenceContext,
   limit: 10,
   pathLimit: 10,
@@ -128,6 +131,7 @@ describe("Error Handling Integration Tests", () => {
 
     const params: McpUpdateContextParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       message: "short", // Less than 10 chars
     };
 

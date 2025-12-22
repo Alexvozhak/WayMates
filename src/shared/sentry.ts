@@ -35,6 +35,10 @@ export function initSentry(config: SentryConfig): void {
     dsn: config.dsn,
     environment: config.environment,
     serverName: config.service,
+    // 10% for MVP (50-200 users)
+    // Free tier: 10K transactions/month
+    // 200 users × 10 req/day × 30 days × 0.1 = 6K — fits free tier
+    tracesSampleRate: 0.1,
   });
 }
 

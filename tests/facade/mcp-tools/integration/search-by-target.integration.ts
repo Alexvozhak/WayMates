@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SearchByTargetTool } from "../../../../src/facade/mcp-server/tools/search-by-target.tool.js";
@@ -27,6 +29,7 @@ describe("SearchByTargetTool Integration Tests", () => {
   it("SBT1: Full flow with normalization - returns candidates matching target", async () => {
     const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python", "React"] },
@@ -50,6 +53,7 @@ describe("SearchByTargetTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_00000000-0000-7000-8000-000000000000";
     const params: McpSearchByTargetParams = {
       sessionId: invalidSession,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
       }),
@@ -71,6 +75,7 @@ describe("SearchByTargetTool Integration Tests", () => {
   it("SBT3: Typos normalized before Core - LLM corrects target criteria", async () => {
     const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         skills: { mode: "desired", values: ["Pyton"] },
       }),
@@ -92,6 +97,7 @@ describe("SearchByTargetTool Integration Tests", () => {
   it("SBT4: Undesired mode filters - excludes candidates with undesired values", async () => {
     const params: McpSearchByTargetParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "undesired", values: ["Intern"] },
         skills: { mode: "desired", values: ["Python"] },

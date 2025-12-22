@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, expect, it, beforeAll, afterEach } from "vitest";
 
 import { TelegramTestContext } from "../helpers/test-context.js";
@@ -41,6 +43,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
       await ctx.mcpClient.callTool("converse", {
         message: "отмена",
         sessionId: testSessionId,
+        requestId: randomUUID(),
       });
       console.log(`[E2E Setup] Cancelled active graph (if any)`);
     } catch {
@@ -75,6 +78,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     const turn1 = await ctx.mcpClient.callTool("converse", {
       message: "Быстрый поиск: я junior backend разработчик",
       sessionId,
+      requestId: randomUUID(),
     });
 
     console.log(`[E2E Turn 1] Response phase: ${turn1.result.phase}`);
@@ -98,6 +102,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     const turn2 = await ctx.mcpClient.callTool("converse", {
       message: "Покажи без учёта города, страны, индустрии, возраста и языков",
       sessionId,
+      requestId: randomUUID(),
     });
 
     console.log(`[E2E Turn 2] Response phase: ${turn2.result.phase}`);
@@ -132,6 +137,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     const turn3 = await ctx.mcpClient.callTool("converse", {
       message: "Хочу стать middle backend разработчиком",
       sessionId,
+      requestId: randomUUID(),
     });
 
     console.log(`[E2E Turn 3] Response phase: ${turn3.result.phase}`);
@@ -167,6 +173,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     const turn4 = await ctx.mcpClient.callTool("converse", {
       message: "сохрани",
       sessionId,
+      requestId: randomUUID(),
     });
 
     console.log(`[E2E Turn 4] Response phase: ${turn4.result.phase}`);

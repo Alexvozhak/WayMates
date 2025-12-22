@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { SetGoalTool } from "../../../../src/facade/mcp-server/tools/set-goal.tool.js";
@@ -27,6 +29,7 @@ describe("SetGoalTool Integration Tests", () => {
   it("SG1: Full flow with normalization - creates goal and returns goalId", async () => {
     const params: McpSetGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python", "React"] },
@@ -49,6 +52,7 @@ describe("SetGoalTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_00000000-0000-7000-8000-000000000000";
     const params: McpSetGoalParams = {
       sessionId: invalidSession,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
       }),
@@ -67,6 +71,7 @@ describe("SetGoalTool Integration Tests", () => {
   it("SG3: Typos normalized before saving - LLM corrects target criteria", async () => {
     const params: McpSetGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         skills: { mode: "desired", values: ["Pyton"] },
       }),
@@ -85,6 +90,7 @@ describe("SetGoalTool Integration Tests", () => {
   it("SG4: Idempotent goal updates - overwrites previous goal for same user", async () => {
     const firstGoal: McpSetGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["junior"] },
       }),
@@ -95,6 +101,7 @@ describe("SetGoalTool Integration Tests", () => {
 
     const secondGoal: McpSetGoalParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["senior"] },
         skills: { mode: "desired", values: ["Python"] },

@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { contextFieldSchema, newContextReasonSchema, sessionIdSchema } from "../../../shared/schemas.js";
+import {
+  contextFieldSchema,
+  newContextReasonSchema,
+  requestIdSchema,
+  sessionIdSchema,
+} from "../../../shared/schemas.js";
 
 import { BaseTool } from "./base-tool.js";
 
@@ -16,6 +21,7 @@ import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js"
 export const mcpSearchUserCareersParamsSchema = z
   .object({
     sessionId: sessionIdSchema,
+    requestId: requestIdSchema,
     excludedContextFields: z
       .array(contextFieldSchema)
       .default([])

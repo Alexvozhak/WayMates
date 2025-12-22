@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ColdStartGraph, PHASE } from "../../../../../src/facade/langGraph/cold-start-v2/cold-start-graph.js";
@@ -157,7 +159,12 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
     const coldStartTool = new ColdStartTool(getToolDeps());
 
     const runTool = async (message: string) => {
-      const result = await coldStartTool.execute({ sessionId: testSessionId, message, cvText: null });
+      const result = await coldStartTool.execute({
+        sessionId: testSessionId,
+        requestId: randomUUID(),
+        message,
+        cvText: null,
+      });
       if (!result.ok) {
         console.error("TC-I2 error details:", JSON.stringify(result.error, null, 2));
         expect.fail(`ColdStartTool error: ${result.error.message}`);

@@ -4,6 +4,7 @@ import {
   adhocContextBase,
   contextFieldSchema,
   newContextReasonSchema,
+  requestIdSchema,
   sessionIdSchema,
 } from "../../../shared/schemas.js";
 import { ValidationError } from "../../errors.js";
@@ -25,6 +26,7 @@ import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js"
 export const mcpSearchCareersParamsSchema = z
   .object({
     sessionId: sessionIdSchema,
+    requestId: requestIdSchema,
     referenceContext: adhocContextBase,
     excludedContextFields: z
       .array(contextFieldSchema)

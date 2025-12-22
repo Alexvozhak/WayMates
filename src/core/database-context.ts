@@ -1,5 +1,7 @@
 import { session as neo4jSession } from "neo4j-driver";
 
+import { logger } from "./logger.js";
+
 import type { Driver, ManagedTransaction, Session } from "neo4j-driver";
 
 export class DatabaseContext {
@@ -9,8 +11,12 @@ export class DatabaseContext {
     const session: Session = this.driver.session({
       defaultAccessMode: neo4jSession.READ,
     });
+    const start = Date.now();
     try {
-      return await session.executeRead(work);
+      const result = await session.executeRead(work);
+      const durationMs = Date.now() - start;
+      logger.debug({ durationMs, mode: "read" }, "Neo4j query");
+      return result;
     } finally {
       await session.close();
     }
@@ -20,8 +26,12 @@ export class DatabaseContext {
     const session: Session = this.driver.session({
       defaultAccessMode: neo4jSession.WRITE,
     });
+    const start = Date.now();
     try {
-      return await session.executeWrite(work);
+      const result = await session.executeWrite(work);
+      const durationMs = Date.now() - start;
+      logger.debug({ durationMs, mode: "write" }, "Neo4j query");
+      return result;
     } finally {
       await session.close();
     }

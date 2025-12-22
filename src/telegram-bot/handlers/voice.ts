@@ -19,6 +19,7 @@ export async function handleVoice(ctx: BotContext): Promise<void> {
   const converseResp = await ctx.services.mcpClient.callTool("converse", {
     sessionId,
     message: transcription,
+    requestId: ctx.requestId,
   });
 
   const formatted = await formatResponse(converseResp, ctx.services, ctx.from?.language_code);

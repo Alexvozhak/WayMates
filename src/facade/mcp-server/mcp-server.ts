@@ -90,7 +90,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
   };
 
   return {
-    auth: new AuthTool(deps.authService),
+    auth: new AuthTool(deps.authService, logger),
     coldStart: new ColdStartTool(toolDeps),
     converse: new ConverseTool(toolDeps),
     getStory: new GetStoryTool(toolDeps),

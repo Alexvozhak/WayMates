@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { GetStoryTool } from "../../../../src/facade/mcp-server/tools/get-story.tool.js";
@@ -29,6 +31,7 @@ describe("GetStoryTool Integration Tests", () => {
   it("GS1: Retrieve own story - returns full profile with contexts and trails", async () => {
     const params: McpGetStoryParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetUserId: null,
     };
 
@@ -51,6 +54,7 @@ describe("GetStoryTool Integration Tests", () => {
     const invalidSession: SessionId = "sess_00000000-0000-7000-8000-000000000000";
     const params: McpGetStoryParams = {
       sessionId: invalidSession,
+      requestId: randomUUID(),
       targetUserId: null,
     };
 
@@ -67,6 +71,7 @@ describe("GetStoryTool Integration Tests", () => {
   it("GS3: Retrieve other user's story - targetUserId overrides session userId", async () => {
     const params: McpGetStoryParams = {
       sessionId: testSessionId,
+      requestId: randomUUID(),
       targetUserId: u2.userId,
     };
 
@@ -88,6 +93,7 @@ describe("GetStoryTool Integration Tests", () => {
 
     const params: McpGetStoryParams = {
       sessionId: newSessionId,
+      requestId: randomUUID(),
       targetUserId: null,
     };
 

@@ -16,7 +16,7 @@ export class SessionService {
       throw new SessionError("Telegram user ID not found");
     }
 
-    const result = await this.mcpClient.callTool("register_telegram", { telegramUserId });
+    const result = await this.mcpClient.callTool("register_telegram", { telegramUserId, requestId: ctx.requestId });
 
     ctx.session = {
       status: "initialised",
@@ -42,7 +42,7 @@ export class SessionService {
       return cachedSessionId;
     }
 
-    const result = await this.mcpClient.callTool("register_telegram", { telegramUserId });
+    const result = await this.mcpClient.callTool("register_telegram", { telegramUserId, requestId: ctx.requestId });
 
     await this.redis.setex(cacheKey, 1800, result.sessionId);
 

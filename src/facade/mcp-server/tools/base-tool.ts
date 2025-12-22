@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import { ZodError } from "zod";
 
 import { createRequestLogger } from "../../../shared/logger.js";
@@ -20,7 +18,7 @@ import type { ErrorResponse, Result } from "../result.js";
 import type { Logger } from "pino";
 import type { ZodType } from "zod";
 
-export type WithSessionId = { sessionId: SessionId };
+export type BaseToolParams = { sessionId: SessionId; requestId: string };
 
 export type BaseToolDependencies = {
   session: SessionService;
@@ -33,7 +31,7 @@ export type BaseToolDependencies = {
   logger: Logger;
 };
 
-export abstract class BaseTool<TParams extends WithSessionId, TResult> {
+export abstract class BaseTool<TParams extends BaseToolParams, TResult> {
   protected session: SessionService;
   protected normalizer: Normalizer;
   protected coreClient: CoreClient;
@@ -68,7 +66,8 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
   }
 
   async execute(params: TParams): Promise<Result<TResult, ErrorResponse>> {
-    const requestId = randomUUID();
+    const { requestId } = params;
+    const start = Date.now();
     let userId: UserId | undefined;
     let requestLogger: Logger = this.baseLogger;
 
@@ -80,14 +79,16 @@ export abstract class BaseTool<TParams extends WithSessionId, TResult> {
 
       const result = await this.executeImpl(params, userId);
 
-      requestLogger.info({ tool: this.constructor.name }, "Tool execution completed");
+      const durationMs = Date.now() - start;
+      requestLogger.info({ tool: this.constructor.name, durationMs }, "Tool execution completed");
       return ok(result);
     } catch (error) {
+      const durationMs = Date.now() - start;
       const tags = userId
         ? { tool: this.constructor.name, userId, sessionId: params.sessionId }
         : { tool: this.constructor.name };
       captureException(error, tags);
-      requestLogger.error({ err: error, tool: this.constructor.name }, "Tool execution failed");
+      requestLogger.error({ err: error, tool: this.constructor.name, durationMs }, "Tool execution failed");
       return err(this.handleError(error));
     }
   }

@@ -55,8 +55,11 @@ export const sessionIdSchema = z
 
 export const tokenSchema = z.string().uuid().describe("User token (UUID v7 format) for authentication");
 
+export const requestIdSchema = z.string().uuid().describe("Request correlation ID for distributed tracing");
+
 export type SessionId = z.infer<typeof sessionIdSchema>;
 export type Token = z.infer<typeof tokenSchema>;
+export type RequestId = z.infer<typeof requestIdSchema>;
 
 // User state (for orchestrator routing)
 export const userStateSchema = z.object({
@@ -1211,6 +1214,7 @@ export type ConverseResponse = z.infer<typeof converseResponseSchema>;
 export const mcpGetStoryParamsSchema = z.object({
   targetUserId: userIdSchema.nullable(),
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpGetStoryParams = z.infer<typeof mcpGetStoryParamsSchema>;
@@ -1222,6 +1226,7 @@ export type McpGetStoryParams = z.infer<typeof mcpGetStoryParamsSchema>;
 export const mcpSetGoalParamsSchema = z.object({
   targetContext: targetContextSchema,
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpSetGoalParams = z.infer<typeof mcpSetGoalParamsSchema>;
@@ -1239,6 +1244,7 @@ export const mcpUpdateContextParamsSchema = z.object({
         "Example: 'Добавь React в мои навыки' or 'Измени позицию на Senior Developer'",
     ),
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpUpdateContextParams = z.infer<typeof mcpUpdateContextParamsSchema>;
@@ -1250,6 +1256,7 @@ export type McpUpdateContextParams = z.infer<typeof mcpUpdateContextParamsSchema
 export const mcpGetGoalParamsSchema = z.object({
   targetUserId: userIdSchema.nullable(),
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpGetGoalParams = z.infer<typeof mcpGetGoalParamsSchema>;
@@ -1260,6 +1267,7 @@ export type McpGetGoalParams = z.infer<typeof mcpGetGoalParamsSchema>;
  */
 export const mcpDeleteGoalParamsSchema = z.object({
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpDeleteGoalParams = z.infer<typeof mcpDeleteGoalParamsSchema>;
@@ -1270,6 +1278,7 @@ export type McpDeleteGoalParams = z.infer<typeof mcpDeleteGoalParamsSchema>;
  */
 export const mcpSearchByTargetParamsSchema = targetSearchParamsBaseSchema.extend({
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpSearchByTargetParams = z.infer<typeof mcpSearchByTargetParamsSchema>;
@@ -1281,6 +1290,7 @@ export type McpSearchByTargetParams = z.infer<typeof mcpSearchByTargetParamsSche
 export const mcpDeleteContextParamsSchema = z.object({
   contextId: contextIdSchema,
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpDeleteContextParams = z.infer<typeof mcpDeleteContextParamsSchema>;
@@ -1298,6 +1308,7 @@ export const mcpUpsertContextParamsSchema = z.object({
         "Example: 'Я работаю senior backend в Яндексе с 2023 года в Москве, пишу на Python и Go'",
     ),
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpUpsertContextParams = z.infer<typeof mcpUpsertContextParamsSchema>;
@@ -1309,6 +1320,7 @@ export type McpUpsertContextParams = z.infer<typeof mcpUpsertContextParamsSchema
 export const mcpConverseParamsSchema = z.object({
   message: z.string().min(1).describe("User message in natural language"),
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpConverseParams = z.infer<typeof mcpConverseParamsSchema>;
@@ -1320,6 +1332,7 @@ export type McpConverseParams = z.infer<typeof mcpConverseParamsSchema>;
 export const mcpColdStartParamsSchema = z.object({
   message: z.string().min(1).describe("User message (career history or confirmation)"),
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
   cvText: z.string().nullable().describe("Parsed anonymized text from PDF resume if provided"),
 });
 
@@ -1331,6 +1344,7 @@ export type McpColdStartParams = z.infer<typeof mcpColdStartParamsSchema>;
  */
 export const mcpResetColdStartParamsSchema = z.object({
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpResetColdStartParams = z.infer<typeof mcpResetColdStartParamsSchema>;
@@ -1352,6 +1366,7 @@ export const mcpUpsertTrailParamsSchema = z.object({
     .nullable()
     .describe("Source context ID if trail originates from a specific context"),
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpUpsertTrailParams = z.infer<typeof mcpUpsertTrailParamsSchema>;
@@ -1363,6 +1378,7 @@ export type McpUpsertTrailParams = z.infer<typeof mcpUpsertTrailParamsSchema>;
 export const mcpDeleteTrailParamsSchema = z.object({
   trailId: trailIdSchema,
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpDeleteTrailParams = z.infer<typeof mcpDeleteTrailParamsSchema>;
@@ -1373,6 +1389,7 @@ export type McpDeleteTrailParams = z.infer<typeof mcpDeleteTrailParamsSchema>;
  */
 export const mcpAuthParamsSchema = z.object({
   token: tokenSchema.nullable(),
+  requestId: requestIdSchema,
 });
 
 export type McpAuthParams = z.infer<typeof mcpAuthParamsSchema>;
@@ -1383,6 +1400,7 @@ export type McpAuthParams = z.infer<typeof mcpAuthParamsSchema>;
  */
 export const mcpTelegramRegisterParamsSchema = z.object({
   telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
+  requestId: requestIdSchema,
 });
 
 export type McpTelegramRegisterParams = z.infer<typeof mcpTelegramRegisterParamsSchema>;
@@ -1394,6 +1412,7 @@ export type McpTelegramRegisterParams = z.infer<typeof mcpTelegramRegisterParams
 export const mcpTelegramLinkParamsSchema = z.object({
   token: tokenSchema.describe("Token from LibreChat account to link"),
   telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
+  requestId: requestIdSchema,
 });
 
 export type McpTelegramLinkParams = z.infer<typeof mcpTelegramLinkParamsSchema>;
@@ -1405,6 +1424,7 @@ export type McpTelegramLinkParams = z.infer<typeof mcpTelegramLinkParamsSchema>;
 export const mcpParseCvToTextParamsSchema = z.object({
   fileBuffer: z.string().describe("Base64-encoded PDF file content"),
   sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
 });
 
 export type McpParseCvToTextParams = z.infer<typeof mcpParseCvToTextParamsSchema>;

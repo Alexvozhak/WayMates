@@ -1,5 +1,7 @@
 import { initTRPC } from "@trpc/server";
 
+import { logger } from "../logger.js";
+
 import type { DictionariesManager } from "../dictionaries-manager.js";
 import type { GoalsManager } from "../goals-manager.js";
 import type { SearchManager } from "../search-manager.js";
@@ -14,4 +16,18 @@ export type CoreContext = {
 
 export const t = initTRPC.context<CoreContext>().create();
 
-export const publicProcedure = t.procedure;
+const timingMiddleware = t.middleware(async (opts) => {
+  const start = Date.now();
+  const result = await opts.next();
+  const durationMs = Date.now() - start;
+
+  if (result.ok) {
+    logger.info({ path: opts.path, type: opts.type, durationMs }, "tRPC completed");
+  } else {
+    logger.error({ path: opts.path, type: opts.type, durationMs }, "tRPC failed");
+  }
+
+  return result;
+});
+
+export const publicProcedure = t.procedure.use(timingMiddleware);
