@@ -22,17 +22,18 @@ export const GOAL_STAR_COLOR = "#fbbf24";
  * Generate distinct colors for N candidates using golden ratio.
  * Uses HSL color space with fixed saturation/lightness for perceptual uniformity.
  * Ensures maximum perceptual difference between all colors.
+ * Starts from red (0°) to avoid gold range (35°-55°) which is reserved for Goal.
  *
  * @param count - Number of colors to generate
  * @returns Array of HSL color strings
  *
  * @example
- * const colors = generateCandidateColors(5);
- * // => ['hsl(180, 70%, 50%)', 'hsl(42, 70%, 50%)', ...]
+ * const colors = generateCandidateColors(4);
+ * // => ['hsl(222, 70%, 50%)', 'hsl(85, 70%, 50%)', 'hsl(307, 70%, 50%)', 'hsl(170, 70%, 50%)']
  */
 export function generateCandidateColors(count: number): string[] {
   const colors: string[] = [];
-  let hue = 0.5; // Start from cyan (180°)
+  let hue = 0; // Start from red (0°) to avoid gold range
 
   for (let index = 0; index < count; index++) {
     hue = (hue + GOLDEN_RATIO_CONJUGATE) % 1;

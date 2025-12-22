@@ -252,30 +252,51 @@ export class HtmlRenderer {
     }`;
   }
 
+  // eslint-disable-next-line max-lines-per-function -- JS string generation for browser
   private buildTraceBuilders(): string {
     return `
+    const JITTER_STEP = 0.08;
+
+    function calculateJitterOffset(candidateIndex, totalCandidates) {
+      if (totalCandidates === 0) return 0;
+      return (candidateIndex - (totalCandidates - 1) / 2) * JITTER_STEP;
+    }
+
+    function buildTraceForTrajectory(traj, field, xaxisId, yaxisId, levels, jitterOffset) {
+      const x = traj.points.map(p => new Date(p.timestamp));
+      const rawValues = traj.points.map(p => p.values[field]);
+      const y = levels.length > 0 ? rawValues.map(v => v === null ? null : levels.indexOf(v) + jitterOffset) : rawValues;
+      const text = rawValues.map(v => v === null ? '—' : String(v));
+      const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : traj.candidateType === 'pathfinder' ? ' (Pathfinder)' : '';
+      return {
+        x, y, text, mode: 'lines+markers', name: traj.label + badge,
+        line: { color: traj.color, width: traj.width, shape: 'hv' },
+        marker: { size: 6, color: traj.color }, legendgroup: traj.label,
+        showlegend: field === chartData.selectedFields[0],
+        hovertemplate: '<b>%{text}</b><br>%{x|%Y-%m-%d}<extra>' + traj.label + '</extra>',
+        xaxis: xaxisId, yaxis: yaxisId
+      };
+    }
+
     function buildTracesForField(field, xaxisId, yaxisId, enabledCandidates) {
       const traces = [];
       const config = getFieldConfig(field);
       const levels = config.levels;
 
-      for (const traj of chartData.trajectories) {
-        if (traj.candidateType !== null && !enabledCandidates.includes(traj.id)) continue;
+      const userTraj = chartData.trajectories.find(t => t.candidateType === null);
+      const candidates = chartData.trajectories.filter(t => t.candidateType !== null && enabledCandidates.includes(t.id));
 
-        const x = traj.points.map(p => new Date(p.timestamp));
-        const rawValues = traj.points.map(p => p.values[field]);
-        const y = levels.length > 0 ? rawValues.map(v => v === null ? null : levels.indexOf(v)) : rawValues;
-        const text = rawValues.map(v => v === null ? '—' : String(v));
-        const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : traj.candidateType === 'pathfinder' ? ' (Pathfinder)' : '';
-        traces.push({
-          x, y, text, mode: 'lines+markers', name: traj.label + badge,
-          line: { color: traj.color, width: traj.width, shape: 'hv' },
-          marker: { size: 6, color: traj.color }, legendgroup: traj.label,
-          showlegend: field === chartData.selectedFields[0],
-          hovertemplate: '<b>%{text}</b><br>%{x|%Y-%m-%d}<extra>' + traj.label + '</extra>',
-          xaxis: xaxisId, yaxis: yaxisId
-        });
+      // 1. Add candidates first (below)
+      candidates.forEach((traj, idx) => {
+        const jitterOffset = calculateJitterOffset(idx, candidates.length);
+        traces.push(buildTraceForTrajectory(traj, field, xaxisId, yaxisId, levels, jitterOffset));
+      });
+
+      // 2. Add User last (on top)
+      if (userTraj) {
+        traces.push(buildTraceForTrajectory(userTraj, field, xaxisId, yaxisId, levels, 0));
       }
+
       return traces;
     }
 
@@ -518,7 +539,7 @@ export class HtmlRenderer {
       const axes = ['Shape', 'Tempo', 'Stability', 'Shape'];
       const userTraj = chartData.trajectories[0];
       traces.push({ type: 'scatterpolar', r: [1, 1, 1, 1], theta: axes, fill: 'toself',
-        fillcolor: userTraj.color + '20', mode: 'lines+markers', name: userTraj.label + ' (reference)',
+        fillcolor: userTraj.color + '10', mode: 'lines+markers', name: userTraj.label + ' (reference)',
         line: { color: userTraj.color, width: 2, dash: 'dash' }, marker: { size: 5, color: userTraj.color },
         hovertemplate: '%{theta}: 100%<extra>' + userTraj.label + '</extra>' });
 
@@ -530,7 +551,7 @@ export class HtmlRenderer {
         const tempo = metric.perField.domains || 0;
         const stability = metric.perField.cityName || 0;
         traces.push({ type: 'scatterpolar', r: [shape, tempo, stability, shape], theta: axes, fill: 'toself',
-          fillcolor: traj.color + '30', mode: 'lines+markers', name: traj.label,
+          fillcolor: traj.color + '18', mode: 'lines+markers', name: traj.label,
           line: { color: traj.color, width: 2 }, marker: { size: 6, color: traj.color },
           hovertemplate: '%{theta}: %{r:.0%}<extra>' + traj.label + '</extra>' });
       });
@@ -544,9 +565,19 @@ export class HtmlRenderer {
         return;
       }
       const layout = {
-        polar: { radialaxis: { visible: true, range: [0, 1], tickmode: 'array', tickvals: [0.25, 0.5, 0.75, 1],
-          ticktext: ['25%', '50%', '75%', '100%'], tickfont: { size: 11, color: '#374151' }, gridcolor: '#9ca3af', linecolor: '#6b7280' },
-          angularaxis: { tickfont: { size: 12, color: '#1f2937' }, gridcolor: '#9ca3af' }, bgcolor: '#f9fafb' },
+        polar: {
+          radialaxis: {
+            visible: true, range: [0, 1], tickmode: 'array', tickvals: [0.25, 0.5, 0.75, 1],
+            ticktext: ['25%', '50%', '75%', '100%'],
+            tickfont: { size: 12, color: '#000', family: 'system-ui, sans-serif', weight: 700 },
+            gridcolor: '#e5e7eb', linecolor: '#9ca3af', angle: 90
+          },
+          angularaxis: {
+            tickfont: { size: 13, color: '#1f2937', weight: 600 }, gridcolor: '#d1d5db',
+            rotation: 90, direction: 'clockwise'
+          },
+          bgcolor: '#f9fafb'
+        },
         showlegend: true, legend: { x: 0.5, xanchor: 'center', y: -0.18, orientation: 'h', font: { size: 11 } },
         margin: { t: 20, b: 70, l: 50, r: 50 }, height: 350, dragmode: false
       };

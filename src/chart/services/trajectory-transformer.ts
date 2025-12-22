@@ -115,8 +115,7 @@ export class TrajectoryTransformer {
   }
 
   private getLineWidth(candidateType: "pathfinder" | "waymate" | null): number {
-    if (candidateType === "pathfinder") return 3;
-    if (candidateType === "waymate") return 2;
-    return 1.5;
+    if (candidateType === null) return 2.5; // User — thicker
+    return 1.5; // All candidates — thinner
   }
 }

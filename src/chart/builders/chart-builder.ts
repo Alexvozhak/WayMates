@@ -95,26 +95,89 @@ export class ChartBuilder {
     };
   }
 
-  /* eslint-disable max-depth -- collecting values from nested structure */
+  /**
+   * Calculate dynamic levels for Y-axis with chronological ordering.
+   * Order: User values (chronologically) → Goal value → Candidate values (alphabetically)
+   * This ensures User trajectory goes upward on the chart.
+   */
   private calculateDynamicLevels(): DynamicLevels {
     const levels: DynamicLevels = {};
+    const userTrajectory = this.trajectories[0]!;
+    const candidateTrajectories = this.trajectories.slice(1);
 
     for (const field of this.input.fields) {
-      const uniqueValues = new Set<string>();
-
-      for (const traj of this.trajectories) {
-        for (const point of traj.points) {
-          const value = point.values[field];
-          if (value !== null && value !== undefined && typeof value === "string") {
-            uniqueValues.add(value);
-          }
-        }
-      }
-
-      levels[field] = [...uniqueValues].toSorted();
+      levels[field] = this.calculateLevelsForField(field, userTrajectory, candidateTrajectories);
     }
 
     return levels;
   }
+
+  private calculateLevelsForField(
+    field: ChartableField,
+    userTrajectory: ProcessedTrajectory,
+    candidateTrajectories: ProcessedTrajectory[],
+  ): string[] {
+    const orderedLevels: string[] = [];
+    const seen = new Set<string>();
+
+    // 1. User values in chronological order (trajectory already sorted by timestamp)
+    this.addUserValuesToLevels(field, userTrajectory, orderedLevels, seen);
+
+    // 2. Goal value (if not already in User trajectory)
+    this.addGoalValueToLevels(field, orderedLevels, seen);
+
+    // 3. Remaining candidate values (alphabetically for predictability)
+    this.addCandidateValuesToLevels(field, candidateTrajectories, orderedLevels, seen);
+
+    return orderedLevels;
+  }
+
+  private addUserValuesToLevels(
+    field: ChartableField,
+    userTrajectory: ProcessedTrajectory,
+    orderedLevels: string[],
+    seen: Set<string>,
+  ): void {
+    for (const point of userTrajectory.points) {
+      const value = point.values[field];
+      if (this.isValidStringValue(value) && !seen.has(value)) {
+        orderedLevels.push(value);
+        seen.add(value);
+      }
+    }
+  }
+
+  private addGoalValueToLevels(field: ChartableField, orderedLevels: string[], seen: Set<string>): void {
+    const goalValue = this.input.goalValues[field];
+    if (this.isValidStringValue(goalValue) && !seen.has(goalValue)) {
+      orderedLevels.push(goalValue);
+      seen.add(goalValue);
+    }
+  }
+
+  /* eslint-disable max-depth -- collecting values from nested candidate trajectories */
+  private addCandidateValuesToLevels(
+    field: ChartableField,
+    candidateTrajectories: ProcessedTrajectory[],
+    orderedLevels: string[],
+    seen: Set<string>,
+  ): void {
+    const candidateValues = new Set<string>();
+
+    for (const traj of candidateTrajectories) {
+      for (const point of traj.points) {
+        const value = point.values[field];
+        if (this.isValidStringValue(value) && !seen.has(value)) {
+          candidateValues.add(value);
+        }
+      }
+    }
+
+    orderedLevels.push(...[...candidateValues].toSorted());
+  }
   /* eslint-enable max-depth */
+
+  private isValidStringValue(value: unknown): value is string {
+    return value !== null && value !== undefined && typeof value === "string";
+  }
 }
