@@ -3,10 +3,15 @@ import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { AuthService } from "../../../../src/facade/services/auth.service.js";
 import { AuthTool } from "../../../../src/facade/mcp-server/tools/auth.tool.js";
 import { SessionService } from "../../../../src/facade/services/session.service.js";
+import { sessionIdSchema } from "../../../../src/shared/schemas.js";
 import { FacadeTestContext } from "../../helpers/test-context.js";
 
 import type { SessionId } from "../../../../src/facade/mcp-server/result.js";
 import type { RegisterResult } from "../../../../src/facade/services/auth.service.js";
+
+function isValidSessionId(value: unknown): boolean {
+  return sessionIdSchema.safeParse(value).success;
+}
 
 function isRegisterResult(value: unknown): value is RegisterResult {
   return typeof value === "object" && value !== null && "token" in value && "sessionId" in value && "warning" in value;
@@ -49,7 +54,7 @@ describe("Auth Tool Integration Tests", () => {
     if (!isRegisterResult(result.value)) return;
 
     expect(result.value.token).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    expect(result.value.sessionId).toMatch(/^sess_[0-9a-f]{32}$/);
+    expect(isValidSessionId(result.value.sessionId)).toBe(true);
     expect(result.value.warning).toContain("Save this token");
 
     createdSessionIds.push(result.value.sessionId);
@@ -82,7 +87,7 @@ describe("Auth Tool Integration Tests", () => {
     expect(authResult.value).not.toHaveProperty("warning");
 
     if ("sessionId" in authResult.value) {
-      expect(authResult.value.sessionId).toMatch(/^sess_[0-9a-f]{32}$/);
+      expect(isValidSessionId(authResult.value.sessionId)).toBe(true);
       createdSessionIds.push(authResult.value.sessionId);
     }
   });
