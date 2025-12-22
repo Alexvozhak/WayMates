@@ -171,12 +171,20 @@ describe("SessionService Integration", () => {
      */
     it("SS-G4: does not overwrite initialised session on cache miss", async () => {
       const botCtx = createBotContext(TEST_USER_1);
-      botCtx.session = { status: "initialised", token: "existing_token" };
+      botCtx.session = {
+        status: "initialised",
+        token: "existing_token",
+        userId: "usr_00000000-0000-0000-0000-000000000001",
+        sessionId: "sess_00000000-0000-7000-8000-000000000001",
+      };
 
       await service.getSessionId(botCtx);
 
       // Session не должна быть перезаписана
-      expect(botCtx.session.token).toBe("existing_token");
+      expect(botCtx.session.status).toBe("initialised");
+      if (botCtx.session.status === "initialised") {
+        expect(botCtx.session.token).toBe("existing_token");
+      }
     });
 
     /**

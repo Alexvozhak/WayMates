@@ -1,3 +1,5 @@
+import { initSentry } from "../shared/sentry.js";
+
 import { DatabaseContext } from "./database-context.js";
 import { DictionariesManager } from "./dictionaries-manager.js";
 import { config } from "./env.js";
@@ -9,6 +11,8 @@ import { SelectivityService } from "./selectivity.service.js";
 import { StoryManager } from "./story-manager.js";
 import { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
 import { startTRPCServer } from "./trpc-server.js";
+
+initSentry({ dsn: config.SENTRY_DSN, environment: config.NODE_ENV, service: "core" });
 
 async function main(): Promise<void> {
   const driver = createDriver();

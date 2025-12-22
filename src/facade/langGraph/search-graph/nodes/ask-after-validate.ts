@@ -1,6 +1,7 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { OPTIONS, PHASE } from "../state.js";
+import { NODE, OPTIONS, PHASE } from "../state.js";
+import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
 
@@ -8,7 +9,7 @@ import type { SearchStateType } from "../state.js";
  * Ask after validate node: shows validation results and asks if user wants to proceed.
  * User can save, change goal, clarify, or cancel.
  */
-export function askAfterValidateNode(state: SearchStateType): Partial<SearchStateType> {
+export const askAfterValidateNode = withLogging<SearchStateType>(NODE.ask_after_validate, (state, _config, _deps) => {
   const userResponse = interrupt({
     type: "ask_after_validate",
     candidates: state.validationResults,
@@ -21,4 +22,4 @@ export function askAfterValidateNode(state: SearchStateType): Partial<SearchStat
     userResponse: String(userResponse),
     phase: PHASE.asking_after_validate,
   };
-}
+});

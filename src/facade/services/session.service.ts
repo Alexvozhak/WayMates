@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { v7 as uuidv7 } from "uuid";
 
 import { userIdSchema } from "../../shared/schemas.js";
 import { config } from "../env.js";
@@ -75,7 +75,6 @@ export class SessionService {
   }
 
   private generateSessionId(): SessionId {
-    const randomHex = randomBytes(16).toString("hex");
-    return sessionIdSchema.parse(`sess_${randomHex}`);
+    return sessionIdSchema.parse(`sess_${uuidv7()}`);
   }
 }

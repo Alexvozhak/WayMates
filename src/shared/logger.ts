@@ -1,7 +1,7 @@
 import pino from "pino";
 
 import type { LogLevel, NodeEnv } from "./env/index.js";
-import type { UserId } from "./schemas.js";
+import type { SessionId, UserId } from "./schemas.js";
 import type { Logger } from "pino";
 
 export type ServiceName = "telegram" | "facade" | "core";
@@ -14,6 +14,7 @@ export type LoggerConfig = {
 export type RequestFields = {
   requestId: string;
   userId: UserId;
+  sessionId: SessionId;
 };
 
 const REDACT_PATHS = ["password", "token", "apiKey", "*.password", "*.token", "*.apiKey"];
@@ -38,5 +39,6 @@ export function createRequestLogger(baseLogger: Logger, fields: RequestFields): 
   return baseLogger.child({
     requestId: fields.requestId,
     userId: fields.userId,
+    sessionId: fields.sessionId,
   });
 }

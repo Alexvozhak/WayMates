@@ -65,7 +65,7 @@ describe("Error Handling Integration Tests", () => {
   it("EH2: Expired session - session_expired error", async () => {
     const tool = new SearchCareersTool(getToolDeps());
 
-    const expiredSession: SessionId = "sess_00000000000000000000000000000000";
+    const expiredSession: SessionId = "sess_00000000-0000-7000-8000-000000000000";
     const params = createFacadeSearchParams(expiredSession, adhocContextBase.parse({ position: "senior" }));
 
     const result = await tool.execute(params);
@@ -110,7 +110,7 @@ describe("Error Handling Integration Tests", () => {
   it("EH6: Redis connection lost - session_expired error", async () => {
     const tool = new SearchCareersTool(getToolDeps());
 
-    const invalidSession: SessionId = "sess_11111111111111111111111111111111";
+    const invalidSession: SessionId = "sess_11111111-1111-7111-8111-111111111111";
     const params = createFacadeSearchParams(invalidSession, adhocContextBase.parse({ position: "senior" }));
 
     const result = await tool.execute(params);

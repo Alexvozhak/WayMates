@@ -46,12 +46,12 @@ export type ContextId = z.infer<typeof contextIdSchema>;
 export type TrailId = z.infer<typeof trailIdSchema>;
 
 // Session and authentication
-export const SESSION_ID_PATTERN = "^sess_[0-9a-f]{32}$";
+export const SESSION_ID_PATTERN = "^sess_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
 
 export const sessionIdSchema = z
   .string()
-  .regex(new RegExp(SESSION_ID_PATTERN), "Session ID must be in format sess_<32-char-hex>")
-  .describe("Session ID in format sess_<32-char-hex>");
+  .regex(new RegExp(SESSION_ID_PATTERN), "Session ID must be in format sess_<uuidv7>")
+  .describe("Session ID in format sess_<uuidv7>");
 
 export const tokenSchema = z.string().uuid().describe("User token (UUID v7 format) for authentication");
 

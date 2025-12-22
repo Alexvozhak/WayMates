@@ -21,6 +21,8 @@ export async function handleLink(ctx: BotContext): Promise<void> {
     ctx.session = {
       status: "initialised",
       token: result.token,
+      userId: result.userId,
+      sessionId: result.sessionId,
     };
 
     await ctx.services.sessionService.saveSessionId(telegramUserId, result.sessionId);

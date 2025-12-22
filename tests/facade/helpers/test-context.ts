@@ -1,4 +1,5 @@
 import { Redis } from "ioredis";
+import pino from "pino";
 
 import { CoreClient } from "../../../src/facade/core-client.js";
 import { CheckpointService } from "../../../src/facade/services/checkpoint.service.js";
@@ -13,6 +14,8 @@ import { getTestEnv } from "./test-env.js";
 import { createMockFuzzyModel } from "./llm-mock.js";
 
 import type { GraphDeps } from "../../../src/facade/langGraph/shared/types.js";
+
+const testLogger = pino({ level: "silent" });
 
 export class FacadeTestContext {
   private static instance: FacadeTestContext | null = null;
@@ -95,6 +98,7 @@ export class FacadeTestContext {
   public readonly userService: UserService;
   public readonly sessionService: SessionService;
   public readonly documentary: DocumentaryService;
+  public readonly logger = testLogger;
 
   private constructor(
     coreClient: CoreClient,
@@ -125,6 +129,7 @@ export class FacadeTestContext {
       cache: this.cache,
       userService: this.userService,
       checkpointService: this.checkpointService,
+      logger: this.logger,
     };
   }
 

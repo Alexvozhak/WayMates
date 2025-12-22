@@ -3,16 +3,16 @@ import { v7 as uuidv7 } from "uuid";
 
 import { AgentInvariantError } from "../../../errors.js";
 import { buildDictionaryHints, loadExtractionDicts } from "../../shared/dictionary-hints.js";
-import { hasConfigDeps } from "../../shared/types.js";
 import { extractableContextSchema, extractableTrailSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
 import { contextExtractionPrompt, trailExtractionPrompt } from "../prompts.js";
+import { NODE } from "../types.js";
+import { withLogging } from "../with-logging.js";
 
 import type { ContextId } from "../../../../shared/schemas.js";
 import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda } from "../state.js";
 import type { BaseMessage } from "@langchain/core/messages";
-import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
 const contextExtractionModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
 const trailExtractionModel = getModel("extraction").withStructuredOutput(extractableTrailSchema);
@@ -76,38 +76,34 @@ async function extractContextData(
   };
 }
 
-export async function extractContextNode(
-  state: ColdStartStateType,
-  config: LangGraphRunnableConfig,
-): Promise<Partial<ColdStartStateType>> {
-  const { messages, queue, currentContextIndex, cvText } = state;
+export const extractContextNode = withLogging<ColdStartStateType>(
+  NODE.extract_context,
+  async (state, _config, { cache }) => {
+    const { messages, queue, currentContextIndex, cvText } = state;
 
-  const agenda = queue[currentContextIndex];
-  if (!agenda) {
-    throw new AgentInvariantError("extractContextNode", "agenda must exist for currentContextIndex", {
-      currentContextIndex,
-      queueLength: queue.length,
-    });
-  }
+    const agenda = queue[currentContextIndex];
+    if (!agenda) {
+      throw new AgentInvariantError(NODE.extract_context, "agenda must exist for currentContextIndex", {
+        currentContextIndex,
+        queueLength: queue.length,
+      });
+    }
 
-  // Load dictionaries for better extraction
-  let dictHints = "";
-  if (hasConfigDeps(config)) {
-    const dicts = await loadExtractionDicts(config.configurable.cache);
-    dictHints = buildDictionaryHints(dicts);
-  }
+    const dicts = await loadExtractionDicts(cache);
+    const dictHints = buildDictionaryHints(dicts);
 
-  const [contextData, trailsData] = await Promise.all([
-    extractContextData(messages, agenda, queue, currentContextIndex, cvText, dictHints),
-    extractAllTrails(messages, agenda, queue, currentContextIndex),
-  ]);
+    const [contextData, trailsData] = await Promise.all([
+      extractContextData(messages, agenda, queue, currentContextIndex, cvText, dictHints),
+      extractAllTrails(messages, agenda, queue, currentContextIndex),
+    ]);
 
-  return {
-    pendingContext: contextData,
-    pendingTrails: trailsData,
-    currentEntityContext: {
-      contextIndex: currentContextIndex,
-      preview: agenda.preview,
-    },
-  };
-}
+    return {
+      pendingContext: contextData,
+      pendingTrails: trailsData,
+      currentEntityContext: {
+        contextIndex: currentContextIndex,
+        preview: agenda.preview,
+      },
+    };
+  },
+);

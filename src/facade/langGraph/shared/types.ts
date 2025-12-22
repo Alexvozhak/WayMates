@@ -4,6 +4,7 @@ import type { DictionariesCache } from "../../services/dictionaries-cache.js";
 import type { Normalizer } from "../../services/normalizer.js";
 import type { UserService } from "../../services/user.service.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
+import type { Logger } from "pino";
 
 export type GraphDeps = {
   coreClient: CoreClient;
@@ -11,6 +12,7 @@ export type GraphDeps = {
   cache: DictionariesCache;
   userService?: UserService;
   checkpointService: CheckpointService;
+  logger: Logger;
 };
 
 type ConfigWithDeps = LangGraphRunnableConfig & {
@@ -19,7 +21,7 @@ type ConfigWithDeps = LangGraphRunnableConfig & {
 
 export function hasConfigDeps(config: LangGraphRunnableConfig): config is ConfigWithDeps {
   const c = config.configurable;
-  return !!c && "coreClient" in c && "normalizer" in c && "cache" in c;
+  return !!c && "coreClient" in c && "normalizer" in c && "cache" in c && "logger" in c;
 }
 
 type ConfigWithUserService = ConfigWithDeps & {

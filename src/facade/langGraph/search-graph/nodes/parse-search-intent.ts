@@ -1,7 +1,7 @@
 import { AgentInvariantError } from "../../../errors.js";
-import { hasConfigDeps } from "../../shared/types.js";
 import { NODE, PHASE } from "../state.js";
 import { DEFAULT_LIMIT, MAX_LIMIT, MIN_LIMIT, MIN_RECENCY_THRESHOLD_MONTHS } from "../types.js";
+import { withLogging } from "../with-logging.js";
 
 import { parseUserIntent } from "./parse-intent.js";
 
@@ -10,7 +10,6 @@ import type { TargetContext } from "../../../../shared/schemas.js";
 import type { Normalizer } from "../../../services/normalizer.js";
 import type { SearchStateType } from "../state.js";
 import type { TargetSearchParamsWithFeedback } from "../types.js";
-import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
 async function buildTargetSearchParams(
   parsed: ParsedIntent,
@@ -56,36 +55,35 @@ function computeNewPositionRound(
 /**
  * Parse search intent node: classifies user response and extracts intent-specific data.
  */
-export async function parseSearchIntentNode(
-  state: SearchStateType,
-  config: LangGraphRunnableConfig,
-): Promise<Partial<SearchStateType>> {
-  const { userResponse, phase, extractedGoal, newPositionRound } = state;
+export const parseSearchIntentNode = withLogging<SearchStateType>(
+  "parse_search_intent",
+  async (state, _config, { normalizer }) => {
+    const { userResponse, phase, extractedGoal, newPositionRound } = state;
 
-  if (!userResponse) {
-    throw new AgentInvariantError(NODE.parse_search_intent, "userResponse must exist");
-  }
+    if (!userResponse) {
+      throw new AgentInvariantError(NODE.parse_search_intent, "userResponse must exist");
+    }
 
-  const parsed = await parseUserIntent(userResponse);
+    const parsed = await parseUserIntent(userResponse);
 
-  // Build targetSearchParams for showing_goal + validate
-  const canBuildTargetParams = phase === PHASE.showing_goal && extractedGoal && hasConfigDeps(config);
-  const targetSearchParams = canBuildTargetParams
-    ? await buildTargetSearchParams(parsed, extractedGoal, config.configurable.normalizer)
-    : null;
+    const targetSearchParams =
+      phase === PHASE.showing_goal && extractedGoal
+        ? await buildTargetSearchParams(parsed, extractedGoal, normalizer)
+        : null;
 
-  const updatedRound = computeNewPositionRound(phase, parsed.intent, newPositionRound);
+    const updatedRound = computeNewPositionRound(phase, parsed.intent, newPositionRound);
 
-  const stateUpdate: Partial<SearchStateType> = {
-    searchUserIntent: parsed.intent,
-    targetSearchParams,
-    clarificationText: extractClarificationText(parsed),
-    newPositionRound: updatedRound,
-  };
+    const stateUpdate: Partial<SearchStateType> = {
+      searchUserIntent: parsed.intent,
+      targetSearchParams,
+      clarificationText: extractClarificationText(parsed),
+      newPositionRound: updatedRound,
+    };
 
-  if (!shouldKeepUserResponse(parsed.intent)) {
-    stateUpdate.userResponse = "";
-  }
+    if (!shouldKeepUserResponse(parsed.intent)) {
+      stateUpdate.userResponse = "";
+    }
 
-  return stateUpdate;
-}
+    return stateUpdate;
+  },
+);

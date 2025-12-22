@@ -86,6 +86,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     checkpointService: deps.checkpointService,
     userService: deps.userService,
     documentary: deps.documentary,
+    logger,
   };
 
   return {

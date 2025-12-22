@@ -1,5 +1,7 @@
 import { Redis } from "ioredis";
 
+import { initSentry } from "../shared/sentry.js";
+
 import { createBot } from "./bot.js";
 import { config } from "./env.js";
 import { logger } from "./logger-instance.js";
@@ -9,6 +11,8 @@ import { SystemMessagePresenter } from "./presenters/system-message-presenter.js
 import { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import { McpClient } from "./services/mcp-client.js";
 import { SessionService } from "./services/session-service.js";
+
+initSentry({ dsn: config.SENTRY_DSN, environment: config.NODE_ENV, service: "telegram" });
 
 const redis = new Redis(config.REDIS_URL);
 

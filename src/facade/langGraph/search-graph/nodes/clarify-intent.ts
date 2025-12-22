@@ -2,6 +2,7 @@ import { interrupt } from "@langchain/langgraph";
 
 import { AgentInvariantError } from "../../../errors.js";
 import { NODE, OPTIONS, PHASE } from "../state.js";
+import { withLogging } from "../with-logging.js";
 
 import type { SearchPhase, SearchStateType } from "../state.js";
 
@@ -12,7 +13,7 @@ const PHASE_OPTIONS = new Map<SearchPhase, string[]>([
   [PHASE.showing_results, OPTIONS.showResults],
 ]);
 
-export function clarifyIntentNode(state: SearchStateType): Partial<SearchStateType> {
+export const clarifyIntentNode = withLogging<SearchStateType>(NODE.clarify_intent, (state, _config, _deps) => {
   const { phase } = state;
 
   const options = PHASE_OPTIONS.get(phase);
@@ -28,4 +29,4 @@ export function clarifyIntentNode(state: SearchStateType): Partial<SearchStateTy
   });
 
   return { userResponse: String(userResponse) };
-}
+});

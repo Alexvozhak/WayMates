@@ -1,24 +1,14 @@
-import { AgentInvariantError } from "../../../errors.js";
-import { hasConfigDeps } from "../../shared/types.js";
 import { NODE, PHASE } from "../state.js";
+import { withLogging } from "../with-logging.js";
 
 import type { Goal } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
-import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
-export async function checkGoalNode(
-  state: SearchStateType,
-  config: LangGraphRunnableConfig,
-): Promise<Partial<SearchStateType>> {
-  if (!hasConfigDeps(config)) {
-    throw new AgentInvariantError(NODE.check_goal, "Missing coreClient or normalizer");
-  }
-  const { coreClient } = config.configurable;
-
+export const checkGoalNode = withLogging<SearchStateType>(NODE.check_goal, async (state, _config, { coreClient }) => {
   const goal: Goal | null = await coreClient.client.goal.getByUser.query({ userId: state.userId });
 
   return {
     existingGoal: goal,
     phase: goal ? PHASE.searching : PHASE.exploring,
   };
-}
+});

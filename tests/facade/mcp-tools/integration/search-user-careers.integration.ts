@@ -51,7 +51,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   // Business rule: Security-first design - invalid sessions rejected before DB access.
   // Prevents unauthorized queries; user must authenticate via session before accessing their data.
   it("SUC2: Invalid session rejected - returns error", async () => {
-    const invalidSession: SessionId = "sess_00000000000000000000000000000000";
+    const invalidSession: SessionId = "sess_00000000-0000-7000-8000-000000000000";
     const params: McpSearchUserCareersParams = {
       sessionId: invalidSession,
       limit: 10,

@@ -1,5 +1,7 @@
 import { Redis } from "ioredis";
 
+import { initSentry } from "../shared/sentry.js";
+
 import { CoreClient } from "./core-client.js";
 import { config } from "./env.js";
 import { logger } from "./logger.js";
@@ -12,6 +14,8 @@ import { Normalizer } from "./services/normalizer.js";
 import { PostgresService } from "./services/postgres.service.js";
 import { SessionService } from "./services/session.service.js";
 import { UserService } from "./services/user.service.js";
+
+initSentry({ dsn: config.SENTRY_DSN, environment: config.NODE_ENV, service: "facade" });
 
 async function main(): Promise<void> {
   const redis = new Redis({

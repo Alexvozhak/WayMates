@@ -31,5 +31,6 @@ export function getToolDeps(): BaseToolDependencies {
     checkpointService: ctx.checkpointService,
     userService: ctx.userService,
     documentary: ctx.documentary,
+    logger: ctx.logger,
   };
 }

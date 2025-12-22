@@ -5,12 +5,13 @@ import { AgentInvariantError } from "../../../errors.js";
 import { getModel } from "../../shared-tools/models.js";
 import { GOAL_CLARIFICATION_PROMPT } from "../prompts.js";
 import { NODE, PHASE } from "../state.js";
+import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
 
 const clarificationModel = getModel("extraction").withStructuredOutput(targetContextSchema);
 
-export async function clarifyGoalNode(state: SearchStateType): Promise<Partial<SearchStateType>> {
+export const clarifyGoalNode = withLogging<SearchStateType>(NODE.clarify_goal, async (state, _config, _deps) => {
   const { extractedGoal, messages, clarifyRound, clarificationText } = state;
 
   if (!clarificationText) {
@@ -32,8 +33,8 @@ export async function clarifyGoalNode(state: SearchStateType): Promise<Partial<S
   return {
     extractedGoal: targetContextSchema.parse(updated),
     clarifyRound: clarifyRound + 1,
-    userResponse: "", // Clear to ensure show_goal does interrupt
+    userResponse: "",
     phase: PHASE.showing_goal,
     messages: [...messages, new HumanMessage(clarificationText)],
   };
-}
+});

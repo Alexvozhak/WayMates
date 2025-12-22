@@ -7,6 +7,7 @@ export const nodeEnvSchema = z.enum(["development", "production", "test"]).defau
 export const baseEnvSchema = z.object({
   NODE_ENV: nodeEnvSchema,
   LOG_LEVEL: logLevelSchema,
+  SENTRY_DSN: z.string().url().nullable().default(null),
 });
 
 export type LogLevel = z.infer<typeof logLevelSchema>;

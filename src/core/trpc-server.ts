@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 
 import { createHTTPHandler } from "@trpc/server/adapters/standalone";
 
+import { captureException } from "../shared/sentry.js";
+
 import { logger } from "./logger.js";
 import { appRouter } from "./routers/app.router.js";
 
@@ -11,6 +13,10 @@ function createTRPCServer(context: CoreContext): ReturnType<typeof createServer>
   const trpcHandler = createHTTPHandler({
     router: appRouter,
     createContext: () => context,
+    onError: ({ error, path }) => {
+      captureException(error, { path: path ?? "unknown" });
+      logger.error({ err: error, path }, "tRPC error");
+    },
   });
 
   return createServer((req, res) => {

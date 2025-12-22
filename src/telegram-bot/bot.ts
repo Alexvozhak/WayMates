@@ -7,6 +7,8 @@ import { I18n } from "@grammyjs/i18n";
 import { RedisAdapter } from "@grammyjs/storage-redis";
 import { Bot, session } from "grammy";
 
+import { captureException } from "../shared/sentry.js";
+
 import { BotError, McpClientError } from "./errors.js";
 import { handleConverse } from "./handlers/converse.js";
 import { handleLink } from "./handlers/link.js";
@@ -97,6 +99,11 @@ async function handleGlobalError(error: GrammyBotError<BotContext>, logger: Logg
     return;
   }
 
-  logger.error({ err: error.error }, "Unhandled error");
+  const tags =
+    ctx.session.status === "initialised"
+      ? { telegramUserId: String(ctx.from?.id), userId: ctx.session.userId, sessionId: ctx.session.sessionId }
+      : { telegramUserId: String(ctx.from?.id) };
+  captureException(error.error, tags);
+  logger.error({ err: error.error, ...tags }, "Unhandled error");
   await ctx.reply(ctx.t("error-generic"));
 }

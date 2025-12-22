@@ -1,3 +1,4 @@
+import type { SessionId, UserId } from "../shared/schemas.js";
 import type { CrudGraphPresenter } from "./presenters/crud-graph-presenter.js";
 import type { SearchGraphPresenter } from "./presenters/search-graph-presenter.js";
 import type { SystemMessagePresenter } from "./presenters/system-message-presenter.js";
@@ -29,7 +30,9 @@ export type BotServices = {
   logger: Logger;
 };
 
-export type MySessionData = { status: "uninitialised" } | { status: "initialised"; token: string | null };
+export type MySessionData =
+  | { status: "uninitialised" }
+  | { status: "initialised"; token: string | null; userId: UserId; sessionId: SessionId };
 
 export type BotContext = Context &
   I18nFlavor &
