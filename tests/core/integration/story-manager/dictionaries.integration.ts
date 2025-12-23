@@ -93,7 +93,7 @@ describe("Dictionaries Integration", () => {
     });
 
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
-    const matchCount = dictionaries.skill.filter((s) => s === skillName).length;
+    const matchCount = dictionaries.skill.filter((s) => s.canonicalName === skillName).length;
 
     expect(matchCount).toBe(1);
 
@@ -141,11 +141,11 @@ describe("Dictionaries Integration", () => {
 
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    expect(dictionaries.position.includes(`test-position-${timestamp}`)).toBe(true);
-    expect(dictionaries.domain.includes(`test-domain-${timestamp}`)).toBe(true);
-    expect(dictionaries.city.includes(`test-city-${timestamp}`)).toBe(true);
-    expect(dictionaries.industry.includes(`test-industry-${timestamp}`)).toBe(true);
-    expect(dictionaries.platform.includes(`test-platform-${timestamp}`)).toBe(true);
+    expect(dictionaries.position.some((e) => e.canonicalName === `test-position-${timestamp}`)).toBe(true);
+    expect(dictionaries.domain.some((e) => e.canonicalName === `test-domain-${timestamp}`)).toBe(true);
+    expect(dictionaries.city.some((e) => e.canonicalName === `test-city-${timestamp}`)).toBe(true);
+    expect(dictionaries.industry.some((e) => e.canonicalName === `test-industry-${timestamp}`)).toBe(true);
+    expect(dictionaries.platform.some((e) => e.canonicalName === `test-platform-${timestamp}`)).toBe(true);
 
     console.log("[D5] All dictionary types support addTerm: ✅");
   });

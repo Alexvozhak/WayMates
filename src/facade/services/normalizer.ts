@@ -7,6 +7,7 @@ import { getModel } from "../langGraph/shared-tools/models.js";
 import type { DictionariesCache } from "./dictionaries-cache.js";
 import type {
   AdhocContextBase,
+  DictionaryEntry,
   FieldFilter,
   SimpleDictionaryType,
   TargetContext,
@@ -108,8 +109,8 @@ export class Normalizer {
       return { normalized: [], rejected: [] };
     }
 
-    const dict = await this.cache.getReasons();
-    const dictEntries = [...dict.values()].map((name) => `"${name}"`).join(", ");
+    const reasons = await this.cache.getReasons();
+    const dictEntries = reasons.map((r) => `"${r.canonicalName}"`).join(", ");
 
     const prompt = `You are a term normalization assistant for career transition reasons.
 
@@ -208,7 +209,7 @@ Return: { normalized: string[], rejected: string[] }`;
 
     // Step 1: Exact match
     const exact = dict.get(normalized);
-    if (exact) return exact;
+    if (exact) return exact.canonicalName;
 
     // Step 2: Fuzzy match via LLM
     if (dict.size > 0) {
@@ -228,8 +229,8 @@ Return: { normalized: string[], rejected: string[] }`;
     return normalized;
   }
 
-  private async invokeFuzzyModel(value: string, dict: Map<string, string>): Promise<string | null> {
-    const dictEntries = [...dict.values()].map((name) => `"${name}"`).join(", ");
+  private async invokeFuzzyModel(value: string, dict: Map<string, DictionaryEntry>): Promise<string | null> {
+    const dictEntries = [...dict.values()].map((e) => `"${e.canonicalName}"`).join(", ");
     const prompt = `You are a term normalization assistant for career data.
 
 Dictionary: ${dictEntries}
@@ -246,7 +247,7 @@ Rules:
 
     if (!result.canonical) return null;
 
-    return dict.get(result.canonical.toLowerCase()) ?? null;
+    return dict.get(result.canonical.toLowerCase())?.canonicalName ?? null;
   }
 
   private removeNullishFields<T extends Record<string, unknown>>(obj: T): T {

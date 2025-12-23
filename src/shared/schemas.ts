@@ -45,6 +45,17 @@ export type UserId = z.infer<typeof userIdSchema>;
 export type ContextId = z.infer<typeof contextIdSchema>;
 export type TrailId = z.infer<typeof trailIdSchema>;
 
+/**
+ * Single dictionary entry with canonical name and human-readable description.
+ * Used in dictionaries API and user-facing UX (e.g., showing filter options).
+ */
+export const dictionaryEntrySchema = z.object({
+  canonicalName: z.string(),
+  description: z.string(),
+});
+
+export type DictionaryEntry = z.infer<typeof dictionaryEntrySchema>;
+
 // Session and authentication
 export const SESSION_ID_PATTERN = "^sess_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
 
@@ -484,12 +495,11 @@ export const targetSearchParamsSchema = targetSearchParamsBaseSchema.extend({
 export type TargetSearchParams = z.infer<typeof targetSearchParamsSchema>;
 
 /**
- * Available filters for SearchGraph UI (TargetSearchParams - showing_goal phase)
- * Shows reasons user can exclude during target validation
- * Array of reason IDs (Telegram Bot translates via system prompt)
+ * Available filters for SearchGraph UI (TargetSearchParams - showing_goal phase).
+ * Contains full DictionaryEntry with descriptions for user-facing UX.
  */
 export const availableFiltersSchema = z.object({
-  reasons: z.array(newContextReasonSchema),
+  reasons: z.array(dictionaryEntrySchema),
 });
 
 export type AvailableFilters = z.infer<typeof availableFiltersSchema>;
@@ -744,20 +754,20 @@ export type MatchedCandidateWithPath = z.infer<typeof matchedCandidateWithPathSc
 // ==========================================
 
 /**
- * Dictionaries containing verified canonical terms
- * Used by LLM for normalization (user input → canonical name)
- * Keys use singular form matching SimpleDictionaryType
+ * Dictionaries containing verified canonical terms with descriptions.
+ * Used by LLM for normalization (user input → canonical name).
+ * Keys use singular form matching SimpleDictionaryType.
  */
 export const dictionariesSchema = z.object({
-  skill: z.array(z.string()),
-  position: z.array(z.string()),
-  role: z.array(z.string()),
-  domain: z.array(z.string()),
-  city: z.array(z.string()),
-  industry: z.array(z.string()),
-  platform: z.array(z.string()),
-  language: z.array(z.string()),
-  reasons: z.array(z.string()),
+  skill: z.array(dictionaryEntrySchema),
+  position: z.array(dictionaryEntrySchema),
+  role: z.array(dictionaryEntrySchema),
+  domain: z.array(dictionaryEntrySchema),
+  city: z.array(dictionaryEntrySchema),
+  industry: z.array(dictionaryEntrySchema),
+  platform: z.array(dictionaryEntrySchema),
+  language: z.array(dictionaryEntrySchema),
+  reasons: z.array(dictionaryEntrySchema),
 });
 
 export type Dictionaries = z.infer<typeof dictionariesSchema>;

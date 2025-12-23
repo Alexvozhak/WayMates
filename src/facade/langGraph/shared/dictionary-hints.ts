@@ -1,3 +1,4 @@
+import type { DictionaryEntry } from "../../../shared/schemas.js";
 import type { DictionariesCache } from "../../services/dictionaries-cache.js";
 
 /**
@@ -9,6 +10,8 @@ export type ExtractionDictionaries = {
   positions: string[];
   domains: string[];
   skills: string[];
+  industries: string[];
+  reasons: DictionaryEntry[];
 };
 
 /**
@@ -16,18 +19,22 @@ export type ExtractionDictionaries = {
  * Used by cold-start, search-graph, and other extraction nodes.
  */
 export async function loadExtractionDicts(cache: DictionariesCache): Promise<ExtractionDictionaries> {
-  const [roles, positions, domains, skills] = await Promise.all([
+  const [roles, positions, domains, skills, industries, reasons] = await Promise.all([
     cache.getSimple("role"),
     cache.getSimple("position"),
     cache.getSimple("domain"),
     cache.getSimple("skill"),
+    cache.getSimple("industry"),
+    cache.getReasons(),
   ]);
 
   return {
-    roles: [...roles.values()],
-    positions: [...positions.values()],
-    domains: [...domains.values()],
-    skills: [...skills.values()],
+    roles: [...roles.values()].map((e) => e.canonicalName),
+    positions: [...positions.values()].map((e) => e.canonicalName),
+    domains: [...domains.values()].map((e) => e.canonicalName),
+    skills: [...skills.values()].map((e) => e.canonicalName),
+    industries: [...industries.values()].map((e) => e.canonicalName),
+    reasons,
   };
 }
 
@@ -39,12 +46,22 @@ export async function loadExtractionDicts(cache: DictionariesCache): Promise<Ext
  * @param maxSkills - Limit skills count to avoid prompt bloat (default: 50)
  */
 export function buildDictionaryHints(dicts: ExtractionDictionaries, maxSkills = 50): string {
-  const hints: string[] = [];
+  const simpleHints: [string, string[]][] = [
+    ["ROLES", dicts.roles],
+    ["POSITIONS", dicts.positions],
+    ["DOMAINS", dicts.domains],
+    ["INDUSTRIES", dicts.industries],
+    ["SKILLS", dicts.skills.slice(0, maxSkills)],
+  ];
 
-  if (dicts.roles.length > 0) hints.push(`KNOWN ROLES: ${dicts.roles.join(", ")}`);
-  if (dicts.positions.length > 0) hints.push(`KNOWN POSITIONS: ${dicts.positions.join(", ")}`);
-  if (dicts.domains.length > 0) hints.push(`KNOWN DOMAINS: ${dicts.domains.join(", ")}`);
-  if (dicts.skills.length > 0) hints.push(`KNOWN SKILLS: ${dicts.skills.slice(0, maxSkills).join(", ")}`);
+  const hints = simpleHints
+    .filter(([, values]) => values.length > 0)
+    .map(([label, values]) => `KNOWN ${label}: ${values.join(", ")}`);
+
+  if (dicts.reasons.length > 0) {
+    const reasonsWithDesc = dicts.reasons.map((r) => `${r.canonicalName} (${r.description})`).join(", ");
+    hints.push(`KNOWN REASONS: ${reasonsWithDesc}`);
+  }
 
   return hints.length > 0 ? `\n${hints.join("\n")}\n` : "";
 }

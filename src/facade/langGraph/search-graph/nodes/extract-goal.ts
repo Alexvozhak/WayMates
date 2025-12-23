@@ -22,11 +22,11 @@ export const extractGoalNode = withLogging<SearchStateType>(NODE.extract_goal, a
   ]);
 
   const prompt = buildGoalExtractionPrompt({
-    roles: [...roles.values()],
-    positions: [...positions.values()],
-    domains: [...domains.values()],
-    skills: [...skills.values()],
-    industries: [...industries.values()],
+    roles: [...roles.values()].map((e) => e.canonicalName),
+    positions: [...positions.values()].map((e) => e.canonicalName),
+    domains: [...domains.values()].map((e) => e.canonicalName),
+    skills: [...skills.values()].map((e) => e.canonicalName),
+    industries: [...industries.values()].map((e) => e.canonicalName),
   });
 
   const extracted = await extractionModel.invoke([

@@ -311,15 +311,18 @@ FORMAT RULES (STRICT):
 ${buildContextExtractionRules(!!cvText)}
 
 ═══════════════════════════════════════════════════
-CAREER MODEL (3 distinct dimensions):
+CAREER MODEL (key dimensions):
 ═══════════════════════════════════════════════════
 - ROLE: Profession type (WHAT you do) — map to KNOWN ROLES
 - POSITION: Seniority level (HOW experienced) — map to KNOWN POSITIONS
 - DOMAINS: Technical area (WHICH field) — map to KNOWN DOMAINS
+- INDUSTRY: Company's business sector — map to KNOWN INDUSTRIES
+- CREATION REASON: Why this context was created — map to KNOWN REASONS
 
 EXTRACTION RULES:
 - Extract ONLY explicitly mentioned information
 - Map user terms to KNOWN values when possible
+- For creationReason, infer from context (first job = started_working, new company = company_changed, etc.)
 - Return null for fields not mentioned`;
 }
 

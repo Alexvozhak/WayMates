@@ -3,24 +3,24 @@ import type { SimpleDictionaryType } from "../../shared/schemas.js";
 export function getVerifiedDictionariesQuery(): string {
   return `
 OPTIONAL MATCH (s:Skill {verified: true})
-WITH collect(s.canonicalName) AS skills
+WITH [x IN collect({canonicalName: s.canonicalName, description: coalesce(s.description, s.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS skills
 OPTIONAL MATCH (p:Position {verified: true})
-WITH skills, collect(p.canonicalName) AS positions
+WITH skills, [x IN collect({canonicalName: p.canonicalName, description: coalesce(p.description, p.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS positions
 OPTIONAL MATCH (r:Role {verified: true})
-WITH skills, positions, collect(r.canonicalName) AS roles
+WITH skills, positions, [x IN collect({canonicalName: r.canonicalName, description: coalesce(r.description, r.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS roles
 OPTIONAL MATCH (d:WorkDomain {verified: true})
-WITH skills, positions, roles, collect(d.canonicalName) AS domains
+WITH skills, positions, roles, [x IN collect({canonicalName: d.canonicalName, description: coalesce(d.description, d.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS domains
 OPTIONAL MATCH (c:City {verified: true})
-WITH skills, positions, roles, domains, collect(c.canonicalName) AS cities
+WITH skills, positions, roles, domains, [x IN collect({canonicalName: c.canonicalName, description: coalesce(c.description, c.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS cities
 OPTIONAL MATCH (i:Industry {verified: true})
-WITH skills, positions, roles, domains, cities, collect(i.canonicalName) AS industries
+WITH skills, positions, roles, domains, cities, [x IN collect({canonicalName: i.canonicalName, description: coalesce(i.description, i.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS industries
 OPTIONAL MATCH (pl:Platform {verified: true})
-WITH skills, positions, roles, domains, cities, industries, collect(pl.canonicalName) AS platforms
+WITH skills, positions, roles, domains, cities, industries, [x IN collect({canonicalName: pl.canonicalName, description: coalesce(pl.description, pl.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS platforms
 OPTIONAL MATCH (l:Language {verified: true})
-WITH skills, positions, roles, domains, cities, industries, platforms, collect(l.canonicalName) AS languages
+WITH skills, positions, roles, domains, cities, industries, platforms, [x IN collect({canonicalName: l.canonicalName, description: coalesce(l.description, l.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS languages
 OPTIONAL MATCH (rs:Reason)
 WITH skills, positions, roles, domains, cities, industries, platforms, languages,
-     collect(rs.canonicalName) AS reasons
+     [x IN collect({canonicalName: rs.canonicalName, description: coalesce(rs.description, rs.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS reasons
 RETURN {
   skill: skills,
   position: positions,

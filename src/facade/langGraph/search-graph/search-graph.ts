@@ -56,14 +56,12 @@ function stateToResponse(state: SearchStateType): SearchGraphResponse {
 async function enrichResponse(state: SearchStateType, cache: DictionariesCache): Promise<SearchGraphResponse> {
   const baseResponse = stateToResponse(state);
 
-  // showing_goal: add availableFilters (reasons)
+  // showing_goal: add availableFilters (reasons with descriptions)
   if (baseResponse.phase === "showing_goal" && state.phase === PHASE.showing_goal) {
     const reasons = await cache.getReasons();
     return {
       ...baseResponse,
-      availableFilters: {
-        reasons: [...reasons.keys()],
-      },
+      availableFilters: { reasons },
     };
   }
 
@@ -78,14 +76,12 @@ async function enrichResponse(state: SearchStateType, cache: DictionariesCache):
     };
   }
 
-  // showing_results: add both availableFilters (reasons) and currentFilters (contextFields)
+  // showing_results: add both availableFilters (reasons with descriptions) and currentFilters (contextFields)
   if (baseResponse.phase === "showing_results" && state.phase === PHASE.showing_results) {
     const reasons = await cache.getReasons();
     return {
       ...baseResponse,
-      availableFilters: {
-        reasons: [...reasons.keys()],
-      },
+      availableFilters: { reasons },
       currentFilters: {
         contextFields: CONTEXT_FIELD_NAMES,
       },

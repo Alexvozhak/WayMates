@@ -1,15 +1,23 @@
 import { z } from "zod";
 
+import { dictionaryEntrySchema } from "../../shared/schemas.js";
 import { config } from "../env.js";
 
-import type { Dictionaries, SimpleDictionaryType } from "../../shared/schemas.js";
+import type { DictionaryEntry, SimpleDictionaryType } from "../../shared/schemas.js";
 import type { CoreClient } from "../core-client.js";
 import type { Redis } from "ioredis";
 
 /**
- * Subset of dictionaries used for LLM extraction prompts.
+ * String arrays for LLM extraction prompts (KNOWN_* hints).
+ * Extracted from DictionaryEntry[] for prompt injection.
  */
-export type ExtractionDictionaries = Pick<Dictionaries, "role" | "position" | "domain" | "skill" | "industry">;
+export type ExtractionDictionaries = {
+  role: string[];
+  position: string[];
+  domain: string[];
+  skill: string[];
+  industry: string[];
+};
 
 export class DictionariesCache {
   private readonly ttl: number;
@@ -21,24 +29,24 @@ export class DictionariesCache {
     this.ttl = config.DICT_CACHE_TTL_SECONDS;
   }
 
-  async getSimple(type: SimpleDictionaryType): Promise<Map<string, string>> {
+  async getSimple(type: SimpleDictionaryType): Promise<Map<string, DictionaryEntry>> {
     return this.getCached(`waymates:dict:${type}`, async () => {
       const coreData = await this.coreClient.client.dictionaries.getVerified.query();
       const items = coreData[type];
-      return new Map(items.map((name) => [name.toLowerCase(), name]));
+      return new Map(items.map((entry) => [entry.canonicalName.toLowerCase(), entry]));
     });
   }
 
-  async getReasons(): Promise<Map<string, string>> {
-    return this.getCached("waymates:dict:reasons", async () => {
+  async getReasons(): Promise<DictionaryEntry[]> {
+    return this.getCachedArray("waymates:dict:reasons", async () => {
       const coreData = await this.coreClient.client.dictionaries.getVerified.query();
-      return new Map(coreData.reasons.map((canonicalName) => [canonicalName, canonicalName]));
+      return coreData.reasons;
     });
   }
 
   /**
    * Load all dictionaries for LLM extraction prompts.
-   * Returns string arrays ready to inject into KNOWN_* hints.
+   * Returns canonicalName arrays ready to inject into KNOWN_* hints.
    */
   async getForExtraction(): Promise<ExtractionDictionaries> {
     const [role, position, domain, skill, industry] = await Promise.all([
@@ -50,11 +58,11 @@ export class DictionariesCache {
     ]);
 
     return {
-      role: [...role.values()],
-      position: [...position.values()],
-      domain: [...domain.values()],
-      skill: [...skill.values()],
-      industry: [...industry.values()],
+      role: [...role.values()].map((e) => e.canonicalName),
+      position: [...position.values()].map((e) => e.canonicalName),
+      domain: [...domain.values()].map((e) => e.canonicalName),
+      skill: [...skill.values()].map((e) => e.canonicalName),
+      industry: [...industry.values()].map((e) => e.canonicalName),
     };
   }
 
@@ -70,11 +78,14 @@ export class DictionariesCache {
     }
   }
 
-  private async getCached(key: string, fetcher: () => Promise<Map<string, string>>): Promise<Map<string, string>> {
+  private async getCached(
+    key: string,
+    fetcher: () => Promise<Map<string, DictionaryEntry>>,
+  ): Promise<Map<string, DictionaryEntry>> {
     const cached = await this.redis.get(key);
 
     if (cached) {
-      const cachedEntriesSchema = z.array(z.tuple([z.string(), z.string()]));
+      const cachedEntriesSchema = z.array(z.tuple([z.string(), dictionaryEntrySchema]));
       const entries = cachedEntriesSchema.parse(JSON.parse(cached));
       return new Map(entries);
     }
@@ -83,5 +94,18 @@ export class DictionariesCache {
     await this.redis.setex(key, this.ttl, JSON.stringify([...dict.entries()]));
 
     return dict;
+  }
+
+  private async getCachedArray(key: string, fetcher: () => Promise<DictionaryEntry[]>): Promise<DictionaryEntry[]> {
+    const cached = await this.redis.get(key);
+
+    if (cached) {
+      return z.array(dictionaryEntrySchema).parse(JSON.parse(cached));
+    }
+
+    const arr = await fetcher();
+    await this.redis.setex(key, this.ttl, JSON.stringify(arr));
+
+    return arr;
   }
 }

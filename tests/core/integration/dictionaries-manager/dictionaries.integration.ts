@@ -31,11 +31,11 @@ describe("Dictionaries Integration", () => {
     expect(dictionaries.skill.length).toBeGreaterThanOrEqual(85);
 
     // Business Rule: Specific skills from skills.yaml must be present
-    expect(dictionaries.skill).toContain("rust"); // Programming language
-    expect(dictionaries.skill).toContain("python"); // Programming language
-    expect(dictionaries.skill).toContain("typescript"); // Programming language
-    expect(dictionaries.skill).toContain("django"); // Web framework
-    expect(dictionaries.skill).toContain("kubernetes"); // Infrastructure
+    expect(dictionaries.skill.some((e) => e.canonicalName === "rust")).toBe(true); // Programming language
+    expect(dictionaries.skill.some((e) => e.canonicalName === "python")).toBe(true); // Programming language
+    expect(dictionaries.skill.some((e) => e.canonicalName === "typescript")).toBe(true); // Programming language
+    expect(dictionaries.skill.some((e) => e.canonicalName === "django")).toBe(true); // Web framework
+    expect(dictionaries.skill.some((e) => e.canonicalName === "kubernetes")).toBe(true); // Infrastructure
   });
 
   // Business Logic: Verify all dictionary types structure and that seed data is loaded
@@ -57,13 +57,14 @@ describe("Dictionaries Integration", () => {
     expect(dictionaries.skill.length).toBeGreaterThan(80); // ~85 from yaml minimum
     expect(dictionaries.language.length).toBeGreaterThan(0); // from languages.json
 
-    // Business Rule: All dictionary types return string[] (canonical names only)
+    // Business Rule: All dictionary types return DictionaryEntry[] (canonicalName + description)
     const sampleSkill = dictionaries.skill[0];
     expect(sampleSkill).toBeDefined();
-    expect(typeof sampleSkill).toBe("string");
+    expect(sampleSkill).toHaveProperty("canonicalName");
+    expect(sampleSkill).toHaveProperty("description");
 
     if (dictionaries.language.length > 0) {
-      expect(typeof dictionaries.language[0]).toBe("string");
+      expect(dictionaries.language[0]).toHaveProperty("canonicalName");
     }
   });
 
@@ -82,7 +83,7 @@ describe("Dictionaries Integration", () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
     // Business Rule: Newly added skill must exist
-    expect(dictionaries.skill).toContain(newSkillName);
+    expect(dictionaries.skill.some((e) => e.canonicalName === newSkillName)).toBe(true);
   });
 
   // Business Logic: MERGE idempotency - ON CREATE SET should preserve FIRST values
@@ -112,7 +113,7 @@ describe("Dictionaries Integration", () => {
 
     // Business Rule: MERGE with ON CREATE SET keeps FIRST values
     // Second call should NOT update existing node, so skill appears (verified=true from first call)
-    expect(dictionaries.skill).toContain(skillName);
+    expect(dictionaries.skill.some((e) => e.canonicalName === skillName)).toBe(true);
   });
 
   // Business Logic: addTerm supports all dictionary types (position, domain, city, skill, etc.)
@@ -147,9 +148,9 @@ describe("Dictionaries Integration", () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
     // Business Rule: Each term must be retrievable after creation
-    expect(dictionaries.position.includes(`test-position-${timestamp}`)).toBe(true);
-    expect(dictionaries.domain.includes(`test-domain-${timestamp}`)).toBe(true);
-    expect(dictionaries.city.includes(`test-city-${timestamp}`)).toBe(true);
+    expect(dictionaries.position.some((e) => e.canonicalName === `test-position-${timestamp}`)).toBe(true);
+    expect(dictionaries.domain.some((e) => e.canonicalName === `test-domain-${timestamp}`)).toBe(true);
+    expect(dictionaries.city.some((e) => e.canonicalName === `test-city-${timestamp}`)).toBe(true);
   });
 
   // Business Logic: Only verified=true terms should be returned by getVerifiedDictionaries
@@ -180,8 +181,8 @@ describe("Dictionaries Integration", () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
     // Business Rule: Only verified terms should appear in dictionaries
-    expect(dictionaries.skill).not.toContain(unverifiedSkillName); // Should NOT be returned
-    expect(dictionaries.skill).toContain(verifiedSkillName); // Should be returned
+    expect(dictionaries.skill.some((e) => e.canonicalName === unverifiedSkillName)).toBe(false); // Should NOT be returned
+    expect(dictionaries.skill.some((e) => e.canonicalName === verifiedSkillName)).toBe(true); // Should be returned
   });
 
   // Business Logic: Verify that reasons from reasons.json are loaded correctly
@@ -192,16 +193,17 @@ describe("Dictionaries Integration", () => {
     // Business Rule: reasons.json contains 15 predefined reasons
     expect(dictionaries.reasons.length).toBe(15);
 
-    // Business Rule: Reasons are returned as canonicalName strings
+    // Business Rule: Reasons are returned as DictionaryEntry (canonicalName + description)
     const sampleReason = dictionaries.reasons[0];
     expect(sampleReason).toBeDefined();
-    expect(typeof sampleReason).toBe("string");
+    expect(sampleReason).toHaveProperty("canonicalName");
+    expect(sampleReason).toHaveProperty("description");
 
     // Business Rule: Specific reason canonical names from reasons.json must exist
-    expect(dictionaries.reasons).toContain("position_changed");
-    expect(dictionaries.reasons).toContain("started_working");
-    expect(dictionaries.reasons).toContain("skill_learning");
-    expect(dictionaries.reasons).toContain("goals_change");
+    expect(dictionaries.reasons.some((e) => e.canonicalName === "position_changed")).toBe(true);
+    expect(dictionaries.reasons.some((e) => e.canonicalName === "started_working")).toBe(true);
+    expect(dictionaries.reasons.some((e) => e.canonicalName === "skill_learning")).toBe(true);
+    expect(dictionaries.reasons.some((e) => e.canonicalName === "goals_change")).toBe(true);
   });
 
   // Business Logic: Reasons are used for filtering in search (excludedCreationReasons)
@@ -209,7 +211,7 @@ describe("Dictionaries Integration", () => {
   it("D8: reasons contain all expected transition types for search filtering", async () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    const reasonCanonicalNames = dictionaries.reasons;
+    const reasonCanonicalNames = dictionaries.reasons.map((r) => r.canonicalName);
 
     // Business Rule: All critical transition types must exist for search filtering
     const criticalReasons = [
@@ -262,7 +264,7 @@ describe("Dictionaries Integration", () => {
       "other",
     ];
 
-    const actualReasonIds = dictionaries.reasons.toSorted();
+    const actualReasonIds = dictionaries.reasons.map((r) => r.canonicalName).toSorted();
     expect(actualReasonIds).toEqual(expectedReasonIds.toSorted());
   });
 });
