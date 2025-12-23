@@ -1,8 +1,11 @@
 import { z } from "zod";
 
+import {
+  currentContextSearchFilterNullableSchema,
+  targetContextSearchFilterNullableSchema,
+} from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { USER_INTENT_PROMPT } from "../prompts.js";
-import { currentSearchParamsModificationSchema, targetSearchParamsModificationSchema } from "../types.js";
 
 // Workaround for OpenAI structured output: discriminatedUnion must be wrapped in object
 // See: https://github.com/openai/openai-node/issues/995
@@ -10,11 +13,11 @@ const intentWithFiltersSchema = z.object({
   parsed: z.discriminatedUnion("intent", [
     z.object({
       intent: z.literal("validate"),
-      filters: targetSearchParamsModificationSchema.nullable(),
+      filters: targetContextSearchFilterNullableSchema.nullable(),
     }),
     z.object({
       intent: z.literal("filter"),
-      filters: currentSearchParamsModificationSchema.nullable(),
+      filters: currentContextSearchFilterNullableSchema.nullable(),
     }),
     z.object({
       intent: z.literal("clarify"),

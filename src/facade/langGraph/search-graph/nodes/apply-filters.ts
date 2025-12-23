@@ -1,6 +1,6 @@
 import { AgentInvariantError } from "../../../errors.js";
 import { NODE } from "../state.js";
-import { DEFAULT_LIMIT, MAX_LIMIT, MIN_LIMIT, MIN_RECENCY_THRESHOLD_MONTHS } from "../types.js";
+import { clampSearchParams } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import { parseUserIntent } from "./parse-intent.js";
@@ -9,7 +9,6 @@ import type { SearchStateType } from "../state.js";
 
 export const applyFiltersNode = withLogging<SearchStateType>(
   NODE.apply_filters,
-  // eslint-disable-next-line complexity
   async (state, _config, { normalizerService }) => {
     const { userResponse } = state;
 
@@ -31,19 +30,14 @@ export const applyFiltersNode = withLogging<SearchStateType>(
       parsed.filters.excludedCreationReasons ?? [],
     );
 
-    const { filters } = parsed;
-    const limit = filters.limit ? Math.min(Math.max(filters.limit, MIN_LIMIT), MAX_LIMIT) : DEFAULT_LIMIT;
-    const pathLimit = filters.pathLimit ? Math.min(Math.max(filters.pathLimit, MIN_LIMIT), limit) : limit;
-    const recency = filters.recencyThresholdMonths
-      ? Math.max(filters.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
-      : null;
+    const { limit, pathLimit, recencyThresholdMonths } = clampSearchParams(parsed.filters);
 
     return {
       searchUserIntent: parsed.intent,
       currentSearchParams: {
         excludedContextFields: fields,
         excludedCreationReasons: reasons,
-        recencyThresholdMonths: recency,
+        recencyThresholdMonths,
         limit,
         pathLimit,
         rejectedFields: [...rejectedFields, ...rejectedReasons],

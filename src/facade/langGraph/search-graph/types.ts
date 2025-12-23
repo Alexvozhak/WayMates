@@ -1,8 +1,6 @@
 import { z } from "zod";
 
-import { contextFieldSchema, newContextReasonSchema, targetSearchParamsBaseSchema } from "../../../shared/schemas.js";
-
-import type { CurrentSearchParamsBase } from "../../../shared/schemas.js";
+import { currentSearchParamsBaseSchema, targetSearchParamsBaseSchema } from "../../../shared/schemas.js";
 
 export const targetSearchParamsWithFeedbackSchema = targetSearchParamsBaseSchema.extend({
   rejectedReasons: z.array(z.string()),
@@ -10,27 +8,13 @@ export const targetSearchParamsWithFeedbackSchema = targetSearchParamsBaseSchema
 
 export type TargetSearchParamsWithFeedback = z.infer<typeof targetSearchParamsWithFeedbackSchema>;
 
-export type CurrentSearchParamsWithFeedback = CurrentSearchParamsBase & {
-  rejectedFields: string[];
-};
+// Note: currentSearchParamsBaseSchema is ZodEffects (has transform), so .extend() doesn't work.
+// Using .and() to combine with feedback fields.
+export const currentSearchParamsWithFeedbackSchema = currentSearchParamsBaseSchema.and(
+  z.object({ rejectedFields: z.array(z.string()) }),
+);
 
-export const targetSearchParamsModificationSchema = z.object({
-  excludedCreationReasons: z.array(newContextReasonSchema).nullable(),
-  recencyThresholdMonths: z.number().nullable(),
-  limit: z.number().nullable(),
-});
-
-export type TargetSearchParamsModification = z.infer<typeof targetSearchParamsModificationSchema>;
-
-export const currentSearchParamsModificationSchema = z.object({
-  excludedContextFields: z.array(contextFieldSchema).nullable(),
-  excludedCreationReasons: z.array(newContextReasonSchema).nullable(),
-  recencyThresholdMonths: z.number().nullable(),
-  limit: z.number().nullable(),
-  pathLimit: z.number().nullable(),
-});
-
-export type CurrentSearchParamsModification = z.infer<typeof currentSearchParamsModificationSchema>;
+export type CurrentSearchParamsWithFeedback = z.infer<typeof currentSearchParamsWithFeedbackSchema>;
 
 // Search params validation constants (match shared/schemas.ts business rules)
 export const MIN_LIMIT = 1;
@@ -38,5 +22,23 @@ export const MAX_LIMIT = 100;
 export const DEFAULT_LIMIT = 20;
 export const MIN_RECENCY_THRESHOLD_MONTHS = 1;
 export const DEFAULT_RECENCY_THRESHOLD_MONTHS = null; // No filter by default (explore-first)
+
+/**
+ * Clamps and applies defaults to LLM-extracted search params.
+ * Centralizes Math.min/max logic from parse-search-intent and apply-filters.
+ */
+export function clampSearchParams(raw: {
+  limit?: number | null;
+  pathLimit?: number | null;
+  recencyThresholdMonths?: number | null;
+}): { limit: number; pathLimit: number; recencyThresholdMonths: number | null } {
+  const limit = raw.limit ? Math.min(Math.max(raw.limit, MIN_LIMIT), MAX_LIMIT) : DEFAULT_LIMIT;
+  const pathLimit = raw.pathLimit ? Math.min(Math.max(raw.pathLimit, MIN_LIMIT), limit) : limit;
+  const recency = raw.recencyThresholdMonths
+    ? Math.max(raw.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
+    : null;
+
+  return { limit, pathLimit, recencyThresholdMonths: recency };
+}
 
 export type { SearchGraphResponse } from "../../../shared/schemas.js";

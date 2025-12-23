@@ -463,30 +463,67 @@ export const currentSearchParamsBaseSchema = withPathLimitTransform(userSearchPa
 export type CurrentSearchParamsBase = z.infer<typeof currentSearchParamsBaseSchema>;
 
 /**
- * Base target search parameters (without userId) — for Telegram and Facade
- * Uses targetContext field name for API compatibility
- * Used by makeNullable() for NLP extraction
+ * Nullable schema for target search — OpenAI structured output compatibility.
+ * All optional fields are nullable (not optional) per OpenAI requirements.
+ * Used by: LLM extraction in facade, makeNullable() wrappers.
  */
-export const targetSearchParamsBaseSchema = z.object({
+export const targetSearchParamsNullableSchema = z.object({
   targetContext: targetContextSchema.describe("Target context criteria (FieldFilter with mode/values)"),
   excludedCreationReasons: z
     .array(newContextReasonSchema)
-    .default([])
-    .describe("Exclude candidates with these transition reasons (backward path filter)"),
-  recencyThresholdMonths: z
-    .number()
-    .min(1)
     .nullable()
-    .default(null)
-    .describe("Filter by recency (months since last update)"),
-  limit: z.number().min(1).max(100).default(20).describe("Maximum number of results to return"),
+    .describe("Exclude candidates with these transition reasons (backward path filter)"),
+  recencyThresholdMonths: z.number().min(1).nullable().describe("Filter by recency (months since last update)"),
+  limit: z.number().min(1).max(100).nullable().describe("Maximum number of results to return"),
+});
+
+export type TargetSearchParamsNullable = z.infer<typeof targetSearchParamsNullableSchema>;
+
+/**
+ * Nullable schema for target context search filters (partial modification).
+ * Used in parse-intent for "validate" intent — user applies filters to target search.
+ * Note: Does NOT include targetContext (that's in targetSearchParamsNullableSchema).
+ */
+export const targetContextSearchFilterNullableSchema = z.object({
+  excludedCreationReasons: z.array(newContextReasonSchema).nullable(),
+  recencyThresholdMonths: z.number().nullable(),
+  limit: z.number().nullable(),
+});
+
+export type TargetContextSearchFilterNullable = z.infer<typeof targetContextSearchFilterNullableSchema>;
+
+/**
+ * Nullable schema for current context search filters (partial modification).
+ * Used in parse-intent for "filter" intent — user modifies current search params.
+ */
+export const currentContextSearchFilterNullableSchema = z.object({
+  excludedContextFields: z.array(contextFieldSchema).nullable(),
+  excludedCreationReasons: z.array(newContextReasonSchema).nullable(),
+  recencyThresholdMonths: z.number().nullable(),
+  limit: z.number().nullable(),
+  pathLimit: z.number().nullable(),
+});
+
+export type CurrentContextSearchFilterNullable = z.infer<typeof currentContextSearchFilterNullableSchema>;
+
+/**
+ * Base target search parameters WITH defaults (business logic layer).
+ * .extend() перезаписывает типы nullable → with defaults.
+ * Used by:
+ * - MCP tools (extend with sessionId)
+ * - Core API (extend with userId)
+ */
+export const targetSearchParamsBaseSchema = targetSearchParamsNullableSchema.extend({
+  excludedCreationReasons: z.array(newContextReasonSchema).default([]),
+  recencyThresholdMonths: z.number().min(1).nullable().default(null),
+  limit: z.number().min(1).max(100).default(20),
 });
 
 export type TargetSearchParamsBase = z.infer<typeof targetSearchParamsBaseSchema>;
 
 /**
  * Target search parameters (Mode 4: reverse search by target criteria)
- * Extends base with userId for Core layer
+ * Extends base with userId for Core API layer.
  */
 export const targetSearchParamsSchema = targetSearchParamsBaseSchema.extend({
   userId: userIdSchema.describe("User ID to exclude from results (avoid self-match)"),

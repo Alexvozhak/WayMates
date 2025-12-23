@@ -1,6 +1,6 @@
 import { AgentInvariantError } from "../../../errors.js";
 import { NODE, PHASE } from "../state.js";
-import { DEFAULT_LIMIT, MAX_LIMIT, MIN_LIMIT, MIN_RECENCY_THRESHOLD_MONTHS } from "../types.js";
+import { clampSearchParams } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import { parseUserIntent } from "./parse-intent.js";
@@ -19,10 +19,7 @@ async function buildTargetSearchParams(
   if (parsed.intent !== "validate" || !parsed.filters) return null;
 
   const { normalized, rejected } = await normalizer.normalizeReasons(parsed.filters.excludedCreationReasons ?? []);
-  const limit = parsed.filters.limit ? Math.min(Math.max(parsed.filters.limit, MIN_LIMIT), MAX_LIMIT) : DEFAULT_LIMIT;
-  const recencyThresholdMonths = parsed.filters.recencyThresholdMonths
-    ? Math.max(parsed.filters.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
-    : null;
+  const { limit, recencyThresholdMonths } = clampSearchParams(parsed.filters);
 
   return {
     targetContext: extractedGoal,
