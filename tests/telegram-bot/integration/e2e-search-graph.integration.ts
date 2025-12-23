@@ -120,12 +120,9 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
       "Turn 2: With relaxed filters (excludes geo/industry), MUST return candidates matching junior backend",
     ).toBeGreaterThanOrEqual(2);
 
-    expect(
-      turn2.result.appliedCurrentFilters,
-      "Turn 2: appliedCurrentFilters MUST be present after filter intent",
-    ).toBeDefined();
+    expect(turn2.result.appliedFilters, "Turn 2: appliedFilters MUST be present after filter intent").toBeDefined();
 
-    const excludedFields = turn2.result.appliedCurrentFilters?.excludedContextFields ?? [];
+    const excludedFields = turn2.result.appliedFilters?.excludedContextFields ?? [];
     console.log(`[E2E Turn 2] Excluded fields: ${excludedFields.join(", ")}`);
     expect(excludedFields.length, "Turn 2: LLM MUST extract excluded fields from filter message").toBeGreaterThan(0);
   }

@@ -1,7 +1,7 @@
 import { interrupt } from "@langchain/langgraph";
 
 import { AgentInvariantError } from "../../../errors.js";
-import { NODE, OPTIONS, PHASE } from "../state.js";
+import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -32,7 +32,6 @@ export const showGoalNode = withLogging<SearchStateType>(NODE.show_goal, (state,
   const userResponse = interrupt({
     type: "show_goal",
     extractedGoal,
-    options: OPTIONS.showGoal,
     phase: PHASE.showing_goal,
   });
 

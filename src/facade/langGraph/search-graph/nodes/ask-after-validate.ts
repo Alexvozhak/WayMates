@@ -1,6 +1,6 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { NODE, OPTIONS, PHASE } from "../state.js";
+import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -14,7 +14,6 @@ export const askAfterValidateNode = withLogging<SearchStateType>(NODE.ask_after_
     type: "ask_after_validate",
     candidates: state.validationResults,
     message: "Based on these trajectories, is this the goal you want?",
-    options: OPTIONS.askAfterValidate,
     phase: PHASE.asking_after_validate,
   });
 

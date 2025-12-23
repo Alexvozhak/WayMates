@@ -99,7 +99,7 @@ describe("SearchGraph: Exploration (TC-SG-EX)", () => {
    * Then:
    * - Turn 1: phase = showing_exploration
    * - Turn 2: phase = showing_exploration (NOT showing_results!)
-   * - Turn 2: appliedCurrentFilters.excludedContextFields contains geo fields
+   * - Turn 2: appliedFilters.excludedContextFields contains geo fields
    *
    * Тип теста: Integration (multi-turn, real LLM)
    */
@@ -134,13 +134,10 @@ describe("SearchGraph: Exploration (TC-SG-EX)", () => {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    // Verify filter was applied (appliedCurrentFilters exists and contains geo fields)
-    expect(
-      turn2.appliedCurrentFilters,
-      "Turn 2: appliedCurrentFilters MUST be present after filter intent",
-    ).toBeDefined();
+    // Verify filter was applied (appliedFilters exists and contains geo fields)
+    expect(turn2.appliedFilters, "Turn 2: appliedFilters MUST be present after filter intent").toBeDefined();
 
-    const excludedFields = turn2.appliedCurrentFilters?.excludedContextFields ?? [];
+    const excludedFields = turn2.appliedFilters?.excludedContextFields ?? [];
     const hasGeoExcluded =
       excludedFields.some((f) => f.toLowerCase().includes("city")) ||
       excludedFields.some((f) => f.toLowerCase().includes("country"));

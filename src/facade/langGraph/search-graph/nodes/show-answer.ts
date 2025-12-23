@@ -1,6 +1,6 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { NODE, OPTIONS, PHASE } from "../state.js";
+import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -13,7 +13,6 @@ export const showAnswerNode = withLogging<SearchStateType>(NODE.show_answer, (st
   const userResponse = interrupt({
     type: "advising",
     answerText: state.currentAnswer,
-    options: OPTIONS.advising,
     phase: PHASE.advising,
   });
 

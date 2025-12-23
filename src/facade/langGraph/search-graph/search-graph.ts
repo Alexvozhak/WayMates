@@ -1,6 +1,5 @@
 import { Command, END, START, StateGraph } from "@langchain/langgraph";
 
-import { CONTEXT_FIELD_NAMES } from "../../../shared/schemas.js";
 import { createInterruptPhaseExtractor } from "../shared/interrupt-utils.js";
 import { isGraphState } from "../shared/state-utils.js";
 
@@ -36,12 +35,11 @@ import {
   routeAfterCheckGoal,
   routeAfterParseSearchIntent,
 } from "./search-router.js";
-import { NODE, PHASE, searchPhaseSchema, searchStateAnnotation } from "./state.js";
+import { NODE, searchPhaseSchema, searchStateAnnotation } from "./state.js";
 
 import type { SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
 import type { UserId } from "../../../shared/schemas.js";
-import type { DictionariesService } from "../../services/dictionaries.service.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 import type { GraphDeps } from "../shared/types.js";
 
@@ -51,47 +49,6 @@ function stateToResponse(state: SearchStateType): SearchGraphResponse {
   const { phase } = state;
   return responseBuilders[phase](state);
 }
-
-/* eslint-disable complexity -- UI enrichment with phase-specific filters */
-async function enrichResponse(state: SearchStateType, cache: DictionariesService): Promise<SearchGraphResponse> {
-  const baseResponse = stateToResponse(state);
-
-  // showing_goal: add availableFilters (reasons with descriptions)
-  if (baseResponse.phase === "showing_goal" && state.phase === PHASE.showing_goal) {
-    const reasons = await cache.getReasons();
-    return {
-      ...baseResponse,
-      availableFilters: { reasons },
-    };
-  }
-
-  // showing_exploration: add currentFilters + optionally appliedCurrentFilters
-  if (baseResponse.phase === "showing_exploration" && state.phase === PHASE.showing_exploration) {
-    return {
-      ...baseResponse,
-      currentFilters: {
-        contextFields: CONTEXT_FIELD_NAMES,
-      },
-      ...(state.currentSearchParams && { appliedCurrentFilters: state.currentSearchParams }),
-    };
-  }
-
-  // showing_results: add both availableFilters (reasons with descriptions) and currentFilters (contextFields)
-  if (baseResponse.phase === "showing_results" && state.phase === PHASE.showing_results) {
-    const reasons = await cache.getReasons();
-    return {
-      ...baseResponse,
-      availableFilters: { reasons },
-      currentFilters: {
-        contextFields: CONTEXT_FIELD_NAMES,
-      },
-      ...(state.currentSearchParams && { appliedCurrentFilters: state.currentSearchParams }),
-    };
-  }
-
-  return baseResponse;
-}
-/* eslint-enable complexity */
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
 export function createGraphBuilder() {
@@ -188,10 +145,10 @@ export class SearchGraph {
     const interruptPhase = extractInterruptPhase(finalSnapshot);
 
     if (interruptPhase && isGraphState<SearchStateType>(finalSnapshot.values)) {
-      return enrichResponse({ ...finalSnapshot.values, phase: interruptPhase }, this.deps.dictionariesService);
+      return stateToResponse({ ...finalSnapshot.values, phase: interruptPhase });
     }
 
-    return enrichResponse(result, this.deps.dictionariesService);
+    return stateToResponse(result);
   }
 }
 

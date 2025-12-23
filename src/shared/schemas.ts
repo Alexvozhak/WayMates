@@ -532,36 +532,15 @@ export const targetSearchParamsSchema = targetSearchParamsBaseSchema.extend({
 export type TargetSearchParams = z.infer<typeof targetSearchParamsSchema>;
 
 /**
- * Available filters for SearchGraph UI (TargetSearchParams - showing_goal phase).
- * Contains full DictionaryEntry with descriptions for user-facing UX.
- */
-export const availableFiltersSchema = z.object({
-  reasons: z.array(dictionaryEntrySchema),
-});
-
-export type AvailableFilters = z.infer<typeof availableFiltersSchema>;
-
-/**
  * Applied filters feedback (TargetSearchParams - asking_after_validate phase)
  * Shows what filters were applied + rejected reasons (user input not matched)
  * Omits targetContext (already shown in extractedGoal)
  */
-export const appliedFiltersSchema = targetSearchParamsBaseSchema.omit({ targetContext: true }).extend({
+export const targetAppliedFiltersSchema = targetSearchParamsBaseSchema.omit({ targetContext: true }).extend({
   rejectedReasons: z.array(z.string()).nullable(),
 });
 
-export type AppliedFilters = z.infer<typeof appliedFiltersSchema>;
-
-/**
- * Available filters for SearchGraph UI (CurrentSearchParams - showing_exploration/showing_results)
- * Shows context fields user can exclude during explore/search
- * Array of field IDs (Telegram Bot translates via system prompt)
- */
-export const currentAvailableFiltersSchema = z.object({
-  contextFields: z.array(contextFieldSchema),
-});
-
-export type CurrentAvailableFilters = z.infer<typeof currentAvailableFiltersSchema>;
+export type TargetAppliedFilters = z.infer<typeof targetAppliedFiltersSchema>;
 
 /**
  * Applied filters feedback (CurrentSearchParams - showing_exploration/showing_results after filter)
@@ -1161,16 +1140,12 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("showing_exploration"),
     candidates: z.array(scoredMatchedCandidateSchema),
-    options: z.array(z.string()),
-    currentFilters: currentAvailableFiltersSchema.nullable(),
-    appliedCurrentFilters: currentAppliedFiltersSchema.nullable(),
+    appliedFilters: currentAppliedFiltersSchema.nullable(),
   }),
   z.object({ phase: z.literal("extracting_goal") }),
   z.object({
     phase: z.literal("showing_goal"),
     extractedGoal: targetContextSchema,
-    options: z.array(z.string()),
-    availableFilters: availableFiltersSchema.nullable(),
   }),
   z.object({
     phase: z.literal("clarifying_goal"),
@@ -1183,8 +1158,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("asking_after_validate"),
     candidates: z.array(matchedCandidateWithPathSchema),
-    options: z.array(z.string()),
-    appliedFilters: appliedFiltersSchema.nullable(),
+    appliedFilters: targetAppliedFiltersSchema.nullable(),
   }),
   z.object({ phase: z.literal("setting_goal") }),
   z.object({ phase: z.literal("deleting_goal") }),
@@ -1194,15 +1168,11 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     results: z.array(scoredMatchedCandidateSchema),
     goal: goalSchema.nullable(),
     chartUrl: z.string().url().nullable(),
-    options: z.array(z.string()),
-    availableFilters: availableFiltersSchema.nullable(),
-    currentFilters: currentAvailableFiltersSchema.nullable(),
-    appliedCurrentFilters: currentAppliedFiltersSchema.nullable(),
+    appliedFilters: currentAppliedFiltersSchema.nullable(),
   }),
   z.object({
     phase: z.literal("advising"),
     answerText: z.string(),
-    options: z.array(z.string()),
   }),
   z.object({ phase: z.literal("cancelled") }),
   z.object({ phase: z.literal("failed") }),

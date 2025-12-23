@@ -46,7 +46,7 @@ describe("SearchGraph: Search Results (TC-SG-SR)", () => {
    *
    * Then:
    * - Turn 3: phase = showing_results (NOT showing_exploration!)
-   * - Turn 3: appliedCurrentFilters.excludedContextFields contains "industry"
+   * - Turn 3: appliedFilters.excludedContextFields contains "industry"
    *
    * Тип теста: Integration (multi-turn, real LLM)
    */
@@ -95,9 +95,9 @@ describe("SearchGraph: Search Results (TC-SG-SR)", () => {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    expect(turn3.appliedCurrentFilters, "Turn 3: appliedCurrentFilters MUST be present").toBeDefined();
+    expect(turn3.appliedFilters, "Turn 3: appliedFilters MUST be present").toBeDefined();
 
-    const excludedFields = turn3.appliedCurrentFilters?.excludedContextFields ?? [];
+    const excludedFields = turn3.appliedFilters?.excludedContextFields ?? [];
     const hasIndustryExcluded = excludedFields.some((f) => f.toLowerCase().includes("industry"));
 
     expect(

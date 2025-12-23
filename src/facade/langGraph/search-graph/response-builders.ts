@@ -1,6 +1,6 @@
 import { InvalidStateError } from "../../errors.js";
 
-import { OPTIONS, PHASE } from "./state.js";
+import { PHASE } from "./state.js";
 
 import type { SearchPhase, SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
@@ -26,9 +26,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
   [PHASE.showing_exploration]: (state) => ({
     phase: PHASE.showing_exploration,
     candidates: state.explorationResults,
-    options: OPTIONS.showExploration,
-    currentFilters: null, // enrichResponse() adds from CONTEXT_FIELD_NAMES
-    appliedCurrentFilters: state.currentSearchParams,
+    appliedFilters: state.currentSearchParams,
   }),
 
   [PHASE.extracting_goal]: () => ({
@@ -40,8 +38,6 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     return {
       phase: PHASE.showing_goal,
       extractedGoal,
-      options: OPTIONS.showGoal,
-      availableFilters: null, // enrichResponse() adds from cache.getReasons()
     };
   },
 
@@ -61,7 +57,6 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
   [PHASE.asking_after_validate]: (state) => ({
     phase: PHASE.asking_after_validate,
     candidates: state.validationResults,
-    options: OPTIONS.askAfterValidate,
     appliedFilters: state.targetSearchParams,
   }),
 
@@ -82,16 +77,12 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     results: state.searchResults,
     goal: state.storedGoal,
     chartUrl: state.chartUrl,
-    options: OPTIONS.showResults,
-    availableFilters: null, // enrichResponse() adds from cache.getReasons()
-    currentFilters: null, // enrichResponse() adds from CONTEXT_FIELD_NAMES
-    appliedCurrentFilters: state.currentSearchParams,
+    appliedFilters: state.currentSearchParams,
   }),
 
   [PHASE.advising]: (state) => ({
     phase: PHASE.advising,
     answerText: state.currentAnswer ?? "",
-    options: OPTIONS.advising,
   }),
 
   [PHASE.cancelled]: () => ({

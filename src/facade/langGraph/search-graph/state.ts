@@ -116,11 +116,3 @@ export type SearchStateType = typeof searchStateAnnotation.State;
 
 export const MAX_CLARIFY_ROUNDS = 3;
 export const MAX_NEW_POSITION_ROUNDS = 2;
-
-export const OPTIONS = {
-  showExploration: ["proceed", "filter", "cancel"],
-  showGoal: ["validate", "clarify", "save", "cancel"],
-  askAfterValidate: ["save", "change", "cancel"],
-  showResults: ["change", "delete", "filter", "cancel"],
-  advising: ["ask more", "done"],
-};

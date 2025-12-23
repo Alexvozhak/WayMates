@@ -1,7 +1,7 @@
 import { interrupt } from "@langchain/langgraph";
 
 import { extractGoalValues, generateTrajectoryChart, isChartServiceEnabled } from "../../../../chart/index.js";
-import { NODE, OPTIONS, PHASE } from "../state.js";
+import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -37,7 +37,6 @@ export const showResultsNode = withLogging<SearchStateType>(NODE.show_results, a
     results: state.searchResults,
     goal: state.storedGoal,
     chartUrl,
-    options: OPTIONS.showResults,
     phase: PHASE.showing_results,
   });
 

@@ -19,11 +19,8 @@ Context by phase:
 - ${SEARCH_PHASE.failed}: Explain the error clearly, suggest trying again.
 - ${SEARCH_PHASE.advising}: Answer user's question about the search results in a helpful, conversational tone.
 
-Filter fields (if present):
-- availableFilters.reasons: Reasons user can filter by when validating goal
-- appliedFilters: What filters were applied + rejectedReasons (user input not matched)
-- currentFilters: Available filter options (contextFields, creationReasons, recencyThresholdMonths, limit, pathLimit)
-- appliedCurrentFilters: Applied context filters + rejectedFields
+Filter feedback (if present):
+- appliedFilters: Applied filters + rejectedFields/rejectedReasons (type varies by phase)
 
 Advanced search capabilities (suggest when user shows interest in refining):
 - mode can be "undesired" to EXCLUDE criteria instead of include

@@ -1,30 +1,16 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { AgentInvariantError } from "../../../errors.js";
-import { NODE, OPTIONS, PHASE } from "../state.js";
+import { NODE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
-import type { SearchPhase, SearchStateType } from "../state.js";
-
-const PHASE_OPTIONS = new Map<SearchPhase, string[]>([
-  [PHASE.showing_exploration, OPTIONS.showExploration],
-  [PHASE.showing_goal, OPTIONS.showGoal],
-  [PHASE.asking_after_validate, OPTIONS.askAfterValidate],
-  [PHASE.showing_results, OPTIONS.showResults],
-]);
+import type { SearchStateType } from "../state.js";
 
 export const clarifyIntentNode = withLogging<SearchStateType>(NODE.clarify_intent, (state, _config, _deps) => {
   const { phase } = state;
 
-  const options = PHASE_OPTIONS.get(phase);
-  if (!options) {
-    throw new AgentInvariantError(NODE.clarify_intent, `No options for phase: ${phase}`);
-  }
-
   const userResponse = interrupt({
     type: "clarify_intent",
-    message: "I didn't understand your response. Please choose an action:",
-    options,
+    message: "I didn't understand your response. Please try again.",
     phase,
   });
 

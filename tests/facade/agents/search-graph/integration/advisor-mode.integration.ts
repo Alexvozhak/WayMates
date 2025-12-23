@@ -92,8 +92,6 @@ describe("SearchGraph: Advisor Mode (TC-SG-ADV)", () => {
 
     expect(turn3.answerText, "Advisor MUST provide non-empty answer").toBeTruthy();
     expect(turn3.answerText.length, "Answer should be substantial (>50 chars)").toBeGreaterThan(50);
-    expect(turn3.options, "Options MUST include advisor actions").toContain("ask more");
-    expect(turn3.options).toContain("done");
 
     console.log(`TC-SG-ADV1 [3/3]: ✅ Advisor mode activated`);
     console.log(`  Answer length: ${turn3.answerText.length} chars`);
