@@ -1,6 +1,6 @@
 # FEAT-040: SearchGraph Architecture Cleanup
 
-**Статус:** PENDING
+**Статус:** IN PROGRESS
 **Приоритет:** P1
 **Источник:** Code review сессия 2025-12-23
 
@@ -167,7 +167,7 @@ options: OPTIONS.showResults,
 
 ### Phase 1
 - [ ] pathLimit вычисляется как `Math.min(pathLimit, limit)`
-- [ ] reasons добавлены в ExtractionDictionaries
+- [x] reasons добавлены в ExtractionDictionaries → **Реализовано через DictionariesService.buildHints(["reasons"])** (commit f32b875)
 
 ### Phase 2
 - [ ] userService удалён из GraphDeps
