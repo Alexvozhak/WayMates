@@ -72,7 +72,7 @@ async function enrichResponse(state: SearchStateType, cache: DictionariesService
       currentFilters: {
         contextFields: CONTEXT_FIELD_NAMES,
       },
-      ...(state.appliedFilters && { appliedCurrentFilters: state.appliedFilters }),
+      ...(state.currentSearchParams && { appliedCurrentFilters: state.currentSearchParams }),
     };
   }
 
@@ -85,7 +85,7 @@ async function enrichResponse(state: SearchStateType, cache: DictionariesService
       currentFilters: {
         contextFields: CONTEXT_FIELD_NAMES,
       },
-      ...(state.appliedFilters && { appliedCurrentFilters: state.appliedFilters }),
+      ...(state.currentSearchParams && { appliedCurrentFilters: state.currentSearchParams }),
     };
   }
 
@@ -178,7 +178,7 @@ export class SearchGraph {
       : await this.compiledGraph.invoke(
           {
             userId,
-            intent,
+            orchestratorIntent: intent,
             userResponse: message,
           },
           config,

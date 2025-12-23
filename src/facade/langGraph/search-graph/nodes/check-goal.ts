@@ -8,7 +8,7 @@ export const checkGoalNode = withLogging<SearchStateType>(NODE.check_goal, async
   const goal: Goal | null = await coreClient.client.goal.getByUser.query({ userId: state.userId });
 
   return {
-    existingGoal: goal,
+    storedGoal: goal,
     phase: goal ? PHASE.searching : PHASE.exploring,
   };
 });

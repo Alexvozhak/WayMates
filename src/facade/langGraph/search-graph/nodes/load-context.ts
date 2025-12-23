@@ -28,7 +28,7 @@ async function extractAdhocContext(message: string, hints: string): Promise<Adho
 export const loadContextNode = withLogging<SearchStateType>(
   NODE.load_context,
   async (state, _config, { coreClient, normalizerService, dictionariesService }) => {
-    if (state.intent === GRAPH_INTENT.startAdhoc) {
+    if (state.orchestratorIntent === GRAPH_INTENT.startAdhoc) {
       const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
       const extracted = await extractAdhocContext(state.userResponse, hints);
       const adhocContext = extracted ? await normalizerService.normalizeAdhocContext(extracted, state.userId) : null;

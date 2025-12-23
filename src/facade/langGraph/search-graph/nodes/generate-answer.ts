@@ -24,7 +24,7 @@ export const generateAnswerNode = withLogging<SearchStateType>(NODE.generate_ans
   }
 
   const context = builder
-    .addGoal(state.existingGoal)
+    .addGoal(state.storedGoal)
     .addCandidates(state.searchResults)
     .addCandidateDetails(state.searchResults.slice(0, 5))
     .addChart(state.chartUrl)

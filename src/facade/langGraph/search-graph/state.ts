@@ -6,7 +6,6 @@ import { lastValue } from "../shared/state-utils.js";
 import type { CurrentSearchParamsWithFeedback, TargetSearchParamsWithFeedback } from "./types.js";
 import type {
   AdhocContextBase,
-  CurrentSearchParamsBase,
   Goal,
   MatchedCandidateWithPath,
   ScoredMatchedCandidate,
@@ -84,18 +83,17 @@ export const searchStateAnnotation = Annotation.Root({
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),
   phase: Annotation<SearchPhase>({ reducer: lastValue, default: () => PHASE.checking_goal }),
   userResponse: Annotation<string>({ reducer: lastValue, default: () => "" }),
-  intent: Annotation<UserIntent | null>({ reducer: lastValue, default: () => null }),
+  orchestratorIntent: Annotation<UserIntent | null>({ reducer: lastValue, default: () => null }),
 
   // Context for search: either from DB (userContext) or extracted from message (adhocContext)
   userContext: Annotation<UserContext | null>({ reducer: lastValue, default: () => null }),
   adhocContext: Annotation<AdhocContextBase | null>({ reducer: lastValue, default: () => null }),
   userTrajectory: Annotation<UserContext[]>({ reducer: lastValue, default: () => [] }),
 
-  existingGoal: Annotation<Goal | null>({ reducer: lastValue, default: () => null }),
+  storedGoal: Annotation<Goal | null>({ reducer: lastValue, default: () => null }),
   extractedGoal: Annotation<TargetContext | null>({ reducer: lastValue, default: () => null }),
   targetSearchParams: Annotation<TargetSearchParamsWithFeedback | null>({ reducer: lastValue, default: () => null }),
-  currentSearchParams: Annotation<CurrentSearchParamsBase | null>({ reducer: lastValue, default: () => null }),
-  appliedFilters: Annotation<CurrentSearchParamsWithFeedback | null>({ reducer: lastValue, default: () => null }),
+  currentSearchParams: Annotation<CurrentSearchParamsWithFeedback | null>({ reducer: lastValue, default: () => null }),
 
   clarifyRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   newPositionRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),

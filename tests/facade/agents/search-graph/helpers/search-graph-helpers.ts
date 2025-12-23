@@ -8,12 +8,13 @@ import { DEFAULT_LIMIT } from "../../../../../src/facade/langGraph/search-graph/
 import { targetContextSchema } from "../../../../../src/shared/schemas.js";
 
 import type {
+  CurrentSearchParamsWithFeedback,
   SearchGraphResponse,
   TargetSearchParamsWithFeedback,
 } from "../../../../../src/facade/langGraph/search-graph/types.js";
 import type { SearchStateType } from "../../../../../src/facade/langGraph/search-graph/state.js";
 import type { CoreClient } from "../../../../../src/facade/core-client.js";
-import type { CreateGoalInput, CurrentSearchParamsBase, UserId } from "../../../../../src/shared/schemas.js";
+import type { CreateGoalInput, UserId } from "../../../../../src/shared/schemas.js";
 import type { GraphDeps } from "../../../../../src/facade/langGraph/shared/types.js";
 import type { UserIntent } from "../../../../../src/facade/services/orchestrator/intent-classifier.js";
 
@@ -36,12 +37,13 @@ const TEST_RECENCY_THRESHOLD_MONTHS = 120;
  * Excludes geo/personal fields that vary across fixtures (countryCode, cityName, birthYear, languages).
  * Allows matching on core professional fields (position, domains, industry, etc).
  */
-export const RELAXED_FILTERS: CurrentSearchParamsBase = {
+export const RELAXED_FILTERS: CurrentSearchParamsWithFeedback = {
   excludedContextFields: ["countryCode", "cityName", "birthYear", "languages"],
   excludedCreationReasons: [],
   recencyThresholdMonths: TEST_RECENCY_THRESHOLD_MONTHS,
   limit: DEFAULT_LIMIT,
   pathLimit: DEFAULT_LIMIT,
+  rejectedFields: [],
 };
 
 /**
@@ -82,7 +84,7 @@ export async function cleanupUserGoal(coreClient: CoreClient, userId: UserId): P
  * - Partial<SearchStateType> for type-safe state overrides
  *
  * @param intent - Pre-parsed intent (e.g., GRAPH_INTENT.startAdhoc) or null for LLM parsing
- * @param initialStateOverrides - State fields to inject (e.g., currentSearchParams, existingGoal, adhocContext)
+ * @param initialStateOverrides - State fields to inject (e.g., currentSearchParams, storedGoal, adhocContext)
  * @example
  * // Inject relaxed filters
  * runSearchGraphWithInitialState(deps, msg, tid, uid, null, { currentSearchParams: RELAXED_FILTERS })

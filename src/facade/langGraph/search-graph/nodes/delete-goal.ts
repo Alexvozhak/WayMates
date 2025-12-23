@@ -13,7 +13,7 @@ export const deleteGoalNode = withLogging<SearchStateType>(NODE.delete_goal, asy
   await coreClient.client.goal.delete.mutate({ userId });
 
   return {
-    existingGoal: null,
+    storedGoal: null,
     extractedGoal: null,
     phase: PHASE.exploring,
   };

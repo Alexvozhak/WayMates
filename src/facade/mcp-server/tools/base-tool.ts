@@ -59,7 +59,6 @@ export abstract class BaseTool<TParams extends BaseToolParams, TResult> {
       coreClient: this.coreClient,
       normalizerService: this.normalizerService,
       dictionariesService: this.dictionariesService,
-      userService: this.userService,
       checkpointService: this.checkpointService,
       logger: this.baseLogger,
     };

@@ -88,7 +88,7 @@ describe("SearchGraph: Search Results (TC-SG-SR)", () => {
     expect(
       turn3.phase,
       "Turn 3: Filter intent WITH goal MUST return to search results (not exploration). " +
-        "If showing_exploration, check routeAfterApplyFilters — should route to search when existingGoal present",
+        "If showing_exploration, check routeAfterApplyFilters — should route to search when storedGoal present",
     ).toBe(PHASE.showing_results);
 
     if (turn3.phase !== PHASE.showing_results) {

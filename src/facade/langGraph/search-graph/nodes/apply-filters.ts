@@ -38,18 +38,16 @@ export const applyFiltersNode = withLogging<SearchStateType>(
       ? Math.max(filters.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
       : null;
 
-    const params = {
-      excludedContextFields: fields,
-      excludedCreationReasons: reasons,
-      recencyThresholdMonths: recency,
-      limit,
-      pathLimit,
-    };
-
     return {
       searchUserIntent: parsed.intent,
-      currentSearchParams: params,
-      appliedFilters: { ...params, rejectedFields: [...rejectedFields, ...rejectedReasons] },
+      currentSearchParams: {
+        excludedContextFields: fields,
+        excludedCreationReasons: reasons,
+        recencyThresholdMonths: recency,
+        limit,
+        pathLimit,
+        rejectedFields: [...rejectedFields, ...rejectedReasons],
+      },
     };
   },
 );

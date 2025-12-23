@@ -82,11 +82,11 @@ export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
 }
 
 export function routeAfterCheckGoal(state: SearchStateType): NodeName {
-  return state.existingGoal ? NODE.load_existing_goal : NODE.explore;
+  return state.storedGoal ? NODE.load_existing_goal : NODE.explore;
 }
 
 export function routeAfterApplyFilters(state: SearchStateType): NodeName {
-  return state.existingGoal ? NODE.search : NODE.explore;
+  return state.storedGoal ? NODE.search : NODE.explore;
 }
 
 export function routeAfterAdvisor(state: SearchStateType): NodeName {

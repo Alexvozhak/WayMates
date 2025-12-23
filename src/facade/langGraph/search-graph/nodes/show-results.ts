@@ -18,12 +18,12 @@ export const showResultsNode = withLogging<SearchStateType>(NODE.show_results, a
 
   if (shouldGenerateChart) {
     try {
-      const goalValues = extractGoalValues(state.existingGoal);
+      const goalValues = extractGoalValues(state.storedGoal);
       const result = await generateTrajectoryChart({
         userTrajectory: state.userTrajectory,
         candidates: state.searchResults.slice(0, 5),
         locale: "ru",
-        existingGoal: Boolean(state.existingGoal),
+        existingGoal: Boolean(state.storedGoal),
         goalValues,
       });
       chartUrl = result.chartUrl;
@@ -35,7 +35,7 @@ export const showResultsNode = withLogging<SearchStateType>(NODE.show_results, a
   const userResponse = interrupt({
     type: "show_results",
     results: state.searchResults,
-    goal: state.existingGoal,
+    goal: state.storedGoal,
     chartUrl,
     options: OPTIONS.showResults,
     phase: PHASE.showing_results,

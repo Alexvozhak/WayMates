@@ -5,7 +5,7 @@ import { withLogging } from "../with-logging.js";
 import type { SearchStateType } from "../state.js";
 
 /**
- * Load existing goal node: copies existingGoal.targetCriteria to extractedGoal.
+ * Load existing goal node: copies storedGoal.targetCriteria to extractedGoal.
  *
  * Called from two places:
  * 1. check_goal → load_existing_goal (first entry with existing goal)
@@ -19,16 +19,16 @@ import type { SearchStateType } from "../state.js";
  *    - Must preserve userResponse for show_goal to use
  */
 export const loadExistingGoalNode = withLogging<SearchStateType>(NODE.load_existing_goal, (state, _config, _deps) => {
-  const { existingGoal, phase } = state;
+  const { storedGoal, phase } = state;
 
-  if (!existingGoal) {
-    throw new AgentInvariantError(NODE.load_existing_goal, "existingGoal must exist to load");
+  if (!storedGoal) {
+    throw new AgentInvariantError(NODE.load_existing_goal, "storedGoal must exist to load");
   }
 
   const isFromCheckGoal = phase === PHASE.searching;
 
   return {
-    extractedGoal: existingGoal.targetCriteria,
+    extractedGoal: storedGoal.targetCriteria,
     clarifyRound: 0,
     ...(isFromCheckGoal && { userResponse: "" }),
   };

@@ -129,7 +129,6 @@ export class FacadeTestContext {
       coreClient: this.coreClient,
       normalizerService: this.normalizerService,
       dictionariesService: this.dictionariesService,
-      userService: this.userService,
       checkpointService: this.checkpointService,
       logger: this.logger,
     };

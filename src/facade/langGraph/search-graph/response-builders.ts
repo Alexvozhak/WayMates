@@ -28,7 +28,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     candidates: state.explorationResults,
     options: OPTIONS.showExploration,
     currentFilters: null, // enrichResponse() adds from CONTEXT_FIELD_NAMES
-    appliedCurrentFilters: state.appliedFilters,
+    appliedCurrentFilters: state.currentSearchParams,
   }),
 
   [PHASE.extracting_goal]: () => ({
@@ -80,12 +80,12 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
   [PHASE.showing_results]: (state) => ({
     phase: PHASE.showing_results,
     results: state.searchResults,
-    goal: state.existingGoal,
+    goal: state.storedGoal,
     chartUrl: state.chartUrl,
     options: OPTIONS.showResults,
     availableFilters: null, // enrichResponse() adds from cache.getReasons()
     currentFilters: null, // enrichResponse() adds from CONTEXT_FIELD_NAMES
-    appliedCurrentFilters: state.appliedFilters,
+    appliedCurrentFilters: state.currentSearchParams,
   }),
 
   [PHASE.advising]: (state) => ({
