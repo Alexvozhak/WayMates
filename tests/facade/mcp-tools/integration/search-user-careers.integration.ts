@@ -78,7 +78,7 @@ describe("SearchUserCareersTool Integration Tests", () => {
   it("SUC3: Empty profile handling - returns empty array for users without contexts", async () => {
     // Abstract user ID (not from fixtures) - tests cold start with empty profile
     const emptyUserId: UserId = "usr_01933ec5-c5f0-7a57-af82-87199be6c999";
-    const emptySession = await deps.session.create(emptyUserId);
+    const emptySession = await deps.sessionService.create(emptyUserId);
 
     const params: McpSearchUserCareersParams = {
       sessionId: emptySession,

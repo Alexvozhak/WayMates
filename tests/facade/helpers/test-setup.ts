@@ -12,7 +12,7 @@ beforeAll(async () => {
   const ctx = await FacadeTestContext.initialize();
 
   console.log("[Facade Setup] Invalidating cache to ensure fresh dictionary data...");
-  await ctx.cache.invalidate();
+  await ctx.dictionariesService.invalidate();
 
   console.log("[Facade Setup] Loading fixtures via Core tRPC...");
   const storiesToLoad: UserKey[] = ["U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9"];

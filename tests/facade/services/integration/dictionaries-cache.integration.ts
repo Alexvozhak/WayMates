@@ -22,7 +22,7 @@ describe("DictionariesCache Integration Tests", () => {
 
     await ctx.redis.setex(`waymates:dict:${type}`, 3600, JSON.stringify([...testData.entries()]));
 
-    const result = await ctx.cache.getSimple(type);
+    const result = await ctx.dictionariesService.getSimple(type);
 
     expect(result.get("python")).toBe("Python");
     expect(result.get("react")).toBe("React");
@@ -35,7 +35,7 @@ describe("DictionariesCache Integration Tests", () => {
 
     await ctx.redis.del(`waymates:dict:${type}`);
 
-    const result = await ctx.cache.getSimple(type);
+    const result = await ctx.dictionariesService.getSimple(type);
 
     expect(result.size).toBeGreaterThan(0);
     console.log("[DC2] Available positions:", [...result.keys()]);
@@ -54,7 +54,7 @@ describe("DictionariesCache Integration Tests", () => {
 
     await ctx.redis.setex(`waymates:dict:${type}`, 3600, JSON.stringify([...testData.entries()]));
 
-    await ctx.cache.invalidate(type);
+    await ctx.dictionariesService.invalidate(type);
 
     const cached = await ctx.redis.get(`waymates:dict:${type}`);
     expect(cached).toBeNull();

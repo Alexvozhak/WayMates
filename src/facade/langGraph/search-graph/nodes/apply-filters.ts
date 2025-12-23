@@ -9,7 +9,8 @@ import type { SearchStateType } from "../state.js";
 
 export const applyFiltersNode = withLogging<SearchStateType>(
   NODE.apply_filters,
-  async (state, _config, { normalizer }) => {
+  // eslint-disable-next-line complexity
+  async (state, _config, { normalizerService }) => {
     const { userResponse } = state;
 
     if (!userResponse) {
@@ -19,42 +20,36 @@ export const applyFiltersNode = withLogging<SearchStateType>(
     const parsed = await parseUserIntent(userResponse);
 
     if (parsed.intent !== "filter" || !parsed.filters) {
-      return {
-        searchUserIntent: parsed.intent,
-      };
+      return { searchUserIntent: parsed.intent };
     }
 
-    const { normalized: normalizedFields, rejected: rejectedFields } = await normalizer.normalizeContextFields(
+    const { normalized: fields, rejected: rejectedFields } = await normalizerService.normalizeContextFields(
       parsed.filters.excludedContextFields ?? [],
     );
 
-    const { normalized: normalizedReasons, rejected: rejectedReasons } = await normalizer.normalizeReasons(
+    const { normalized: reasons, rejected: rejectedReasons } = await normalizerService.normalizeReasons(
       parsed.filters.excludedCreationReasons ?? [],
     );
 
-    const limit = parsed.filters.limit ? Math.min(Math.max(parsed.filters.limit, MIN_LIMIT), MAX_LIMIT) : DEFAULT_LIMIT;
-
-    const recencyThresholdMonths = parsed.filters.recencyThresholdMonths
-      ? Math.max(parsed.filters.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
+    const { filters } = parsed;
+    const limit = filters.limit ? Math.min(Math.max(filters.limit, MIN_LIMIT), MAX_LIMIT) : DEFAULT_LIMIT;
+    const pathLimit = filters.pathLimit ? Math.min(Math.max(filters.pathLimit, MIN_LIMIT), limit) : limit;
+    const recency = filters.recencyThresholdMonths
+      ? Math.max(filters.recencyThresholdMonths, MIN_RECENCY_THRESHOLD_MONTHS)
       : null;
+
+    const params = {
+      excludedContextFields: fields,
+      excludedCreationReasons: reasons,
+      recencyThresholdMonths: recency,
+      limit,
+      pathLimit,
+    };
 
     return {
       searchUserIntent: parsed.intent,
-      currentSearchParams: {
-        excludedContextFields: normalizedFields,
-        excludedCreationReasons: normalizedReasons,
-        recencyThresholdMonths,
-        limit,
-        pathLimit: limit,
-      },
-      appliedFilters: {
-        excludedContextFields: normalizedFields,
-        excludedCreationReasons: normalizedReasons,
-        recencyThresholdMonths,
-        limit,
-        pathLimit: limit,
-        rejectedFields: [...rejectedFields, ...rejectedReasons],
-      },
+      currentSearchParams: params,
+      appliedFilters: { ...params, rejectedFields: [...rejectedFields, ...rejectedReasons] },
     };
   },
 );

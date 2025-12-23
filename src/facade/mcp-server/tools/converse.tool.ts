@@ -53,13 +53,13 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
   private async getProjectInfo(intent: UserIntent, question: string): Promise<string | null> {
     switch (intent) {
       case NON_GRAPH_INTENT.projectInvestor: {
-        return this.documentary.answerInvestorQuestion(question);
+        return this.documentaryService.answerInvestorQuestion(question);
       }
       case NON_GRAPH_INTENT.projectTech: {
-        return this.documentary.answerTechQuestion(question);
+        return this.documentaryService.answerTechQuestion(question);
       }
       case NON_GRAPH_INTENT.projectUser: {
-        return this.documentary.answerUserQuestion(question);
+        return this.documentaryService.answerUserQuestion(question);
       }
       default: {
         return null;

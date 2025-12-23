@@ -1,31 +1,10 @@
-import { buildDictionaryHints } from "../shared/dictionary-hints.js";
-
-import type { ExtractionDictionaries } from "../shared/dictionary-hints.js";
-
-export type GoalExtractionDictionaries = {
-  roles: string[];
-  positions: string[];
-  domains: string[];
-  skills: string[];
-  industries: string[];
-};
-
 /**
- * Builds goal extraction prompt with injected dictionaries.
- * Dictionaries are loaded from Neo4j to help LLM map user input to canonical values.
+ * Builds goal extraction prompt with injected dictionary hints.
+ * @param hints - Pre-built hints string from DictionariesService.buildHints()
  */
-export function buildGoalExtractionPrompt(dicts: GoalExtractionDictionaries): string {
-  const hints: string[] = [];
-  if (dicts.roles.length > 0) hints.push(`KNOWN ROLES: ${dicts.roles.join(", ")}`);
-  if (dicts.positions.length > 0) hints.push(`KNOWN POSITIONS: ${dicts.positions.join(", ")}`);
-  if (dicts.domains.length > 0) hints.push(`KNOWN DOMAINS: ${dicts.domains.join(", ")}`);
-  if (dicts.industries.length > 0) hints.push(`KNOWN INDUSTRIES: ${dicts.industries.join(", ")}`);
-  if (dicts.skills.length > 0) hints.push(`KNOWN SKILLS: ${dicts.skills.join(", ")}`);
-
-  const dictsSection = hints.length > 0 ? `\n${hints.join("\n")}\n` : "";
-
+export function buildGoalExtractionPrompt(hints: string): string {
   return `Extract career goal from user's message. Response may be in any language.
-${dictsSection}
+${hints}
 IMPORTANT - distinguish these 3 fields:
 - role: profession type (WHAT you do) — map to KNOWN ROLES
 - position: seniority level (HOW experienced) — map to KNOWN POSITIONS
@@ -70,14 +49,12 @@ MERGE RULES:
 - Return the COMPLETE goal with ALL fields`;
 
 /**
- * Builds adhoc context extraction prompt with injected dictionaries.
- * Dictionaries help LLM map user input to canonical values.
+ * Builds adhoc context extraction prompt with injected dictionary hints.
+ * @param hints - Pre-built hints string from DictionariesService.buildHints()
  */
-export function buildAdhocExtractionPrompt(dicts: ExtractionDictionaries): string {
-  const dictsSection = buildDictionaryHints(dicts);
-
+export function buildAdhocExtractionPrompt(hints: string): string {
   return `Extract user's CURRENT career context (not goals). Response may be in any language.
-${dictsSection}
+${hints}
 IMPORTANT - distinguish these 3 fields:
 - role: profession type (WHAT you do) — map to KNOWN ROLES
 - position: seniority level (HOW experienced) — map to KNOWN POSITIONS

@@ -2,7 +2,6 @@ import { HumanMessage } from "@langchain/core/messages";
 import { v7 as uuidv7 } from "uuid";
 
 import { AgentInvariantError } from "../../../errors.js";
-import { buildDictionaryHints, loadExtractionDicts } from "../../shared/dictionary-hints.js";
 import { extractableContextSchema, extractableTrailSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
 import { contextExtractionPrompt, trailExtractionPrompt } from "../prompts.js";
@@ -78,7 +77,7 @@ async function extractContextData(
 
 export const extractContextNode = withLogging<ColdStartStateType>(
   NODE.extract_context,
-  async (state, _config, { cache }) => {
+  async (state, _config, { dictionariesService }) => {
     const { messages, queue, currentContextIndex, cvText } = state;
 
     const agenda = queue[currentContextIndex];
@@ -89,8 +88,14 @@ export const extractContextNode = withLogging<ColdStartStateType>(
       });
     }
 
-    const dicts = await loadExtractionDicts(cache);
-    const dictHints = buildDictionaryHints(dicts);
+    const dictHints = await dictionariesService.buildHints([
+      "role",
+      "position",
+      "domain",
+      "skill",
+      "industry",
+      "reasons",
+    ]);
 
     const [contextData, trailsData] = await Promise.all([
       extractContextData(messages, agenda, queue, currentContextIndex, cvText, dictHints),

@@ -3,7 +3,8 @@ import pino from "pino";
 
 import { CoreClient } from "../../../src/facade/core-client.js";
 import { CheckpointService } from "../../../src/facade/services/checkpoint.service.js";
-import { DictionariesCache } from "../../../src/facade/services/dictionaries-cache.js";
+import { DictionaryCache } from "../../../src/facade/services/dictionaries-cache.js";
+import { DictionariesService } from "../../../src/facade/services/dictionaries.service.js";
 import { DocumentaryService } from "../../../src/facade/services/documentary.service.js";
 import { Normalizer } from "../../../src/facade/services/normalizer.js";
 import { PostgresService } from "../../../src/facade/services/postgres.service.js";
@@ -57,9 +58,10 @@ export class FacadeTestContext {
     });
 
     console.log("[Facade Setup] Creating cache and normalizer singletons...");
-    const cache = new DictionariesCache(redis, coreClient);
+    const dictionaryCache = new DictionaryCache(redis, coreClient);
+    const dictionariesService = new DictionariesService(dictionaryCache);
     const mockFuzzyModel = createMockFuzzyModel();
-    const normalizer = new Normalizer(cache, coreClient, mockFuzzyModel);
+    const normalizer = new Normalizer(dictionaryCache, coreClient, mockFuzzyModel);
 
     console.log("[Facade Setup] Creating session service...");
     const sessionService = new SessionService(redis);
@@ -70,7 +72,7 @@ export class FacadeTestContext {
     FacadeTestContext.instance = new FacadeTestContext(
       coreClient,
       redis,
-      cache,
+      dictionariesService,
       normalizer,
       postgres,
       checkpointService,
@@ -91,42 +93,42 @@ export class FacadeTestContext {
 
   public readonly coreClient: CoreClient;
   public readonly redis: Redis;
-  public readonly cache: DictionariesCache;
-  public readonly normalizer: Normalizer;
+  public readonly dictionariesService: DictionariesService;
+  public readonly normalizerService: Normalizer;
   public readonly postgres: PostgresService;
   public readonly checkpointService: CheckpointService;
   public readonly userService: UserService;
   public readonly sessionService: SessionService;
-  public readonly documentary: DocumentaryService;
+  public readonly documentaryService: DocumentaryService;
   public readonly logger = testLogger;
 
   private constructor(
     coreClient: CoreClient,
     redis: Redis,
-    cache: DictionariesCache,
-    normalizer: Normalizer,
+    dictionariesService: DictionariesService,
+    normalizerService: Normalizer,
     postgres: PostgresService,
     checkpointService: CheckpointService,
     userService: UserService,
     sessionService: SessionService,
-    documentary: DocumentaryService,
+    documentaryService: DocumentaryService,
   ) {
     this.coreClient = coreClient;
     this.redis = redis;
-    this.cache = cache;
-    this.normalizer = normalizer;
+    this.dictionariesService = dictionariesService;
+    this.normalizerService = normalizerService;
     this.postgres = postgres;
     this.checkpointService = checkpointService;
     this.userService = userService;
     this.sessionService = sessionService;
-    this.documentary = documentary;
+    this.documentaryService = documentaryService;
   }
 
   getGraphDeps(): GraphDeps {
     return {
       coreClient: this.coreClient,
-      normalizer: this.normalizer,
-      cache: this.cache,
+      normalizerService: this.normalizerService,
+      dictionariesService: this.dictionariesService,
       userService: this.userService,
       checkpointService: this.checkpointService,
       logger: this.logger,

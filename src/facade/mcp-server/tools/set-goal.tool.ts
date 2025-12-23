@@ -12,7 +12,7 @@ export class SetGoalTool extends BaseTool<McpSetGoalParams, SetGoalResponse> {
   }
 
   protected async executeImpl(params: McpSetGoalParams, userId: UserId): Promise<SetGoalResponse> {
-    const normalizedPartial = await this.normalizer.normalizeTargetContext(params.targetContext, userId);
+    const normalizedPartial = await this.normalizerService.normalizeTargetContext(params.targetContext, userId);
 
     const normalized = targetContextSchema.parse(normalizedPartial);
 

@@ -41,21 +41,21 @@ import { UpsertTrailTool } from "./tools/upsert-trail.tool.js";
 import type { CoreClient } from "../core-client.js";
 import type { AuthService } from "../services/auth.service.js";
 import type { CheckpointService } from "../services/checkpoint.service.js";
-import type { DictionariesCache } from "../services/dictionaries-cache.js";
+import type { DictionariesService } from "../services/dictionaries.service.js";
 import type { DocumentaryService } from "../services/documentary.service.js";
 import type { Normalizer } from "../services/normalizer.js";
 import type { SessionService } from "../services/session.service.js";
 import type { UserService } from "../services/user.service.js";
 
 export type FacadeServerDependencies = {
-  sessionMiddleware: SessionService;
-  normalizer: Normalizer;
+  sessionService: SessionService;
+  normalizerService: Normalizer;
   coreClient: CoreClient;
-  cache: DictionariesCache;
+  dictionariesService: DictionariesService;
   checkpointService: CheckpointService;
   userService: UserService;
   authService: AuthService;
-  documentary: DocumentaryService;
+  documentaryService: DocumentaryService;
 };
 
 type ToolInstances = {
@@ -79,13 +79,13 @@ type ToolInstances = {
 
 function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
   const toolDeps = {
-    session: deps.sessionMiddleware,
-    normalizer: deps.normalizer,
+    sessionService: deps.sessionService,
+    normalizerService: deps.normalizerService,
     coreClient: deps.coreClient,
-    cache: deps.cache,
+    dictionariesService: deps.dictionariesService,
     checkpointService: deps.checkpointService,
     userService: deps.userService,
-    documentary: deps.documentary,
+    documentaryService: deps.documentaryService,
     logger,
   };
 

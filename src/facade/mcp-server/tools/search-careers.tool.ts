@@ -58,7 +58,7 @@ export class SearchCareersTool extends BaseTool<McpSearchCareersParams, ScoredMa
     }
 
     // 1. Normalize user input (fuzzy matching, dictionary lookup)
-    const normalizedPartial = await this.normalizer.normalizeAdhocContext(params.referenceContext, userId);
+    const normalizedPartial = await this.normalizerService.normalizeAdhocContext(params.referenceContext, userId);
 
     // 2. Validation (ADR-031 Правило 3: validation после normalizer)
     // Ensures all fields match schema (min length, array constraints)

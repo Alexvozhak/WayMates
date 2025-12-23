@@ -12,12 +12,12 @@ const extractionModel = getModel("extraction").withStructuredOutput(extractableC
 
 export const extractContextNode = withLogging<UpsertContextStateType>(
   NODE.extract_context,
-  async (state, _config, { cache }) => {
+  async (state, _config, { dictionariesService }) => {
     const { messages, userResponse } = state;
     const inputText = messages.length === 0 ? userResponse : messages.map((m) => m.content).join("\n");
 
-    const dicts = await cache.getForExtraction();
-    const prompt = buildContextExtractionPrompt(dicts);
+    const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
+    const prompt = buildContextExtractionPrompt(hints);
 
     const extracted = await extractionModel.invoke([
       { role: "system", content: prompt },

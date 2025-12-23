@@ -3,23 +3,11 @@ import { z } from "zod";
 import { dictionaryEntrySchema } from "../../shared/schemas.js";
 import { config } from "../env.js";
 
-import type { DictionaryEntry, SimpleDictionaryType } from "../../shared/schemas.js";
+import type { DictionaryEntry, DictionaryType, SimpleDictionaryType } from "../../shared/schemas.js";
 import type { CoreClient } from "../core-client.js";
 import type { Redis } from "ioredis";
 
-/**
- * String arrays for LLM extraction prompts (KNOWN_* hints).
- * Extracted from DictionaryEntry[] for prompt injection.
- */
-export type ExtractionDictionaries = {
-  role: string[];
-  position: string[];
-  domain: string[];
-  skill: string[];
-  industry: string[];
-};
-
-export class DictionariesCache {
+export class DictionaryCache {
   private readonly ttl: number;
 
   constructor(
@@ -44,29 +32,7 @@ export class DictionariesCache {
     });
   }
 
-  /**
-   * Load all dictionaries for LLM extraction prompts.
-   * Returns canonicalName arrays ready to inject into KNOWN_* hints.
-   */
-  async getForExtraction(): Promise<ExtractionDictionaries> {
-    const [role, position, domain, skill, industry] = await Promise.all([
-      this.getSimple("role"),
-      this.getSimple("position"),
-      this.getSimple("domain"),
-      this.getSimple("skill"),
-      this.getSimple("industry"),
-    ]);
-
-    return {
-      role: [...role.values()].map((e) => e.canonicalName),
-      position: [...position.values()].map((e) => e.canonicalName),
-      domain: [...domain.values()].map((e) => e.canonicalName),
-      skill: [...skill.values()].map((e) => e.canonicalName),
-      industry: [...industry.values()].map((e) => e.canonicalName),
-    };
-  }
-
-  async invalidate(type?: SimpleDictionaryType): Promise<void> {
+  async invalidate(type?: DictionaryType): Promise<void> {
     if (type) {
       await this.redis.del(`waymates:dict:${type}`);
       return;

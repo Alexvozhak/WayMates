@@ -4,7 +4,7 @@ import { z } from "zod";
 import { CONTEXT_FIELD_NAMES, contextFieldSchema, newContextReasonSchema } from "../../shared/schemas.js";
 import { getModel } from "../langGraph/shared-tools/models.js";
 
-import type { DictionariesCache } from "./dictionaries-cache.js";
+import type { DictionaryCache } from "./dictionaries-cache.js";
 import type {
   AdhocContextBase,
   DictionaryEntry,
@@ -45,7 +45,7 @@ const defaultFuzzyModel: FuzzyModel = getModel("deterministic").withStructuredOu
 
 export class Normalizer {
   constructor(
-    private readonly cache: DictionariesCache,
+    private readonly dictionaryCache: DictionaryCache,
     private readonly coreClient: CoreClient,
     private readonly fuzzyModel: FuzzyModel = defaultFuzzyModel,
   ) {}
@@ -109,7 +109,7 @@ export class Normalizer {
       return { normalized: [], rejected: [] };
     }
 
-    const reasons = await this.cache.getReasons();
+    const reasons = await this.dictionaryCache.getReasons();
     const dictEntries = reasons.map((r) => `"${r.canonicalName}"`).join(", ");
 
     const prompt = `You are a term normalization assistant for career transition reasons.
@@ -204,7 +204,7 @@ Return: { normalized: string[], rejected: string[] }`;
       return "";
     }
 
-    const dict = await this.cache.getSimple(type);
+    const dict = await this.dictionaryCache.getSimple(type);
     const normalized = value.toLowerCase();
 
     // Step 1: Exact match

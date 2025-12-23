@@ -41,7 +41,7 @@ import { NODE, PHASE, searchPhaseSchema, searchStateAnnotation } from "./state.j
 import type { SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
 import type { UserId } from "../../../shared/schemas.js";
-import type { DictionariesCache } from "../../services/dictionaries-cache.js";
+import type { DictionariesService } from "../../services/dictionaries.service.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 import type { GraphDeps } from "../shared/types.js";
 
@@ -53,7 +53,7 @@ function stateToResponse(state: SearchStateType): SearchGraphResponse {
 }
 
 /* eslint-disable complexity -- UI enrichment with phase-specific filters */
-async function enrichResponse(state: SearchStateType, cache: DictionariesCache): Promise<SearchGraphResponse> {
+async function enrichResponse(state: SearchStateType, cache: DictionariesService): Promise<SearchGraphResponse> {
   const baseResponse = stateToResponse(state);
 
   // showing_goal: add availableFilters (reasons with descriptions)
@@ -188,10 +188,10 @@ export class SearchGraph {
     const interruptPhase = extractInterruptPhase(finalSnapshot);
 
     if (interruptPhase && isGraphState<SearchStateType>(finalSnapshot.values)) {
-      return enrichResponse({ ...finalSnapshot.values, phase: interruptPhase }, this.deps.cache);
+      return enrichResponse({ ...finalSnapshot.values, phase: interruptPhase }, this.deps.dictionariesService);
     }
 
-    return enrichResponse(result, this.deps.cache);
+    return enrichResponse(result, this.deps.dictionariesService);
   }
 }
 

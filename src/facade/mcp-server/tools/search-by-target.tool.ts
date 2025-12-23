@@ -12,7 +12,7 @@ export class SearchByTargetTool extends BaseTool<McpSearchByTargetParams, Matche
   }
 
   protected async executeImpl(params: McpSearchByTargetParams, userId: UserId): Promise<MatchedCandidateWithPath[]> {
-    const normalizedPartial = await this.normalizer.normalizeTargetContext(params.targetContext, userId);
+    const normalizedPartial = await this.normalizerService.normalizeTargetContext(params.targetContext, userId);
 
     const normalized = targetContextSchema.parse(normalizedPartial);
 

@@ -63,7 +63,7 @@ function computeNewPositionRound(
  */
 export const parseSearchIntentNode = withLogging<SearchStateType>(
   NODE.parse_search_intent,
-  async (state, _config, { normalizer }) => {
+  async (state, _config, { normalizerService }) => {
     const { userResponse, phase, extractedGoal, newPositionRound } = state;
 
     if (!userResponse) {
@@ -74,7 +74,7 @@ export const parseSearchIntentNode = withLogging<SearchStateType>(
 
     const targetSearchParams =
       phase === PHASE.showing_goal && extractedGoal
-        ? await buildTargetSearchParams(parsed, extractedGoal, normalizer)
+        ? await buildTargetSearchParams(parsed, extractedGoal, normalizerService)
         : null;
 
     const updatedRound = computeNewPositionRound(phase, parsed.intent, newPositionRound);

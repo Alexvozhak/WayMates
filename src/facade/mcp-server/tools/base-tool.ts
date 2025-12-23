@@ -9,7 +9,7 @@ import type { SessionId, UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 import type { GraphDeps } from "../../langGraph/shared/types.js";
 import type { CheckpointService } from "../../services/checkpoint.service.js";
-import type { DictionariesCache } from "../../services/dictionaries-cache.js";
+import type { DictionariesService } from "../../services/dictionaries.service.js";
 import type { DocumentaryService } from "../../services/documentary.service.js";
 import type { Normalizer } from "../../services/normalizer.js";
 import type { SessionService } from "../../services/session.service.js";
@@ -21,35 +21,35 @@ import type { ZodType } from "zod";
 export type BaseToolParams = { sessionId: SessionId; requestId: string };
 
 export type BaseToolDependencies = {
-  session: SessionService;
-  normalizer: Normalizer;
+  sessionService: SessionService;
+  normalizerService: Normalizer;
   coreClient: CoreClient;
-  cache: DictionariesCache;
+  dictionariesService: DictionariesService;
   checkpointService: CheckpointService;
   userService: UserService;
-  documentary: DocumentaryService;
+  documentaryService: DocumentaryService;
   logger: Logger;
 };
 
 export abstract class BaseTool<TParams extends BaseToolParams, TResult> {
-  protected session: SessionService;
-  protected normalizer: Normalizer;
+  protected sessionService: SessionService;
+  protected normalizerService: Normalizer;
   protected coreClient: CoreClient;
-  protected cache: DictionariesCache;
+  protected dictionariesService: DictionariesService;
   protected checkpointService: CheckpointService;
   protected userService: UserService;
-  protected documentary: DocumentaryService;
+  protected documentaryService: DocumentaryService;
   protected baseLogger: Logger;
   private paramsSchema: ZodType;
 
   constructor(deps: BaseToolDependencies, paramsSchema: ZodType) {
-    this.session = deps.session;
-    this.normalizer = deps.normalizer;
+    this.sessionService = deps.sessionService;
+    this.normalizerService = deps.normalizerService;
     this.coreClient = deps.coreClient;
-    this.cache = deps.cache;
+    this.dictionariesService = deps.dictionariesService;
     this.checkpointService = deps.checkpointService;
     this.userService = deps.userService;
-    this.documentary = deps.documentary;
+    this.documentaryService = deps.documentaryService;
     this.baseLogger = deps.logger;
     this.paramsSchema = paramsSchema;
   }
@@ -57,8 +57,8 @@ export abstract class BaseTool<TParams extends BaseToolParams, TResult> {
   protected get graphDeps(): GraphDeps {
     return {
       coreClient: this.coreClient,
-      normalizer: this.normalizer,
-      cache: this.cache,
+      normalizerService: this.normalizerService,
+      dictionariesService: this.dictionariesService,
       userService: this.userService,
       checkpointService: this.checkpointService,
       logger: this.baseLogger,
@@ -73,7 +73,7 @@ export abstract class BaseTool<TParams extends BaseToolParams, TResult> {
 
     try {
       this.paramsSchema.parse(params);
-      userId = await this.session.validate(params.sessionId);
+      userId = await this.sessionService.validate(params.sessionId);
       requestLogger = createRequestLogger(this.baseLogger, { requestId, userId, sessionId: params.sessionId });
       requestLogger.info({ tool: this.constructor.name }, "Tool execution started");
 

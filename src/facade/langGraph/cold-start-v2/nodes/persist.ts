@@ -6,7 +6,7 @@ import type { ColdStartStateType } from "../state.js";
 
 export const persistNode = withLogging<ColdStartStateType>(
   "persist",
-  async (state, _config, { coreClient, normalizer }) => {
+  async (state, _config, { coreClient, normalizerService }) => {
     const { collectedContexts, collectedTrails, queue, userId } = state;
 
     if (!collectedContexts || collectedContexts.length === 0) {
@@ -18,7 +18,7 @@ export const persistNode = withLogging<ColdStartStateType>(
     }
 
     const normalizedContexts = await Promise.all(
-      collectedContexts.map((ctx) => normalizer.normalizeFullContext(ctx, userId)),
+      collectedContexts.map((ctx) => normalizerService.normalizeFullContext(ctx, userId)),
     );
 
     await coreClient.client.story.upsertStory.mutate({

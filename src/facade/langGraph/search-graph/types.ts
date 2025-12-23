@@ -27,6 +27,7 @@ export const currentSearchParamsModificationSchema = z.object({
   excludedCreationReasons: z.array(newContextReasonSchema).nullable(),
   recencyThresholdMonths: z.number().nullable(),
   limit: z.number().nullable(),
+  pathLimit: z.number().nullable(),
 });
 
 export type CurrentSearchParamsModification = z.infer<typeof currentSearchParamsModificationSchema>;

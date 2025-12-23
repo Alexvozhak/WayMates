@@ -24,13 +24,13 @@ export function getToolDeps(): BaseToolDependencies {
   const ctx = FacadeTestContext.getInstance();
 
   return {
-    session: ctx.sessionService,
-    normalizer: ctx.normalizer,
+    sessionService: ctx.sessionService,
+    normalizerService: ctx.normalizerService,
     coreClient: ctx.coreClient,
-    cache: ctx.cache,
+    dictionariesService: ctx.dictionariesService,
     checkpointService: ctx.checkpointService,
     userService: ctx.userService,
-    documentary: ctx.documentary,
+    documentaryService: ctx.documentaryService,
     logger: ctx.logger,
   };
 }

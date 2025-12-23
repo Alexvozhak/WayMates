@@ -68,7 +68,7 @@ describe("GetGoalTool Integration Tests", () => {
   // Business rule: User without goal (cold start or deleted goal) returns null gracefully (not error).
   // UI can prompt "Set your career goal to get personalized recommendations" vs confusing error.
   it("GG2: No goal exists - returns null for users without saved goals", async () => {
-    const newSession = await deps.session.create(userWithoutGoal);
+    const newSession = await deps.sessionService.create(userWithoutGoal);
 
     const params: McpGetGoalParams = {
       sessionId: newSession,

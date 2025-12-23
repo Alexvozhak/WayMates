@@ -7,7 +7,7 @@ import type { SearchStateType } from "../state.js";
 
 export const validateGoalNode = withLogging<SearchStateType>(
   NODE.validate_goal,
-  async (state, _config, { coreClient, normalizer }) => {
+  async (state, _config, { coreClient, normalizerService }) => {
     const { extractedGoal, existingGoal, userId, targetSearchParams } = state;
 
     const goalToValidate = extractedGoal ?? existingGoal?.targetCriteria;
@@ -16,7 +16,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
       throw new AgentInvariantError(NODE.validate_goal, "No goal to validate");
     }
 
-    const normalized = await normalizer.normalizeTargetContext(goalToValidate, userId);
+    const normalized = await normalizerService.normalizeTargetContext(goalToValidate, userId);
 
     const params = targetSearchParams ?? {
       targetContext: goalToValidate,
