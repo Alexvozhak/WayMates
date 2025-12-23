@@ -16,16 +16,16 @@ describe("DictionariesCache Integration Tests", () => {
   it("DC1: Cache hit returns canonical names from Redis", async () => {
     const type: SimpleDictionaryType = "skill";
     const testData = new Map([
-      ["python", "Python"],
-      ["react", "React"],
+      ["python", { canonicalName: "Python", description: "General-purpose programming language" }],
+      ["react", { canonicalName: "React", description: "JavaScript library for building UIs" }],
     ]);
 
     await ctx.redis.setex(`waymates:dict:${type}`, 3600, JSON.stringify([...testData.entries()]));
 
     const result = await ctx.dictionariesService.getSimple(type);
 
-    expect(result.get("python")).toBe("Python");
-    expect(result.get("react")).toBe("React");
+    expect(result.get("python")?.canonicalName).toBe("Python");
+    expect(result.get("react")?.canonicalName).toBe("React");
   });
 
   // Business rule: Cache miss triggers fallback to Core API (verified dictionaries).
@@ -50,7 +50,7 @@ describe("DictionariesCache Integration Tests", () => {
   // Without invalidation, users would see stale data until TTL expires (potential 24h delay).
   it("DC3: Invalidate clears cache", async () => {
     const type: SimpleDictionaryType = "domain";
-    const testData = new Map([["backend", "Backend"]]);
+    const testData = new Map([["backend", { canonicalName: "Backend", description: "Server-side development" }]]);
 
     await ctx.redis.setex(`waymates:dict:${type}`, 3600, JSON.stringify([...testData.entries()]));
 
