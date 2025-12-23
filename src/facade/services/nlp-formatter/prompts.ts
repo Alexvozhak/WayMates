@@ -22,8 +22,13 @@ Context by phase:
 Filter fields (if present):
 - availableFilters.reasons: Reasons user can filter by when validating goal
 - appliedFilters: What filters were applied + rejectedReasons (user input not matched)
-- currentFilters.contextFields: Fields user can exclude from matching
+- currentFilters: Available filter options (contextFields, creationReasons, recencyThresholdMonths, limit, pathLimit)
 - appliedCurrentFilters: Applied context filters + rejectedFields
+
+Advanced search capabilities (suggest when user shows interest in refining):
+- mode can be "undesired" to EXCLUDE criteria instead of include
+- excludedReasons: filter out candidates by specific transition types
+- recencyThresholdMonths: focus on recent transitions only
 
 CRITICAL:
 - NEVER show technical field names or intent names
@@ -51,6 +56,13 @@ Phases:
 - ${COLD_START_PHASE.saved}/${COLD_START_PHASE.already_saved}: Congratulate on completion
 - ${COLD_START_PHASE.failed}: Explain the issue clearly
 
+Optional fields user might want to share (suggest naturally during story_gathering or confirmation):
+- languages: B2+ proficiency — helps international job matching
+- citizenships: passport countries — affects visa and relocation eligibility
+- educationLevel: formal education — relevant for positions requiring degrees
+- salary range: compensation info — helps compare with similar trajectories
+- feedback: personal insight on career transitions — valuable for others
+
 Rules:
 - Use emojis sparingly (one per section max)
 - Format with Markdown (bold **text**, lists)
@@ -74,6 +86,13 @@ Phases:
 - ${SIMPLE_PHASE.saved}: Saved successfully
 - ${SIMPLE_PHASE.cancelled}: Operation cancelled
 - ${SIMPLE_PHASE.failed}: Explain error from message field
+
+Optional fields user might want to add (suggest naturally during confirmation):
+- languages: B2+ proficiency — helps international job matching
+- citizenships: passport countries — affects visa and relocation eligibility
+- educationLevel: formal education — relevant for positions requiring degrees
+- salary range: compensation info — helps compare with similar trajectories
+- feedback: personal insight on this career position — valuable for others
 
 Rules:
 - Use emojis sparingly (one per section max)
@@ -99,6 +118,13 @@ Phases:
 - ${SIMPLE_PHASE.cancelled}: Operation cancelled
 - ${SIMPLE_PHASE.failed}: Explain error from message field
 
+Optional fields user might want to update (suggest naturally during confirmation):
+- languages: B2+ proficiency — helps international job matching
+- citizenships: passport countries — affects visa and relocation eligibility
+- educationLevel: formal education — relevant for positions requiring degrees
+- salary range: compensation info — helps compare with similar trajectories
+- feedback: personal insight on this career position — valuable for others
+
 Rules:
 - Use emojis sparingly (one per section max)
 - Format with Markdown (bold **text**, lists)
@@ -122,6 +148,12 @@ Phases:
 - ${SIMPLE_PHASE.saved}: Trail saved successfully
 - ${SIMPLE_PHASE.cancelled}: Operation cancelled
 - ${SIMPLE_PHASE.failed}: Explain error from message field
+
+Optional trail details user might want to share (suggest naturally during confirmation):
+- ratings (1-5): course quality, platform experience, schedule fit — helps others choose
+- cost: investment amount — useful for budgeting decisions
+- schedule: study intensity — helps plan similar learning paths
+- feedback: personal review of the learning experience — valuable for community
 
 Rules:
 - Use emojis sparingly (one per section max)
