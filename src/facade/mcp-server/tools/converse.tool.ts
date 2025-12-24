@@ -25,10 +25,11 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
   }
 
   protected async executeImpl(params: McpConverseParams, userId: UserId): Promise<ConverseResponse> {
-    const intent = await classifyIntent(params.message);
+    const message = params.message;
+    const intent = await classifyIntent(message);
 
     // 1. Active graph — resume or cancel
-    const activeResult = await this.graphManager.executeActiveGraph(intent, params.message, userId);
+    const activeResult = await this.graphManager.executeActiveGraph(intent, message, userId);
     if (activeResult) return activeResult;
 
     // 2. Guards — help, cancel, onboarding, state checks
@@ -36,7 +37,7 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     if (guardResult) return guardResult;
 
     // 3. Project info — investor, tech, user documentation
-    const docContent = await this.getProjectInfo(intent, params.message);
+    const docContent = await this.getProjectInfo(intent, message);
     if (docContent) return createNlpResponse(docContent);
 
     // 4. Query — getStory, getGoal, deleteGoal, deleteContext, deleteTrail
@@ -44,7 +45,7 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     if (queryResult) return queryResult;
 
     // 5. Graph — cold_start, upsert_context, update_context, upsert_trail, search
-    const graphResult = await this.graphManager.executeNewGraph(intent, params.message, userId);
+    const graphResult = await this.graphManager.executeNewGraph(intent, message, userId);
     if (graphResult) return graphResult;
 
     return createNlpResponse("I didn't understand. Try 'help' for available commands.");

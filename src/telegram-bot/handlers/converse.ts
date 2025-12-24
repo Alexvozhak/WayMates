@@ -4,31 +4,35 @@ import type { BotContext } from "../types.js";
 
 /**
  * Unified handler for all user text messages.
- * Replaces 14 command handlers + input-router.
  *
  * Flow:
  * 1. Get sessionId from session
- * 2. Call converse.tool with message + requestId (from timing middleware)
- * 3. Format ConverseResponse via LLM
- * 4. Reply to user
+ * 2. Enqueue message to batcher (combines rapid messages)
+ * 3. If follower (batched) — skip reply
+ * 4. Format ConverseResponse via LLM
+ * 5. Reply to user
  *
  * Error handling: McpClientError is caught by global bot.catch()
  */
 export async function handleConverse(ctx: BotContext): Promise<void> {
   const message = ctx.message?.text;
-  if (!message) {
+  if (!message || !ctx.from) {
     return;
   }
 
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
-  const converseResp = await ctx.services.mcpClient.callTool("converse", {
-    sessionId,
-    message,
-    requestId: ctx.requestId,
-  });
+  const converseResp = await ctx.services.messageBatcher.enqueue(ctx.from.id, message, (combined) =>
+    ctx.services.mcpClient.callTool("converse", {
+      sessionId,
+      message: combined,
+      requestId: ctx.requestId,
+    }),
+  );
 
-  const formatted = await formatResponse(converseResp, ctx.services, ctx.from?.language_code);
+  if (!converseResp) return;
+
+  const formatted = await formatResponse(converseResp, ctx.services, ctx.from.language_code);
 
   await ctx.reply(formatted, { parse_mode: "Markdown" });
 }

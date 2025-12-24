@@ -8,7 +8,10 @@ import { logger } from "./logger-instance.js";
 import { SystemMessagePresenter } from "./presenters/system-message-presenter.js";
 import { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import { McpClient } from "./services/mcp-client.js";
+import { MessageBatcherService } from "./services/message-batcher.service.js";
 import { SessionService } from "./services/session-service.js";
+
+import type { ConverseResponse } from "../shared/schemas.js";
 
 initSentry({ dsn: config.SENTRY_DSN, environment: config.NODE_ENV, service: "telegram" });
 
@@ -53,6 +56,10 @@ try {
 }
 
 const sessionService = new SessionService(mcpClient, redis);
+const messageBatcher = new MessageBatcherService<ConverseResponse>(
+  config.MESSAGE_BATCH_DELAY_MS,
+  config.MESSAGE_BATCH_MAX_SIZE,
+);
 
 const llmConfig = {
   model: config.FORMATTER_LLM_MODEL,
@@ -82,6 +89,7 @@ const bot = createBot(
   {
     mcpClient,
     sessionService,
+    messageBatcher,
     systemMessagePresenter,
     welcomePresenter,
     openaiApiKey: config.OPENAI_API_KEY,

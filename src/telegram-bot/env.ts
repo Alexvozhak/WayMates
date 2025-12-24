@@ -20,6 +20,9 @@ export const envSchema = baseEnvSchema.extend({
   USER_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().positive().default(3),
   TELEGRAM_PRESENTER_RPM_LIMIT: z.coerce.number().int().positive().default(60),
   TELEGRAM_PRESENTER_MAX_CONCURRENT: z.coerce.number().int().positive().default(5),
+  // Message batching (race condition protection)
+  MESSAGE_BATCH_DELAY_MS: z.coerce.number().int().positive().default(300),
+  MESSAGE_BATCH_MAX_SIZE: z.coerce.number().int().positive().default(10),
 });
 
 export type BotEnv = z.infer<typeof envSchema>;
