@@ -144,6 +144,8 @@ Fields to extract (map to KNOWN values from hints):
 - position: seniority level (HOW experienced) — map to KNOWN POSITIONS
 - domains: technical specialization — map to KNOWN DOMAINS
 - industry: business sector — map to KNOWN INDUSTRIES
+- countryCode: work location (WHERE you work now) — ISO country code
+- citizenships: passport countries (nationalities) — array of ISO country codes
 
 RULES:
 1. Extract ONLY from self-descriptions

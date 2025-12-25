@@ -30,18 +30,21 @@ async function extractAdhocContext(message: string, hints: string): Promise<Adho
 }
 
 /**
- * Check if adhoc context has at least one valid field for search.
- * Required: position OR role OR countryCode OR domains(1+) OR skills(1+)
+ * Check if adhoc context has all required fields for meaningful search.
+ * Required: role AND position AND countryCode AND domains(1+)
+ *
+ * countryCode = location (where you work) — critical for matching
+ * citizenships = passports (for relocation) — not used for matching
  */
 function isAdhocContextValid(ctx: AdhocContextBase | null): boolean {
   if (!ctx) return false;
-  return (
-    ctx.position !== null ||
-    ctx.role !== null ||
-    ctx.countryCode !== null ||
-    (ctx.domains !== null && ctx.domains.length > 0) ||
-    (ctx.skills !== null && ctx.skills.length > 0)
-  );
+
+  const hasRole = ctx.role != null;
+  const hasPosition = ctx.position != null;
+  const hasLocation = ctx.countryCode != null;
+  const hasDomain = ctx.domains != null && ctx.domains.length > 0;
+
+  return hasRole && hasPosition && hasLocation && hasDomain;
 }
 
 export const loadContextNode = withLogging<SearchStateType>(

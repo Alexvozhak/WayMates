@@ -287,6 +287,7 @@ export const adhocContextBase = z.object({
   companySize: z.string().nullable().default(null),
   cityName: z.string().nullable().default(null),
   countryCode: z.string().nullable().default(null),
+  citizenships: z.array(z.string()).nullable().default(null),
   birthYear: z.number().min(1950).nullable().default(null),
   educationLevel: educationLevelSchema.nullable().default(null),
   languages: z.array(languageCodeSchema).nullable().default(null),

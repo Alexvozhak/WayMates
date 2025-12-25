@@ -8,5 +8,11 @@
   "saas": "saas",
   "fintech": "fintech",
   "ai": "ai",
-  "security": "security"
+  "security": "security",
+  "devops": "devops",
+  "qa": "qa",
+  "platform": "platform",
+  "ecommerce": "ecommerce",
+  "edtech": "edtech",
+  "healthtech": "healthtech"
 }
