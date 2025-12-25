@@ -24,7 +24,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
       targetContext: goalToValidate,
     };
 
-    const candidates = await coreClient.client.search.byTarget.query({
+    const candidates = await coreClient.client.search.reversePathfinders.query({
       userId,
       ...params,
       targetContext: normalized,

@@ -1,4 +1,8 @@
-import { buildCurrentSearchQuery, buildTargetSearchWithPathsQuery, userCurrentContextQuery } from "../cypher/index.js";
+import {
+  buildCurrentSearchQuery,
+  buildReversePathfinderSearchQuery,
+  userCurrentContextQuery,
+} from "../cypher/index.js";
 import {
   CONTEXT_FIELD_NAMES,
   matchedCandidateWithPathSchema,
@@ -68,8 +72,8 @@ export class SearchManager {
         );
   }
 
-  async searchByTarget(params: TargetSearchParams): Promise<MatchedCandidateWithPath[]> {
-    const query = buildTargetSearchWithPathsQuery(params);
+  async reverseSearchPathfinders(params: TargetSearchParams): Promise<MatchedCandidateWithPath[]> {
+    const query = buildReversePathfinderSearchQuery(params);
 
     const queryParams = {
       userId: params.userId,

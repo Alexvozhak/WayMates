@@ -25,10 +25,10 @@ export const searchRouter = t.router({
       return ctx.searchManager.searchByUser(input);
     }),
 
-  byTarget: publicProcedure
+  reversePathfinders: publicProcedure
     .input(targetSearchParamsSchema)
     .output(z.array(matchedCandidateWithPathSchema))
     .query(async ({ ctx, input }) => {
-      return ctx.searchManager.searchByTarget(input);
+      return ctx.searchManager.reverseSearchPathfinders(input);
     }),
 });

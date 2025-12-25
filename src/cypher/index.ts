@@ -16,7 +16,7 @@
 // Search queries
 export {
   buildCurrentSearchQuery,
-  buildTargetSearchWithPathsQuery,
+  buildReversePathfinderSearchQuery,
   userCurrentContextIdQuery,
   userCurrentContextQuery,
 } from "./queries/search.js";

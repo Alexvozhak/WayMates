@@ -1,7 +1,7 @@
 /**
  * Target Search Integration Tests (TG1-TG7)
  *
- * Tests searchByTarget() with FieldFilter modes (desired/undesired)
+ * Tests reverseSearchPathfinders() with FieldFilter modes (desired/undesired)
  * Uses Batch A+B test data (U1-U18) from globalSetup
  *
  * Test focus:
@@ -43,7 +43,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG1] Searching for position: Middle (desired mode)");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({
@@ -86,7 +86,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG2] Excluding position: Junior (undesired mode)");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({
@@ -130,7 +130,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG3] Searching for domains: Frontend (desired mode)");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({
@@ -180,7 +180,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG4] Excluding domains: Frontend (undesired mode)");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({
@@ -228,7 +228,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG5] Searching for skills: python (desired mode)");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({
@@ -277,7 +277,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG6] Excluding skills: python (undesired mode)");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({
@@ -328,7 +328,7 @@ describe("Target Search (TG1-TG7)", () => {
 
     console.log("[TG7] Combined: Junior + Backend + NOT python");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({
@@ -393,7 +393,7 @@ describe("Target Search (TG1-TG7)", () => {
     console.log("[TG-LANG-1] Searching for languages: ['en', 'fr'] (desired mode, OR logic)");
     const u3 = dataManager.getStoryBy("U3");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({
@@ -444,7 +444,7 @@ describe("Target Search (TG1-TG7)", () => {
     console.log("[TG-LANG-2] Searching for undesired languages: ['en'] (exclude ALL with 'en')");
     const u3 = dataManager.getStoryBy("U3");
 
-    const results = await searchManager.searchByTarget(
+    const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
         u3.userId,
         targetContextSchema.parse({

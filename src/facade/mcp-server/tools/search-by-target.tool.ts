@@ -29,6 +29,6 @@ export class SearchByTargetTool extends BaseTool<McpSearchByTargetParams, Matche
       limit: params.limit,
     };
 
-    return this.coreClient.client.search.byTarget.query(coreParams);
+    return this.coreClient.client.search.reversePathfinders.query(coreParams);
   }
 }

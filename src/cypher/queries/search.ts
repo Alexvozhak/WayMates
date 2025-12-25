@@ -309,7 +309,7 @@ RETURN matchedUser.userId AS userId,
  * @returns Complete Cypher query
  */
 // eslint-disable-next-line max-lines-per-function -- Cypher query builder with conditional blocks
-export function buildTargetSearchWithPathsQuery(params: TargetSearchParams): string {
+export function buildReversePathfinderSearchQuery(params: TargetSearchParams): string {
   const { targetContext, recencyThresholdMonths, excludedCreationReasons } = params;
 
   // Build WHERE conditions for target filtering
