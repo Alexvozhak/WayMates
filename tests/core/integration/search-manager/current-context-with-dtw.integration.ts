@@ -1,11 +1,11 @@
 /**
- * searchByUser WITH DTW (trajectory ≥ 3 contexts)
+ * searchWaymates WITH DTW (trajectory ≥ 3 contexts)
  * Test data: U10-U13 from globalSetup
  */
 
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/shared-driver.js";
-import { FixtureSearchManager, createUserSearchParams } from "../../helpers/fixture-search-manager.js";
+import { FixtureSearchManager, createWaymatesSearchParams } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 
 function validateDtwFormula(
@@ -49,8 +49,8 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       domains: u10.contexts.map((c) => c.domains),
     });
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u10.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u10.userId, {
         excludedContextFields: ["birthYear", "countryCode", "cityName"],
       }),
     );
@@ -124,8 +124,8 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
     console.log("[DT2] Searching from U10 for different domain trajectories (U12 Frontend, U13 Data Science)");
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u10.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u10.userId, {
         excludedContextFields: ["birthYear", "countryCode", "cityName"],
       }),
     );
@@ -178,8 +178,8 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       u12.contexts.map((c) => c.creationReason),
     );
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u10.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u10.userId, {
         excludedContextFields: ["birthYear", "countryCode", "cityName"],
         excludedCreationReasons: ["company_changed"],
       }),
@@ -224,8 +224,8 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
 
     console.log("[DT4] Searching from U10 to rank multiple candidates by dtwTotal");
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u10.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u10.userId, {
         excludedContextFields: ["birthYear", "countryCode", "cityName", "role"],
       }),
     );

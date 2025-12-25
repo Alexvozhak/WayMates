@@ -436,24 +436,17 @@ export const userSearchParamsRawSchema = z.object({
 });
 
 /**
- * Validated base schema WITH pathLimit auto-clamped to limit
- * Exported for reuse in Facade (replace userId with sessionId)
+ * Waymates search parameters (unified adhoc + byUser).
+ * - referenceContext present = adhoc mode (use provided context)
+ * - referenceContext absent = profile mode (resolve from DB)
  */
-export const userSearchParamsBaseSchema = withPathLimitTransform(userSearchParamsRawSchema);
-
-/**
- * User search parameters for Core API (Mode 2: search by user's current context).
- * Base schema with userId (domain concern).
- */
-export type UserSearchParams = z.infer<typeof userSearchParamsBaseSchema>;
-
-export const adhocSearchParamsSchema = withPathLimitTransform(
+export const waymatesSearchParamsSchema = withPathLimitTransform(
   userSearchParamsRawSchema.extend({
-    referenceContext: adhocContextBase,
+    referenceContext: adhocContextBase.optional(),
   }),
 );
 
-export type AdhocSearchParams = z.infer<typeof adhocSearchParamsSchema>;
+export type WaymatesSearchParams = z.infer<typeof waymatesSearchParamsSchema>;
 
 /**
  * Current search parameters (without userId/sessionId) — for Telegram NLP extraction

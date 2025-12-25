@@ -48,7 +48,7 @@ export class SearchUserCareersTool extends BaseTool<McpSearchUserCareersParams, 
   protected async executeImpl(params: McpSearchUserCareersParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
     const { sessionId: _, recencyThresholdMonths, ...coreParams } = params;
 
-    return this.coreClient.client.search.byUser.query({
+    return this.coreClient.client.search.waymates.query({
       userId,
       ...coreParams,
       recencyThresholdMonths: recencyThresholdMonths ?? null,

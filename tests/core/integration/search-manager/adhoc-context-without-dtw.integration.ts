@@ -1,7 +1,7 @@
 /**
  * Adhoc Context Search Integration Tests (AC1-AC12)
  *
- * Tests searchAdhoc() with custom referenceContext (Mode 1)
+ * Tests searchWaymates() with custom referenceContext (Mode 1)
  * Uses Batch A test data (U1-U9) from globalSetup
  * Uses Batch C test data (U14-U16) from globalSetup - educationLevel tests
  * Uses Batch D test data (U17-U18) from globalSetup - salary tests
@@ -20,10 +20,16 @@ import { driver } from "../../helpers/drivers/shared-driver.js";
 import { FixtureSearchManager } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 import { adhocContextBase } from "../../../../src/shared/schemas.js";
-import type { AdhocSearchParams, AdhocContextBase, ContextField, UserContext } from "../../../../src/shared/schemas.js";
+
+import type {
+  WaymatesSearchParams,
+  AdhocContextBase,
+  ContextField,
+  UserContext,
+} from "../../../../src/shared/schemas.js";
 
 /**
- * Creates default searchAdhoc parameters with ability to override
+ * Creates searchWaymates parameters with referenceContext for adhoc mode
  *
  * Default values:
  * - limit: 10
@@ -41,7 +47,7 @@ const createAdhocSearchParams = (
     excludedCreationReasons: string[];
     recencyThresholdMonths: number;
   }>,
-): AdhocSearchParams => ({
+): WaymatesSearchParams => ({
   userId,
   referenceContext,
   limit: 10,
@@ -70,7 +76,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     });
 
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context));
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC1] Results count:", results.length);
     console.log(
@@ -127,7 +133,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "languages"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC2] Results count:", results.length);
     console.log(
@@ -202,7 +208,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["countryCode", "cityName", "birthYear", "languages"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC3] Results count:", results.length);
     console.log("[AC3] Countries found:", [...new Set(results.map((r) => r.matchedContext.countryCode))]);
@@ -248,7 +254,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "languages",
       ],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC4] Results count:", results.length);
     console.log(
@@ -303,7 +309,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       ],
       excludedCreationReasons: ["milestone_achieved"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC5] Results count:", results.length);
     console.log(
@@ -354,7 +360,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "languages"],
       recencyThresholdMonths: 6,
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC6] Results count:", results.length);
     console.log(
@@ -405,7 +411,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[AC7] NOT expected: U14 (MASTER)");
 
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context));
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC7] Results count:", results.length);
     console.log(
@@ -458,7 +464,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "languages",
       ],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC8] Results count:", results.length);
     console.log(
@@ -500,7 +506,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const params = createAdhocSearchParams(u15.userId, adhocContextBase.parse(u15Context), {
       excludedContextFields: ["position", "domains", "skills", "companySize", "countryCode", "cityName", "birthYear"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC9] Results count:", results.length);
     console.log(
@@ -547,7 +553,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "educationLevel",
       ],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC10] Results count:", results.length);
     const u17Result = results.find((r) => r.userId === u17.userId);
@@ -592,7 +598,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       ],
       limit: 20, // ADR-011: skills excluded → contextMatchScore=0 for all → order by recency only
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC11] Results count:", results.length);
     const u18Result = results.find((r) => r.userId === u18.userId);
@@ -624,7 +630,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1Context = u1.contexts[0]!;
 
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context));
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC12] Results count:", results.length);
     const u2 = dataManager.getStoryBy("U2");
@@ -660,7 +666,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[SC1] Results count:", results.length);
     console.log(
@@ -696,7 +702,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const params = createAdhocSearchParams(u4.userId, adhocContextBase.parse(u4Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[SC3] Results count:", results.length);
     console.log(
@@ -732,7 +738,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["languages", "birthYear", "countryCode", "cityName", "domains", "skills"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[SC2] Results count:", results.length);
     console.log(
@@ -764,7 +770,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const params = createAdhocSearchParams(u3.userId, adhocContextBase.parse(u3Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[SC4] Results count:", results.length);
     console.log(
@@ -800,7 +806,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[SC7] Results count:", results.length);
     expect(results.length).toBeGreaterThan(0);
@@ -822,7 +828,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u3Params = createAdhocSearchParams(u3.userId, adhocContextBase.parse(u3.contexts[0]!), {
       excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
     });
-    const u3Results = await searchManager.searchAdhoc(u3Params);
+    const u3Results = await searchManager.searchWaymates(u3Params);
 
     const u1InU3Search = u3Results.find((r) => r.userId === u1.userId);
     expect(u1InU3Search).toBeDefined();
@@ -855,7 +861,7 @@ describe("Partial Context Tests (AC13-AC15)", () => {
     const params = createAdhocSearchParams("test_user", adhocContextBase.parse(partialContext), {
       excludedContextFields: [],
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC13] Results count:", results.length);
     console.log(
@@ -923,7 +929,7 @@ describe("Partial Context Tests (AC13-AC15)", () => {
       ],
       limit: 20,
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC14] Results count:", results.length);
     console.log("[AC14] Position diversity:", [...new Set(results.map((r) => r.matchedContext.position))]);
@@ -974,7 +980,7 @@ describe("Partial Context Tests (AC13-AC15)", () => {
       ],
       limit: 20,
     });
-    const results = await searchManager.searchAdhoc(params);
+    const results = await searchManager.searchWaymates(params);
 
     console.log("[AC15] Results count:", results.length);
     console.log("[AC15] Countries found:", [...new Set(results.map((r) => r.matchedContext.countryCode))]);

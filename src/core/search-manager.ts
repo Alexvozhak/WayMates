@@ -1,6 +1,6 @@
 import {
-  buildCurrentSearchQuery,
   buildReversePathfinderSearchQuery,
+  buildWaymatesSearchQuery,
   userCurrentContextQuery,
 } from "../cypher/index.js";
 import {
@@ -16,13 +16,13 @@ import type { PathCollectorService } from "./path-collector.service.js";
 import type { SelectivityService } from "./selectivity.service.js";
 import type { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
 import type {
-  AdhocSearchParams,
+  AdhocContextBase,
   ContextField,
   MatchedCandidateWithPath,
   ScoredMatchedCandidate,
   TargetSearchParams,
   UserContext,
-  UserSearchParams,
+  WaymatesSearchParams,
 } from "../shared/schemas.js";
 
 /**
@@ -47,29 +47,26 @@ export class SearchManager {
     private goalsManager: GoalsManager,
   ) {}
 
-  async searchAdhoc(params: AdhocSearchParams): Promise<ScoredMatchedCandidate[]> {
-    return this.searchByContext(params);
-  }
+  /**
+   * Unified waymates search (merged adhoc + byUser).
+   * - referenceContext present = adhoc mode (use provided context)
+   * - referenceContext absent = profile mode (resolve from DB, apply DTW if trajectory exists)
+   */
+  async searchWaymates(params: WaymatesSearchParams): Promise<ScoredMatchedCandidate[]> {
+    const referenceContext = params.referenceContext ?? (await this.resolveContext(params.userId));
 
-  async searchByUser(params: UserSearchParams): Promise<ScoredMatchedCandidate[]> {
-    const context = await this.resolveContext(params.userId);
-
-    // Cold start user - return empty results gracefully
-    if (!context) {
-      return [];
+    if (!referenceContext) {
+      return []; // Cold start user - no context
     }
 
-    const hasTrajectory = context.previousContextId !== null;
+    // DTW only for profile mode with trajectory (UserContext has previousContextId)
+    const isProfileMode = !params.referenceContext;
 
-    return hasTrajectory
-      ? this.executeCoreSearchWithDTW(params, context)
-      : this.searchByContext(
-          {
-            ...params,
-            referenceContext: context,
-          },
-          true,
-        );
+    if (isProfileMode && this.isUserContextWithTrajectory(referenceContext)) {
+      return this.executeCoreSearchWithDTW(params, referenceContext);
+    }
+
+    return this.searchByContext({ ...params, referenceContext }, false);
   }
 
   async reverseSearchPathfinders(params: TargetSearchParams): Promise<MatchedCandidateWithPath[]> {
@@ -91,7 +88,7 @@ export class SearchManager {
   }
 
   private async searchByContext(
-    params: AdhocSearchParams,
+    params: WaymatesSearchParams & { referenceContext: AdhocContextBase },
     filterByCurrentContext = false,
   ): Promise<ScoredMatchedCandidate[]> {
     const {
@@ -112,7 +109,7 @@ export class SearchManager {
 
     const rankedStrictFields = await this.selectivity.rankStrictFields(strictFields, referenceContext);
 
-    const query = buildCurrentSearchQuery(
+    const query = buildWaymatesSearchQuery(
       goalPositions,
       rankedStrictFields,
       {
@@ -155,8 +152,12 @@ export class SearchManager {
     });
   }
 
+  private isUserContextWithTrajectory(context: AdhocContextBase | UserContext): context is UserContext {
+    return "previousContextId" in context && context.previousContextId !== null;
+  }
+
   private async executeCoreSearchWithDTW(
-    params: UserSearchParams,
+    params: WaymatesSearchParams,
     referenceContext: UserContext,
   ): Promise<ScoredMatchedCandidate[]> {
     // Step 1: Search candidates (without DTW)

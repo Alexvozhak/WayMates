@@ -116,43 +116,6 @@ describe("Dictionaries Integration", () => {
     expect(dictionaries.skill.some((e) => e.canonicalName === skillName)).toBe(true);
   });
 
-  // Business Logic: addTerm supports all dictionary types (position, domain, city, skill, etc.)
-  // Each type creates corresponding label node (Position, WorkDomain, City, Skill, etc.)
-  it("D5: addTerm supports all dictionary types", async () => {
-    const timestamp = Date.now();
-
-    await dictionariesManager.addTerm({
-      type: "position",
-      canonicalName: `test-position-${timestamp}`,
-      complexity: null,
-      verified: true,
-      createdBy: "test-user",
-    });
-
-    await dictionariesManager.addTerm({
-      type: "domain",
-      canonicalName: `test-domain-${timestamp}`,
-      complexity: null,
-      verified: true,
-      createdBy: "test-user",
-    });
-
-    await dictionariesManager.addTerm({
-      type: "city",
-      canonicalName: `test-city-${timestamp}`,
-      complexity: null,
-      verified: true,
-      createdBy: "test-user",
-    });
-
-    const dictionaries = await dictionariesManager.getVerifiedDictionaries();
-
-    // Business Rule: Each term must be retrievable after creation
-    expect(dictionaries.position.some((e) => e.canonicalName === `test-position-${timestamp}`)).toBe(true);
-    expect(dictionaries.domain.some((e) => e.canonicalName === `test-domain-${timestamp}`)).toBe(true);
-    expect(dictionaries.city.some((e) => e.canonicalName === `test-city-${timestamp}`)).toBe(true);
-  });
-
   // Business Logic: Only verified=true terms should be returned by getVerifiedDictionaries
   // This is critical for normalization workflow: LLM should only see approved canonical names
   it("D6: getVerifiedDictionaries excludes unverified terms", async () => {

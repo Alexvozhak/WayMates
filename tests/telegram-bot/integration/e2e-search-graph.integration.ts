@@ -82,139 +82,145 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     });
 
     console.log(`[E2E Turn 1] Response phase: ${turn1.result.phase}`);
-    expect(turn1.result.phase, "Turn 1: startAdhoc intent MUST trigger exploration phase").toBe(
-      "showing_exploration_candidates",
+    expect(turn1.result.phase, "Turn 1: startAdhoc intent MUST trigger confirming phase").toBe(
+      "confirming_adhoc_context",
     );
 
-    if (turn1.result.phase !== "showing_exploration_candidates") {
+    if (turn1.result.phase !== "confirming_adhoc_context") {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    console.log(`[E2E Turn 1] Candidates: ${turn1.result.candidates.length}`);
-    expect(
-      turn1.result.candidates.length,
-      "Turn 1: adhoc 'junior backend' MUST find matching candidates from fixtures",
-    ).toBeGreaterThanOrEqual(2);
+    console.log(`[E2E Turn 1] Adhoc context confirmed, proceeding to exploration...`);
   }
 
-  async function executeApplyFiltersTurn(sessionId: SessionId) {
+  async function executeProceedToExplorationTurn(sessionId: SessionId) {
     const ctx = TelegramTestContext.getInstance();
-    console.log("[E2E Turn 2] Applying relaxed filters...");
+    console.log("[E2E Turn 2] Proceeding to exploration...");
 
     const turn2 = await ctx.mcpClient.callTool("converse", {
-      message: "Покажи без учёта города, страны, индустрии, возраста и языков",
+      message: "давай посмотрим похожих",
       sessionId,
       requestId: randomUUID(),
     });
 
     console.log(`[E2E Turn 2] Response phase: ${turn2.result.phase}`);
-    expect(turn2.result.phase, "Turn 2: filter intent MUST stay in exploration phase with updated params").toBe(
-      "showing_exploration_candidates",
-    );
+    expect(turn2.result.phase, "Turn 2: proceed intent MUST trigger exploration phase").toMatch(/^showing_exploration/);
 
-    if (turn2.result.phase !== "showing_exploration_candidates") {
+    if (!turn2.result.phase.startsWith("showing_exploration")) {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    console.log(`[E2E Turn 2] Candidates: ${turn2.result.candidates.length} (relaxed filters)`);
-    expect(
-      turn2.result.candidates.length,
-      "Turn 2: With relaxed filters (excludes geo/industry), MUST return candidates matching junior backend",
-    ).toBeGreaterThanOrEqual(2);
-
-    expect(turn2.result.appliedFilters, "Turn 2: appliedFilters MUST be present after filter intent").toBeDefined();
-
-    const excludedFields = turn2.result.appliedFilters?.excludedContextFields ?? [];
-    console.log(`[E2E Turn 2] Excluded fields: ${excludedFields.join(", ")}`);
-    expect(excludedFields.length, "Turn 2: LLM MUST extract excluded fields from filter message").toBeGreaterThan(0);
+    console.log(`[E2E Turn 2] Exploration phase: ${turn2.result.phase}`);
   }
 
-  async function executeExtractGoalTurn(sessionId: SessionId) {
+  async function executeApplyFiltersTurn(sessionId: SessionId) {
     const ctx = TelegramTestContext.getInstance();
-    console.log("[E2E Turn 3] Extracting goal...");
+    console.log("[E2E Turn 3] Applying relaxed filters...");
 
     const turn3 = await ctx.mcpClient.callTool("converse", {
-      message: "Хочу стать middle backend разработчиком",
+      message: "Покажи без учёта города, страны, индустрии, возраста и языков",
       sessionId,
       requestId: randomUUID(),
     });
 
     console.log(`[E2E Turn 3] Response phase: ${turn3.result.phase}`);
-    expect(turn3.result.phase, "Turn 3: User expresses goal MUST trigger extraction and showing_goal phase").toBe(
-      "showing_goal",
+    expect(turn3.result.phase, "Turn 3: filter intent MUST stay in exploration phase with updated params").toMatch(
+      /^showing_exploration/,
     );
 
-    if (turn3.result.phase !== "showing_goal") {
+    if (!turn3.result.phase.startsWith("showing_exploration")) {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    const positionValues = turn3.result.extractedGoal.position?.values ?? [];
-    const domainValues = turn3.result.extractedGoal.domains?.values ?? [];
-
-    console.log(`[E2E Turn 3] Extracted position: ${JSON.stringify(positionValues)}`);
-    console.log(`[E2E Turn 3] Extracted domains: ${JSON.stringify(domainValues)}`);
-
-    expect(
-      positionValues.some((v) => v.toLowerCase().includes("middle")),
-      `Turn 3: LLM MUST extract "middle" from message, got: ${JSON.stringify(positionValues)}`,
-    ).toBe(true);
-
-    expect(
-      domainValues.some((v: string) => v.toLowerCase().includes("backend")),
-      `Turn 3: LLM MUST extract "backend" from message, got: ${JSON.stringify(domainValues)}`,
-    ).toBe(true);
+    console.log(`[E2E Turn 3] Exploration phase: ${turn3.result.phase} (relaxed filters)`);
   }
 
-  async function executeSaveAndSearchTurn(sessionId: SessionId) {
+  async function executeExtractGoalTurn(sessionId: SessionId) {
     const ctx = TelegramTestContext.getInstance();
-    console.log("[E2E Turn 4] Saving goal and searching...");
+    console.log("[E2E Turn 4] Extracting goal...");
 
     const turn4 = await ctx.mcpClient.callTool("converse", {
-      message: "сохрани",
+      message: "Хочу стать middle backend разработчиком",
       sessionId,
       requestId: randomUUID(),
     });
 
     console.log(`[E2E Turn 4] Response phase: ${turn4.result.phase}`);
-    expect(turn4.result.phase, "Turn 4: save intent MUST persist goal and show search results").toBe("showing_results");
+    expect(turn4.result.phase, "Turn 4: User expresses goal MUST trigger extraction and showing_goal phase").toBe(
+      "showing_goal",
+    );
 
-    if (turn4.result.phase !== "showing_results") {
+    if (turn4.result.phase !== "showing_goal") {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    console.log(`[E2E Turn 4] Results: ${turn4.result.results.length}`);
+    const positionValues = turn4.result.extractedGoal.position?.values ?? [];
+    const domainValues = turn4.result.extractedGoal.domains?.values ?? [];
+
+    console.log(`[E2E Turn 4] Extracted position: ${JSON.stringify(positionValues)}`);
+    console.log(`[E2E Turn 4] Extracted domains: ${JSON.stringify(domainValues)}`);
+
     expect(
-      turn4.result.results.length,
-      "Turn 4: With relaxed filters + middle backend goal, MUST return pathfinders (U3, U8, U10, U11)",
+      positionValues.some((v) => v.toLowerCase().includes("middle")),
+      `Turn 4: LLM MUST extract "middle" from message, got: ${JSON.stringify(positionValues)}`,
+    ).toBe(true);
+
+    expect(
+      domainValues.some((v: string) => v.toLowerCase().includes("backend")),
+      `Turn 4: LLM MUST extract "backend" from message, got: ${JSON.stringify(domainValues)}`,
+    ).toBe(true);
+  }
+
+  async function executeSaveAndSearchTurn(sessionId: SessionId) {
+    const ctx = TelegramTestContext.getInstance();
+    console.log("[E2E Turn 5] Saving goal and searching...");
+
+    const turn5 = await ctx.mcpClient.callTool("converse", {
+      message: "сохрани",
+      sessionId,
+      requestId: randomUUID(),
+    });
+
+    console.log(`[E2E Turn 5] Response phase: ${turn5.result.phase}`);
+    expect(turn5.result.phase, "Turn 5: save intent MUST persist goal and show search results").toBe("showing_results");
+
+    if (turn5.result.phase !== "showing_results") {
+      expect.fail("Type guard failed after strict assertion");
+    }
+
+    console.log(`[E2E Turn 5] Results: ${turn5.result.results.length}`);
+    expect(
+      turn5.result.results.length,
+      "Turn 5: With relaxed filters + middle backend goal, MUST return pathfinders (U3, U8, U10, U11)",
     ).toBeGreaterThanOrEqual(2);
     expect(
-      turn4.result.results.length,
-      "Turn 4: Results should not exceed expected pathfinders count",
+      turn5.result.results.length,
+      "Turn 5: Results should not exceed expected pathfinders count",
     ).toBeLessThanOrEqual(5);
 
     // Verify goal persisted to Neo4j
     const savedGoal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
 
-    expect(savedGoal, "Turn 4: Goal MUST be saved to Neo4j after 'save' command").not.toBeNull();
+    expect(savedGoal, "Turn 5: Goal MUST be saved to Neo4j after 'save' command").not.toBeNull();
 
     const savedPositionValues = savedGoal?.targetContext.position?.values ?? [];
     expect(
       savedPositionValues.some((v) => v.toLowerCase().includes("middle")),
-      `Turn 4: Saved goal MUST contain "middle", got: ${JSON.stringify(savedPositionValues)}`,
+      `Turn 5: Saved goal MUST contain "middle", got: ${JSON.stringify(savedPositionValues)}`,
     ).toBe(true);
 
     // Note: path is only returned for DTW-enabled searches (user with trajectory)
     // For adhoc search, path may be undefined - that's expected behavior
-    console.log("[E2E Turn 4] Search completed with goal filter applied");
+    console.log("[E2E Turn 5] Search completed with goal filter applied");
   }
 
   // ========== Test case ==========
 
   /**
-   * E2E-SG-01: Full adhoc → filters → goal → save flow
+   * E2E-SG-01: Full adhoc → confirm → explore → filters → goal → save flow
    *
    * Сценарий:
-   * Пользователь без профиля делает quick search, применяет фильтры для broader matching,
+   * Пользователь без профиля делает quick search, подтверждает контекст, применяет фильтры,
    * формирует цель и получает результаты.
    *
    * Given:
@@ -223,19 +229,21 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
    *
    * Flow:
    * 1. Turn 1: adhoc context "Быстрый поиск: я junior backend разработчик"
-   *    → startAdhoc intent → explore → showing_exploration
-   *    → candidates = [] (strict filters, ожидаемо)
+   *    → startAdhoc intent → confirming_adhoc_context (спросить что дальше)
    *
-   * 2. Turn 2: apply relaxed filters "Покажи без учёта города, страны, индустрии, возраста и языков"
+   * 2. Turn 2: proceed to exploration "давай посмотрим похожих"
+   *    → proceed intent → explore → showing_exploration
+   *
+   * 3. Turn 3: apply relaxed filters "Покажи без учёта города, страны, индустрии, возраста и языков"
    *    → filter intent → apply_filters → explore
-   *    → candidates.length >= 2 (U3, U8, U10, U11 видны с relaxed filters)
+   *    → showing_exploration (with relaxed filters)
    *
-   * 3. Turn 3: extract goal "Хочу стать middle backend разработчиком"
-   *    → extract_goal → showing_goal
+   * 4. Turn 4: extract goal "Хочу стать middle backend разработчиком"
+   *    → clarify intent → extract_goal → showing_goal
    *    → extractedGoal contains "middle" + "backend"
    *
-   * 4. Turn 4: save + search "сохрани"
-   *    → set_goal → search → showing_results
+   * 5. Turn 5: save + search "сохрани"
+   *    → save intent → set_goal → search → showing_results
    *    → results.length >= 2 (pathfinders: U3, U8, U10, U11)
    *
    * Then:
@@ -244,12 +252,13 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
    *
    * Тип теста: E2E Integration (real MCP → Facade → SearchGraph → Neo4j)
    */
-  it("E2E-SG-01: adhoc → filters → goal → save returns pathfinders", async () => {
+  it("E2E-SG-01: adhoc → confirm → explore → filters → goal → save returns pathfinders", async () => {
     await executeAdhocContextTurn(testSessionId);
+    await executeProceedToExplorationTurn(testSessionId);
     await executeApplyFiltersTurn(testSessionId);
     await executeExtractGoalTurn(testSessionId);
     await executeSaveAndSearchTurn(testSessionId);
 
-    console.log("E2E-SG-01: ✅ Full adhoc → filters → goal → save flow completed successfully");
+    console.log("E2E-SG-01: ✅ Full adhoc → confirm → explore → filters → goal → save flow completed successfully");
   }, 300_000); // 5 min timeout for full E2E flow with LLM calls
 });

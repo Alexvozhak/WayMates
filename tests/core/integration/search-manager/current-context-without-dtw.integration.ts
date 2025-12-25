@@ -1,11 +1,11 @@
 /**
- * searchByUser WITHOUT DTW (single context users)
+ * searchWaymates WITHOUT DTW (single context users)
  * Business rule: Automatic fallback to searchByContext when no trajectory exists
  */
 
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/shared-driver.js";
-import { FixtureSearchManager, createUserSearchParams } from "../../helpers/fixture-search-manager.js";
+import { FixtureSearchManager, createWaymatesSearchParams } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 
 describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
@@ -29,8 +29,8 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
 
     expect(u4Context.previousContextId).toBeNull();
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u4.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u4.userId, {
         excludedContextFields: [
           "birthYear",
           "countryCode",
@@ -82,8 +82,8 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
       geo: `${u4Context.countryCode}/${u4Context.cityName}`,
     });
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u4.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u4.userId, {
         excludedContextFields: [
           "countryCode",
           "cityName",

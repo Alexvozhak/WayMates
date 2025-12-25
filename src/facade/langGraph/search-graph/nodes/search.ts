@@ -14,16 +14,11 @@ export const searchNode = withLogging<SearchStateType>(NODE.search, async (state
 
   const params = currentSearchParams ?? { ...DEFAULT_CURRENT_SEARCH_PARAMS };
 
-  const results = adhocContext
-    ? await coreClient.client.search.adhoc.query({
-        userId,
-        referenceContext: adhocContext,
-        ...params,
-      })
-    : await coreClient.client.search.byUser.query({
-        userId,
-        ...params,
-      });
+  const results = await coreClient.client.search.waymates.query({
+    userId,
+    referenceContext: adhocContext ?? undefined,
+    ...params,
+  });
 
   return {
     searchResults: results,

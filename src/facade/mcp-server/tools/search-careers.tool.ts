@@ -67,7 +67,7 @@ export class SearchCareersTool extends BaseTool<McpSearchCareersParams, ScoredMa
 
     const { sessionId: _sessionId, referenceContext: _ref, recencyThresholdMonths, ...searchParams } = params;
 
-    return this.coreClient.client.search.adhoc.query({
+    return this.coreClient.client.search.waymates.query({
       userId,
       ...searchParams,
       recencyThresholdMonths: recencyThresholdMonths ?? null,

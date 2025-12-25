@@ -1,28 +1,20 @@
 import { z } from "zod";
 
 import {
-  adhocSearchParamsSchema,
   matchedCandidateWithPathSchema,
   scoredMatchedCandidateSchema,
   targetSearchParamsSchema,
-  userSearchParamsBaseSchema,
+  waymatesSearchParamsSchema,
 } from "../../shared/schemas.js";
 
 import { publicProcedure, t } from "./trpc.js";
 
 export const searchRouter = t.router({
-  adhoc: publicProcedure
-    .input(adhocSearchParamsSchema)
+  waymates: publicProcedure
+    .input(waymatesSearchParamsSchema)
     .output(z.array(scoredMatchedCandidateSchema))
     .query(async ({ ctx, input }) => {
-      return ctx.searchManager.searchAdhoc(input);
-    }),
-
-  byUser: publicProcedure
-    .input(userSearchParamsBaseSchema)
-    .output(z.array(scoredMatchedCandidateSchema))
-    .query(async ({ ctx, input }) => {
-      return ctx.searchManager.searchByUser(input);
+      return ctx.searchManager.searchWaymates(input);
     }),
 
   reversePathfinders: publicProcedure

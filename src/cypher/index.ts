@@ -15,8 +15,8 @@
 
 // Search queries
 export {
-  buildCurrentSearchQuery,
   buildReversePathfinderSearchQuery,
+  buildWaymatesSearchQuery,
   userCurrentContextIdQuery,
   userCurrentContextQuery,
 } from "./queries/search.js";

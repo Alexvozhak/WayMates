@@ -6,7 +6,7 @@ import { SearchManager } from "../../../src/core/search-manager.js";
 import { SelectivityService } from "../../../src/core/selectivity.service.js";
 import { StoryManager } from "../../../src/core/story-manager.js";
 import { TrajectorySimilarityService } from "../../../src/core/trajectory-similarity.service.js";
-import type { UserSearchParams } from "../../../src/shared/schemas.js";
+import type { WaymatesSearchParams } from "../../../src/shared/schemas.js";
 
 export class FixtureSearchManager {
   private searchManager: SearchManager;
@@ -32,7 +32,10 @@ export class FixtureSearchManager {
   }
 }
 
-export const createUserSearchParams = (userId: string, overrides?: Partial<UserSearchParams>): UserSearchParams => ({
+export const createWaymatesSearchParams = (
+  userId: string,
+  overrides?: Partial<WaymatesSearchParams>,
+): WaymatesSearchParams => ({
   userId,
   limit: 10,
   pathLimit: 10,

@@ -119,7 +119,7 @@ ${buildWithCollect("matchedContext", ["matchedUser"])}
  * @returns Complete Cypher query
  */
 // eslint-disable-next-line complexity, max-lines-per-function -- Cypher query builder with conditional blocks
-export function buildCurrentSearchQuery(
+export function buildWaymatesSearchQuery(
   goalPositions: string[] | null,
   strictFields: ContextField[],
   params: {

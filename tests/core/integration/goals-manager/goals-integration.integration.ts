@@ -2,12 +2,12 @@
  * Goals Integration Tests
  * Business rules:
  * - GM1-GM4: GoalsManager CRUD operations (create, read, update, delete)
- * - G1-G5: Goals integration with searchByUser (candidateType classification: pathfinder, waymate)
+ * - G1-G5: Goals integration with searchWaymates (candidateType classification: pathfinder, waymate)
  */
 
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/goals-driver.js";
-import { FixtureSearchManager, createUserSearchParams } from "../../helpers/fixture-search-manager.js";
+import { FixtureSearchManager, createWaymatesSearchParams } from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 import { GoalsManager } from "../../../../src/core/goals-manager.js";
 import { DatabaseContext } from "../../../../src/core/database-context.js";
@@ -186,7 +186,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   });
 
   // Business rule: Without goal, all candidates have candidateType=null
-  it("G1: No Goal baseline - searchByUser without goal returns candidateType=null", async () => {
+  it("G1: No Goal baseline - searchWaymates without goal returns candidateType=null", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new UserStories();
@@ -195,8 +195,8 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     console.log("[G1] Searching without goal for U1");
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u1.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u1.userId, {
         excludedContextFields: ["languages"],
         recencyThresholdMonths: 24,
       }),
@@ -250,11 +250,11 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       }),
     });
 
-    const searchParams = createUserSearchParams(u1.userId, {
+    const searchParams = createWaymatesSearchParams(u1.userId, {
       excludedContextFields: ["position", "birthYear", "languages"],
       recencyThresholdMonths: 24,
     });
-    const results = await searchManager.searchByUser(searchParams);
+    const results = await searchManager.searchWaymates(searchParams);
 
     console.log("[G2] Results count:", results.length);
     console.log(
@@ -329,8 +329,8 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       }),
     });
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u1.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u1.userId, {
         excludedContextFields: ["languages"],
         recencyThresholdMonths: 24,
       }),
@@ -377,11 +377,11 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       }),
     });
 
-    const searchParams = createUserSearchParams(u1.userId, {
+    const searchParams = createWaymatesSearchParams(u1.userId, {
       excludedContextFields: ["position", "birthYear", "languages"],
       recencyThresholdMonths: 24,
     });
-    const results = await searchManager.searchByUser(searchParams);
+    const results = await searchManager.searchWaymates(searchParams);
 
     // Find pathfinders and non-pathfinders
     const pathfinders = results.filter((r) => r.candidateType === "pathfinder");
@@ -433,8 +433,8 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       }),
     });
 
-    const results = await searchManager.searchByUser(
-      createUserSearchParams(u10.userId, {
+    const results = await searchManager.searchWaymates(
+      createWaymatesSearchParams(u10.userId, {
         excludedContextFields: [],
         recencyThresholdMonths: 48,
       }),
