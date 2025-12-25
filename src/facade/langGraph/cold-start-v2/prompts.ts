@@ -384,24 +384,16 @@ USER CORRECTION REQUEST:
 ═══════════════════════════════════════════════════
 YOUR TASK:
 ═══════════════════════════════════════════════════
-Apply the user's correction EXACTLY as requested:
+Apply the user's correction EXACTLY as requested.
 
-1. If user says "change position to X" or "измени позицию на X":
-   → Set position field to "X" (the new value)
+Correction types:
+- Change field value: set the field to the new value user specified
+- Add to array: append items to the relevant array (skills, domains, etc.)
+- Remove from array: remove items from the relevant array
 
-2. If user says "add skill X" or "добавь X":
-   → Add "X" to skills array
-
-3. If user says "remove X" or "убери X":
-   → Remove "X" from the relevant array
-
-EXAMPLES:
-- "измени позицию на lead" → position: "lead"
-- "change position to senior" → position: "senior"
-- "добавь Python" → skills: [...existing, "python"]
-
-IMPORTANT:
-- Apply corrections LITERALLY — if user says "lead", the position should be "lead"
+RULES:
+- Apply corrections LITERALLY — use exact values user provides
 - Preserve ALL other fields unchanged
-- Return the COMPLETE context object with correction applied`;
+- Return the COMPLETE context object with correction applied
+- All values in lowercase-kebab-case where applicable`;
 }

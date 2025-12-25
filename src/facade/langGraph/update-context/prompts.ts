@@ -4,17 +4,12 @@ You are given the CURRENT_CONTEXT and a USER_REQUEST. Your task is to:
 1. Identify what fields the user wants to change
 2. Return ONLY the changed fields with new values
 
-Examples:
-- "Добавь React в навыки" → { skills: [...current skills, "React"] }
-- "Измени позицию на Senior Developer" → { position: "Senior Developer" }
-- "Теперь работаю в fintech" → { industry: "fintech" }
-- "Добавь Python и Go" → { skills: [...current skills, "Python", "Go"] }
-
-IMPORTANT RULES:
+RULES:
 - Only return fields that need to be updated
 - For array fields (skills, domains, languages): return the FULL new array (not just additions)
 - Preserve original values for fields not mentioned
-- Keep contextId, previousContextId, nextContextId unchanged`;
+- Keep contextId, previousContextId, nextContextId unchanged
+- All values in lowercase-kebab-case where applicable`;
 
 export const UPDATE_EDIT_PROMPT = `Apply corrections to the updated context.
 

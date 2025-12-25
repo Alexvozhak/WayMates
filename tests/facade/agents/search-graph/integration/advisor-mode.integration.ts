@@ -206,10 +206,11 @@ describe("SearchGraph: Advisor Mode (TC-SG-ADV)", () => {
 
     console.log("TC-SG-ADV3 [1/2]: ✅ In advising phase");
 
-    // Exit with "done"
+    // Exit with "done" — returns to showing_results, NOT cancelled
+    // UX: "спасибо" after Q&A = done asking questions, not "cancel everything"
     const exit = await runGraph("спасибо, всё понятно");
-    expect(exit.phase, "'Done' intent MUST exit to cancelled phase").toBe(PHASE.cancelled);
+    expect(exit.phase, "'Done' intent returns to results, not cancels").toBe(PHASE.showing_results);
 
-    console.log("TC-SG-ADV3 [2/2]: ✅ Exited advisor mode");
+    console.log("TC-SG-ADV3 [2/2]: ✅ Returned to results after advisor done");
   }, 300_000);
 });
