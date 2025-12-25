@@ -1,6 +1,6 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { NODE, PHASE } from "../state.js";
+import { NODE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -10,15 +10,16 @@ import type { SearchStateType } from "../state.js";
  * User can save, change goal, clarify, or cancel.
  */
 export const askAfterValidateNode = withLogging<SearchStateType>(NODE.ask_after_validate, (state, _config, _deps) => {
+  // Phase is already set by validate_goal node (asking_after_validate_candidates or asking_after_validate_facets)
   const userResponse = interrupt({
     type: "ask_after_validate",
     candidates: state.validationResults,
     message: "Based on these trajectories, is this the goal you want?",
-    phase: PHASE.asking_after_validate,
+    phase: state.phase,
   });
 
   return {
     userResponse: String(userResponse),
-    phase: PHASE.asking_after_validate,
+    // Keep phase as set by validate_goal - don't override
   };
 });

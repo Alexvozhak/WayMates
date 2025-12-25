@@ -1,0 +1,16 @@
+{
+  "consulting": "consulting",
+  "defense": "defense",
+  "education": "education",
+  "energy": "energy",
+  "finance": "finance",
+  "government": "government",
+  "healthcare": "healthcare",
+  "legal": "legal",
+  "manufacturing": "manufacturing",
+  "media": "media",
+  "retail": "retail",
+  "technology": "technology",
+  "telecom": "telecom",
+  "transportation": "transportation"
+}

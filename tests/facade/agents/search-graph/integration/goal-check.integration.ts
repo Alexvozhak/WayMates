@@ -59,9 +59,9 @@ describe("SearchGraph: Goal Check (TC-SG-GC)", () => {
       response.phase,
       "User without goal MUST start with exploration. " +
         "If this fails, check: (1) check_goal routing, (2) load_context logic",
-    ).toBe(PHASE.showing_exploration);
+    ).toBe(PHASE.showing_exploration_candidates);
 
-    if (response.phase !== PHASE.showing_exploration) {
+    if (response.phase !== PHASE.showing_exploration_candidates) {
       expect.fail("Type guard failed after strict assertion");
     }
 

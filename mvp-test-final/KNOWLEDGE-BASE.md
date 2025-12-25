@@ -226,13 +226,19 @@ load_context (из БД) → check_goal
 
 ### Ключевые фазы
 
-| Фаза                       | Что происходит                                |
-| -------------------------- | --------------------------------------------- |
-| `asking_adhoc_context`     | Просим контекст (нет данных для поиска)       |
-| `confirming_adhoc_context` | Подтверждаем контекст, спрашиваем что дальше  |
-| `showing_exploration`      | Показываем кандидатов без goal                |
-| `showing_goal`             | Показываем извлечённую цель для подтверждения |
-| `showing_results`          | Финальные результаты с pathfinder/waymate     |
+| Фаза                                 | Что происходит                                |
+| ------------------------------------ | --------------------------------------------- |
+| `asking_adhoc_context`               | Просим контекст (нет данных для поиска)       |
+| `confirming_adhoc_context`           | Подтверждаем контекст, спрашиваем что дальше  |
+| `showing_exploration_candidates`     | Показываем кандидатов без goal (< threshold)  |
+| `showing_exploration_facets`         | Показываем facets без goal (>= threshold)     |
+| `showing_goal`                       | Показываем извлечённую цель для подтверждения |
+| `asking_after_validate_candidates`   | Показываем pathfinders (< threshold)          |
+| `asking_after_validate_facets`       | Показываем facets pathfinders (>= threshold)  |
+| `showing_results`                    | Финальные результаты с pathfinder/waymate     |
+
+**PHASE = response schema** — определяет структуру ответа (discriminatedUnion).
+**NODE = execution unit** — определяет бизнес-логику.
 
 ### Валидация adhocContext
 
@@ -247,6 +253,30 @@ load_context (из БД) → check_goal
 ---
 
 ## 6. LANGGRAPH — КРИТИЧЕСКИЕ ПРАВИЛА
+
+### Два уровня Intent Classification
+
+```
+User Message
+    ↓
+┌─────────────────────────────────────────────────┐
+│ ORCHESTRATOR (ConverseTool)                      │
+│ classifyIntent(message) → UserIntent             │
+│ Решает: какой граф запустить или guard           │
+│ Intents: startAdhoc, help, greeting, search...   │
+└─────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────┐
+│ GRAPH-INTERNAL (parse_search_intent)             │
+│ parseUserIntent(message, phase) → SearchIntent   │
+│ Решает: куда роутить ВНУТРИ графа                │
+│ Intents: proceed, clarify, validate, save...     │
+│ phase передаётся для контекста (PHASE_CONTEXT)   │
+└─────────────────────────────────────────────────┘
+```
+
+**Критично**: При resume активного графа orchestrator intent ИГНОРИРУЕТСЯ!
+Граф использует свой parseUserIntent с phase context.
 
 ### Типы нод
 
@@ -386,15 +416,126 @@ Lint можно пропустить — фокус на функциональ�
 
 ### Примеры плохого UX (что искать)
 
-| Ситуация                    | Плохой UX         | Хороший UX               |
-| --------------------------- | ----------------- | ------------------------ |
-| Контекст не извлечён        | Пустые результаты | Спросить явно            |
-| Unknown intent              | Cancel            | Уточнить что имел в виду |
-| Clarify в неожиданном месте | Cancel            | Принять уточнение        |
+| Ситуация                    | Плохой UX                | Хороший UX                  |
+| --------------------------- | ------------------------ | --------------------------- |
+| Контекст не извлечён        | Пустые результаты        | Спросить явно               |
+| Unknown intent              | Cancel                   | Уточнить что имел в виду    |
+| Clarify в неожиданном месте | Cancel                   | Принять уточнение           |
+| Много кандидатов (>10)      | Token limit error        | Progressive Disclosure      |
+| 0 результатов               | "Ничего не найдено"      | Показать фильтры + missing  |
+
+### Progressive Disclosure Pattern
+
+Когда candidates > threshold (10, см. `FACETS_MAX_CANDIDATES`):
+1. Показать **facets** — распределение с counts по полям:
+   - Countries, Citizenships, Positions, Roles, Industries
+2. Предложить выбрать фильтр: "Technology (31), Healthcare (8) — какая индустрия?"
+3. После фильтра — полный анализ + Chart
+
+Зачем: избежать token limit, помочь пользователю сузить выбор.
+
+### Прозрачность = доверие
+
+| Что показать | Зачем |
+|--------------|-------|
+| Missing fields | "we're missing position" → понятно почему такие результаты |
+| Applied filters | "искали: senior, backend, Europe" → можно скорректировать |
+| Counts | "найдено 20 pathfinders, 5 waymates" → масштаб понятен |
+
+### Intent семантика
+
+| Intent | Значение | Роутинг |
+|--------|----------|---------|
+| `change` | Полная замена цели | `extract_goal` (с нуля) |
+| `clarify` | Дополнить существующую | `clarify_goal` (merge) |
+| `proceed` | Согласие БЕЗ новой инфо | depends on hasGoal |
+| `validate` | "покажи реальных людей" | `validate_goal` |
+| `save` | Явное сохранение | `set_goal` |
 
 ---
 
-## 11. ТЕСТОВЫЕ ДАННЫЕ
+## 11. SEARCH ARCHITECTURE (Core)
+
+### Три режима поиска
+
+| Режим | Кого ищем | Recency на | Требует Goal | Chart |
+|-------|-----------|------------|--------------|-------|
+| **searchWaymates** | Однопутники с ТЕМ ЖЕ текущим контекстом | текущий контекст кандидата | Нет | Нет (нет paths) |
+| **searchPathfinders** | Кто прошёл ОТ нашего контекста К нашей цели | целевой контекст кандидата | ДА | Да (есть paths) |
+| **reverseSearchPathfinders** | Кто достиг target (любой старт) | целевой контекст кандидата | ДА | Да (есть paths) |
+
+### Бизнес-смысл каждого режима
+
+1. **Waymates** = peers в одной лодке СЕЙЧАС
+   - Match: candidate.currentContext = our.current
+   - Recency: "он ещё там? не ушёл?"
+   - Ценность: solidarity, "кто ещё в моей ситуации"
+
+2. **Pathfinders** = proof of transition (наш путь возможен)
+   - Match 1: candidate.history содержит our.current (был где мы)
+   - Match 2: candidate.history содержит our.goal (достиг куда мы хотим)
+   - Temporal: goal.createdAt > current.createdAt
+   - Recency на goal: "он недавно достиг цели?"
+   - Ценность: "путь возможен, вот доказательство"
+
+3. **ReversePathfinders** = reverse engineering (откуда приходят на target)
+   - Match: candidate.history содержит target
+   - Recency на target: "он недавно достиг target?"
+   - Ценность: "откуда вообще люди приходят на эту позицию"
+
+### Adhoc vs Profile
+
+Adhoc/Profile — это НЕ режим поиска, а источник referenceContext:
+
+| Источник | referenceContext | Доступные режимы |
+|----------|------------------|------------------|
+| **Adhoc** | Из сообщения пользователя | Waymates, Pathfinders (если goal есть) |
+| **Profile** | Из DB (user.currentContextId) | Все три |
+
+### Где искать (файлы)
+
+| Компонент | Файл |
+|-----------|------|
+| Cypher queries | `src/cypher/queries/search.ts` |
+| SearchManager | `src/core/search-manager.ts` |
+| tRPC Router | `src/core/routers/search.ts` |
+| Facade nodes | `src/facade/langGraph/search-graph/nodes/explore.ts`, `validate-goal.ts` |
+| Types | `src/shared/schemas.ts` |
+
+### recencyThresholdMonths
+
+Фильтр по возрасту контекста в месяцах:
+
+```cypher
+duration.between(datetime(matchedContext.createdAt), datetime()).months <= $recencyThresholdMonths
+```
+
+- **Waymates**: recency на candidate.currentContext — "он ещё там?"
+- **Pathfinders/Reverse**: recency на goalContext — "он недавно достиг?"
+
+### filterByCurrentContext (Cypher)
+
+```cypher
+// filterByCurrentContext = true
+MATCH (u:User)-[:HAS_CONTEXT]->(c:Context{contextId: u.currentContextId})
+// → только ТЕКУЩИЙ контекст кандидата (для Waymates)
+
+// filterByCurrentContext = false
+MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)
+// → ЛЮБОЙ контекст в истории (для Pathfinders/Reverse)
+```
+
+### candidateType в результатах
+
+| candidateType | Значение | Когда |
+|---------------|----------|-------|
+| `'waymate'` | Та же цель что у нас | Waymates search + goal совпадает |
+| `'pathfinder'` | Достиг нашей цели | Pathfinders search |
+| `null` | Нет классификации | Нет goal или не матчится |
+
+---
+
+## 12. ТЕСТОВЫЕ ДАННЫЕ
 
 ### Kaggle users (225)
 
@@ -417,7 +558,7 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 
 ---
 
-## 12. ЧЕКЛИСТ НАЧАЛА СЕССИИ
+## 13. ЧЕКЛИСТ НАЧАЛА СЕССИИ
 
 - [ ] Поднять инфраструктуру: `npm run test:telegram:setup`
 - [ ] Загрузить данные (если нужно): Kaggle import
@@ -427,7 +568,7 @@ mcp__neo4j-cypher__read_neo4j_cypher({
 
 ---
 
-## 13. ЧЕКЛИСТ ЗАВЕРШЕНИЯ СЕССИИ
+## 14. ЧЕКЛИСТ ЗАВЕРШЕНИЯ СЕССИИ
 
 - [ ] Записать найденные проблемы в INSIGHTS.md
 - [ ] Записать изменённые файлы

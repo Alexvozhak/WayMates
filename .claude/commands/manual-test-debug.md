@@ -199,6 +199,11 @@ LANGSMITH_PROJECT=waymates-manual-test
 | Спам lint/tsc                             | Только после блока              |
 | Импровизация                              | Строго по дизайну               |
 | Код без Pre-Action заявки                 | Сначала описать план            |
+| **Использовать sed**                      | Есть filesystem MCP             |
+| **git checkout без проверки**             | Сначала прочитать файлы!        |
+| **Telegram зависит от facade**            | shared = контракт               |
+| **Hardcode строки в типах**               | Pick/Omit от базовых типов      |
+| **Graph schemas вне shared**              | Ломает контракт между пакетами  |
 
 ---
 
@@ -235,11 +240,38 @@ confirm → parse_search_intent → explore/search/extract_goal
 
 ## ⚠️ Спотыкания (lessons learned)
 
-### Intent classification без контекста
+### Intent classification: phase = контекст диалога
 
-- `parseUserIntent(message)` не видит что бот спросил → ошибки классификации
-- "давай проверим" после "хочешь проверить?" = validate, не proceed
-- **Решение**: передавать messages[] в парсер, добавить reasoning поле для отладки
+- `parseUserIntent(message, phase)` — phase определяет какие опции бот предложил
+- `PHASE_CONTEXT` map в prompts.ts описывает опции каждой фазы
+- reasoning поле в схеме → видим логику LLM в логах
+- **Структурные требования > fuzzy описания:**
+  - Плохо: "expresses a career goal" (размыто)
+  - Хорошо: "provides NEW information that wasn't in conversation"
+
+### Два уровня intent classification
+
+| Уровень | Функция | Роль |
+|---------|---------|------|
+| Orchestrator | `classifyIntent()` | Какой граф запустить |
+| Graph-internal | `parseUserIntent()` | Куда роутить внутри графа |
+
+При resume активного графа → orchestrator intent ИГНОРИРУЕТСЯ, граф использует свой parseUserIntent.
+
+### change ≠ clarify (семантика)
+
+| Intent | Что значит | Куда роутит |
+|--------|------------|-------------|
+| `change` | "хочу другую цель" | `extract_goal` (с нуля) |
+| `clarify` | "добавь Python" | `clarify_goal` (мержить) |
+
+### shouldKeepUserResponse
+
+Если нода требует данные из сообщения (change, clarify) — userResponse нельзя очищать в parse_search_intent.
+
+### Advisor done ≠ cancel
+
+"спасибо" после Q&A = закончил advisor, НЕ отменил весь flow → `done → show_results`
 
 ### Pino логгер, не console.log
 
@@ -253,6 +285,64 @@ logger.info({ data }, "message"); // НЕ console.log!
 - Файл: `src/facade/services/nlp-formatter/prompts.ts`
 - Стиль: как товарищ, не корпоративный робот
 - Каждая фаза должна быть описана в промпте
+
+### UX: Прозрачность = доверие
+
+- Показывать missing fields: "we're missing position, location" → пользователь понимает результаты
+- Показывать appliedFilters при пустых результатах → предложить скорректировать
+- Token limit → graceful degradation (facets вместо "Tool execution failed")
+
+### UX: Progressive Disclosure
+
+- candidates > threshold → показать facets (распределение с counts)
+- candidates <= threshold → полный анализ + Chart
+- Facets помогают выбрать фильтр: "15 senior, 8 middle, 2 junior"
+
+### Фиксить в правильном слое
+
+| Симптом | Плохо | Хорошо |
+|---------|-------|--------|
+| API возвращает неполные данные | Workaround в Facade | Fix в Core |
+| storedGoal = null после save | Проверка в Facade | goal.set возвращает Goal |
+
+### PHASE vs NODE — разные ЗО
+
+| Концепт | ЗО | Пример |
+|---------|-----|--------|
+| **PHASE** | Определяет response schema | `showing_exploration_candidates`, `showing_exploration_facets` |
+| **NODE** | Определяет execution unit | `show_exploration` (один node, разные phases) |
+
+- Бизнес-нода (`explore`, `validate_goal`) устанавливает phase
+- Interrupt-нода (`show_exploration`) НЕ меняет phase
+
+### discriminatedUnion: уникальные discriminator values
+
+Zod `discriminatedUnion` требует **уникальные** значения discriminator:
+```typescript
+// ❌ Ошибка — два варианта с phase: "showing_exploration"
+z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("showing_exploration"), needsFiltering: z.literal(true) }),
+  z.object({ phase: z.literal("showing_exploration"), needsFiltering: z.literal(false) }),
+])
+
+// ✅ Правильно — разные phase values
+z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("showing_exploration_candidates"), ... }),
+  z.object({ phase: z.literal("showing_exploration_facets"), ... }),
+])
+```
+
+### Архитектура зависимостей
+
+```
+           shared
+          /      \
+     facade      telegram-bot
+```
+
+- `shared` = контракт между пакетами
+- facade и telegram-bot НЕ зависят друг от друга
+- ConverseResponse, SearchGraphResponse — в shared
 
 ### Новые фазы — добавить везде
 

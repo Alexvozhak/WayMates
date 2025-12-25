@@ -26,7 +26,7 @@ async function buildTargetSearchParams(
     targetContext: extractedGoal,
     excludedCreationReasons: normalized,
     recencyThresholdMonths,
-    limit,
+    limit: limit,
     rejectedReasons: rejected,
   };
 }
@@ -52,7 +52,9 @@ function computeNewPositionRound(
   intent: ParsedIntent["intent"],
   currentRound: number,
 ): number {
-  const isChangeAfterValidate = phase === PHASE.asking_after_validate && intent === "change";
+  const isAskingAfterValidate =
+    phase === PHASE.asking_after_validate_candidates || phase === PHASE.asking_after_validate_facets;
+  const isChangeAfterValidate = isAskingAfterValidate && intent === "change";
   return isChangeAfterValidate ? currentRound + 1 : currentRound;
 }
 

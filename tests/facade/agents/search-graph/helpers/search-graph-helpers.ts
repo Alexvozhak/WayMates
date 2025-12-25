@@ -3,8 +3,8 @@ import { vi } from "vitest";
 import { Command } from "@langchain/langgraph";
 
 import { AgentInvariantError } from "../../../../../src/facade/errors.js";
+import { config } from "../../../../../src/facade/env.js";
 import { SearchGraph } from "../../../../../src/facade/langGraph/search-graph/search-graph.js";
-import { DEFAULT_LIMIT } from "../../../../../src/facade/langGraph/search-graph/types.js";
 import { targetContextSchema } from "../../../../../src/shared/schemas.js";
 
 import type {
@@ -41,8 +41,8 @@ export const RELAXED_FILTERS: CurrentSearchParamsWithFeedback = {
   excludedContextFields: ["countryCode", "cityName", "birthYear", "languages"],
   excludedCreationReasons: [],
   recencyThresholdMonths: TEST_RECENCY_THRESHOLD_MONTHS,
-  limit: DEFAULT_LIMIT,
-  pathLimit: DEFAULT_LIMIT,
+  limit: config.CANDIDATES_FETCH_LIMIT,
+  pathLimit: config.CANDIDATES_DISPLAY_LIMIT,
   rejectedFields: [],
 };
 
@@ -54,7 +54,7 @@ export const RELAXED_TARGET_FILTERS: TargetSearchParamsWithFeedback = {
   targetContext: targetContextSchema.parse({}),
   excludedCreationReasons: [],
   recencyThresholdMonths: TEST_RECENCY_THRESHOLD_MONTHS,
-  limit: DEFAULT_LIMIT,
+  limit: config.CANDIDATES_FETCH_LIMIT,
   rejectedReasons: [],
 };
 

@@ -85,27 +85,32 @@ export class ChartService {
 
   private normalizeInput(input: GenerateChartInput): ChartBuildInput {
     const {
-      userTrajectory,
       candidates,
+      maxCandidates,
+      positionOrder,
       selectedFields,
-      maxCandidates = 5,
       locale = "ru",
       existingGoal = false,
       goalValues,
     } = input;
 
-    if (userTrajectory.length === 0) {
-      throw new ChartGenerationError("User trajectory is empty", "INVALID_TRAJECTORY");
-    }
-
-    return {
-      userTrajectory,
+    const baseInput = {
       candidates: candidates.slice(0, maxCandidates),
       fields: selectedFields ?? DEFAULT_FIELDS,
+      positionOrder,
       locale,
       existingGoal,
       goalValues: goalValues ?? {},
     };
+
+    if (input.mode === "full") {
+      if (input.userTrajectory.length === 0) {
+        throw new ChartGenerationError("User trajectory is empty", "INVALID_TRAJECTORY");
+      }
+      return { ...baseInput, mode: "full", userTrajectory: input.userTrajectory };
+    }
+
+    return { ...baseInput, mode: "candidates-only", adhocContext: input.adhocContext };
   }
 }
 

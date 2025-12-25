@@ -99,9 +99,9 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
       turn2.phase,
       "Turn 2: 'validate' intent MUST trigger validation with by_target search. " +
         "If this fails, check: (1) parseUserIntent, (2) routeAfterParseSearchIntent",
-    ).toBe(PHASE.asking_after_validate);
+    ).toBe(PHASE.asking_after_validate_candidates);
 
-    if (turn2.phase !== PHASE.asking_after_validate) {
+    if (turn2.phase !== PHASE.asking_after_validate_candidates) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -178,7 +178,7 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
 
     // Turn 1: start exploration
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase).toBe(PHASE.showing_exploration);
+    expect(turn1.phase).toBe(PHASE.showing_exploration_candidates);
     console.log("Turn 1: ✅ Exploration started");
 
     // Turn 2: express initial goal
@@ -321,9 +321,9 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
       turn2.phase,
       "Turn 2: 'validate' intent from showing_goal MUST trigger validation. " +
         "If this fails, check: (1) parseUserIntent, (2) routeAfterParseSearchIntent",
-    ).toBe(PHASE.asking_after_validate);
+    ).toBe(PHASE.asking_after_validate_candidates);
 
-    if (turn2.phase !== PHASE.asking_after_validate) {
+    if (turn2.phase !== PHASE.asking_after_validate_candidates) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -363,9 +363,11 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
 
     // Turn 4: User wants to re-validate with updated goal (Germany already in extractedGoal from Turn 3)
     const turn4 = await runGraph("покажи ещё раз кто достиг такой цели");
-    expect(turn4.phase, "Turn 4: Re-validation MUST work with updated goal").toBe(PHASE.asking_after_validate);
+    expect(turn4.phase, "Turn 4: Re-validation MUST work with updated goal").toBe(
+      PHASE.asking_after_validate_candidates,
+    );
 
-    if (turn4.phase !== PHASE.asking_after_validate) {
+    if (turn4.phase !== PHASE.asking_after_validate_candidates) {
       expect.fail("Type guard failed after strict assertion");
     }
 

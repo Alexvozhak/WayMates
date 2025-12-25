@@ -1,121 +1,145 @@
 import { ASPECT_CONFIGS } from "../config/aspect-configs.js";
 import { generateCandidateColors, USER_COLOR } from "../config/colors.js";
-import { ChartGenerationError } from "../types.js";
 
-import type { ScoredMatchedCandidate, UserContext } from "../../shared/schemas.js";
+import type { AdhocContextBase, ScoredMatchedCandidate, UserContext } from "../../shared/schemas.js";
 import type { Locale, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
 
-/**
- * Transforms raw user/candidate data into ProcessedTrajectory format for charting.
- * Encapsulates all trajectory building logic with proper data ownership.
- */
-export class TrajectoryTransformer {
-  private readonly colors: string[];
+type BaseTransformInput = {
+  candidates: ScoredMatchedCandidate[];
+  locale: Locale;
+  existingGoal: boolean;
+};
 
-  constructor(
-    private readonly userTrajectory: UserContext[],
-    private readonly candidates: ScoredMatchedCandidate[],
-    private readonly locale: Locale,
-    private readonly existingGoal: boolean,
-  ) {
-    this.validateInput();
-    this.colors = generateCandidateColors(candidates.length);
-  }
+export type FullModeTransformInput = BaseTransformInput & {
+  mode: "full";
+  userTrajectory: UserContext[];
+};
 
-  /**
-   * Transform all data into ProcessedTrajectory array.
-   * First element is always user trajectory.
-   */
-  transform(): ProcessedTrajectory[] {
-    const user = this.buildUserTrajectory();
-    const candidates = this.buildCandidateTrajectories();
-    return [user, ...candidates];
-  }
+export type CandidatesOnlyTransformInput = BaseTransformInput & {
+  mode: "candidates-only";
+  adhocContext: AdhocContextBase;
+};
 
-  private validateInput(): void {
-    if (this.userTrajectory.length === 0) {
-      throw new ChartGenerationError("User trajectory is empty", "INVALID_TRAJECTORY");
-    }
-  }
+export type TransformInput = FullModeTransformInput | CandidatesOnlyTransformInput;
 
-  private buildUserTrajectory(): ProcessedTrajectory {
-    const points = this.userTrajectory.map((ctx) => this.extractPointValues(ctx));
-    const label = this.locale === "ru" ? "Вы" : "You";
+export function transformFullMode(input: FullModeTransformInput): ProcessedTrajectory[] {
+  const colors = generateCandidateColors(input.candidates.length);
+  const user = buildUserTrajectory(input.userTrajectory, input.locale);
+  const candidates = buildCandidateTrajectories(input.candidates, colors, input.existingGoal);
+  return [user, ...candidates];
+}
 
-    return {
-      id: "user",
-      label,
-      color: USER_COLOR,
-      width: 2,
-      candidateType: null,
-      points,
-    };
-  }
+export function transformCandidatesOnly(input: CandidatesOnlyTransformInput): ProcessedTrajectory[] {
+  const colors = generateCandidateColors(input.candidates.length);
+  const marker = buildAdhocMarker(input.adhocContext, input.locale);
+  const candidates = buildCandidateTrajectories(input.candidates, colors, input.existingGoal);
+  return [marker, ...candidates];
+}
 
-  private buildCandidateTrajectories(): ProcessedTrajectory[] {
-    return this.candidates.map((candidate, index) => this.buildCandidateTrajectory(candidate, index));
-  }
+function buildUserTrajectory(userTrajectory: UserContext[], locale: Locale): ProcessedTrajectory {
+  const points = userTrajectory.map((ctx) => extractPointValues(ctx));
+  const label = locale === "ru" ? "Вы" : "You";
 
-  private buildCandidateTrajectory(candidate: ScoredMatchedCandidate, index: number): ProcessedTrajectory {
-    const { userId, candidateType, matchedContext, timeSinceMatchedMonths, path } = candidate;
-    const color = this.colors[index]!;
+  return {
+    id: "user",
+    label,
+    color: USER_COLOR,
+    width: 2.5,
+    candidateType: null,
+    points,
+  };
+}
 
-    const points = this.extractCandidatePoints(path, matchedContext);
-    const width = this.getLineWidth(candidateType);
+function buildAdhocMarker(adhocContext: AdhocContextBase, locale: Locale): ProcessedTrajectory {
+  const point = extractAdhocPointValues(adhocContext);
+  const label = locale === "ru" ? "Вы" : "You";
 
-    const trajectory: ProcessedTrajectory = {
-      id: userId,
-      label: `#${index + 1}`,
-      color,
-      width,
-      candidateType,
-      points,
-    };
+  return {
+    id: "user",
+    label,
+    color: USER_COLOR,
+    width: 2.5,
+    candidateType: null,
+    points: [point],
+  };
+}
 
-    this.addGoalMarkerIfNeeded(trajectory, candidate, path);
+function extractAdhocPointValues(ctx: AdhocContextBase): TrajectoryPoint {
+  const values = Object.fromEntries(
+    // eslint-disable-next-line complexity -- field mapping for adhoc context
+    Object.values(ASPECT_CONFIGS).map((config) => {
+      const field = config.field;
+      if (field === "position") return [field, ctx.position ?? null];
+      if (field === "role") return [field, ctx.role ?? null];
+      if (field === "domains") return [field, ctx.domains?.[0] ?? null];
+      if (field === "cityName") return [field, ctx.cityName ?? null];
+      if (field === "industry") return [field, ctx.industry ?? null];
+      if (field === "salaryExact") return [field, null];
+      return [field, null];
+    }),
+  );
 
-    if (timeSinceMatchedMonths !== undefined) {
-      trajectory.timeSinceMatchedMonths = timeSinceMatchedMonths;
-    }
+  return {
+    timestamp: Date.now(),
+    values,
+  };
+}
 
-    return trajectory;
-  }
+function buildCandidateTrajectories(
+  candidates: ScoredMatchedCandidate[],
+  colors: string[],
+  existingGoal: boolean,
+): ProcessedTrajectory[] {
+  return candidates.map((candidate, index) => buildCandidateTrajectory(candidate, colors[index]!, index, existingGoal));
+}
 
-  private extractCandidatePoints(path: UserContext[] | undefined, matchedContext: UserContext): TrajectoryPoint[] {
-    if (path && path.length > 0) {
-      return path.map((ctx) => this.extractPointValues(ctx));
-    }
-    return [this.extractPointValues(matchedContext)];
-  }
+function buildCandidateTrajectory(
+  candidate: ScoredMatchedCandidate,
+  color: string,
+  index: number,
+  existingGoal: boolean,
+): ProcessedTrajectory {
+  const { userId, candidateType, matchedContext, timeSinceMatchedMonths, path } = candidate;
 
-  private addGoalMarkerIfNeeded(
-    trajectory: ProcessedTrajectory,
-    candidate: ScoredMatchedCandidate,
-    path: UserContext[] | undefined,
-  ): void {
-    if (!this.existingGoal) return;
-    if (candidate.candidateType !== "pathfinder") return;
-    if (!path) return;
+  const points = extractCandidatePoints(path, matchedContext);
 
-    const matchedIndex = path.findIndex((ctx) => ctx.contextId === candidate.matchedContext.contextId);
+  const trajectory: ProcessedTrajectory = {
+    id: userId,
+    label: `#${index + 1}`,
+    color,
+    width: 1.5,
+    candidateType,
+    points,
+  };
+
+  if (existingGoal && candidateType === "pathfinder" && path) {
+    const matchedIndex = path.findIndex((ctx) => ctx.contextId === matchedContext.contextId);
     if (matchedIndex !== -1) {
       trajectory.matchedContextIndex = matchedIndex;
     }
   }
 
-  private extractPointValues(ctx: UserContext): TrajectoryPoint {
-    const values = Object.fromEntries(
-      Object.values(ASPECT_CONFIGS).map((config) => [config.field, config.extractValue(ctx)]),
-    );
-
-    return {
-      timestamp: new Date(ctx.createdAt).getTime(),
-      values,
-    };
+  if (timeSinceMatchedMonths !== undefined) {
+    trajectory.timeSinceMatchedMonths = timeSinceMatchedMonths;
   }
 
-  private getLineWidth(candidateType: "pathfinder" | "waymate" | null): number {
-    if (candidateType === null) return 2.5; // User — thicker
-    return 1.5; // All candidates — thinner
+  return trajectory;
+}
+
+function extractCandidatePoints(path: UserContext[] | undefined, matchedContext: UserContext): TrajectoryPoint[] {
+  if (path && path.length > 0) {
+    return path.map((ctx) => extractPointValues(ctx));
   }
+  return [extractPointValues(matchedContext)];
+}
+
+function extractPointValues(ctx: UserContext): TrajectoryPoint {
+  const values = Object.fromEntries(
+    Object.values(ASPECT_CONFIGS).map((config) => [config.field, config.extractValue(ctx)]),
+  );
+
+  return {
+    timestamp: new Date(ctx.createdAt).getTime(),
+    values,
+  };
 }

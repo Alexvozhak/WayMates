@@ -1,8 +1,8 @@
-# FEAT-044: Validation UX — Facets & Token Limit Handling
+# FEAT-044: Validation UX — Facets & Limits Consolidation
 
-**Status**: TODO
+**Status**: TESTING
 **Priority**: P0
-**Component**: Facade (SearchGraph, NlpFormatter)
+**Component**: Facade (SearchGraph, NlpFormatter, env config)
 **Created**: 2025-12-25
 **Depends on**: -
 **Blocks**: FEAT-045
@@ -11,130 +11,111 @@
 
 ## Проблема
 
-При validation (byTarget search) с большим количеством кандидатов:
 1. **Token limit exceeded** — 20 кандидатов с траекториями = 160K+ токенов
 2. **UX бессмысленный** — показывать 20 траекторий текстом нечитаемо
-3. **Ошибка без graceful handling** — пользователь видит "Tool execution failed"
+3. **Лимиты размазаны** — DEFAULT_LIMIT в types.ts, FACETS в env.ts, user может менять через filter intent
 
 ---
 
 ## Решение
 
-**Progressive disclosure:**
-1. Если candidates > MAX_CANDIDATES_FOR_ANALYSIS (10) → показать facets + предложить фильтры
-2. Если candidates <= MAX_CANDIDATES_FOR_ANALYSIS → полный анализ + Chart
+### 1. Progressive Disclosure
+- `candidates > FACETS_MAX_CANDIDATES` → показать facets + предложить фильтры
+- `candidates ≤ FACETS_MAX_CANDIDATES` → полный анализ + Chart
+
+### 2. Консолидация лимитов в env.ts
+- `SEARCH_LIMIT = 20` — лимит для Cypher + pathLimit (фиксировано)
+- `FACETS_MAX_CANDIDATES = 10` — порог для progressive disclosure
+- Пользователь НЕ может менять лимиты (игнорируем input)
+
+### 3. FacetField через extract
+- Использовать `contextFieldSchema.extract()` вместо hardcoded типа
+- 4 поля для facets: countryCode, position, role, industry
 
 ---
 
-## Схемы (согласованы)
+## Архитектура лимитов
 
-### FacetValue
-
-```typescript
-export const facetValueSchema = z.object({
-  value: z.string(),
-  count: z.number().int().positive(),
-});
-
-export type FacetValue = z.infer<typeof facetValueSchema>;
 ```
+Facade env.ts
+  ├─ SEARCH_LIMIT = 20         → limit & pathLimit для Core
+  └─ FACETS_MAX_CANDIDATES = 10 → порог показа facets
 
-### CandidateFacets
+Facade nodes (explore/search/validate)
+  └─ params.limit = config.SEARCH_LIMIT  ← всегда из config
 
-```typescript
-export const candidateFacetsSchema = z.object({
-  totalCount: z.number().int().nonnegative(),
-  countries: z.array(facetValueSchema),
-  positions: z.array(facetValueSchema),
-  roles: z.array(facetValueSchema),
-  industries: z.array(facetValueSchema),
-});
+Facade apply-filters
+  └─ игнорирует user input для limit/pathLimit
 
-export type CandidateFacets = z.infer<typeof candidateFacetsSchema>;
-```
-
-### Константа
-
-```typescript
-export const MAX_CANDIDATES_FOR_ANALYSIS = 10;
-```
-
-### Response asking_after_validate (два варианта)
-
-```typescript
-// needsFiltering: true — слишком много
-{
-  phase: "asking_after_validate",
-  needsFiltering: true,
-  facets: CandidateFacets,
-  extractedGoal: TargetContext,
-  adhocContext: UserContext | null,
-}
-
-// needsFiltering: false — нормальное количество
-{
-  phase: "asking_after_validate",
-  needsFiltering: false,
-  candidates: MatchedCandidateWithPath[],
-  chartUrl: string | null,
-  extractedGoal: TargetContext,
-  adhocContext: UserContext | null,
-  appliedFilters: TargetSearchParams,
-}
+Core API
+  └─ получает limit/pathLimit → Cypher LIMIT $limit
 ```
 
 ---
 
-## Acceptance Criteria
+## Что сделано
 
-1. **computeFacets()** — функция подсчёта уникальных значений с count
-   - [ ] countries, positions, roles, industries
-   - [ ] Сортировка по count desc
-
-2. **Threshold логика в response-builder**
-   - [ ] `candidates.length > MAX_CANDIDATES_FOR_ANALYSIS` → facets mode
-   - [ ] Иначе → full mode (candidates + chartUrl)
-
-3. **NLP prompt для facets**
-   - [ ] "Нашёл N кандидатов, слишком много для анализа"
-   - [ ] Показать распределение по полям
-   - [ ] Предложить сузить поиск
-
-4. **Schema updates**
-   - [ ] `facetValueSchema`, `candidateFacetsSchema` в schemas.ts
-   - [ ] `needsFiltering` в asking_after_validate response
-
-5. **Graceful error handling**
-   - [ ] Catch token limit errors → friendly message
-
-6. **Тесты проходят**
-   - [ ] lint + tsc
-   - [ ] Существующие SearchGraph тесты
+- [x] `facetValueSchema`, `candidateFacetsSchema` в schemas.ts
+- [x] `askingAfterValidateResponseSchema` с discriminatedUnion по needsFiltering (инлайнен)
+- [x] `FACETS_MAX_CANDIDATES`, `FACETS_MAX_JSON_SIZE_KB` в env.ts
+- [x] `facets.ts` создан (computeFacets, shouldUseFacets)
+- [x] `FacetField` через extract в schemas.ts
+- [x] `CANDIDATES_FETCH_LIMIT` / `CANDIDATES_DISPLAY_LIMIT` в env.ts (50/20)
+- [x] Убран `DEFAULT_LIMIT` из types.ts — используем config
+- [x] `response-builders.ts` — threshold логика для asking_after_validate
+- [x] `show-results.ts` — chart с `mode: "full"` + `maxCandidates` из config
+- [x] NLP prompt обновлён для facets режима
+- [x] Тесты обновлены (needsFiltering guards)
+- [x] lint + tsc чисто
 
 ---
 
-## Файлы для изменения
+## Что нужно протестировать
+
+### 1. Порог facets (threshold)
+```bash
+npm run test:facade:setup
+
+# Маленький результат (< 10 candidates) — ожидание: needsFiltering=false
+npx tsx poc/mcp-chat.ts --reset
+npx tsx poc/mcp-chat.ts "я backend разработчик"
+npx tsx poc/mcp-chat.ts "хочу стать senior в Германии"
+npx tsx poc/mcp-chat.ts "проверь"
+```
+
+### 2. Facets режим (много результатов)
+```bash
+# Широкий запрос (> 10 candidates) — ожидание: needsFiltering=true, facets
+npx tsx poc/mcp-chat.ts --reset
+npx tsx poc/mcp-chat.ts "я разработчик"
+npx tsx poc/mcp-chat.ts "хочу стать senior"
+npx tsx poc/mcp-chat.ts "проверь"
+```
+
+### 3. NLP ответы
+- `needsFiltering=true`: показать totalCount + distribution, предложить сузить
+- `needsFiltering=false`: показать candidates как обычно
+
+### 4. Integration тесты
+```bash
+npm run test:facade:run -- --filter validate-clarify
+```
+
+### 5. Chart с лимитами
+- `show_results` генерирует chart с `maxCandidates: 20` из config
+
+---
+
+## Изменённые файлы
 
 | Файл | Изменения |
 |------|-----------|
-| `src/shared/schemas.ts` | facetValueSchema, candidateFacetsSchema |
-| `src/facade/langGraph/search-graph/types.ts` | MAX_CANDIDATES_FOR_ANALYSIS |
-| `src/facade/langGraph/search-graph/utils/facets.ts` | computeFacets() — новый файл |
+| `src/shared/schemas.ts` | FacetField через extract, инлайн варианты asking_after_validate |
+| `src/facade/env.ts` | CANDIDATES_FETCH_LIMIT, CANDIDATES_DISPLAY_LIMIT |
+| `src/facade/langGraph/search-graph/types.ts` | убран DEFAULT_LIMIT, используем config |
+| `src/facade/langGraph/search-graph/facets.ts` | импорт FacetField из schemas |
 | `src/facade/langGraph/search-graph/response-builders.ts` | threshold логика |
-| `src/facade/services/nlp-formatter/prompts.ts` | инструкции для facets |
-
----
-
-## Оценка
-
-| Аспект | Оценка |
-|--------|--------|
-| LOC | ~60 |
-| Сложность | Средняя |
-| Риск | Низкий |
-
----
-
-## Notes
-
-Обнаружено при тестировании с нормализованными Kaggle данными (225 users). byTarget search на "senior backend" вернул 20+ кандидатов → token limit exceeded.
+| `src/facade/langGraph/search-graph/nodes/show-results.ts` | mode + maxCandidates |
+| `src/facade/services/nlp-formatter/prompts.ts` | facets режим |
+| `tests/facade/agents/search-graph/helpers/search-graph-helpers.ts` | config вместо DEFAULT_LIMIT |
+| `tests/facade/agents/search-graph/integration/validate-clarify.integration.ts` | needsFiltering guards |

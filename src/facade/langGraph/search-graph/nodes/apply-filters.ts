@@ -38,8 +38,8 @@ export const applyFiltersNode = withLogging<SearchStateType>(
         excludedContextFields: fields,
         excludedCreationReasons: reasons,
         recencyThresholdMonths,
-        limit,
-        pathLimit,
+        limit: limit,
+        pathLimit: pathLimit,
         rejectedFields: [...rejectedFields, ...rejectedReasons],
       },
     };

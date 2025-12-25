@@ -102,10 +102,10 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
     const turn2 = await runGraph("глянуть похожих");
 
     expect(turn2.phase, "Turn 2: After confirm with 'explore' intent, MUST show exploration").toBe(
-      PHASE.showing_exploration,
+      PHASE.showing_exploration_candidates,
     );
 
-    if (turn2.phase !== PHASE.showing_exploration) {
+    if (turn2.phase !== PHASE.showing_exploration_candidates) {
       expect.fail("Type guard failed after strict assertion");
     }
 

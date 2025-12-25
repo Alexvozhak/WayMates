@@ -2,6 +2,7 @@ import { GOAL_STAR_COLOR } from "../config/colors.js";
 
 import type {
   ChartableField,
+  ChartMode,
   DynamicLevels,
   GoalValues,
   Locale,
@@ -11,6 +12,7 @@ import type {
 } from "../types.js";
 
 export type ChartRenderData = {
+  mode: ChartMode;
   trajectories: ProcessedTrajectory[];
   fields: ChartableField[];
   metrics: SimilarityMetrics[];
@@ -44,6 +46,14 @@ export class HtmlRenderer {
   }
 
   private buildHtmlDocument(): string {
+    const spiderSection =
+      this.data.mode === "full"
+        ? `<div id="spider-chart-container">
+      <h4>DTW Similarity</h4>
+      <div id="spider-chart"></div>
+    </div>`
+        : "";
+
     return `<!DOCTYPE html>
 <html lang="${this.data.locale}">
 <head>
@@ -59,10 +69,7 @@ export class HtmlRenderer {
     <div id="main-chart-container">
       <div id="main-chart"></div>
     </div>
-    <div id="spider-chart-container">
-      <h4>DTW Similarity</h4>
-      <div id="spider-chart"></div>
-    </div>
+    ${spiderSection}
   </div>
   ${this.buildMetricsTable()}
   ${this.buildScript()}
@@ -192,6 +199,7 @@ export class HtmlRenderer {
 
   private buildScript(): string {
     const chartDataJson = JSON.stringify({
+      mode: this.data.mode,
       trajectories: this.data.trajectories,
       fields: this.data.fields,
       selectedFields: this.data.fields,
@@ -385,6 +393,11 @@ export class HtmlRenderer {
     }
 
     function buildOverlapTraces(fields, overlapYaxisId, enabledCandidates) {
+      if (chartData.mode === 'candidates-only') {
+        window.overlapSummaries = [];
+        window.enabledCandidateIndices = [];
+        return [];
+      }
       const traces = [];
       const userTraj = chartData.trajectories[0];
       const candidates = chartData.trajectories.slice(1).filter(c => enabledCandidates.includes(c.id));
@@ -459,9 +472,10 @@ export class HtmlRenderer {
     function buildLayout(fields, enabledCandidates) {
       const numFields = fields.length;
       const candidates = chartData.trajectories.slice(1).filter(c => enabledCandidates.includes(c.id));
-      const overlapHeight = candidates.length > 0 ? 0.10 + candidates.length * 0.03 : 0.12;
+      const isCandidatesOnly = chartData.mode === 'candidates-only';
+      const overlapHeight = isCandidatesOnly ? 0 : (candidates.length > 0 ? 0.10 + candidates.length * 0.03 : 0.12);
       const chartAreaTop = 0.95;
-      const chartAreaBottom = overlapHeight + 0.05;
+      const chartAreaBottom = isCandidatesOnly ? 0.05 : overlapHeight + 0.05;
       const chartHeight = chartAreaTop - chartAreaBottom;
       const subplotHeight = chartHeight / numFields;
       const gap = 0.015;
@@ -470,7 +484,7 @@ export class HtmlRenderer {
         title: { text: '${this.title}', font: { size: 18 } },
         showlegend: true, legend: { x: 1.02, y: 1, xanchor: 'left' },
         hovermode: 'closest',
-        height: 300 + numFields * 160 + Math.max(candidates.length, 2) * 40,
+        height: isCandidatesOnly ? 300 + numFields * 160 : 300 + numFields * 160 + Math.max(candidates.length, 2) * 40,
         margin: { l: 150, r: 150, t: 60 }, annotations: [], shapes: []
       };
 
@@ -494,12 +508,14 @@ export class HtmlRenderer {
       });
 
       const overlapAxisNum = numFields + 1;
-      const candidateLabels = candidates.map(t => t.label);
-      layout['yaxis' + overlapAxisNum] = {
-        title: { text: 'Overlap', font: { size: 12 } }, domain: [0.02, overlapHeight], anchor: 'x',
-        tickmode: 'array', tickvals: candidateLabels.map((_, i) => i), ticktext: candidateLabels,
-        tickfont: { size: 11 }, fixedrange: true, gridcolor: '#e5e7eb'
-      };
+      if (!isCandidatesOnly) {
+        const candidateLabels = candidates.map(t => t.label);
+        layout['yaxis' + overlapAxisNum] = {
+          title: { text: 'Overlap', font: { size: 12 } }, domain: [0.02, overlapHeight], anchor: 'x',
+          tickmode: 'array', tickvals: candidateLabels.map((_, i) => i), ticktext: candidateLabels,
+          tickfont: { size: 11 }, fixedrange: true, gridcolor: '#e5e7eb'
+        };
+      }
 
       layout.xaxis = layout.xaxis || {};
       layout.xaxis.title = { text: 'Date', font: { size: 12 } };
@@ -559,9 +575,12 @@ export class HtmlRenderer {
     }
 
     function renderSpiderChart(enabledCandidates) {
+      if (chartData.mode === 'candidates-only') return;
+      const spiderEl = document.getElementById('spider-chart');
+      if (!spiderEl) return;
       const traces = buildSpiderTraces(enabledCandidates);
       if (traces.length <= 1) {
-        document.getElementById('spider-chart').innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">No DTW data</p>';
+        spiderEl.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">No DTW data</p>';
         return;
       }
       const layout = {

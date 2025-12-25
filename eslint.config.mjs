@@ -134,10 +134,6 @@ export default [
           selector: 'ExportAllDeclaration',
           message: 'Re-export всё (export * from) запрещён. Используйте именованные экспорты.',
         },
-        {
-          selector: "CallExpression[callee.property.name='optional']",
-          message: 'Используйте .nullable() вместо .optional() — null единый способ обозначить отсутствие значения.',
-        },
       ],
       '@typescript-eslint/no-explicit-any': 'error', // Запретить any полностью
       '@typescript-eslint/require-await': 'error',
@@ -226,14 +222,6 @@ export default [
       'unicorn/no-array-for-each': 'off', // forEach читабельнее для side effects
       'unicorn/no-await-expression-member': 'off', // Разрешить (await foo()).bar
       'unicorn/numeric-separators-style': 'warn', // Warn для небольших чисел (3600, 5000), но рекомендуем для больших (1_000_000)
-    },
-  },
-
-  // Env files can use .optional() — env vars may be absent
-  {
-    files: ['**/env.ts'],
-    rules: {
-      'no-restricted-syntax': 'off',
     },
   },
 

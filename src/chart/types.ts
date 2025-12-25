@@ -1,4 +1,4 @@
-import type { ScoredMatchedCandidate, UserContext } from "../shared/schemas.js";
+import type { AdhocContextBase, ScoredMatchedCandidate, UserContext } from "../shared/schemas.js";
 
 // ==========================================
 // === CHARTABLE FIELDS ===
@@ -108,15 +108,29 @@ export type GoalValues = Partial<Record<ChartableField, string | number | null>>
  */
 export type DynamicLevels = Partial<Record<ChartableField, string[]>>;
 
-export type GenerateChartInput = {
-  userTrajectory: UserContext[];
+type BaseChartInput = {
   candidates: ScoredMatchedCandidate[];
+  maxCandidates: number;
+  positionOrder: string[];
   selectedFields?: ChartableField[];
-  maxCandidates?: number;
   locale?: Locale;
-  existingGoal?: boolean; // for pathfinder star visualization
-  goalValues?: GoalValues; // target values for goal line on each aspect
+  existingGoal?: boolean;
+  goalValues?: GoalValues;
 };
+
+export type FullModeInput = BaseChartInput & {
+  mode: "full";
+  userTrajectory: UserContext[];
+};
+
+export type CandidatesOnlyInput = BaseChartInput & {
+  mode: "candidates-only";
+  adhocContext: AdhocContextBase;
+};
+
+export type GenerateChartInput = FullModeInput | CandidatesOnlyInput;
+
+export type ChartMode = GenerateChartInput["mode"];
 
 export type GenerateChartOutput = {
   chartUrl: string;

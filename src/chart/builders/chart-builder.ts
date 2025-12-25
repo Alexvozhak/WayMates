@@ -1,9 +1,9 @@
 import { OverlapCalculator } from "../services/overlap-calculator.js";
-import { TrajectoryTransformer } from "../services/trajectory-transformer.js";
+import { transformCandidatesOnly, transformFullMode } from "../services/trajectory-transformer.js";
 
 import { HtmlRenderer } from "./html-renderer.js";
 
-import type { ScoredMatchedCandidate, UserContext } from "../../shared/schemas.js";
+import type { AdhocContextBase, ScoredMatchedCandidate, UserContext } from "../../shared/schemas.js";
 import type {
   ChartableField,
   DynamicLevels,
@@ -14,14 +14,26 @@ import type {
   SimilarityMetrics,
 } from "../types.js";
 
-export type ChartBuildInput = {
-  userTrajectory: UserContext[];
+type BaseBuildInput = {
   candidates: ScoredMatchedCandidate[];
   fields: ChartableField[];
+  positionOrder: string[];
   locale: Locale;
   existingGoal: boolean;
   goalValues: GoalValues;
 };
+
+type FullModeBuildInput = BaseBuildInput & {
+  mode: "full";
+  userTrajectory: UserContext[];
+};
+
+type CandidatesOnlyBuildInput = BaseBuildInput & {
+  mode: "candidates-only";
+  adhocContext: AdhocContextBase;
+};
+
+export type ChartBuildInput = FullModeBuildInput | CandidatesOnlyBuildInput;
 
 type TimeRange = { minTime: number; maxTime: number };
 
@@ -45,11 +57,9 @@ export class ChartBuilder {
     this.dynamicLevels = this.calculateDynamicLevels();
   }
 
-  /**
-   * Build complete HTML chart document.
-   */
   build(): string {
     const renderer = new HtmlRenderer({
+      mode: this.input.mode,
       trajectories: this.trajectories,
       fields: this.input.fields,
       metrics: this.metrics,
@@ -64,20 +74,32 @@ export class ChartBuilder {
   }
 
   private transformTrajectories(): ProcessedTrajectory[] {
-    const transformer = new TrajectoryTransformer(
-      this.input.userTrajectory,
-      this.input.candidates,
-      this.input.locale,
-      this.input.existingGoal,
-    );
+    if (this.input.mode === "full") {
+      return transformFullMode({
+        mode: "full",
+        userTrajectory: this.input.userTrajectory,
+        candidates: this.input.candidates,
+        locale: this.input.locale,
+        existingGoal: this.input.existingGoal,
+      });
+    }
 
-    return transformer.transform();
+    return transformCandidatesOnly({
+      mode: "candidates-only",
+      adhocContext: this.input.adhocContext,
+      candidates: this.input.candidates,
+      locale: this.input.locale,
+      existingGoal: this.input.existingGoal,
+    });
   }
 
   private calculateMetrics(): { summaries: OverlapSummary[]; metrics: SimilarityMetrics[] } {
+    if (this.input.mode === "candidates-only") {
+      return { summaries: [], metrics: [] };
+    }
+
     const userTrajectory = this.trajectories[0]!;
     const candidateTrajectories = this.trajectories.slice(1);
-
     const calculator = new OverlapCalculator(userTrajectory, candidateTrajectories, this.input.fields);
 
     return {
@@ -117,19 +139,41 @@ export class ChartBuilder {
     userTrajectory: ProcessedTrajectory,
     candidateTrajectories: ProcessedTrajectory[],
   ): string[] {
+    if (field === "position") {
+      return this.calculatePositionLevels(userTrajectory, candidateTrajectories);
+    }
+
     const orderedLevels: string[] = [];
     const seen = new Set<string>();
 
-    // 1. User values in chronological order (trajectory already sorted by timestamp)
     this.addUserValuesToLevels(field, userTrajectory, orderedLevels, seen);
-
-    // 2. Goal value (if not already in User trajectory)
     this.addGoalValueToLevels(field, orderedLevels, seen);
-
-    // 3. Remaining candidate values (alphabetically for predictability)
     this.addCandidateValuesToLevels(field, candidateTrajectories, orderedLevels, seen);
 
     return orderedLevels;
+  }
+
+  private calculatePositionLevels(
+    userTrajectory: ProcessedTrajectory,
+    candidateTrajectories: ProcessedTrajectory[],
+  ): string[] {
+    const allValues = new Set<string>();
+
+    for (const p of userTrajectory.points) {
+      const v = p.values.position;
+      if (this.isValidStringValue(v)) allValues.add(v);
+    }
+
+    const goalValue = this.input.goalValues.position;
+    if (this.isValidStringValue(goalValue)) allValues.add(goalValue);
+
+    for (const p of candidateTrajectories.flatMap((t) => t.points)) {
+      const v = p.values.position;
+      if (this.isValidStringValue(v)) allValues.add(v);
+    }
+
+    const orderMap = new Map(this.input.positionOrder.map((v, i) => [v, i]));
+    return [...allValues].toSorted((a, b) => (orderMap.get(a) ?? Infinity) - (orderMap.get(b) ?? Infinity));
   }
 
   private addUserValuesToLevels(

@@ -23,9 +23,15 @@ const PHASE_CONTEXT: Partial<Record<SearchPhase, string>> = {
   - Explore similar people without goal
   If user mentions a goal → CLARIFY. If user agrees to explore → PROCEED.`,
 
-  [PHASE.showing_exploration]: `Bot showed similar people (no goal set). Options offered:
+  [PHASE.showing_exploration_candidates]: `Bot showed similar people (no goal set). Options offered:
   - Set a goal to find paths
   - Apply filters
+  - Stop
+  If user mentions a goal → CLARIFY. If user wants to filter → FILTER.`,
+
+  [PHASE.showing_exploration_facets]: `Bot showed facets (too many results). Options offered:
+  - Set a goal to find paths
+  - Apply filters to narrow down
   - Stop
   If user mentions a goal → CLARIFY. If user wants to filter → FILTER.`,
 
@@ -35,9 +41,15 @@ const PHASE_CONTEXT: Partial<Record<SearchPhase, string>> = {
   - Save and search
   If user wants to check/verify/see examples → VALIDATE. If user confirms saving → SAVE.`,
 
-  [PHASE.asking_after_validate]: `Bot showed people who achieved the goal. Options offered:
+  [PHASE.asking_after_validate_candidates]: `Bot showed people who achieved the goal. Options offered:
   - Save the goal
   - Change something
+  - Adjust goal
+  If user agrees/confirms → SAVE. If user wants different goal → CHANGE.`,
+
+  [PHASE.asking_after_validate_facets]: `Bot showed facets for pathfinders (too many results). Options offered:
+  - Save the goal
+  - Apply filters to narrow down
   - Adjust goal
   If user agrees/confirms → SAVE. If user wants different goal → CHANGE.`,
 
@@ -128,12 +140,13 @@ export function buildAdhocExtractionPrompt(hints: string): string {
   return `Extract career context from user's professional self-description.
 ${hints}
 Fields to extract (map to KNOWN values from hints):
-- role: profession type (WHAT you do)
-- position: seniority level (HOW experienced)
-- domains: technical area (WHICH field)
+- role: profession type (WHAT you do) — map to KNOWN ROLES
+- position: seniority level (HOW experienced) — map to KNOWN POSITIONS
+- domains: technical specialization — map to KNOWN DOMAINS
+- industry: business sector — map to KNOWN INDUSTRIES
 
 RULES:
-1. Extract ONLY from self-descriptions like "I am a senior backend developer"
+1. Extract ONLY from self-descriptions
 2. Commands and requests are NOT self-descriptions → return null for ALL fields
 3. NEVER return empty strings "" — use JSON null instead
 4. NEVER return string representations of null like "null", "/null", "NULL" — use JSON null

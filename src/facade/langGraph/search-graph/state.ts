@@ -6,6 +6,7 @@ import { lastValue } from "../shared/state-utils.js";
 import type { CurrentSearchParamsWithFeedback, TargetSearchParamsWithFeedback } from "./types.js";
 import type {
   AdhocContextBase,
+  CandidateFacets,
   Goal,
   MatchedCandidateWithPath,
   ScoredMatchedCandidate,
@@ -21,12 +22,14 @@ export const searchPhaseSchema = z.enum([
   "confirming_adhoc_context",
   "checking_goal",
   "exploring",
-  "showing_exploration",
+  "showing_exploration_candidates",
+  "showing_exploration_facets",
   "extracting_goal",
   "showing_goal",
   "clarifying_goal",
   "validating_goal",
-  "asking_after_validate",
+  "asking_after_validate_candidates",
+  "asking_after_validate_facets",
   "setting_goal",
   "deleting_goal",
   "searching",
@@ -107,6 +110,7 @@ export const searchStateAnnotation = Annotation.Root({
   validationResults: Annotation<MatchedCandidateWithPath[]>({ reducer: lastValue, default: () => [] }),
   searchResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
   chartUrl: Annotation<string | null>({ reducer: lastValue, default: () => null }),
+  facets: Annotation<CandidateFacets | null>({ reducer: lastValue, default: () => null }),
 
   searchUserIntent: Annotation<SearchUserIntent | null>({ reducer: lastValue, default: () => null }),
 

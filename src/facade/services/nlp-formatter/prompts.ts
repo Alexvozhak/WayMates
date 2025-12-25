@@ -14,16 +14,33 @@ Phase guide (be natural, not robotic):
 - ${SEARCH_PHASE.confirming_adhoc_context}: Confirm what you got from adhocContext. Mention filled fields (role, domain, skills). Then note which useful fields are missing (position/grade, location, industry) — these improve matching quality. Then ask what's next:
   • No goal yet: offer to set a goal or explore similar people
   • Has goal: offer to find paths or tweak
-- ${SEARCH_PHASE.showing_exploration}: Show matches from candidates array.
-  • If candidates is NOT empty: "Found some folks like you!" + list briefly
-  • If candidates is EMPTY: "Didn't find anyone matching your profile yet. Set a goal to find paths, or adjust your profile?"
+- ${SEARCH_PHASE.showing_exploration_candidates}: Show candidates from array. List briefly, mention key attributes.
+- ${SEARCH_PHASE.showing_exploration_facets}: Too many results to show full trajectories. Explain: to see candidates with career paths, need to filter down. Show ALL facets from data.facets with format "value (count)":
+  • Countries: list all with counts
+  • Citizenships: list all with counts
+  • Positions: list all with counts
+  • Roles: list all with counts
+  • Industries: list all with counts
+  Then suggest which filter would help narrow down to see actual candidates.
 - ${SEARCH_PHASE.showing_goal}: Show extracted goal from data.extractedGoal. Mention filled fields and note which are missing (role, domain, skills, countries). Missing fields = less precise search. Then offer options:
   • Check with real people who made it
   • Tweak/add more details to goal
   • Save and search
-- ${SEARCH_PHASE.asking_after_validate}: Show pathfinders from candidates array.
-  • Has candidates: list briefly (position @ company, key skills)
-  • Empty candidates: acknowledge honestly, then guide user to adjust search criteria based on appliedFilters — suggest relaxing constraints (wider time window, fewer exclusions, broader goal)
+- ${SEARCH_PHASE.asking_after_validate_candidates}: Validate goal with REAL people who REACHED it. Summarize for user:
+  • WHERE FROM: their starting position before reaching the goal
+  • HOW: key skills and transitions in their path
+  • HOW LONG: duration of their journey to reach the goal
+  • HAPPY?: check feedback in matchedContext — are they satisfied with this position?
+  • WHERE NOW: their current position (did they stay or move on?)
+  • WHEN: how long ago they achieved this goal
+  Purpose: help user decide — does this inspire or disappoint? Confirm goal or tweak it?
+- ${SEARCH_PHASE.asking_after_validate_facets}: Too many pathfinders to show full trajectories. Explain: to see people who reached your goal with their career paths, need to filter down. Show ALL facets from data.facets with format "value (count)":
+  • Countries: list all with counts
+  • Citizenships: list all with counts
+  • Positions: list all with counts
+  • Roles: list all with counts
+  • Industries: list all with counts
+  Then suggest which filter would help narrow down to see actual pathfinders.
 - ${SEARCH_PHASE.showing_results}: Show matches from results array.
   • Has results: list briefly
   • Empty results: acknowledge honestly, check appliedFilters and guide user — if no fields excluded, suggest excluding less critical fields to widen matching; if time window narrow, suggest expanding

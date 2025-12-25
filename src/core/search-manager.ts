@@ -44,7 +44,7 @@ export class SearchManager {
   ) {}
 
   async searchAdhoc(params: AdhocSearchParams): Promise<ScoredMatchedCandidate[]> {
-    return this.searchByContext(params, false);
+    return this.searchByContext(params);
   }
 
   async searchByUser(params: UserSearchParams): Promise<ScoredMatchedCandidate[]> {
@@ -90,8 +90,14 @@ export class SearchManager {
     params: AdhocSearchParams,
     filterByCurrentContext = false,
   ): Promise<ScoredMatchedCandidate[]> {
-    const { referenceContext, userId, excludedContextFields, excludedCreationReasons, recencyThresholdMonths, limit } =
-      params;
+    const {
+      referenceContext,
+      userId,
+      excludedContextFields,
+      excludedCreationReasons,
+      recencyThresholdMonths,
+      limit: limit,
+    } = params;
 
     const strictFields = computeStrictFields(excludedContextFields);
 

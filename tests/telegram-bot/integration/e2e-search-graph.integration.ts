@@ -82,9 +82,11 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     });
 
     console.log(`[E2E Turn 1] Response phase: ${turn1.result.phase}`);
-    expect(turn1.result.phase, "Turn 1: startAdhoc intent MUST trigger exploration phase").toBe("showing_exploration");
+    expect(turn1.result.phase, "Turn 1: startAdhoc intent MUST trigger exploration phase").toBe(
+      "showing_exploration_candidates",
+    );
 
-    if (turn1.result.phase !== "showing_exploration") {
+    if (turn1.result.phase !== "showing_exploration_candidates") {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -107,10 +109,10 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
 
     console.log(`[E2E Turn 2] Response phase: ${turn2.result.phase}`);
     expect(turn2.result.phase, "Turn 2: filter intent MUST stay in exploration phase with updated params").toBe(
-      "showing_exploration",
+      "showing_exploration_candidates",
     );
 
-    if (turn2.result.phase !== "showing_exploration") {
+    if (turn2.result.phase !== "showing_exploration_candidates") {
       expect.fail("Type guard failed after strict assertion");
     }
 

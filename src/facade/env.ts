@@ -29,6 +29,12 @@ const envSchema = baseEnvSchema.extend({
   // Rate limiting
   OPENAI_FACADE_RPM_LIMIT: z.coerce.number().int().positive().default(500),
   OPENAI_FACADE_MAX_CONCURRENT: z.coerce.number().int().positive().default(10),
+  // Search limits (fixed, not user-configurable)
+  CANDIDATES_FETCH_LIMIT: z.coerce.number().int().positive().default(50),
+  CANDIDATES_DISPLAY_LIMIT: z.coerce.number().int().positive().default(20),
+  // Facets threshold (Progressive Disclosure)
+  FACETS_MAX_CANDIDATES: z.coerce.number().int().positive().default(10),
+  FACETS_MAX_JSON_SIZE_KB: z.coerce.number().int().positive().default(50),
   // Auth configuration
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
   // Server transport configuration

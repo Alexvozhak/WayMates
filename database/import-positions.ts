@@ -8,15 +8,22 @@ const IMPORT_POSITIONS_QUERY = `
   UNWIND $positions AS pos
   MERGE (p:Position {canonicalName: pos.canonicalName})
   SET p.description = pos.description,
+      p.order = pos.order,
       p.verified = true,
       p.createdAt = timestamp(),
       p.createdBy = "system"
 `;
 
+type PositionData = { description: string; order: number };
+type PositionsJson = Record<string, PositionData>;
+
+const typedPositionsData: PositionsJson = positionsData;
+
 async function importPositions(driver: Driver): Promise<void> {
-  const positions = Object.values(positionsData).map((displayName) => ({
-    canonicalName: displayName,
-    description: displayName,
+  const positions = Object.entries(typedPositionsData).map(([, data]) => ({
+    canonicalName: data.description,
+    description: data.description,
+    order: data.order,
   }));
 
   console.log("Starting positions import...");

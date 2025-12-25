@@ -52,6 +52,7 @@ export type TrailId = z.infer<typeof trailIdSchema>;
 export const dictionaryEntrySchema = z.object({
   canonicalName: z.string(),
   description: z.string(),
+  order: z.number().int().min(1).nullish(),
 });
 
 export type DictionaryEntry = z.infer<typeof dictionaryEntrySchema>;
@@ -767,6 +768,28 @@ export const matchedCandidateWithPathSchema = candidateCoreSchema.merge(pathFiel
 export type MatchedCandidateWithPath = z.infer<typeof matchedCandidateWithPathSchema>;
 
 // ==========================================
+// === FACETS (for large result sets) ===
+// ==========================================
+
+export type FacetField = keyof Pick<UserContext, "countryCode" | "position" | "role" | "industry">;
+
+export const facetValueSchema = z.object({
+  value: z.string(),
+  count: z.number(),
+});
+export type FacetValue = z.infer<typeof facetValueSchema>;
+
+export const candidateFacetsSchema = z.object({
+  totalCount: z.number(),
+  countries: z.array(facetValueSchema),
+  positions: z.array(facetValueSchema),
+  roles: z.array(facetValueSchema),
+  industries: z.array(facetValueSchema),
+  citizenships: z.array(facetValueSchema),
+});
+export type CandidateFacets = z.infer<typeof candidateFacetsSchema>;
+
+// ==========================================
 // === DICTIONARIES ===
 // ==========================================
 
@@ -1135,8 +1158,15 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("checking_goal") }),
   z.object({ phase: z.literal("exploring") }),
   z.object({
-    phase: z.literal("showing_exploration"),
+    phase: z.literal("showing_exploration_candidates"),
     candidates: z.array(scoredMatchedCandidateSchema),
+    chartUrl: z.string().url().nullable(),
+    appliedFilters: currentAppliedFiltersSchema.nullable(),
+    adhocContext: adhocContextBase.nullable(),
+  }),
+  z.object({
+    phase: z.literal("showing_exploration_facets"),
+    facets: candidateFacetsSchema,
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
   }),
@@ -1154,8 +1184,16 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     candidates: z.array(matchedCandidateWithPathSchema),
   }),
   z.object({
-    phase: z.literal("asking_after_validate"),
+    phase: z.literal("asking_after_validate_candidates"),
     candidates: z.array(matchedCandidateWithPathSchema),
+    chartUrl: z.string().url().nullable(),
+    appliedFilters: targetAppliedFiltersSchema.nullable(),
+    adhocContext: adhocContextBase.nullable(),
+    extractedGoal: targetContextSchema.nullable(),
+  }),
+  z.object({
+    phase: z.literal("asking_after_validate_facets"),
+    facets: candidateFacetsSchema,
     appliedFilters: targetAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
     extractedGoal: targetContextSchema.nullable(),

@@ -48,7 +48,7 @@ describe("SearchGraph: Clarify Intent (TC-SG-CI)", () => {
   it("TC-SG-CI1: unknown intent triggers clarify_intent", async () => {
     // Turn 1: Start exploration
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase).toBe(PHASE.showing_exploration);
+    expect(turn1.phase).toBe(PHASE.showing_exploration_candidates);
 
     console.log("TC-SG-CI1 [1/2]: ✅ Exploration started");
 
@@ -58,7 +58,7 @@ describe("SearchGraph: Clarify Intent (TC-SG-CI)", () => {
     // Graceful handling: should stay in exploration or ask for clarification
     // NOT failed, NOT showing_results (no goal)
     const isValidPhase =
-      turn2.phase === PHASE.showing_exploration ||
+      turn2.phase === PHASE.showing_exploration_candidates ||
       turn2.phase === PHASE.showing_goal ||
       turn2.phase === PHASE.cancelled;
 

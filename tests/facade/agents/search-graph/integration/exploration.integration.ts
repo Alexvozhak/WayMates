@@ -50,9 +50,11 @@ describe("SearchGraph: Exploration (TC-SG-EX)", () => {
 
     // Turn 1: Initial exploration
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase, "Turn 1: User without goal MUST start with exploration").toBe(PHASE.showing_exploration);
+    expect(turn1.phase, "Turn 1: User without goal MUST start with exploration").toBe(
+      PHASE.showing_exploration_candidates,
+    );
 
-    if (turn1.phase !== PHASE.showing_exploration) {
+    if (turn1.phase !== PHASE.showing_exploration_candidates) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -112,9 +114,11 @@ describe("SearchGraph: Exploration (TC-SG-EX)", () => {
 
     // Turn 1: Initial exploration (with relaxed filters for stable results)
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase, "Turn 1: User without goal MUST start with exploration").toBe(PHASE.showing_exploration);
+    expect(turn1.phase, "Turn 1: User without goal MUST start with exploration").toBe(
+      PHASE.showing_exploration_candidates,
+    );
 
-    if (turn1.phase !== PHASE.showing_exploration) {
+    if (turn1.phase !== PHASE.showing_exploration_candidates) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -128,9 +132,9 @@ describe("SearchGraph: Exploration (TC-SG-EX)", () => {
       turn2.phase,
       "Turn 2: Filter intent without goal MUST return to exploration (not search). " +
         "Invariant I13: apply_filters БЕЗ цели → explore",
-    ).toBe(PHASE.showing_exploration);
+    ).toBe(PHASE.showing_exploration_candidates);
 
-    if (turn2.phase !== PHASE.showing_exploration) {
+    if (turn2.phase !== PHASE.showing_exploration_candidates) {
       expect.fail("Type guard failed after strict assertion");
     }
 

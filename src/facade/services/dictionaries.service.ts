@@ -33,6 +33,14 @@ export class DictionariesService {
     return this.cache.invalidate(type);
   }
 
+  async getPositionOrder(): Promise<string[]> {
+    const positions = await this.cache.getSimple("position");
+    return [...positions.values()]
+      .filter((e): e is typeof e & { order: number } => e.order !== null)
+      .toSorted((a, b) => a.order - b.order)
+      .map((e) => e.canonicalName);
+  }
+
   async buildHints(types: DictionaryType[]): Promise<string> {
     const hints: string[] = [];
 

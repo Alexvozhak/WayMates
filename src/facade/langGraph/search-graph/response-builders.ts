@@ -33,11 +33,19 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     phase: PHASE.exploring,
   }),
 
-  [PHASE.showing_exploration]: (state) => ({
-    phase: PHASE.showing_exploration,
-    candidates: state.explorationResults,
+  [PHASE.showing_exploration_candidates]: (state) => ({
+    phase: PHASE.showing_exploration_candidates,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
+    candidates: state.explorationResults,
+    chartUrl: state.chartUrl,
+  }),
+
+  [PHASE.showing_exploration_facets]: (state) => ({
+    phase: PHASE.showing_exploration_facets,
+    appliedFilters: state.currentSearchParams,
+    adhocContext: state.adhocContext,
+    facets: state.facets!,
   }),
 
   [PHASE.extracting_goal]: () => ({
@@ -65,12 +73,21 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     candidates: state.validationResults,
   }),
 
-  [PHASE.asking_after_validate]: (state) => ({
-    phase: PHASE.asking_after_validate,
-    candidates: state.validationResults,
+  [PHASE.asking_after_validate_candidates]: (state) => ({
+    phase: PHASE.asking_after_validate_candidates,
     appliedFilters: state.targetSearchParams,
     adhocContext: state.adhocContext,
     extractedGoal: state.extractedGoal,
+    candidates: state.validationResults,
+    chartUrl: state.chartUrl,
+  }),
+
+  [PHASE.asking_after_validate_facets]: (state) => ({
+    phase: PHASE.asking_after_validate_facets,
+    appliedFilters: state.targetSearchParams,
+    adhocContext: state.adhocContext,
+    extractedGoal: state.extractedGoal,
+    facets: state.facets!,
   }),
 
   [PHASE.setting_goal]: () => ({

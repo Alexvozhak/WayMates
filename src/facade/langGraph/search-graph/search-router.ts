@@ -13,11 +13,13 @@ type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 
 // prettier-ignore
 const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
-  [PHASE.confirming_adhoc_context, buildRouteMap([NODE.search, NODE.explore, NODE.extract_goal, NODE.ask_adhoc_context, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_exploration,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_goal,          buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.delete_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.asking_after_validate,  buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_results,       buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search, NODE.explore, NODE.extract_goal, NODE.ask_adhoc_context, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_goal,                     buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.delete_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.asking_after_validate_candidates, buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.asking_after_validate_facets,     buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_results,                  buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
 ]);
 
 // Static route maps (not phase-dependent)
@@ -43,14 +45,31 @@ type RouteFlags = {
 function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, RouteMap>> {
   const { canClarify, canChangePosition, hasGoal } = flags;
 
+  const explorationRoutes: RouteMap = {
+    proceed: NODE.extract_goal,
+    clarify: NODE.extract_goal,
+    filter: NODE.apply_filters,
+    cancel: NODE.cancel,
+    unknown: NODE.clarify_intent,
+  };
+  const validateRoutes: RouteMap = {
+    save: NODE.set_goal,
+    clarify: canClarify ? NODE.clarify_goal : NODE.set_goal,
+    change: canChangePosition ? NODE.extract_goal : NODE.set_goal,
+    cancel: NODE.cancel,
+    unknown: NODE.clarify_intent,
+  };
+
   // prettier-ignore
   return {
     // confirming_adhoc_context: proceed→search/explore, clarify→extract_goal (set goal), filter→ask_adhoc_context (refine profile)
-    [PHASE.confirming_adhoc_context]: { proceed: hasGoal ? NODE.search : NODE.explore, clarify: NODE.extract_goal, filter: NODE.ask_adhoc_context, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.showing_exploration]: { proceed: NODE.extract_goal, clarify: NODE.extract_goal, filter: NODE.apply_filters, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.showing_goal]:        { validate: NODE.validate_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, save: NODE.set_goal, delete: NODE.delete_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.asking_after_validate]:{ save: NODE.set_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, change: canChangePosition ? NODE.extract_goal : NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.showing_results]:     { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.extract_goal, delete: NODE.delete_goal, ask: NODE.generate_answer, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.confirming_adhoc_context]:         { proceed: hasGoal ? NODE.search : NODE.explore, clarify: NODE.extract_goal, filter: NODE.ask_adhoc_context, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showing_exploration_candidates]:   explorationRoutes,
+    [PHASE.showing_exploration_facets]:       explorationRoutes,
+    [PHASE.showing_goal]:                     { validate: NODE.validate_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, save: NODE.set_goal, delete: NODE.delete_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.asking_after_validate_candidates]: validateRoutes,
+    [PHASE.asking_after_validate_facets]:     validateRoutes,
+    [PHASE.showing_results]:                  { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.extract_goal, delete: NODE.delete_goal, ask: NODE.generate_answer, cancel: NODE.cancel, unknown: NODE.clarify_intent },
   } satisfies Partial<Record<SearchPhase, RouteMap>>;
 }
 
@@ -67,9 +86,11 @@ export function availableNodesByPhase(phase: SearchPhase): Partial<Record<NodeNa
 // Combined destinations for parse_search_intent (routes to all phase-specific nodes)
 export const PARSE_INTENT_ALL_DESTINATIONS = {
   ...availableNodesByPhase(PHASE.confirming_adhoc_context),
-  ...availableNodesByPhase(PHASE.showing_exploration),
+  ...availableNodesByPhase(PHASE.showing_exploration_candidates),
+  ...availableNodesByPhase(PHASE.showing_exploration_facets),
   ...availableNodesByPhase(PHASE.showing_goal),
-  ...availableNodesByPhase(PHASE.asking_after_validate),
+  ...availableNodesByPhase(PHASE.asking_after_validate_candidates),
+  ...availableNodesByPhase(PHASE.asking_after_validate_facets),
   ...availableNodesByPhase(PHASE.showing_results),
 };
 

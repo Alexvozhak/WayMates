@@ -57,7 +57,7 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
 
     // Turn 1: start exploration
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase).toBe(PHASE.showing_exploration);
+    expect(turn1.phase).toBe(PHASE.showing_exploration_candidates);
 
     // Turn 2: express goal intent
     const turn2 = await runGraph("хочу стать senior разработчиком");
@@ -131,7 +131,7 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
 
     // Turn 3: delete goal
     const turn3 = await runGraph("delete");
-    expect(turn3.phase, "After delete, user should return to exploration").toBe(PHASE.showing_exploration);
+    expect(turn3.phase, "After delete, user should return to exploration").toBe(PHASE.showing_exploration_candidates);
 
     // Verify: goal deleted from Neo4j
     goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });

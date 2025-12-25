@@ -1,4 +1,5 @@
 import { AgentInvariantError } from "../../../errors.js";
+import { computeFacets, shouldUseFacets } from "../facets.js";
 import { NODE, PHASE } from "../state.js";
 import { DEFAULT_TARGET_SEARCH_PARAMS } from "../types.js";
 import { withLogging } from "../with-logging.js";
@@ -29,10 +30,14 @@ export const validateGoalNode = withLogging<SearchStateType>(
       targetContext: normalized,
     });
 
+    const needsFiltering = shouldUseFacets(candidates);
+
     return {
       validationResults: candidates,
       targetSearchParams: params,
-      phase: PHASE.asking_after_validate,
+      phase: needsFiltering ? PHASE.asking_after_validate_facets : PHASE.asking_after_validate_candidates,
+      facets: needsFiltering ? computeFacets(candidates) : null,
+      chartUrl: null,
     };
   },
 );

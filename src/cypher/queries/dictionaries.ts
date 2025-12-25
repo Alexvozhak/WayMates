@@ -5,7 +5,7 @@ export function getVerifiedDictionariesQuery(): string {
 OPTIONAL MATCH (s:Skill {verified: true})
 WITH [x IN collect({canonicalName: s.canonicalName, description: coalesce(s.description, s.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS skills
 OPTIONAL MATCH (p:Position {verified: true})
-WITH skills, [x IN collect({canonicalName: p.canonicalName, description: coalesce(p.description, p.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS positions
+WITH skills, [x IN collect({canonicalName: p.canonicalName, description: coalesce(p.description, p.canonicalName), order: p.order}) WHERE x.canonicalName IS NOT NULL] AS positions
 OPTIONAL MATCH (r:Role {verified: true})
 WITH skills, positions, [x IN collect({canonicalName: r.canonicalName, description: coalesce(r.description, r.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS roles
 OPTIONAL MATCH (d:WorkDomain {verified: true})

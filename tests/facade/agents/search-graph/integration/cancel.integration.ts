@@ -49,7 +49,7 @@ describe("SearchGraph: Cancel (TC-SG-CANCEL)", () => {
 
     // Turn 1: Start exploration
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase).toBe(PHASE.showing_exploration);
+    expect(turn1.phase).toBe(PHASE.showing_exploration_candidates);
 
     console.log("TC-SG-CANCEL1 [1/2]: ✅ Exploration started");
 
@@ -93,7 +93,7 @@ describe("SearchGraph: Cancel (TC-SG-CANCEL)", () => {
 
     // Turn 1: Start exploration
     const turn1 = await runGraph("ищу работу");
-    expect(turn1.phase).toBe(PHASE.showing_exploration);
+    expect(turn1.phase).toBe(PHASE.showing_exploration_candidates);
 
     console.log("TC-SG-CANCEL2 [1/3]: ✅ Exploration started");
 
