@@ -173,9 +173,9 @@ WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, 
        THEN 'pathfinder'
        // Waymate: candidate's goal contains at least one of user's desired positions (string matching)
        WHEN $goalPositions IS NOT NULL
-            AND candidateGoal.targetCriteria IS NOT NULL
+            AND candidateGoal.targetContext IS NOT NULL
             AND ANY(goalPos IN $goalPositions
-                    WHERE candidateGoal.targetCriteria CONTAINS ('"' + goalPos + '"'))
+                    WHERE candidateGoal.targetContext CONTAINS ('"' + goalPos + '"'))
        THEN 'waymate'
        ELSE null
      END AS candidateType

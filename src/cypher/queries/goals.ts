@@ -10,17 +10,17 @@
  * Parameters:
  * - $userId: User ID (string)
  * - $createdAt: Goal creation timestamp (ISO string)
- * - $targetCriteria: Target criteria object (TargetCriteria)
+ * - $targetContext: Target criteria object (TargetCriteria)
  *
  * Returns:
- * - userId: string (confirmation)
+ * - goal: Goal object { userId, targetContext, createdAt }
  *
  * @example
  * const query = setGoalQuery();
  * const result = await tx.run(query, {
  *   userId: 'usr_123',
  *   createdAt: new Date().toISOString(),
- *   targetCriteria: { ... }
+ *   targetContext: { ... }
  * });
  */
 export function setGoalQuery(): string {
@@ -30,10 +30,14 @@ MERGE (searchingUser)-[:HAS_GOAL]->(g:Goal)
 ON CREATE SET
   g.userId = $userId,
   g.createdAt = $createdAt,
-  g.targetCriteria = $targetCriteria
+  g.targetContext = $targetContext
 ON MATCH SET
-  g.targetCriteria = $targetCriteria
-RETURN g.userId AS userId
+  g.targetContext = $targetContext
+RETURN g {
+  .userId,
+  .targetContext,
+  .createdAt
+} AS goal
   `.trim();
 }
 
@@ -44,7 +48,7 @@ RETURN g.userId AS userId
  * - $userId: User ID (string)
  *
  * Returns:
- * - goal: Goal object { userId, targetCriteria, createdAt } | null
+ * - goal: Goal object { userId, targetContext, createdAt } | null
  *
  * @example
  * const query = getUserGoalQuery();
@@ -56,7 +60,7 @@ export function getUserGoalQuery(): string {
 MATCH (searchingUser:User {userId: $userId})-[:HAS_GOAL]->(g:Goal)
 RETURN g {
   .userId,
-  .targetCriteria,
+  .targetContext,
   .createdAt
 } AS goal
   `.trim();

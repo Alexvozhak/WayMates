@@ -10,13 +10,13 @@ import type { SearchStateType } from "../state.js";
 export const applyFiltersNode = withLogging<SearchStateType>(
   NODE.apply_filters,
   async (state, _config, { normalizerService }) => {
-    const { userResponse } = state;
+    const { userResponse, phase } = state;
 
     if (!userResponse) {
       throw new AgentInvariantError(NODE.apply_filters, "userResponse must exist before applying filters");
     }
 
-    const parsed = await parseUserIntent(userResponse);
+    const parsed = await parseUserIntent(userResponse, phase);
 
     if (parsed.intent !== "filter" || !parsed.filters) {
       return { searchUserIntent: parsed.intent };

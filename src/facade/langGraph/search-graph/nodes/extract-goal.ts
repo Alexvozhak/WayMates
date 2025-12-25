@@ -13,14 +13,17 @@ const extractionModel = getModel("extraction").withStructuredOutput(targetContex
 export const extractGoalNode = withLogging<SearchStateType>(
   NODE.extract_goal,
   async (state, _config, { dictionariesService }) => {
-    const { messages, userResponse } = state;
+    const { messages, userResponse, clarificationText } = state;
+
+    // Use clarificationText if userResponse is empty (clarify intent case)
+    const textToExtract = userResponse || clarificationText || "";
 
     const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
     const prompt = buildGoalExtractionPrompt(hints);
 
     const extracted = await extractionModel.invoke([
       { role: "system", content: prompt },
-      { role: "user", content: userResponse },
+      { role: "user", content: textToExtract },
     ]);
 
     const extractedGoal = extracted ? targetContextSchema.parse(extracted) : null;

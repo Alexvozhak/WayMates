@@ -20,6 +20,7 @@ export const NON_GRAPH_INTENT = {
   deleteTrail: "deleteTrail",
   cancel: "cancel",
   help: "help",
+  greeting: "greeting",
   projectInvestor: "projectInvestor",
   projectTech: "projectTech",
   projectUser: "projectUser",
@@ -44,6 +45,7 @@ export const nonGraphIntentSchema = z.enum([
   NON_GRAPH_INTENT.deleteTrail,
   NON_GRAPH_INTENT.cancel,
   NON_GRAPH_INTENT.help,
+  NON_GRAPH_INTENT.greeting,
   NON_GRAPH_INTENT.projectInvestor,
   NON_GRAPH_INTENT.projectTech,
   NON_GRAPH_INTENT.projectUser,
@@ -58,7 +60,7 @@ export const userIntentSchema = z.enum([...graphIntentSchema.options, ...nonGrap
 
 const intentDescriptions: ReadonlyMap<UserIntent, string> = new Map([
   ["startStory", "wants to tell full career story with trajectory"],
-  ["startAdhoc", "wants quick search without saving profile"],
+  ["startAdhoc", "describes their professional identity or role, wants quick search without saving profile"],
   ["getStory", "wants to see saved career story"],
   ["setGoal", "wants to set career goal"],
   ["getGoal", "wants to see current goal"],
@@ -71,6 +73,7 @@ const intentDescriptions: ReadonlyMap<UserIntent, string> = new Map([
   ["search", "wants to find similar careers"],
   ["cancel", "wants to cancel current operation"],
   ["help", "needs help with commands"],
+  ["greeting", "says hello, hi, hey, good morning — friendly conversation opener"],
   ["projectInvestor", "asks about WayMates business value, investment, accelerator, startup pitch"],
   ["projectTech", "asks about WayMates architecture, tech stack, code quality, engineering"],
   ["projectUser", "asks what WayMates offers, how to use it, features for end users"],

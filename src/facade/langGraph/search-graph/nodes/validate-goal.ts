@@ -1,6 +1,6 @@
 import { AgentInvariantError } from "../../../errors.js";
 import { NODE, PHASE } from "../state.js";
-import { DEFAULT_LIMIT, DEFAULT_RECENCY_THRESHOLD_MONTHS } from "../types.js";
+import { DEFAULT_TARGET_SEARCH_PARAMS } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -10,7 +10,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
   async (state, _config, { coreClient, normalizerService }) => {
     const { extractedGoal, storedGoal, userId, targetSearchParams } = state;
 
-    const goalToValidate = extractedGoal ?? storedGoal?.targetCriteria;
+    const goalToValidate = extractedGoal ?? storedGoal?.targetContext;
 
     if (!goalToValidate) {
       throw new AgentInvariantError(NODE.validate_goal, "No goal to validate");
@@ -19,10 +19,8 @@ export const validateGoalNode = withLogging<SearchStateType>(
     const normalized = await normalizerService.normalizeTargetContext(goalToValidate, userId);
 
     const params = targetSearchParams ?? {
+      ...DEFAULT_TARGET_SEARCH_PARAMS,
       targetContext: goalToValidate,
-      excludedCreationReasons: [],
-      recencyThresholdMonths: DEFAULT_RECENCY_THRESHOLD_MONTHS,
-      limit: DEFAULT_LIMIT,
     };
 
     const candidates = await coreClient.client.search.byTarget.query({
@@ -33,6 +31,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
 
     return {
       validationResults: candidates,
+      targetSearchParams: params,
       phase: PHASE.asking_after_validate,
     };
   },

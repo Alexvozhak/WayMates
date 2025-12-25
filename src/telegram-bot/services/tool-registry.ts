@@ -2,8 +2,10 @@ import {
   converseResponseSchema,
   mcpAuthParamsSchema,
   mcpConverseParamsSchema,
+  mcpParseCvToTextParamsSchema,
   mcpTelegramLinkParamsSchema,
   mcpTelegramRegisterParamsSchema,
+  parseCvToTextResponseSchema,
   telegramLinkResponseSchema,
   telegramRegisterResponseSchema,
 } from "../../shared/schemas.js";
@@ -32,6 +34,10 @@ export const TOOL_REGISTRY = {
   converse: {
     paramsSchema: mcpConverseParamsSchema,
     responseSchema: converseResponseSchema,
+  },
+  parse_cv_to_text: {
+    paramsSchema: mcpParseCvToTextParamsSchema,
+    responseSchema: parseCvToTextResponseSchema,
   },
 } as const;
 

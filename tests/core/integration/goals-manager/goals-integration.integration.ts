@@ -15,7 +15,7 @@ import { targetContextSchema } from "../../../../src/shared/schemas.js";
 
 describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   // Business rule: setGoal creates goal and returns userId
-  it("GM1: Create goal - setGoal creates goal with targetCriteria", async () => {
+  it("GM1: Create goal - setGoal creates goal with targetContext", async () => {
     const db = new DatabaseContext(driver);
     const goalsManager = new GoalsManager(db);
     const dataManager = new UserStories();
@@ -28,7 +28,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       domains: { mode: "desired", values: ["backend"] },
     });
 
-    const userId = await goalsManager.setGoal({
+    const createdGoal = await goalsManager.setGoal({
       userId: u3.userId,
       targetContext: targetContextSchema.parse({
         position: { mode: "desired", values: ["middle"] },
@@ -36,17 +36,17 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       }),
     });
 
-    expect(userId).toBe(u3.userId);
+    expect(createdGoal.userId).toBe(u3.userId);
 
     const goal = await goalsManager.getUserGoal(u3.userId);
     console.log("[GM1] Created goal:", goal);
 
     expect(goal?.userId).toBe(u3.userId);
-    expect(goal?.targetCriteria.position).toEqual({
+    expect(goal?.targetContext.position).toEqual({
       mode: "desired",
       values: ["middle"],
     });
-    expect(goal?.targetCriteria.domains).toEqual({
+    expect(goal?.targetContext.domains).toEqual({
       mode: "desired",
       values: ["backend"],
     });
@@ -73,10 +73,10 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     console.log("[GM2] Testing getUserGoal for existing user");
 
     const existingGoal = await goalsManager.getUserGoal(u3.userId);
-    console.log("[GM2] Found goal for U3:", existingGoal?.targetCriteria);
+    console.log("[GM2] Found goal for U3:", existingGoal?.targetContext);
 
     expect(existingGoal?.userId).toBe(u3.userId);
-    expect(existingGoal?.targetCriteria.position).toEqual({
+    expect(existingGoal?.targetContext.position).toEqual({
       mode: "desired",
       values: ["senior"],
     });
@@ -106,7 +106,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     const createdAt1 = goal1?.createdAt;
 
     console.log("[GM3] Goal #1 created at:", createdAt1);
-    console.log("[GM3] Goal #1 criteria:", goal1?.targetCriteria);
+    console.log("[GM3] Goal #1 criteria:", goal1?.targetContext);
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -129,13 +129,13 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     const goal2 = await goalsManager.getUserGoal(u3.userId);
 
     console.log("[GM3] Goal #2 created at:", goal2?.createdAt);
-    console.log("[GM3] Goal #2 criteria:", goal2?.targetCriteria);
+    console.log("[GM3] Goal #2 criteria:", goal2?.targetContext);
 
-    expect(goal2?.targetCriteria.position).toEqual({
+    expect(goal2?.targetContext.position).toEqual({
       mode: "desired",
       values: ["senior"],
     });
-    expect(goal2?.targetCriteria.domains).toEqual({
+    expect(goal2?.targetContext.domains).toEqual({
       mode: "desired",
       values: ["backend"],
     });

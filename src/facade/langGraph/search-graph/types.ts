@@ -23,6 +23,24 @@ export const DEFAULT_LIMIT = 20;
 export const MIN_RECENCY_THRESHOLD_MONTHS = 1;
 export const DEFAULT_RECENCY_THRESHOLD_MONTHS = null; // No filter by default (explore-first)
 
+/** Default current search params (adhoc/byUser) */
+export const DEFAULT_CURRENT_SEARCH_PARAMS: CurrentSearchParamsWithFeedback = {
+  excludedContextFields: [],
+  excludedCreationReasons: [],
+  recencyThresholdMonths: DEFAULT_RECENCY_THRESHOLD_MONTHS,
+  limit: DEFAULT_LIMIT,
+  pathLimit: DEFAULT_LIMIT,
+  rejectedFields: [],
+};
+
+/** Default target search params (byTarget validation) */
+export const DEFAULT_TARGET_SEARCH_PARAMS: Omit<TargetSearchParamsWithFeedback, "targetContext"> = {
+  excludedCreationReasons: [],
+  recencyThresholdMonths: DEFAULT_RECENCY_THRESHOLD_MONTHS,
+  limit: DEFAULT_LIMIT,
+  rejectedReasons: [],
+};
+
 /**
  * Clamps and applies defaults to LLM-extracted search params.
  * Centralizes Math.min/max logic from parse-search-intent and apply-filters.

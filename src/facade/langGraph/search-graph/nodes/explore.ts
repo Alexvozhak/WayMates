@@ -1,5 +1,5 @@
 import { NODE, PHASE } from "../state.js";
-import { DEFAULT_LIMIT, DEFAULT_RECENCY_THRESHOLD_MONTHS } from "../types.js";
+import { DEFAULT_CURRENT_SEARCH_PARAMS } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -12,13 +12,7 @@ import type { SearchStateType } from "../state.js";
 export const exploreNode = withLogging<SearchStateType>(NODE.explore, async (state, _config, { coreClient }) => {
   const { userId, adhocContext, currentSearchParams } = state;
 
-  const params = currentSearchParams ?? {
-    excludedContextFields: [],
-    excludedCreationReasons: [],
-    recencyThresholdMonths: DEFAULT_RECENCY_THRESHOLD_MONTHS,
-    limit: DEFAULT_LIMIT,
-    pathLimit: DEFAULT_LIMIT,
-  };
+  const params = currentSearchParams ?? { ...DEFAULT_CURRENT_SEARCH_PARAMS };
 
   const results = adhocContext
     ? await coreClient.client.search.adhoc.query({
@@ -33,6 +27,7 @@ export const exploreNode = withLogging<SearchStateType>(NODE.explore, async (sta
 
   return {
     explorationResults: results,
+    currentSearchParams: params,
     phase: PHASE.showing_exploration,
   };
 });

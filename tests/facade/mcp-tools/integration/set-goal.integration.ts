@@ -25,8 +25,8 @@ describe("SetGoalTool Integration Tests", () => {
   });
 
   // Business rule: User sets career goal (desired target context) to enable goal-driven search.
-  // Flow: validate session → normalize target criteria → save to DB → return goalId for tracking.
-  it("SG1: Full flow with normalization - creates goal and returns goalId", async () => {
+  // Flow: validate session → normalize target criteria → save to DB → return full Goal.
+  it("SG1: Full flow with normalization - creates goal and returns Goal object", async () => {
     const params: McpSetGoalParams = {
       sessionId: testSessionId,
       requestId: randomUUID(),
@@ -41,8 +41,9 @@ describe("SetGoalTool Integration Tests", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.goalId).toBeDefined();
-      expect(typeof result.value.goalId).toBe("string");
+      expect(result.value.userId).toBe(testUserId);
+      expect(result.value.targetContext).toBeDefined();
+      expect(result.value.createdAt).toBeDefined();
     }
   });
 
@@ -81,7 +82,7 @@ describe("SetGoalTool Integration Tests", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.goalId).toBeDefined();
+      expect(result.value.userId).toBe(testUserId);
     }
   });
 
@@ -112,7 +113,8 @@ describe("SetGoalTool Integration Tests", () => {
     expect(secondResult.ok).toBe(true);
 
     if (firstResult.ok && secondResult.ok) {
-      expect(secondResult.value.goalId).toBe(firstResult.value.goalId);
+      expect(secondResult.value.userId).toBe(firstResult.value.userId);
+      expect(secondResult.value.targetContext.position?.values).toContain("senior");
     }
   });
 });

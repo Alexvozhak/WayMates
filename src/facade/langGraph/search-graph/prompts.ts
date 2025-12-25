@@ -1,3 +1,5 @@
+import { type SearchPhase, PHASE } from "./state.js";
+
 /**
  * Builds goal extraction prompt with injected dictionary hints.
  * @param hints - Pre-built hints string from DictionariesService.buildHints()
@@ -15,25 +17,95 @@ MODE: "desired" by default, "undesired" if user says "not", "avoid", "except"
 Return null for fields not mentioned.`;
 }
 
-export const USER_INTENT_PROMPT = `Classify user's intent. Response may be in any language.
+const PHASE_CONTEXT: Partial<Record<SearchPhase, string>> = {
+  [PHASE.confirming_adhoc_context]: `User just described themselves. Bot confirmed their profile and offered options:
+  - Set a career goal
+  - Explore similar people without goal
+  If user mentions a goal → CLARIFY. If user agrees to explore → PROCEED.`,
+
+  [PHASE.showing_exploration]: `Bot showed similar people (no goal set). Options offered:
+  - Set a goal to find paths
+  - Apply filters
+  - Stop
+  If user mentions a goal → CLARIFY. If user wants to filter → FILTER.`,
+
+  [PHASE.showing_goal]: `Bot showed extracted career goal. Options offered:
+  - Check with real people who made it (validate)
+  - Tweak something (clarify)
+  - Save and search
+  If user wants to check/verify/see examples → VALIDATE. If user confirms saving → SAVE.`,
+
+  [PHASE.asking_after_validate]: `Bot showed people who achieved the goal. Options offered:
+  - Save the goal
+  - Change something
+  - Adjust goal
+  If user agrees/confirms → SAVE. If user wants different goal → CHANGE.`,
+
+  [PHASE.showing_results]: `Bot showed final search results. Options offered:
+  - Change goal
+  - Delete goal
+  - Filter more
+  - Ask questions about results
+  If user has question → ASK. If user wants to filter → FILTER.`,
+};
+
+const BASE_INTENT_PROMPT = `Classify user's intent in career search conversation.
+
+CRITICAL: Consider the FULL MEANING of the message in context of what was just offered.
 
 Intents:
-- PROCEED: User expresses a career goal, states what position/role they want, confirms readiness to move forward, or agrees
-- VALIDATE: User wants to see real people who achieved similar goals, check trajectories, validate feasibility
-  + filters: { excludedCreationReasons, recencyThresholdMonths, limit } or null
-- CLARIFY: User adds details or refines the current goal (countries, skills, domains)
-  + clarificationText: user's full message
-- SAVE: User explicitly confirms saving the goal
-- CHANGE: User wants to completely change the goal to something different (not add details)
-- DELETE: User wants to delete the goal and start over
-- FILTER: User wants to refine search parameters (exclude fields, reasons, adjust limits)
-  + filters: { excludedContextFields, excludedCreationReasons, recencyThresholdMonths, limit } or null
-- ASK: User asks a QUESTION about search results, candidates, their trajectories, skills, or chart
-  + question: user's question text
-- CANCEL: User explicitly wants to stop, cancel, or exit
-- UNKNOWN: Message is unrelated, unclear, or gibberish
 
-Return: { intent, clarificationText (for clarify), filters (for validate/filter), question (for ask) }`;
+PROCEED — User agrees to continue WITHOUT adding new information
+  Semantic: simple confirmation, agreement to proceed with current state
+
+CLARIFY — User provides NEW goal-related information
+  Semantic: mentions career goal, desired position, skills to add, location preference
+  + clarificationText: user's full message
+
+VALIDATE — User wants to see REAL PEOPLE who achieved similar goals
+  Semantic: requests verification, wants proof, asks to check feasibility, see examples
+  + filters or null
+
+SAVE — User confirms SAVING the goal
+  Semantic: explicit confirmation to save, finalize, remember
+
+CHANGE — User wants a DIFFERENT goal entirely
+  Semantic: rejection of current goal + new direction
+
+DELETE — User wants to REMOVE the goal
+  Semantic: delete, remove, clear goal
+
+FILTER — User wants to NARROW DOWN results
+  Semantic: exclude something, filter by criteria, limit scope
+  + filters or null
+
+ASK — User asks a QUESTION about results/candidates
+  Semantic: question about data shown, why/how/who questions
+  + question: user's question text
+
+CANCEL — User wants to STOP the flow
+  Semantic: stop, exit, abort, cancel
+
+UNKNOWN — Unclear or unrelated
+
+Return:
+{
+  reasoning: "Brief explanation considering phase context",
+  intent: "...",
+  clarificationText/filters/question: (if applicable)
+}`;
+
+export function buildUserIntentPrompt(phase: SearchPhase): string {
+  const phaseContext = PHASE_CONTEXT[phase];
+  if (!phaseContext) {
+    return BASE_INTENT_PROMPT;
+  }
+
+  return `Current phase context:
+${phaseContext}
+
+${BASE_INTENT_PROMPT}`;
+}
 
 export const GOAL_CLARIFICATION_PROMPT = `Update the existing goal based on user's clarification.
 
@@ -53,14 +125,19 @@ MERGE RULES:
  * @param hints - Pre-built hints string from DictionariesService.buildHints()
  */
 export function buildAdhocExtractionPrompt(hints: string): string {
-  return `Extract user's CURRENT career context (not goals). Response may be in any language.
+  return `Extract career context from user's professional self-description.
 ${hints}
-IMPORTANT - distinguish these 3 fields:
-- role: profession type (WHAT you do) — map to KNOWN ROLES
-- position: seniority level (HOW experienced) — map to KNOWN POSITIONS
-- domains: technical area (WHICH field) — map to KNOWN DOMAINS
+Fields to extract (map to KNOWN values from hints):
+- role: profession type (WHAT you do)
+- position: seniority level (HOW experienced)
+- domains: technical area (WHICH field)
 
-Return null for fields not mentioned.`;
+RULES:
+1. Extract ONLY from self-descriptions like "I am a senior backend developer"
+2. Commands and requests are NOT self-descriptions → return null for ALL fields
+3. NEVER return empty strings "" — use JSON null instead
+4. NEVER return string representations of null like "null", "/null", "NULL" — use JSON null
+5. If field not explicitly stated → null`;
 }
 
 /**

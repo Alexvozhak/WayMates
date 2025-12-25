@@ -37,6 +37,26 @@ type EnrichedPerson = {
 // ==========================================
 
 /**
+ * Normalize date: take END year from range (e.g., "2009-2015" → 2015)
+ */
+function normalizeDate(dateStr: string): string {
+  // Pattern: "2009-2015-01T00:00:00Z" → take second year (end of period)
+  const rangeMatch = dateStr.match(/^(\d{4})-(\d{4})-01T/);
+  if (rangeMatch) {
+    const endYear = Math.max(Number(rangeMatch[1]), Number(rangeMatch[2]));
+    return `${endYear}-01-01T00:00:00Z`;
+  }
+
+  // Pattern: "-2000-01T00:00:00Z"
+  const negativeMatch = dateStr.match(/^-(\d{4})-01T/);
+  if (negativeMatch) {
+    return `${negativeMatch[1]}-01-01T00:00:00Z`;
+  }
+
+  return dateStr;
+}
+
+/**
  * Convert enriched context to UserContext with IDs and linked list structure
  */
 function buildUserContexts(enrichedContexts: EnrichedContext[]): UserContext[] {
@@ -50,7 +70,7 @@ function buildUserContexts(enrichedContexts: EnrichedContext[]): UserContext[] {
       contextId,
       previousContextId: i > 0 ? contexts[i - 1].contextId : null,
       nextContextId: null, // Will be set for previous context
-      createdAt: enriched.createdAt,
+      createdAt: normalizeDate(enriched.createdAt),
       creationReason: enriched.creationReason as ("started_working" | "company_changed" | "location_changed")[],
       position: enriched.position,
       role: enriched.role,

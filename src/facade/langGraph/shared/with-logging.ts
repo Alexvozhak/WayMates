@@ -14,6 +14,26 @@ type NodeFn<S extends StateWithUserId> = (
   deps: GraphDeps,
 ) => Partial<S> | Promise<Partial<S>>;
 
+// eslint-disable-next-line complexity
+function summarizeState(state: Record<string, unknown>): Record<string, unknown> {
+  const summary: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (key === "messages") {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      summary[key] = `[${(value as unknown[])?.length ?? 0} messages]`;
+    } else if (Array.isArray(value)) {
+      summary[key] = `[${value.length} items]`;
+    } else if (typeof value === "object" && value !== null) {
+      summary[key] = "{...}";
+    } else if (typeof value === "string" && value.length > 100) {
+      summary[key] = value.slice(0, 100) + "...";
+    } else {
+      summary[key] = value;
+    }
+  }
+  return summary;
+}
+
 export function createWithLogging<NodeEnum extends Record<string, string>>() {
   return function withLogging<S extends StateWithUserId>(
     nodeName: NodeEnum[keyof NodeEnum],
@@ -25,12 +45,16 @@ export function createWithLogging<NodeEnum extends Record<string, string>>() {
       }
       const deps = config.configurable;
       const start = Date.now();
-      deps.logger.info({ node: nodeName, userId: state.userId }, `Executing ${nodeName}`);
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const inputSummary = summarizeState(state as Record<string, unknown>);
+      deps.logger.info({ node: nodeName, userId: state.userId, input: inputSummary }, `Executing ${nodeName}`);
 
       const result = await fn(state, config, deps);
 
       const durationMs = Date.now() - start;
-      deps.logger.info({ node: nodeName, durationMs }, `Completed ${nodeName}`);
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const outputSummary = summarizeState(result as Record<string, unknown>);
+      deps.logger.info({ node: nodeName, durationMs, output: outputSummary }, `Completed ${nodeName}`);
       return result;
     };
   };

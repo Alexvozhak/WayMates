@@ -6,46 +6,46 @@ import type { UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
 /**
- * System messages for flow guards - full English NLP.
+ * System messages for flow guards - full English, friendly style.
  * Client LLMs translate to user's language (no expansion needed).
  */
-const helpMessage = `I can help you find your career path!
+const greetingMessage = `Hey! 👋 I help with career stuff.
 
-• Tell me about yourself — I'll save your career story
-• Set a goal — Define where you want to go
-• Find similar — I'll show pathfinders who reached your goal
+Tell me about yourself — or just write "I'm a backend developer" and let's find similar folks.`;
 
-Just write naturally and I'll understand what you need.`;
+const helpMessage = `Sure, here's what I can do:
 
-const onboardingMessage = `Let's start! Tell me about yourself:
-• Full career story — your complete trajectory
-• Quick search — find similar careers without saving profile`;
+• Tell your story — I'll save your career path
+• Set a goal — where do you want to be?
+• Find similar — people like you or who reached your goal
 
-const cancelNoActiveMessage = "No active operations to cancel.";
-const goalNotSetMessage = "You don't have a goal set yet.";
-const goalNotSetDeleteMessage = "You have no goal to delete.";
+Just write naturally, I'll get it.`;
 
-const unknownMessage = `I didn't understand that command. Here's what I can do:
+const onboardingMessage = `Let's go! Tell me about yourself:
 
-Search:
-• Quick search — "I'm a junior backend developer"
-• Find careers — "show career paths"
+• Full story — share your career journey
+• Quick search — just describe who you are and we'll find matches`;
 
-Profile:
-• Tell story — "tell my career story"
-• Add context — "add new position"
+const cancelNoActiveMessage = "Nothing to cancel right now.";
+const goalNotSetMessage = "You don't have a goal yet. Want to set one?";
+const goalNotSetDeleteMessage = "No goal to delete — you haven't set one yet.";
 
-Goal:
-• Set goal — "I want to become a senior engineer"
-• View goal — "show my goal"
+const unknownMessage = `Hmm, didn't catch that. Try:
 
-Type "help" for more options.`;
+• Describe yourself — "I'm a senior frontend dev"
+• Set a goal — "I want to move into data science"
+• Or just say "help"`;
 
 export class FlowGuardChecker {
   constructor(private readonly coreClient: CoreClient) {}
 
   /* eslint-disable-next-line complexity -- guard conditions are linear and readable */
   async check(intent: UserIntent, userId: UserId): Promise<ConverseResponse | null> {
+    // Greeting — friendly opener
+    if (intent === "greeting") {
+      return createNlpResponse(greetingMessage);
+    }
+
     // Help
     if (intent === "help") {
       return createNlpResponse(helpMessage);

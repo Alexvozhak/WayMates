@@ -13,16 +13,22 @@ type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 
 // prettier-ignore
 const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
-  [PHASE.showing_exploration,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_goal,          buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.confirming_adhoc_context, buildRouteMap([NODE.search, NODE.explore, NODE.extract_goal, NODE.ask_adhoc_context, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_exploration,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_goal,          buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.delete_goal, NODE.clarify_intent, NODE.cancel])],
   [PHASE.asking_after_validate,  buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_results,       buildRouteMap([NODE.load_existing_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_results,       buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
 ]);
 
 // Static route maps (not phase-dependent)
+export const LOAD_CONTEXT_ROUTE_MAP = buildRouteMap([
+  NODE.confirm_adhoc_context,
+  NODE.ask_adhoc_context,
+  NODE.check_goal,
+]);
 export const CHECK_GOAL_ROUTE_MAP = buildRouteMap([NODE.search, NODE.explore, NODE.load_existing_goal]);
 export const APPLY_FILTERS_ROUTE_MAP = buildRouteMap([NODE.explore, NODE.search]);
-export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.cancel]);
+export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.show_results]);
 
 // =============================================================================
 // ROUTES: маппинг intent → node (фабрика с state-dependent параметрами)
@@ -31,17 +37,20 @@ export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.cance
 type RouteFlags = {
   canClarify: boolean;
   canChangePosition: boolean;
+  hasGoal: boolean;
 };
 
 function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, RouteMap>> {
-  const { canClarify, canChangePosition } = flags;
+  const { canClarify, canChangePosition, hasGoal } = flags;
 
   // prettier-ignore
   return {
-    [PHASE.showing_exploration]: { proceed: NODE.extract_goal, filter: NODE.apply_filters, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.showing_goal]:        { validate: NODE.validate_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, save: NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    // confirming_adhoc_context: proceed→search/explore, clarify→extract_goal (set goal), filter→ask_adhoc_context (refine profile)
+    [PHASE.confirming_adhoc_context]: { proceed: hasGoal ? NODE.search : NODE.explore, clarify: NODE.extract_goal, filter: NODE.ask_adhoc_context, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showing_exploration]: { proceed: NODE.extract_goal, clarify: NODE.extract_goal, filter: NODE.apply_filters, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showing_goal]:        { validate: NODE.validate_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, save: NODE.set_goal, delete: NODE.delete_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
     [PHASE.asking_after_validate]:{ save: NODE.set_goal, clarify: canClarify ? NODE.clarify_goal : NODE.set_goal, change: canChangePosition ? NODE.extract_goal : NODE.set_goal, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.showing_results]:     { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.load_existing_goal, delete: NODE.delete_goal, ask: NODE.generate_answer, cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.showing_results]:     { filter: NODE.apply_filters, clarify: NODE.load_existing_goal, change: NODE.extract_goal, delete: NODE.delete_goal, ask: NODE.generate_answer, cancel: NODE.cancel, unknown: NODE.clarify_intent },
   } satisfies Partial<Record<SearchPhase, RouteMap>>;
 }
 
@@ -57,6 +66,7 @@ export function availableNodesByPhase(phase: SearchPhase): Partial<Record<NodeNa
 
 // Combined destinations for parse_search_intent (routes to all phase-specific nodes)
 export const PARSE_INTENT_ALL_DESTINATIONS = {
+  ...availableNodesByPhase(PHASE.confirming_adhoc_context),
   ...availableNodesByPhase(PHASE.showing_exploration),
   ...availableNodesByPhase(PHASE.showing_goal),
   ...availableNodesByPhase(PHASE.asking_after_validate),
@@ -64,7 +74,7 @@ export const PARSE_INTENT_ALL_DESTINATIONS = {
 };
 
 export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
-  const { phase, clarifyRound, newPositionRound, searchUserIntent } = state;
+  const { phase, clarifyRound, newPositionRound, searchUserIntent, storedGoal } = state;
 
   if (phase === PHASE.failed) return NODE.cancel;
   if (!searchUserIntent) throw new AgentInvariantError("routeAfterParseSearchIntent", "searchUserIntent missing");
@@ -72,6 +82,7 @@ export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
   const flags: RouteFlags = {
     canClarify: clarifyRound < MAX_CLARIFY_ROUNDS,
     canChangePosition: newPositionRound < MAX_NEW_POSITION_ROUNDS,
+    hasGoal: storedGoal !== null,
   };
 
   const routes = createIntentRoutes(flags);
@@ -79,6 +90,12 @@ export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
   const defaultRoute = phase === PHASE.showing_goal ? NODE.set_goal : NODE.cancel;
 
   return phaseRoutes?.[searchUserIntent] ?? defaultRoute;
+}
+
+export function routeAfterLoadContext(state: SearchStateType): NodeName {
+  if (state.phase === PHASE.asking_adhoc_context) return NODE.ask_adhoc_context;
+  if (state.phase === PHASE.confirming_adhoc_context) return NODE.confirm_adhoc_context;
+  return NODE.check_goal; // profile flow
 }
 
 export function routeAfterCheckGoal(state: SearchStateType): NodeName {
@@ -90,7 +107,7 @@ export function routeAfterApplyFilters(state: SearchStateType): NodeName {
 }
 
 export function routeAfterAdvisor(state: SearchStateType): NodeName {
-  return state.advisorIntent === "ask" ? NODE.generate_answer : NODE.cancel;
+  return state.advisorIntent === "ask" ? NODE.generate_answer : NODE.show_results;
 }
 
 export function isTerminalPhase(phase: SearchPhase): boolean {

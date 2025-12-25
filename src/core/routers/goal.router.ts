@@ -7,14 +7,9 @@ import { publicProcedure, t } from "./trpc.js";
 export const goalRouter = t.router({
   set: publicProcedure
     .input(createGoalInputSchema)
-    .output(
-      z.object({
-        goalId: z.string(),
-      }),
-    )
+    .output(goalSchema)
     .mutation(async ({ ctx, input }) => {
-      const userId = await ctx.goalsManager.setGoal(input);
-      return { goalId: userId };
+      return ctx.goalsManager.setGoal(input);
     }),
 
   getByUser: publicProcedure

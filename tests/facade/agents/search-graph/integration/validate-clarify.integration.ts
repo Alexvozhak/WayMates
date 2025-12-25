@@ -247,10 +247,10 @@ describe("SearchGraph: Validate & Clarify (TC-SG-VC)", () => {
     goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
     expect(goal, "Turn 4: Goal MUST be saved to Neo4j").not.toBeNull();
 
-    const savedPositionValues = goal?.targetCriteria.position?.values ?? [];
+    const savedPositionValues = goal?.targetContext.position?.values ?? [];
     expect(savedPositionValues.length, "Turn 4: Saved goal MUST have position").toBeGreaterThan(0);
 
-    const savedCountryValues = goal?.targetCriteria.countries?.values ?? [];
+    const savedCountryValues = goal?.targetContext.countries?.values ?? [];
     expect(savedCountryValues.length, "Turn 4: Saved goal MUST have countries from clarification").toBeGreaterThan(0);
 
     console.log("Turn 4: ✅ Clarified goal saved, search complete");

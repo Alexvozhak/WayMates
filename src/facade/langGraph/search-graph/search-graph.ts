@@ -4,11 +4,13 @@ import { createInterruptPhaseExtractor } from "../shared/interrupt-utils.js";
 import { isGraphState } from "../shared/state-utils.js";
 
 import { applyFiltersNode } from "./nodes/apply-filters.js";
+import { askAdhocContextNode } from "./nodes/ask-adhoc-context.js";
 import { askAfterValidateNode } from "./nodes/ask-after-validate.js";
 import { cancelNode } from "./nodes/cancel.js";
 import { checkGoalNode } from "./nodes/check-goal.js";
 import { clarifyGoalNode } from "./nodes/clarify-goal.js";
 import { clarifyIntentNode } from "./nodes/clarify-intent.js";
+import { confirmAdhocContextNode } from "./nodes/confirm-adhoc-context.js";
 import { deleteGoalNode } from "./nodes/delete-goal.js";
 import { exploreNode } from "./nodes/explore.js";
 import { extractGoalNode } from "./nodes/extract-goal.js";
@@ -29,10 +31,12 @@ import {
   ADVISOR_ROUTE_MAP,
   APPLY_FILTERS_ROUTE_MAP,
   CHECK_GOAL_ROUTE_MAP,
+  LOAD_CONTEXT_ROUTE_MAP,
   PARSE_INTENT_ALL_DESTINATIONS,
   routeAfterAdvisor,
   routeAfterApplyFilters,
   routeAfterCheckGoal,
+  routeAfterLoadContext,
   routeAfterParseSearchIntent,
 } from "./search-router.js";
 import { NODE, searchPhaseSchema, searchStateAnnotation } from "./state.js";
@@ -55,6 +59,8 @@ export function createGraphBuilder() {
   // prettier-ignore
   return new StateGraph(searchStateAnnotation)
     .addNode(NODE.load_context, loadContextNode)
+    .addNode(NODE.ask_adhoc_context, askAdhocContextNode)
+    .addNode(NODE.confirm_adhoc_context, confirmAdhocContextNode)
     .addNode(NODE.check_goal, checkGoalNode)
     .addNode(NODE.explore, exploreNode)
     .addNode(NODE.show_exploration, showExplorationNode)
@@ -77,7 +83,9 @@ export function createGraphBuilder() {
     .addNode(NODE.cancel, cancelNode)
 
     .addEdge(START, NODE.load_context)
-    .addEdge(NODE.load_context, NODE.check_goal)
+    .addConditionalEdges(NODE.load_context, routeAfterLoadContext, LOAD_CONTEXT_ROUTE_MAP)
+    .addEdge(NODE.ask_adhoc_context, NODE.load_context)
+    .addEdge(NODE.confirm_adhoc_context, NODE.parse_search_intent)
     .addConditionalEdges(NODE.check_goal, routeAfterCheckGoal, CHECK_GOAL_ROUTE_MAP)
 
     // show_* nodes → parse_search_intent

@@ -251,8 +251,18 @@ Rules:
   }
 
   private removeNullishFields<T extends Record<string, unknown>>(obj: T): T {
-    // Remove null, undefined, and empty strings (LLM often returns "" for missing values)
+    // Remove null, undefined, empty strings, and LLM's string representations of null
+    // LLM sometimes returns "", "/null", "null", "/NULL" instead of proper null
+    // eslint-disable-next-line unicorn/consistent-function-scoping -- intentionally scoped for readability
+    const isNullish = (v: unknown): boolean => {
+      if (v == null || v === "") return true;
+      if (typeof v === "string") {
+        const normalized = v.toLowerCase().trim();
+        return normalized === "null" || normalized === "/null";
+      }
+      return false;
+    };
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Object.fromEntries loses type information, cast to original type is safe here
-    return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v != null && v !== "")) as T;
+    return Object.fromEntries(Object.entries(obj).filter(([_, v]) => !isNullish(v))) as T;
   }
 }

@@ -71,7 +71,7 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
     goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
     expect(goal, "Goal MUST be saved to Neo4j after 'save' command").not.toBeNull();
     // Check that LLM extracted "senior" in some form (may be "senior developer", "senior", etc.)
-    const positionValues = goal?.targetCriteria.position?.values ?? [];
+    const positionValues = goal?.targetContext.position?.values ?? [];
     expect(
       positionValues.some((v) => v.toLowerCase().includes("senior")),
       `Expected position to contain "senior", got: ${JSON.stringify(positionValues)}`,

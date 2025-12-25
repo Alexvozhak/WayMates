@@ -98,8 +98,7 @@ export class SearchManager {
     const goal = await this.goalsManager.getUserGoal(userId);
 
     // Extract goal positions for Cypher parameter (null if no goal or no position filter)
-    const goalPositions =
-      goal?.targetCriteria.position?.mode === "desired" ? goal.targetCriteria.position.values : null;
+    const goalPositions = goal?.targetContext.position?.mode === "desired" ? goal.targetContext.position.values : null;
 
     const rankedStrictFields = await this.selectivity.rankStrictFields(strictFields, referenceContext);
 

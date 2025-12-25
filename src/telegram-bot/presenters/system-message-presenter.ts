@@ -6,16 +6,9 @@ import { BasePresenter } from "./base-presenter.js";
  */
 export class SystemMessagePresenter extends BasePresenter {
   protected createPrompt(rawJson: string, language: string): string {
-    return `Translate this message to ${language}.
+    const text = rawJson.startsWith('"') ? JSON.parse(rawJson) : rawJson;
+    return `Translate to ${language}. Output ONLY the translated text.
 
-Message (English):
-${rawJson}
-
-Rules:
-- Keep formatting (bullet points, line breaks)
-- Use conversational, friendly tone
-- Preserve technical terms if needed
-
-Response in ${language}:`;
+${text}`;
   }
 }

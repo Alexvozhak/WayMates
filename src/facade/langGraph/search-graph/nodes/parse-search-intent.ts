@@ -1,4 +1,5 @@
 import { AgentInvariantError } from "../../../errors.js";
+import { logger } from "../../../logger.js";
 import { NODE, PHASE } from "../state.js";
 import { clampSearchParams } from "../types.js";
 import { withLogging } from "../with-logging.js";
@@ -43,7 +44,7 @@ function extractAdvisorQuestion(parsed: ParsedIntent): string | null {
 }
 
 function shouldKeepUserResponse(intent: ParsedIntent["intent"]): boolean {
-  return intent === "proceed" || intent === "filter" || intent === "ask";
+  return intent === "proceed" || intent === "filter" || intent === "ask" || intent === "change";
 }
 
 function computeNewPositionRound(
@@ -67,7 +68,12 @@ export const parseSearchIntentNode = withLogging<SearchStateType>(
       throw new AgentInvariantError(NODE.parse_search_intent, "userResponse must exist");
     }
 
-    const parsed = await parseUserIntent(userResponse);
+    const parsed = await parseUserIntent(userResponse, phase);
+
+    logger.info(
+      { userResponse, phase, intent: parsed.intent, reasoning: parsed.reasoning },
+      "intent classification with reasoning",
+    );
 
     const targetSearchParams =
       phase === PHASE.showing_goal && extractedGoal

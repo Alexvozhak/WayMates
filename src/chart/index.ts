@@ -20,20 +20,20 @@ export { ASPECT_CONFIGS, DEFAULT_FIELDS, extractGrade } from "./config/aspect-co
 
 /**
  * Extract goal values for chart visualization from Goal object.
- * Maps targetCriteria fields to chartable field values.
+ * Maps targetContext fields to chartable field values.
  */
 export function extractGoalValues(goal: Goal | null | undefined): GoalValues {
-  if (!goal?.targetCriteria) return {};
+  if (!goal?.targetContext) return {};
 
   const values: GoalValues = {};
-  const { targetCriteria } = goal;
+  const { targetContext } = goal;
 
-  if (targetCriteria.position?.values[0]) {
-    values.position = extractGrade(targetCriteria.position.values[0]);
+  if (targetContext.position?.values[0]) {
+    values.position = extractGrade(targetContext.position.values[0]);
   }
 
-  if (targetCriteria.domains?.values[0]) {
-    values.domains = targetCriteria.domains.values[0];
+  if (targetContext.domains?.values[0]) {
+    values.domains = targetContext.domains.values[0];
   }
 
   return values;

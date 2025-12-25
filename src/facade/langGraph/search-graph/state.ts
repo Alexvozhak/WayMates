@@ -17,6 +17,8 @@ import type { UserIntent } from "../../services/orchestrator/intent-classifier.j
 import type { BaseMessage } from "@langchain/core/messages";
 
 export const searchPhaseSchema = z.enum([
+  "asking_adhoc_context",
+  "confirming_adhoc_context",
   "checking_goal",
   "exploring",
   "showing_exploration",
@@ -40,6 +42,8 @@ export const PHASE = searchPhaseSchema.Values;
 
 export const NODE = {
   load_context: "load_context",
+  ask_adhoc_context: "ask_adhoc_context",
+  confirm_adhoc_context: "confirm_adhoc_context",
   check_goal: "check_goal",
   explore: "explore",
   show_exploration: "show_exploration",

@@ -195,7 +195,7 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
 
     expect(savedGoal, "Turn 4: Goal MUST be saved to Neo4j after 'save' command").not.toBeNull();
 
-    const savedPositionValues = savedGoal?.targetCriteria.position?.values ?? [];
+    const savedPositionValues = savedGoal?.targetContext.position?.values ?? [];
     expect(
       savedPositionValues.some((v) => v.toLowerCase().includes("middle")),
       `Turn 4: Saved goal MUST contain "middle", got: ${JSON.stringify(savedPositionValues)}`,

@@ -1,6 +1,6 @@
 import type { Goal, ScoredMatchedCandidate, UserContext } from "../../../shared/schemas.js";
 
-type GoalCriteria = NonNullable<Goal["targetCriteria"]>;
+type GoalCriteria = NonNullable<Goal["targetContext"]>;
 type CriterionValue = { values: string[]; mode?: string } | null | undefined;
 
 function formatGoalPart(name: string, criterion: CriterionValue): string | null {
@@ -67,7 +67,7 @@ export class AdvisorContextBuilder {
   addGoal(goal: Goal | null): this {
     if (!goal) return this;
 
-    const g: GoalCriteria = goal.targetCriteria;
+    const g: GoalCriteria = goal.targetContext;
     const parts = [
       formatGoalPart("Position", g.position),
       formatGoalPart("Role", g.role),

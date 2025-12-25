@@ -1,19 +1,19 @@
 import { deleteGoalQuery, getUserGoalQuery, setGoalQuery } from "../cypher/index.js";
-import { goalSchema, userIdSchema } from "../shared/schemas.js";
+import { goalSchema } from "../shared/schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";
-import type { CreateGoalInput, Goal, UserId } from "../shared/schemas.js";
+import type { CreateGoalInput, Goal } from "../shared/schemas.js";
 
 export class GoalsManager {
   constructor(private db: DatabaseContext) {}
 
-  async setGoal(params: CreateGoalInput): Promise<UserId> {
+  async setGoal(params: CreateGoalInput): Promise<Goal> {
     const createdAt = new Date().toISOString();
 
     return this.db.write(async (tx) => {
       const result = await tx.run(setGoalQuery(), {
         userId: params.userId,
-        targetCriteria: JSON.stringify(params.targetContext),
+        targetContext: JSON.stringify(params.targetContext),
         createdAt,
       });
 
@@ -22,7 +22,13 @@ export class GoalsManager {
         throw new Error(`setGoal: no result returned for user=${params.userId}`);
       }
 
-      return userIdSchema.parse(record.get("userId"));
+      const goalData = record.get("goal");
+      const goalWithParsedContext = {
+        ...goalData,
+        targetContext: JSON.parse(goalData.targetContext),
+      };
+
+      return goalSchema.parse(goalWithParsedContext);
     });
   }
 
@@ -35,10 +41,10 @@ export class GoalsManager {
       }
       const goalData = record.get("goal");
 
-      // Deserialize targetCriteria from JSON string
+      // Deserialize targetContext from JSON string
       const goalWithParsedCriteria = {
         ...goalData,
-        targetCriteria: JSON.parse(goalData.targetCriteria),
+        targetContext: JSON.parse(goalData.targetContext),
       };
 
       return goalSchema.parse(goalWithParsedCriteria);

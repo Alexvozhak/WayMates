@@ -11,6 +11,7 @@ import { captureException } from "../shared/sentry.js";
 
 import { BotError, McpClientError } from "./errors.js";
 import { handleConverse } from "./handlers/converse.js";
+import { handleDocument } from "./handlers/document.js";
 import { handleLink } from "./handlers/link.js";
 import { handleStart } from "./handlers/start.js";
 import { handleToken } from "./handlers/token.js";
@@ -82,6 +83,7 @@ export function createBot(
   // Unified text message handler — routes through converse.tool
   bot.on("message:text", handleConverse);
   bot.on("message:voice", handleVoice);
+  bot.on("message:document", handleDocument);
 
   bot.catch((error) => handleGlobalError(error, logger));
 

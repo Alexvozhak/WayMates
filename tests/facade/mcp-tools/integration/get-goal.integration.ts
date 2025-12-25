@@ -59,9 +59,9 @@ describe("GetGoalTool Integration Tests", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok && result.value) {
-      expect(result.value.targetCriteria).toBeDefined();
-      expect(result.value.targetCriteria.position?.mode).toBe("desired");
-      expect(result.value.targetCriteria.position?.values).toContain("senior");
+      expect(result.value.targetContext).toBeDefined();
+      expect(result.value.targetContext.position?.mode).toBe("desired");
+      expect(result.value.targetContext.position?.values).toContain("senior");
     }
   });
 

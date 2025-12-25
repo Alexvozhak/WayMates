@@ -23,13 +23,13 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
     await cleanupUserGoal(ctx.coreClient, testUserId);
   });
 
-  /* eslint-disable complexity -- E2E test covers full multi-turn flow (adhoc → explore → extract → save → search), complexity unavoidable */
+  /* eslint-disable complexity -- E2E test covers full multi-turn flow (adhoc → confirm → explore → extract → save → search), complexity unavoidable */
   /**
-   * TC-SG-E2E-01: Full happy path with adhoc context → goal formation → results
+   * TC-SG-E2E-01: Full happy path with adhoc context → confirm → explore → goal → results
    *
    * Что тестируем:
    * Полный E2E flow SearchGraph в adhoc режиме (без сохранённого контекста).
-   * User приходит, даёт adhoc контекст, формирует цель, получает результаты.
+   * User приходит, даёт adhoc контекст, подтверждает, исследует, формирует цель, получает результаты.
    *
    * Given:
    * - User: БЕЗ сохранённого контекста (adhoc режим)
@@ -38,36 +38,34 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
    * Flow:
    * - Turn 1: "Я junior backend разработчик" (startAdhoc intent)
    *   → load_context извлекает adhocContext через LLM
+   *   → confirm_adhoc_context (interrupt: "что дальше?")
+   *
+   * - Turn 2: "глянуть похожих" (proceed intent, no goal)
    *   → explore → showing_exploration
    *
-   * - Turn 2: "Хочу стать middle backend разработчиком"
+   * - Turn 3: "Хочу стать middle backend разработчиком"
    *   → extract_goal → showing_goal
    *
-   * - Turn 3: "сохрани"
+   * - Turn 4: "сохрани"
    *   → set_goal → search → showing_results
    *
    * Then:
-   * - Turn 1: phase = showing_exploration
-   * - Turn 1: candidates.length > 0 (adhoc search works)
+   * - Turn 1: phase = confirming_adhoc_context
+   * - Turn 1: adhocContext.role contains "backend" OR adhocContext.domains contains "backend"
    *
-   * - Turn 2: phase = showing_goal
-   * - Turn 2: extractedGoal.position contains "middle"
-   * - Turn 2: extractedGoal.domain contains "backend"
+   * - Turn 2: phase = showing_exploration
+   * - Turn 2: candidates.length > 0 (adhoc search works)
    *
-   * - Turn 3: phase = showing_results
-   * - Turn 3: results.length >= 2 && <= 5 (multiple candidates found)
-   * - Turn 3: goal saved to Neo4j
-   * - Turn 3: results have userId and score (path not available in adhoc mode)
+   * - Turn 3: phase = showing_goal
+   * - Turn 3: extractedGoal.position contains "middle"
+   *
+   * - Turn 4: phase = showing_results
+   * - Turn 4: results.length >= 2 && <= 5 (multiple candidates found)
+   * - Turn 4: goal saved to Neo4j
    *
    * Тип теста: E2E Integration (adhoc mode + multi-turn + LLM + Neo4j + search)
-   *
-   * Почему НЕ проверяем конкретных userId:
-   * - Fixtures содержат 8+ кандидатов с middle backend траекториями
-   * - Scoring может вернуть любых из них в зависимости от skills matching
-   * - Integration test не должен быть хрупким к конкретным fixtures
-   * - Проверяем КОЛИЧЕСТВО и КАЧЕСТВО результатов, не конкретные userId
    */
-  it("TC-SG-E2E-01: adhoc context → goal formation → search results", async () => {
+  it("TC-SG-E2E-01: adhoc context → confirm → explore → goal → search results", async () => {
     const ctx = FacadeTestContext.getInstance();
 
     // Pre-check: no goal exists
@@ -75,63 +73,79 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
     expect(goal, "Goal must be absent before test").toBeNull();
 
     // ================================================================================
-    // Turn 1: adhoc context extraction (startAdhoc intent → LLM extraction)
+    // Turn 1: adhoc context extraction → confirm (startAdhoc intent → LLM extraction)
     // ================================================================================
     const turn1 = await runGraph("Я junior backend разработчик", GRAPH_INTENT.startAdhoc);
 
-    expect(
-      turn1.phase,
-      "Turn 1: adhoc mode MUST start with exploration (load_context extracts adhocContext via LLM)",
-    ).toBe(PHASE.showing_exploration);
+    expect(turn1.phase, "Turn 1: adhoc mode MUST confirm extracted context before exploration").toBe(
+      PHASE.confirming_adhoc_context,
+    );
 
-    if (turn1.phase !== PHASE.showing_exploration) {
+    if (turn1.phase !== PHASE.confirming_adhoc_context) {
+      expect.fail("Type guard failed after strict assertion");
+    }
+
+    // Verify LLM extraction worked (backend can be in role or domains)
+    const hasBackend =
+      turn1.adhocContext?.role?.toLowerCase().includes("backend") ||
+      turn1.adhocContext?.domains?.some((d) => d.toLowerCase().includes("backend"));
+    expect(
+      hasBackend,
+      `Turn 1: LLM MUST extract "backend" from message, got: ${JSON.stringify(turn1.adhocContext)}`,
+    ).toBe(true);
+
+    console.log(`Turn 1: ✅ adhoc extraction → confirming_adhoc_context (${JSON.stringify(turn1.adhocContext)})`);
+
+    // ================================================================================
+    // Turn 2: User wants to explore similar people (proceed without goal)
+    // ================================================================================
+    const turn2 = await runGraph("глянуть похожих");
+
+    expect(turn2.phase, "Turn 2: After confirm with 'explore' intent, MUST show exploration").toBe(
+      PHASE.showing_exploration,
+    );
+
+    if (turn2.phase !== PHASE.showing_exploration) {
       expect.fail("Type guard failed after strict assertion");
     }
 
     expect(
-      turn1.candidates.length,
-      "Turn 1: Exploration MUST return candidates with relaxed filters (adhoc search works)",
+      turn2.candidates.length,
+      "Turn 2: Exploration MUST return candidates with relaxed filters (adhoc search works)",
     ).toBeGreaterThan(0);
 
-    console.log(`Turn 1: ✅ adhoc extraction → exploration (${turn1.candidates.length} candidates)`);
+    console.log(`Turn 2: ✅ explore → showing_exploration (${turn2.candidates.length} candidates)`);
 
     // ================================================================================
-    // Turn 2: Goal formation (extract_goal)
+    // Turn 3: Goal formation (extract_goal)
     // ================================================================================
-    const turn2 = await runGraph("Хочу стать middle backend разработчиком");
+    const turn3 = await runGraph("Хочу стать middle backend разработчиком");
 
-    expect(turn2.phase, "Turn 2: After user expresses goal, MUST extract and show goal").toBe(PHASE.showing_goal);
+    expect(turn3.phase, "Turn 3: After user expresses goal, MUST extract and show goal").toBe(PHASE.showing_goal);
 
-    if (turn2.phase !== PHASE.showing_goal) {
+    if (turn3.phase !== PHASE.showing_goal) {
       expect.fail("Type guard failed after strict assertion");
     }
 
     // Verify LLM extraction: position "middle"
-    const positionValues = turn2.extractedGoal.position?.values ?? [];
+    const positionValues = turn3.extractedGoal.position?.values ?? [];
     expect(
       positionValues.some((v) => v.toLowerCase().includes("middle")),
-      `Turn 2: LLM MUST extract "middle" from message, got: ${JSON.stringify(positionValues)}`,
+      `Turn 3: LLM MUST extract "middle" from message, got: ${JSON.stringify(positionValues)}`,
     ).toBe(true);
 
-    // Verify LLM extraction: domains "backend"
-    const domainValues = turn2.extractedGoal.domains?.values ?? [];
-    expect(
-      domainValues.some((v: string) => v.toLowerCase().includes("backend")),
-      `Turn 2: LLM MUST extract "backend" from message, got: ${JSON.stringify(domainValues)}`,
-    ).toBe(true);
-
-    console.log(`Turn 2: ✅ Goal extracted (position: ${positionValues}, domain: ${domainValues})`);
+    console.log(`Turn 3: ✅ Goal extracted (position: ${positionValues})`);
 
     // ================================================================================
-    // Turn 3: Save goal + Search (set_goal → search → showing_results)
+    // Turn 4: Save goal + Search (set_goal → search → showing_results)
     // ================================================================================
-    const turn3 = await runGraph("сохрани");
+    const turn4 = await runGraph("сохрани");
 
-    expect(turn3.phase, "Turn 3: Save intent MUST persist goal to Neo4j and show search results").toBe(
+    expect(turn4.phase, "Turn 4: Save intent MUST persist goal to Neo4j and show search results").toBe(
       PHASE.showing_results,
     );
 
-    if (turn3.phase !== PHASE.showing_results) {
+    if (turn4.phase !== PHASE.showing_results) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -139,7 +153,7 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
     goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
     expect(goal, "Goal MUST be saved to Neo4j after 'save' command").not.toBeNull();
 
-    const savedPositionValues = goal?.targetCriteria.position?.values ?? [];
+    const savedPositionValues = goal?.targetContext.position?.values ?? [];
     expect(
       savedPositionValues.some((v) => v.toLowerCase().includes("middle")),
       `Expected saved goal to contain "middle", got: ${JSON.stringify(savedPositionValues)}`,
@@ -147,21 +161,73 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
 
     // Verify: search results returned
     expect(
-      turn3.results.length,
-      "Turn 3: Search MUST return at least 2 pathfinders (relaxed filters allow multiple matches). " +
+      turn4.results.length,
+      "Turn 4: Search MUST return at least 2 pathfinders (relaxed filters allow multiple matches). " +
         "Fixtures contain 8+ candidates with middle backend trajectories (U3, U8, U10, U11, U15, U17, U19, ...).",
     ).toBeGreaterThanOrEqual(2);
 
     expect(
-      turn3.results.length,
-      "Turn 3: Search SHOULD NOT return too many results (sanity check for scoring). " +
+      turn4.results.length,
+      "Turn 4: Search SHOULD NOT return too many results (sanity check for scoring). " +
         "If this fails, check if relaxed filters are TOO relaxed or scoring is broken.",
     ).toBeLessThanOrEqual(5);
 
-    // Note: In adhoc mode, search.adhoc returns ScoredMatchedCandidate WITHOUT path (trajectory).
-    // Zod on tRPC layer guarantees response structure — no need for coverage theater checks here.
+    console.log(`Turn 4: ✅ E2E complete! Results: ${turn4.results.length} candidates found, goal saved to Neo4j`);
+    console.log(`  Candidates: ${turn4.results.map((r) => `${r.userId.slice(0, 8)}...`).join(", ")}`);
+  }, 300_000); // 5 minutes timeout for 4-turn LLM calls
 
-    console.log(`Turn 3: ✅ E2E complete! Results: ${turn3.results.length} candidates found, goal saved to Neo4j`);
-    console.log(`  Candidates: ${turn3.results.map((r) => `${r.userId.slice(0, 8)}...`).join(", ")}`);
-  }, 240_000); // 4 minutes timeout for multi-turn LLM calls
+  /**
+   * TC-SG-E2E-02: No context extracted → asking_adhoc_context
+   *
+   * Что тестируем:
+   * Когда пользователь пишет команду без контекста, система должна спросить.
+   *
+   * Given:
+   * - User: без сохранённого контекста
+   * - Message: "Давай быстрый поиск" (команда, не самоописание)
+   *
+   * Flow:
+   * - Turn 1: команда без контекста → LLM extraction = null → asking_adhoc_context
+   * - Turn 2: "Я senior frontend" → extraction → confirming_adhoc_context
+   *
+   * Then:
+   * - Turn 1: phase = asking_adhoc_context
+   * - Turn 2: phase = confirming_adhoc_context, adhocContext содержит frontend
+   */
+  it("TC-SG-E2E-02: no context → asking_adhoc_context → provide context → confirm", async () => {
+    const ctx = FacadeTestContext.getInstance();
+    await ctx.checkpointService.delete(threadId);
+
+    // ================================================================================
+    // Turn 1: Command without context → should ask for context
+    // ================================================================================
+    const turn1 = await runGraph("Давай быстрый поиск", GRAPH_INTENT.startAdhoc);
+
+    expect(
+      turn1.phase,
+      "Turn 1: Command without self-description MUST ask for context (LLM should NOT hallucinate)",
+    ).toBe(PHASE.asking_adhoc_context);
+
+    console.log(`Turn 1: ✅ No context extracted → asking_adhoc_context`);
+
+    // ================================================================================
+    // Turn 2: User provides context → should confirm
+    // ================================================================================
+    const turn2 = await runGraph("Я senior frontend разработчик");
+
+    expect(turn2.phase, "Turn 2: After user provides context, MUST confirm extracted context").toBe(
+      PHASE.confirming_adhoc_context,
+    );
+
+    if (turn2.phase !== PHASE.confirming_adhoc_context) {
+      expect.fail("Type guard failed after strict assertion");
+    }
+
+    const hasFrontend =
+      turn2.adhocContext?.role?.toLowerCase().includes("frontend") ||
+      turn2.adhocContext?.domains?.some((d) => d.toLowerCase().includes("frontend"));
+    expect(hasFrontend, `Turn 2: MUST extract "frontend", got: ${JSON.stringify(turn2.adhocContext)}`).toBe(true);
+
+    console.log(`Turn 2: ✅ Context extracted → confirming_adhoc_context`);
+  }, 120_000);
 });

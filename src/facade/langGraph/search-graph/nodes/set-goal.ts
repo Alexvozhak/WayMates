@@ -15,11 +15,11 @@ export const setGoalNode = withLogging<SearchStateType>(
 
     const normalized = await normalizerService.normalizeTargetContext(extractedGoal, userId);
 
-    await coreClient.client.goal.set.mutate({
+    const storedGoal = await coreClient.client.goal.set.mutate({
       userId,
       targetContext: normalized,
     });
 
-    return { phase: PHASE.searching };
+    return { phase: PHASE.searching, storedGoal };
   },
 );

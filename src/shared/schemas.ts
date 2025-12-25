@@ -561,11 +561,12 @@ export type CurrentAppliedFilters = z.infer<typeof currentAppliedFiltersSchema>;
 export const storyInputSchema = z
   .object({
     userId: userIdSchema,
-    contexts: z.array(userContextSchema).min(1),
+    contexts: z.array(userContextSchema).min(0),
     trails: z.array(trailSchema).min(0),
   })
   .superRefine((data, ctx) => {
-    if (data.contexts.length === 1) {
+    const MIN_CONTEXTS_FOR_CHAIN = 2;
+    if (data.contexts.length < MIN_CONTEXTS_FOR_CHAIN) {
       return;
     }
 
@@ -648,7 +649,7 @@ export type OperationResult = z.infer<typeof operationResultSchema>;
 
 export const goalSchema = z.object({
   userId: userIdSchema,
-  targetCriteria: targetContextSchema.describe("Target position criteria with FieldFilter pattern"),
+  targetContext: targetContextSchema.describe("Target position criteria with FieldFilter pattern"),
   createdAt: z
     .string()
     .regex(new RegExp(ISO_8601_DATETIME_PATTERN), "Must be ISO 8601 format")
@@ -1016,16 +1017,6 @@ export const searchResultResponseSchema = z.object({
 export type SearchResultResponse = z.infer<typeof searchResultResponseSchema>;
 
 /**
- * Response from set_goal MCP tool.
- * Returns the created goal ID.
- */
-export const setGoalResponseSchema = z.object({
-  goalId: z.string(),
-});
-
-export type SetGoalResponse = z.infer<typeof setGoalResponseSchema>;
-
-/**
  * Response from delete_* MCP tools (delete_goal, delete_context, delete_trail).
  */
 export const deleteSuccessResponseSchema = z.object({
@@ -1135,12 +1126,19 @@ export type UpsertTrailResponse = z.infer<typeof upsertTrailResponseSchema>;
  * Multi-phase workflow: explore → goal formation → search.
  */
 export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
+  z.object({ phase: z.literal("asking_adhoc_context") }),
+  z.object({
+    phase: z.literal("confirming_adhoc_context"),
+    adhocContext: adhocContextBase.nullable(),
+    goal: goalSchema.nullable(),
+  }),
   z.object({ phase: z.literal("checking_goal") }),
   z.object({ phase: z.literal("exploring") }),
   z.object({
     phase: z.literal("showing_exploration"),
     candidates: z.array(scoredMatchedCandidateSchema),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
+    adhocContext: adhocContextBase.nullable(),
   }),
   z.object({ phase: z.literal("extracting_goal") }),
   z.object({
@@ -1159,6 +1157,8 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     phase: z.literal("asking_after_validate"),
     candidates: z.array(matchedCandidateWithPathSchema),
     appliedFilters: targetAppliedFiltersSchema.nullable(),
+    adhocContext: adhocContextBase.nullable(),
+    extractedGoal: targetContextSchema.nullable(),
   }),
   z.object({ phase: z.literal("setting_goal") }),
   z.object({ phase: z.literal("deleting_goal") }),
@@ -1169,6 +1169,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     goal: goalSchema.nullable(),
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
+    adhocContext: adhocContextBase.nullable(),
   }),
   z.object({
     phase: z.literal("advising"),
