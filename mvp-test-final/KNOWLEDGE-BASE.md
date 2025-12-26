@@ -507,18 +507,30 @@ Lint можно пропустить — фокус на функциональ�
 ### Intent Architecture (Single Source of Truth)
 
 Intent'ы определены в `state.ts` как const arrays:
-- `SIMPLE_INTENTS` — без доп. полей в schema
-- `COMPLEX_INTENTS` — с clarificationText/filters/question
+- `SIMPLE_INTENTS` — без доп. полей в schema (proceed, explore, save, change, delete, searchWaymates, searchPathfinders, cancel, unknown)
+- `COMPLEX_INTENTS` — с clarificationText/filters/question (validate, clarify, filter, ask)
 - `SearchUserIntent = SimpleIntent | ComplexIntent` — derived type
 
 **Где используются:**
-1. `state.ts` — type definition
+1. `state.ts` — SIMPLE_INTENTS/COMPLEX_INTENTS arrays
 2. `parse-intent.ts` — `z.enum(SIMPLE_INTENTS)` в Zod schema
-3. `prompts.ts` — `INTENT_DESCRIPTIONS: Record<SearchUserIntent, string>`
-4. `prompts.ts` — `PHASE_CONTEXT` с `intents()` helper
-5. `search-router.ts` — routing по intent
+3. `classification.ts` — `INTENT_DESCRIPTIONS: Record<SearchUserIntent, string>`
+4. `search-router.ts` — `createIntentRoutes(flags)` возвращает valid intents по фазам
 
-**При добавлении нового intent:** обновить ВСЕ 4 места!
+**При добавлении нового intent:** обновить 3 места: state.ts, classification.ts, search-router.ts
+
+**ВАЖНО:** Prompt для classification строится динамически из router — показывает ТОЛЬКО valid intents для текущей фазы. `getValidIntentsForPhase(phase, flags)` = source of truth.
+
+### explore vs proceed
+
+| Intent | Semantic | Когда |
+|--------|----------|-------|
+| `proceed` | Согласие БЕЗ новой информации | "да", "ок", "давай" |
+| `explore` | Запрос на просмотр похожих | "глянь похожих", "покажи кандидатов" |
+
+**Routing explore с учётом hasGoal:**
+- `hasGoal=false` → NODE.explore (browse UI)
+- `hasGoal=true` → NODE.search_waymates (results UI с фильтрацией по цели)
 
 ### Chart Generation
 

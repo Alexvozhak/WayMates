@@ -1,7 +1,7 @@
 import { AgentInvariantError } from "../../errors.js";
 import { buildRouteMap } from "../shared/routing.js";
 
-import { MAX_CLARIFY_ROUNDS, MAX_NEW_POSITION_ROUNDS, NODE, PHASE } from "./state.js";
+import { COMPLEX_INTENTS, MAX_CLARIFY_ROUNDS, MAX_NEW_POSITION_ROUNDS, NODE, PHASE, SIMPLE_INTENTS } from "./state.js";
 
 import type { NodeName, SearchPhase, SearchStateType, SearchUserIntent } from "./state.js";
 
@@ -38,11 +38,29 @@ export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.parse
 // ROUTES: маппинг intent → node (фабрика с state-dependent параметрами)
 // =============================================================================
 
-type RouteFlags = {
+export type RouteFlags = {
   canClarify: boolean;
   canChangePosition: boolean;
   hasGoal: boolean;
 };
+
+// All valid intents for type-safe key filtering
+const ALL_INTENTS: readonly SearchUserIntent[] = [...SIMPLE_INTENTS, ...COMPLEX_INTENTS];
+const INTENT_SET = new Set<string>(ALL_INTENTS);
+
+function isSearchUserIntent(key: string): key is SearchUserIntent {
+  return INTENT_SET.has(key);
+}
+
+/**
+ * Get valid intents for a given phase and flags.
+ * Used by intent classification prompt to show only valid options.
+ */
+export function getValidIntentsForPhase(phase: SearchPhase, flags: RouteFlags): SearchUserIntent[] {
+  const routes = createIntentRoutes(flags)[phase];
+  if (!routes) return [];
+  return Object.keys(routes).filter((key) => isSearchUserIntent(key));
+}
 
 // Static routes (no flags dependency)
 const EXPLORATION_ROUTES: RouteMap = {
@@ -70,7 +88,7 @@ const RESULTS_ROUTES: RouteMap = {
   unknown: NODE.clarify_intent,
 };
 
-function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, RouteMap>> {
+export function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, RouteMap>> {
   const { canClarify, canChangePosition, hasGoal } = flags;
 
   const validateRoutes: RouteMap = {
@@ -83,7 +101,7 @@ function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, Rout
     unknown: NODE.clarify_intent,
   };
   const confirmingRoutes: RouteMap = {
-    proceed: hasGoal ? NODE.search_waymates : NODE.explore,
+    explore: hasGoal ? NODE.search_waymates : NODE.explore,
     clarify: NODE.extract_goal,
     filter: NODE.ask_adhoc_context,
     ask: NODE.generate_answer,

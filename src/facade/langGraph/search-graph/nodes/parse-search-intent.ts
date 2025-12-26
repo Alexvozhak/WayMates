@@ -1,16 +1,25 @@
 import { AgentInvariantError } from "../../../errors.js";
 import { logger } from "../../../logger.js";
-import { NODE, PHASE } from "../state.js";
+import { MAX_CLARIFY_ROUNDS, MAX_NEW_POSITION_ROUNDS, NODE, PHASE } from "../state.js";
 import { clampSearchParams } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import { parseUserIntent } from "./parse-intent.js";
 
+import type { RouteFlags } from "../search-router.js";
 import type { ParsedIntent } from "./parse-intent.js";
 import type { TargetContext } from "../../../../shared/schemas.js";
 import type { Normalizer } from "../../../services/normalizer.js";
 import type { SearchStateType } from "../state.js";
 import type { TargetSearchParamsWithFeedback } from "../types.js";
+
+function buildRouteFlags(state: SearchStateType): RouteFlags {
+  return {
+    canClarify: state.clarifyRound < MAX_CLARIFY_ROUNDS,
+    canChangePosition: state.newPositionRound < MAX_NEW_POSITION_ROUNDS,
+    hasGoal: state.storedGoal !== null,
+  };
+}
 
 async function buildTargetSearchParams(
   parsed: ParsedIntent,
@@ -28,6 +37,32 @@ async function buildTargetSearchParams(
     recencyThresholdMonths,
     limit: limit,
     rejectedReasons: rejected,
+  };
+}
+
+async function buildCurrentSearchParams(
+  parsed: ParsedIntent,
+  normalizer: Normalizer,
+): Promise<SearchStateType["currentSearchParams"]> {
+  if (parsed.intent !== "filter" || !parsed.filters) return null;
+
+  const { normalized: fields, rejected: rejectedFields } = await normalizer.normalizeContextFields(
+    parsed.filters.excludedContextFields ?? [],
+  );
+
+  const { normalized: reasons, rejected: rejectedReasons } = await normalizer.normalizeReasons(
+    parsed.filters.excludedCreationReasons ?? [],
+  );
+
+  const { limit, pathLimit, recencyThresholdMonths } = clampSearchParams(parsed.filters);
+
+  return {
+    excludedContextFields: fields,
+    excludedCreationReasons: reasons,
+    recencyThresholdMonths,
+    limit,
+    pathLimit,
+    rejectedFields: [...rejectedFields, ...rejectedReasons],
   };
 }
 
@@ -73,7 +108,8 @@ export const parseSearchIntentNode = withLogging<SearchStateType>(
     // Use previousPhase when returning from advisor
     const effectivePhase = phase === PHASE.advising && previousPhase ? previousPhase : phase;
 
-    const parsed = await parseUserIntent(userResponse, effectivePhase);
+    const flags = buildRouteFlags(state);
+    const parsed = await parseUserIntent(userResponse, effectivePhase, flags);
 
     logger.info(
       { userResponse, phase, intent: parsed.intent, reasoning: parsed.reasoning },
@@ -85,11 +121,14 @@ export const parseSearchIntentNode = withLogging<SearchStateType>(
         ? await buildTargetSearchParams(parsed, extractedGoal, normalizerService)
         : null;
 
+    const currentSearchParams = await buildCurrentSearchParams(parsed, normalizerService);
+
     const updatedRound = computeNewPositionRound(phase, parsed.intent, newPositionRound);
 
     const stateUpdate: Partial<SearchStateType> = {
       searchUserIntent: parsed.intent,
       targetSearchParams,
+      currentSearchParams,
       clarificationText: extractClarificationText(parsed),
       advisorQuestion: extractAdvisorQuestion(parsed),
       newPositionRound: updatedRound,

@@ -3,8 +3,9 @@
 // Classify user intent within SearchGraph
 // ============================================================================
 
-import { AgentInvariantError } from "../../../errors.js";
+import { getValidIntentsForPhase } from "../search-router.js";
 
+import type { RouteFlags } from "../search-router.js";
 import type { SearchPhase, SearchUserIntent } from "../state.js";
 
 // ============================================================================
@@ -13,18 +14,31 @@ import type { SearchPhase, SearchUserIntent } from "../state.js";
 
 /**
  * Builds user intent classification prompt with phase context.
- * @param phase - Current search phase (determines valid intents)
+ * Valid intents are derived from the router (single source of truth).
  */
-export function buildUserIntentPrompt(phase: SearchPhase): string {
-  const phaseContext = PHASE_CONTEXT[phase];
-  if (!phaseContext) {
-    throw new AgentInvariantError("buildUserIntentPrompt", `Missing PHASE_CONTEXT for phase: ${phase}`);
+export function buildUserIntentPrompt(phase: SearchPhase, flags: RouteFlags): string {
+  const validIntents = getValidIntentsForPhase(phase, flags);
+
+  if (validIntents.length === 0) {
+    return `Phase "${phase}" has no valid intents. Return: { reasoning: "No valid intents", intent: "cancel" }`;
   }
 
-  return `Current phase context:
-${phaseContext}
+  const intentSection = validIntents.map((intent) => `${intent} — ${INTENT_DESCRIPTIONS[intent]}`).join("\n\n");
 
-${BASE_INTENT_PROMPT}`;
+  return `Classify user's intent in career search conversation.
+
+CRITICAL: Pick ONE intent from the list below. These are the ONLY valid options.
+
+Intents:
+
+${intentSection}
+
+Return:
+{
+  reasoning: "Brief explanation of why this intent fits",
+  intent: "<one of: ${validIntents.join(", ")}>",
+  clarificationText/filters/question: (if applicable)
+}`;
 }
 
 // ============================================================================
@@ -35,6 +49,8 @@ ${BASE_INTENT_PROMPT}`;
 const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   proceed: `User agrees to continue WITHOUT adding new information
   Semantic: simple confirmation, agreement to proceed with current state`,
+  explore: `User wants to SEE SIMILAR PEOPLE without setting a goal
+  Semantic: browse, look around, show matches, find similar, explore options`,
   clarify: `User provides NEW goal-related information
   Semantic: mentions career goal, desired position, skills to add, location preference
   + clarificationText: user's full message`,
@@ -61,54 +77,3 @@ const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   Semantic: stop, exit, abort, cancel`,
   unknown: `Unclear or unrelated`,
 };
-
-// Generate intent section from the map (single source of truth)
-const INTENT_SECTION = Object.entries(INTENT_DESCRIPTIONS)
-  .map(([intent, desc]) => `${intent} — ${desc}`)
-  .join("\n\n");
-
-// Type-safe intent list builder
-const intents = (...names: SearchUserIntent[]): string => names.join(", ");
-
-// Phase context - what options were offered to user in each phase
-// ask is always valid — user can ask meta-questions anytime
-const PHASE_CONTEXT: Partial<Record<SearchPhase, string>> = {
-  confirming_adhoc_context: `User described themselves. Bot confirmed profile.
-  Valid: ${intents("clarify", "proceed", "ask", "cancel")}`,
-
-  showing_exploration_candidates: `Bot showed similar people (no goal set).
-  Valid: ${intents("clarify", "filter", "ask", "cancel")}`,
-
-  showing_exploration_facets: `Bot showed facets (too many results).
-  Valid: ${intents("clarify", "filter", "ask", "cancel")}`,
-
-  showing_goal: `Bot showed extracted goal.
-  Valid: ${intents("validate", "clarify", "save", "ask", "cancel")}`,
-
-  asking_after_validate_candidates: `Bot showed pathfinders who achieved the goal.
-  Valid: ${intents("save", "change", "clarify", "ask", "cancel")}`,
-
-  asking_after_validate_facets: `Bot showed pathfinder facets (too many).
-  Valid: ${intents("save", "filter", "change", "ask", "cancel")}`,
-
-  showing_results: `Bot showed search results.
-  Valid: ${intents("change", "delete", "filter", "ask", "cancel")}`,
-
-  asking_search_mode: `Bot saved goal and asks which search mode.
-  Valid: ${intents("searchPathfinders", "searchWaymates", "ask", "cancel")}`,
-};
-
-const BASE_INTENT_PROMPT = `Classify user's intent in career search conversation.
-
-CRITICAL: Consider the FULL MEANING of the message in context of what was just offered.
-
-Intents:
-
-${INTENT_SECTION}
-
-Return:
-{
-  reasoning: "Brief explanation considering phase context",
-  intent: "<one of: ${Object.keys(INTENT_DESCRIPTIONS).join(", ")}>",
-  clarificationText/filters/question: (if applicable)
-}`;

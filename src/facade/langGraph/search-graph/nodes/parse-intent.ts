@@ -8,6 +8,7 @@ import { getModel } from "../../shared-tools/models.js";
 import { buildUserIntentPrompt } from "../prompts/classification.js";
 import { SIMPLE_INTENTS } from "../state.js";
 
+import type { RouteFlags } from "../search-router.js";
 import type { SearchPhase } from "../state.js";
 
 // Workaround for OpenAI structured output: discriminatedUnion must be wrapped in object
@@ -48,8 +49,12 @@ export type ParsedIntent = z.infer<typeof intentWithFiltersSchema>["parsed"];
 
 const intentParser = getModel("deterministic").withStructuredOutput(intentWithFiltersSchema);
 
-export async function parseUserIntent(userMessage: string, phase: SearchPhase): Promise<ParsedIntent> {
-  const prompt = buildUserIntentPrompt(phase);
+export async function parseUserIntent(
+  userMessage: string,
+  phase: SearchPhase,
+  flags: RouteFlags,
+): Promise<ParsedIntent> {
+  const prompt = buildUserIntentPrompt(phase, flags);
 
   const { parsed } = await intentParser.invoke([
     { role: "system", content: prompt },

@@ -82,6 +82,7 @@ export const NODE = nodeSchema.Values;
 // Simple: no extra fields in schema
 export const SIMPLE_INTENTS = [
   "proceed",
+  "explore",
   "save",
   "change",
   "delete",

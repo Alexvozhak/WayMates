@@ -256,6 +256,22 @@
 | **Первопричина** | `ask` intent добавлен только в некоторые фазы PHASE_CONTEXT. В остальных LLM не имеет валидного варианта для мета-вопросов |
 | **Правило** | `ask` intent должен быть в КАЖДОЙ фазе. Пользователь может задать мета-вопрос в любой момент |
 
+### 5.13 Prompt показывает все intents, LLM игнорирует Valid constraint
+
+| | |
+|---|---|
+| **Паттерн ошибки** | LLM выбирает semantically matching intent вместо Valid intent |
+| **Первопричина** | Prompt содержит ALL intent descriptions + "Valid: X, Y". LLM делает semantic match, игнорирует constraint |
+| **Правило** | Prompt должен показывать ТОЛЬКО valid intents. Router = source of truth. `getValidIntentsForPhase(phase, flags)` |
+
+### 5.14 proceed ≠ explore (семантика)
+
+| | |
+|---|---|
+| **Паттерн ошибки** | "глянь похожих" → proceed → wrong routing |
+| **Первопричина** | `proceed` = "agrees WITHOUT new info". "глянь похожих" = новая информация (что хочет пользователь) |
+| **Правило** | `proceed` = pure confirmation. `explore` = request to see similar people. Разные семантики |
+
 ### 5.10 Advisor как тупик без выхода
 
 | | |
@@ -410,6 +426,7 @@
 
 | Дата | Изменения |
 |------|-----------|
+| 2025-12-27 | +5.13 Prompt показывает все intents (router = source of truth), +5.14 proceed ≠ explore |
 | 2025-12-26 | +5.7 Overwrite вместо Merge для incremental input |
 | 2025-12-26 | +1.4 Контекст диалога для classification, +2.6 Negative assertions, +6.4 LIMIT без GROUP BY, +6.5 Debug сложных queries, +7.5 Pre-Action Declaration |
 | 2025-12-23 | +4.6 Имя не соответствует семантике, +4.7 Ручная работа вместо инструментов, +8.1 Угодничество вместо анализа |
