@@ -58,39 +58,43 @@ export type UserIntent = GraphIntent | NonGraphIntent;
 
 export const userIntentSchema = z.enum([...graphIntentSchema.options, ...nonGraphIntentSchema.options]);
 
-const intentDescriptions: ReadonlyMap<UserIntent, string> = new Map([
-  ["startStory", "wants to tell full career story with trajectory"],
-  ["startAdhoc", "describes their professional identity or role, wants quick search without saving profile"],
-  ["getStory", "wants to see saved career story"],
-  ["setGoal", "wants to set career goal"],
-  ["getGoal", "wants to see current goal"],
-  ["deleteGoal", "wants to delete goal"],
-  ["addContext", "wants to add new career position/context"],
-  ["updateContext", "wants to update/edit current position details"],
-  ["deleteContext", "wants to delete a career position"],
-  ["addTrail", "wants to add learning trail (course, certification, bootcamp)"],
-  ["deleteTrail", "wants to delete a learning trail"],
-  ["search", "wants to find similar careers"],
-  ["cancel", "wants to cancel current operation"],
-  ["help", "needs help with commands"],
-  ["greeting", "says hello, hi, hey, good morning — friendly conversation opener"],
-  ["projectInvestor", "asks about WayMates business value, investment, accelerator, startup pitch"],
-  ["projectTech", "asks about WayMates architecture, tech stack, code quality, engineering"],
-  ["projectUser", "asks what WayMates offers, how to use it, features for end users"],
-  ["unknown", "unclear message or doesn't match any intent"],
-]);
+// Type-safe: TypeScript enforces all UserIntent keys are present
+const INTENT_DESCRIPTIONS: Record<UserIntent, string> = {
+  startStory: "wants to tell full career story with trajectory",
+  startAdhoc: "describes their professional identity or role, wants quick search without saving profile",
+  setGoal: "wants to set career goal",
+  addContext: "wants to add new career position/context",
+  updateContext: "wants to update/edit current position details",
+  addTrail: "wants to add learning trail (course, certification, bootcamp)",
+  search: "wants to find similar careers",
+  getStory: "wants to see saved career story",
+  getGoal: "wants to see current goal",
+  deleteGoal: "wants to delete goal",
+  deleteContext: "wants to delete a career position",
+  deleteTrail: "wants to delete a learning trail",
+  cancel: "wants to cancel current operation",
+  help: "needs help with commands",
+  greeting: "says hello, hi, hey, good morning — friendly conversation opener",
+  projectInvestor: "asks about WayMates business value, investment, accelerator, startup pitch",
+  projectTech: "asks about WayMates architecture, tech stack, code quality, engineering",
+  projectUser: "asks what WayMates offers, how to use it, features for end users",
+  unknown: "unclear message or doesn't match any intent",
+};
 
-function buildIntentList(): string {
-  const allIntents = [...graphIntentSchema.options, ...nonGraphIntentSchema.options];
-  return allIntents.map((intent) => `- ${intent}: ${intentDescriptions.get(intent)}`).join("\n");
-}
+// Generate intent list from Record (single source of truth)
+const INTENT_SECTION = Object.entries(INTENT_DESCRIPTIONS)
+  .map(([intent, desc]) => `- ${intent}: ${desc}`)
+  .join("\n");
 
 const INTENT_CLASSIFICATION_PROMPT = `Classify user intent from their message.
 
 Intent types:
-${buildIntentList()}
+${INTENT_SECTION}
 
-CRITICAL: If message is unclear, garbage, or doesn't match any intent, classify as "unknown".`;
+PRIORITY RULES:
+1. If message contains BOTH greeting AND substantive content (role, skills, goal, question), prioritize the substantive intent over greeting
+2. "greeting" is ONLY for pure greetings without any other meaningful information
+3. If message is unclear, garbage, or doesn't match any intent, classify as "unknown".`;
 
 const classificationSchema = z.object({ intent: userIntentSchema });
 const classifier = getModel("deterministic").withStructuredOutput(classificationSchema);

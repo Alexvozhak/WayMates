@@ -94,12 +94,18 @@ flowchart TD
         SHOW_VALIDATION --> |"Изменить"| EXTRACT
         SHOW_VALIDATION --> |"cancel"| CANCELLED
 
-        SET_GOAL --> SEARCH_FILTERED
+        SET_GOAL --> ASK_MODE["ask_search_mode
+(выбор режима поиска)"]
+        ASK_MODE --> |"Проводники"| SEARCH_PATHFINDERS["search_pathfinders
+(кто прошёл путь)"]
+        ASK_MODE --> |"Попутчики"| SEARCH_WAYMATES["search_waymates
+(похожие с той же целью)"]
     end
 
     subgraph RESULT ["3. Результат"]
-        SEARCH_FILTERED --> SHOW_RESULTS["show_results
+        SEARCH_PATHFINDERS --> SHOW_RESULTS["show_results
 (результаты + текущая цель)"]
+        SEARCH_WAYMATES --> SHOW_RESULTS
 
         SHOW_RESULTS --> |"Уточнить цель"| SHOW_GOAL
         SHOW_RESULTS --> |"Удалить цель"| DELETE_GOAL["delete_goal"]
@@ -153,19 +159,24 @@ flowchart TD
     [2.3] extract_goal → show_goal
         • "Проверить" → by_target (показать траектории достигших)
         • "Уточнить" → clarify_goal → show_goal
-        • "Сохранить" → set_goal → search
+        • "Сохранить" → set_goal → ask_search_mode
         • "cancel" → END
 
     [2.4] by_target → show_validation
-        • "Подтвердить" → set_goal → search
+        • "Подтвердить" → set_goal → ask_search_mode
         • "Изменить" → extract_goal
         • "cancel" → END
 
+    [2.5] set_goal → ask_search_mode (НОВОЕ)
+        После сохранения цели пользователь выбирает режим поиска:
+        • "Проводники" → search_pathfinders (кто прошёл ОТ нас К цели)
+        • "Попутчики" → search_waymates (похожие с той же целью)
+
 [3] РЕЗУЛЬТАТ
     show_results (показывает результаты + текущую цель):
-        • Pathfinders (достигли цели)
-        • Waymates (идут к цели)
-        • DTW метрики (если траектория)
+        • Если searchMode=pathfinders: люди прошедшие путь
+        • Если searchMode=waymates: peers с той же целью
+        • DTW метрики (если траектория + profile mode)
 
     Опции после результатов:
         • "Уточнить цель" → show_goal (можно изменить/проверить)
@@ -339,9 +350,27 @@ Adhoc/Profile — это НЕ режим поиска, а **источник ref
 | **Adhoc** | Из сообщения | ❌ | Waymates, Pathfinders |
 | **Profile** | Из DB (user.currentContextId) | ✅ | Все три |
 
+### 5.5 Adhoc Context Validation
+
+**Required fields** (для осмысленного поиска):
+- `position` — уровень (junior/middle/senior)
+- `role` — специализация (backend/frontend/etc)
+- `countryCode` — страна работы
+- `domains` — область (минимум 1)
+
+**Optional fields** (улучшают matching):
+- skills, industry, companySize, cityName, citizenships, birthYear, educationLevel, languages
+
+**UX паттерн:** Показывать пользователю статус полей:
+- ✅ FILLED — заполненные поля с значениями
+- ❌ MISSING — обязательные незаполненные
+- ⚪ OPTIONAL — необязательные (можно добавить)
+
+**Валидация:** Zod `safeParse` → список `missingFields` для NLP
+
 ---
 
-### 5.5 isWaymate (classification)
+### 5.6 isWaymate (classification)
 
 ```typescript
 isWaymate: boolean
@@ -353,7 +382,7 @@ isWaymate: boolean
 
 ---
 
-### 5.6 SearchParams Filtering
+### 5.7 SearchParams Filtering
 
 Применяется ко ВСЕМ типам поиска.
 
@@ -372,7 +401,7 @@ limit: number                        // макс. результатов (1-100,
 
 ---
 
-### 5.7 Ключевые файлы
+### 5.8 Ключевые файлы
 
 | Компонент | Файл |
 |-----------|------|

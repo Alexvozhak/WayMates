@@ -295,6 +295,50 @@ export const adhocContextBase = z.object({
 
 export type AdhocContextBase = z.infer<typeof adhocContextBase>;
 
+/**
+ * Strict schema for adhoc context validation.
+ * Inherits optional fields from base, overrides required fields to be non-nullable.
+ * Used with safeParse to get missing fields list.
+ */
+export const adhocContextRequiredSchema = adhocContextBase
+  .omit({ position: true, role: true, countryCode: true, domains: true })
+  .extend({
+    position: z.string().min(1).describe("Level (junior/middle/senior)"),
+    role: z.string().min(1).describe("Specialty (backend/frontend/etc)"),
+    countryCode: z.string().min(1).describe("Work location country"),
+    domains: z.array(z.string()).min(1).describe("Work area (at least 1)"),
+  });
+
+export type AdhocContextRequired = z.infer<typeof adhocContextRequiredSchema>;
+
+/** Required field names for UI */
+export const ADHOC_REQUIRED_FIELDS: (keyof AdhocContextRequired)[] = ["position", "role", "countryCode", "domains"];
+
+/** Optional field names for UI */
+export const ADHOC_OPTIONAL_FIELDS = [
+  "skills",
+  "industry",
+  "companySize",
+  "cityName",
+  "citizenships",
+  "birthYear",
+  "educationLevel",
+  "languages",
+] as const satisfies readonly (keyof AdhocContextBase)[];
+
+export type AdhocOptionalField = (typeof ADHOC_OPTIONAL_FIELDS)[number];
+
+/** Zod schema for optional field names */
+export const adhocOptionalFieldSchema = z.enum(ADHOC_OPTIONAL_FIELDS);
+
+/** Missing field info for adhoc context validation */
+export const adhocMissingFieldSchema = z.object({
+  field: z.string(),
+  message: z.string(),
+});
+
+export type AdhocMissingField = z.infer<typeof adhocMissingFieldSchema>;
+
 // Schema with salary validation
 export const userContextSchema = userContextSchemaBase.refine(
   (data) => {
@@ -1181,11 +1225,18 @@ export type UpsertTrailResponse = z.infer<typeof upsertTrailResponseSchema>;
  * Multi-phase workflow: explore → goal formation → search.
  */
 export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
-  z.object({ phase: z.literal("asking_adhoc_context") }),
+  z.object({
+    phase: z.literal("asking_adhoc_context"),
+    adhocContext: adhocContextBase.nullable(),
+    missingFields: z.array(adhocMissingFieldSchema),
+    optionalFields: z.array(adhocOptionalFieldSchema),
+  }),
   z.object({
     phase: z.literal("confirming_adhoc_context"),
     adhocContext: adhocContextBase.nullable(),
     goal: goalSchema.nullable(),
+    missingFields: z.array(adhocMissingFieldSchema),
+    optionalFields: z.array(adhocOptionalFieldSchema),
   }),
   z.object({ phase: z.literal("checking_goal") }),
   z.object({ phase: z.literal("exploring") }),
@@ -1231,6 +1282,10 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     extractedGoal: targetContextSchema.nullable(),
   }),
   z.object({ phase: z.literal("setting_goal") }),
+  z.object({
+    phase: z.literal("asking_search_mode"),
+    storedGoal: goalSchema,
+  }),
   z.object({ phase: z.literal("deleting_goal") }),
   z.object({ phase: z.literal("searching") }),
   z.object({

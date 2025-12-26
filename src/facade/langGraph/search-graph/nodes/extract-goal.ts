@@ -2,7 +2,7 @@ import { HumanMessage } from "@langchain/core/messages";
 
 import { targetContextSchema } from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
-import { buildGoalExtractionPrompt } from "../prompts.js";
+import { buildGoalExtractionPrompt } from "../prompts/extraction.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 

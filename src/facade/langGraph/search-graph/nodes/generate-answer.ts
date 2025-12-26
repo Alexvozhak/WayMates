@@ -1,6 +1,6 @@
 import { getModel } from "../../shared-tools/models.js";
 import { AdvisorContextBuilder } from "../advisor-context-builder.js";
-import { ADVISOR_SYSTEM_PROMPT } from "../prompts.js";
+import { ADVISOR_SYSTEM_PROMPT } from "../prompts/advisor.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 

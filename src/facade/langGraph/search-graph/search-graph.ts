@@ -6,6 +6,7 @@ import { isGraphState } from "../shared/state-utils.js";
 import { applyFiltersNode } from "./nodes/apply-filters.js";
 import { askAdhocContextNode } from "./nodes/ask-adhoc-context.js";
 import { askAfterValidateNode } from "./nodes/ask-after-validate.js";
+import { askSearchModeNode } from "./nodes/ask-search-mode.js";
 import { cancelNode } from "./nodes/cancel.js";
 import { checkGoalNode } from "./nodes/check-goal.js";
 import { clarifyGoalNode } from "./nodes/clarify-goal.js";
@@ -19,7 +20,8 @@ import { loadContextNode } from "./nodes/load-context.js";
 import { loadExistingGoalNode } from "./nodes/load-existing-goal.js";
 import { parseAdvisorIntentNode } from "./nodes/parse-advisor-intent.js";
 import { parseSearchIntentNode } from "./nodes/parse-search-intent.js";
-import { searchNode } from "./nodes/search.js";
+import { searchPathfindersNode } from "./nodes/search-pathfinders.js";
+import { searchWaymatesNode } from "./nodes/search-waymates.js";
 import { setGoalNode } from "./nodes/set-goal.js";
 import { showAnswerNode } from "./nodes/show-answer.js";
 import { showExplorationNode } from "./nodes/show-exploration.js";
@@ -73,8 +75,10 @@ export function createGraphBuilder() {
     .addNode(NODE.ask_after_validate, askAfterValidateNode)
     .addNode(NODE.load_existing_goal, loadExistingGoalNode)
     .addNode(NODE.set_goal, setGoalNode)
+    .addNode(NODE.ask_search_mode, askSearchModeNode)
     .addNode(NODE.delete_goal, deleteGoalNode)
-    .addNode(NODE.search, searchNode)
+    .addNode(NODE.search_waymates, searchWaymatesNode)
+    .addNode(NODE.search_pathfinders, searchPathfindersNode)
     .addNode(NODE.show_results, showResultsNode)
     .addNode(NODE.apply_filters, applyFiltersNode)
     .addNode(NODE.generate_answer, generateAnswerNode)
@@ -95,8 +99,10 @@ export function createGraphBuilder() {
     .addEdge(NODE.show_goal, NODE.parse_search_intent)
     .addEdge(NODE.validate_goal, NODE.ask_after_validate)
     .addEdge(NODE.ask_after_validate, NODE.parse_search_intent)
-    .addEdge(NODE.set_goal, NODE.search)
-    .addEdge(NODE.search, NODE.show_results)
+    .addEdge(NODE.set_goal, NODE.ask_search_mode)
+    .addEdge(NODE.ask_search_mode, NODE.parse_search_intent)
+    .addEdge(NODE.search_waymates, NODE.show_results)
+    .addEdge(NODE.search_pathfinders, NODE.show_results)
     .addEdge(NODE.show_results, NODE.parse_search_intent)
 
     // parse_search_intent → unified routing (dispatches by phase)

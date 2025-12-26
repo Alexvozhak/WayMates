@@ -5,7 +5,8 @@ import {
   targetContextSearchFilterNullableSchema,
 } from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
-import { buildUserIntentPrompt } from "../prompts.js";
+import { buildUserIntentPrompt } from "../prompts/classification.js";
+import { SIMPLE_INTENTS } from "../state.js";
 
 import type { SearchPhase } from "../state.js";
 
@@ -36,7 +37,7 @@ const intentWithFiltersSchema = z.object({
       filters: z.null(),
     }),
     z.object({
-      intent: z.enum(["proceed", "save", "change", "delete", "cancel", "unknown"]),
+      intent: z.enum(SIMPLE_INTENTS),
       reasoning: z.string(),
       filters: z.null(),
     }),

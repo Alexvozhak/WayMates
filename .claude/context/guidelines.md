@@ -216,6 +216,62 @@
 | **Первопричина** | Тороплюсь исправить баг |
 | **Правило** | Debug логи — временные. Добавил → понял → удалил. Для production есть Pino + LangSmith |
 
+### 5.5 Intent добавлен в routing, но не в schema
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Добавляю новый intent в routing, но забываю добавить в Zod schema и prompt |
+| **Первопричина** | Не понимаю что intent проходит через ТРИ слоя: schema → prompt → routing |
+| **Правило** | При добавлении intent — проверить ВСЕ 4 места: (1) `state.ts` — SIMPLE_INTENTS/COMPLEX_INTENTS, (2) `parse-intent.ts` — Zod schema, (3) `prompts.ts` — INTENT_DESCRIPTIONS + PHASE_CONTEXT, (4) `search-router.ts` — routing |
+
+### 5.6 Hardcoded строки в промптах
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Intent names в промпте как строки ("PROCEED", "CLARIFY"), не связаны с enum |
+| **Первопричина** | Быстрее написать строку чем сделать type-safe |
+| **Правило** | Single source of truth: enum в `state.ts`, промпт интерполирует через `Record<EnumType, string>`. TypeScript ловит рассинхрон на compile time |
+
+### 5.7 Overwrite вместо Merge для incremental input
+
+| | |
+|---|---|
+| **Паттерн ошибки** | При дополнении данных (adhoc context, goal) извлекаю заново с нуля, теряя уже собранное |
+| **Первопричина** | Не думаю о multi-turn flow. Каждое сообщение обрабатываю изолированно |
+| **Правило** | LLM merge pattern: передать текущее состояние в промпт (`Current: {json}`), LLM сама решает что обновить/сохранить. Пример: `buildAdhocClarificationPrompt`, `buildGoalClarificationPrompt` |
+
+### 5.8 Placeholder strings вместо explicit arguments
+
+| | |
+|---|---|
+| **Паттерн ошибки** | `PROMPT.replace("{field}", value)` — неявная подстановка |
+| **Первопричина** | Быстрее написать placeholder чем продумать API функции |
+| **Правило** | Builder function с явными аргументами: `buildPrompt(arg1, arg2)`. IDE подсказывает, TypeScript проверяет |
+
+### 5.9 ask intent не добавлен во все фазы
+
+| | |
+|---|---|
+| **Паттерн ошибки** | "что ты умеешь?" классифицируется как cancel |
+| **Первопричина** | `ask` intent добавлен только в некоторые фазы PHASE_CONTEXT. В остальных LLM не имеет валидного варианта для мета-вопросов |
+| **Правило** | `ask` intent должен быть в КАЖДОЙ фазе. Пользователь может задать мета-вопрос в любой момент |
+
+### 5.10 Инструкции одной фазы влияют на другие
+
+| | |
+|---|---|
+| **Паттерн ошибки** | NLP для `confirming_adhoc_context` спрашивает seniority, хотя это инструкция для `asking_adhoc_context` |
+| **Первопричина** | Все описания фаз в одном SEARCH_PROMPT. LLM видит все инструкции и может применить не ту |
+| **Правило** | Инструкции в PHASE_DESCRIPTIONS должны быть взаимоисключающими. Не "Ask for X", а "DO NOT ask for anything from FILLED section" |
+
+### 5.11 Manual type alias вместо keyof
+
+| | |
+|---|---|
+| **Паттерн ошибки** | `type Field = "a" \| "b" \| "c"` дублирует ключи бизнес-типа |
+| **Первопричина** | Копировал поля вручную, не думал о связи с бизнес-типом |
+| **Правило** | `Record<keyof BusinessType, string>` — single source of truth. При добавлении поля в schema — TypeScript потребует описание |
+
 ---
 
 ## 6. Cypher/Neo4j
@@ -338,6 +394,7 @@
 
 | Дата | Изменения |
 |------|-----------|
+| 2025-12-26 | +5.7 Overwrite вместо Merge для incremental input |
 | 2025-12-26 | +1.4 Контекст диалога для classification, +2.6 Negative assertions, +6.4 LIMIT без GROUP BY, +6.5 Debug сложных queries, +7.5 Pre-Action Declaration |
 | 2025-12-23 | +4.6 Имя не соответствует семантике, +4.7 Ручная работа вместо инструментов, +8.1 Угодничество вместо анализа |
 | 2025-12-22 | Создан документ на основе сессий 2025-12-18 — 2025-12-22 |

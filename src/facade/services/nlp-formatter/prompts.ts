@@ -2,6 +2,46 @@ import { PHASE as COLD_START_PHASE } from "../../langGraph/cold-start-v2/types.j
 import { PHASE as SEARCH_PHASE } from "../../langGraph/search-graph/state.js";
 import { PHASE as SIMPLE_PHASE } from "../../langGraph/shared/phases.js";
 
+import type { SearchPhase } from "../../langGraph/search-graph/state.js";
+
+// Type-safe: TypeScript enforces all SearchPhase keys are present
+const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
+  [SEARCH_PHASE.asking_adhoc_context]: `Missing required fields — ask user to provide them.
+  ❌ MISSING: list from missingFields array
+  ✅ FILLED: list non-null fields from adhocContext
+  ⚪ OPTIONAL: list from optionalFields
+  Ask ONLY for fields from MISSING section`,
+  [SEARCH_PHASE.confirming_adhoc_context]: `All required fields are filled — confirmation phase.
+  ✅ FILLED: list values from adhocContext
+  ⚪ OPTIONAL: list from optionalFields
+  DO NOT ask for anything from FILLED section
+  Offer: set goal or explore similar people`,
+  [SEARCH_PHASE.showing_exploration_candidates]: "List candidates briefly with key attributes from data",
+  [SEARCH_PHASE.showing_exploration_facets]: "Show all facets with counts, suggest narrowing filter",
+  [SEARCH_PHASE.showing_goal]: `Show goal fields.
+  If goal inherited fields from user profile (role, domains, skills, countries) — say explicitly that keeping current field/location, ask if user wants to change.
+  For missing fields explain defaults: no role/domains/countries → matches any.
+  Offer: validate with real people, refine, or save`,
+  [SEARCH_PHASE.asking_after_validate_candidates]:
+    "Show real people who reached goal — starting point, path duration, key skills, current status. Help decide if goal is right",
+  [SEARCH_PHASE.asking_after_validate_facets]: "Show facets with counts, suggest filter",
+  [SEARCH_PHASE.showing_results]: `Show matches.
+  Empty results → list applied filters from goal, suggest which ONE filter to relax first, offer concrete next step`,
+  [SEARCH_PHASE.asking_search_mode]: `Goal saved! Offer two options briefly:
+  • Pathfinders = those who already made this transition
+  • Waymates = peers heading to same goal
+  Keep it short, no walls of text`,
+  [SEARCH_PHASE.clarifying_goal]: "Ask for more detail about target position",
+  [SEARCH_PHASE.advising]: "Answer based on actual data",
+  [SEARCH_PHASE.cancelled]: "Acknowledge stop",
+  [SEARCH_PHASE.failed]: "Acknowledge error, offer retry",
+};
+
+// Generate phases section from Record (single source of truth)
+const SEARCH_PHASES_SECTION = Object.entries(SEARCH_PHASE_DESCRIPTIONS)
+  .map(([phase, desc]) => `- ${phase}: ${desc}`)
+  .join("\n");
+
 const SEARCH_PROMPT = `You are a career buddy in Telegram. Casual, direct, helpful. No corporate speak, no fake enthusiasm.
 
 Data:
@@ -10,27 +50,7 @@ Data:
 CRITICAL: Respond according to "phase" field:
 
 Phases:
-- ${SEARCH_PHASE.asking_adhoc_context}: Ask about user — role, level, stack, location
-- ${SEARCH_PHASE.confirming_adhoc_context}: Confirm filled fields. For missing fields explain search behavior:
-  • no position → searching all levels
-  • no location → searching globally
-  • no industry → any industry
-  Then offer: set goal or explore similar people
-- ${SEARCH_PHASE.showing_exploration_candidates}: List candidates briefly with key attributes from data
-- ${SEARCH_PHASE.showing_exploration_facets}: Show all facets with counts, suggest narrowing filter
-- ${SEARCH_PHASE.showing_goal}: Show goal fields. For missing fields explain defaults:
-  • no role → matches any role
-  • no domains → matches any domain
-  • no countries → matches any country
-  • recency → looking at transitions from last 12 months by default
-  Offer: validate with real people, refine, or save
-- ${SEARCH_PHASE.asking_after_validate_candidates}: Show real people who reached goal — starting point, path duration, key skills, current status. Help decide if goal is right
-- ${SEARCH_PHASE.asking_after_validate_facets}: Show facets with counts, suggest filter
-- ${SEARCH_PHASE.showing_results}: Show matches. Empty → honest acknowledgment, explain strict criteria, suggest adjustments
-- ${SEARCH_PHASE.clarifying_goal}: Ask for more detail about target position
-- ${SEARCH_PHASE.advising}: Answer based on actual data
-- ${SEARCH_PHASE.cancelled}: Acknowledge stop
-- ${SEARCH_PHASE.failed}: Acknowledge error, offer retry
+${SEARCH_PHASES_SECTION}
 
 Transparency:
 - Show what criteria are used

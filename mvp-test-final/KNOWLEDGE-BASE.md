@@ -83,12 +83,14 @@ src/
 | Поиск кандидатов            | `src/core/search-manager.ts`                                     |
 | Cypher queries              | `src/cypher/queries/search.ts`                                   |
 | SearchGraph nodes           | `src/facade/langGraph/search-graph/nodes/`                       |
-| Extraction prompts          | `src/facade/langGraph/search-graph/prompts.ts`                   |
+| Extraction prompts          | `src/facade/langGraph/search-graph/prompts/extraction.ts`        |
+| Classification prompts      | `src/facade/langGraph/search-graph/prompts/classification.ts`    |
+| Advisor prompts             | `src/facade/langGraph/search-graph/prompts/advisor.ts`           |
 | Routing логика              | `src/facade/langGraph/search-graph/search-router.ts`             |
 | State и фазы                | `src/facade/langGraph/search-graph/state.ts`                     |
 | Intent classification       | `src/facade/services/orchestrator/intent-classifier.ts`          |
 | Flow guards (help, unknown) | `src/facade/services/orchestrator/flow-guard-checker.service.ts` |
-| Форматирование ответов      | `src/facade/services/nlp-formatter/prompts.ts`                   |
+| NLP форматирование          | `src/facade/services/nlp-formatter/prompts.ts`                   |
 | Telegram handlers           | `src/facade/mcp-server/tools/converse.tool.ts`                   |
 | LLM перевод сообщений       | `src/telegram-bot/presenters/system-message-presenter.ts`        |
 | Zod схемы                   | `src/shared/schemas.ts`                                          |
@@ -248,6 +250,7 @@ load_context (из БД) → check_goal
 | `showing_goal`                       | Показываем извлечённую цель для подтверждения |
 | `asking_after_validate_candidates`   | Показываем pathfinders (< threshold)          |
 | `asking_after_validate_facets`       | Показываем facets pathfinders (>= threshold)  |
+| `asking_search_mode`                 | Выбор режима: pathfinders или waymates        |
 | `showing_results`                    | Финальные результаты с pathfinder/waymate     |
 
 **PHASE = response schema** — определяет структуру ответа (discriminatedUnion).
@@ -255,13 +258,38 @@ load_context (из БД) → check_goal
 
 ### Валидация adhocContext
 
-Минимум для поиска (хотя бы одно):
-
+**Required поля** (ADHOC_REQUIRED_FIELDS):
 - position (junior, senior)
 - role (backend, frontend)
 - countryCode
 - domains[] (1+ элемент)
-- skills[] (1+ элемент)
+
+**Optional поля** (ADHOC_OPTIONAL_FIELDS):
+- skills, industry, companySize, cityName, citizenships, birthYear, educationLevel, languages
+
+**Архитектура валидации:**
+```
+adhocContextBase (все nullable) → LLM extraction
+           ↓
+adhocContextRequiredSchema (.omit().extend()) → Zod safeParse
+           ↓
+missingFields[] → response → NLP показывает пользователю
+```
+
+**Schema derivation pattern:**
+```typescript
+// Наследование от nullable схемы с заменой required полей
+export const adhocContextRequiredSchema = adhocContextBase
+  .omit({ position: true, role: true, countryCode: true, domains: true })
+  .extend({
+    position: z.string().min(1),
+    role: z.string().min(1),
+    countryCode: z.string().min(1),
+    domains: z.array(z.string()).min(1),
+  });
+```
+
+**LLM Merge:** Если контекст неполный → `ask_adhoc_context` → пользователь дополняет → `load_context` использует `clarifyAdhocContext` для merge (LLM объединяет старое + новое).
 
 ---
 
@@ -291,6 +319,11 @@ User Message
 **Критично**: При resume активного графа orchestrator intent ИГНОРИРУЕТСЯ!
 Граф использует свой parseUserIntent с phase context.
 
+**Orchestrator priority rules** (intent-classifier.ts):
+1. Greeting + substantive content → prioritize substantive (startAdhoc, search)
+2. `greeting` = ТОЛЬКО чистое приветствие без контента
+3. Unclear/garbage → `unknown`
+
 ### Типы нод
 
 | Тип                               | Задача                       | Делает                                     | НЕ делает               |
@@ -307,6 +340,7 @@ User Message
 4. **buildRouteMap** должен содержать ВСЕ возможные return values роутера
 5. **unknown intent → safe fallback**, не infinite loop
 6. **Optional Zod field**: undefined (отсутствие), НЕ null
+7. **LLM merge pattern** для incremental input — передавать текущее состояние в промпт
 
 ### Two-Node Pattern
 
@@ -463,7 +497,28 @@ Lint можно пропустить — фокус на функциональ�
 | `clarify` | Дополнить существующую | `clarify_goal` (merge) |
 | `proceed` | Согласие БЕЗ новой инфо | depends on hasGoal |
 | `validate` | "покажи реальных людей" | `validate_goal` |
-| `save` | Явное сохранение | `set_goal` |
+| `save` | Явное сохранение | `set_goal` → `ask_search_mode` |
+| `searchWaymates` | Выбрал попутчиков | `search_waymates` |
+| `searchPathfinders` | Выбрал проводников | `search_pathfinders` |
+| `ask` | Мета-вопрос о боте | `generate_answer` (advisor) |
+
+**Важно:** `ask` должен быть в КАЖДОЙ фазе — пользователь может спросить "что ты умеешь?" в любой момент.
+
+### Intent Architecture (Single Source of Truth)
+
+Intent'ы определены в `state.ts` как const arrays:
+- `SIMPLE_INTENTS` — без доп. полей в schema
+- `COMPLEX_INTENTS` — с clarificationText/filters/question
+- `SearchUserIntent = SimpleIntent | ComplexIntent` — derived type
+
+**Где используются:**
+1. `state.ts` — type definition
+2. `parse-intent.ts` — `z.enum(SIMPLE_INTENTS)` в Zod schema
+3. `prompts.ts` — `INTENT_DESCRIPTIONS: Record<SearchUserIntent, string>`
+4. `prompts.ts` — `PHASE_CONTEXT` с `intents()` helper
+5. `search-router.ts` — routing по intent
+
+**При добавлении нового intent:** обновить ВСЕ 4 места!
 
 ### Chart Generation
 

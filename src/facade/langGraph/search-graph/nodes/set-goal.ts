@@ -20,6 +20,6 @@ export const setGoalNode = withLogging<SearchStateType>(
       targetContext: normalized,
     });
 
-    return { phase: PHASE.searching, storedGoal };
+    return { phase: PHASE.asking_search_mode, storedGoal };
   },
 );

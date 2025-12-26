@@ -3,7 +3,7 @@ import { HumanMessage } from "@langchain/core/messages";
 import { targetContextSchema } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { getModel } from "../../shared-tools/models.js";
-import { GOAL_CLARIFICATION_PROMPT } from "../prompts.js";
+import { buildGoalClarificationPrompt } from "../prompts/extraction.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
@@ -19,11 +19,7 @@ export const clarifyGoalNode = withLogging<SearchStateType>(NODE.clarify_goal, a
   }
 
   const currentGoalJson = JSON.stringify(extractedGoal ?? {});
-
-  const prompt = GOAL_CLARIFICATION_PROMPT.replace("{currentGoal}", currentGoalJson).replace(
-    "{userMessage}",
-    clarificationText,
-  );
+  const prompt = buildGoalClarificationPrompt(currentGoalJson, clarificationText);
 
   const updated = await clarificationModel.invoke([
     { role: "system", content: prompt },

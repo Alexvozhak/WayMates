@@ -15,14 +15,19 @@ function requireExtractedGoal(state: SearchStateType, phase: string): NonNullabl
 }
 
 export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
-  [PHASE.asking_adhoc_context]: () => ({
+  [PHASE.asking_adhoc_context]: (state) => ({
     phase: PHASE.asking_adhoc_context,
+    adhocContext: state.adhocContext,
+    missingFields: state.missingFields,
+    optionalFields: state.optionalFields,
   }),
 
   [PHASE.confirming_adhoc_context]: (state) => ({
     phase: PHASE.confirming_adhoc_context,
     adhocContext: state.adhocContext,
     goal: state.storedGoal,
+    missingFields: state.missingFields,
+    optionalFields: state.optionalFields,
   }),
 
   [PHASE.checking_goal]: () => ({
@@ -92,6 +97,11 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
 
   [PHASE.setting_goal]: () => ({
     phase: PHASE.setting_goal,
+  }),
+
+  [PHASE.asking_search_mode]: (state) => ({
+    phase: PHASE.asking_search_mode,
+    storedGoal: state.storedGoal!,
   }),
 
   [PHASE.deleting_goal]: () => ({

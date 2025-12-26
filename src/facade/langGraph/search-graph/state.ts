@@ -6,9 +6,12 @@ import { lastValue } from "../shared/state-utils.js";
 import type { CurrentSearchParamsWithFeedback, TargetSearchParamsWithFeedback } from "./types.js";
 import type {
   AdhocContextBase,
+  AdhocMissingField,
+  AdhocOptionalField,
   CandidateFacets,
   Goal,
   MatchedCandidateWithPath,
+  PathfinderCandidate,
   ScoredMatchedCandidate,
   TargetContext,
   UserContext,
@@ -31,6 +34,7 @@ export const searchPhaseSchema = z.enum([
   "asking_after_validate_candidates",
   "asking_after_validate_facets",
   "setting_goal",
+  "asking_search_mode",
   "deleting_goal",
   "searching",
   "showing_results",
@@ -43,45 +47,57 @@ export type SearchPhase = z.infer<typeof searchPhaseSchema>;
 
 export const PHASE = searchPhaseSchema.Values;
 
-export const NODE = {
-  load_context: "load_context",
-  ask_adhoc_context: "ask_adhoc_context",
-  confirm_adhoc_context: "confirm_adhoc_context",
-  check_goal: "check_goal",
-  explore: "explore",
-  show_exploration: "show_exploration",
-  parse_search_intent: "parse_search_intent",
-  clarify_intent: "clarify_intent",
-  extract_goal: "extract_goal",
-  show_goal: "show_goal",
-  clarify_goal: "clarify_goal",
-  validate_goal: "validate_goal",
-  ask_after_validate: "ask_after_validate",
-  load_existing_goal: "load_existing_goal",
-  set_goal: "set_goal",
-  delete_goal: "delete_goal",
-  search: "search",
-  show_results: "show_results",
-  apply_filters: "apply_filters",
-  generate_answer: "generate_answer",
-  show_answer: "show_answer",
-  parse_advisor_intent: "parse_advisor_intent",
-  cancel: "cancel",
-} as const;
+export const nodeSchema = z.enum([
+  "load_context",
+  "ask_adhoc_context",
+  "confirm_adhoc_context",
+  "check_goal",
+  "explore",
+  "show_exploration",
+  "parse_search_intent",
+  "clarify_intent",
+  "extract_goal",
+  "show_goal",
+  "clarify_goal",
+  "validate_goal",
+  "ask_after_validate",
+  "load_existing_goal",
+  "set_goal",
+  "ask_search_mode",
+  "delete_goal",
+  "search_waymates",
+  "search_pathfinders",
+  "show_results",
+  "apply_filters",
+  "generate_answer",
+  "show_answer",
+  "parse_advisor_intent",
+  "cancel",
+]);
 
-export type NodeName = (typeof NODE)[keyof typeof NODE];
+export type NodeName = z.infer<typeof nodeSchema>;
+export const NODE = nodeSchema.Values;
 
-export type SearchUserIntent =
-  | "proceed"
-  | "validate"
-  | "clarify"
-  | "save"
-  | "change"
-  | "delete"
-  | "filter"
-  | "ask"
-  | "cancel"
-  | "unknown";
+// Intent arrays - single source of truth for both Zod schema and prompts
+// Simple: no extra fields in schema
+export const SIMPLE_INTENTS = [
+  "proceed",
+  "save",
+  "change",
+  "delete",
+  "searchWaymates",
+  "searchPathfinders",
+  "cancel",
+  "unknown",
+] as const;
+// Complex: have extra fields (clarificationText, filters, question)
+export const COMPLEX_INTENTS = ["validate", "clarify", "filter", "ask"] as const;
+
+export type SimpleIntent = (typeof SIMPLE_INTENTS)[number];
+export type ComplexIntent = (typeof COMPLEX_INTENTS)[number];
+export type SearchUserIntent = SimpleIntent | ComplexIntent;
+
+export type SearchMode = "waymates" | "pathfinders";
 
 export type AdvisorIntent = "ask" | "done";
 
@@ -95,6 +111,8 @@ export const searchStateAnnotation = Annotation.Root({
   // Context for search: either from DB (userContext) or extracted from message (adhocContext)
   userContext: Annotation<UserContext | null>({ reducer: lastValue, default: () => null }),
   adhocContext: Annotation<AdhocContextBase | null>({ reducer: lastValue, default: () => null }),
+  missingFields: Annotation<AdhocMissingField[]>({ reducer: lastValue, default: () => [] }),
+  optionalFields: Annotation<AdhocOptionalField[]>({ reducer: lastValue, default: () => [] }),
   userTrajectory: Annotation<UserContext[]>({ reducer: lastValue, default: () => [] }),
 
   storedGoal: Annotation<Goal | null>({ reducer: lastValue, default: () => null }),
@@ -109,10 +127,12 @@ export const searchStateAnnotation = Annotation.Root({
   explorationResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
   validationResults: Annotation<MatchedCandidateWithPath[]>({ reducer: lastValue, default: () => [] }),
   searchResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
+  pathfinderResults: Annotation<PathfinderCandidate[]>({ reducer: lastValue, default: () => [] }),
   chartUrl: Annotation<string | null>({ reducer: lastValue, default: () => null }),
   facets: Annotation<CandidateFacets | null>({ reducer: lastValue, default: () => null }),
 
   searchUserIntent: Annotation<SearchUserIntent | null>({ reducer: lastValue, default: () => null }),
+  searchMode: Annotation<SearchMode | null>({ reducer: lastValue, default: () => null }),
 
   // Advisor mode state
   advisorIntent: Annotation<AdvisorIntent | null>({ reducer: lastValue, default: () => null }),

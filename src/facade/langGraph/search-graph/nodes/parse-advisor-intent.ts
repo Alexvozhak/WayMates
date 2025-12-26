@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { getModel } from "../../shared-tools/models.js";
-import { ADVISOR_INTENT_PROMPT } from "../prompts.js";
+import { ADVISOR_INTENT_PROMPT } from "../prompts/advisor.js";
 import { NODE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
