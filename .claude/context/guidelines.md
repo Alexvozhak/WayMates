@@ -180,6 +180,14 @@
 | **Первопричина** | Не знаю/забываю о возможностях инструментов |
 | **Правило** | `lint:fix` удаляет unused imports, форматирует код. Инструменты автоматизируют рутину — использовать их |
 
+### 4.8 Фиксить в правильном слое
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Workaround в Facade для проблемы в Core (напр. API возвращает неполные данные) |
+| **Первопричина** | Быстрее "залатать" на месте чем разобраться где root cause |
+| **Правило** | Баг в Core → фикс в Core. Баг в Facade → фикс в Facade. Workarounds накапливают tech debt |
+
 ---
 
 ## 5. LangGraph
@@ -430,12 +438,21 @@
 | **Первопричина** | Не проследил data flow — какие методы зависят от структуры `trajectories[0]` и т.п. |
 | **Правило** | При добавлении mode — grep по всем методам класса/модуля, проверить каждый на assumptions о данных |
 
+### 3.5 discriminatedUnion: уникальные discriminator values
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Zod `discriminatedUnion` с двумя вариантами на одном discriminator value |
+| **Первопричина** | Хочу разные структуры для одной "фазы" (напр. `showing_exploration` с `needsFiltering: true/false`) |
+| **Правило** | Разные discriminator values для разных структур: `showing_exploration_candidates` + `showing_exploration_facets`, не один `showing_exploration` с флагом |
+
 ---
 
 ## Changelog
 
 | Дата | Изменения |
 |------|-----------|
+| 2025-12-27 | +3.5 discriminatedUnion уникальные values, +4.8 Фиксить в правильном слое (из manual-test-debug.md) |
 | 2025-12-27 | +3.4 Добавление mode в discriminated union |
 | 2025-12-27 | +5.13 Prompt показывает все intents (router = source of truth), +5.14 proceed ≠ explore |
 | 2025-12-26 | +5.7 Overwrite вместо Merge для incremental input |

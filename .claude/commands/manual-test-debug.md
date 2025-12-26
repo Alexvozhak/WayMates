@@ -44,325 +44,189 @@ allowed-tools:
 
 > **Роль**: Токсичный пользователь + опытный разработчик
 > **Цель**: Найти UX баги, исправить flow, сделать диалог адекватным
-> **База знаний**: `mvp-test-final/KNOWLEDGE-BASE.md`
 
 ---
 
-## 🎯 Принципы работы
+## База знаний (ОБЯЗАТЕЛЬНО прочитать перед началом)
 
-### Коммуникация
+```
+Read: mvp-test-final/KNOWLEDGE-BASE.md
+Read: mvp-test-final/BUSINESS-LOGIC-MVP.md
+Read: .claude/context/guidelines.md
+```
 
-- **Комментируй действия** — не давай bash команды без объяснения что делаешь
-- **Согласовывай изменения** — объясни "как было → как предлагаю"
-- **Уверенность 90%+** — не делай правок пока не понял первопричину
-- **Лечи причину, не симптом** — разберись глубоко перед fix
-- **Не сдавайся быстро** — "не работает" ≠ понял почему, копай глубже
+**Куда обращаться:**
+| Вопрос | Источник |
+|--------|----------|
+| Архитектура, flow, LangGraph, инфра | `KNOWLEDGE-BASE.md` |
+| Бизнес-логика, User Journey, режимы поиска | `BUSINESS-LOGIC-MVP.md` |
+| Принципы, паттерны ошибок, спотыкания | `guidelines.md` |
 
-### Качество кода
-
-- **Промпты без примеров** — только семантика, никаких explicit примеров
-- **Анализ всего сообщения** — не цепляться за одно слово, понимать контекст целиком
-- **Контекст диалога** — парсерам интентов передавать messages[] (что бот спросил)
-- **Ответы бота как от товарища** — естественный диалог, не робот
-- **Минимум изменений** — точечные фиксы, не рефакторинг
-- **Не дублировать ЗО** — использовать существующие поля state, не создавать новые
+**Соблюдать и вести документы:**
+- При правке — сверяться с `guidelines.md`
+- Нашёл паттерн ошибки — добавить в `guidelines.md`
+- Новое знание об архитектуре — добавить в `KNOWLEDGE-BASE.md`
+- Уточнение бизнес-логики — добавить в `BUSINESS-LOGIC-MVP.md`
 
 ---
 
-## 📋 Workflow сессии
+## Workflow сессии
 
 ### 1. Начало (МОЛЧА загрузить, потом отчитаться кратко)
 
 ```
-1. Прочитать: KNOWLEDGE-BASE.md, session log (если указан), eslint.config.mjs, tsconfig.json, package.json, vitest.config.ts, vitest.globalSetup.ts
-2. Проверить инфру: docker ps | grep waymates
-3. Проверить данные, если инфра поднята: MATCH (u:User) RETURN count(u)
-4. Отчитаться:
+1. sequential-thinking: проанализировать прочитанные документы, понять контекст задачи
+2. Прочитать session log (если указан)
+3. Проверить инфру: docker ps | grep waymates
+4. Проверить данные: MATCH (u:User) RETURN count(u)
+5. Оценить уверенность:
+   - Понимание что делаю и зачем: X%
+   - Понимание бизнес-логики: X%
+   - Понимание смысла происходящего: X%
+6. Отчитаться:
    - Инфра: ✅/❌ (N контейнеров)
    - Данные: N users
+   - Уверенность: см. выше
    - Контекст: что делаем
-   - Готов / Нужно: [что запустить]
+   - Готов / Нужно: [что уточнить]
 ```
+
+**КРИТИЧНО:** Приступать ТОЛЬКО когда ВСЕ ТРИ аспекта ≥ 90%.
+Если < 90% — сообщить что не хватает для понимания. **Ждать подтверждения пользователя.**
 
 **НЕ делать автоматически:** загружать данные, поднимать инфру, запускать бота.
 
 ### 2. Тестирование
 
-**Основной инструмент:** `poc/mcp-chat.ts` (быстрее чем Telegram bot)
+**Основной инструмент:** `poc/mcp-chat.ts`
 
 ```bash
-# Сброс + тест
 set -a && source .env.test && set +a
 npx tsx poc/mcp-chat.ts --reset
 npx tsx poc/mcp-chat.ts "сообщение"
 
-# Логи с reasoning (для отладки intent classification)
+# Логи с reasoning
 docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 ```
 
-```
-При баге:
-   - Понять первопричину (не симптом!)
-   - Какая фаза? Какой intent ожидали vs получили? Что в reasoning?
-   - Согласовать fix с пользователем
-   - Реализовать → npm run facade:rebuild → проверить
-```
+**ОБЯЗАТЕЛЬНО перед каждым действием:**
+
+- **Проблема**: [что решаем]
+- **Решение**: [как решаем]
+- **Источник**: [док/код/додумал, 1-2 предложения]
+- **Знание кодовой базы**: X% — [почему]
+- **Понимание бизнес-логики**: X% — [почему]
+- **Понимание бизнес-смысла**: X% — [почему]
+- **Объём**: ~N LOC, Xk/Yk токенов (X - на шаг, Y - осталось), вероятность успеть
+
+**При баге:**
+1. Понять первопричину (не симптом!)
+2. Какая фаза? Какой intent ожидали vs получили?
+3. Согласовать fix с пользователем
+4. Реализовать → `npm run facade:rebuild` → проверить
 
 ### 3. Конец сессии
 
 ```
-1. Обновить INSIGHTS.md
-2. tsc --noEmit
-3. Сообщить: сделано / осталось / спотыкания для улучшения промпта
+1. Обновить файл сессии в mvp-test-final/sessions/
+2. npm run lint:fix && npx tsc --noEmit
+3. Сообщить: сделано / осталось / инсайты
 ```
 
 ---
 
-## 🔧 Инфраструктура
+## Эталон: search-graph
 
-### Ключевые знания
+**search-graph = вылизанный эталон**. При работе с cold-start:
 
-| Что                     | Где                      | Важно                        |
-| ----------------------- | ------------------------ | ---------------------------- |
-| Checkpoints             | **Postgres** (не Redis!) | `facade.checkpoints` таблица |
-| MCP сессии              | Redis                    | FLUSHALL убьёт сессию бота   |
-| После пересборки facade | Бот теряет MCP сессию    | Нужен перезапуск бота        |
+1. Сравнивать реализацию cold-start с search-graph
+2. Искать несостыковки: дублирование, усложнения, нарушения SRP
+3. Проверять консистентность: state, routing, prompts
+4. Если в search-graph лучше — переносить паттерн в cold-start
 
-### Операции (через npm scripts!)
+**Ключевые файлы search-graph для сравнения:**
+- `src/facade/langGraph/search-graph/state.ts`
+- `src/facade/langGraph/search-graph/search-router.ts`
+- `src/facade/langGraph/search-graph/prompts/`
+- `src/facade/langGraph/search-graph/nodes/`
 
-```bash
-# Hot reload facade + бот (основной workflow)
-npm run facade:rebuild && npm run bot:kill && npm run bot:test
+---
 
-# Отдельные команды
-npm run facade:rebuild   # пересборка + сброс checkpoints + --wait
-npm run bot:kill         # убить бота
-npm run bot:test         # запустить бота с .env.test
+## Сессии
 
-# Мониторинг логов
-docker logs waymates-facade-test -f
-```
+Вести лог в `mvp-test-final/sessions/YYYY-MM-DD-topic.md`:
 
-**КРИТИЧНО**: После facade:rebuild ВСЕГДА перезапускать бота!
+```markdown
+# Session: [topic]
+**Дата:** YYYY-MM-DD
+**Фокус:** [что тестируем/фиксим]
 
-### LangSmith (для отладки промптов)
+## Найденные проблемы
+- [ ] Проблема 1: описание
+- [x] Проблема 2: описание (FIXED)
 
-**Когда использовать:** extraction/classification промпт не работает как ожидается
+## Изменённые файлы
+- `path/to/file.ts` — что изменили
 
-```bash
-# Включить в .env.test
-LANGSMITH_TRACING=true
-LANGSMITH_PROJECT=waymates-manual-test
-
-# Пересобрать facade, протестировать, смотреть traces в smith.langchain.com
+## Инсайты
+- Паттерн X работает лучше чем Y
 ```
 
 ---
 
-## 🎭 Роль: Токсичный пользователь
+## Роль: Токсичный пользователь
 
-### Сценарии
+**Подробности:** `mvp-test-final/tests_report.md`
 
+**Правило Парето:** 20% правок → 80% UX улучшений. Минимальный fix, максимальный эффект для пользователя.
+
+Тестируй как пользователь который:
+- Не читает инструкции
+- Пишет кратко и неформально
+- Ожидает что бот поймёт контекст
+- Раздражается от переспросов
+
+**Сценарии:**
 1. Команды без контекста: "Давай быстрый поиск"
 2. Gibberish: "asdfgh qwerty"
 3. Смена темы посреди flow
 4. Отмена в любой момент
 5. Ответ не по формату
 
-### При баге
+---
 
-1. **Понять** — что именно сломалось (логи, flow)
-2. **Найти причину** — не симптом, а root cause
-3. **Согласовать** — "как было → как предлагаю"
-4. **Исправить** — минимальный точечный fix
+## Правила
+
+**Порог уверенности 90%+ ОБЯЗАТЕЛЕН для:**
+- Понимание что делаешь и зачем
+- Понимание бизнес-логики
+- Понимание смысла происходящего
+
+**Если < 90%:** читай код, grep как принято, или проси помощи. НЕ приступай к правке.
+
+**Делай:**
+- Перед правкой: `grep` как принято в кодовой базе
+- Batch правки: через `mcp__filesystem__edit_file`
+- Согласовывай: "как было → как предлагаю"
+- Минимальные точечные фиксы
+
+**Не делай:**
+- Не угадывай бизнес-логику — спроси
+- Не делай правки без понимания
+- Не используй `sed` — есть MCP filesystem
+- Не используй `redis-cli FLUSHALL` (checkpoints в Postgres!)
+- Не удаляй данные без согласования
+- Не пытайся угодить — честный анализ важнее
+
+**Полный список правил:** `.claude/context/guidelines.md`
 
 ---
 
-## 🚫 ЗАПРЕТЫ
-
-| Запрет                                    | Почему                          |
-| ----------------------------------------- | ------------------------------- |
-| Угадывать бизнес-логику                   | Спросить если не уверен на 90%+ |
-| Делать правки без понимания               | Сначала разобраться             |
-| redis-cli FLUSHALL для сброса checkpoints | Checkpoints в Postgres!         |
-| Примеры в промптах                        | Только семантика                |
-| Триггерные слова в промптах               | Мультиязычность не позволяет    |
-| Цепляться за одно слово                   | Анализировать весь контекст     |
-| Удалять данные без согласования           | Можно сломать тест              |
-| Код без дизайна                           | Сначала `/mvp-design`           |
-| Отступление от дизайна                    | Обсудить изменения              |
-| `any` типы                                | Явные типы                      |
-| `export default`                          | Named exports                   |
-| Смешанные импорты                         | `import type` отдельно          |
-| Функции > 60 LOC                          | Разбивать                       |
-| Глубина > 2                               | Early return                    |
-| Спам lint/tsc                             | Только после блока              |
-| Импровизация                              | Строго по дизайну               |
-| Код без Pre-Action заявки                 | Сначала описать план            |
-| **Использовать sed**                      | Есть filesystem MCP             |
-| **git checkout без проверки**             | Сначала прочитать файлы!        |
-| **Telegram зависит от facade**            | shared = контракт               |
-| **Hardcode строки в типах**               | Pick/Omit от базовых типов      |
-| **Graph schemas вне shared**              | Ломает контракт между пакетами  |
-
----
-
-## ✅ РАЗРЕШЕНО без спроса
+## Разрешено без спроса
 
 - Читать код, логи
-- Запускать tsc, mcp-chat.ts
+- `npm run lint:fix`, `tsc --noEmit`, `mcp-chat.ts`
 - Cypher через MCP (read)
-- Добавлять в INSIGHTS.md, session logs
+- Добавлять в session logs
 - sequential-thinking для анализа
-- WebSearch для ресерча best practices
-
----
-
-## 🧠 Quick Reference
-
-### SearchGraph flow (adhoc)
-
-```
-startAdhoc → load_context → [adhoc valid?]
-  ├─ YES → confirm_adhoc_context (interrupt: "что дальше?")
-  └─ NO  → ask_adhoc_context (interrupt: "кто ты?")
-     ↓
-confirm → parse_search_intent → explore/search/extract_goal
-```
-
-### adhocContext валидация
-
-Минимум одно из: position, role, countryCode, domains[1+], skills[1+]
-
-**Structured output gotcha**: LLM возвращает `""` вместо `null` — фильтруется в `extractAdhocContext()`
-
----
-
-## ⚠️ Спотыкания (lessons learned)
-
-### Intent classification: phase = контекст диалога
-
-- `parseUserIntent(message, phase)` — phase определяет какие опции бот предложил
-- `PHASE_CONTEXT` map в prompts.ts описывает опции каждой фазы
-- reasoning поле в схеме → видим логику LLM в логах
-- **Структурные требования > fuzzy описания:**
-  - Плохо: "expresses a career goal" (размыто)
-  - Хорошо: "provides NEW information that wasn't in conversation"
-
-### Два уровня intent classification
-
-| Уровень | Функция | Роль |
-|---------|---------|------|
-| Orchestrator | `classifyIntent()` | Какой граф запустить |
-| Graph-internal | `parseUserIntent()` | Куда роутить внутри графа |
-
-При resume активного графа → orchestrator intent ИГНОРИРУЕТСЯ, граф использует свой parseUserIntent.
-
-### change ≠ clarify (семантика)
-
-| Intent | Что значит | Куда роутит |
-|--------|------------|-------------|
-| `change` | "хочу другую цель" | `extract_goal` (с нуля) |
-| `clarify` | "добавь Python" | `clarify_goal` (мержить) |
-
-### shouldKeepUserResponse
-
-Если нода требует данные из сообщения (change, clarify) — userResponse нельзя очищать в parse_search_intent.
-
-### Advisor done ≠ cancel
-
-"спасибо" после Q&A = закончил advisor, НЕ отменил весь flow → `done → show_results`
-
-### Pino логгер, не console.log
-
-```typescript
-import { logger } from "../../../logger.js";
-logger.info({ data }, "message"); // НЕ console.log!
-```
-
-### NLP промпты — дружеский стиль
-
-- Файл: `src/facade/services/nlp-formatter/prompts.ts`
-- Стиль: как товарищ, не корпоративный робот
-- Каждая фаза должна быть описана в промпте
-
-### UX: Прозрачность = доверие
-
-- Показывать missing fields: "we're missing position, location" → пользователь понимает результаты
-- Показывать appliedFilters при пустых результатах → предложить скорректировать
-- Token limit → graceful degradation (facets вместо "Tool execution failed")
-
-### UX: Progressive Disclosure
-
-- candidates > threshold → показать facets (распределение с counts)
-- candidates <= threshold → полный анализ + Chart
-- Facets помогают выбрать фильтр: "15 senior, 8 middle, 2 junior"
-
-### Фиксить в правильном слое
-
-| Симптом | Плохо | Хорошо |
-|---------|-------|--------|
-| API возвращает неполные данные | Workaround в Facade | Fix в Core |
-| storedGoal = null после save | Проверка в Facade | goal.set возвращает Goal |
-
-### PHASE vs NODE — разные ЗО
-
-| Концепт | ЗО | Пример |
-|---------|-----|--------|
-| **PHASE** | Определяет response schema | `showing_exploration_candidates`, `showing_exploration_facets` |
-| **NODE** | Определяет execution unit | `show_exploration` (один node, разные phases) |
-
-- Бизнес-нода (`explore`, `validate_goal`) устанавливает phase
-- Interrupt-нода (`show_exploration`) НЕ меняет phase
-
-### discriminatedUnion: уникальные discriminator values
-
-Zod `discriminatedUnion` требует **уникальные** значения discriminator:
-```typescript
-// ❌ Ошибка — два варианта с phase: "showing_exploration"
-z.discriminatedUnion("phase", [
-  z.object({ phase: z.literal("showing_exploration"), needsFiltering: z.literal(true) }),
-  z.object({ phase: z.literal("showing_exploration"), needsFiltering: z.literal(false) }),
-])
-
-// ✅ Правильно — разные phase values
-z.discriminatedUnion("phase", [
-  z.object({ phase: z.literal("showing_exploration_candidates"), ... }),
-  z.object({ phase: z.literal("showing_exploration_facets"), ... }),
-])
-```
-
-### Архитектура зависимостей
-
-```
-           shared
-          /      \
-     facade      telegram-bot
-```
-
-- `shared` = контракт между пакетами
-- facade и telegram-bot НЕ зависят друг от друга
-- ConverseResponse, SearchGraphResponse — в shared
-
-### Новые фазы — добавить везде
-
-При добавлении фазы:
-
-1. `state.ts` — PHASE enum + NODE
-2. `nodes/new-node.ts` — создать
-3. `search-router.ts` — ROUTE_MAP + routing function
-4. `search-graph.ts` — addNode + addEdge
-5. `response-builders.ts` — builder
-6. `schemas.ts` — searchGraphResponseSchema
-7. `nlp-formatter/prompts.ts` — описание фазы!
-
-## ⚠️ Важно
-
-1. **ESLint first** — учитывать constraints при написании
-2. **Session Report** — вести по ходу работы, зафиксировать при <10% контекста
-3. **Строго по дизайну** — не импровизировать
-4. **Готовность к тестам** — код должен быть testable
-5. **Checkpoint после блока** — показать результат
-6. **Не спамить проверками** — lint/tsc после логического блока
-
----
+- WebSearch для best practices

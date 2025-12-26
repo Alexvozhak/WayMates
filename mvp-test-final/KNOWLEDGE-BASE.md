@@ -76,6 +76,18 @@ src/
     └── logger.ts          # Pino логгер
 ```
 
+### Архитектура зависимостей
+
+```
+           shared
+          /      \
+     facade      telegram-bot
+```
+
+- `shared` = контракт между пакетами
+- facade и telegram-bot НЕ зависят друг от друга
+- ConverseResponse, SearchGraphResponse — в shared
+
 ### Где искать
 
 | Что ищу                     | Где смотреть                                                     |
@@ -341,6 +353,7 @@ User Message
 5. **unknown intent → safe fallback**, не infinite loop
 6. **Optional Zod field**: undefined (отсутствие), НЕ null
 7. **LLM merge pattern** для incremental input — передавать текущее состояние в промпт
+8. **Structured output gotcha**: LLM возвращает `""` вместо `null` — фильтровать в extraction functions
 
 ### Two-Node Pattern
 
