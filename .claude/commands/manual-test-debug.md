@@ -49,11 +49,10 @@ allowed-tools:
 
 ## База знаний (ОБЯЗАТЕЛЬНО прочитать перед началом)
 
-```
-Read: mvp-test-final/KNOWLEDGE-BASE.md
-Read: mvp-test-final/BUSINESS-LOGIC-MVP.md
-Read: .claude/context/guidelines.md
-```
+Прочитать файлы (Read tool, пути от корня проекта):
+- `mvp-test-final/KNOWLEDGE-BASE.md`
+- `mvp-test-final/BUSINESS-LOGIC-MVP.md`
+- `.claude/context/guidelines.md`
 
 **Куда обращаться:**
 | Вопрос | Источник |
