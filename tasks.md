@@ -453,7 +453,7 @@ createAgent
 
 1.  [text](src/facade/mcp-server/tools/cold-start.tool.ts) как будто мы не агент должен писать в бд, а trpc ручка - то есть агент возвращает готовую к записе storyinput (только сформировывает), подумай над текущим вариантом и предлагаемым - что чище, правильней, логичней, дай рекомендации, что бы сделали best practice. createSaveCareerDataTool кажется лишним и мне чёт не очень нравиться что мы ручку mcp пробрасываем в агента "await deps.coreClient.client.story.upsertStory.mutate"
 
-2.                  return state as unknown as AgentState; - давай через zod parse
+2.                   return state as unknown as AgentState; - давай через zod parse
 
 3 [](src/facade/langchain/career-collector-agent.ts) строчки 449-474 повторяются
 
@@ -1666,3 +1666,79 @@ this.flowGuardChecker = new FlowGuardChecker(this.coreClient);" все ли ну
 13. **Тест может быть неправ** — если query корректен, проверь ожидания теста - слабый пункт?
 
 14. **Pre-Action Declaration** — проблема, решение, уверенность, файл - это ты о чем?
+
+консистентные ли у нас промпты:
+
+- одинаковый ли подход во всех? single truth, without defensive programming, type safety, extract и merge данных (как в goal и adhoc)
+- я бы предпочел, чтобы информация о контексте цели фильтры были отформатированы структурированы, а не интегрированы в разговор. имхо так читаться будет проще? или отстоишь текущую версию разговорную подачу?
+- хочу консистентного подхода во всех промтах - чтобы zod.values использовался
+
+  [PHASE.asking_adhoc_context]: (state) => ({
+  phase: PHASE.asking_adhoc_context,
+  adhocContext: state.adhocContext,
+  missingFields: state.missingFields,
+  }),
+
+[PHASE.confirming_adhoc_context]: (state) => ({
+phase: PHASE.confirming_adhoc_context,
+adhocContext: state.adhocContext,
+goal: state.storedGoal,
+missingFields: state.missingFields,
+}),
+странно почему две ноды почти одинаковые в на
+
+"Оцени ответы, их стиль, адекватность, понятность, человечность, общались ли с тобой как с приятелем по человечески - оценивай это всё как токсичный пользователь"
+
+Критерии оценки:
+
+1. Стиль — естественный, не робот
+2. Адекватность — ответ соответствует ситуации
+3. Понятность — без жаргона, ясные инструкции
+4. Человечность — как с приятелем, не корпоративно
+5. Приятельское отношение — дружеское, но без панибратства
+
+Ограничения:
+
+- ❌ Без воды
+- ❌ Без лишних эмоций
+- ❌ Без восторгов ("That's awesome! 🎉")
+- ✅ Разговорная манера допускается
+- ✅ Как карьерный ассистент
+
+@agent-Explore пускай сделает ресерч кодовой базы - что не готово для показа чартов:
+
+- для режима reverseSearchPathfinder (разберись в какой фазе какую схему расширить)
+- для режима searchPathfinder
+- для режима searchWaymate
+  Пускай создаст файл мд на русском с отчетом, проработкой вопроса, решения, рубрика открытые вопросы, варианты решения, альтернативы, рекомендации, аргументы, сравнение - честность, ценность, наглядность, рациональность, простота реализации
+  весь контекст по чарту в @mvp-chart
+
+запусти @agent-Explore пускай изучить кодовую базу, @.claude/commands/mvp-chart.md \
+'/home/alex/projects/WayMatesRemote/mvp-test-final/BUSINESS-LOGIC-MVP.md''/home/alex/projects/WayMatesRemote/mvp-test-final/KNOWLEDGE-BAS
+E.md''/home/alex/projects/WayMatesRemote/.claude/context/guidelines.md'
+'/home/alex/projects/WayMatesRemote/docs/research/CHART-READINESS-RESEARCH.md'\
+\
+и составит новую задачу (feat-048?) док мд на русском: с открытыми вопросами, вариантами реализации, сравнения, рекомендации (честность,
+ценность, простота реализации, рациональность, loc)\
+так же рассчитываю что будут представлены варианты переиспользования имеющегося кода чартов, как его максимально переиспользовать, чтобы
+фичи графика активировались автоматом, если ты передаешь опциональное значение в его апи (мб так сделать? унифицированная сигнатура с
+широким асссортиментов опциональных полей? чтоб все режимы накидывали своё? ну или более типизированный вариант с юнионом или
+дискрименатным юнионом. ultrathink
+
+Промпт для rewind
+
+Продолжаем сессию FEAT-048 Universal Chart API.
+
+Контекст: sessions/2025-12-27-feat-048-universal-chart.md
+
+Статус: Реализация завершена, lint/tsc passed. Нужен smoke test.
+
+Что сделано:
+
+- 3 chart modes: full, candidates-only, goal-only
+- show-results: searchPathfinders → chart через toChartCandidate()
+- validate-goal: chart с mode goal-only
+- explore: chart с mode full/candidates-only
+- Исправлен баг calculateDynamicLevels для goal-only
+
+Следующий шаг: smoke test через /manual-test-debug или commit.
