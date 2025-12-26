@@ -20,7 +20,11 @@ export type CandidatesOnlyTransformInput = BaseTransformInput & {
   adhocContext: AdhocContextBase;
 };
 
-export type TransformInput = FullModeTransformInput | CandidatesOnlyTransformInput;
+export type GoalOnlyTransformInput = BaseTransformInput & {
+  mode: "goal-only";
+};
+
+export type TransformInput = FullModeTransformInput | CandidatesOnlyTransformInput | GoalOnlyTransformInput;
 
 export function transformFullMode(input: FullModeTransformInput): ProcessedTrajectory[] {
   const colors = generateCandidateColors(input.candidates.length);
@@ -34,6 +38,11 @@ export function transformCandidatesOnly(input: CandidatesOnlyTransformInput): Pr
   const marker = buildAdhocMarker(input.adhocContext, input.locale);
   const candidates = buildCandidateTrajectories(input.candidates, colors, input.existingGoal);
   return [marker, ...candidates];
+}
+
+export function transformGoalOnly(input: GoalOnlyTransformInput): ProcessedTrajectory[] {
+  const colors = generateCandidateColors(input.candidates.length);
+  return buildCandidateTrajectories(input.candidates, colors, input.existingGoal);
 }
 
 function buildUserTrajectory(userTrajectory: UserContext[], locale: Locale): ProcessedTrajectory {

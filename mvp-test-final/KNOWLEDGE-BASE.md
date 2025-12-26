@@ -534,20 +534,25 @@ Intent'ы определены в `state.ts` как const arrays:
 
 ### Chart Generation
 
-| Нода | Chart? | Почему |
-|------|--------|--------|
-| `show_results` | ✅ | Есть userTrajectory + candidates |
-| `validate_goal` | ❌ TODO | Нужен mode "candidates only" |
-| `explore` | ❌ TODO | Нужен mode "candidates only" |
+| Нода | Chart? | Mode | Условие |
+|------|--------|------|---------|
+| `show_results` | ✅ | `full` | userTrajectory.length > 0 |
+| `validate_goal` | ✅ | `goal-only` | candidates.length > 0 |
+| `explore` | ✅ | `full` / `candidates-only` | userTrajectory или adhocContext |
 
-**Логика в show_results.ts:**
-```typescript
-const hasDataForChart = searchResults.length > 0 && userTrajectory.length > 0;
-```
+**3 режима Chart (discriminated union):**
+- `full` — user trajectory + candidates (overlap, spider chart)
+- `candidates-only` — adhoc marker + candidates (no overlap)
+- `goal-only` — только candidates + Goal Line (для validate-goal)
 
-**Проблема adhoc**: `userTrajectory` пустой → chart не генерится.
+**Конвертация типов:**
+- `PathfinderCandidate` → `ScoredMatchedCandidate` (show-results.ts)
+- `MatchedCandidateWithPath` → `ScoredMatchedCandidate` (validate-goal.ts)
 
-**TODO**: Добавить mode `"candidates_only"` в `generateTrajectoryChart` для validate_goal и explore.
+**Ключевые файлы:**
+- Types: `src/chart/types.ts`
+- Transformer: `src/chart/services/trajectory-transformer.ts`
+- Builder: `src/chart/builders/chart-builder.ts`
 
 ---
 

@@ -5,7 +5,24 @@ import { config } from "../../../env.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
+import type { PathfinderCandidate, ScoredMatchedCandidate } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
+
+/**
+ * Convert PathfinderCandidate to chart-compatible ScoredMatchedCandidate.
+ * Maps pathfinder-specific fields to standard candidate format.
+ */
+function toChartCandidate(pf: PathfinderCandidate): ScoredMatchedCandidate {
+  return {
+    userId: pf.userId,
+    matchedContext: pf.matchedContext,
+    contextMatchScore: 0,
+    isWaymate: false,
+    path: pf.path,
+    trails: pf.trails,
+    timeSinceMatchedMonths: pf.timeSinceTargetMonths,
+  };
+}
 
 /**
  * Show results node: displays search results with current goal and waits for user decision.
@@ -16,19 +33,22 @@ export const showResultsNode = withLogging<SearchStateType>(
   async (state, _config, { logger, dictionariesService }) => {
     let chartUrl: string | undefined;
 
-    const hasDataForChart = state.searchResults.length > 0 && state.userTrajectory.length > 0;
+    const candidates =
+      state.searchMode === "pathfinders"
+        ? state.pathfinderResults.map((pf) => toChartCandidate(pf))
+        : state.searchResults;
+
+    const hasDataForChart = candidates.length > 0 && state.userTrajectory.length > 0;
     const shouldGenerateChart = isChartServiceEnabled() && hasDataForChart;
 
     if (shouldGenerateChart) {
       try {
-        const [goalValues, positionOrder] = await Promise.all([
-          Promise.resolve(extractGoalValues(state.storedGoal)),
-          dictionariesService.getPositionOrder(),
-        ]);
+        const goalValues = extractGoalValues(state.storedGoal);
+        const positionOrder = await dictionariesService.getPositionOrder();
         const result = await generateTrajectoryChart({
           mode: "full",
           userTrajectory: state.userTrajectory,
-          candidates: state.searchResults,
+          candidates,
           maxCandidates: config.CANDIDATES_DISPLAY_LIMIT,
           positionOrder,
           locale: "ru",

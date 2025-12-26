@@ -393,7 +393,7 @@ export class HtmlRenderer {
     }
 
     function buildOverlapTraces(fields, overlapYaxisId, enabledCandidates) {
-      if (chartData.mode === 'candidates-only') {
+      if (chartData.mode !== 'full') {
         window.overlapSummaries = [];
         window.enabledCandidateIndices = [];
         return [];
@@ -472,7 +472,7 @@ export class HtmlRenderer {
     function buildLayout(fields, enabledCandidates) {
       const numFields = fields.length;
       const candidates = chartData.trajectories.slice(1).filter(c => enabledCandidates.includes(c.id));
-      const isCandidatesOnly = chartData.mode === 'candidates-only';
+      const isCandidatesOnly = chartData.mode !== 'full';
       const overlapHeight = isCandidatesOnly ? 0 : (candidates.length > 0 ? 0.10 + candidates.length * 0.03 : 0.12);
       const chartAreaTop = 0.95;
       const chartAreaBottom = isCandidatesOnly ? 0.05 : overlapHeight + 0.05;
@@ -575,7 +575,7 @@ export class HtmlRenderer {
     }
 
     function renderSpiderChart(enabledCandidates) {
-      if (chartData.mode === 'candidates-only') return;
+      if (chartData.mode !== 'full') return;
       const spiderEl = document.getElementById('spider-chart');
       if (!spiderEl) return;
       const traces = buildSpiderTraces(enabledCandidates);

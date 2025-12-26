@@ -422,10 +422,21 @@
 
 ---
 
+### 3.4 Добавление mode в discriminated union
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Добавил новый mode, но методы делают assumptions о структуре данных старых modes |
+| **Первопричина** | Не проследил data flow — какие методы зависят от структуры `trajectories[0]` и т.п. |
+| **Правило** | При добавлении mode — grep по всем методам класса/модуля, проверить каждый на assumptions о данных |
+
+---
+
 ## Changelog
 
 | Дата | Изменения |
 |------|-----------|
+| 2025-12-27 | +3.4 Добавление mode в discriminated union |
 | 2025-12-27 | +5.13 Prompt показывает все intents (router = source of truth), +5.14 proceed ≠ explore |
 | 2025-12-26 | +5.7 Overwrite вместо Merge для incremental input |
 | 2025-12-26 | +1.4 Контекст диалога для classification, +2.6 Negative assertions, +6.4 LIMIT без GROUP BY, +6.5 Debug сложных queries, +7.5 Pre-Action Declaration |

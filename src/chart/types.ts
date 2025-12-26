@@ -1,28 +1,16 @@
 import type { AdhocContextBase, ScoredMatchedCandidate, UserContext } from "../shared/schemas.js";
 
-// ==========================================
-// === CHARTABLE FIELDS ===
-// ==========================================
-
-/**
- * Chartable fields - compile-time validated against UserContext.
- * Only fields that make sense for visual trajectory comparison.
- */
 const CHARTABLE_FIELDS = [
-  "position", // → extract grade (junior/middle/senior/lead)
-  "role", // → role/function
-  "domains", // → first domain
-  "cityName", // → city
-  "industry", // → industry
-  "salaryExact", // → salary (if present)
+  "position",
+  "role",
+  "domains",
+  "cityName",
+  "industry",
+  "salaryExact",
 ] as const satisfies readonly (keyof UserContext)[];
 
 export type ChartableField = (typeof CHARTABLE_FIELDS)[number];
 export { CHARTABLE_FIELDS };
-
-// ==========================================
-// === ASPECT CONFIGURATION ===
-// ==========================================
 
 export type AspectConfig = {
   field: ChartableField;
@@ -30,10 +18,6 @@ export type AspectConfig = {
   extractValue: (ctx: UserContext) => string | number | null;
   getLevels: () => string[];
 };
-
-// ==========================================
-// === PROCESSED DATA ===
-// ==========================================
 
 export type TrajectoryPoint = {
   timestamp: number;
@@ -44,10 +28,10 @@ export type ProcessedTrajectory = {
   id: string;
   label: string;
   color: string;
-  width: number; // waymate priority (2 for waymate, 1.5 for regular)
+  width: number;
   isWaymate: boolean;
-  matchedContextIndex?: number; // index of matched context in points[]
-  timeSinceMatchedMonths?: number; // for legend
+  matchedContextIndex?: number;
+  timeSinceMatchedMonths?: number;
   points: TrajectoryPoint[];
 };
 
@@ -59,20 +43,13 @@ export type OverlapPeriod = {
   value: string | number;
 };
 
-/**
- * Full overlap period - when ALL selected fields match between user and candidate.
- * Used for Overlap Timeline visualization.
- */
+/** Full overlap period — when ALL selected fields match between user and candidate. */
 export type FullOverlapPeriod = {
   candidateId: string;
   startTime: number;
   endTime: number;
 };
 
-/**
- * Summary of full overlap for a candidate.
- * Displayed in the Overlap Timeline section.
- */
 export type OverlapSummary = {
   candidateId: string;
   candidateLabel: string;
@@ -89,32 +66,19 @@ export type SimilarityMetrics = {
   overall: number;
 };
 
-// ==========================================
-// === SERVICE INPUT/OUTPUT ===
-// ==========================================
-
 export type Locale = "ru" | "en";
 
-/**
- * Goal values for horizontal goal line visualization.
- * Maps chartable fields to their target values.
- */
 export type GoalValues = Partial<Record<ChartableField, string | number | null>>;
 
-/**
- * Dynamic levels for each chartable field.
- * Collected from User + Candidates data at runtime.
- * Used for Y-axis tick labels and Goal Line positioning.
- */
 export type DynamicLevels = Partial<Record<ChartableField, string[]>>;
 
 type BaseChartInput = {
   candidates: ScoredMatchedCandidate[];
   maxCandidates: number;
   positionOrder: string[];
+  locale: Locale;
+  existingGoal: boolean;
   selectedFields?: ChartableField[];
-  locale?: Locale;
-  existingGoal?: boolean;
   goalValues?: GoalValues;
 };
 
@@ -128,7 +92,12 @@ export type CandidatesOnlyInput = BaseChartInput & {
   adhocContext: AdhocContextBase;
 };
 
-export type GenerateChartInput = FullModeInput | CandidatesOnlyInput;
+export type GoalOnlyInput = BaseChartInput & {
+  mode: "goal-only";
+  goalValues: GoalValues;
+};
+
+export type GenerateChartInput = FullModeInput | CandidatesOnlyInput | GoalOnlyInput;
 
 export type ChartMode = GenerateChartInput["mode"];
 
@@ -139,10 +108,6 @@ export type GenerateChartOutput = {
   fieldCount: number;
 };
 
-// ==========================================
-// === R2 CONFIG ===
-// ==========================================
-
 export type R2Config = {
   accountId: string;
   accessKeyId: string;
@@ -151,10 +116,6 @@ export type R2Config = {
   publicUrl: string;
   ttlDays: number;
 };
-
-// ==========================================
-// === ERRORS ===
-// ==========================================
 
 export type ChartErrorCode = "R2_UPLOAD_FAILED" | "INVALID_TRAJECTORY" | "CONFIG_MISSING" | "TRANSFORM_FAILED";
 

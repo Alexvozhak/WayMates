@@ -1,5 +1,6 @@
 import { OverlapCalculator } from "../services/overlap-calculator.js";
-import { transformCandidatesOnly, transformFullMode } from "../services/trajectory-transformer.js";
+import { transformCandidatesOnly, transformFullMode, transformGoalOnly } from "../services/trajectory-transformer.js";
+import { ChartGenerationError } from "../types.js";
 
 import { HtmlRenderer } from "./html-renderer.js";
 
@@ -33,7 +34,11 @@ type CandidatesOnlyBuildInput = BaseBuildInput & {
   adhocContext: AdhocContextBase;
 };
 
-export type ChartBuildInput = FullModeBuildInput | CandidatesOnlyBuildInput;
+type GoalOnlyBuildInput = BaseBuildInput & {
+  mode: "goal-only";
+};
+
+export type ChartBuildInput = FullModeBuildInput | CandidatesOnlyBuildInput | GoalOnlyBuildInput;
 
 type TimeRange = { minTime: number; maxTime: number };
 
@@ -84,6 +89,15 @@ export class ChartBuilder {
       });
     }
 
+    if (this.input.mode === "goal-only") {
+      return transformGoalOnly({
+        mode: "goal-only",
+        candidates: this.input.candidates,
+        locale: this.input.locale,
+        existingGoal: this.input.existingGoal,
+      });
+    }
+
     return transformCandidatesOnly({
       mode: "candidates-only",
       adhocContext: this.input.adhocContext,
@@ -94,11 +108,14 @@ export class ChartBuilder {
   }
 
   private calculateMetrics(): { summaries: OverlapSummary[]; metrics: SimilarityMetrics[] } {
-    if (this.input.mode === "candidates-only") {
+    if (this.input.mode !== "full") {
       return { summaries: [], metrics: [] };
     }
 
-    const userTrajectory = this.trajectories[0]!;
+    const userTrajectory = this.trajectories[0];
+    if (!userTrajectory) {
+      throw new ChartGenerationError("User trajectory missing in full mode", "INVALID_TRAJECTORY");
+    }
     const candidateTrajectories = this.trajectories.slice(1);
     const calculator = new OverlapCalculator(userTrajectory, candidateTrajectories, this.input.fields);
 
@@ -124,8 +141,11 @@ export class ChartBuilder {
    */
   private calculateDynamicLevels(): DynamicLevels {
     const levels: DynamicLevels = {};
-    const userTrajectory = this.trajectories[0]!;
-    const candidateTrajectories = this.trajectories.slice(1);
+
+    // goal-only mode has no user trajectory — all trajectories are candidates
+    const hasUserTrajectory = this.input.mode === "full" || this.input.mode === "candidates-only";
+    const userTrajectory = hasUserTrajectory ? (this.trajectories[0] ?? null) : null;
+    const candidateTrajectories = hasUserTrajectory ? this.trajectories.slice(1) : this.trajectories;
 
     for (const field of this.input.fields) {
       levels[field] = this.calculateLevelsForField(field, userTrajectory, candidateTrajectories);
@@ -136,7 +156,7 @@ export class ChartBuilder {
 
   private calculateLevelsForField(
     field: ChartableField,
-    userTrajectory: ProcessedTrajectory,
+    userTrajectory: ProcessedTrajectory | null,
     candidateTrajectories: ProcessedTrajectory[],
   ): string[] {
     if (field === "position") {
@@ -146,7 +166,9 @@ export class ChartBuilder {
     const orderedLevels: string[] = [];
     const seen = new Set<string>();
 
-    this.addUserValuesToLevels(field, userTrajectory, orderedLevels, seen);
+    if (userTrajectory) {
+      this.addUserValuesToLevels(field, userTrajectory, orderedLevels, seen);
+    }
     this.addGoalValueToLevels(field, orderedLevels, seen);
     this.addCandidateValuesToLevels(field, candidateTrajectories, orderedLevels, seen);
 
@@ -154,22 +176,22 @@ export class ChartBuilder {
   }
 
   private calculatePositionLevels(
-    userTrajectory: ProcessedTrajectory,
+    userTrajectory: ProcessedTrajectory | null,
     candidateTrajectories: ProcessedTrajectory[],
   ): string[] {
     const allValues = new Set<string>();
 
-    for (const p of userTrajectory.points) {
-      const v = p.values.position;
-      if (this.isValidStringValue(v)) allValues.add(v);
+    const userPoints = userTrajectory?.points ?? [];
+    for (const v of userPoints.map((p) => p.values.position).filter((v) => this.isValidStringValue(v))) {
+      allValues.add(v);
     }
 
     const goalValue = this.input.goalValues.position;
     if (this.isValidStringValue(goalValue)) allValues.add(goalValue);
 
-    for (const p of candidateTrajectories.flatMap((t) => t.points)) {
-      const v = p.values.position;
-      if (this.isValidStringValue(v)) allValues.add(v);
+    const candidatePoints = candidateTrajectories.flatMap((t) => t.points);
+    for (const v of candidatePoints.map((p) => p.values.position).filter((v) => this.isValidStringValue(v))) {
+      allValues.add(v);
     }
 
     const orderMap = new Map(this.input.positionOrder.map((v, i) => [v, i]));
@@ -184,7 +206,7 @@ export class ChartBuilder {
   ): void {
     for (const point of userTrajectory.points) {
       const value = point.values[field];
-      if (this.isValidStringValue(value) && !seen.has(value)) {
+      if (this.isNewValidValue(value, seen)) {
         orderedLevels.push(value);
         seen.add(value);
       }
@@ -193,7 +215,7 @@ export class ChartBuilder {
 
   private addGoalValueToLevels(field: ChartableField, orderedLevels: string[], seen: Set<string>): void {
     const goalValue = this.input.goalValues[field];
-    if (this.isValidStringValue(goalValue) && !seen.has(goalValue)) {
+    if (this.isNewValidValue(goalValue, seen)) {
       orderedLevels.push(goalValue);
       seen.add(goalValue);
     }
@@ -211,7 +233,7 @@ export class ChartBuilder {
     for (const traj of candidateTrajectories) {
       for (const point of traj.points) {
         const value = point.values[field];
-        if (this.isValidStringValue(value) && !seen.has(value)) {
+        if (this.isNewValidValue(value, seen)) {
           candidateValues.add(value);
         }
       }
@@ -223,5 +245,9 @@ export class ChartBuilder {
 
   private isValidStringValue(value: unknown): value is string {
     return value !== null && value !== undefined && typeof value === "string";
+  }
+
+  private isNewValidValue(value: unknown, seen: Set<string>): value is string {
+    return this.isValidStringValue(value) && !seen.has(value);
   }
 }
