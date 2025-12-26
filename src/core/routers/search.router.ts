@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import {
   matchedCandidateWithPathSchema,
+  pathfinderCandidateSchema,
+  pathfinderSearchParamsSchema,
   scoredMatchedCandidateSchema,
   targetSearchParamsSchema,
   waymatesSearchParamsSchema,
@@ -22,5 +24,12 @@ export const searchRouter = t.router({
     .output(z.array(matchedCandidateWithPathSchema))
     .query(async ({ ctx, input }) => {
       return ctx.searchManager.reverseSearchPathfinders(input);
+    }),
+
+  pathfinders: publicProcedure
+    .input(pathfinderSearchParamsSchema)
+    .output(z.array(pathfinderCandidateSchema))
+    .query(async ({ ctx, input }) => {
+      return ctx.searchManager.searchPathfinders(input);
     }),
 });

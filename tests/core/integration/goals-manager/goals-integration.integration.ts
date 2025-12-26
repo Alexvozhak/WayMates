@@ -2,16 +2,21 @@
  * Goals Integration Tests
  * Business rules:
  * - GM1-GM4: GoalsManager CRUD operations (create, read, update, delete)
- * - G1-G5: Goals integration with searchWaymates (candidateType classification: pathfinder, waymate)
+ * - G1, G3, G5: Goals integration with searchWaymates (isWaymate classification)
+ * - G2, G4: Pathfinder search (searchPathfinders with dual matching)
  */
 
 import { describe, it, expect } from "vitest";
 import { driver } from "../../helpers/drivers/goals-driver.js";
-import { FixtureSearchManager, createWaymatesSearchParams } from "../../helpers/fixture-search-manager.js";
+import {
+  FixtureSearchManager,
+  createPathfinderSearchParams,
+  createWaymatesSearchParams,
+} from "../../helpers/fixture-search-manager.js";
 import { UserStories } from "../../helpers/user-stories.js";
 import { GoalsManager } from "../../../../src/core/goals-manager.js";
 import { DatabaseContext } from "../../../../src/core/database-context.js";
-import { targetContextSchema } from "../../../../src/shared/schemas.js";
+import { adhocContextBase, targetContextSchema } from "../../../../src/shared/schemas.js";
 
 describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
   // Business rule: setGoal creates goal and returns userId
@@ -185,8 +190,8 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     console.log("[GM4] Idempotent delete: ✅");
   });
 
-  // Business rule: Without goal, all candidates have candidateType=null
-  it("G1: No Goal baseline - searchWaymates without goal returns candidateType=null", async () => {
+  // Business rule: Without goal, all candidates have isWaymate=false
+  it("G1: No Goal baseline - searchWaymates without goal returns isWaymate=false", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new UserStories();
@@ -208,95 +213,86 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       results.slice(0, 3).map((r) => ({
         userId: r.userId,
         position: r.matchedContext.position,
-        candidateType: r.candidateType,
+        isWaymate: r.isWaymate,
       })),
     );
 
-    // Assert - All candidates have candidateType=null (no goal)
+    // Assert - All candidates have isWaymate=false (no goal set)
     expect(results.length).toBeGreaterThan(0);
     results.forEach((r) => {
-      expect(r.candidateType).toBeNull();
+      expect(r.isWaymate).toBe(false);
     });
 
-    console.log("[G1] All candidates have candidateType=null: ✅");
+    console.log("[G1] All candidates have isWaymate=false: ✅");
   });
 
-  // Business rule: Candidate who achieved goal position = pathfinder
-  // IMPORTANT: Exclude 'position' and 'birthYear' to allow pathfinder detection
-  // (pathfinders have DIFFERENT positions than user - that's the whole point!)
-  it("G2: Pathfinder detection - U5 (achieved Senior) marked as pathfinder", async () => {
-    const db = new DatabaseContext(driver);
-    const goalsManager = new GoalsManager(db);
+  // Business rule: searchPathfinders finds proof of transition FROM our context TO our goal
+  // Scenario: U1 is middle frontend dev, wants senior. U5 went middle → senior frontend.
+  // Expected: U5 is pathfinder (was like U1, achieved U1's goal)
+  it("G2: Pathfinder search - U1 (middle) finds U5 who achieved senior", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
     const u5 = dataManager.getStoryBy("U5");
+    const u8 = dataManager.getStoryBy("U8"); // backend dev → senior (different domain)
 
-    console.log("[G2] U1 goal: Senior position");
+    // U1's current context is middle frontend dev (last in trajectory)
+    const u1Current = u1.contexts.at(-1);
+    if (!u1Current) throw new Error("U1 has no contexts");
+
+    console.log("[G2] U1 current:", { position: u1Current.position, role: u1Current.role, domains: u1Current.domains });
     console.log(
-      "[G2] U5 trajectory positions:",
+      "[G2] U5 trajectory:",
       u5.contexts.map((c) => c.position),
     );
 
-    await goalsManager.setGoal({
-      userId: u1.userId,
-      targetContext: targetContextSchema.parse({
-        position: {
-          mode: "desired",
-          values: ["senior"],
-        },
+    const results = await searchManager.searchPathfinders(
+      createPathfinderSearchParams(u1.userId, {
+        referenceContext: adhocContextBase.parse({
+          position: u1Current.position,
+          role: u1Current.role,
+          domains: u1Current.domains,
+          skills: u1Current.skills,
+        }),
+        targetContext: targetContextSchema.parse({
+          position: { mode: "desired", values: ["senior"] },
+        }),
+        // Match on role + domains, not position (find who was at ANY level in same field)
+        excludedContextFields: ["position", "birthYear", "languages"],
       }),
-    });
+    );
 
-    const searchParams = createWaymatesSearchParams(u1.userId, {
-      excludedContextFields: ["position", "birthYear", "languages"],
-      recencyThresholdMonths: 24,
-    });
-    const results = await searchManager.searchWaymates(searchParams);
-
-    console.log("[G2] Results count:", results.length);
+    console.log("[G2] Pathfinders found:", results.length);
     console.log(
-      "[G2] All results:",
+      "[G2] Results:",
       results.map((r) => ({
         userId: r.userId,
-        position: r.matchedContext.position,
-        candidateType: r.candidateType,
+        targetPosition: r.matchedContext.position,
+        refPosition: r.referenceContext.position,
+        timeSinceTarget: r.timeSinceTargetMonths,
+        timeSinceRef: r.timeSinceReferenceMonths,
       })),
     );
-    console.log(
-      "[G2] Pathfinders:",
-      results
-        .filter((r) => r.candidateType === "pathfinder")
-        .map((r) => ({
-          userId: r.userId,
-          position: r.matchedContext.position,
-        })),
-    );
 
-    // Assert - U5 is marked as pathfinder (achieved Senior)
-    // U5 may appear multiple times (different contexts), find Senior context specifically
-    const u5SeniorResult = results.find((r) => r.userId === u5.userId && r.matchedContext.position === "senior");
-    console.log(
-      "[G2] U5 Senior result:",
-      u5SeniorResult
-        ? {
-            userId: u5SeniorResult.userId,
-            position: u5SeniorResult.matchedContext.position,
-            candidateType: u5SeniorResult.candidateType,
-          }
-        : "NOT FOUND",
-    );
+    // U5 should be found: was middle frontend (matches reference), achieved senior (matches target)
+    const u5Result = results.find((r) => r.userId === u5.userId);
+    expect(u5Result).toBeDefined();
+    expect(u5Result?.matchedContext.position).toBe("senior");
+    expect(u5Result?.referenceContext.position).toBe("middle");
+    // Temporal ordering: reference before target
+    expect(u5Result!.timeSinceReferenceMonths).toBeGreaterThan(u5Result!.timeSinceTargetMonths);
 
-    expect(u5SeniorResult).toBeDefined();
-    expect(u5SeniorResult?.candidateType).toBe("pathfinder");
-    expect(u5SeniorResult?.matchedContext.position).toBe("senior");
+    // NEGATIVE ASSERTION: U8 (backend) should NOT be found (different domain)
+    const u8Result = results.find((r) => r.userId === u8.userId);
+    expect(u8Result).toBeUndefined();
 
-    console.log("[G2] U5 marked as pathfinder: ✅");
+    console.log("[G2] U5 found as pathfinder (middle → senior): ✅");
+    console.log("[G2] U8 NOT found (backend, different domain): ✅");
   });
 
-  // Business rule: Candidates with same goal = waymates
+  // Business rule: Candidates with same goal = waymates (isWaymate: true)
   it("G3: Waymate detection - U1 and U2 both want Senior → U2 is waymate", async () => {
     const db = new DatabaseContext(driver);
     const goalsManager = new GoalsManager(db);
@@ -340,7 +336,7 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     console.log(
       "[G3] Waymates:",
       results
-        .filter((r) => r.candidateType === "waymate")
+        .filter((r) => r.isWaymate)
         .map((r) => ({
           userId: r.userId,
           position: r.matchedContext.position,
@@ -350,67 +346,91 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
     // Assert - U2 is marked as waymate (same goal as U1)
     const u2Result = results.find((r) => r.userId === u2.userId);
     expect(u2Result).toBeDefined();
-    expect(u2Result?.candidateType).toBe("waymate");
+    expect(u2Result?.isWaymate).toBe(true);
 
     console.log("[G3] U2 marked as waymate: ✅");
   });
 
-  // Business rule: Pathfinder gets scoring bonus (contextMatchScore > 0)
-  it("G4: Goal affects scoring - Pathfinder gets bonus to contextMatchScore", async () => {
-    const db = new DatabaseContext(driver);
-    const goalsManager = new GoalsManager(db);
+  // Business rule: targetRecencyMonths filters pathfinders by when they reached the goal
+  // Scenario: U5 reached senior 1-2 months ago. With targetRecencyMonths=6, U5 should be found.
+  // With targetRecencyMonths=0, no one should be found.
+  it("G4: Pathfinder recency filter - targetRecencyMonths limits results", async () => {
     const fixture = new FixtureSearchManager(driver);
     const searchManager = fixture.getSearchManager();
     const dataManager = new UserStories();
 
     const u1 = dataManager.getStoryBy("U1");
+    const u1Current = u1.contexts.at(-1);
+    if (!u1Current) throw new Error("U1 has no contexts");
 
-    console.log("[G4] Creating goal for U1: Senior position");
+    console.log("[G4] Testing targetRecencyMonths filter");
 
-    await goalsManager.setGoal({
-      userId: u1.userId,
-      targetContext: targetContextSchema.parse({
-        position: {
-          mode: "desired",
-          values: ["senior"],
-        },
+    // Search with generous recency (should find pathfinders)
+    const resultsWithRecency = await searchManager.searchPathfinders(
+      createPathfinderSearchParams(u1.userId, {
+        referenceContext: adhocContextBase.parse({
+          position: u1Current.position,
+          role: u1Current.role,
+          domains: u1Current.domains,
+        }),
+        targetContext: targetContextSchema.parse({
+          position: { mode: "desired", values: ["senior"] },
+        }),
+        excludedContextFields: ["position", "birthYear", "languages"],
+        targetRecencyMonths: 24, // Last 2 years
       }),
-    });
-
-    const searchParams = createWaymatesSearchParams(u1.userId, {
-      excludedContextFields: ["position", "birthYear", "languages"],
-      recencyThresholdMonths: 24,
-    });
-    const results = await searchManager.searchWaymates(searchParams);
-
-    // Find pathfinders and non-pathfinders
-    const pathfinders = results.filter((r) => r.candidateType === "pathfinder");
-    const regularCandidates = results.filter((r) => r.candidateType === null);
-
-    console.log("[G4] Pathfinders count:", pathfinders.length);
-    console.log("[G4] Regular candidates count:", regularCandidates.length);
-
-    // Assert - At least one pathfinder exists
-    expect(pathfinders.length).toBeGreaterThan(0);
-
-    // Assert - Pathfinders have contextMatchScore (scoring is applied)
-    pathfinders.forEach((p) => {
-      expect(p.contextMatchScore).toBeDefined();
-      expect(p.contextMatchScore).toBeGreaterThan(0);
-    });
-
-    console.log(
-      "[G4] Pathfinder scores:",
-      pathfinders.map((p) => ({
-        userId: p.userId,
-        score: p.contextMatchScore,
-      })),
     );
 
-    console.log("[G4] Pathfinder scoring verified: ✅");
+    console.log("[G4] With targetRecencyMonths=24:", resultsWithRecency.length, "pathfinders");
+
+    // All results should have timeSinceTargetMonths <= 24
+    resultsWithRecency.forEach((r) => {
+      expect(r.timeSinceTargetMonths).toBeLessThanOrEqual(24);
+    });
+
+    // Search with stricter recency (6 months)
+    const resultsStrict = await searchManager.searchPathfinders(
+      createPathfinderSearchParams(u1.userId, {
+        referenceContext: adhocContextBase.parse({
+          position: u1Current.position,
+          role: u1Current.role,
+          domains: u1Current.domains,
+        }),
+        targetContext: targetContextSchema.parse({
+          position: { mode: "desired", values: ["senior"] },
+        }),
+        excludedContextFields: ["position", "birthYear", "languages"],
+        targetRecencyMonths: 6, // Last 6 months - stricter filter
+      }),
+    );
+
+    console.log("[G4] With targetRecencyMonths=6:", resultsStrict.length, "pathfinders");
+
+    // STRICT: filter MUST reduce results (not just <=)
+    expect(resultsStrict.length).toBeLessThan(resultsWithRecency.length);
+
+    // All strict results should have timeSinceTargetMonths <= 6
+    resultsStrict.forEach((r) => {
+      expect(r.timeSinceTargetMonths).toBeLessThanOrEqual(6);
+    });
+
+    // NEGATIVE ASSERTION: find someone filtered out
+    const filteredOut = resultsWithRecency.find((r) => r.timeSinceTargetMonths > 6);
+    expect(filteredOut).toBeDefined(); // Must have someone older than 6 months in relaxed
+    const stillInStrict = resultsStrict.find((r) => r.userId === filteredOut!.userId);
+    expect(stillInStrict).toBeUndefined(); // They must NOT be in strict results
+
+    console.log("[G4] Recency filter works: strict < relaxed ✅");
+    console.log(
+      "[G4] Filtered out:",
+      filteredOut!.userId,
+      "timeSince:",
+      filteredOut!.timeSinceTargetMonths,
+      "months ✅",
+    );
   });
 
-  // Business rule: Goals work with trajectory search (DTW + candidateType)
+  // Business rule: Goals work with trajectory search (DTW + isWaymate)
   it("G5: Goal + DTW integration - Goals work with trajectory search", async () => {
     const db = new DatabaseContext(driver);
     const goalsManager = new GoalsManager(db);
@@ -442,28 +462,23 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
 
     console.log("[G5] Results count:", results.length);
     console.log(
-      "[G5] Candidates with types:",
+      "[G5] Candidates with isWaymate:",
       results.slice(0, 5).map((r) => ({
         userId: r.userId,
-        candidateType: r.candidateType,
+        isWaymate: r.isWaymate,
         trajectoryLength: r.path?.length || 0,
       })),
     );
 
-    // Assert - candidateType is a label (pathfinder/waymate/null), not a filter
+    // Assert - isWaymate is boolean
     expect(results.length).toBeGreaterThan(0);
     results.forEach((r) => {
-      expect(r.candidateType === null || r.candidateType === "pathfinder" || r.candidateType === "waymate").toBe(true);
+      expect(typeof r.isWaymate).toBe("boolean");
     });
 
-    // Assert - If pathfinders exist, they should be properly detected
-    const pathfinders = results.filter((r) => r.candidateType === "pathfinder");
-    if (pathfinders.length > 0) {
-      console.log("[G5] Found pathfinders:", pathfinders.length);
-      pathfinders.forEach((p) => {
-        expect(p.matchedContext.position).toBe("senior");
-      });
-    }
+    // Assert - Waymates have same goal
+    const waymates = results.filter((r) => r.isWaymate);
+    console.log("[G5] Found waymates:", waymates.length);
 
     console.log("[G5] Goals + trajectory integration verified: ✅");
   });

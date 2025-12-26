@@ -26,7 +26,7 @@ function formatTrailsLine(c: ScoredMatchedCandidate): string | null {
 }
 
 function formatCandidateDetail(c: ScoredMatchedCandidate, index: number): string {
-  const type = c.candidateType ? ` (${c.candidateType})` : "";
+  const type = c.isWaymate ? " (waymate)" : "";
   const header = `#${index + 1}${type}: ${c.matchedContext.position} ${c.matchedContext.role}`;
   const feedback = c.matchedContext.feedback ? `  Feedback: "${c.matchedContext.feedback}"` : null;
 
@@ -87,7 +87,7 @@ export class AdvisorContextBuilder {
     if (candidates.length === 0) return this;
 
     const lines = candidates.map((c, i) => {
-      const type = c.candidateType ? `[${c.candidateType}]` : "";
+      const type = c.isWaymate ? "[waymate]" : "";
       const dtw = c.dtwMetrics
         ? `DTW: ${c.dtwMetrics.shapeSimilarity.toFixed(2)}/${c.dtwMetrics.tempoSimilarity.toFixed(2)}/${c.dtwMetrics.stabilityScore.toFixed(2)}=${c.dtwTotal?.toFixed(2) ?? "?"}`
         : "";

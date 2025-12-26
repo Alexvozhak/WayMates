@@ -197,14 +197,14 @@ export class OverlapCalculator {
   private createEmptyMetrics(trajectory: ProcessedTrajectory): SimilarityMetrics {
     return {
       candidateId: trajectory.id,
-      candidateType: trajectory.candidateType,
+      isWaymate: trajectory.isWaymate,
       perField: {},
       overall: 0,
     };
   }
 
   private createMetricsFromDtw(trajectory: ProcessedTrajectory, scored: ScoredMatchedCandidate): SimilarityMetrics {
-    const { dtwMetrics, candidateType } = scored;
+    const { dtwMetrics, isWaymate } = scored;
 
     if (!dtwMetrics) {
       return this.createEmptyMetrics(trajectory);
@@ -214,7 +214,7 @@ export class OverlapCalculator {
 
     return {
       candidateId: trajectory.id,
-      candidateType,
+      isWaymate,
       perField: {
         position: shapeSimilarity,
         domains: tempoSimilarity,

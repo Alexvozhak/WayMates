@@ -114,11 +114,11 @@ export class HtmlRenderer {
     const candidates = this.data.trajectories.slice(1);
     const candidateCheckboxes = candidates
       .map((traj) => {
-        const badge = traj.candidateType === "pathfinder" ? "Pathfinder" : "Waymate";
+        const badge = traj.isWaymate ? " (Waymate)" : "";
         return `<label>
               <input type="checkbox" value="${traj.id}" checked>
               <span class="candidate-label" style="background:${traj.color};"></span>
-              ${traj.label} (${badge})
+              ${traj.label}${badge}
             </label>`;
       })
       .join("\n            ");
@@ -166,7 +166,7 @@ export class HtmlRenderer {
         const traj = this.data.trajectories.find((t) => t.id === metric.candidateId);
         if (!traj) return "";
 
-        const typeLabel = metric.candidateType === "pathfinder" ? "Pathfinder" : "Waymate";
+        const typeLabel = metric.isWaymate ? "Waymate" : "—";
         const shape = metric.perField.position ? `${Math.round(metric.perField.position * 100)}%` : "—";
         const tempo = metric.perField.domains ? `${Math.round(metric.perField.domains * 100)}%` : "—";
         const stability = metric.perField.cityName ? `${Math.round(metric.perField.cityName * 100)}%` : "—";
@@ -275,7 +275,7 @@ export class HtmlRenderer {
       const rawValues = traj.points.map(p => p.values[field]);
       const y = levels.length > 0 ? rawValues.map(v => v === null ? null : levels.indexOf(v) + jitterOffset) : rawValues;
       const text = rawValues.map(v => v === null ? '—' : String(v));
-      const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : traj.candidateType === 'pathfinder' ? ' (Pathfinder)' : '';
+      const badge = traj.isWaymate ? ' (Waymate)' : '';
       return {
         x, y, text, mode: 'lines+markers', name: traj.label + badge,
         line: { color: traj.color, width: traj.width, shape: 'hv' },
@@ -291,8 +291,8 @@ export class HtmlRenderer {
       const config = getFieldConfig(field);
       const levels = config.levels;
 
-      const userTraj = chartData.trajectories.find(t => t.candidateType === null);
-      const candidates = chartData.trajectories.filter(t => t.candidateType !== null && enabledCandidates.includes(t.id));
+      const userTraj = chartData.trajectories.find(t => t.id === 'user');
+      const candidates = chartData.trajectories.filter(t => t.id !== 'user' && enabledCandidates.includes(t.id));
 
       // 1. Add candidates first (below)
       candidates.forEach((traj, idx) => {
@@ -450,9 +450,9 @@ export class HtmlRenderer {
       if (!hasGoal()) return { shapes, annotations };
 
       chartData.trajectories.forEach(traj => {
-        if (traj.candidateType !== 'pathfinder') return;
-        if (!enabledCandidates.includes(traj.id)) return;
+        // Only show goal markers for candidates with matchedContextIndex (pathfinders from searchPathfinders)
         if (traj.matchedContextIndex === undefined || traj.matchedContextIndex < 0) return;
+        if (!enabledCandidates.includes(traj.id)) return;
 
         const matchedDate = traj.points[traj.matchedContextIndex].timestamp;
         shapes.push({ type: 'line', x0: matchedDate, x1: matchedDate, y0: 0.02, y1: 0.95, xref: 'x', yref: 'paper',

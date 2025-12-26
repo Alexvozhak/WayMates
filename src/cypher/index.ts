@@ -15,6 +15,7 @@
 
 // Search queries
 export {
+  buildPathfinderSearchQuery,
   buildReversePathfinderSearchQuery,
   buildWaymatesSearchQuery,
   userCurrentContextIdQuery,

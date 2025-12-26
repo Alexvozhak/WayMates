@@ -45,7 +45,7 @@ function buildUserTrajectory(userTrajectory: UserContext[], locale: Locale): Pro
     label,
     color: USER_COLOR,
     width: 2.5,
-    candidateType: null,
+    isWaymate: false,
     points,
   };
 }
@@ -59,7 +59,7 @@ function buildAdhocMarker(adhocContext: AdhocContextBase, locale: Locale): Proce
     label,
     color: USER_COLOR,
     width: 2.5,
-    candidateType: null,
+    isWaymate: false,
     points: [point],
   };
 }
@@ -97,9 +97,9 @@ function buildCandidateTrajectory(
   candidate: ScoredMatchedCandidate,
   color: string,
   index: number,
-  existingGoal: boolean,
+  _existingGoal: boolean,
 ): ProcessedTrajectory {
-  const { userId, candidateType, matchedContext, timeSinceMatchedMonths, path } = candidate;
+  const { userId, isWaymate, matchedContext, timeSinceMatchedMonths, path } = candidate;
 
   const points = extractCandidatePoints(path, matchedContext);
 
@@ -107,17 +107,10 @@ function buildCandidateTrajectory(
     id: userId,
     label: `#${index + 1}`,
     color,
-    width: 1.5,
-    candidateType,
+    width: isWaymate ? 2 : 1.5,
+    isWaymate,
     points,
   };
-
-  if (existingGoal && candidateType === "pathfinder" && path) {
-    const matchedIndex = path.findIndex((ctx) => ctx.contextId === matchedContext.contextId);
-    if (matchedIndex !== -1) {
-      trajectory.matchedContextIndex = matchedIndex;
-    }
-  }
 
   if (timeSinceMatchedMonths !== undefined) {
     trajectory.timeSinceMatchedMonths = timeSinceMatchedMonths;

@@ -44,10 +44,10 @@ export type ProcessedTrajectory = {
   id: string;
   label: string;
   color: string;
-  width: number; // candidateType priority (3/2/1.5)
-  candidateType: "pathfinder" | "waymate" | null;
+  width: number; // waymate priority (2 for waymate, 1.5 for regular)
+  isWaymate: boolean;
   matchedContextIndex?: number; // index of matched context in points[]
-  timeSinceMatchedMonths?: number; // for pathfinder legend
+  timeSinceMatchedMonths?: number; // for legend
   points: TrajectoryPoint[];
 };
 
@@ -84,7 +84,7 @@ export type OverlapSummary = {
 
 export type SimilarityMetrics = {
   candidateId: string;
-  candidateType: "pathfinder" | "waymate" | null;
+  isWaymate: boolean;
   perField: Partial<Record<ChartableField, number>>;
   overall: number;
 };

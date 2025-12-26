@@ -1,4 +1,5 @@
 import {
+  buildPathfinderSearchQuery,
   buildReversePathfinderSearchQuery,
   buildWaymatesSearchQuery,
   userCurrentContextQuery,
@@ -6,6 +7,7 @@ import {
 import {
   CONTEXT_FIELD_NAMES,
   matchedCandidateWithPathSchema,
+  pathfinderCandidateSchema,
   scoredMatchedCandidateSchema,
   userContextSchema,
 } from "../shared/schemas.js";
@@ -19,6 +21,8 @@ import type {
   AdhocContextBase,
   ContextField,
   MatchedCandidateWithPath,
+  PathfinderCandidate,
+  PathfinderSearchParams,
   ScoredMatchedCandidate,
   TargetSearchParams,
   UserContext,
@@ -84,6 +88,31 @@ export class SearchManager {
       const result = await tx.run(query, queryParams);
 
       return result.records.map((record) => matchedCandidateWithPathSchema.parse(record.toObject()));
+    });
+  }
+
+  /**
+   * Search pathfinders: people who went FROM our context TO our goal.
+   * Proof of transition - shows that the career path is possible.
+   */
+  async searchPathfinders(params: PathfinderSearchParams): Promise<PathfinderCandidate[]> {
+    const strictFields = computeStrictFields(params.excludedContextFields);
+    const query = buildPathfinderSearchQuery(params, strictFields);
+
+    const queryParams = {
+      userId: params.userId,
+      referenceContext: params.referenceContext,
+      ...params.targetContext,
+      excludedCreationReasons: params.excludedCreationReasons,
+      targetRecencyMonths: params.targetRecencyMonths,
+      referenceRecencyMonths: params.referenceRecencyMonths,
+      limit: params.limit,
+    };
+
+    return this.db.read(async (tx) => {
+      const result = await tx.run(query, queryParams);
+
+      return result.records.map((record) => pathfinderCandidateSchema.parse(record.toObject()));
     });
   }
 

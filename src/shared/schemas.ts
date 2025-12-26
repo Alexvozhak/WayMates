@@ -527,6 +527,34 @@ export const targetSearchParamsSchema = targetSearchParamsBaseSchema.extend({
 export type TargetSearchParams = z.infer<typeof targetSearchParamsSchema>;
 
 /**
+ * Pathfinder search parameters (Mode 3: proof of transition).
+ * Finds people who went FROM our context TO our goal.
+ *
+ * Dual matching:
+ * - referenceContext: their history contains context similar to ours
+ * - targetContext: their history contains our goal
+ *
+ * Dual recency:
+ * - referenceRecencyMonths: how long ago they were in our context (~2-5 years = path length)
+ * - targetRecencyMonths: how recently they reached the goal (~2-6 months)
+ */
+export const pathfinderSearchParamsSchema = withPathLimitTransform(
+  userSearchParamsRawSchema.omit({ recencyThresholdMonths: true }).extend({
+    referenceContext: adhocContextBase.describe("Our current context for matching"),
+    targetContext: targetContextSchema.describe("Our goal for matching"),
+    referenceRecencyMonths: z
+      .number()
+      .min(1)
+      .nullable()
+      .default(null)
+      .describe("Max months since being in reference context (path length)"),
+    targetRecencyMonths: z.number().min(1).nullable().default(null).describe("Max months since reaching target"),
+  }),
+);
+
+export type PathfinderSearchParams = z.infer<typeof pathfinderSearchParamsSchema>;
+
+/**
  * Applied filters feedback (TargetSearchParams - asking_after_validate phase)
  * Shows what filters were applied + rejected reasons (user input not matched)
  * Omits targetContext (already shown in extractedGoal)
@@ -717,10 +745,7 @@ export type CandidateCore = z.infer<typeof candidateCoreSchema>;
 // Block 2: Context scoring fields
 export const contextScoringFieldsSchema = z.object({
   contextMatchScore: z.number().min(0).describe("Context match score (raw: matched weights - extra penalties, >= 0)"),
-  candidateType: z
-    .enum(["pathfinder", "waymate"])
-    .nullable()
-    .describe("Pathfinder = reached goal, Waymate = same goal, null = regular"),
+  isWaymate: z.boolean().describe("True if candidate has same goal as searching user (and hasn't reached it yet)"),
 });
 
 export type ContextScoringFields = z.infer<typeof contextScoringFieldsSchema>;
@@ -757,9 +782,22 @@ export const scoredMatchedCandidateSchema = candidateCoreSchema
   .merge(dtwFieldsSchema.partial());
 export type ScoredMatchedCandidate = z.infer<typeof scoredMatchedCandidateSchema>;
 
-// Type 3: Core + Path
+// Type 3: Core + Path (for reverseSearchPathfinders)
 export const matchedCandidateWithPathSchema = candidateCoreSchema.merge(pathFieldsSchema);
 export type MatchedCandidateWithPath = z.infer<typeof matchedCandidateWithPathSchema>;
+
+// Type 4: Pathfinder candidate (dual matching, dual recency)
+// Used by searchPathfinders - finds people who went FROM our context TO our goal
+export const pathfinderCandidateSchema = z.object({
+  userId: userIdSchema.describe("Candidate user ID"),
+  matchedContext: userContextSchema.describe("Target context (where they reached our goal)"),
+  referenceContext: userContextSchema.describe("Reference context (where they were like us)"),
+  timeSinceTargetMonths: z.number().min(0).describe("Months since reaching target"),
+  timeSinceReferenceMonths: z.number().min(0).describe("Months since being in reference context"),
+  path: z.array(userContextSchema).describe("Full career path"),
+  trails: z.array(trailSchema).describe("Learning paths between contexts"),
+});
+export type PathfinderCandidate = z.infer<typeof pathfinderCandidateSchema>;
 
 // ==========================================
 // === FACETS (for large result sets) ===
