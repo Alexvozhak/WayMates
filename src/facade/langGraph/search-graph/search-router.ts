@@ -17,8 +17,8 @@ const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, No
   [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_goal,                     buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.delete_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.asking_after_validate_candidates, buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.asking_after_validate_facets,     buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.asking_after_validate_candidates, buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.asking_after_validate_facets,     buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_results,                  buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
 ]);
 
@@ -56,6 +56,7 @@ function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, Rout
     save: NODE.set_goal,
     clarify: canClarify ? NODE.clarify_goal : NODE.set_goal,
     change: canChangePosition ? NODE.extract_goal : NODE.set_goal,
+    filter: NODE.apply_filters,
     cancel: NODE.cancel,
     unknown: NODE.clarify_intent,
   };

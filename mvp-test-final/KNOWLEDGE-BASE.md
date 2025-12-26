@@ -190,6 +190,19 @@ logger.warn({ error }, "something went wrong");
 
 **Программный query**: через `langsmith` SDK, см. `docs/architecture/decisions/ADR-018-langsmith-observability.md`
 
+### Dictionary Hints Pollution
+
+LLM extraction получает hints из `getVerifiedDictionaries()` — все `verified: true` entries.
+
+**Проблема**: Если тест создаёт entry с `verified: true`, он попадает в hints и ломает extraction.
+
+**Симптом**: LLM возвращает `test-position-12345` вместо `junior`.
+
+**Решение**:
+1. Тесты используют `verified: false` для user-suggested terms
+2. Или cleanup entries в afterAll
+3. Или отдельная test DB
+
 ---
 
 ## 5. SEARCHGRAPH FLOW (Основной сценарий)
@@ -452,26 +465,47 @@ Lint можно пропустить — фокус на функциональ�
 | `validate` | "покажи реальных людей" | `validate_goal` |
 | `save` | Явное сохранение | `set_goal` |
 
+### Chart Generation
+
+| Нода | Chart? | Почему |
+|------|--------|--------|
+| `show_results` | ✅ | Есть userTrajectory + candidates |
+| `validate_goal` | ❌ TODO | Нужен mode "candidates only" |
+| `explore` | ❌ TODO | Нужен mode "candidates only" |
+
+**Логика в show_results.ts:**
+```typescript
+const hasDataForChart = searchResults.length > 0 && userTrajectory.length > 0;
+```
+
+**Проблема adhoc**: `userTrajectory` пустой → chart не генерится.
+
+**TODO**: Добавить mode `"candidates_only"` в `generateTrajectoryChart` для validate_goal и explore.
+
 ---
 
 ## 11. SEARCH ARCHITECTURE (Core)
 
-### Три режима поиска
+### Два режима поиска (unified API)
 
-| Режим | Кого ищем | Recency на | Требует Goal | Chart |
-|-------|-----------|------------|--------------|-------|
-| **searchWaymates** | Однопутники с ТЕМ ЖЕ текущим контекстом | текущий контекст кандидата | Нет | Нет (нет paths) |
-| **searchPathfinders** | Кто прошёл ОТ нашего контекста К нашей цели | целевой контекст кандидата | ДА | Да (есть paths) |
-| **reverseSearchPathfinders** | Кто достиг target (любой старт) | целевой контекст кандидата | ДА | Да (есть paths) |
+| Режим | Кого ищем | referenceContext | Chart |
+|-------|-----------|------------------|-------|
+| **searchWaymates** | Похожие люди (adhoc ИЛИ profile) | optional (adhoc = из сообщения, profile = из DB) | ❌ |
+| **reverseSearchPathfinders** | Кто достиг target (любой старт) | - | ❌ (TODO) |
+
+**searchWaymates** — unified API для adhoc и profile:
+- `referenceContext` есть → adhoc mode (из сообщения)
+- `referenceContext` нет → profile mode (из user.currentContextId)
 
 ### Бизнес-смысл каждого режима
 
-1. **Waymates** = peers в одной лодке СЕЙЧАС
-   - Match: candidate.currentContext = our.current
-   - Recency: "он ещё там? не ушёл?"
-   - Ценность: solidarity, "кто ещё в моей ситуации"
+1. **Waymates** = похожие люди (unified: adhoc + profile)
+   - Match: candidate имеет контекст похожий на наш (любой в истории)
+   - С goal: candidateType = pathfinder (достиг) / waymate (та же цель) / null
+   - Без goal: candidateType = null (просто похожие)
+   - Ценность: "кто ещё в моей ситуации"
 
-2. **Pathfinders** = proof of transition (наш путь возможен)
+2. **Pathfinders** = proof of transition (НЕ РЕАЛИЗОВАН)
    - Match 1: candidate.history содержит our.current (был где мы)
    - Match 2: candidate.history содержит our.goal (достиг куда мы хотим)
    - Temporal: goal.createdAt > current.createdAt
