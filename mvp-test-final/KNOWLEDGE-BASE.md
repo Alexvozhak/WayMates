@@ -486,36 +486,32 @@ const hasDataForChart = searchResults.length > 0 && userTrajectory.length > 0;
 
 ## 11. SEARCH ARCHITECTURE (Core)
 
-### Два режима поиска (unified API)
+### Три режима поиска
 
-| Режим | Кого ищем | referenceContext | Chart |
-|-------|-----------|------------------|-------|
-| **searchWaymates** | Похожие люди (adhoc ИЛИ profile) | optional (adhoc = из сообщения, profile = из DB) | ❌ |
-| **reverseSearchPathfinders** | Кто достиг target (любой старт) | - | ❌ (TODO) |
-
-**searchWaymates** — unified API для adhoc и profile:
-- `referenceContext` есть → adhoc mode (из сообщения)
-- `referenceContext` нет → profile mode (из user.currentContextId)
+| Режим | Кого ищем | Ключевые параметры |
+|-------|-----------|-------------------|
+| **searchWaymates** | Похожие люди (adhoc ИЛИ profile) | `referenceContext?`, `recencyMonths`, `isWaymate: true` |
+| **searchPathfinders** | Кто прошёл от нашего контекста к нашей цели | `referenceContext` + `targetContext`, dual recency |
+| **reverseSearchPathfinders** | Кто достиг target (любой старт) | `targetContext`, для валидации цели |
 
 ### Бизнес-смысл каждого режима
 
 1. **Waymates** = похожие люди (unified: adhoc + profile)
    - Match: candidate имеет контекст похожий на наш (любой в истории)
-   - С goal: candidateType = pathfinder (достиг) / waymate (та же цель) / null
-   - Без goal: candidateType = null (просто похожие)
+   - `isWaymate: boolean` — кандидат имеет ту же цель что и мы
    - Ценность: "кто ещё в моей ситуации"
 
-2. **Pathfinders** = proof of transition (НЕ РЕАЛИЗОВАН)
-   - Match 1: candidate.history содержит our.current (был где мы)
-   - Match 2: candidate.history содержит our.goal (достиг куда мы хотим)
-   - Temporal: goal.createdAt > current.createdAt
-   - Recency на goal: "он недавно достиг цели?"
+2. **Pathfinders** = proof of transition
+   - Match 1: candidate.history содержит our.referenceContext (был где мы)
+   - Match 2: candidate.history содержит our.targetContext (достиг куда мы хотим)
+   - Temporal: refContext.createdAt < targetContext.createdAt
+   - Dual recency: `targetRecencyMonths` + `referenceRecencyMonths`
    - Ценность: "путь возможен, вот доказательство"
 
 3. **ReversePathfinders** = reverse engineering (откуда приходят на target)
    - Match: candidate.history содержит target
    - Recency на target: "он недавно достиг target?"
-   - Ценность: "откуда вообще люди приходят на эту позицию"
+   - Ценность: валидация цели, "откуда люди приходят на эту позицию"
 
 ### Adhoc vs Profile
 
@@ -559,13 +555,14 @@ MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)
 // → ЛЮБОЙ контекст в истории (для Pathfinders/Reverse)
 ```
 
-### candidateType в результатах
+### isWaymate в результатах
 
-| candidateType | Значение | Когда |
-|---------------|----------|-------|
-| `'waymate'` | Та же цель что у нас | Waymates search + goal совпадает |
-| `'pathfinder'` | Достиг нашей цели | Pathfinders search |
-| `null` | Нет классификации | Нет goal или не матчится |
+| isWaymate | Значение | Когда |
+|-----------|----------|-------|
+| `true` | Кандидат имеет ту же цель | Waymates search + goal совпадает |
+| `false` | Нет goal или другая цель | Нет goal или не матчится |
+
+**Примечание:** `candidateType` enum удалён, заменён на `isWaymate: boolean`.
 
 ---
 

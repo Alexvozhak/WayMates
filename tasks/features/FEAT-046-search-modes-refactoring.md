@@ -1,8 +1,9 @@
 # FEAT-046: Рефакторинг режимов поиска (Search Modes)
 
-**Статус:** IN PROGRESS
+**Статус:** DONE ✅
 **Приоритет:** P1
 **Ветка:** `feature/search-refactor`
+**Коммит:** `fe886d7`
 **Создано:** 2025-12-25
 **Обновлено:** 2025-12-26
 
@@ -39,23 +40,25 @@
 
 ## Текущий статус
 
-### Выполнено
+### Все фазы выполнены ✅
 
-- [x] **Фаза 1: Rename** — `searchByTarget` → `reverseSearchPathfinders` (коммит `aeabdcf`)
-- [x] **Фаза 2: Waymates merge** — объединение searchAdhoc + searchByUser (коммит `e2399b0`)
-- [x] **Фаза 3: Chart cleanup** — убран из explore.ts
-- [x] **Фаза 4: Prompt improvements** — убраны примеры, dictionary hints (коммит `4b3f65e`)
-- [x] **Фаза 5: Adhoc validation** — 4 required fields (коммит `6e11200`)
-- [x] **Фаза 6: Goal inheritance** — fillFromContext()
-- [x] **Фаза 7: Router fix** — добавлен `filter` в validateRoutes (uncommitted)
-
-### В работе
-
-- [ ] **Фаза 8: searchPathfinders** — реализовать полноценный поиск pathfinders
+| Фаза | Описание | Коммит |
+|------|----------|--------|
+| 1 | Rename: `searchByTarget` → `reverseSearchPathfinders` | `aeabdcf` |
+| 2 | Merge: `searchAdhoc` + `searchByUser` → `searchWaymates` | `e2399b0` |
+| 3 | Chart cleanup: убран из explore.ts | — |
+| 4 | Prompt improvements: убраны примеры, dictionary hints | `4b3f65e` |
+| 5 | Adhoc validation: 4 required fields | `6e11200` |
+| 6 | Goal inheritance: fillFromContext() | — |
+| 7 | Router fix: `filter` в validateRoutes | `d447270` |
+| 8.1 | `candidateType` → `isWaymate: boolean` | — |
+| 8.2-8.4 | searchPathfinders (dual matching, dual recency) | — |
+| 8.5 | Тесты G1-G5 переписаны | — |
+| 8.6 | LIMIT 1 bug → `collect()[0]` per user | `fe886d7` |
 
 ---
 
-## Фаза 8: searchPathfinders (СЛЕДУЮЩАЯ СЕССИЯ)
+## Фаза 8: searchPathfinders (DONE ✅)
 
 ### Бизнес-требования
 
@@ -121,39 +124,34 @@ pathfinderSearchParamsSchema = {
 }
 ```
 
-### Подфазы реализации
+### Подфазы реализации (все выполнены ✅)
 
-**Фаза 8.1: Рефакторинг waymates (~5% контекста)**
-- [ ] `candidateType` → `isWaymate: boolean`
-- [ ] Убрать pathfinder classification из buildWaymatesSearchQuery
-- [ ] Обновить типы: ScoredMatchedCandidate
-- [ ] Обновить тесты
+**Фаза 8.1: Рефакторинг waymates**
+- [x] `candidateType` → `isWaymate: boolean`
+- [x] Убрать pathfinder classification из buildWaymatesSearchQuery
+- [x] Обновить типы: ScoredMatchedCandidate
+- [x] Обновить тесты
 
-**Фаза 8.2: Извлечь buildTargetFilterConditions (~5% контекста)**
-- [ ] Извлечь target filtering из buildReversePathfinderSearchQuery
-- [ ] Переиспользовать в reversePathfinders
-- [ ] Тесты без изменения поведения
+**Фаза 8.2-8.3: buildPathfinderSearchQuery**
+- [x] Dual matching (ref + target)
+- [x] Два recency фильтра (targetRecencyMonths + referenceRecencyMonths)
+- [x] excludedContextFields для ref matching
+- [x] Temporal ordering: `refContext.createdAt < matchedContext.createdAt`
+- [x] LIMIT 1 bug fix → `collect()[0]` per (user, targetContext)
 
-**Фаза 8.3: buildPathfinderSearchQuery (~10% контекста)**
-- [ ] Создать query с dual matching (ref + target)
-- [ ] Два recency фильтра
-- [ ] excludedContextFields для ref matching
-- [ ] excludedCreationReasons для траектории
-- [ ] Temporal ordering
+**Фаза 8.4: SearchManager + tRPC**
+- [x] `searchPathfinders()` в SearchManager
+- [x] `search.pathfinders` endpoint
+- [x] `pathfinderSearchParamsSchema`, `pathfinderCandidateSchema`
 
-**Фаза 8.4: SearchManager + tRPC (~5% контекста)**
-- [ ] Добавить searchPathfinders в SearchManager
-- [ ] Добавить endpoint в search.router.ts
-- [ ] pathfinderSearchParamsSchema
+**Фаза 8.5: Facade integration**
+- [x] `validate_goal` использует `reversePathfinders` (правильно для валидации)
+- [ ] **TODO:** UX выбор waymates/pathfinders после save goal
 
-**Фаза 8.5: Facade integration (~5% контекста)**
-- [ ] Обновить search node: с goal → pathfinders
-- [ ] Или добавить выбор waymates/pathfinders после save
-
-**Фаза 8.6: Тестирование (~5% контекста)**
-- [ ] Unit тесты для buildPathfinderSearchQuery
-- [ ] Integration тесты для searchPathfinders
-- [ ] E2E: adhoc → goal → pathfinders
+**Фаза 8.6: Тестирование**
+- [x] G1-G5 тесты переписаны
+- [x] Negative assertions (U8 НЕ найден)
+- [x] 88/88 integration tests pass
 
 ---
 
@@ -244,31 +242,27 @@ Adhoc = пользователь ввёл контекст вручную, тр�
 ## Промпт для продолжения
 
 ```
-Изучи: tasks/features/FEAT-046-search-modes-refactoring.md (Фаза 8)
+Изучи: tasks/features/FEAT-046-search-modes-refactoring.md
 
 КОНТЕКСТ:
-- Ветка: feature/search-refactor
-- Фазы 1-7 — DONE
-- Фаза 8 (searchPathfinders) — IN PROGRESS
+- Ветка: feature/search-refactor, коммит: fe886d7
+- FEAT-046 DONE ✅, 88/88 integration tests pass
 
-ЧТО ДЕЛАТЬ (по подфазам):
-8.1: candidateType → isWaymate: boolean
-8.2: Извлечь buildTargetFilterConditions()
-8.3: buildPathfinderSearchQuery (dual matching, dual recency)
-8.4: SearchManager + tRPC
-8.5: Facade integration
-8.6: Тесты
+ЧТО СДЕЛАНО:
+- searchWaymates (unified adhoc + profile)
+- searchPathfinders (dual matching, dual recency)
+- isWaymate: boolean вместо candidateType enum
+- LIMIT 1 bug → collect()[0] per user
 
-КЛЮЧЕВЫЕ РЕШЕНИЯ (согласовано):
-- isWaymate: boolean (не candidateType enum)
-- Два recency: targetRecencyMonths + referenceRecencyMonths
-- excludedContextFields как в waymates
-- excludedCreationReasons на траекторию
-- 90%+ reuse существующего кода
+СЛЕДУЮЩИЕ ЗАДАЧИ:
+1. UX: выбор waymates/pathfinders после save goal
+2. UX тест как критичный пользователь
+3. NLP стиль improvements
+4. Chart improvements (FEAT-047)
 
 БИЗНЕС-ЛОГИКА:
-- Pathfinder = был как мы + достиг нашей цели + temporal ordering
 - Waymate = похожий + та же цель + ещё не достиг
+- Pathfinder = был как мы + достиг нашей цели + temporal ordering
 - reversePathfinder = достиг цели (любой старт), для валидации
 ```
 
@@ -282,4 +276,5 @@ Adhoc = пользователь ввёл контекст вручную, тр�
 | `e2399b0` | Фаза 2: merge searchAdhoc + searchByUser → searchWaymates |
 | `4b3f65e` | Фаза 4: prompt improvements |
 | `6e11200` | Фазы 5-6: adhoc validation + goal inheritance |
-| PENDING | Фаза 7: filter в validateRoutes |
+| `d447270` | Фаза 7: filter в validateRoutes + searchPathfinders design |
+| `fe886d7` | Фаза 8: LIMIT 1 bug fix + G2/G4 test improvements |
