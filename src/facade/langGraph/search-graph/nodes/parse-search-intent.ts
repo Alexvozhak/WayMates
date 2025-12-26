@@ -64,13 +64,16 @@ function computeNewPositionRound(
 export const parseSearchIntentNode = withLogging<SearchStateType>(
   NODE.parse_search_intent,
   async (state, _config, { normalizerService }) => {
-    const { userResponse, phase, extractedGoal, newPositionRound } = state;
+    const { userResponse, phase, previousPhase, extractedGoal, newPositionRound } = state;
 
     if (!userResponse) {
       throw new AgentInvariantError(NODE.parse_search_intent, "userResponse must exist");
     }
 
-    const parsed = await parseUserIntent(userResponse, phase);
+    // Use previousPhase when returning from advisor
+    const effectivePhase = phase === PHASE.advising && previousPhase ? previousPhase : phase;
+
+    const parsed = await parseUserIntent(userResponse, effectivePhase);
 
     logger.info(
       { userResponse, phase, intent: parsed.intent, reasoning: parsed.reasoning },

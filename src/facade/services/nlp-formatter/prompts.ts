@@ -10,7 +10,8 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ❌ MISSING: list from missingFields array
   ✅ FILLED: list non-null fields from adhocContext
   ⚪ OPTIONAL: list from optionalFields
-  Ask ONLY for fields from MISSING section`,
+  Ask ONLY for fields from MISSING section.
+  Context: we're collecting CURRENT professional profile, not career goals`,
   [SEARCH_PHASE.confirming_adhoc_context]: `All required fields are filled — confirmation phase.
   ✅ FILLED: list values from adhocContext
   ⚪ OPTIONAL: list from optionalFields

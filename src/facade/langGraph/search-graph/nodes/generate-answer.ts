@@ -38,8 +38,12 @@ export const generateAnswerNode = withLogging<SearchStateType>(NODE.generate_ans
 
   const answerText = typeof response.content === "string" ? response.content : String(response.content);
 
+  // Save previous phase only on first entry to advisor (not during Q&A loop)
+  const previousPhase = state.phase === PHASE.advising ? state.previousPhase : state.phase;
+
   return {
     currentAnswer: answerText,
     phase: PHASE.advising,
+    previousPhase,
   };
 });

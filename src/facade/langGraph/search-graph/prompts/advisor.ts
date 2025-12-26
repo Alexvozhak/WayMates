@@ -3,6 +3,15 @@
 // Q&A mode for answering questions about search results
 // ============================================================================
 
+import type { AdvisorIntent } from "../state.js";
+
+// Type-safe intent descriptions
+const ADVISOR_INTENT_DESCRIPTIONS: Record<AdvisorIntent, string> = {
+  ask: "User asks a QUESTION — wants information, explanation, clarification about data or results",
+  action: "User wants to DO something — set goal, change filters, search, explore, any action request (not a question)",
+  done: "User FINISHES conversation — thanks, goodbye, satisfied, enough",
+};
+
 /**
  * Career Advisor system prompt for Q&A about search results.
  * Includes DTW explanation, terminology, and evidence-based response rules.
@@ -48,14 +57,22 @@ RESPONSE RULES:
 6. End with actionable insight when appropriate
 7. Respond in user's language`;
 
+// Generate intents section from Record (single source of truth)
+const ADVISOR_INTENTS_SECTION = Object.entries(ADVISOR_INTENT_DESCRIPTIONS)
+  .map(([intent, desc]) => `- ${intent.toUpperCase()}: ${desc}`)
+  .join("\n");
+
+const ADVISOR_INTENT_VALUES = Object.keys(ADVISOR_INTENT_DESCRIPTIONS)
+  .map((k) => `"${k}"`)
+  .join(" | ");
+
 /**
  * Advisor intent classification prompt.
- * Simpler than search intent — only ask (continue) or done (finish).
+ * Type-safe: intents derived from AdvisorIntent type.
  */
 export const ADVISOR_INTENT_PROMPT = `Classify user's intent in advisor conversation. Response may be in any language.
 
 Intents:
-- ASK: User asks another question, wants more information, or continues the conversation
-- DONE: User explicitly finishes, says thanks, goodbye, or indicates they're satisfied
+${ADVISOR_INTENTS_SECTION}
 
-Return: { intent: "ask" | "done" }`;
+Return: { intent: ${ADVISOR_INTENT_VALUES} }`;

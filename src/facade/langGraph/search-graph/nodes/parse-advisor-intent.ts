@@ -8,7 +8,7 @@ import { withLogging } from "../with-logging.js";
 import type { AdvisorIntent, SearchStateType } from "../state.js";
 
 const advisorIntentSchema = z.object({
-  intent: z.enum(["ask", "done"]),
+  intent: z.enum(["ask", "action", "done"]),
 });
 
 const intentParser = getModel("deterministic").withStructuredOutput(advisorIntentSchema);
@@ -34,7 +34,8 @@ export const parseAdvisorIntentNode = withLogging<SearchStateType>(
     return {
       advisorIntent: intent,
       advisorQuestion,
-      userResponse: "",
+      // Keep userResponse for action — main flow will process it
+      userResponse: intent === "action" ? userResponse : "",
     };
   },
 );

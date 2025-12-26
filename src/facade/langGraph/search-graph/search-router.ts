@@ -32,7 +32,7 @@ export const LOAD_CONTEXT_ROUTE_MAP = buildRouteMap([
 ]);
 export const CHECK_GOAL_ROUTE_MAP = buildRouteMap([NODE.search_waymates, NODE.explore, NODE.load_existing_goal]);
 export const APPLY_FILTERS_ROUTE_MAP = buildRouteMap([NODE.explore, NODE.search_waymates, NODE.search_pathfinders]);
-export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.show_results]);
+export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.parse_search_intent, NODE.show_results]);
 
 // =============================================================================
 // ROUTES: маппинг intent → node (фабрика с state-dependent параметрами)
@@ -135,10 +135,13 @@ export const PARSE_INTENT_ALL_DESTINATIONS = {
 };
 
 export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
-  const { phase, clarifyRound, newPositionRound, searchUserIntent, storedGoal } = state;
+  const { phase, previousPhase, clarifyRound, newPositionRound, searchUserIntent, storedGoal } = state;
 
   if (phase === PHASE.failed) return NODE.cancel;
   if (!searchUserIntent) throw new AgentInvariantError("routeAfterParseSearchIntent", "searchUserIntent missing");
+
+  // Use previousPhase when returning from advisor
+  const effectivePhase = phase === PHASE.advising && previousPhase ? previousPhase : phase;
 
   const flags: RouteFlags = {
     canClarify: clarifyRound < MAX_CLARIFY_ROUNDS,
@@ -147,8 +150,8 @@ export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
   };
 
   const routes = createIntentRoutes(flags);
-  const phaseRoutes = routes[phase];
-  const defaultRoute = phase === PHASE.showing_goal ? NODE.set_goal : NODE.cancel;
+  const phaseRoutes = routes[effectivePhase];
+  const defaultRoute = effectivePhase === PHASE.showing_goal ? NODE.set_goal : NODE.cancel;
 
   return phaseRoutes?.[searchUserIntent] ?? defaultRoute;
 }
@@ -169,7 +172,9 @@ export function routeAfterApplyFilters(state: SearchStateType): NodeName {
 }
 
 export function routeAfterAdvisor(state: SearchStateType): NodeName {
-  return state.advisorIntent === "ask" ? NODE.generate_answer : NODE.show_results;
+  if (state.advisorIntent === "ask") return NODE.generate_answer;
+  if (state.advisorIntent === "action") return NODE.parse_search_intent;
+  return NODE.show_results;
 }
 
 export function isTerminalPhase(phase: SearchPhase): boolean {

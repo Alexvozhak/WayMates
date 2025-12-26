@@ -45,15 +45,49 @@
 
 ---
 
-## Фаза 3: Router Refactor (IN PROGRESS)
+## Фаза 3: Router Refactor (DONE)
 
-**Что сделано:**
 - Добавлен `ask` intent во все фазы (PHASE_CONTEXT + routing)
 - Извлечены статические routes в константы (EXPLORATION_ROUTES, SEARCH_MODE_ROUTES, RESULTS_ROUTES)
+- Коммит: `a5b0d1f`
 
-**Осталось:**
-- Проверить tsc + lint
-- Rebuild facade и финальный тест
+---
+
+## Фаза 4: Advisor Action Intent (DONE)
+
+**Проблема:** Из advisor нельзя вернуться в main flow. "хочу стать senior" классифицировался как `ask` и зацикливался.
+
+**Решение:** Generic `action` intent вместо дублирования интентов.
+
+### Архитектура
+
+```
+advisor
+   │
+   ├─ ask → generate_answer (продолжить Q&A)
+   ├─ action → parse_search_intent (вернуться в main flow)
+   └─ done → show_results (закончить)
+```
+
+**Ключевой инсайт:** `action` = generic intent. Мы НЕ определяем КАКОЕ действие в advisor, просто понимаем что это действие (не вопрос). Main flow разберётся через parse_search_intent.
+
+### Изменённые файлы
+
+| Файл | Изменение |
+|------|-----------|
+| `state.ts` | + `action` в AdvisorIntent, + `previousPhase` |
+| `prompts/advisor.ts` | Type-safe ADVISOR_INTENT_DESCRIPTIONS |
+| `parse-advisor-intent.ts` | Schema + сохранение userResponse для action |
+| `generate-answer.ts` | Сохранение previousPhase при входе в advisor |
+| `search-router.ts` | action → parse_search_intent |
+| `parse-search-intent.ts` | effectivePhase = previousPhase когда advising |
+| `nlp-formatter/prompts.ts` | "CURRENT professional profile, not career goals" |
+
+### Протестировано
+
+```
+confirming_adhoc_context → ask → advising → action → showing_goal ✅
+```
 
 ---
 
@@ -61,30 +95,28 @@
 
 ### `ask` intent должен быть везде
 
-Пользователь может спросить "что ты умеешь?" или "а что дальше?" в любой фазе. Без `ask` в valid intents → LLM классифицирует как `cancel`.
+Пользователь может спросить "что ты умеешь?" в любой фазе. Без `ask` в valid intents → LLM классифицирует как `cancel`.
 
-### Инструкции в промпте видны всем фазам
+### Advisor как layer, не destination
 
-Все описания фаз в одном SEARCH_PROMPT. Если в одной фазе сказано "Ask for X", LLM может применить это к другой фазе. Решение: семантические инструкции без конкретных полей.
+Advisor должен уметь вернуть пользователя в main flow. Для этого нужен `previousPhase` чтобы parse_search_intent знал какой route map использовать.
 
-### Static vs Dynamic routes
+### Generic action vs дублирование интентов
 
-Routes без зависимости от flags → выносить в константы (UPPER_CASE). Routes с flags → внутри функции.
+Вместо добавления setGoal, filter, explore в advisor (дублирование!) — один generic `action` который роутит в parse_search_intent с сохранённым userResponse.
 
----
+### INTERRUPT ноды всегда ждут
 
-## Отчёт по багам
-
-См. `docs/mvp_final/tests_report.md`
+Нельзя роутить из advisor в confirm_adhoc_context — там interrupt() снова остановит flow. Нужен прямой путь в parse_search_intent.
 
 ---
 
-## Что делать дальше
+## Осталось сделать
 
-1. `npx tsc --noEmit` + `npm run lint:fix`
-2. `npm run facade:rebuild`
-3. Финальный прогон flow: adhoc → goal → search → results
-4. Коммит если всё ок
+1. **lint + commit** — изменения не закоммичены
+2. **Test ask intent** — business/arch/user topics из разных фаз
+3. **Structurizr research** — интеграция для архитектурных диаграмм
+4. **Charts** — waymates, pathfinders, reverseSearch
 
 ---
 
@@ -95,17 +127,16 @@ Routes без зависимости от flags → выносить в конс
 
 КОНТЕКСТ:
 - Ветка: feature/search-refactor
-- UX тестирование как токсичный пользователь
-- 7 NLP багов найдено и исправлено
-- Router refactor: статические routes вынесены в константы
+- Advisor action intent реализован — возврат из advisor в main flow через previousPhase
 
 СТАТУС:
-- tsc/lint не проверены после последнего изменения
-- facade не пересобран
+- tsc ✅, lint не запущен
+- facade пересобран, тесты прошли
+- коммит НЕ сделан
 
 ЧТО ДЕЛАТЬ:
-1. npx tsc --noEmit && npm run lint:fix
-2. npm run facade:rebuild
-3. Финальный тест полного flow
-4. Коммит
+1. npm run lint:fix && git add -A && git commit
+2. Test ask intent из разных фаз (business/arch/user topics)
+3. Structurizr research
+4. Charts implementation (waymates, pathfinders, reverseSearch)
 ```

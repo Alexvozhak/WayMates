@@ -99,12 +99,13 @@ export type SearchUserIntent = SimpleIntent | ComplexIntent;
 
 export type SearchMode = "waymates" | "pathfinders";
 
-export type AdvisorIntent = "ask" | "done";
+export type AdvisorIntent = "ask" | "action" | "done";
 
 export const searchStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),
   phase: Annotation<SearchPhase>({ reducer: lastValue, default: () => PHASE.checking_goal }),
+  previousPhase: Annotation<SearchPhase | null>({ reducer: lastValue, default: () => null }),
   userResponse: Annotation<string>({ reducer: lastValue, default: () => "" }),
   orchestratorIntent: Annotation<UserIntent | null>({ reducer: lastValue, default: () => null }),
 
