@@ -37,12 +37,12 @@ Each metric is 0-1 where 1 = perfectly similar.
    High (~0.85): Both spent ~2 years per level
    Low (~0.4): One grew fast, other slow
 
-3. Stability Score — how "smooth" both trajectories are
+3. Alignment Score — how well trajectories align in DTW
    Formula: min_length / actual_alignment_length
-   High (~0.9): Steady progressions without jumps
-   Low (~0.5): Required much "stretching" to align
+   High (~0.9): Clean 1:1 alignment, trajectories match well
+   Low (~0.5): Required much "warping" to align paths
 
-Total Score: shape + tempo + stability (max = 3.0)
+Total Score: shape + tempo + alignment (max = 3.0)
 - > 2.5: Very similar trajectories — highly relevant
 - 2.0-2.5: Similar — worth considering
 - 1.5-2.0: Moderate similarity — some differences

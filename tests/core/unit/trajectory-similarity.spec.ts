@@ -174,7 +174,7 @@ describe("TrajectorySimilarityService", () => {
      *
      * Then:
      * - shapeSimilarity > 0.8 (похожие positions/domains)
-     * - stabilityScore > 0.8 (одинаковая длина траектории)
+     * - alignmentScore > 0.8 (одинаковая длина траектории)
      *
      * Бизнес-правило:
      * Skills (nodejs vs python) НЕ учитываются в DTW — это design decision.
@@ -189,7 +189,7 @@ describe("TrajectorySimilarityService", () => {
       // Smoke test: похожие траектории → высокие scores
       // (точные значения зависят от fixture data, проверяем только "высокий")
       expect(metrics.shapeSimilarity).toBeGreaterThan(0.8);
-      expect(metrics.stabilityScore).toBeGreaterThan(0.9);
+      expect(metrics.alignmentScore).toBeGreaterThan(0.9);
     });
 
     /**

@@ -210,7 +210,7 @@ export class OverlapCalculator {
       return this.createEmptyMetrics(trajectory);
     }
 
-    const { shapeSimilarity, tempoSimilarity, stabilityScore } = dtwMetrics;
+    const { shapeSimilarity, tempoSimilarity, alignmentScore } = dtwMetrics;
 
     return {
       candidateId: trajectory.id,
@@ -218,9 +218,9 @@ export class OverlapCalculator {
       perField: {
         position: shapeSimilarity,
         domains: tempoSimilarity,
-        cityName: stabilityScore,
+        cityName: alignmentScore,
       },
-      overall: shapeSimilarity + tempoSimilarity + stabilityScore,
+      overall: shapeSimilarity + tempoSimilarity + alignmentScore,
     };
   }
 }

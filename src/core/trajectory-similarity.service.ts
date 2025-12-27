@@ -34,11 +34,12 @@ export class TrajectorySimilarityService {
     // 4. Compute Shape and Stability from cached DTW result
     const shapeSimilarity = 1 / (1 + distance / pathLength);
 
-    // Stability: userLength / pathLength
-    // Measures how compressed user's trajectory is in DTW alignment
-    // Higher score = less warping needed (more stable)
-    // User trajectory is always baseline
-    const stabilityScore = userTrajectory.length / pathLength;
+    // Alignment: minLength / pathLength
+    // Measures how "clean" the DTW alignment is between trajectories
+    // Higher score = less warping needed (better path alignment)
+    // minLength = max(userLength, candidateLength) — shortest possible DTW path
+    const minLength = Math.max(userTrajectory.length, candidateTrajectory.length);
+    const alignmentScore = minLength / pathLength;
 
     // 4. Compute Tempo (separate DTW on derivatives)
     const userDurations = userSteps.map((step) => step.duration);
@@ -53,7 +54,7 @@ export class TrajectorySimilarityService {
     return {
       shapeSimilarity,
       tempoSimilarity,
-      stabilityScore,
+      alignmentScore,
     };
   }
 
@@ -185,35 +186,41 @@ export class TrajectorySimilarityService {
    * Calculate distance between two trajectory steps
    * Returns normalized distance [0, 1] where 0 = identical, 1 = maximum difference
    *
-   * Components (equal weights):
-   * - Position: binary 0 or 1
-   * - Duration: normalized by MAX(durationA, durationB) (Bug #5 fix: no artificial capping)
-   *   - Edge case: both durations = 0 → durationDiff = 0 (no difference)
-   *   - Outliers: 120mo vs 1mo → durationDiff ≈ 0.99 (correctly penalized, not capped)
-   * - Domains: Jaccard distance (1 - similarity)
-   * - Reasons: Jaccard distance (1 - similarity)
+   * 7 aspects with equal weights (1/7 each):
+   * - Position: binary (0/1)
+   * - Duration: normalized diff
+   * - Domains: Jaccard distance
+   * - Industry: binary (0/1)
+   * - Country: binary (0/1)
+   * - Citizenships: Jaccard distance
+   * - Role: binary (0/1)
    */
   private trajectoryDistance(stepA: UserContext, stepB: UserContext, durationA: number, durationB: number): number {
-    // 1. Position difference (0 = same position, 1 = different)
+    // 1. Position difference (0 = same, 1 = different)
     const positionDiff = stepA.position === stepB.position ? 0 : 1;
 
-    // 2. Duration difference (normalized to 0-1 by max duration)
-    // Business logic: Extreme outliers (e.g., 120 months vs 1 month) produce high distance (~0.99)
-    // This is CORRECT behavior - outliers should be penalized, not capped (Bug #5 fix)
+    // 2. Duration difference (normalized to 0-1)
     const maxDuration = Math.max(durationA, durationB);
-    const durationDiff = maxDuration > 0 ? Math.abs(durationA - durationB) / maxDuration : 0; // Both durations zero (identical timestamps) → no difference
+    const durationDiff = maxDuration > 0 ? Math.abs(durationA - durationB) / maxDuration : 0;
 
-    // 3. Domains overlap (Jaccard distance: 1 - similarity)
-    const domainsA = new Set(stepA.domains);
-    const domainsB = new Set(stepB.domains);
-    const domainsDiff = this.computeJaccardDistance(domainsA, domainsB);
+    // 3. Domains (Jaccard distance)
+    const domainsDiff = this.computeJaccardDistance(new Set(stepA.domains), new Set(stepB.domains));
 
-    // 4. Reasons overlap (Jaccard distance: 1 - similarity)
-    const reasonsA = new Set(stepA.creationReason);
-    const reasonsB = new Set(stepB.creationReason);
-    const reasonsDiff = this.computeJaccardDistance(reasonsA, reasonsB);
+    // 4. Industry (binary, null-safe)
+    const industryDiff = stepA.industry === stepB.industry ? 0 : 1;
 
-    // Average of four normalized components (equal weights)
-    return (positionDiff + durationDiff + domainsDiff + reasonsDiff) / 4;
+    // 5. Country (binary)
+    const countryDiff = stepA.countryCode === stepB.countryCode ? 0 : 1;
+
+    // 6. Citizenships (Jaccard distance, null-safe)
+    const citizenshipsA = new Set(stepA.citizenships || []);
+    const citizenshipsB = new Set(stepB.citizenships || []);
+    const citizenshipsDiff = this.computeJaccardDistance(citizenshipsA, citizenshipsB);
+
+    // 7. Role (binary)
+    const roleDiff = stepA.role === stepB.role ? 0 : 1;
+
+    // Average of 7 aspects (equal weights)
+    return (positionDiff + durationDiff + domainsDiff + industryDiff + countryDiff + citizenshipsDiff + roleDiff) / 7;
   }
 }

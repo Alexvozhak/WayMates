@@ -27,6 +27,7 @@ const FIELD_LABELS: Record<ChartableField, string> = {
   position: "Grade",
   role: "Role",
   domains: "Domain",
+  countryCode: "Country",
   cityName: "City",
   industry: "Industry",
   salaryExact: "Salary",
@@ -45,14 +46,19 @@ export class HtmlRenderer {
     return this.buildHtmlDocument();
   }
 
+  /** Check if any candidate has real DTW data (not empty metrics) */
+  private get hasDtwData(): boolean {
+    return this.data.metrics.some((m) => m.overall > 0);
+  }
+
   private buildHtmlDocument(): string {
-    const spiderSection =
-      this.data.mode === "full"
-        ? `<div id="spider-chart-container">
+    const showDtwSection = this.data.mode === "full" && this.hasDtwData;
+    const spiderSection = showDtwSection
+      ? `<div id="spider-chart-container">
       <h4>DTW Similarity</h4>
       <div id="spider-chart"></div>
     </div>`
-        : "";
+      : "";
 
     return `<!DOCTYPE html>
 <html lang="${this.data.locale}">
@@ -156,9 +162,9 @@ export class HtmlRenderer {
   }
 
   private buildMetricsTable(): string {
-    if (this.data.metrics.length === 0) return "";
+    if (!this.hasDtwData) return "";
 
-    const headers = ["#", "Type", "Shape", "Tempo", "Stability", "Total"];
+    const headers = ["#", "Type", "Shape", "Tempo", "Alignment", "Total"];
     const sortedMetrics = this.data.metrics.toSorted((a, b) => b.overall - a.overall);
 
     const rows = sortedMetrics
@@ -169,7 +175,7 @@ export class HtmlRenderer {
         const typeLabel = metric.isWaymate ? "Waymate" : "—";
         const shape = metric.perField.position ? `${Math.round(metric.perField.position * 100)}%` : "—";
         const tempo = metric.perField.domains ? `${Math.round(metric.perField.domains * 100)}%` : "—";
-        const stability = metric.perField.cityName ? `${Math.round(metric.perField.cityName * 100)}%` : "—";
+        const alignment = metric.perField.cityName ? `${Math.round(metric.perField.cityName * 100)}%` : "—";
         const total = metric.overall > 0 ? metric.overall.toFixed(2) : "—";
 
         return `
@@ -178,7 +184,7 @@ export class HtmlRenderer {
           <td>${typeLabel}</td>
           <td>${shape}</td>
           <td>${tempo}</td>
-          <td>${stability}</td>
+          <td>${alignment}</td>
           <td><strong>${total}</strong></td>
         </tr>`;
       })
@@ -552,7 +558,7 @@ export class HtmlRenderer {
 
     function buildSpiderTraces(enabledCandidates) {
       const traces = [];
-      const axes = ['Shape', 'Tempo', 'Stability', 'Shape'];
+      const axes = ['Shape', 'Tempo', 'Alignment', 'Shape'];
       const userTraj = chartData.trajectories[0];
       traces.push({ type: 'scatterpolar', r: [1, 1, 1, 1], theta: axes, fill: 'toself',
         fillcolor: userTraj.color + '10', mode: 'lines+markers', name: userTraj.label + ' (reference)',
@@ -565,8 +571,8 @@ export class HtmlRenderer {
         if (!traj) return;
         const shape = metric.perField.position || 0;
         const tempo = metric.perField.domains || 0;
-        const stability = metric.perField.cityName || 0;
-        traces.push({ type: 'scatterpolar', r: [shape, tempo, stability, shape], theta: axes, fill: 'toself',
+        const alignment = metric.perField.cityName || 0;
+        traces.push({ type: 'scatterpolar', r: [shape, tempo, alignment, shape], theta: axes, fill: 'toself',
           fillcolor: traj.color + '18', mode: 'lines+markers', name: traj.label,
           line: { color: traj.color, width: 2 }, marker: { size: 6, color: traj.color },
           hovertemplate: '%{theta}: %{r:.0%}<extra>' + traj.label + '</extra>' });

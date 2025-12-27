@@ -768,7 +768,7 @@ export type CoreUpdateContextParams = z.infer<typeof coreUpdateContextParamsSche
 export const dtwMetricsSchema = z.object({
   shapeSimilarity: z.number().min(0).max(1).describe("Path shape similarity (0-1)"),
   tempoSimilarity: z.number().min(0).max(1).describe("Career speed similarity (0-1)"),
-  stabilityScore: z.number().min(0).max(1).describe("Job stability metric (0-1)"),
+  alignmentScore: z.number().min(0).max(1).describe("DTW path alignment quality (0-1)"),
 });
 
 export type DTWMetrics = z.infer<typeof dtwMetricsSchema>;
@@ -1057,7 +1057,7 @@ export type AlreadySavedResult = z.infer<typeof alreadySavedResultSchema>;
 export const coldStartResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("story_gathering"),
-    message: z.string(),
+    messageCount: z.number(),
   }),
   planResultSchema,
   entityBatchResultClarificationSchema,

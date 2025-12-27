@@ -4,6 +4,7 @@ const CHARTABLE_FIELDS = [
   "position",
   "role",
   "domains",
+  "countryCode",
   "cityName",
   "industry",
   "salaryExact",

@@ -10,9 +10,9 @@ function formatGoalPart(name: string, criterion: CriterionValue): string | null 
 
 function formatDtwLine(c: ScoredMatchedCandidate): string | null {
   if (!c.dtwMetrics) return null;
-  const { shapeSimilarity, tempoSimilarity, stabilityScore } = c.dtwMetrics;
+  const { shapeSimilarity, tempoSimilarity, alignmentScore } = c.dtwMetrics;
   const total = c.dtwTotal?.toFixed(2) ?? "?";
-  return `  DTW: shape=${shapeSimilarity.toFixed(2)}, tempo=${tempoSimilarity.toFixed(2)}, stability=${stabilityScore.toFixed(2)} | total=${total}`;
+  return `  DTW: shape=${shapeSimilarity.toFixed(2)}, tempo=${tempoSimilarity.toFixed(2)}, alignment=${alignmentScore.toFixed(2)} | total=${total}`;
 }
 
 function formatPathLine(c: ScoredMatchedCandidate): string | null {
@@ -89,7 +89,7 @@ export class AdvisorContextBuilder {
     const lines = candidates.map((c, i) => {
       const type = c.isWaymate ? "[waymate]" : "";
       const dtw = c.dtwMetrics
-        ? `DTW: ${c.dtwMetrics.shapeSimilarity.toFixed(2)}/${c.dtwMetrics.tempoSimilarity.toFixed(2)}/${c.dtwMetrics.stabilityScore.toFixed(2)}=${c.dtwTotal?.toFixed(2) ?? "?"}`
+        ? `DTW: ${c.dtwMetrics.shapeSimilarity.toFixed(2)}/${c.dtwMetrics.tempoSimilarity.toFixed(2)}/${c.dtwMetrics.alignmentScore.toFixed(2)}=${c.dtwTotal?.toFixed(2) ?? "?"}`
         : "";
       const ctx = c.matchedContext;
       const feedback = ctx.feedback ? ` — "${ctx.feedback}"` : "";

@@ -11,18 +11,18 @@ import { UserStories } from "../../helpers/user-stories.js";
 function validateDtwFormula(
   userId: string,
   result: {
-    dtwMetrics?: { shapeSimilarity: number; tempoSimilarity: number; stabilityScore: number } | undefined;
+    dtwMetrics?: { shapeSimilarity: number; tempoSimilarity: number; alignmentScore: number } | undefined;
     dtwTotal?: number | null | undefined;
   },
 ) {
   if (result.dtwMetrics) {
-    const { shapeSimilarity, tempoSimilarity, stabilityScore } = result.dtwMetrics;
-    const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
+    const { shapeSimilarity, tempoSimilarity, alignmentScore } = result.dtwMetrics;
+    const calculatedTotal = shapeSimilarity + tempoSimilarity + alignmentScore;
     const dtwTotal = result.dtwTotal ?? 0;
     console.log(`[DTW] ${userId} formula breakdown:`, {
       shapeSimilarity,
       tempoSimilarity,
-      stabilityScore,
+      alignmentScore,
       sum: calculatedTotal,
       dtwTotal,
     });
@@ -34,7 +34,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
   /**
    * Business rule: U10 (Backend Node.js) vs U11 (Backend Python) = VERY similar
    * Both: Backend domain, 3 contexts (Junior→Middle→Senior), identical durations, stable growth
-   * Expected DTW: shapeSimilarity ~0.9, tempoSimilarity ~0.85, stabilityScore ~0.8, total ~2.55
+   * Expected DTW: shapeSimilarity ~0.9, tempoSimilarity ~0.85, alignmentScore ~0.8, total ~2.55
    */
   it("DT1: High similarity - U10 (Backend Node.js) finds U11 (Backend Python) with high DTW scores", async () => {
     const fixture = new FixtureSearchManager(driver);
@@ -64,7 +64,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
         domains: r.matchedContext.domains,
         shapeSimilarity: r.dtwMetrics?.shapeSimilarity,
         tempoSimilarity: r.dtwMetrics?.tempoSimilarity,
-        stabilityScore: r.dtwMetrics?.stabilityScore,
+        alignmentScore: r.dtwMetrics?.alignmentScore,
         dtwTotal: r.dtwTotal,
       })),
     );
@@ -76,33 +76,33 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     if (u11Result) {
       expect(u11Result.dtwMetrics).toBeDefined();
 
-      const { shapeSimilarity, tempoSimilarity, stabilityScore } = u11Result.dtwMetrics!;
+      const { shapeSimilarity, tempoSimilarity, alignmentScore } = u11Result.dtwMetrics!;
       const { dtwTotal } = u11Result;
 
       console.log("[DT1] U11 DTW metrics:", {
         shapeSimilarity,
         tempoSimilarity,
-        stabilityScore,
+        alignmentScore,
         dtwTotal,
       });
 
       expect(shapeSimilarity).toBeGreaterThan(0.85);
       expect(tempoSimilarity).toBeGreaterThan(0.8);
-      expect(stabilityScore).toBeGreaterThan(0.75);
+      expect(alignmentScore).toBeGreaterThan(0.75);
       expect(dtwTotal).toBeGreaterThan(2.55);
 
       expect(shapeSimilarity).toBeGreaterThanOrEqual(0);
       expect(shapeSimilarity).toBeLessThanOrEqual(1);
       expect(tempoSimilarity).toBeGreaterThanOrEqual(0);
       expect(tempoSimilarity).toBeLessThanOrEqual(1);
-      expect(stabilityScore).toBeGreaterThanOrEqual(0);
-      expect(stabilityScore).toBeLessThanOrEqual(1);
+      expect(alignmentScore).toBeGreaterThanOrEqual(0);
+      expect(alignmentScore).toBeLessThanOrEqual(1);
 
-      const calculatedTotal = shapeSimilarity + tempoSimilarity + stabilityScore;
+      const calculatedTotal = shapeSimilarity + tempoSimilarity + alignmentScore;
       console.log("[DT1] DTW formula breakdown:", {
         shapeSimilarity,
         tempoSimilarity,
-        stabilityScore,
+        alignmentScore,
         sum: calculatedTotal,
         dtwTotal,
         matches: Math.abs(calculatedTotal - dtwTotal!) < 0.01,
@@ -149,7 +149,7 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
       validateDtwFormula("U13", u13Result);
       expect(u13Result.dtwMetrics.shapeSimilarity).toBeGreaterThan(0.6);
       expect(u13Result.dtwMetrics.tempoSimilarity).toBeGreaterThan(0.6);
-      expect(u13Result.dtwMetrics.stabilityScore).toBeGreaterThan(0.5);
+      expect(u13Result.dtwMetrics.alignmentScore).toBeGreaterThan(0.5);
       expect(u13Result.dtwTotal).toBeGreaterThan(2);
       expect(u13Result.dtwTotal).toBeLessThan(2.9);
     }

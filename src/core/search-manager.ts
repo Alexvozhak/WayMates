@@ -245,7 +245,7 @@ export class SearchManager {
 
     const dtwMetrics = this.trajectorySimilarity.computeDTWMetrics(userPath, path);
 
-    const dtwTotal = dtwMetrics.shapeSimilarity + dtwMetrics.tempoSimilarity + dtwMetrics.stabilityScore;
+    const dtwTotal = dtwMetrics.shapeSimilarity + dtwMetrics.tempoSimilarity + dtwMetrics.alignmentScore;
 
     return {
       ...candidate,
