@@ -1,7 +1,8 @@
-# Session: Cold-Start UX Fix
+# Session: Cold-Start UX Fix — Активное слушание
 
 **Дата:** 2025-12-27
-**Фокус:** Проблема #1, #2 — статичное сообщение в story_gathering
+**Фокус:** Баги #9, #10 — статичное сообщение в story_gathering
+**Коммит:** `e2c3f76` fix(cold-start): active listening in story_gathering
 
 ---
 
@@ -9,46 +10,50 @@
 
 ### Фаза 1: Диагностика
 
-1. **Протестировали cold-start flow** через `poc/mcp-chat.ts`
-2. **Выявили проблему**: При повторном входе в `story_gathering` бот показывает тот же статичный текст без acknowledge
-3. **Нашли root cause**: Два источника message — interrupt и response-builders, при этом interrupt.message игнорируется
+1. Протестировали cold-start через `poc/mcp-chat.ts --session`
+2. Выявили: бот не acknowledge полученную информацию, повторяет статичный текст
+3. Root cause: NLP formatter получал только `{ phase, messageCount }` — не видел историю диалога
 
 ### Фаза 2: Анализ архитектуры
 
-1. **Сравнили с search-graph**: там response builders возвращают ДАННЫЕ, не message
-2. **Выбрали решение**: Добавить `messageCount` в schema, NLP сам формирует текст на основе данных
-3. **Убрали message из schema** для story_gathering — консистентно с search-graph
+1. Сравнили с search-graph — там response builders передают ДАННЫЕ, NLP генерирует текст
+2. Обсудили варианты: отдельная нода generate_followup vs передать messages в NLP
+3. **Выбрали**: передать `messages[]` в response — 1 LLM вызов, минимальные изменения
 
 ### Фаза 3: Реализация
 
-**Изменённые файлы:**
+| Файл | Суть |
+|------|------|
+| `schemas.ts` | `story_gathering`: убрали `messageCount`, добавили `messages[]` |
+| `response-builders.ts` | Сериализуем `BaseMessage` → `{role, content}` через `.type` |
+| `prompts.ts` | Инструкция активного слушания: empty → welcome, has content → acknowledge + follow-up |
+| `tests/*.integration.ts` | Обновили assertions: `messageCount` → `messages.length` |
 
-| Файл | Изменение |
-|------|-----------|
-| `src/shared/schemas.ts` | `story_gathering`: убрали `message`, добавили `messageCount: z.number()` |
-| `src/facade/langGraph/cold-start-v2/response-builders.ts` | Передаём `messageCount: state.messages.length`, убрали `buildGatherMessage` |
-| `src/facade/langGraph/cold-start-v2/nodes/gather-story.ts` | Убрали `message` из interrupt, убрали `buildGatherMessage` |
-| `src/facade/services/nlp-formatter/prompts.ts` | Логика: `messageCount <= 1` → спросить, `> 1` → acknowledge |
+### Фаза 4: Тестирование
+
+```
+User: "хочу рассказать карьеру"
+Bot: "Hello! I'm here to listen..." (messages: 1)
+
+User: "я бэкендер, 5 лет опыта, работаю в финтехе"
+Bot: "Got it! You mentioned backend developer with 5 years in fintech.
+      Could you share more about job or position changes?" (messages: 2)
+
+User: "это всё, готово"
+Bot: → awaiting_plan_confirmation (план из 3 контекстов)
+```
 
 ---
 
 ## Что делать дальше
 
-1. **Протестировать полный flow:**
-   ```bash
-   set -a && source .env.test && set +a
-   npx tsx poc/mcp-chat.ts --session cs-final --reset
-   npx tsx poc/mcp-chat.ts --session cs-final "хочу рассказать карьеру"
-   npx tsx poc/mcp-chat.ts --session cs-final "я бэкендер, 5 лет опыта"
-   npx tsx poc/mcp-chat.ts --session cs-final "готово"
-   ```
+1. **Баг #11**: "расскажи историю карьеры" классифицируется как getStory/startAdhoc
+   - Файл: `intent-classifier.ts`
+   - Fix: уточнить descriptions startStory vs getStory
 
-2. **Проверить что:**
-   - Первое сообщение: спрашивает про карьеру (`messageCount: 1`)
-   - Второе: acknowledge + приглашение продолжить (`messageCount: 2`)
-   - "готово": переход к `awaiting_plan_confirmation`
-
-3. **Если работает** — запустить lint + tsc
+2. **Баг #12**: нельзя пропустить citizenships
+   - Файл: `clarify-fields.ts`
+   - Fix: добавить skip intent или сделать optional
 
 ---
 
@@ -56,34 +61,114 @@
 
 | Вопрос | Решение | Почему |
 |--------|---------|--------|
-| Где формировать текст? | NLP formatter | Консистентно с search-graph, SRP |
-| Как NLP узнает состояние? | `messageCount` в response | Минимальное изменение schema |
-| Нужно ли приветствие? | Нет отдельного | Telegram bot здоровается при /start |
-| "Say 'done'"? | Нет триггерных слов | "let you know when done" — мягче |
+| Сколько LLM вызовов? | 1 (NLP) | Нет extraction на story_gathering |
+| Где логика текста? | prompts.ts | Консистентно с search-graph |
+| Передавать ли messages клиенту? | Да | Нужно для NLP, клиент может игнорировать |
+| `.getType()` vs `.type`? | `.type` | getType() deprecated |
 
 ---
 
 ## Рефлексия
 
-### Паттерн ошибки: Два источника истины
+### Ошибка: Использование lint без :fix
 
-**Ситуация:** interrupt содержит message, response-builders тоже — конфликт.
+**Ситуация:** Использовал `npm run lint` вместо `npm run lint:fix`
 
-**Первопричина:** Не изучил как работает data flow перед изменениями. Предположил что interrupt.message используется, но он игнорируется.
+**Первопричина:** Хотел только проверить ошибки. Но правило в CLAUDE.md явное — всегда `:fix`.
 
-**Правило:** Перед изменением проследить ВЕСЬ data flow от источника до UI. Найти единственный источник истины.
+**Правило:** Читать правила буквально. Если написано "ВСЕГДА lint:fix" — значит всегда.
 
-### Паттерн ошибки: Детектирование состояния по косвенным признакам
+### Ошибка: Неполное понимание бизнес-логики
 
-**Ситуация:** Пытались определить "первое сообщение vs повторное" через `messages.length`, но первое сообщение — intent, не контент.
+**Ситуация:** Предлагал порядок вопросов "companies → dates → transitions" без обоснования.
 
-**Первопричина:** Не понял семантику данных. `messages` содержит ВСЁ включая intent, а нужен был только карьерный контент.
+**Первопричина:** Не спросил бизнес-требования, додумал сам.
 
-**Правило:** При использовании данных для логики — понимать их СЕМАНТИКУ, не только структуру.
+**Правило:** Бизнес-решения (порядок, приоритеты) — спрашивать явно, не додумывать.
+
+### Инсайт: reasons.json = источник истины для контекстов
+
+Контексты нарезаются по reasons (14 типов). Один reason = потенциально новый контекст. Несколько одновременно — один контекст с массивом reasons.
 
 ---
 
 ## Артефакты
 
-- Тестовая сессия: `--session cs-final`
-- Инфра: уже поднята (`npm run test:telegram:setup`)
+- Тестовая сессия: `--session cs-active`
+- Инфра: поднята (`npm run test:telegram:setup`)
+- Баги: #9, #10 → FIXED в `tests_report.md`
+
+---
+
+## Сессия 2: Clarification UX (FILLED/MISSING/OPTIONAL)
+
+**Фокус:** Баг #12 — нельзя пропустить citizenships, нет структуры полей
+
+### Диагностика
+
+1. Баг #12 не баг — citizenships REQUIRED по бизнес-требованиям
+2. Проблема UX: бот не показывает что поле обязательно и зачем
+3. Cold-start передавал только `missingFields`, не показывал FILLED и OPTIONAL
+
+### Сравнение с search-graph
+
+Search-graph для `asking_adhoc_context`:
+```
+❌ MISSING: list from missingFields array
+✅ FILLED: list non-null fields from adhocContext
+⚪ OPTIONAL: list from optionalFields
+```
+
+Cold-start передавал только `missingFields` без контекста.
+
+### Реализация
+
+| Файл | Суть |
+|------|------|
+| `schemas.ts` | `CONTEXT_OPTIONAL_FIELDS` + `contextOptionalFieldSchema` (type-safe, linked to UserContext) |
+| `state.ts` | `optionalFields: Annotation<ContextOptionalField[]>` |
+| `types.ts` | `optionalFields: z.array(contextOptionalFieldSchema)` |
+| `validate-context.ts` | `getUnfilledOptionalFields()` вычисляет unfilled optional |
+| `response-builders.ts` | Передаёт `pendingContext`, `missingFields`, `optionalFields` |
+| `prompts.ts` | Инструкция FILLED/MISSING/OPTIONAL как в search-graph |
+| `entityBatchResultClarificationSchema` | Обновлён с новыми полями |
+
+### Тестирование
+
+```
+User: "да" (confirm plan)
+Bot: "It looks like we're missing some important information.
+      I need you to provide your citizenships.
+      This is REQUIRED — affects visa and relocation eligibility."
+
+User: "Россия"
+Bot: → awaiting_context_confirmation (progress 1/2)
+```
+
+### Ключевые решения
+
+| Вопрос | Решение | Почему |
+|--------|---------|--------|
+| КАСТЫ? | Нет, типизация | CLAUDE.md правило: касты = сигнал что типы неправильные |
+| optionalFields тип? | `ContextOptionalField[]` | Консистентно с `AdhocOptionalField[]` в search-graph |
+| Связать с UserContext? | `keyof Pick<UserContext, ...>` | Type-safe, TypeScript проверит |
+
+### UX Refinement: Progress + OPTIONAL placement
+
+**Проблема:** Пользователь не понимал где он в процессе, OPTIONAL показывались как мусор с null.
+
+**Решение:**
+1. Clarification: `📍 Position 1/2` + MISSING + кратко OPTIONAL
+2. Confirmation: `📍 Position 1/2` + только заполненные поля
+
+**Файлы:**
+- `schemas.ts`: добавили `entityPreview`, `progress` в clarification response
+- `response-builders.ts`: передаём `currentAgenda.preview`, `progress`
+- `prompts.ts`: переделали clarification/confirmation UX
+
+---
+
+## Открытые задачи
+
+1. **Баг #11**: intent classification "расскажи историю карьеры" — частично работает, edge cases
+2. **Active listening**: иногда не acknowledge (LLM variance?) — мониторить

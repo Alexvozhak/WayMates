@@ -331,6 +331,33 @@ export type AdhocOptionalField = (typeof ADHOC_OPTIONAL_FIELDS)[number];
 /** Zod schema for optional field names */
 export const adhocOptionalFieldSchema = z.enum(ADHOC_OPTIONAL_FIELDS);
 
+/** System/platform fields not shown to user in cold-start clarification (linked to UserContext) */
+type ContextSystemField = keyof Pick<
+  UserContext,
+  "contextId" | "previousContextId" | "nextContextId" | "createdAt" | "creationReason"
+>;
+
+/** Required fields that USER must provide in cold-start (linked to UserContext) */
+type ContextRequiredField = keyof Pick<
+  UserContext,
+  "position" | "role" | "domains" | "skills" | "industry" | "countryCode" | "cityName" | "citizenships"
+>;
+
+/** Optional fields derived from UserContext (nullable fields, excluding system) */
+export type ContextOptionalField = Exclude<keyof UserContext, ContextRequiredField | ContextSystemField>;
+
+/** Runtime array of optional field names for cold-start UI */
+export const CONTEXT_OPTIONAL_FIELDS = [
+  "companySize",
+  "birthYear",
+  "educationLevel",
+  "salaryExact",
+  "salaryMin",
+  "salaryMax",
+  "languages",
+  "feedback",
+] as const satisfies readonly ContextOptionalField[];
+
 /** Missing field info for adhoc context validation */
 export const adhocMissingFieldSchema = z.object({
   field: z.string(),
@@ -586,6 +613,10 @@ export const pathfinderSearchParamsSchema = withPathLimitTransform(
   userSearchParamsRawSchema.omit({ recencyThresholdMonths: true }).extend({
     referenceContext: adhocContextBase.describe("Our current context for matching"),
     targetContext: targetContextSchema.describe("Our goal for matching"),
+    userTrajectory: z
+      .array(userContextSchema)
+      .optional()
+      .describe("User trajectory for DTW calculation (profile mode)"),
     referenceRecencyMonths: z
       .number()
       .min(1)
@@ -840,6 +871,8 @@ export const pathfinderCandidateSchema = z.object({
   timeSinceReferenceMonths: z.number().min(0).describe("Months since being in reference context"),
   path: z.array(userContextSchema).describe("Full career path"),
   trails: z.array(trailSchema).describe("Learning paths between contexts"),
+  dtwMetrics: dtwMetricsSchema.optional().describe("DTW metrics (when userTrajectory provided)"),
+  dtwTotal: z.number().min(0).max(3).optional().describe("Sum of DTW metrics (0-3)"),
 });
 export type PathfinderCandidate = z.infer<typeof pathfinderCandidateSchema>;
 
@@ -966,13 +999,21 @@ export const collectionProgressSchema = z.object({
 
 export type CollectionProgress = z.infer<typeof collectionProgressSchema>;
 
+/** Zod schema for context optional field names */
+export const contextOptionalFieldSchema = z.enum(CONTEXT_OPTIONAL_FIELDS);
+
 /**
  * Result of processEntityBatchTool execution - clarification needed.
+ * Structured like search-graph adhoc: FILLED (pendingContext) + MISSING + OPTIONAL
  */
 export const entityBatchResultClarificationSchema = z.object({
   phase: z.literal("awaiting_clarification"),
   message: z.string(),
-  missingFields: z.array(missingFieldSchema),
+  entityPreview: z.string().describe("Current context being processed"),
+  progress: collectionProgressSchema.describe("Position in queue"),
+  pendingContext: z.record(z.unknown()).describe("Current extracted values (FILLED fields)"),
+  missingFields: z.array(missingFieldSchema).describe("Required fields still missing (MISSING)"),
+  optionalFields: z.array(contextOptionalFieldSchema).describe("Optional fields user can add (OPTIONAL)"),
 });
 
 /**

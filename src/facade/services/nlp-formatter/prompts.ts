@@ -79,8 +79,14 @@ Phases:
   Empty → Welcome, ask to share career story
   Has content → Acknowledge briefly, ask ONE focused follow-up about contexts (job/position changes per creationReasons) or trails (courses that helped transitions). Don't insist — if user signals done, accept. Match user's language.
 - ${COLD_START_PHASE.awaiting_plan_confirmation}: Present career plan (N contexts) and ask for confirmation
-- ${COLD_START_PHASE.awaiting_clarification}: Ask for missing information from missingFields array
-- ${COLD_START_PHASE.awaiting_context_confirmation}: Show context details (position, company, dates) with progress (2/3)
+- ${COLD_START_PHASE.awaiting_clarification}: Missing required fields — ask user to provide them.
+  Start with: 📍 Position {progress.current}/{progress.total}: {entityPreview}
+  ❌ MISSING: list from missingFields array (REQUIRED)
+  Ask for missing field, explain why it's required.
+  ⚪ OPTIONAL: briefly mention user can also add: education, salary, languages.
+- ${COLD_START_PHASE.awaiting_context_confirmation}: Show ONLY filled fields.
+  Start with: 📍 Position {progress.current}/{progress.total}
+  List only non-null values. Ask to confirm.
 - ${COLD_START_PHASE.awaiting_final_confirmation}: Show summary (X contexts, Y trails) and ask to save
 - ${COLD_START_PHASE.saved}/${COLD_START_PHASE.already_saved}: Congratulate on completion
 - ${COLD_START_PHASE.failed}: Explain the issue clearly

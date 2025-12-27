@@ -1,14 +1,31 @@
-import { missingFieldSchema, trailSchema, userContextSchema } from "../../../../shared/schemas.js";
+import {
+  CONTEXT_OPTIONAL_FIELDS,
+  missingFieldSchema,
+  trailSchema,
+  userContextSchema,
+} from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { PHASE } from "../state.js";
 
+import type { ContextOptionalField } from "../../../../shared/schemas.js";
 import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda, MissingField, Trail, UserContext } from "../state.js";
 import type { z } from "zod";
 
 const MAX_QUESTIONS_PER_BATCH = config.LANGCHAIN_MAX_QUESTIONS_PER_BATCH;
 const MAX_CLARIFICATION_ROUNDS = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
+
+function hasValue(value: unknown): boolean {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "string") return value.length > 0;
+  return true;
+}
+
+function getUnfilledOptionalFields(ctx: Record<string, unknown>): ContextOptionalField[] {
+  return CONTEXT_OPTIONAL_FIELDS.filter((f) => !hasValue(ctx[f]));
+}
 
 function extractMissingFields<T>(
   validation: z.SafeParseReturnType<unknown, T>,
@@ -130,6 +147,7 @@ export function validateContextNode(state: ColdStartStateType): Partial<ColdStar
     return {
       phase: PHASE.awaiting_clarification,
       missingFields: validation.missing,
+      optionalFields: getUnfilledOptionalFields(pendingContext),
       clarificationRound: nextRound,
     };
   }

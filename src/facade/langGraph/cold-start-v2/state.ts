@@ -5,7 +5,14 @@ import { lastValue } from "../shared/state-utils.js";
 import { PHASE } from "./types.js";
 
 import type { ColdStartPhase, CurrentEntityContext, ParsedDecision } from "./types.js";
-import type { ContextAgenda, MissingField, Trail, UserContext, UserId } from "../../../shared/schemas.js";
+import type {
+  ContextAgenda,
+  ContextOptionalField,
+  MissingField,
+  Trail,
+  UserContext,
+  UserId,
+} from "../../../shared/schemas.js";
 import type { ExtractableContext, ExtractableTrail } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
@@ -39,6 +46,7 @@ export const coldStartStateAnnotation = Annotation.Root({
   pendingTrails: Annotation<ExtractableTrail[]>({ reducer: lastValue, default: () => [] }),
 
   missingFields: Annotation<MissingField[]>({ reducer: lastValue, default: () => [] }),
+  optionalFields: Annotation<ContextOptionalField[]>({ reducer: lastValue, default: () => [] }),
   clarificationRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   currentEntityContext: Annotation<CurrentEntityContext | undefined>({ reducer: lastValue }),
 });

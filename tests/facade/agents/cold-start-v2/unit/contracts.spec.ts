@@ -29,6 +29,7 @@ function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStart
     pendingContext: null,
     pendingTrails: [],
     missingFields: [],
+    optionalFields: [],
     clarificationRound: 0,
     currentEntityContext: undefined,
     ...overrides,

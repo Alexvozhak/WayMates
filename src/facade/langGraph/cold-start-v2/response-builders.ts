@@ -31,10 +31,20 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
     if (state.missingFields.length === 0) {
       throw new InvalidStateError(PHASE.awaiting_clarification, "missingFields is empty");
     }
+
+    const currentAgenda = state.queue[state.currentContextIndex];
+    if (!currentAgenda) {
+      throw new InvalidStateError(PHASE.awaiting_clarification, "no agenda at currentContextIndex");
+    }
+
     return {
       phase: PHASE.awaiting_clarification,
       message: "Please provide the missing information.",
+      entityPreview: currentAgenda.preview,
+      progress: { current: state.currentContextIndex + 1, total: state.queue.length },
+      pendingContext: state.pendingContext ?? {},
       missingFields: state.missingFields,
+      optionalFields: state.optionalFields,
     };
   },
 

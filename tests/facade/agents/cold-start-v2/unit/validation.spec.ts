@@ -37,6 +37,7 @@ function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStart
     pendingContext: toExtractableContext(firstContext),
     pendingTrails: [],
     missingFields: [],
+    optionalFields: [],
     clarificationRound: 0,
     currentEntityContext: { contextIndex: 0, preview: firstContext.position },
     ...overrides,

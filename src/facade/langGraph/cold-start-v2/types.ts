@@ -1,7 +1,13 @@
 import { MessagesZodState } from "@langchain/langgraph";
 import { z } from "zod";
 
-import { contextAgendaSchema, missingFieldSchema, trailSchema, userContextSchema } from "../../../shared/schemas.js";
+import {
+  contextAgendaSchema,
+  contextOptionalFieldSchema,
+  missingFieldSchema,
+  trailSchema,
+  userContextSchema,
+} from "../../../shared/schemas.js";
 
 export const coldStartPhaseSchema = z.enum([
   "story_gathering",
@@ -67,10 +73,11 @@ export const coldStartStateSchema = z.object({
   collectedContexts: z.array(userContextSchema).default([]),
   collectedTrails: z.array(trailSchema).default([]),
 
-  pendingContext: z.unknown().nullable().default(null),
+  pendingContext: z.record(z.unknown()).nullable().default(null),
   pendingTrails: z.array(z.unknown()).default([]),
 
   missingFields: z.array(missingFieldSchema).default([]),
+  optionalFields: z.array(contextOptionalFieldSchema).default([]),
   clarificationRound: z.number().default(0),
 
   currentEntityContext: currentEntityContextSchema.nullable().default(null),
