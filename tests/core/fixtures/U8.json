@@ -34,7 +34,7 @@
       "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-bfdc78c3b1b2",
       "createdAt": "2024-01-01T00:00:00Z",
       "creationReason": [
-        "skill_learning"
+        "skills_changed"
       ],
       "position": "middle",
       "industry": "IT",
@@ -62,7 +62,7 @@
       "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-c384e8c836e4",
       "createdAt": "2025-03-01T00:00:00Z",
       "creationReason": [
-        "milestone_achieved",
+        "position_changed",
         "company_changed"
       ],
       "position": "senior",

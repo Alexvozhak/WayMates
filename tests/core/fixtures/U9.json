@@ -35,7 +35,7 @@
       "createdAt": "2024-01-01T00:00:00Z",
       "creationReason": [
         "position_changed",
-        "skill_learning"
+        "skills_changed"
       ],
       "position": "middle",
       "industry": "tech",
@@ -63,7 +63,7 @@
       "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-d771b6fe0251",
       "createdAt": "2025-03-01T00:00:00Z",
       "creationReason": [
-        "skill_learning",
+        "skills_changed",
         "domain_changed"
       ],
       "position": "senior",

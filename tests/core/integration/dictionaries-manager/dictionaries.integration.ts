@@ -165,8 +165,8 @@ describe("Dictionaries Integration", () => {
     // Business Rule: Specific reason canonical names from reasons.json must exist
     expect(dictionaries.reasons.some((e) => e.canonicalName === "position_changed")).toBe(true);
     expect(dictionaries.reasons.some((e) => e.canonicalName === "started_working")).toBe(true);
-    expect(dictionaries.reasons.some((e) => e.canonicalName === "skill_learning")).toBe(true);
-    expect(dictionaries.reasons.some((e) => e.canonicalName === "goals_change")).toBe(true);
+    expect(dictionaries.reasons.some((e) => e.canonicalName === "skills_changed")).toBe(true);
+    expect(dictionaries.reasons.some((e) => e.canonicalName === "role_changed")).toBe(true);
   });
 
   // Business Logic: Reasons are used for filtering in search (excludedCreationReasons)
@@ -179,20 +179,18 @@ describe("Dictionaries Integration", () => {
     // Business Rule: All critical transition types must exist for search filtering
     const criticalReasons = [
       "position_changed",
-      "location_changed",
+      "role_changed",
       "company_changed",
+      "laid_off",
+      "salary_changed",
+      "location_changed",
       "industry_changed",
       "domain_changed",
-      "work_format_changed",
+      "skills_changed",
+      "languages_changed",
+      "education_completed",
       "started_working",
       "stopped_working",
-      "skill_learning",
-      "education_completed",
-      "goals_change",
-      "constraints_update",
-      "milestone_achieved",
-      "system_recommendation",
-      "other",
     ];
 
     criticalReasons.forEach((canonicalName) => {
@@ -205,26 +203,24 @@ describe("Dictionaries Integration", () => {
   it("D9: reasons are read-only and match reasons.json exactly", async () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    // Business Rule: Exactly 15 reasons as defined in reasons.json
-    expect(dictionaries.reasons).toHaveLength(15);
+    // Business Rule: Exactly 13 reasons as defined in reasons.json
+    expect(dictionaries.reasons).toHaveLength(13);
 
     // Business Rule: Order doesn't matter, but all keys from reasons.json must exist
     const expectedReasonIds = [
       "position_changed",
-      "location_changed",
+      "role_changed",
       "company_changed",
+      "laid_off",
+      "salary_changed",
+      "location_changed",
       "industry_changed",
       "domain_changed",
-      "work_format_changed",
+      "skills_changed",
+      "languages_changed",
+      "education_completed",
       "started_working",
       "stopped_working",
-      "skill_learning",
-      "education_completed",
-      "goals_change",
-      "constraints_update",
-      "milestone_achieved",
-      "system_recommendation",
-      "other",
     ];
 
     const actualReasonIds = dictionaries.reasons.map((r) => r.canonicalName).toSorted();

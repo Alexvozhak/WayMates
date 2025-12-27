@@ -289,7 +289,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1 = dataManager.getStoryBy("U1");
     const u1Context = u1.contexts[0]!;
 
-    console.log("[AC5] Searching with excludedCreationReasons: [milestone_achieved]");
+    console.log("[AC5] Searching with excludedCreationReasons: [position_changed]");
     console.log("[AC5] Reference context creationReason:", u1Context.creationReason);
     console.log(
       "[AC5] U1 trajectory:",
@@ -307,7 +307,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "cityName",
         "companySize",
       ],
-      excludedCreationReasons: ["milestone_achieved"],
+      excludedCreationReasons: ["position_changed"],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -332,7 +332,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       console.log("[AC5] Score comparison - U2 (included) vs U1 (excluded):", {
         u2Score: u2Result.contextMatchScore,
         u2Reasons: u2.contexts.map((c) => c.creationReason),
-        u1Excluded: "U1 filtered out (has milestone_achieved in trajectory)",
+        u1Excluded: "U1 filtered out (has position_changed in trajectory)",
         filterLogic: "excludedCreationReasons works as HARD filter, not score penalty",
       });
     }
