@@ -15,7 +15,6 @@ export function gatherStoryNode(state: ColdStartStateType): Partial<ColdStartSta
 
   const userResponse = interrupt({
     type: "story_gathering",
-    message: "Tell me about your career history. Say 'готово' or 'done' when finished.",
     phase: PHASE.story_gathering,
   });
 

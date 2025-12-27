@@ -8,9 +8,12 @@ import type { ColdStartResponse } from "../../../shared/schemas.js";
 type ResponseBuilder<P extends ColdStartPhase> = (state: ColdStartState) => Extract<ColdStartResponse, { phase: P }>;
 
 export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
-  [PHASE.story_gathering]: () => ({
+  [PHASE.story_gathering]: (state) => ({
     phase: PHASE.story_gathering,
-    message: "Tell me about your career history.",
+    messages: state.messages.map((m) => ({
+      role: m.type,
+      content: String(m.content),
+    })),
   }),
 
   [PHASE.awaiting_plan_confirmation]: (state) => {

@@ -365,6 +365,22 @@ generate_* (бизнес → state) → show_* (interrupt)
 
 Потому что interrupt() прерывает — return не достигается.
 
+### Data Flow: interrupt → response-builder → NLP
+
+```
+Нода: interrupt({phase, ...data})     ← сохраняется в snapshot
+          ↓
+Graph: extractInterruptPhase(snapshot) ← извлекает только phase
+          ↓
+Graph: responseBuilders[phase](state)  ← формирует response из state
+          ↓
+NLP: format(response)                  ← генерирует текст
+```
+
+**Важно:** interrupt.message НЕ используется! Текст формируется в response-builder или NLP.
+
+**Паттерн search-graph:** response-builders возвращают ДАННЫЕ, NLP генерирует текст.
+
 ---
 
 ## 7. CYPHER — КРИТИЧЕСКИЕ ПРАВИЛА
@@ -648,6 +664,29 @@ MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)
 | `false` | Нет goal или другая цель | Нет goal или не матчится |
 
 **Примечание:** `candidateType` enum удалён, заменён на `isWaymate: boolean`.
+
+### DTW Architecture (где вычисляется)
+
+DTW вычисляется **в TypeScript**, не в Cypher:
+
+| Слой | Роль в DTW |
+|------|------------|
+| **Cypher** | Возвращает кандидатов с `path` (траекторией) |
+| **Core TypeScript** | `TrajectorySimilarityService.computeDTWMetrics()` вычисляет метрики |
+| **SearchManager** | Orchestrator: получает кандидатов → обогащает DTW → возвращает |
+
+**Условие для DTW расчёта:**
+- `userTrajectory.length >= 3` (минимум 3 контекста у пользователя)
+- `candidate.path.length >= 3` (минимум 3 контекста у кандидата)
+
+**Где вызывается:**
+- `searchWaymates` (profile mode) → `executeCoreSearchWithDTW()` → DTW есть
+- `searchWaymates` (adhoc mode) → DTW нет (нет userTrajectory)
+- `searchPathfinders` → DTW нет (TODO: добавить)
+
+**Ключевые файлы:**
+- `src/core/trajectory-similarity.service.ts` — вычисление DTW метрик
+- `src/core/search-manager.ts` — orchestration DTW обогащения
 
 ---
 

@@ -75,7 +75,9 @@ Data (Cold-Start workflow response):
 {data}
 
 Phases:
-- ${COLD_START_PHASE.story_gathering}: Encourage user to continue sharing career history
+- ${COLD_START_PHASE.story_gathering}: Active listening mode. Check messages array:
+  Empty → Welcome, ask to share career story
+  Has content → Acknowledge briefly, ask ONE focused follow-up about contexts (job/position changes per creationReasons) or trails (courses that helped transitions). Don't insist — if user signals done, accept. Match user's language.
 - ${COLD_START_PHASE.awaiting_plan_confirmation}: Present career plan (N contexts) and ask for confirmation
 - ${COLD_START_PHASE.awaiting_clarification}: Ask for missing information from missingFields array
 - ${COLD_START_PHASE.awaiting_context_confirmation}: Show context details (position, company, dates) with progress (2/3)

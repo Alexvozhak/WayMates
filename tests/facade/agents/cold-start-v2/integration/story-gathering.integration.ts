@@ -72,15 +72,15 @@ describe("Cold-Start V2: Story Gathering (TC-S)", () => {
     const response1 = await runWorkflow(message1);
     expect(response1.phase, "After message 1, phase should be story_gathering").toBe(PHASE.story_gathering);
     if (response1.phase === PHASE.story_gathering) {
-      expect(response1.message.length, "LLM should respond with non-empty message").toBeGreaterThan(0);
-      console.log(`TC-S2 [1/3]: Message 1 → story_gathering, response length: ${response1.message.length}`);
+      expect(response1.messages.length, "messages should be tracked").toBeGreaterThanOrEqual(1);
+      console.log(`TC-S2 [1/3]: Message 1 → story_gathering, messages: ${response1.messages.length}`);
     }
 
     const message2 = "Я работал в IT, но пока не скажу детали";
     const response2 = await runWorkflow(message2);
     expect(response2.phase, "After message 2, phase should still be story_gathering").toBe(PHASE.story_gathering);
     if (response2.phase === PHASE.story_gathering) {
-      console.log(`TC-S2 [2/3]: Message 2 → story_gathering, response length: ${response2.message.length}`);
+      console.log(`TC-S2 [2/3]: Message 2 → story_gathering, messages: ${response2.messages.length}`);
     }
 
     const message3 = "Позже расскажу про технологии...";

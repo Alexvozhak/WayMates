@@ -17,23 +17,6 @@
 7. Непонятно что отвечать
 8. Общее впечатление
 
----
-
-## Таблица багов
-
-| #   | Фаза                     | Критерий               | Проблема                                                                     | Статус |
-| --- | ------------------------ | ---------------------- | ---------------------------------------------------------------------------- | ------ |
-| 1   | asking_adhoc_context     | Непонятно что отвечать | "What position are you aiming for?" — путает текущий уровень с целью         | FIXED  |
-| 2   | showing_goal             | Непонятно что за инфа  | Унаследовал role/domains/skills молча — пользователь не говорил это про цель | FIXED  |
-| 3   | showing_results (0)      | Непонятно что не так   | Нет объяснения почему 0 результатов, непонятно что делать                    | FIXED  |
-| 4   | asking_search_mode       | Непонятно что отвечать | Jargon (Pathfinders/Waymates), много текста                                  | FIXED  |
-| 5   | extraction prompt        | Диалог как с больным   | "джун с 4 годами опыта" → LLM возвращал middle, игнорируя explicit           | FIXED  |
-| 6   | confirming_adhoc_context | Переспросы             | Спрашивал seniority хотя position уже заполнен                               | FIXED  |
-| 7   | все фазы                 | Диалог как с больным   | "что ты умеешь?" → cancel вместо advisor mode                                | FIXED  |
-| 8   | confirming_adhoc_context | Диалог как с больным   | "глянь похожих" → cancel вместо explore (searchWaymates не в valid intents)  | FIXED |
-
----
-
 ## Детали багов
 
 ### Баг #1: asking_adhoc_context — "aiming for"
@@ -99,5 +82,91 @@ You could consider adjusting the role or expanding the skills.
 **Проблема:** Много текста, непонятные термины.
 
 **Fix:** Упростить: "Проводники (кто прошёл путь) / Попутчики (идут к той же цели)"
+
+---
+
+### Баг #9: story_gathering — статичное сообщение (cold-start-v2) ✅ FIXED
+
+**Отправил:** "ну короче я бэкендер, 5 лет опыта, питон, сейчас в финтехе работаю"
+
+**Было:**
+
+```
+Tell me about your career history.
+```
+
+**Стало:**
+
+```
+Got it! ... You mentioned you're a backend developer with 5 years of experience in fintech.
+Could you share more about any job or position changes?
+```
+
+**Решение:** Активное слушание — передаём `messages[]` в NLP formatter, он генерирует acknowledge + follow-up.
+
+**Изменённые файлы:**
+
+- `schemas.ts` — добавили `messages[]` вместо `messageCount`
+- `response-builders.ts` — сериализуем messages
+- `prompts.ts` — инструкция активного слушания
+
+---
+
+### Баг #10: story_gathering — edit без контекста (cold-start-v2) ✅ FIXED
+
+**Контекст:** На этапе `awaiting_plan_confirmation` пользователь хочет добавить информацию.
+
+**Отправил:** "хочу добавить что раньше был junior"
+
+**Было:**
+
+```
+Tell me about your career history.
+```
+
+**Стало:** NLP видит всю историю messages и может acknowledge + спросить что добавить. При повторном "готово" LLM merge добавляет новую инфу к существующему плану.
+
+**Решение:** То же что #9 — активное слушание через messages[].
+
+---
+
+### Баг #11: orchestrator — неверная классификация startStory
+
+**Отправил:** "расскажи историю карьеры"
+
+**Получил:** `showing_exploration_candidates` (adhoc search вместо cold-start)
+
+**Проблема:** Intent "расскажи историю карьеры" классифицируется как `getStory` или `startAdhoc` вместо `startStory`.
+
+**Файл:** `src/facade/services/orchestrator/intent-classifier.ts`
+
+**Fix:** Уточнить intent descriptions:
+
+- `startStory`: "wants to TELL their career story, share trajectory, create profile"
+- `getStory`: "wants to SEE/VIEW their saved career story"
+
+---
+
+### Баг #12: awaiting_clarification — нельзя пропустить поле (cold-start-v2)
+
+**Контекст:** Бот спрашивает про citizenships.
+
+**Отправил:** "не хочу указывать гражданство"
+
+**Получил:**
+
+```
+Please provide your citizenships so we can continue...
+```
+
+**Проблема:** Бот игнорирует явный отказ пользователя и продолжает спрашивать обязательное поле.
+
+**Файл:** `src/facade/langGraph/cold-start-v2/nodes/clarify-fields.ts`
+
+**Fix:** Варианты:
+
+1. Добавить "skip" intent в clarification
+2. Сделать citizenships optional
+3. Использовать default value при отказе
 
 ---

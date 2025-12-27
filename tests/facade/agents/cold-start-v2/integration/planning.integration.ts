@@ -126,7 +126,7 @@ describe("Cold-Start V2: Planning (TC-P)", () => {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    expect(response.message.length, "LLM should explain why more info is needed").toBeGreaterThan(0);
+    expect(response.messages.length, "messages should be tracked").toBeGreaterThanOrEqual(1);
 
     console.log(`TC-P2: ✅ LLM asked for clarification (correct behavior for no experience)`);
   }, 120_000);
@@ -175,7 +175,7 @@ describe("Cold-Start V2: Planning (TC-P)", () => {
       expect.fail(`Expected story_gathering, got ${rejectResponse.phase}`);
     }
 
-    expect(rejectResponse.message.length).toBeGreaterThan(0);
+    expect(rejectResponse.messages.length).toBeGreaterThan(0);
     console.log(`TC-P4 result: returned to story gathering`);
   }, 180_000);
 

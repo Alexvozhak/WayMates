@@ -1054,10 +1054,15 @@ export type AlreadySavedResult = z.infer<typeof alreadySavedResultSchema>;
  * Cold Start MCP response - discriminated union by phase.
  * This is what cold_start MCP tool returns to telegram-bot.
  */
+const storyMessageSchema = z.object({
+  role: z.string(),
+  content: z.string(),
+});
+
 export const coldStartResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("story_gathering"),
-    messageCount: z.number(),
+    messages: z.array(storyMessageSchema),
   }),
   planResultSchema,
   entityBatchResultClarificationSchema,
