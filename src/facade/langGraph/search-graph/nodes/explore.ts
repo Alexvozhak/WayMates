@@ -65,13 +65,17 @@ export const exploreNode = withLogging<SearchStateType>(
     });
 
     const needsFiltering = shouldUseFacets(results);
-    const chartUrl = await safeGenerateExploreChart({
-      userTrajectory,
-      adhocContext,
-      results,
-      dictionariesService,
-      logger,
-    });
+
+    // Skip chart generation if showing facets (chart won't be used)
+    const chartUrl = needsFiltering
+      ? null
+      : await safeGenerateExploreChart({
+          userTrajectory,
+          adhocContext,
+          results,
+          dictionariesService,
+          logger,
+        });
 
     return {
       explorationResults: results,

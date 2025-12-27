@@ -81,7 +81,11 @@ export const validateGoalNode = withLogging<SearchStateType>(
     });
 
     const needsFiltering = shouldUseFacets(candidates);
-    const chartUrl = await generateValidationChart({ storedGoal, dictionariesService, candidates, logger });
+
+    // Skip chart generation if showing facets (chart won't be used)
+    const chartUrl = needsFiltering
+      ? null
+      : await generateValidationChart({ storedGoal, dictionariesService, candidates, logger });
 
     return {
       validationResults: candidates,
