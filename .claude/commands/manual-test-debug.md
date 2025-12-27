@@ -49,10 +49,12 @@ allowed-tools:
 
 ## База знаний (ОБЯЗАТЕЛЬНО прочитать перед началом)
 
-Прочитать файлы (Read tool, пути от корня проекта):
-- `mvp-test-final/KNOWLEDGE-BASE.md`
-- `mvp-test-final/BUSINESS-LOGIC-MVP.md`
-- `.claude/context/guidelines.md`
+Прочитать и изучить:
+
+- /home/alex/projects/WayMatesRemote/.claude/context/guidelines.md
+- /home/alex/projects/WayMatesRemote/mvp-test-final/BUSINESS-LOGIC-MVP.md
+- /home/alex/projects/WayMatesRemote/mvp-test-final/KNOWLEDGE-BASE.md
+- /home/alex/projects/WayMatesRemote/mvp-test-final/tests_report.md
 
 **Куда обращаться:**
 | Вопрос | Источник |
@@ -62,6 +64,7 @@ allowed-tools:
 | Принципы, паттерны ошибок, спотыкания | `guidelines.md` |
 
 **Соблюдать и вести документы:**
+
 - При правке — сверяться с `guidelines.md`
 - Нашёл паттерн ошибки — добавить в `guidelines.md`
 - Новое знание об архитектуре — добавить в `KNOWLEDGE-BASE.md`
@@ -76,13 +79,15 @@ allowed-tools:
 ```
 1. sequential-thinking: проанализировать прочитанные документы, понять контекст задачи
 2. Прочитать session log (если указан)
-3. Проверить инфру: docker ps | grep waymates
-4. Проверить данные: MATCH (u:User) RETURN count(u)
-5. Оценить уверенность:
+3. Выбрать УНИКАЛЬНОЕ имя сессии для mcp-chat.ts (например: cs1, debug1, test-cold-start)
+4. Проверить инфру: docker ps | grep waymates (НЕ перезапускать если работает!)
+5. Проверить данные: MATCH (u:User) RETURN count(u)
+6. Оценить уверенность:
    - Понимание что делаю и зачем: X%
    - Понимание бизнес-логики: X%
    - Понимание смысла происходящего: X%
-6. Отчитаться:
+7. Отчитаться:
+   - Сессия mcp-chat: `--session <выбранное имя>`
    - Инфра: ✅/❌ (N контейнеров)
    - Данные: N users
    - Уверенность: см. выше
@@ -99,11 +104,28 @@ allowed-tools:
 
 **Основной инструмент:** `poc/mcp-chat.ts`
 
+**ВАЖНО: Изолированные сессии**
+
+Скрипт поддерживает именованные сессии через `--session <name>`. Это позволяет нескольким Claude сессиям работать параллельно без конфликтов.
+
 ```bash
 set -a && source .env.test && set +a
-npx tsx poc/mcp-chat.ts --reset
-npx tsx poc/mcp-chat.ts "сообщение"
 
+# Использовать УНИКАЛЬНОЕ имя сессии (например, первые буквы задачи или random)
+npx tsx poc/mcp-chat.ts --session cs1 --reset              # сбросить свою сессию
+npx tsx poc/mcp-chat.ts --session cs1 "сообщение"          # отправить в свою сессию
+npx tsx poc/mcp-chat.ts --session cs1 --status             # статус своей сессии
+
+# Файлы сессий: /tmp/mcp-chat-session-{name}.json
+# Примеры имён: cs1, cs2, alice, bob, test1, debug
+```
+
+**Почему важно:**
+- Инфра общая (Docker контейнеры) — НЕ перезапускать без согласования
+- Сессии изолированы по файлам — каждый `--session` имеет свой state
+- Без `--session` используется `default` — может конфликтовать с другими
+
+```bash
 # Логи с reasoning
 docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 ```
@@ -119,6 +141,7 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 - **Объём**: ~N LOC, Xk/Yk токенов (X - на шаг, Y - осталось), вероятность успеть
 
 **При баге:**
+
 1. Понять первопричину (не симптом!)
 2. Какая фаза? Какой intent ожидали vs получили?
 3. Согласовать fix с пользователем
@@ -144,6 +167,7 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 4. Если в search-graph лучше — переносить паттерн в cold-start
 
 **Ключевые файлы search-graph для сравнения:**
+
 - `src/facade/langGraph/search-graph/state.ts`
 - `src/facade/langGraph/search-graph/search-router.ts`
 - `src/facade/langGraph/search-graph/prompts/`
@@ -157,17 +181,21 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 
 ```markdown
 # Session: [topic]
+
 **Дата:** YYYY-MM-DD
 **Фокус:** [что тестируем/фиксим]
 
 ## Найденные проблемы
+
 - [ ] Проблема 1: описание
 - [x] Проблема 2: описание (FIXED)
 
 ## Изменённые файлы
+
 - `path/to/file.ts` — что изменили
 
 ## Инсайты
+
 - Паттерн X работает лучше чем Y
 ```
 
@@ -180,12 +208,14 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 **Правило Парето:** 20% правок → 80% UX улучшений. Минимальный fix, максимальный эффект для пользователя.
 
 Тестируй как пользователь который:
+
 - Не читает инструкции
 - Пишет кратко и неформально
 - Ожидает что бот поймёт контекст
 - Раздражается от переспросов
 
 **Сценарии:**
+
 1. Команды без контекста: "Давай быстрый поиск"
 2. Gibberish: "asdfgh qwerty"
 3. Смена темы посреди flow
@@ -197,6 +227,7 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 ## Правила
 
 **Порог уверенности 90%+ ОБЯЗАТЕЛЕН для:**
+
 - Понимание что делаешь и зачем
 - Понимание бизнес-логики
 - Понимание смысла происходящего
@@ -204,18 +235,22 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 **Если < 90%:** читай код, grep как принято, или проси помощи. НЕ приступай к правке.
 
 **Делай:**
+
 - Перед правкой: `grep` как принято в кодовой базе
 - Batch правки: через `mcp__filesystem__edit_file`
 - Согласовывай: "как было → как предлагаю"
 - Минимальные точечные фиксы
 
 **Не делай:**
+
 - Не угадывай бизнес-логику — спроси
 - Не делай правки без понимания
 - Не используй `sed` — есть MCP filesystem
 - Не используй `redis-cli FLUSHALL` (checkpoints в Postgres!)
 - Не удаляй данные без согласования
 - Не пытайся угодить — честный анализ важнее
+- Не перезапускай инфру (`npm run test:telegram:setup`) без согласования — другие сессии могут работать
+- Не используй `--session default` или без `--session` — конфликт с другими
 
 **Полный список правил:** `.claude/context/guidelines.md`
 

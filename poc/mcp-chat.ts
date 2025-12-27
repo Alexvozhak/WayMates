@@ -4,9 +4,12 @@
  * Usage:
  *   npx tsx poc/mcp-chat.ts "Привет"
  *   npx tsx poc/mcp-chat.ts "Я backend разработчик"
- *   npx tsx poc/mcp-chat.ts --reset  # сбросить сессию
+ *   npx tsx poc/mcp-chat.ts --reset                    # сбросить сессию
+ *   npx tsx poc/mcp-chat.ts --session alice "Привет"   # именованная сессия
+ *   npx tsx poc/mcp-chat.ts --session alice --reset    # сбросить именованную
+ *   npx tsx poc/mcp-chat.ts --session alice --status   # статус именованной
  *
- * Session хранится в /tmp/mcp-chat-session.json
+ * Session хранится в /tmp/mcp-chat-session-{name}.json
  */
 
 import fs from "node:fs";
@@ -14,7 +17,31 @@ import { randomUUID } from "node:crypto";
 
 import { McpClient } from "../src/telegram-bot/services/mcp-client.js";
 
-const SESSION_FILE = "/tmp/mcp-chat-session.json";
+function parseArgs(args: string[]): { sessionName: string; command: string | null; message: string | null } {
+  let sessionName = "default";
+  let command: string | null = null;
+  const messageWords: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--session" && args[i + 1]) {
+      sessionName = args[i + 1];
+      i++; // skip next arg
+    } else if (args[i] === "--reset") {
+      command = "reset";
+    } else if (args[i] === "--status") {
+      command = "status";
+    } else {
+      messageWords.push(args[i]);
+    }
+  }
+
+  return {
+    sessionName,
+    command,
+    message: messageWords.length > 0 ? messageWords.join(" ") : null,
+  };
+}
+
 const MCP_URL = process.env.FACADE_MCP_URL ?? "http://localhost:3001/mcp";
 
 type Session = {
@@ -22,16 +49,22 @@ type Session = {
   userId: string;
 };
 
-async function loadOrCreateSession(client: McpClient): Promise<Session> {
+function getSessionFile(sessionName: string): string {
+  return `/tmp/mcp-chat-session-${sessionName}.json`;
+}
+
+async function loadOrCreateSession(client: McpClient, sessionName: string): Promise<Session> {
+  const sessionFile = getSessionFile(sessionName);
+
   // Try to load existing session
-  if (fs.existsSync(SESSION_FILE)) {
-    const data = JSON.parse(fs.readFileSync(SESSION_FILE, "utf-8"));
-    console.log(`📂 Loaded session: ${data.sessionId.slice(0, 20)}...`);
+  if (fs.existsSync(sessionFile)) {
+    const data = JSON.parse(fs.readFileSync(sessionFile, "utf-8"));
+    console.log(`📂 Loaded session [${sessionName}]: ${data.sessionId.slice(0, 20)}...`);
     return data;
   }
 
   // Create new session via register_telegram
-  console.log("🆕 Creating new session...");
+  console.log(`🆕 Creating new session [${sessionName}]...`);
   const telegramUserId = Date.now(); // number, not string
 
   const authResult = await client.callTool("register_telegram", {
@@ -44,21 +77,21 @@ async function loadOrCreateSession(client: McpClient): Promise<Session> {
     userId: authResult.userId,
   };
 
-  fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2));
-  console.log(`✅ Session created: ${session.sessionId.slice(0, 20)}...`);
+  fs.writeFileSync(sessionFile, JSON.stringify(session, null, 2));
+  console.log(`✅ Session created [${sessionName}]: ${session.sessionId.slice(0, 20)}...`);
 
   return session;
 }
 
-async function chat(message: string): Promise<void> {
+async function chat(message: string, sessionName: string): Promise<void> {
   console.log(`\n${"=".repeat(60)}`);
-  console.log(`→ USER: ${message}`);
+  console.log(`→ USER [${sessionName}]: ${message}`);
   console.log("=".repeat(60));
 
   const client = await McpClient.create(MCP_URL);
 
   try {
-    const session = await loadOrCreateSession(client);
+    const session = await loadOrCreateSession(client, sessionName);
 
     const response = await client.callTool("converse", {
       message,
@@ -88,12 +121,23 @@ async function chat(message: string): Promise<void> {
   }
 }
 
-async function reset(): Promise<void> {
-  if (fs.existsSync(SESSION_FILE)) {
-    fs.unlinkSync(SESSION_FILE);
-    console.log("🗑️  Session reset");
+function reset(sessionName: string): void {
+  const sessionFile = getSessionFile(sessionName);
+  if (fs.existsSync(sessionFile)) {
+    fs.unlinkSync(sessionFile);
+    console.log(`🗑️  Session [${sessionName}] reset`);
   } else {
-    console.log("ℹ️  No session to reset");
+    console.log(`ℹ️  No session [${sessionName}] to reset`);
+  }
+}
+
+function showStatus(sessionName: string): void {
+  const sessionFile = getSessionFile(sessionName);
+  if (fs.existsSync(sessionFile)) {
+    const data = JSON.parse(fs.readFileSync(sessionFile, "utf-8"));
+    console.log(`Session [${sessionName}]:`, data);
+  } else {
+    console.log(`No active session [${sessionName}]`);
   }
 }
 
@@ -102,28 +146,33 @@ async function main(): Promise<void> {
 
   if (args.length === 0) {
     console.log(`Usage:
-  npx tsx poc/mcp-chat.ts "message"   — send message
-  npx tsx poc/mcp-chat.ts --reset     — reset session
-  npx tsx poc/mcp-chat.ts --status    — show session info`);
+  npx tsx poc/mcp-chat.ts "message"                   — send message (default session)
+  npx tsx poc/mcp-chat.ts --session alice "message"   — send message (named session)
+  npx tsx poc/mcp-chat.ts --reset                     — reset default session
+  npx tsx poc/mcp-chat.ts --session alice --reset     — reset named session
+  npx tsx poc/mcp-chat.ts --status                    — show default session info
+  npx tsx poc/mcp-chat.ts --session alice --status    — show named session info`);
     return;
   }
 
-  if (args[0] === "--reset") {
-    await reset();
+  const { sessionName, command, message } = parseArgs(args);
+
+  if (command === "reset") {
+    reset(sessionName);
     return;
   }
 
-  if (args[0] === "--status") {
-    if (fs.existsSync(SESSION_FILE)) {
-      const data = JSON.parse(fs.readFileSync(SESSION_FILE, "utf-8"));
-      console.log("Session:", data);
-    } else {
-      console.log("No active session");
-    }
+  if (command === "status") {
+    showStatus(sessionName);
     return;
   }
 
-  await chat(args.join(" "));
+  if (!message) {
+    console.log("Error: No message provided");
+    return;
+  }
+
+  await chat(message, sessionName);
 }
 
 main().catch(console.error);
