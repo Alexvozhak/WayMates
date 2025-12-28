@@ -196,9 +196,10 @@ src/telegram-bot/presenters/format-response.ts           # -LLM translate, +CHAR
 - healthcare → technology в chart-pathfinders.yaml (нет данных в healthcare)
 - chart-validate-goal.yaml: ожидаем facets вместо candidates (Progressive Disclosure)
 
-### Что осталось
+### Коммит
 
-1. **Коммит рефакторинга** — chart-utils.ts + изменения в нодах (код готов, тесты ✅)
+- **9326798** — `refactor(search-graph): extract chart-utils with unified API`
+- 11 files changed, 357 insertions(+), 214 deletions(-)
 
 ---
 
@@ -218,22 +219,18 @@ src/telegram-bot/presenters/format-response.ts           # -LLM translate, +CHAR
 ## Prompt для продолжения
 
 ```
-Продолжаю сессию Chart Refactoring.
+Сессия FEAT-049 + Chart Refactoring ЗАВЕРШЕНА.
 
-Контекст: sessions/2025-12-28-locale-unification.md (секция "Сессия 2025-12-29")
+Коммиты:
+- fe00c2e: feat(locale): FEAT-049 unified localization
+- 9326798: refactor(search-graph): extract chart-utils
 
-Статус:
-- FEAT-049 закоммичен (fe00c2e)
-- chart-utils.ts создан, рефакторинг завершён
-- 4/4 batch tests проходят ✅
-- Quality gates: lint 0 errors, tsc OK
+Что сделано:
+1. Locale унификация: MCP → Guards/NLP/Charts
+2. chart-utils.ts: unified API для всех 4 search методов
+3. Batch tests: 4/4 проходят
 
-Осталось:
-1. Коммит рефакторинга chart-utils (код готов)
-
-Проверено:
-- explore (searchWaymates no goal): chartUrl ✅
-- searchWaymates (with goal): chartUrl ✅
-- searchPathfinders: chartUrl ✅
-- reverseSearchPathfinders: facets при >10 ✅
+Следующие задачи (бэклог):
+- Интеграционные тесты core
+- show-results facets fallback (нет при >10 candidates)
 ```

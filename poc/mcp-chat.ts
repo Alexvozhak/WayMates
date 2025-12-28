@@ -217,16 +217,34 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
 
 type AssertionResult = { passed: boolean; message: string };
 
+function checkSingleAssertion(actualValue: unknown, expectedValue: unknown): { passed: boolean; explain: string } {
+  // Special assertions
+  if (expectedValue === "!null") {
+    const passed = actualValue !== null && actualValue !== undefined;
+    return { passed, explain: passed ? "is not null" : "expected not null" };
+  }
+
+  if (typeof expectedValue === "string" && expectedValue.startsWith("startsWith:")) {
+    const prefix = expectedValue.slice("startsWith:".length);
+    const passed = typeof actualValue === "string" && actualValue.startsWith(prefix);
+    return { passed, explain: passed ? `starts with "${prefix}"` : `expected to start with "${prefix}"` };
+  }
+
+  // Default: exact match
+  const passed = JSON.stringify(actualValue) === JSON.stringify(expectedValue);
+  return { passed, explain: passed ? "" : `expected: ${JSON.stringify(expectedValue)}` };
+}
+
 function checkAssertions(response: Record<string, unknown>, expect: Record<string, unknown>): AssertionResult[] {
   const results: AssertionResult[] = [];
 
   for (const [path, expectedValue] of Object.entries(expect)) {
     const actualValue = path === "phase" ? response.result.phase : getNestedValue(response.result, path);
+    const { passed, explain } = checkSingleAssertion(actualValue, expectedValue);
 
-    const passed = JSON.stringify(actualValue) === JSON.stringify(expectedValue);
     results.push({
       passed,
-      message: `${path}: ${JSON.stringify(actualValue)} ${passed ? "✅" : `❌ (expected: ${JSON.stringify(expectedValue)})`}`,
+      message: `${path}: ${JSON.stringify(actualValue)} ${passed ? "✅" : `❌ (${explain})`}`,
     });
   }
 
