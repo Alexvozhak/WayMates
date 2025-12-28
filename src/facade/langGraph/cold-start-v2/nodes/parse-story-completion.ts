@@ -1,3 +1,4 @@
+import { logger } from "../../../logger.js";
 import { getModel } from "../../shared-tools/models.js";
 import { decisionSchema } from "../types.js";
 
@@ -6,71 +7,44 @@ import type { BaseMessage } from "@langchain/core/messages";
 
 const intentParser = getModel("deterministic").withStructuredOutput(decisionSchema);
 
+// Valid intents for story completion decision
+const STORY_DECISION_INTENTS = ["approve", "continue", "cancel"] as const;
+type StoryDecisionIntent = (typeof STORY_DECISION_INTENTS)[number];
+
+// Semantic descriptions - no literal examples, only meaning
+const STORY_DECISION_DESCRIPTIONS: Record<StoryDecisionIntent, string> = {
+  approve: `User signals COMPLETION and has career content
+  Semantic: finality, ready to proceed, nothing more to add
+  Condition: CV provided OR conversation contains work positions`,
+
+  continue: `DEFAULT - keep gathering story
+  Semantic: sharing info, greeting, unclear, claims no experience
+  Note: "no experience" always continues (ask about internships, freelance)`,
+
+  cancel: `User wants to STOP the flow
+  Semantic: abort, exit, give up`,
+};
+
 function serializeMessages(messages: BaseMessage[]): string {
   return messages.map((m) => `${m.type}: ${m.content}`).join("\n");
 }
 
 function buildStoryCompletionPrompt(cvText: string | null, conversationText: string | null): string {
-  const cvSection = cvText
-    ? `
-═══════════════════════════════════════════════════
-CV/RESUME PROVIDED (anonymized):
-═══════════════════════════════════════════════════
-${cvText}
-`
-    : "";
+  const cvSection = cvText ? `CV/RESUME PROVIDED:\n${cvText}\n\n` : "";
+  const conversationSection = conversationText ? `CONVERSATION:\n${conversationText}\n\n` : "";
 
-  const conversationSection = conversationText
-    ? `
-═══════════════════════════════════════════════════
-CONVERSATION HISTORY:
-═══════════════════════════════════════════════════
-${conversationText}
-`
-    : "";
+  const intentSection = STORY_DECISION_INTENTS.map(
+    (intent) => `${intent} — ${STORY_DECISION_DESCRIPTIONS[intent]}`,
+  ).join("\n\n");
 
-  return `Determine if user has FINISHED telling their career story AND has career content to plan.
+  return `Determine if user has FINISHED telling their career story.
 
-${cvSection}${conversationSection}
-═══════════════════════════════════════════════════
-DECISION RULES (priority order):
-═══════════════════════════════════════════════════
+${cvSection}${conversationSection}DECISION (pick ONE):
 
-1. NO CAREER EXPERIENCE: User explicitly states they have no work experience
-   ("никогда не работал", "нет опыта", "no experience", "never worked")
-   → return CONTINUE (ask about internships, freelance, part-time work, etc.)
-   IMPORTANT: This takes priority even if user says they are "done"
+${intentSection}
 
-2. USER SIGNALS COMPLETION + HAS CAREER CONTENT:
-   User conveys finality (finished, nothing more, ready to proceed)
-   AND (CV provided OR conversation mentions at least 1 work position)
-   → return APPROVE
-
-3. CV PROVIDED AS STORY: CV is provided and user confirms/acknowledges
-   → return APPROVE
-
-4. USER WANTS TO STOP: User expresses desire to cancel or abort
-   → return CANCEL
-
-5. DEFAULT - CONTINUE GATHERING: In ALL other cases
-   - User shares career info but no completion signal → CONTINUE
-   - User still telling their story → CONTINUE
-   - Greeting or unclear message → CONTINUE
-
-═══════════════════════════════════════════════════
-IMPORTANT:
-═══════════════════════════════════════════════════
-- Simply mentioning a job does NOT mean done - may have more positions
-- If user says "no experience" - ALWAYS return CONTINUE, even with completion signal
-- Only APPROVE when: has career content + signals completion
-
-═══════════════════════════════════════════════════
-OUTPUT:
-═══════════════════════════════════════════════════
-Return structured JSON with:
-- intent: "approve" (finished + has content), "continue" (default), or "cancel"
-- editTarget: empty string
-- editInstructions: empty string`;
+PRIORITY: "no experience" claim → always CONTINUE (even with completion signal).
+Simply mentioning a job does NOT mean done — user may have more positions.`;
 }
 
 export async function parseStoryCompletionNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {
@@ -83,6 +57,8 @@ export async function parseStoryCompletionNode(state: ColdStartStateType): Promi
     { role: "system", content: prompt },
     { role: "user", content: userResponse },
   ]);
+
+  logger.info({ parsedDecision, userResponse }, "parse_story_decision reasoning");
 
   return { parsedDecision };
 }

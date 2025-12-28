@@ -37,7 +37,7 @@ function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStart
 }
 
 function createDecision(intent: ParsedDecision["intent"]): ParsedDecision {
-  return { intent, editTarget: "", editInstructions: "" };
+  return { reasoning: "test", intent, editTarget: "", editInstructions: "" };
 }
 
 describe("Cold-Start V2: Contract Tests (TC-C)", () => {

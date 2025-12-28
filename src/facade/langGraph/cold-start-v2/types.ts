@@ -55,6 +55,7 @@ export const currentEntityContextSchema = z.object({
 export type CurrentEntityContext = z.infer<typeof currentEntityContextSchema>;
 
 export const decisionSchema = z.object({
+  reasoning: z.string().describe("Brief explanation of why this intent was chosen"),
   intent: z.enum(["approve", "edit", "cancel", "continue", "unknown"]),
   editTarget: z.string(),
   editInstructions: z.string(),

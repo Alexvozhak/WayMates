@@ -342,6 +342,7 @@ User Message
 7. **LLM merge pattern** для incremental input — передавать текущее состояние в промпт
 8. **Structured output gotcha**: LLM возвращает `""` вместо `null` — фильтровать в extraction functions
 9. **Business-нода отвечает за cleanup** — кто использует данные, тот и очищает. Паттерн cold-start/upsert-context/search-graph
+10. **Reasoning в structured output** — добавляем `reasoning: z.string()` в schema, LLM вынужден объяснить решение перед ответом. Улучшает следование инструкциям и помогает отладке
 
 ### Two-Node Pattern
 
