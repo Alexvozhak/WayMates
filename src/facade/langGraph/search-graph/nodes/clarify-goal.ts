@@ -12,18 +12,18 @@ import type { SearchStateType } from "../state.js";
 const clarificationModel = getModel("extraction").withStructuredOutput(targetContextSchema);
 
 export const clarifyGoalNode = withLogging<SearchStateType>(NODE.clarify_goal, async (state, _config, _deps) => {
-  const { extractedGoal, messages, clarifyRound, clarificationText } = state;
+  const { extractedGoal, messages, clarifyRound, userResponse } = state;
 
-  if (!clarificationText) {
-    throw new AgentInvariantError(NODE.clarify_goal, "clarificationText missing in state");
+  if (!userResponse) {
+    throw new AgentInvariantError(NODE.clarify_goal, "userResponse missing in state");
   }
 
   const currentGoalJson = JSON.stringify(extractedGoal ?? {});
-  const prompt = buildGoalClarificationPrompt(currentGoalJson, clarificationText);
+  const prompt = buildGoalClarificationPrompt(currentGoalJson, userResponse);
 
   const updated = await clarificationModel.invoke([
     { role: "system", content: prompt },
-    { role: "user", content: clarificationText },
+    { role: "user", content: userResponse },
   ]);
 
   return {
@@ -31,6 +31,6 @@ export const clarifyGoalNode = withLogging<SearchStateType>(NODE.clarify_goal, a
     clarifyRound: clarifyRound + 1,
     userResponse: "",
     phase: PHASE.showing_goal,
-    messages: [...messages, new HumanMessage(clarificationText)],
+    messages: [...messages, new HumanMessage(userResponse)],
   };
 });

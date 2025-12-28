@@ -66,20 +66,10 @@ async function buildCurrentSearchParams(
   };
 }
 
-function extractClarificationText(parsed: ParsedIntent): string | null {
-  if (parsed.intent !== "clarify") return null;
-  if (!("clarificationText" in parsed)) return null;
-  return parsed.clarificationText;
-}
-
 function extractAdvisorQuestion(parsed: ParsedIntent): string | null {
   if (parsed.intent !== "ask") return null;
   if (!("question" in parsed)) return null;
   return parsed.question;
-}
-
-function shouldKeepUserResponse(intent: ParsedIntent["intent"]): boolean {
-  return intent === "proceed" || intent === "filter" || intent === "ask" || intent === "change";
 }
 
 function computeNewPositionRound(
@@ -125,19 +115,12 @@ export const parseSearchIntentNode = withLogging<SearchStateType>(
 
     const updatedRound = computeNewPositionRound(phase, parsed.intent, newPositionRound);
 
-    const stateUpdate: Partial<SearchStateType> = {
+    return {
       searchUserIntent: parsed.intent,
       targetSearchParams,
       currentSearchParams,
-      clarificationText: extractClarificationText(parsed),
       advisorQuestion: extractAdvisorQuestion(parsed),
       newPositionRound: updatedRound,
     };
-
-    if (!shouldKeepUserResponse(parsed.intent)) {
-      stateUpdate.userResponse = "";
-    }
-
-    return stateUpdate;
   },
 );

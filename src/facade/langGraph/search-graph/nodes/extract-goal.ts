@@ -40,10 +40,8 @@ function fillFromContext(goal: TargetContext, ctx: AdhocContextBase | null): Tar
 export const extractGoalNode = withLogging<SearchStateType>(
   NODE.extract_goal,
   async (state, _config, { dictionariesService }) => {
-    const { messages, userResponse, clarificationText, adhocContext } = state;
-
-    // Use clarificationText if userResponse is empty (clarify intent case)
-    const textToExtract = userResponse || clarificationText || "";
+    const { messages, userResponse, adhocContext } = state;
+    const textToExtract = userResponse || "";
 
     const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
     const prompt = buildGoalExtractionPrompt(hints);

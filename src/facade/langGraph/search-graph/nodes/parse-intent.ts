@@ -28,7 +28,6 @@ const intentWithFiltersSchema = z.object({
     z.object({
       intent: z.literal("clarify"),
       reasoning: z.string(),
-      clarificationText: z.string(),
       filters: z.null(),
     }),
     z.object({
