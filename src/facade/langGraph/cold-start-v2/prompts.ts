@@ -261,6 +261,14 @@ RULES:
 - Preview MUST include top 3 skills and industry for user to validate early
 
 ═══════════════════════════════════════════════════
+🚨 CRITICAL — DO NOT INVENT DATA:
+═══════════════════════════════════════════════════
+- Extract ONLY explicitly mentioned learning activities
+- Empty incomingTrails is VALID when no learning activities mentioned
+- Formal education degrees belong to educationLevel field, NOT trails
+- No explicit learning mentioned → incomingTrails = []
+
+═══════════════════════════════════════════════════
 EXAMPLE OUTPUT:
 ═══════════════════════════════════════════════════
 contexts: [

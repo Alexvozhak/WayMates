@@ -148,26 +148,108 @@ Tell me about your career history.
 
 ---
 
-### Баг #12: awaiting_clarification — нельзя пропустить поле (cold-start-v2)
+### ~~Баг #12~~: NOT A BUG — citizenships required by design
 
-**Контекст:** Бот спрашивает про citizenships.
+**Статус:** CLOSED (not a bug)
 
-**Отправил:** "не хочу указывать гражданство"
+**Контекст:** citizenships — обязательное поле по бизнес-требованиям (visa/relocation eligibility).
+
+**UX улучшен в коммите `0a6e592`:**
+- Clarification показывает `📍 Position 1/2` + почему поле required
+- Предлагает OPTIONAL поля (education, salary, languages)
+- После MAX_CLARIFICATION_ROUNDS (3) → failed (защита от бесконечного цикла)
+
+---
+
+### Баг #13: plan_career — галлюцинация trails (cold-start-v2) ✅ FIXED
+
+**Отправил:** Полное резюме (4 позиции, без упомянутых курсов/сертификатов)
+
+**Было:**
+```
+2. Middle Developer at DSSL
+   - Incoming Trail: ["Leadership Training Program 2023"]
+3. Team Lead at DSSL
+   - Incoming Trail: ["Agile Project Management Certification 2024"]
+```
+
+**Проблема:** LLM выдумывает trails которых нет в резюме.
+
+**Стало:**
+```
+incomingTrails: []  (для всех контекстов)
+```
+
+**Решение:** Добавлены explicit rules в `planningPrompt`:
+- Extract ONLY explicitly mentioned learning activities
+- Empty incomingTrails is VALID
+- Formal education → educationLevel field, NOT trails
+
+**Изменённые файлы:**
+- `prompts.ts` — секция "DO NOT INVENT DATA"
+
+---
+
+### Баг #14: extract_context — creationReason неверные (cold-start-v2)
+
+**Контекст:** CV с 4 позициями: Research Institute → DSSL (Middle) → DSSL (Lead) → Lido
 
 **Получил:**
-
 ```
-Please provide your citizenships so we can continue...
+Position 2 (DSSL Middle): creationReason: ["started_working"]  ← должен быть company_changed
+Position 3 (DSSL Lead): creationReason: ["company_changed"]  ← неверно, та же компания
+Position 4 (Lido): creationReason: ["started_working"]  ← должен быть company_changed
 ```
 
-**Проблема:** Бот игнорирует явный отказ пользователя и продолжает спрашивать обязательное поле.
+**Проблема:** LLM не сравнивает с предыдущим контекстом при определении reason.
 
-**Файл:** `src/facade/langGraph/cold-start-v2/nodes/clarify-fields.ts`
+**Файл:** `src/facade/langGraph/cold-start-v2/prompts.ts` (contextExtractionPrompt)
 
-**Fix:** Варианты:
+**Fix:** Передавать previousContext в промпт для сравнения.
 
-1. Добавить "skip" intent в clarification
-2. Сделать citizenships optional
-3. Использовать default value при отказе
+---
+
+### Баг #15: extract_context — position не из словаря (cold-start-v2)
+
+**Получил:**
+```
+position: "grade-2"
+position: "team lead"
+position: "project manager"
+```
+
+**Проблема:** Значения не из стандартного словаря (junior/middle/senior/lead/principal).
+
+**Ожидаемое:** Нормализация к canonical values.
+
+**Файл:** `contextExtractionPrompt` — проверить dictHints для position
+
+---
+
+### Баг #16: extract_context — skills/domains не нормализованы (cold-start-v2)
+
+**Получил:**
+```
+skills: ["project management", "team leadership"]
+domains: ["research-and-development"]
+```
+
+**Проблема:** Значения не из словаря, LLM придумывает свои.
+
+**Файл:** `contextExtractionPrompt` — проверить инжекцию dictHints
+
+---
+
+### Баг #17: orchestrator — "загрузить резюме" не распознаётся
+
+**Отправил:** "хочу загрузить своё резюме"
+
+**Получил:** `system_message` (unknown intent)
+
+**Ожидаемое:** `startStory` → cold-start flow
+
+**Файл:** `src/facade/services/orchestrator/intent-classifier.ts`
+
+**Fix:** Добавить в описание startStory семантику "upload CV/resume".
 
 ---
