@@ -1,0 +1,22 @@
+name: chart-waymates-with-goal
+description: Chart генерируется для searchWaymates с установленной целью
+locale: ru
+
+steps:
+  - message: Я middle backend разработчик в healthcare, США
+    expect:
+      phase: confirming_adhoc_context
+      adhocContext.industry: healthcare
+
+  - message: хочу стать senior
+    expect:
+      phase: showing_goal
+
+  - message: сохрани цель
+    expect:
+      phase: asking_search_mode
+
+  - message: покажи похожих на меня
+    expect:
+      phase: showing_results
+      chartUrl: "!null"

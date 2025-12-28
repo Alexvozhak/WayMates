@@ -149,20 +149,91 @@ src/telegram-bot/presenters/format-response.ts           # -LLM translate, +CHAR
 
 ---
 
+## Сессия 2025-12-29 (продолжение): Chart refactoring
+
+### Коммит FEAT-049
+- **fe00c2e** — `feat(locale): FEAT-049 unified localization from MCP client`
+- 58 files changed, 1915 insertions(+), 258 deletions(-)
+- FEAT-049.md статус → DONE
+
+### Batch testing (уже сделано)
+- **5ea0025** — `feat(poc): add --batch mode to mcp-chat.ts`
+- Поддержка YAML batch files с assertions
+- Специальные assertions: `!null`, `startsWith:`
+
+### Проблема: chartUrl = null в show_results
+
+**Причина:** `interrupt()` выбрасывает исключение → код после него не выполняется → `return { chartUrl }` не срабатывает → state не обновляется.
+
+**Решение:** Перенести chart generation из show_results в search_waymates/search_pathfinders (по аналогии с explore → show_exploration).
+
+### Рефакторинг chart-utils.ts
+
+Создан `chart-utils.ts` с unified API:
+- `pathfinderToChartCandidate()` — конвертация PathfinderCandidate
+- `matchedToChartCandidate()` — конвертация MatchedCandidateWithPath
+- `safeGenerateChart()` — единая функция с discriminated union (explore/with-goal/goal-only)
+
+| Файл | Изменения |
+|------|-----------|
+| chart-utils.ts | +120 LOC: новый shared модуль |
+| explore.ts | -40 LOC: используем chart-utils |
+| search-waymates.ts | -35 LOC: используем chart-utils |
+| search-pathfinders.ts | -45 LOC: используем chart-utils |
+| validate-goal.ts | -30 LOC: используем chart-utils |
+| show-results.ts | -80 LOC: убран chart generation, только interrupt |
+
+### Batch tests результаты (после фикса)
+
+| API | Тест | Результат | chartUrl |
+|-----|------|-----------|----------|
+| explore (searchWaymates no goal) | chart-generation.yaml | ✅ 6/6 | генерируется |
+| searchWaymates (with goal) | chart-waymates-with-goal.yaml | ✅ 6/6 | генерируется |
+| searchPathfinders | chart-pathfinders.yaml | ✅ 6/6 | генерируется |
+| reverseSearchPathfinders | chart-validate-goal.yaml | ✅ 5/5 | facets (50 > 10) |
+
+**Фиксы:**
+- healthcare → technology в chart-pathfinders.yaml (нет данных в healthcare)
+- chart-validate-goal.yaml: ожидаем facets вместо candidates (Progressive Disclosure)
+
+### Что осталось
+
+1. **Коммит рефакторинга** — chart-utils.ts + изменения в нодах (код готов, тесты ✅)
+
+---
+
+## Рефлексия сессии 2025-12-29
+
+### Ошибки Claude (корректировки пользователя)
+
+| Ошибка | Суть | Урок |
+|--------|------|------|
+| Не понял архитектуру interrupt() | Пытался генерить chartUrl в show_results ПОСЛЕ interrupt | interrupt() выбрасывает исключение, код после него не выполняется. Данные для response готовить ДО interrupt или в предыдущей ноде |
+| Не использовал todo list | Пользователь напомнил закрыть задачу перед коммитом | Активно использовать TodoWrite, не забывать отмечать completed |
+| Неполная проверка перед коммитом | Проверил 2/4 batch теста, поспешил коммитить | Проверять ВСЕ связанные сценарии (explore, waymates, pathfinders, reverse), не только failing tests |
+| Повторное игнорирование todo | Снова забыл todo при втором коммите | Workflow (todo) — часть работы, не overhead. Паттерн повторяется → требует осознанного внимания |
+
+---
+
 ## Prompt для продолжения
 
 ```
-Продолжаю сессию FEAT-049 Locale Unification.
+Продолжаю сессию Chart Refactoring.
 
-Контекст: sessions/2025-12-28-locale-unification.md
+Контекст: sessions/2025-12-28-locale-unification.md (секция "Сессия 2025-12-29")
 
-Статус: КОД ГОТОВ, тесты пройдены (5/5 adhoc vs goal).
+Статус:
+- FEAT-049 закоммичен (fe00c2e)
+- chart-utils.ts создан, рефакторинг завершён
+- 4/4 batch tests проходят ✅
+- Quality gates: lint 0 errors, tsc OK
 
 Осталось:
-1. Коммит (git add && commit)
-2. Обновить FEAT-049.md статус → DONE
+1. Коммит рефакторинга chart-utils (код готов)
 
-Бэклог:
-- chartUrl не выводится в mcp-chat.ts
-- Batch testing для workflow (изучить: LangSmith datasets, Promptfoo)
+Проверено:
+- explore (searchWaymates no goal): chartUrl ✅
+- searchWaymates (with goal): chartUrl ✅
+- searchPathfinders: chartUrl ✅
+- reverseSearchPathfinders: facets при >10 ✅
 ```

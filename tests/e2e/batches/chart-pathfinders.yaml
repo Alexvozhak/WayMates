@@ -1,0 +1,22 @@
+name: chart-pathfinders
+description: Chart генерируется для searchPathfinders (кто достиг цели)
+locale: ru
+
+steps:
+  - message: Я middle backend разработчик в technology, США
+    expect:
+      phase: confirming_adhoc_context
+      adhocContext.industry: technology
+
+  - message: хочу стать senior
+    expect:
+      phase: showing_goal
+
+  - message: сохрани цель
+    expect:
+      phase: asking_search_mode
+
+  - message: покажи кто уже достиг этой цели
+    expect:
+      phase: showing_results
+      chartUrl: "!null"

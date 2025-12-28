@@ -1,6 +1,7 @@
 import { DTW_MIN_TRAJECTORY_LENGTH } from "../../../../config/scoring.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
+import { pathfinderToChartCandidate, safeGenerateChart } from "../chart-utils.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
@@ -13,8 +14,8 @@ import type { SearchStateType } from "../state.js";
  */
 export const searchPathfindersNode = withLogging<SearchStateType>(
   NODE.search_pathfinders,
-  async (state, _config, { coreClient }) => {
-    const { userId, adhocContext, userContext, storedGoal } = state;
+  async (state, _config, { coreClient, dictionariesService, logger }) => {
+    const { userId, adhocContext, userContext, userTrajectory, storedGoal, locale } = state;
 
     if (!storedGoal) {
       throw new AgentInvariantError(NODE.search_pathfinders, "storedGoal required for pathfinder search");
@@ -29,7 +30,7 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       userId,
       referenceContext,
       targetContext: storedGoal.targetContext,
-      userTrajectory: state.userTrajectory.length >= DTW_MIN_TRAJECTORY_LENGTH ? state.userTrajectory : undefined,
+      userTrajectory: userTrajectory.length >= DTW_MIN_TRAJECTORY_LENGTH ? userTrajectory : undefined,
       referenceRecencyMonths: null,
       targetRecencyMonths: null,
       excludedContextFields: [],
@@ -38,10 +39,23 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       pathLimit: config.CANDIDATES_DISPLAY_LIMIT,
     });
 
+    const chartUrl = await safeGenerateChart({
+      mode: "with-goal",
+      userTrajectory,
+      adhocContext,
+      storedGoal,
+      candidates: results.map((c) => pathfinderToChartCandidate(c)),
+      locale,
+      dictionariesService,
+      logger,
+      nodeName: NODE.search_pathfinders,
+    });
+
     return {
       pathfinderResults: results,
       searchMode: "pathfinders" as const,
       phase: PHASE.showing_results,
+      chartUrl,
     };
   },
 );

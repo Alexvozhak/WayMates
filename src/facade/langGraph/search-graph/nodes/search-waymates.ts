@@ -1,3 +1,4 @@
+import { safeGenerateChart } from "../chart-utils.js";
 import { NODE, PHASE } from "../state.js";
 import { DEFAULT_CURRENT_SEARCH_PARAMS } from "../types.js";
 import { withLogging } from "../with-logging.js";
@@ -11,8 +12,8 @@ import type { SearchStateType } from "../state.js";
  */
 export const searchWaymatesNode = withLogging<SearchStateType>(
   NODE.search_waymates,
-  async (state, _config, { coreClient }) => {
-    const { userId, adhocContext, currentSearchParams } = state;
+  async (state, _config, { coreClient, dictionariesService, logger }) => {
+    const { userId, adhocContext, userTrajectory, storedGoal, currentSearchParams, locale } = state;
 
     const params = currentSearchParams ?? { ...DEFAULT_CURRENT_SEARCH_PARAMS };
 
@@ -22,11 +23,24 @@ export const searchWaymatesNode = withLogging<SearchStateType>(
       ...params,
     });
 
+    const chartUrl = await safeGenerateChart({
+      mode: "with-goal",
+      userTrajectory,
+      adhocContext,
+      storedGoal,
+      candidates: results,
+      locale,
+      dictionariesService,
+      logger,
+      nodeName: NODE.search_waymates,
+    });
+
     return {
       searchResults: results,
       currentSearchParams: params,
       searchMode: "waymates" as const,
       phase: PHASE.showing_results,
+      chartUrl,
     };
   },
 );

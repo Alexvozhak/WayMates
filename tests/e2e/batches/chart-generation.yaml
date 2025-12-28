@@ -1,0 +1,16 @@
+name: chart-generation
+description: Проверка что chartUrl генерируется при <10 кандидатах
+locale: ru
+
+steps:
+  - message: Я middle backend разработчик в healthcare, США
+    expect:
+      phase: confirming_adhoc_context
+      adhocContext.position: middle
+      adhocContext.industry: healthcare
+      adhocContext.countryCode: US
+
+  - message: покажи похожих
+    expect:
+      phase: showing_exploration_candidates
+      chartUrl: "!null"
