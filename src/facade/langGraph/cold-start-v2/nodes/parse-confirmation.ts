@@ -1,3 +1,4 @@
+import { logger } from "../../../logger.js";
 import { getModel } from "../../shared-tools/models.js";
 import { decisionSchema } from "../types.js";
 
@@ -19,6 +20,8 @@ export async function parseConfirmationNode(state: ColdStartStateType): Promise<
     { role: "system", content: CONFIRMATION_PROMPT },
     { role: "user", content: userResponse },
   ]);
+
+  logger.info({ parsedDecision, userResponse }, "parse_confirmation reasoning");
 
   return { parsedDecision };
 }
