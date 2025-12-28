@@ -18,14 +18,15 @@
 
 ### Ключевые понятия
 
-| Термин            | Описание                                                   |
-| ----------------- | ---------------------------------------------------------- |
-| **Context**       | Одна позиция в карьере (роль, навыки, домен, компания)     |
-| **Trajectory**    | Цепочка Context-ов пользователя (карьерный путь)           |
-| **Goal**          | Желаемая позиция пользователя                              |
-| **Pathfinder**    | Кандидат, который УЖЕ достиг цели пользователя             |
-| **Waymate**       | Кандидат с ТОЙ ЖЕ целью (ещё не достиг)                    |
-| **Adhoc Context** | Временный контекст из сообщения (не сохраняется в профиль) |
+> Бизнес-смысл сущностей → см. [BUSINESS-LOGIC-MVP.md](./BUSINESS-LOGIC-MVP.md#1-концепция-продукта)
+
+**Технические детали:**
+
+| Термин | Техническая роль |
+|--------|------------------|
+| **Context** | Node в Neo4j, содержит `position`, `role`, `domains[]`, `skills[]` |
+| **Trajectory** | Цепочка Context связанных `PREVIOUS_CONTEXT` |
+| **Adhoc Context** | Временный объект (не node в Neo4j), не сохраняется |
 
 ### Допустимые состояния User
 
@@ -279,29 +280,15 @@ load_context (из БД) → check_goal
 **Optional поля** (ADHOC_OPTIONAL_FIELDS):
 - skills, industry, companySize, cityName, citizenships, birthYear, educationLevel, languages
 
-**Архитектура валидации:**
+**Flow валидации:** `adhocContextBase (nullable)` → LLM extraction → `adhocContextRequiredSchema (.omit().extend())` → Zod safeParse → `missingFields[]`
+
+**Schema derivation:**
 ```
-adhocContextBase (все nullable) → LLM extraction
-           ↓
-adhocContextRequiredSchema (.omit().extend()) → Zod safeParse
-           ↓
-missingFields[] → response → NLP показывает пользователю
+✅ schema.omit({...}).extend({...})  — наследование с заменой required
+❌ дублировать поля в новой схеме   — рассинхрон
 ```
 
-**Schema derivation pattern:**
-```typescript
-// Наследование от nullable схемы с заменой required полей
-export const adhocContextRequiredSchema = adhocContextBase
-  .omit({ position: true, role: true, countryCode: true, domains: true })
-  .extend({
-    position: z.string().min(1),
-    role: z.string().min(1),
-    countryCode: z.string().min(1),
-    domains: z.array(z.string()).min(1),
-  });
-```
-
-**LLM Merge:** Если контекст неполный → `ask_adhoc_context` → пользователь дополняет → `load_context` использует `clarifyAdhocContext` для merge (LLM объединяет старое + новое).
+**LLM Merge:** Неполный контекст → `ask_adhoc_context` → `clarifyAdhocContext` (LLM merge старое + новое).
 
 ---
 
@@ -348,12 +335,13 @@ User Message
 
 1. **checkpointer обязателен** для interrupt
 2. **thread_id обязателен** для persistence
-3. **userResponse очищать** после использования (`userResponse: ""`)
+3. **userResponse очищать в business-ноде** после использования (`userResponse: ""`). Не в parse_search_intent — он только классифицирует
 4. **buildRouteMap** должен содержать ВСЕ возможные return values роутера
 5. **unknown intent → safe fallback**, не infinite loop
 6. **Optional Zod field**: undefined (отсутствие), НЕ null
 7. **LLM merge pattern** для incremental input — передавать текущее состояние в промпт
 8. **Structured output gotcha**: LLM возвращает `""` вместо `null` — фильтровать в extraction functions
+9. **Business-нода отвечает за cleanup** — кто использует данные, тот и очищает. Паттерн cold-start/upsert-context/search-graph
 
 ### Two-Node Pattern
 
@@ -478,105 +466,40 @@ Lint можно пропустить — фокус на функциональ�
 
 ---
 
-## 10. БИЗНЕС-ЛОГИКА UX
+## 10. INTENT ARCHITECTURE
 
-### Роль токсичного пользователя
+> Бизнес-семантика intent'ов → см. [BUSINESS-LOGIC-MVP.md](./BUSINESS-LOGIC-MVP.md#intent-семантика)
 
-При тестировании думай как пользователь который:
-
-- Не читает инструкции
-- Пишет кратко и неформально
-- Ожидает что бот поймёт контекст
-- Раздражается когда бот отменяет действие
-- Хочет простой и понятный flow
-
-### Примеры плохого UX (что искать)
-
-| Ситуация                    | Плохой UX                | Хороший UX                  |
-| --------------------------- | ------------------------ | --------------------------- |
-| Контекст не извлечён        | Пустые результаты        | Спросить явно               |
-| Unknown intent              | Cancel                   | Уточнить что имел в виду    |
-| Clarify в неожиданном месте | Cancel                   | Принять уточнение           |
-| Много кандидатов (>10)      | Token limit error        | Progressive Disclosure      |
-| 0 результатов               | "Ничего не найдено"      | Показать фильтры + missing  |
-
-### Progressive Disclosure Pattern
-
-Когда candidates > threshold (10, см. `FACETS_MAX_CANDIDATES`):
-1. Показать **facets** — распределение с counts по полям:
-   - Countries, Citizenships, Positions, Roles, Industries
-2. Предложить выбрать фильтр: "Technology (31), Healthcare (8) — какая индустрия?"
-3. После фильтра — полный анализ + Chart
-
-Зачем: избежать token limit, помочь пользователю сузить выбор.
-
-### Прозрачность = доверие
-
-| Что показать | Зачем |
-|--------------|-------|
-| Missing fields | "we're missing position" → понятно почему такие результаты |
-| Applied filters | "искали: senior, backend, Europe" → можно скорректировать |
-| Counts | "найдено 20 pathfinders, 5 waymates" → масштаб понятен |
-
-### Intent семантика
-
-| Intent | Значение | Роутинг |
-|--------|----------|---------|
-| `change` | Полная замена цели | `extract_goal` (с нуля) |
-| `clarify` | Дополнить существующую | `clarify_goal` (merge) |
-| `proceed` | Согласие БЕЗ новой инфо | depends on hasGoal |
-| `validate` | "покажи реальных людей" | `validate_goal` |
-| `save` | Явное сохранение | `set_goal` → `ask_search_mode` |
-| `searchWaymates` | Выбрал попутчиков | `search_waymates` |
-| `searchPathfinders` | Выбрал проводников | `search_pathfinders` |
-| `ask` | Мета-вопрос о боте | `generate_answer` (advisor) |
-
-**Важно:** `ask` должен быть в КАЖДОЙ фазе — пользователь может спросить "что ты умеешь?" в любой момент.
-
-### Intent Architecture (Single Source of Truth)
+### Single Source of Truth
 
 Intent'ы определены в `state.ts` как const arrays:
-- `SIMPLE_INTENTS` — без доп. полей в schema (proceed, explore, save, change, delete, searchWaymates, searchPathfinders, cancel, unknown)
+- `SIMPLE_INTENTS` — без доп. полей (proceed, explore, save, change, delete, cancel, unknown)
 - `COMPLEX_INTENTS` — с clarificationText/filters/question (validate, clarify, filter, ask)
-- `SearchUserIntent = SimpleIntent | ComplexIntent` — derived type
 
-**Где используются:**
-1. `state.ts` — SIMPLE_INTENTS/COMPLEX_INTENTS arrays
-2. `parse-intent.ts` — `z.enum(SIMPLE_INTENTS)` в Zod schema
-3. `classification.ts` — `INTENT_DESCRIPTIONS: Record<SearchUserIntent, string>`
-4. `search-router.ts` — `createIntentRoutes(flags)` возвращает valid intents по фазам
+**Где используются (обновить при добавлении):**
 
-**При добавлении нового intent:** обновить 3 места: state.ts, classification.ts, search-router.ts
+| Файл | Что обновить |
+|------|--------------|
+| `state.ts` | SIMPLE_INTENTS / COMPLEX_INTENTS arrays |
+| `classification.ts` | INTENT_DESCRIPTIONS record |
+| `search-router.ts` | createIntentRoutes() |
 
-**ВАЖНО:** Prompt для classification строится динамически из router — показывает ТОЛЬКО valid intents для текущей фазы. `getValidIntentsForPhase(phase, flags)` = source of truth.
+**ВАЖНО:** Prompt строится динамически из router — показывает ТОЛЬКО valid intents для фазы.
 
-### explore vs proceed
+---
 
-| Intent | Semantic | Когда |
-|--------|----------|-------|
-| `proceed` | Согласие БЕЗ новой информации | "да", "ок", "давай" |
-| `explore` | Запрос на просмотр похожих | "глянь похожих", "покажи кандидатов" |
+## 10.1 CHART ARCHITECTURE
 
-**Routing explore с учётом hasGoal:**
-- `hasGoal=false` → NODE.explore (browse UI)
-- `hasGoal=true` → NODE.search_waymates (results UI с фильтрацией по цели)
+| Нода | Chart Mode | Условие |
+|------|------------|---------|
+| `show_results` | `full` | userTrajectory.length > 0 |
+| `validate_goal` | `goal-only` | candidates.length > 0 |
+| `explore` | `full` / `candidates-only` | userTrajectory или adhocContext |
 
-### Chart Generation
-
-| Нода | Chart? | Mode | Условие |
-|------|--------|------|---------|
-| `show_results` | ✅ | `full` | userTrajectory.length > 0 |
-| `validate_goal` | ✅ | `goal-only` | candidates.length > 0 |
-| `explore` | ✅ | `full` / `candidates-only` | userTrajectory или adhocContext |
-
-**3 режима Chart (discriminated union):**
-- `full` — user trajectory + candidates (overlap, spider chart)
-- `candidates-only` — adhoc marker + candidates (no overlap)
-- `goal-only` — только candidates + Goal Line (для validate-goal)
-
-**Конвертация типов:**
-- `PathfinderCandidate` → `ScoredMatchedCandidate` (show-results.ts)
-- `MatchedCandidateWithPath` → `ScoredMatchedCandidate` (validate-goal.ts)
+**3 режима (discriminated union):**
+- `full` — user trajectory + candidates
+- `candidates-only` — adhoc marker + candidates
+- `goal-only` — candidates + Goal Line
 
 **Ключевые файлы:**
 - Types: `src/chart/types.ts`
@@ -587,125 +510,72 @@ Intent'ы определены в `state.ts` как const arrays:
 
 ## 11. SEARCH ARCHITECTURE (Core)
 
-### Три режима поиска
+> Бизнес-логика поиска (что каждый режим означает) → см. [BUSINESS-LOGIC-MVP.md](./BUSINESS-LOGIC-MVP.md#5-логика-поиска)
 
-| Режим | Кого ищем | Ключевые параметры |
-|-------|-----------|-------------------|
-| **searchWaymates** | Похожие люди (adhoc ИЛИ profile) | `referenceContext?`, `recencyMonths`, `isWaymate: true` |
-| **searchPathfinders** | Кто прошёл от нашего контекста к нашей цели | `referenceContext` + `targetContext`, dual recency |
-| **reverseSearchPathfinders** | Кто достиг target (любой старт) | `targetContext`, для валидации цели |
+### Unified Flow
 
-### Бизнес-смысл каждого режима
+```
+Cypher (Light query, без path/trails)
+    ↓
+PathCollectorService.collectTrajectories(candidateIds)
+    ↓
+DTW enrichment (если userTrajectory >= 3)
+    ↓
+Sort (dtwTotal + contextMatchScore) → slice(pathLimit)
+```
 
-1. **Waymates** = похожие люди (unified: adhoc + profile)
-   - Match: candidate имеет контекст похожий на наш (любой в истории)
-   - `isWaymate: boolean` — кандидат имеет ту же цель что и мы
-   - Ценность: "кто ещё в моей ситуации"
+### Type Hierarchy
 
-2. **Pathfinders** = proof of transition
-   - Match 1: candidate.history содержит our.referenceContext (был где мы)
-   - Match 2: candidate.history содержит our.targetContext (достиг куда мы хотим)
-   - Temporal: refContext.createdAt < targetContext.createdAt
-   - Dual recency: `targetRecencyMonths` + `referenceRecencyMonths`
-   - Ценность: "путь возможен, вот доказательство"
+```
+candidateBaseSchema (path/trails required):
+├── matchedContext, timeSinceMatchedMonths, contextMatchScore
+├── path, trails, dtwMetrics?, dtwTotal?
 
-3. **ReversePathfinders** = reverse engineering (откуда приходят на target)
-   - Match: candidate.history содержит target
-   - Recency на target: "он недавно достиг target?"
-   - Ценность: валидация цели, "откуда люди приходят на эту позицию"
+WaymateCandidate = base + isWaymate
+PathfinderCandidate = base + targetContext + timeSinceTargetMonths
+```
 
-### Adhoc vs Profile
+**Light типы (Cypher parsing):** `*CandidateLight` — без path/trails.
 
-Adhoc/Profile — это НЕ режим поиска, а источник referenceContext:
-
-| Источник | referenceContext | Доступные режимы |
-|----------|------------------|------------------|
-| **Adhoc** | Из сообщения пользователя | Waymates, Pathfinders (если goal есть) |
-| **Profile** | Из DB (user.currentContextId) | Все три |
-
-### Где искать (файлы)
+### Ключевые файлы
 
 | Компонент | Файл |
 |-----------|------|
 | Cypher queries | `src/cypher/queries/search.ts` |
+| Scoring helper | `src/cypher/helpers/scoring.ts` |
 | SearchManager | `src/core/search-manager.ts` |
-| tRPC Router | `src/core/routers/search.ts` |
-| Facade nodes | `src/facade/langGraph/search-graph/nodes/explore.ts`, `validate-goal.ts` |
+| PathCollector | `src/core/path-collector.service.ts` |
+| TrajectorySimilarity | `src/core/trajectory-similarity.service.ts` |
 | Types | `src/shared/schemas.ts` |
 
-### recencyThresholdMonths
+### Skills Scoring
 
-Фильтр по возрасту контекста в месяцах:
-
-```cypher
-duration.between(datetime(matchedContext.createdAt), datetime()).months <= $recencyThresholdMonths
+```
+referenceContext.skills ∩ candidateSkills → positive
+candidateSkills \ referenceContext.skills → penalty
+contextMatchScore = max(0, positive - penalty)
 ```
 
-- **Waymates**: recency на candidate.currentContext — "он ещё там?"
-- **Pathfinders/Reverse**: recency на goalContext — "он недавно достиг?"
+### DTW Architecture
 
-### filterByCurrentContext (Cypher)
+DTW вычисляется **в TypeScript**, не в Cypher.
 
-```cypher
-// filterByCurrentContext = true
-MATCH (u:User)-[:HAS_CONTEXT]->(c:Context{contextId: u.currentContextId})
-// → только ТЕКУЩИЙ контекст кандидата (для Waymates)
+**Условие:** `userTrajectory.length >= 3` И `candidate.path.length >= 3`
 
-// filterByCurrentContext = false
-MATCH (u:User)-[:HAS_CONTEXT]->(c:Context)
-// → ЛЮБОЙ контекст в истории (для Pathfinders/Reverse)
+Константа: `DTW_MIN_TRAJECTORY_LENGTH` в `config/scoring.ts`.
+
+### Cypher Patterns
+
+**recencyThresholdMonths:**
+```
+✅ duration.between(datetime(c.createdAt), datetime()).months <= $threshold
 ```
 
-### isWaymate в результатах
-
-| isWaymate | Значение | Когда |
-|-----------|----------|-------|
-| `true` | Кандидат имеет ту же цель | Waymates search + goal совпадает |
-| `false` | Нет goal или другая цель | Нет goal или не матчится |
-
-**Примечание:** `candidateType` enum удалён, заменён на `isWaymate: boolean`.
-
-### DTW Architecture (где вычисляется)
-
-DTW вычисляется **в TypeScript**, не в Cypher:
-
-| Слой | Роль в DTW |
-|------|------------|
-| **Cypher** | Возвращает кандидатов |
-| **trajectoryCollector** | Batch запрос за path + trails для списка userIds |
-| **Core TypeScript** | `TrajectorySimilarityService.computeDTWMetrics()` вычисляет метрики |
-| **SearchManager** | Orchestrator: получает кандидатов → обогащает DTW → возвращает |
-
-**Условие для DTW расчёта** (см. `DTW_MIN_TRAJECTORY_LENGTH` в `config/scoring.ts`):
-- `userTrajectory.length >= 3` (минимум 3 контекста у пользователя)
-- `candidate.path.length >= 3` (минимум 3 контекста у кандидата)
-
-**Текущий статус:**
-- `searchWaymates` (profile mode) → DTW ✅ (через trajectoryCollector)
-- `searchWaymates` (adhoc mode) → DTW нет (нет userTrajectory)
-- `searchPathfinders` → DTW ✅ (добавлен 2025-12-28, пока через inline Cypher)
-
-**TODO: Унификация архитектуры** (см. `sessions/2025-12-28-search-unification-plan.md`):
-- Pathfinders должен использовать trajectoryCollector (как Waymates)
-- Общий базовый тип `CandidateBase` с path/trails required
-
-**Известные проблемы (исправлено 2025-12-28):**
-- ~~`pathCollector` возвращает только path, без trails~~ → теперь `{ path, trails }`
-- ~~**Баг:** trails НЕ попадают в waymates~~ → исправлено
-- Архитектурное расхождение: waymates vs pathfinders → TODO унификация
-
-**Целевая архитектура:**
+**filterByCurrentContext:**
 ```
-Cypher → кандидаты (без path/trails)
-  → trajectoryCollector (path + trails batch)
-  → DTW enrichment (если userTrajectory >= 3)
-  → sort + slice(pathLimit)
+✅ MATCH (u)-[:HAS_CONTEXT]->(c{contextId: u.currentContextId})  — только текущий
+✅ MATCH (u)-[:HAS_CONTEXT]->(c)                                 — любой в истории
 ```
-
-**Ключевые файлы:**
-- `src/core/trajectory-similarity.service.ts` — вычисление DTW метрик
-- `src/core/search-manager.ts` — orchestration DTW обогащения
-- `src/cypher/queries/paths.ts` — batch path query
 
 ---
 
@@ -713,8 +583,19 @@ Cypher → кандидаты (без path/trails)
 
 ### Kaggle users (225)
 
-- Реальные карьерные истории
-- Загружаются: `npx tsx scripts/import-kaggle.ts`
+225 пользователей с 1319 контекстами из Kaggle resume dataset.
+
+```bash
+# 1. Поднять БД
+npm run test:setup  # тестовая
+
+# 2. Импорт
+npx tsx scripts/import-kaggle.ts
+
+# 3. Проверка: MATCH (u:User:Synthetic) RETURN count(u)
+```
+
+**Данные:** `data/kaggle-enriched.json`
 
 ### Fixture users (U1-U18)
 
@@ -756,6 +637,27 @@ gather_story → state.messages (накапливаются через reducer)
 response-builders → { phase, messages: [{role, content}] }
     ↓
 NLP formatter → текст с acknowledge + follow-up
+```
+
+### Clarification/Confirmation UX Pattern
+
+**Принцип:** OPTIONAL предлагаются в clarification, confirmation показывает только filled.
+
+| Фаза | Progress | Показывает | OPTIONAL |
+|------|----------|------------|----------|
+| `awaiting_clarification` | `📍 Position 1/2: {preview}` | MISSING (required) | Предлагает кратко |
+| `awaiting_context_confirmation` | `📍 Position 1/2` | Только filled fields | Не показывает |
+
+**Response data (clarification):**
+- `entityPreview` — preview текущего контекста
+- `progress` — `{ current, total }`
+- `missingFields` — required поля
+- `optionalFields` — unfilled optional (типизированы через `ContextOptionalField`)
+
+**Type-safe optional fields:**
+```typescript
+type ContextOptionalField = Exclude<keyof UserContext, ContextRequiredField | ContextSystemField>;
+const CONTEXT_OPTIONAL_FIELDS = ["companySize", "birthYear", ...] as const satisfies readonly ContextOptionalField[];
 ```
 
 ---

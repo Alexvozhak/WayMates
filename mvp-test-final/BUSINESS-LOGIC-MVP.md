@@ -189,14 +189,10 @@ flowchart TD
 
 ## 3. User State (состояние пользователя)
 
-### Структура:
-
-```typescript
-interface UserState {
-  hasContext: boolean;        // есть ли сохранённый контекст в БД
-  hasGoal: boolean;           // есть ли зафиксированная цель
-}
-```
+| Флаг | Что означает |
+|------|--------------|
+| `hasContext` | Есть сохранённый контекст в БД |
+| `hasGoal` | Есть зафиксированная цель |
 
 **Почему нет флага `skippedOnboarding`:**
 - Режим определяется по активному checkpoint графа
@@ -255,31 +251,16 @@ hasContext=true → setGoal → hasGoal=true
 2. Имеет ту же цель что и мы
 3. Ещё не достиг этой цели
 
-```typescript
-// Вход
-WaymatesSearchParams {
-  referenceContext?: AdhocContext,  // optional: adhoc или из DB
-  goalPositions?: string[],          // позиции цели для matching
-  recencyMonths: number,             // фильтр по актуальности
-  excludedContextFields: string[],   // поля для исключения из matching
-  excludedCreationReasons: string[], // причины смены для исключения
-  limit: number,
-}
+**Ценность:** Peers для networking, люди в такой же ситуации.
 
-// Выход
-ScoredMatchedCandidate {
-  userId: string,
-  matchedContext: UserContext,       // контекст который совпал
-  score: number,                     // score совпадения
-  isWaymate: boolean,                // true = та же цель
-  trajectory: UserContext[],         // полная траектория
-  dtwMetrics?: DTWMetrics,           // только для profile mode
-}
-```
+**Режим определяется по referenceContext:**
+- Передан → adhoc mode (контекст из сообщения)
+- Не передан → profile mode (из user.currentContextId + DTW)
 
-**Логика:**
-- `referenceContext` есть → adhoc mode (из сообщения)
-- `referenceContext` нет → profile mode (из user.currentContextId + DTW)
+**Ключевые поля результата:**
+- `matchedContext` — где кандидат похож на нас
+- `isWaymate` — true если та же цель
+- `path` + `trails` — полная траектория (всегда)
 
 ---
 
@@ -288,32 +269,15 @@ ScoredMatchedCandidate {
 **Определение:** Pathfinder = человек который:
 1. БЫЛ в контексте похожем на наш (в истории, не сейчас)
 2. ДОСТИГ нашей цели (имеет контекст matching target)
-3. `refContext.createdAt < targetContext.createdAt` (proof of progression)
+3. `matchedContext.createdAt < targetContext.createdAt` (proof of progression)
 
-```typescript
-// Вход
-PathfinderSearchParams {
-  referenceContext: AdhocContext,    // наш текущий контекст
-  targetContext: TargetContext,      // наша цель
-  referenceRecencyMonths: number,    // как давно был в нашем контексте (2-5 лет)
-  targetRecencyMonths: number,       // как давно достиг цели (2-6 мес)
-  excludedContextFields: string[],
-  excludedCreationReasons: string[],
-  limit: number,
-}
+**Ценность:** Доказательство что переход возможен, путь + сроки.
 
-// Выход
-PathfinderCandidate {
-  userId: string,
-  referenceContext: UserContext,     // где был похож на нас
-  matchedContext: UserContext,       // где достиг цели
-  timeSinceReferenceMonths: number,  // длина пути
-  timeSinceTargetMonths: number,     // как давно достиг
-  trajectory: UserContext[],
-}
-```
+**Dual matching:**
+- `matchedContext` — где кандидат БЫЛ как мы
+- `targetContext` — где кандидат ДОСТИГ цели
 
-**Ключевые параметры:**
+**Dual recency (разные окна времени):**
 - `targetRecencyMonths` (2-6 мес) — недавно достиг цели
 - `referenceRecencyMonths` (2-5 лет) — был в нашем контексте давно (путь занимает годы)
 
@@ -325,19 +289,9 @@ PathfinderCandidate {
 1. ДОСТИГ конкретной цели (match targetContext)
 2. Любой старт (неважно откуда пришёл)
 
-**Ценность:** ОТКУДА, КАК, ЗА СКОЛЬКО, КОГДА пришёл к цели.
+**Ценность:** ОТКУДА, КАК, ЗА СКОЛЬКО, КОГДА люди приходят к цели.
 
-```typescript
-// Вход
-ReversePathfinderSearchParams {
-  targetContext: TargetContext,      // целевая позиция
-  recencyMonths: number,             // как давно достиг
-  excludedCreationReasons: string[],
-  limit: number,
-}
-
-// Выход (как searchWaymates)
-```
+**Использование:** Валидация цели перед её сохранением — показать реальных людей на этой позиции.
 
 ---
 
@@ -372,13 +326,10 @@ Adhoc/Profile — это НЕ режим поиска, а **источник ref
 
 ### 5.6 isWaymate (classification)
 
-```typescript
-isWaymate: boolean
-// true = кандидат имеет ту же цель что и мы
-// false = нет goal ИЛИ другая цель
-```
-
-**Примечание:** `candidateType` enum удалён, заменён на `isWaymate: boolean`.
+| isWaymate | Значение |
+|-----------|----------|
+| `true` | Кандидат имеет ту же цель что и мы |
+| `false` | Нет goal ИЛИ другая цель |
 
 ---
 
@@ -386,18 +337,14 @@ isWaymate: boolean
 
 Применяется ко ВСЕМ типам поиска.
 
-```typescript
-// Общие фильтры
-excludedContextFields: string[]      // поля для исключения (industry, birthYear...)
-excludedCreationReasons: string[]    // причины смены (company_changed...)
-recencyThresholdMonths: number       // только контексты не старше N мес
-limit: number                        // макс. результатов (1-100, default 20)
-```
+| Фильтр | Что делает |
+|--------|------------|
+| `excludedContextFields` | Поля для исключения (industry, birthYear...) |
+| `excludedCreationReasons` | Причины смены для исключения (company_changed...) |
+| `recencyThresholdMonths` | Только контексты не старше N мес |
+| `limit` | Макс. результатов (1-100, default 20) |
 
-**Нормализация:**
-- LLM парсит user input
-- Normalizer делает fuzzy matching к canonical values
-- Clamping: `limit` ∈ [1, 100]
+**Нормализация:** LLM парсит → fuzzy matching к canonical values → clamping
 
 ---
 
@@ -456,18 +403,6 @@ DTW (Dynamic Time Warping) сравнивает траектории польз�
 
 ---
 
-### 5.9 Ключевые файлы
-
-| Компонент | Файл |
-|-----------|------|
-| Cypher queries | `src/cypher/queries/search.ts` |
-| SearchManager | `src/core/search-manager.ts` |
-| TrajectorySimilarity | `src/core/trajectory-similarity.service.ts` |
-| tRPC Router | `src/core/routers/search.router.ts` |
-| Types | `src/shared/schemas.ts` |
-
----
-
 ## 6. Conversation Router
 
 Техническая архитектура описана в [ADR-030-conversation-orchestrator](../architecture/decisions/ADR-030-conversation-orchestrator.md).
@@ -485,24 +420,56 @@ DTW (Dynamic Time Warping) сравнивает траектории польз�
 
 ---
 
-## 8. Kaggle Import (синтетические данные)
+## 8. UX-требования
 
-225 пользователей с 1319 контекстами из Kaggle resume dataset.
+### Роль токсичного пользователя
 
-```bash
-# 1. Поднять БД
-npm run test:setup          # тестовая
-# ИЛИ
-npm run docker:prod:up      # prod
+При тестировании думай как пользователь который:
+- Не читает инструкции
+- Пишет кратко и неформально
+- Ожидает что бот поймёт контекст
+- Раздражается когда бот отменяет действие
+- Хочет простой и понятный flow
 
-# 2. Импорт
-npx tsx scripts/import-kaggle.ts
+### Примеры плохого UX (что искать)
 
-# 3. Проверка
-# MATCH (u:User:Synthetic) RETURN count(u)
-```
+| Ситуация | Плохой UX | Хороший UX |
+|----------|-----------|------------|
+| Контекст не извлечён | Пустые результаты | Спросить явно |
+| Unknown intent | Cancel | Уточнить что имел в виду |
+| Много кандидатов (>10) | Token limit error | Progressive Disclosure |
+| 0 результатов | "Ничего не найдено" | Показать фильтры + missing |
 
-**Данные:** `data/kaggle-enriched.json`
+### Progressive Disclosure Pattern
+
+Когда candidates > threshold (10):
+1. Показать **facets** — распределение с counts (Countries, Positions, Roles, Industries)
+2. Предложить выбрать фильтр: "Technology (31), Healthcare (8) — какая индустрия?"
+3. После фильтра — полный анализ + Chart
+
+Зачем: избежать token limit, помочь пользователю сузить выбор.
+
+### Прозрачность = доверие
+
+| Что показать | Зачем |
+|--------------|-------|
+| Missing fields | "we're missing position" → понятно почему такие результаты |
+| Applied filters | "искали: senior, backend, Europe" → можно скорректировать |
+| Counts | "найдено 20 pathfinders, 5 waymates" → масштаб понятен |
+
+### Intent семантика
+
+| Intent | Значение | Когда использовать |
+|--------|----------|-------------------|
+| `proceed` | Согласие БЕЗ новой информации | "да", "ок", "давай" |
+| `explore` | Просмотр похожих | "глянь похожих", "покажи кандидатов" |
+| `clarify` | Дополнить существующую цель | "ещё хочу в IT" |
+| `change` | Полная замена цели | "нет, хочу другое" |
+| `validate` | "покажи реальных людей" | перед сохранением цели |
+| `save` | Явное сохранение цели | "сохрани" |
+| `ask` | Мета-вопрос о боте | "что ты умеешь?" |
+
+**Важно:** `ask` должен быть в КАЖДОЙ фазе — пользователь может спросить в любой момент.
 
 ---
 
