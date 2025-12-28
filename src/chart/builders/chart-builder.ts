@@ -4,7 +4,7 @@ import { ChartGenerationError } from "../types.js";
 
 import { HtmlRenderer } from "./html-renderer.js";
 
-import type { AdhocContextBase, ScoredMatchedCandidate, UserContext } from "../../shared/schemas.js";
+import type { AdhocContextBase, UserContext, WaymateCandidate } from "../../shared/schemas.js";
 import type {
   ChartableField,
   DynamicLevels,
@@ -16,7 +16,7 @@ import type {
 } from "../types.js";
 
 type BaseBuildInput = {
-  candidates: ScoredMatchedCandidate[];
+  candidates: WaymateCandidate[];
   fields: ChartableField[];
   positionOrder: string[];
   locale: Locale;

@@ -2,11 +2,11 @@
  * Search queries
  */
 
-import { SCORING_CONFIG } from "../../config/scoring.js";
 import { buildContextMapProjection } from "../constants/projections.js";
 import { buildWithCollect } from "../helpers/aggregation.js";
 import { buildExcludedReasonsFilter, buildStrictWhereClause } from "../helpers/filters.js";
 import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
+import { buildSkillsScoringBlock } from "../helpers/scoring.js";
 import { buildFullTrajectoryFromUser, buildUnwindPath } from "../helpers/trajectory.js";
 
 import type { ContextField, PathfinderSearchParams, TargetSearchParams } from "../../shared/schemas.js";
@@ -205,49 +205,24 @@ ${buildExcludedReasonsFilter("matchedContext", [
   "timeSinceMatchedMonths",
 ])}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
-     ${
-       skipSkillsPenalty
-         ? "0.0 AS contextMatchScore"
-         : `[skill IN $referenceContext.skills WHERE skill IN matchedSkills] AS matchedSkillsIntersection,
-     [skill IN matchedSkills WHERE NOT skill IN $referenceContext.skills] AS extraSkills
-
-// Calculate matched skills weights
-CALL {
-  WITH matchedSkillsIntersection
-  UNWIND matchedSkillsIntersection AS matchedSkill
-  OPTIONAL MATCH (s:Skill {canonicalName: matchedSkill, verified: true})
-  RETURN collect({
-    skill: matchedSkill,
-    weight: coalesce(s.complexity * ${SCORING_CONFIG.weightMultiplier}, 5.0)
-  }) AS matchedSkillsWithWeights
+${
+  skipSkillsPenalty
+    ? `WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+     0.0 AS contextMatchScore`
+    : buildSkillsScoringBlock("$referenceContext", "matchedSkills", [
+        "matchedUser",
+        "matchedContext",
+        "matchedPosition",
+        "matchedRole",
+        "matchedDomains",
+        "matchedSkills",
+        "matchedLanguages",
+        "matchedIndustry",
+        "matchedCity",
+        "matchedCountry",
+        "timeSinceMatchedMonths",
+      ])
 }
-
-// Calculate extra skills penalties
-CALL {
-  WITH extraSkills
-  UNWIND extraSkills AS extraSkill
-  OPTIONAL MATCH (s:Skill {canonicalName: extraSkill, verified: true})
-  RETURN collect({
-    skill: extraSkill,
-    penalty: coalesce(s.complexity * ${SCORING_CONFIG.penaltyMultiplier}, 1.0)
-  }) AS extraSkillsWithPenalty
-}
-
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
-     reduce(positiveScore = 0.0, matched IN matchedSkillsWithWeights |
-       positiveScore + matched.weight
-     ) AS skillsPositiveScore,
-     reduce(penaltyScore = 0.0, extra IN extraSkillsWithPenalty |
-       penaltyScore + extra.penalty
-     ) AS skillsPenaltyScore
-
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
-     CASE
-       WHEN (skillsPositiveScore - skillsPenaltyScore) < 0 THEN 0.0
-       ELSE (skillsPositiveScore - skillsPenaltyScore)
-     END AS contextMatchScore`
-     }
 
 ${goalFilterClause}
 
@@ -459,100 +434,71 @@ RETURN matchedUser.userId AS userId,
 }
 
 /**
- * Build pathfinder search query with dual matching and dual recency.
- *
- * Finds candidates who went FROM our context TO our goal (proof of transition).
- *
- * Dual matching:
- * - Phase 1: Find contexts matching TARGET criteria (our goal)
- * - Phase 2: Get full trajectory
- * - Phase 3: Find REFERENCE match in trajectory (was like us)
- * - Phase 4: Ensure temporal ordering (target.createdAt > reference.createdAt)
- *
- * Dual recency:
- * - targetRecencyMonths: filter by when they reached target
- * - referenceRecencyMonths: filter by when they were in reference context
- *
- * Parameters:
- * - $userId: Searching user ID (for exclusion)
- * - $referenceContext: Our current context for matching
- * - $position, $countries, $domains, $skills, $languages: Target filters (FieldFilter)
- * - $targetRecencyMonths: Max months since reaching target
- * - $referenceRecencyMonths: Max months since being in reference context
- * - $excludedCreationReasons: Reasons to exclude from trajectories
- * - $limit: Max results
- *
- * Returns:
- * - userId, matchedContext (target), referenceContext, timeSinceTargetMonths, timeSinceReferenceMonths, path, trails
+ * Pathfinder search query (path/trails collected separately via PathCollectorService).
  *
  * @param params - Pathfinder search parameters
  * @param strictFields - Fields to match exactly for reference context
- * @returns Complete Cypher query
+ * @returns Cypher query returning PathfinderCandidateLight
  */
 // eslint-disable-next-line complexity, max-lines-per-function -- Cypher query builder with conditional blocks
 export function buildPathfinderSearchQuery(params: PathfinderSearchParams, strictFields: ContextField[]): string {
-  const { targetContext, targetRecencyMonths, referenceRecencyMonths, excludedCreationReasons } = params;
+  const { targetContext, targetRecencyMonths, referenceRecencyMonths } = params;
 
-  // === PHASE 1: Target matching conditions (duplicated from reversePathfinders) ===
+  // === PHASE 1: Target matching conditions ===
   const targetConditions: string[] = ["matchedUser.userId <> $userId"];
 
   if ("position" in targetContext && targetContext.position) {
     targetConditions.push(
-      `
-    CASE
+      `CASE
       WHEN $position IS NULL THEN true
       WHEN $position.mode = 'desired' THEN matchedPosition.canonicalName IN $position.values
       WHEN $position.mode = 'undesired' THEN NOT matchedPosition.canonicalName IN $position.values
       ELSE true
-    END`.trim(),
+    END`,
     );
   }
 
   if ("countryCode" in targetContext && targetContext.countries) {
     targetConditions.push(
-      `
-    CASE
+      `CASE
       WHEN $countries IS NULL THEN true
       WHEN $countries.mode = 'desired' THEN matchedCountry.name IN $countries.values
       WHEN $countries.mode = 'undesired' THEN NOT matchedCountry.name IN $countries.values
       ELSE true
-    END`.trim(),
+    END`,
     );
   }
 
   if ("domains" in targetContext && targetContext.domains) {
     targetConditions.push(
-      `
-    CASE
+      `CASE
       WHEN $domains IS NULL THEN true
       WHEN $domains.mode = 'desired' THEN ANY(item IN matchedDomains WHERE item IN $domains.values)
       WHEN $domains.mode = 'undesired' THEN NONE(item IN matchedDomains WHERE item IN $domains.values)
       ELSE true
-    END`.trim(),
+    END`,
     );
   }
 
   if ("skills" in targetContext && targetContext.skills) {
     targetConditions.push(
-      `
-    CASE
+      `CASE
       WHEN $skills IS NULL THEN true
       WHEN $skills.mode = 'desired' THEN ANY(item IN matchedSkills WHERE item IN $skills.values)
       WHEN $skills.mode = 'undesired' THEN NONE(item IN matchedSkills WHERE item IN $skills.values)
       ELSE true
-    END`.trim(),
+    END`,
     );
   }
 
   if ("languages" in targetContext && targetContext.languages) {
     targetConditions.push(
-      `
-    CASE
+      `CASE
       WHEN $languages IS NULL THEN true
       WHEN $languages.mode = 'desired' THEN ANY(item IN matchedLanguages WHERE item IN $languages.values)
       WHEN $languages.mode = 'undesired' THEN NONE(item IN matchedLanguages WHERE item IN $languages.values)
       ELSE true
-    END`.trim(),
+    END`,
     );
   }
 
@@ -564,19 +510,11 @@ export function buildPathfinderSearchQuery(params: PathfinderSearchParams, stric
 
   const targetWhereClause = `WHERE ${targetConditions.join(" AND\n  ")}`;
 
-  // === Reference matching: strictFields for reference context ===
+  // === Reference matching ===
   const referenceStrictWhere = buildStrictWhereClause(strictFields, "refContext", "$referenceContext");
-
-  // Reference recency condition
   const referenceRecencyCondition = referenceRecencyMonths
     ? "AND duration.between(datetime(refContext.createdAt), datetime()).months <= $referenceRecencyMonths"
     : "";
-
-  // Excluded reasons filter for trajectory
-  const excludedReasonsCheck =
-    excludedCreationReasons.length > 0
-      ? `WHERE NOT ANY(ctx IN trajectory WHERE ANY(reason IN ctx.creationReason WHERE reason IN $excludedCreationReasons))`
-      : "";
 
   return `
 // Phase 1: Find contexts matching TARGET criteria (our goal)
@@ -587,7 +525,7 @@ ${targetWhereClause}
 WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceTargetMonths
 
-// Phase 2: Find REFERENCE context (NODE matching, before target)
+// Phase 2: Find REFERENCE context (where they were like us, before target)
 MATCH (matchedUser)-[:HAS_CONTEXT]->(refContext:Context)
 ${buildOptionalMatchRelationships("refContext")}
 
@@ -599,7 +537,7 @@ ${referenceStrictWhere ? referenceStrictWhere + " AND" : "WHERE"}
 
 WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceTargetMonths,
      refContext, refPosition, refRole, refDomains, refSkills, refLanguages, refIndustry, refCity, refCountry,
-     duration.between(datetime(refContext.createdAt), datetime()).months AS timeSinceReferenceMonths
+     duration.between(datetime(refContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 ORDER BY matchedUser.userId, matchedContext.contextId, refContext.createdAt ASC
 
 // Deduplicate: keep oldest refContext per (user, targetContext)
@@ -607,71 +545,49 @@ WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, 
      collect({
        refContext: refContext, refPosition: refPosition, refRole: refRole, refDomains: refDomains,
        refSkills: refSkills, refLanguages: refLanguages, refIndustry: refIndustry, refCity: refCity, refCountry: refCountry,
-       timeSinceReferenceMonths: timeSinceReferenceMonths
+       timeSinceMatchedMonths: timeSinceMatchedMonths
      })[0] AS ref
 
-// Unpack ref map back to individual variables
+// Unpack ref map
 WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceTargetMonths,
      ref.refContext AS refContext, ref.refPosition AS refPosition, ref.refRole AS refRole, ref.refDomains AS refDomains,
      ref.refSkills AS refSkills, ref.refLanguages AS refLanguages, ref.refIndustry AS refIndustry, ref.refCity AS refCity, ref.refCountry AS refCountry,
-     ref.timeSinceReferenceMonths AS timeSinceReferenceMonths
+     ref.timeSinceMatchedMonths AS timeSinceMatchedMonths
 
-// Phase 3: Get FULL trajectory from user's current context
-${buildFullTrajectoryFromUser("matchedUser", ["matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceTargetMonths", "refContext", "refPosition", "refRole", "refDomains", "refSkills", "refLanguages", "refIndustry", "refCity", "refCountry", "timeSinceReferenceMonths"])}
+// Skills scoring on refContext (where they were like us)
+${buildSkillsScoringBlock("$referenceContext", "refSkills", [
+  "matchedUser",
+  "matchedContext",
+  "matchedPosition",
+  "matchedRole",
+  "matchedDomains",
+  "matchedSkills",
+  "matchedLanguages",
+  "matchedIndustry",
+  "matchedCity",
+  "matchedCountry",
+  "timeSinceTargetMonths",
+  "refContext",
+  "refPosition",
+  "refRole",
+  "refDomains",
+  "refSkills",
+  "refLanguages",
+  "refIndustry",
+  "refCity",
+  "refCountry",
+  "timeSinceMatchedMonths",
+])}
 
-${buildUnwindPath("matchedPathNodes", "matchedPathContext")}
-
-${buildOptionalMatchRelationships("matchedPathContext")}
-
-${buildWithCollect("matchedPathContext", ["matchedUser", "matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceTargetMonths", "refContext", "refPosition", "refRole", "refDomains", "refSkills", "refLanguages", "refIndustry", "refCity", "refCountry", "timeSinceReferenceMonths"])}
-
-ORDER BY matchedPathContext.createdAt ASC
-
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceTargetMonths,
-     refContext, refPosition, refRole, refDomains, refSkills, refLanguages, refIndustry, refCity, refCountry, timeSinceReferenceMonths,
-     collect(${buildContextMapProjection("matchedPath")}) AS trajectory
-
-// Phase 4: Collect trails for this user
-CALL {
-  WITH matchedUser
-  OPTIONAL MATCH (matchedUser)-[:HAS_TRAIL]->(t:Trail)
-  WITH t {
-    .trailId,
-    .skill,
-    .platform,
-    .fromContextId,
-    .toContextId,
-    .totalDurationWeeks,
-    .costUsd,
-    .ratingCourse,
-    .ratingPlatform,
-    .ratingSchedule,
-    .courseName,
-    .courseLink,
-    .userFeedback,
-    schedule: CASE
-      WHEN t.sessionsPerWeek IS NOT NULL OR t.hoursPerSession IS NOT NULL
-      THEN { sessionsPerWeek: t.sessionsPerWeek, hoursPerSession: t.hoursPerSession }
-      ELSE null
-    END
-  } AS trail
-  WHERE trail.trailId IS NOT NULL
-  RETURN collect(trail) AS trails
-}
-
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
-     timeSinceTargetMonths, refContext, refPosition, refRole, refDomains, refSkills, refLanguages, refIndustry, refCity, refCountry, timeSinceReferenceMonths, trajectory, trails
-${excludedReasonsCheck}
-
-ORDER BY timeSinceTargetMonths ASC, timeSinceReferenceMonths DESC
+ORDER BY contextMatchScore DESC, timeSinceTargetMonths ASC, timeSinceMatchedMonths DESC
 LIMIT toInteger($limit)
 
+// Return without path/trails (collected separately via PathCollectorService)
 RETURN matchedUser.userId AS userId,
-       ${buildContextMapProjection("matched")} AS matchedContext,
-       ${buildContextMapProjection("ref")} AS referenceContext,
-       timeSinceTargetMonths,
-       timeSinceReferenceMonths,
-       trajectory AS path,
-       trails
+       ${buildContextMapProjection("ref")} AS matchedContext,
+       timeSinceMatchedMonths,
+       contextMatchScore,
+       ${buildContextMapProjection("matched")} AS targetContext,
+       timeSinceTargetMonths
   `.trim();
 }

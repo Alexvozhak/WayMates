@@ -153,8 +153,8 @@ describe("Dictionaries Integration", () => {
   it("D7: getVerifiedDictionaries returns all reasons with correct structure", async () => {
     const dictionaries = await dictionariesManager.getVerifiedDictionaries();
 
-    // Business Rule: reasons.json contains 15 predefined reasons
-    expect(dictionaries.reasons.length).toBe(15);
+    // Business Rule: reasons.json contains 13 predefined reasons
+    expect(dictionaries.reasons.length).toBe(13);
 
     // Business Rule: Reasons are returned as DictionaryEntry (canonicalName + description)
     const sampleReason = dictionaries.reasons[0];
@@ -208,17 +208,17 @@ describe("Dictionaries Integration", () => {
 
     // Business Rule: Order doesn't matter, but all keys from reasons.json must exist
     const expectedReasonIds = [
+      "company_changed",
+      "domain_changed",
+      "education_completed",
+      "industry_changed",
+      "laid_off",
+      "languages_changed",
+      "location_changed",
       "position_changed",
       "role_changed",
-      "company_changed",
-      "laid_off",
       "salary_changed",
-      "location_changed",
-      "industry_changed",
-      "domain_changed",
       "skills_changed",
-      "languages_changed",
-      "education_completed",
       "started_working",
       "stopped_working",
     ];

@@ -269,20 +269,20 @@ describe("Goals Integration (GM1-GM4 + G1-G5)", () => {
       "[G2] Results:",
       results.map((r) => ({
         userId: r.userId,
-        targetPosition: r.matchedContext.position,
-        refPosition: r.referenceContext.position,
+        targetPosition: r.targetContext.position,
+        matchedPosition: r.matchedContext.position,
         timeSinceTarget: r.timeSinceTargetMonths,
-        timeSinceRef: r.timeSinceReferenceMonths,
+        timeSinceMatched: r.timeSinceMatchedMonths,
       })),
     );
 
     // U5 should be found: was middle frontend (matches reference), achieved senior (matches target)
     const u5Result = results.find((r) => r.userId === u5.userId);
     expect(u5Result).toBeDefined();
-    expect(u5Result?.matchedContext.position).toBe("senior");
-    expect(u5Result?.referenceContext.position).toBe("middle");
-    // Temporal ordering: reference before target
-    expect(u5Result!.timeSinceReferenceMonths).toBeGreaterThan(u5Result!.timeSinceTargetMonths);
+    expect(u5Result?.targetContext.position).toBe("senior");
+    expect(u5Result?.matchedContext.position).toBe("middle");
+    // Temporal ordering: matched before target (matched is older)
+    expect(u5Result!.timeSinceMatchedMonths).toBeGreaterThan(u5Result!.timeSinceTargetMonths);
 
     // NEGATIVE ASSERTION: U8 (backend) should NOT be found (different domain)
     const u8Result = results.find((r) => r.userId === u8.userId);

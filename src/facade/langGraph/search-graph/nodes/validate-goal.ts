@@ -6,13 +6,13 @@ import { NODE, PHASE } from "../state.js";
 import { DEFAULT_TARGET_SEARCH_PARAMS } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
-import type { MatchedCandidateWithPath, ScoredMatchedCandidate } from "../../../../shared/schemas.js";
+import type { MatchedCandidateWithPath, WaymateCandidate } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 /**
- * Convert MatchedCandidateWithPath to chart-compatible ScoredMatchedCandidate.
+ * Convert MatchedCandidateWithPath to chart-compatible WaymateCandidate.
  */
-function toChartCandidate(c: MatchedCandidateWithPath): ScoredMatchedCandidate {
+function toChartCandidate(c: MatchedCandidateWithPath): WaymateCandidate {
   const createdAt = new Date(c.matchedContext.createdAt);
   const monthsSince = Math.floor((Date.now() - createdAt.getTime()) / (30 * 24 * 60 * 60 * 1000));
   return {

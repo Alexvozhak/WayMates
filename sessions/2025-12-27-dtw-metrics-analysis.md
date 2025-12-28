@@ -7,111 +7,104 @@
 
 ## Что сделано
 
-### Фаза 1: Chart Smoke Test с реальными данными
+### Фаза 1-4: (предыдущие сессии)
 
-1. **Создан smoke test** `poc/chart-smoke-test.ts` с реальными фикстурами (U5, U10)
-2. **Интегрирован реальный DTW** через `TrajectorySimilarityService.computeDTWMetrics()`
-3. **Исправлен баг:** Spider chart и Metrics table скрываются если нет DTW данных (`hasDtwData` getter)
+Кратко:
+- Smoke test с реальными фикстурами
+- Анализ DTW формул, найдены расхождения теория vs реализация
+- Исправлена Stability формула: `minLength / pathLength`
+- Обновлён trajectoryDistance: 7 аспектов (position, duration, domains, industry, country, citizenships, role)
 
-### Фаза 2: Визуальный анализ графиков
+### Фаза 5: Завершение DTW рефакторинга (текущая сессия)
 
-Сгенерированы charts для 3 режимов:
-- **full** (с DTW): shape=0.68, tempo=0.05, stability=0.67
-- **candidates-only**: без DTW секций
-- **goal-only**: без DTW секций
+**1. Переименование Stability → Alignment Score**
 
-### Фаза 3: Глубокий анализ DTW формул
+Затронутые файлы:
+- `src/shared/schemas.ts` — `alignmentScore` в DTWMetrics
+- `src/core/trajectory-similarity.service.ts` — переменная и комментарии
+- `src/chart/builders/html-renderer.ts` — UI labels в таблице и spider chart
+- `src/facade/langGraph/search-graph/advisor-context-builder.ts`
+- `src/facade/langGraph/search-graph/prompts/advisor.ts`
+- `src/core/search-manager.ts`
+- `src/chart/services/overlap-calculator.ts`
+- `tests/core/integration/search-manager/current-context-with-dtw.integration.ts`
+- `tests/core/unit/trajectory-similarity.spec.ts`
+- `poc/chart-smoke-test.ts`
 
-**Найдены расхождения теория vs реализация:**
+**2. Добавлен Country в Main chart**
 
-| Проблема | Теория (документ) | Реализация | Решение |
-|----------|-------------------|------------|---------|
-| **Stability формула** | `minLength / pathLength` | `userLength / pathLength` | Вернуть к теории |
-| **Аспекты в distance** | Все равноценны | Только 4 из 7+ | Добавить недостающие |
-| **Reasons в DTW** | Не упоминались | 25% веса | Убрать из DTW |
+- `src/chart/types.ts` — `countryCode` в CHARTABLE_FIELDS
+- `src/chart/config/aspect-configs.ts` — конфигурация countryCode
+- `src/chart/builders/html-renderer.ts` — label "Country"
 
-**Недостающие аспекты в DTW distance:**
-- Industry ❌ (не в формуле, но на графике)
-- Country ❌
-- Citizenships ❌
-- Role ❌
+**3. Smoke test и визуальная верификация**
+
+```
+DTW (computed): shape=0.65, tempo=0.05, alignment=1.00
+✅ 3/3 tests passed
+```
+
+Актуальные URLs:
+- full: https://pub-3a26a622b51948949e572dc94789c1c6.r2.dev/a2d3844bfe8e47afcc73fe8f85bef7cb.html
+- candidates-only: https://pub-3a26a622b51948949e572dc94789c1c6.r2.dev/a5822e3535ec16c43317a7f61c558c19.html
+- goal-only: https://pub-3a26a622b51948949e572dc94789c1c6.r2.dev/ea10e1541bc3479190f568f4ba62f568.html
+
+### Фаза 6: Анализ Chart интеграции в nodes
+
+**Проверены три ноды:**
+
+| Node | Chart mode | chartUrl | Fallback |
+|------|------------|----------|----------|
+| show-results | full | ✅ | ✅ shouldUseFacets() |
+| validate-goal | goal-only | ✅ | ✅ shouldUseFacets() |
+| explore | full/candidates-only | ✅ | ✅ shouldUseFacets() |
+
+**Fallback механизм:**
+```typescript
+// facets.ts
+export function shouldUseFacets(candidates): boolean {
+  if (candidates.length > config.FACETS_MAX_CANDIDATES) return true; // > 10
+  const sizeKB = JSON.stringify(candidates).length / 1024;
+  return sizeKB > config.FACETS_MAX_JSON_SIZE_KB; // > 50KB
+}
+```
+
+Если результатов много → показываются фасеты вместо списка, chartUrl не включается в response.
 
 ---
 
-## Принятые решения
+## Открытый вопрос: DTW для Pathfinders
 
-### 1. Новая формула DTW distance (7 аспектов, равные веса)
+**Проблема:**
 
-```typescript
-distance = (
-  positionDiff +      // exact match (0/1)
-  durationDiff +      // normalized diff (по датам createdAt)
-  domainsDiff +       // Jaccard distance
-  industryDiff +      // exact match (0/1) ← ДОБАВИТЬ
-  countryDiff +       // exact match (0/1) ← ДОБАВИТЬ
-  citizenshipsDiff +  // Jaccard distance ← ДОБАВИТЬ
-  roleDiff            // exact match (0/1) ← ДОБАВИТЬ
-) / 7
-```
+| Режим поиска | Spider chart | Metrics table | Причина |
+|--------------|--------------|---------------|---------|
+| waymates | ✅ | ✅ | dtwMetrics есть |
+| pathfinders | ❌ | ❌ | dtwMetrics нет → hasDtwData = false |
 
-**Убрать:** `reasonsDiff` — это триггеры переходов, не аспекты траектории
+**Анализ:**
+- `PathfinderCandidate` (schemas.ts) НЕ содержит `dtwMetrics`
+- `ScoredMatchedCandidate` содержит `.merge(dtwFieldsSchema.partial())`
+- В `show-results.ts` функция `toChartCandidate()` не копирует dtwMetrics
 
-### 2. Исправить Stability
+**Гипотеза пользователя:**
+> "searchPathfinders для searchByCurrent (core) — это тот же searchWaymates, только отсекаем тех, у кого нет целевого контекста на пути. Логика с траекторией та же — нужно дописать DTW в Cypher?"
 
-```typescript
-// Было (неправильно):
-const stabilityScore = userTrajectory.length / pathLength;
-
-// Станет (по теории):
-const minLength = Math.max(userTrajectory.length, candidateTrajectory.length);
-const stabilityScore = minLength / pathLength;
-```
-
-### 3. Оставить excludedCreationReasons
-
-Фильтрация по reasons в Cypher остаётся — это ценный фильтр для пользователя.
+**Варианты решения:**
+1. **Вариант A (текущий):** Pathfinders без DTW — spider скрыт
+2. **Вариант B:** Добавить DTW расчёт в searchPathfinders (Core Cypher) → показывать spider
 
 ---
 
-## План реализации (следующая сессия)
+## Следующие шаги (следующая сессия)
 
-### Задача 1: Обновить `trajectory-similarity.service.ts`
+1. **Разобраться с DTW для pathfinders:**
+   - Изучить `src/core/query-builders/pathfinders-query-builder.ts`
+   - Понять почему DTW не вычисляется
+   - Решить: добавлять DTW в Cypher или оставить как есть
 
-**Файл:** `src/core/trajectory-similarity.service.ts`
-
-1. **trajectoryDistance()** — добавить:
-   - `industryDiff` (exact match)
-   - `countryDiff` (exact match на countryCode)
-   - `citizenshipsDiff` (Jaccard distance)
-   - `roleDiff` (exact match)
-   - Убрать `reasonsDiff`
-   - Делитель: `/7` вместо `/4`
-
-2. **computeDTWMetrics()** — исправить Stability:
-   ```typescript
-   const minLength = Math.max(userTrajectory.length, candidateTrajectory.length);
-   const stabilityScore = minLength / pathLength;
-   ```
-
-### Задача 2: Обновить типы (если нужно)
-
-Проверить что `UserContext` содержит все нужные поля (industry, countryCode, citizenships, role).
-
-### Задача 3: Перезапустить smoke test
-
-```bash
-set -a && source .env.test && set +a && npx tsx poc/chart-smoke-test.ts
-```
-
-Проверить что:
-- Shape изменился (больше факторов)
-- Stability изменился (новая формула)
-- Spider chart отражает реальность
-
-### Задача 4: Обновить документацию
-
-**Файл:** `docs/business/_archive/DTW_TRAJECTORY_MATCHING.md`
-- Синхронизировать с новой формулой
+2. **Обновить документацию:**
+   - `docs/business/_archive/DTW_TRAJECTORY_MATCHING.md` — синхронизировать с новой формулой
 
 ---
 
@@ -119,96 +112,36 @@ set -a && source .env.test && set +a && npx tsx poc/chart-smoke-test.ts
 
 | Файл | Назначение |
 |------|------------|
-| `src/core/trajectory-similarity.service.ts` | DTW расчёт — ИЗМЕНИТЬ |
-| `src/chart/builders/html-renderer.ts` | Spider/Metrics visibility — ГОТОВО |
-| `poc/chart-smoke-test.ts` | Smoke test — ГОТОВО |
-| `docs/business/_archive/DTW_TRAJECTORY_MATCHING.md` | Теория DTW |
+| `src/core/trajectory-similarity.service.ts` | DTW расчёт — ОБНОВЛЁН |
+| `src/shared/schemas.ts` | `alignmentScore` в DTWMetrics — ОБНОВЛЁН |
+| `src/chart/builders/html-renderer.ts` | UI labels — ОБНОВЛЁН |
+| `src/facade/langGraph/search-graph/nodes/show-results.ts` | toChartCandidate() без DTW |
+| `src/core/query-builders/pathfinders-query-builder.ts` | Cypher для pathfinders |
 
 ---
 
 ## Рефлексия
 
-### Допущенная ошибка: Расхождение теории и реализации
+### В этой сессии ошибок не было
 
-**Первопричина:** При реализации DTW отошли от документированной теории без явного решения. Комментарий в коде ("User trajectory is always baseline") указывает на осознанное изменение, но документ не был обновлён.
+Работа выполнена методично:
+1. Переименование через grep → replace_all
+2. Проверка tsc после каждого изменения
+3. Smoke test для верификации
 
-**Урок:** При изменении дизайна во время реализации — обновлять документ или явно фиксировать решение в ADR.
+### Ценный инсайт: Архитектура DTW
 
-### Допущенная ошибка: Неполный набор аспектов
+DTW вычисляется **в TypeScript** (`TrajectorySimilarityService`), а не в Cypher. Это значит:
+- searchWaymates возвращает кандидатов → TypeScript вычисляет DTW
+- searchPathfinders возвращает кандидатов → **DTW не вычисляется** (другой тип данных)
 
-**Первопричина:** При реализации trajectoryDistance добавили только 4 аспекта (position, duration, domains, reasons), хотя график показывает больше (industry, city, role). Визуализация и логика рассинхронизировались.
-
-**Урок:** Визуализация должна отражать логику. Если показываем аспект на графике — он должен участвовать в расчётах.
+Для добавления DTW в pathfinders нужно:
+1. Либо вызывать `TrajectorySimilarityService.computeDTWMetrics()` в Core после Cypher
+2. Либо изменить тип `PathfinderCandidate` на что-то совместимое
 
 ---
 
 ## Артефакты
 
-- **Smoke test URLs (устаревшие после изменений):**
-  - full: https://pub-3a26a622b51948949e572dc94789c1c6.r2.dev/1ce17f2df8a1d3a3e1520b859531d91f.html
-  - candidates-only: https://pub-3a26a622b51948949e572dc94789c1c6.r2.dev/1ec1ce2c5cb9d9127ab0f13d3e434dca.html
-  - goal-only: https://pub-3a26a622b51948949e572dc94789c1c6.r2.dev/79d39aa17c2a9b453fa25dfbf5e25e34.html
-
----
-
-## Фаза 4: Реализация (частично завершена)
-
-### Выполнено ✅
-
-1. **Исправлена Stability формула** в `trajectory-similarity.service.ts:41`:
-   ```typescript
-   const minLength = Math.max(userTrajectory.length, candidateTrajectory.length);
-   const stabilityScore = minLength / pathLength;
-   ```
-
-2. **Обновлён trajectoryDistance** — 7 аспектов без reasons:
-   - position, duration, domains, industry, country, citizenships, role
-   - Делитель `/7`
-
-3. **Quality gates passed:**
-   - ✅ lint: 0 errors (16 warnings)
-   - ✅ tsc: 0 errors
-   - ✅ Smoke test: 3/3 passed
-
-4. **Новые метрики после изменений:**
-   | Метрика | До | После |
-   |---------|-----|-------|
-   | Shape | 68% | 65% |
-   | Tempo | 5% | 5% |
-   | Stability | 67% | **100%** |
-   | Total | 1.39 | **1.69** |
-
-5. **Актуальные URLs:**
-   - full: https://pub-3a26a622b51948949e572dc94789c1c6.r2.dev/b8a1c61bcd2c2caa54e1f6960c73dd66.html
-
-### Не завершено ❌
-
-1. **Переименование Stability → Alignment Score** — затрагивает:
-   - `src/shared/schemas.ts` (DTWMetrics type)
-   - `src/chart/builders/html-renderer.ts` (UI labels)
-   - `src/core/trajectory-similarity.service.ts` (variable name)
-
-2. **Добавить Country в Main chart** — чтобы совпадало с DTW по составу:
-   - `src/chart/config/aspect-configs.ts` — добавить countryCode
-   - `src/chart/types.ts` — CHARTABLE_FIELDS
-
----
-
-## Рефлексия Фазы 4
-
-### Урок: Не добавлять в угоду
-
-**Ситуация:** При /before-rewind искал что добавить в guidelines/knowledge-base, предлагал паттерны которые пользователь не считал ценными.
-
-**Первопричина:** Желание "что-то дать" в ответ на запрос рефлексии, даже если реально ценного нет.
-
-**Правило:** Если в сессии не было новых ошибок/инсайтов — это нормально. Не искать искусственно что добавить. "Ничего ценного для guidelines" — валидный ответ.
-
----
-
-## Следующие шаги
-
-1. Переименовать `stabilityScore` → `alignmentScore` везде
-2. Добавить Country aspect в chart (aspect-configs.ts)
-3. Перезапустить smoke test
-4. Обновить документацию DTW_TRAJECTORY_MATCHING.md
+- Smoke test: `poc/chart-smoke-test.ts`
+- Конфиг: `FACETS_MAX_CANDIDATES=10`, `FACETS_MAX_JSON_SIZE_KB=50`, `CANDIDATES_DISPLAY_LIMIT=20`

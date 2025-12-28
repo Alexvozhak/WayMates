@@ -1,4 +1,4 @@
-import type { Goal, ScoredMatchedCandidate, UserContext } from "../../../shared/schemas.js";
+import type { Goal, UserContext, WaymateCandidate } from "../../../shared/schemas.js";
 
 type GoalCriteria = NonNullable<Goal["targetContext"]>;
 type CriterionValue = { values: string[]; mode?: string } | null | undefined;
@@ -8,24 +8,24 @@ function formatGoalPart(name: string, criterion: CriterionValue): string | null 
   return `${name}: ${criterion.values.join(", ")}`;
 }
 
-function formatDtwLine(c: ScoredMatchedCandidate): string | null {
+function formatDtwLine(c: WaymateCandidate): string | null {
   if (!c.dtwMetrics) return null;
   const { shapeSimilarity, tempoSimilarity, alignmentScore } = c.dtwMetrics;
   const total = c.dtwTotal?.toFixed(2) ?? "?";
   return `  DTW: shape=${shapeSimilarity.toFixed(2)}, tempo=${tempoSimilarity.toFixed(2)}, alignment=${alignmentScore.toFixed(2)} | total=${total}`;
 }
 
-function formatPathLine(c: ScoredMatchedCandidate): string | null {
+function formatPathLine(c: WaymateCandidate): string | null {
   if (!c.path?.length) return null;
   return `  Path: ${c.path.map((p) => p.position).join(" → ")}`;
 }
 
-function formatTrailsLine(c: ScoredMatchedCandidate): string | null {
+function formatTrailsLine(c: WaymateCandidate): string | null {
   if (!c.trails?.length) return null;
   return `  Trails: ${c.trails.map((t) => `${t.skill}@${t.platform}`).join(", ")}`;
 }
 
-function formatCandidateDetail(c: ScoredMatchedCandidate, index: number): string {
+function formatCandidateDetail(c: WaymateCandidate, index: number): string {
   const type = c.isWaymate ? " (waymate)" : "";
   const header = `#${index + 1}${type}: ${c.matchedContext.position} ${c.matchedContext.role}`;
   const feedback = c.matchedContext.feedback ? `  Feedback: "${c.matchedContext.feedback}"` : null;
@@ -83,7 +83,7 @@ export class AdvisorContextBuilder {
     return this;
   }
 
-  addCandidates(candidates: ScoredMatchedCandidate[]): this {
+  addCandidates(candidates: WaymateCandidate[]): this {
     if (candidates.length === 0) return this;
 
     const lines = candidates.map((c, i) => {
@@ -101,7 +101,7 @@ export class AdvisorContextBuilder {
     return this;
   }
 
-  addCandidateDetails(candidates: ScoredMatchedCandidate[]): this {
+  addCandidateDetails(candidates: WaymateCandidate[]): this {
     if (candidates.length === 0) return this;
 
     const details = candidates.map((c, i) => formatCandidateDetail(c, i));

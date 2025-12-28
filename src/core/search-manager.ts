@@ -1,3 +1,4 @@
+import { DTW_MIN_TRAJECTORY_LENGTH } from "../config/scoring.js";
 import {
   buildPathfinderSearchQuery,
   buildReversePathfinderSearchQuery,
@@ -7,25 +8,27 @@ import {
 import {
   CONTEXT_FIELD_NAMES,
   matchedCandidateWithPathSchema,
-  pathfinderCandidateSchema,
-  scoredMatchedCandidateSchema,
+  pathfinderCandidateLightSchema,
   userContextSchema,
+  waymateCandidateLightSchema,
 } from "../shared/schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";
 import type { GoalsManager } from "./goals-manager.js";
-import type { PathCollectorService } from "./path-collector.service.js";
+import type { PathCollectorService, TrajectoryData } from "./path-collector.service.js";
 import type { SelectivityService } from "./selectivity.service.js";
 import type { TrajectorySimilarityService } from "./trajectory-similarity.service.js";
 import type {
   AdhocContextBase,
   ContextField,
+  DTWMetrics,
   MatchedCandidateWithPath,
   PathfinderCandidate,
   PathfinderSearchParams,
-  ScoredMatchedCandidate,
   TargetSearchParams,
   UserContext,
+  WaymateCandidate,
+  WaymateCandidateLight,
   WaymatesSearchParams,
 } from "../shared/schemas.js";
 
@@ -53,24 +56,50 @@ export class SearchManager {
 
   /**
    * Unified waymates search (merged adhoc + byUser).
-   * - referenceContext present = adhoc mode (use provided context)
-   * - referenceContext absent = profile mode (resolve from DB, apply DTW if trajectory exists)
+   * Always returns path/trails for candidates.
+   * DTW applied only in profile mode with sufficient user trajectory.
    */
-  async searchWaymates(params: WaymatesSearchParams): Promise<ScoredMatchedCandidate[]> {
+  async searchWaymates(params: WaymatesSearchParams): Promise<WaymateCandidate[]> {
     const referenceContext = params.referenceContext ?? (await this.resolveContext(params.userId));
 
     if (!referenceContext) {
       return []; // Cold start user - no context
     }
 
-    // DTW only for profile mode with trajectory (UserContext has previousContextId)
     const isProfileMode = !params.referenceContext;
 
-    if (isProfileMode && this.isUserContextWithTrajectory(referenceContext)) {
-      return this.executeCoreSearchWithDTW(params, referenceContext);
+    // Step 1: Search candidates (without path)
+    const candidates = await this.searchByContext(
+      { ...params, referenceContext },
+      isProfileMode, // filterByCurrentContext only in profile mode
+    );
+
+    if (candidates.length === 0) {
+      return [];
     }
 
-    return this.searchByContext({ ...params, referenceContext }, false);
+    // Step 2: Collect paths for candidates (+ user if profile mode)
+    const candidateIds = candidates.map((c) => c.userId);
+    const userIdsToCollect = isProfileMode ? [params.userId, ...candidateIds] : candidateIds;
+    const trajectoriesMap = await this.pathCollector.collectTrajectories(userIdsToCollect);
+
+    // Step 3: Get user trajectory for DTW (profile mode only)
+    const userData = isProfileMode ? trajectoriesMap.get(params.userId) : null;
+    const canApplyDTW = userData && userData.path.length >= DTW_MIN_TRAJECTORY_LENGTH;
+
+    // Step 4: Enrich candidates with path (and DTW if applicable)
+    const enrichedCandidates = candidates
+      .filter((c) => c.userId !== params.userId)
+      .map((c) => this.enrichCandidateWithPath(c, trajectoriesMap, canApplyDTW ? userData.path : null));
+
+    // Step 5: Sort and apply pathLimit
+    return enrichedCandidates
+      .toSorted((a, b) => {
+        const scoreA = (a.dtwTotal ?? 0) + a.contextMatchScore;
+        const scoreB = (b.dtwTotal ?? 0) + b.contextMatchScore;
+        return scoreB - scoreA;
+      })
+      .slice(0, params.pathLimit);
   }
 
   async reverseSearchPathfinders(params: TargetSearchParams): Promise<MatchedCandidateWithPath[]> {
@@ -94,6 +123,7 @@ export class SearchManager {
   /**
    * Search pathfinders: people who went FROM our context TO our goal.
    * Proof of transition - shows that the career path is possible.
+   * Uses Light Cypher query + PathCollectorService (unified with waymates).
    */
   async searchPathfinders(params: PathfinderSearchParams): Promise<PathfinderCandidate[]> {
     const strictFields = computeStrictFields(params.excludedContextFields);
@@ -109,17 +139,76 @@ export class SearchManager {
       limit: params.limit,
     };
 
-    return this.db.read(async (tx) => {
+    // Step 1: Get light candidates (without path/trails)
+    const lightCandidates = await this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);
 
-      return result.records.map((record) => pathfinderCandidateSchema.parse(record.toObject()));
+      return result.records.map((record) => pathfinderCandidateLightSchema.parse(record.toObject()));
     });
+
+    if (lightCandidates.length === 0) {
+      return [];
+    }
+
+    // Step 2: Collect paths for candidates
+    const candidateIds = lightCandidates.map((c) => c.userId);
+    const trajectoriesMap = await this.pathCollector.collectTrajectories(candidateIds);
+
+    // Step 3: Enrich with path/trails and optionally DTW
+    const userTrajectory = params.userTrajectory;
+    const canApplyDTW = userTrajectory && userTrajectory.length >= DTW_MIN_TRAJECTORY_LENGTH;
+
+    const enriched: PathfinderCandidate[] = lightCandidates.map((c) => {
+      const trajectoryData = trajectoriesMap.get(c.userId);
+      const base: PathfinderCandidate = {
+        ...c,
+        path: trajectoryData?.path ?? [],
+        trails: trajectoryData?.trails ?? [],
+      };
+
+      // DTW enrichment if applicable
+      if (canApplyDTW && trajectoryData) {
+        const dtw = this.computeDTW(userTrajectory, trajectoryData.path);
+        if (dtw) {
+          return { ...base, ...dtw };
+        }
+      }
+
+      return base;
+    });
+
+    // Step 4: Sort and slice
+    return enriched
+      .toSorted((a, b) => {
+        const scoreA = (a.dtwTotal ?? 0) + a.contextMatchScore;
+        const scoreB = (b.dtwTotal ?? 0) + b.contextMatchScore;
+        return scoreB - scoreA;
+      })
+      .slice(0, params.pathLimit);
+  }
+
+  /**
+   * Compute DTW metrics if candidate path is sufficient length.
+   * Returns null if path too short.
+   */
+  private computeDTW(
+    userPath: UserContext[],
+    candidatePath: UserContext[],
+  ): { dtwMetrics: DTWMetrics; dtwTotal: number } | null {
+    if (candidatePath.length < DTW_MIN_TRAJECTORY_LENGTH) {
+      return null;
+    }
+
+    const dtwMetrics = this.trajectorySimilarity.computeDTWMetrics(userPath, candidatePath);
+    const dtwTotal = dtwMetrics.shapeSimilarity + dtwMetrics.tempoSimilarity + dtwMetrics.alignmentScore;
+
+    return { dtwMetrics, dtwTotal };
   }
 
   private async searchByContext(
     params: WaymatesSearchParams & { referenceContext: AdhocContextBase },
     filterByCurrentContext = false,
-  ): Promise<ScoredMatchedCandidate[]> {
+  ): Promise<WaymateCandidateLight[]> {
     const {
       referenceContext,
       userId,
@@ -162,7 +251,7 @@ export class SearchManager {
     return this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);
 
-      return result.records.map((record) => scoredMatchedCandidateSchema.parse(record.toObject()));
+      return result.records.map((record) => waymateCandidateLightSchema.parse(record.toObject()));
     });
   }
 
@@ -181,77 +270,32 @@ export class SearchManager {
     });
   }
 
-  private isUserContextWithTrajectory(context: AdhocContextBase | UserContext): context is UserContext {
-    return "previousContextId" in context && context.previousContextId !== null;
-  }
+  /**
+   * Enrich light candidate with path/trails (always) and DTW metrics (if userPath provided)
+   */
+  private enrichCandidateWithPath(
+    candidate: WaymateCandidateLight,
+    trajectoriesMap: Map<string, TrajectoryData>,
+    userPath: UserContext[] | null,
+  ): WaymateCandidate {
+    const trajectoryData = trajectoriesMap.get(candidate.userId);
 
-  private async executeCoreSearchWithDTW(
-    params: WaymatesSearchParams,
-    referenceContext: UserContext,
-  ): Promise<ScoredMatchedCandidate[]> {
-    // Step 1: Search candidates (without DTW)
-    const topCandidates = await this.searchByContext(
-      {
-        ...params,
-        referenceContext,
-      },
-      true,
-    );
+    // Base enrichment: add path/trails (empty arrays if not found)
+    const enriched: WaymateCandidate = {
+      ...candidate,
+      path: trajectoryData?.path ?? [],
+      trails: trajectoryData?.trails ?? [],
+    };
 
-    // Step 2: Collect paths for user + candidates
-    const candidateIds = topCandidates.map((c) => c.userId);
-    const pathsMap = await this.pathCollector.collectTrajectories([params.userId, ...candidateIds]);
-
-    const userPath = pathsMap.get(params.userId);
-    if (!userPath || userPath.length < 3) {
-      // Insufficient trajectory (< 3 contexts) - return candidates without DTW (pathLimit ignored)
-      return topCandidates;
-    }
-
-    // Step 3: Enrich candidates with DTW metrics (filter out null)
-    const enrichedCandidates: ScoredMatchedCandidate[] = [];
-    for (const candidate of topCandidates) {
-      const enriched = this.enrichCandidateWithDTW(candidate, userPath, pathsMap, params.userId);
-      if (enriched) {
-        enrichedCandidates.push(enriched);
+    // DTW enrichment: only if userPath provided
+    if (userPath && trajectoryData) {
+      const dtw = this.computeDTW(userPath, trajectoryData.path);
+      if (dtw) {
+        enriched.dtwMetrics = dtw.dtwMetrics;
+        enriched.dtwTotal = dtw.dtwTotal;
       }
     }
 
-    // Step 4: Apply pathLimit AFTER DTW analysis
-    return enrichedCandidates
-      .toSorted((a, b) => {
-        const scoreA = (a.dtwTotal || 0) + a.contextMatchScore;
-        const scoreB = (b.dtwTotal || 0) + b.contextMatchScore;
-        return scoreB - scoreA;
-      })
-      .slice(0, params.pathLimit);
-  }
-
-  private enrichCandidateWithDTW(
-    candidate: ScoredMatchedCandidate,
-    userPath: UserContext[],
-    pathsMap: Map<string, UserContext[]>,
-    userId: string,
-  ): ScoredMatchedCandidate | null {
-    if (candidate.userId === userId) {
-      return null;
-    }
-
-    const path = pathsMap.get(candidate.userId);
-    if (!path || path.length < 3) {
-      // Skip candidates with insufficient trajectory (< 3 contexts)
-      return null;
-    }
-
-    const dtwMetrics = this.trajectorySimilarity.computeDTWMetrics(userPath, path);
-
-    const dtwTotal = dtwMetrics.shapeSimilarity + dtwMetrics.tempoSimilarity + dtwMetrics.alignmentScore;
-
-    return {
-      ...candidate,
-      path,
-      dtwMetrics,
-      dtwTotal,
-    };
+    return enriched;
   }
 }

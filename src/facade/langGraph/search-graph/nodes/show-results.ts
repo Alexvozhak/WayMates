@@ -5,14 +5,14 @@ import { config } from "../../../env.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
-import type { PathfinderCandidate, ScoredMatchedCandidate } from "../../../../shared/schemas.js";
+import type { PathfinderCandidate, WaymateCandidate } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 /**
- * Convert PathfinderCandidate to chart-compatible ScoredMatchedCandidate.
+ * Convert PathfinderCandidate to chart-compatible WaymateCandidate.
  * Maps pathfinder-specific fields to standard candidate format.
  */
-function toChartCandidate(pf: PathfinderCandidate): ScoredMatchedCandidate {
+function toChartCandidate(pf: PathfinderCandidate): WaymateCandidate {
   return {
     userId: pf.userId,
     matchedContext: pf.matchedContext,
@@ -21,6 +21,8 @@ function toChartCandidate(pf: PathfinderCandidate): ScoredMatchedCandidate {
     path: pf.path,
     trails: pf.trails,
     timeSinceMatchedMonths: pf.timeSinceTargetMonths,
+    dtwMetrics: pf.dtwMetrics,
+    dtwTotal: pf.dtwTotal,
   };
 }
 

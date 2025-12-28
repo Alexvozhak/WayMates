@@ -26,7 +26,7 @@ export {
 export { deleteGoalQuery, getUserGoalQuery, setGoalQuery } from "./queries/goals.js";
 
 // Path collection queries
-export { buildPathQuery } from "./queries/paths.js";
+export { buildTrajectoryQuery } from "./queries/paths.js";
 
 // Dictionaries queries
 export { addSimpleTermQuery, addSkillQuery, getVerifiedDictionariesQuery } from "./queries/dictionaries.js";

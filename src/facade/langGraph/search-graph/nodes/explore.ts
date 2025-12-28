@@ -6,13 +6,13 @@ import { DEFAULT_CURRENT_SEARCH_PARAMS } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import type { GenerateChartInput } from "../../../../chart/index.js";
-import type { AdhocContextBase, ScoredMatchedCandidate, UserContext } from "../../../../shared/schemas.js";
+import type { AdhocContextBase, UserContext, WaymateCandidate } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 type ExploreChartDeps = {
   userTrajectory: UserContext[];
   adhocContext: AdhocContextBase | null;
-  results: ScoredMatchedCandidate[];
+  results: WaymateCandidate[];
   dictionariesService: { getPositionOrder: () => Promise<string[]> };
   logger: { error: (obj: object, msg: string) => void };
 };

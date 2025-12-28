@@ -14,7 +14,7 @@ type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 // prettier-ignore
 // NODE.generate_answer added to all phases — user can ask meta-questions anytime
 const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
-  [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search_waymates, NODE.explore, NODE.extract_goal, NODE.ask_adhoc_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search_waymates, NODE.explore, NODE.extract_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_goal,                     buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.delete_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
@@ -102,8 +102,8 @@ export function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhas
   };
   const confirmingRoutes: RouteMap = {
     explore: hasGoal ? NODE.search_waymates : NODE.explore,
-    clarify: NODE.extract_goal,
-    filter: NODE.ask_adhoc_context,
+    clarify: NODE.load_context,
+    proceed: NODE.extract_goal,
     ask: NODE.generate_answer,
     cancel: NODE.cancel,
     unknown: NODE.clarify_intent,

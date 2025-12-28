@@ -1,4 +1,4 @@
-import type { ScoredMatchedCandidate } from "../../shared/schemas.js";
+import type { WaymateCandidate } from "../../shared/schemas.js";
 import type {
   ChartableField,
   FullOverlapPeriod,
@@ -34,7 +34,7 @@ export class OverlapCalculator {
   /**
    * Calculate similarity metrics using DTW data from scored candidates.
    */
-  calculateSimilarityMetrics(scoredCandidates: ScoredMatchedCandidate[]): SimilarityMetrics[] {
+  calculateSimilarityMetrics(scoredCandidates: WaymateCandidate[]): SimilarityMetrics[] {
     return this.candidateTrajectories.map((trajectory, index) => {
       const scored = scoredCandidates[index];
       if (!scored) {
@@ -203,7 +203,7 @@ export class OverlapCalculator {
     };
   }
 
-  private createMetricsFromDtw(trajectory: ProcessedTrajectory, scored: ScoredMatchedCandidate): SimilarityMetrics {
+  private createMetricsFromDtw(trajectory: ProcessedTrajectory, scored: WaymateCandidate): SimilarityMetrics {
     const { dtwMetrics, isWaymate } = scored;
 
     if (!dtwMetrics) {

@@ -1,11 +1,11 @@
 import { ASPECT_CONFIGS } from "../config/aspect-configs.js";
 import { generateCandidateColors, USER_COLOR } from "../config/colors.js";
 
-import type { AdhocContextBase, ScoredMatchedCandidate, UserContext } from "../../shared/schemas.js";
+import type { AdhocContextBase, UserContext, WaymateCandidate } from "../../shared/schemas.js";
 import type { Locale, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
 
 type BaseTransformInput = {
-  candidates: ScoredMatchedCandidate[];
+  candidates: WaymateCandidate[];
   locale: Locale;
   existingGoal: boolean;
 };
@@ -95,7 +95,7 @@ function extractAdhocPointValues(ctx: AdhocContextBase): TrajectoryPoint {
 }
 
 function buildCandidateTrajectories(
-  candidates: ScoredMatchedCandidate[],
+  candidates: WaymateCandidate[],
   colors: string[],
   existingGoal: boolean,
 ): ProcessedTrajectory[] {
@@ -103,7 +103,7 @@ function buildCandidateTrajectories(
 }
 
 function buildCandidateTrajectory(
-  candidate: ScoredMatchedCandidate,
+  candidate: WaymateCandidate,
   color: string,
   index: number,
   _existingGoal: boolean,

@@ -12,10 +12,10 @@ import type {
   Goal,
   MatchedCandidateWithPath,
   PathfinderCandidate,
-  ScoredMatchedCandidate,
   TargetContext,
   UserContext,
   UserId,
+  WaymateCandidate,
 } from "../../../shared/schemas.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 import type { BaseMessage } from "@langchain/core/messages";
@@ -126,9 +126,9 @@ export const searchStateAnnotation = Annotation.Root({
   newPositionRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   clarificationText: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 
-  explorationResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
+  explorationResults: Annotation<WaymateCandidate[]>({ reducer: lastValue, default: () => [] }),
   validationResults: Annotation<MatchedCandidateWithPath[]>({ reducer: lastValue, default: () => [] }),
-  searchResults: Annotation<ScoredMatchedCandidate[]>({ reducer: lastValue, default: () => [] }),
+  searchResults: Annotation<WaymateCandidate[]>({ reducer: lastValue, default: () => [] }),
   pathfinderResults: Annotation<PathfinderCandidate[]>({ reducer: lastValue, default: () => [] }),
   chartUrl: Annotation<string | null>({ reducer: lastValue, default: () => null }),
   facets: Annotation<CandidateFacets | null>({ reducer: lastValue, default: () => null }),

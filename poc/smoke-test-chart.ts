@@ -89,6 +89,7 @@ console.log(`   domains: ${goalValues.domains}`);
 console.log("\n⏳ Building chart with OOP architecture...");
 
 const builder = new ChartBuilder({
+  mode: "full",
   userTrajectory,
   candidates,
   fields: DEFAULT_FIELDS,

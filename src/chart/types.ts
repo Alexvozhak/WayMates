@@ -1,4 +1,4 @@
-import type { AdhocContextBase, ScoredMatchedCandidate, UserContext } from "../shared/schemas.js";
+import type { AdhocContextBase, UserContext, WaymateCandidate } from "../shared/schemas.js";
 
 const CHARTABLE_FIELDS = [
   "position",
@@ -74,7 +74,7 @@ export type GoalValues = Partial<Record<ChartableField, string | number | null>>
 export type DynamicLevels = Partial<Record<ChartableField, string[]>>;
 
 type BaseChartInput = {
-  candidates: ScoredMatchedCandidate[];
+  candidates: WaymateCandidate[];
   maxCandidates: number;
   positionOrder: string[];
   locale: Locale;

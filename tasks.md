@@ -453,7 +453,7 @@ createAgent
 
 1.  [text](src/facade/mcp-server/tools/cold-start.tool.ts) как будто мы не агент должен писать в бд, а trpc ручка - то есть агент возвращает готовую к записе storyinput (только сформировывает), подумай над текущим вариантом и предлагаемым - что чище, правильней, логичней, дай рекомендации, что бы сделали best practice. createSaveCareerDataTool кажется лишним и мне чёт не очень нравиться что мы ручку mcp пробрасываем в агента "await deps.coreClient.client.story.upsertStory.mutate"
 
-2.                   return state as unknown as AgentState; - давай через zod parse
+2.                    return state as unknown as AgentState; - давай через zod parse
 
 3 [](src/facade/langchain/career-collector-agent.ts) строчки 449-474 повторяются
 
@@ -1742,3 +1742,137 @@ E.md''/home/alex/projects/WayMatesRemote/.claude/context/guidelines.md'
 - Исправлен баг calculateDynamicLevels для goal-only
 
 Следующий шаг: smoke test через /manual-test-debug или commit.
+
+Show the followupQuestion from data. Keep it as-is, just format nicely - непонятно, двойное обработка?
+
+● Разберу детально.
+
+Контекст: show-results.ts
+
+// Конвертер PathfinderCandidate → ScoredMatchedCandidate для chart
+function toChartCandidate(pf: PathfinderCandidate): ScoredMatchedCandidate {
+return {
+userId: pf.userId,
+matchedContext: pf.matchedContext,
+contextMatchScore: 0,
+isWaymate: false,
+path: pf.path,
+trails: pf.trails,
+timeSinceMatchedMonths: pf.timeSinceTargetMonths,
+// ❌ НЕТ dtwMetrics — не передаётся в chart
+};
+}
+
+// В node:
+const candidates =
+state.searchMode === "pathfinders"
+? state.pathfinderResults.map((pf) => toChartCandidate(pf)) // ← pathfinders
+: state.searchResults; // ← waymates (УЖЕ имеют dtwMetrics)
+
+---
+
+Кто что не передаёт:
+
+| Источник          | Тип                    | dtwMetrics                                |
+| ----------------- | ---------------------- | ----------------------------------------- |
+| searchWaymates    | ScoredMatchedCandidate | ✅ ЕСТЬ (вычисляется в search-manager.ts) |
+| searchPathfinders | PathfinderCandidate    | ❌ НЕТ (тип не содержит это поле)         |
+
+Проблема: PathfinderCandidate — это отдельный тип без DTW метрик:
+
+export const pathfinderCandidateSchema = z.object({
+userId: userIdSchema,
+matchedContext: userContextSchema,
+referenceContext: userContextSchema, // ← уникальное поле для pathfinders
+timeSinceTargetMonths: z.number(),
+timeSinceReferenceMonths: z.number(),
+path: z.array(userContextSchema),
+trails: z.array(trailSchema),
+// ❌ НЕТ dtwMetrics, dtwTotal
+});
+
+---
+
+Бизнес-смысл:
+
+searchWaymates — ищет похожих людей (waymates) и вычисляет DTW для сравнения траекторий:
+
+- "Насколько похожа моя карьера на карьеру этого кандидата?"
+- DTW показывает Shape/Tempo/Alignment
+
+searchPathfinders — ищет людей которые уже достигли моей цели:
+
+- "Кто был как я и дошёл до senior?"
+- DTW не вычисляется — потому что мы сравниваем не "похожесть траекторий", а "достижение цели"
+
+---
+
+Что недополучает пользователь:
+
+| Режим поиска | Spider chart    | Metrics table   | Почему                              |
+| ------------ | --------------- | --------------- | ----------------------------------- |
+| waymates     | ✅ Показывается | ✅ Показывается | dtwMetrics есть                     |
+| pathfinders  | ❌ Скрыт        | ❌ Скрыта       | dtwMetrics нет → hasDtwData = false |
+
+Пользователь видит:
+
+- При поиске waymates → полный chart со spider и метриками
+- При поиске pathfinders → chart БЕЗ spider и метрик (только траектории)
+
+---
+
+Это баг или by design?
+
+By design — pathfinders это другой тип поиска где DTW не имеет смысла. Но можно обсудить:
+
+1. Вариант A (текущий): Pathfinders без DTW — spider скрыт
+2. Вариант B: Вычислять DTW для pathfinders тоже — показывать spider
+
+Хочешь добавить DTW для pathfinders?
+
+> /before-rewind is running… "в следующей сессии прорабатываем Вариант B: Вычислять DTW для pathfinders тоже —
+> показывать spider"
+
+оптимизацию (не генерировать chart при фасетах)
+
+Фаза 5: Завершение DTW рефакторинга
+
+1. ✅ Переименование Stability → Alignment Score (schemas.ts, trajectory-similarity.service.ts, html-renderer.ts, advisor-context-builder.ts, advisor.ts, search-manager.ts, overlap-calculator.ts, тесты)2. ✅ Добавление Country в Main chart (types.ts, aspect-configs.ts, html-renderer.ts)
+2. ✅ Smoke test passed (3/3)4. ✅ Визуальная верификация
+
+Анализ трёх nodes:
+
+- show-results, validate-goal, explore — все прикрепляют chartUrl
+- Fallback через shouldUseFacets() уже есть
+- Оптимизация (не генерировать chart при фасетах) — пользователь сказал что УЖЕ исправили
+
+Открытый вопрос для следующей сессии:
+
+- Почему pathfinders не имеют DTW?
+- searchPathfinders (searchByCurrent в Core) — это тот же searchWaymates, но с фильтром по целевому контексту
+- Нужно ли добавлять DTW расчёт в searchPathfinders Cypher?
+
+sessions/2025-12-27-dtw-for-pathfinders.md
+
+/mvp-implement sessions/2025-12-27-dtw-for-pathfinders.md
+ИЗУЧИ ОБЯЗАТЕЛЬНО:
+
+- **Бизнес-логика поиска:** `mvp-test-final/BUSINESS-LOGIC-MVP.md` (секция 5)
+- **Knowledge Base:** `mvp-test-final/KNOWLEDGE-BASE.md` (секция 11 Search Architecture)
+- **DTW теория:** `docs/business/_archive/DTW_TRAJECTORY_MATCHING.md`
+
+  Статус: План APPROVED, реализация по шагам 1-8.
+
+  Контекст сессии:
+  - Унификация waymates + pathfinders на одну архитектуру
+  - Создание trajectoryCollector (path + trails batch)
+  - Исправление бага: trails не попадали в waymates
+  - Добавление DTW к pathfinders
+  - Консистентные лимиты из env (CANDIDATES_FETCH_LIMIT, CANDIDATES_DISPLAY_LIMIT)
+
+  Ключевые файлы:
+  - src/core/search-manager.ts — основная логика
+  - src/cypher/queries/paths.ts — batch query
+  - src/facade/langGraph/search-graph/nodes/search-pathfinders.ts — Facade
+
+  Начни с шага 1: создание trajectoryCollector.

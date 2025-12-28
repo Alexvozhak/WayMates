@@ -47,12 +47,12 @@ Return:
 
 // Intent descriptions - keys must match SearchUserIntent (TypeScript enforces completeness)
 const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
-  proceed: `User agrees to continue WITHOUT adding new information
-  Semantic: simple confirmation, agreement to proceed with current state`,
+  proceed: `User agrees to continue or move to NEXT STEP
+  Semantic: confirmation, ready to proceed, wants to move forward`,
   explore: `User wants to SEE SIMILAR PEOPLE without setting a goal
   Semantic: browse, look around, show matches, find similar, explore options`,
-  clarify: `User provides NEW goal-related information
-  Semantic: mentions career goal, desired position, skills to add, location preference
+  clarify: `User CORRECTS or REFINES current information
+  Semantic: disagreement with shown data, correction, refinement, addition to current context
   + clarificationText: user's full message`,
   validate: `User wants to see REAL PEOPLE who achieved similar goals
   Semantic: requests verification, wants proof, asks to check feasibility, see examples
@@ -66,8 +66,8 @@ const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   filter: `User wants to NARROW DOWN results
   Semantic: exclude something, filter by criteria, limit scope
   + filters or null`,
-  ask: `User asks a QUESTION about results/candidates
-  Semantic: question about data shown, why/how/who questions
+  ask: `User asks a QUESTION about results, capabilities, or the system
+  Semantic: why/how/who questions, help requests, meta-questions about bot capabilities
   + question: user's question text`,
   searchWaymates: `User wants to see WAYMATES (peers with same goal)
   Semantic: wants similar people, peers, networking, fellow travelers`,

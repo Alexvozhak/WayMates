@@ -671,22 +671,41 @@ DTW вычисляется **в TypeScript**, не в Cypher:
 
 | Слой | Роль в DTW |
 |------|------------|
-| **Cypher** | Возвращает кандидатов с `path` (траекторией) |
+| **Cypher** | Возвращает кандидатов |
+| **trajectoryCollector** | Batch запрос за path + trails для списка userIds |
 | **Core TypeScript** | `TrajectorySimilarityService.computeDTWMetrics()` вычисляет метрики |
 | **SearchManager** | Orchestrator: получает кандидатов → обогащает DTW → возвращает |
 
-**Условие для DTW расчёта:**
+**Условие для DTW расчёта** (см. `DTW_MIN_TRAJECTORY_LENGTH` в `config/scoring.ts`):
 - `userTrajectory.length >= 3` (минимум 3 контекста у пользователя)
 - `candidate.path.length >= 3` (минимум 3 контекста у кандидата)
 
-**Где вызывается:**
-- `searchWaymates` (profile mode) → `executeCoreSearchWithDTW()` → DTW есть
+**Текущий статус:**
+- `searchWaymates` (profile mode) → DTW ✅ (через trajectoryCollector)
 - `searchWaymates` (adhoc mode) → DTW нет (нет userTrajectory)
-- `searchPathfinders` → DTW нет (TODO: добавить)
+- `searchPathfinders` → DTW ✅ (добавлен 2025-12-28, пока через inline Cypher)
+
+**TODO: Унификация архитектуры** (см. `sessions/2025-12-28-search-unification-plan.md`):
+- Pathfinders должен использовать trajectoryCollector (как Waymates)
+- Общий базовый тип `CandidateBase` с path/trails required
+
+**Известные проблемы (исправлено 2025-12-28):**
+- ~~`pathCollector` возвращает только path, без trails~~ → теперь `{ path, trails }`
+- ~~**Баг:** trails НЕ попадают в waymates~~ → исправлено
+- Архитектурное расхождение: waymates vs pathfinders → TODO унификация
+
+**Целевая архитектура:**
+```
+Cypher → кандидаты (без path/trails)
+  → trajectoryCollector (path + trails batch)
+  → DTW enrichment (если userTrajectory >= 3)
+  → sort + slice(pathLimit)
+```
 
 **Ключевые файлы:**
 - `src/core/trajectory-similarity.service.ts` — вычисление DTW метрик
 - `src/core/search-manager.ts` — orchestration DTW обогащения
+- `src/cypher/queries/paths.ts` — batch path query
 
 ---
 
@@ -709,6 +728,34 @@ DTW вычисляется **в TypeScript**, не в Cypher:
 mcp__neo4j-cypher__read_neo4j_cypher({
   query: "MATCH (u:User)-[:HAS_CONTEXT]->(c) RETURN count(DISTINCT u), count(c)"
 })
+```
+
+---
+
+## 12.1 COLD-START-V2 FLOW
+
+### Фазы
+
+| Фаза | Что происходит |
+|------|----------------|
+| `story_gathering` | Сбор карьерной истории |
+| `awaiting_plan_confirmation` | Показ плана (N контекстов) |
+| `awaiting_clarification` | Запрос обязательных полей |
+| `awaiting_context_confirmation` | Подтверждение каждого контекста (1/3) |
+| `awaiting_final_confirmation` | Финальный preview |
+| `saved` | Успешное сохранение |
+
+### Архитектура NLP для story_gathering
+
+**1 LLM вызов:** response-builders передаёт `messages[]`, NLP formatter генерирует текст.
+
+**Data flow:**
+```
+gather_story → state.messages (накапливаются через reducer)
+    ↓
+response-builders → { phase, messages: [{role, content}] }
+    ↓
+NLP formatter → текст с acknowledge + follow-up
 ```
 
 ---

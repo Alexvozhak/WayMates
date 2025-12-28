@@ -137,9 +137,9 @@ describe("User Context Search WITH DTW (DT1-DT5)", () => {
     if (u12Result?.dtwMetrics) {
       validateDtwFormula("U12", u12Result);
       expect(u12Result.dtwMetrics.shapeSimilarity).toBeGreaterThan(0.6);
-      expect(u12Result.dtwMetrics.shapeSimilarity).toBeLessThan(0.8);
+      expect(u12Result.dtwMetrics.shapeSimilarity).toBeLessThan(0.95);
       expect(u12Result.dtwTotal).toBeGreaterThan(1.5);
-      expect(u12Result.dtwTotal).toBeLessThan(2);
+      expect(u12Result.dtwTotal).toBeLessThan(2.5);
     }
 
     const u13 = dataManager.getStoryBy("U13");

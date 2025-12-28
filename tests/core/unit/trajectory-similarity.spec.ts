@@ -223,16 +223,16 @@ describe("TrajectorySimilarityService", () => {
      * Then:
      * - distance = 0.25 (только position отличается)
      */
-    it("TC-TS5: разный position = +0.25 к distance", () => {
+    it("TC-TS5: разный position = +1/7 к distance", () => {
       const u10 = userStories.getStoryBy("U10");
       const ctxA = u10.contexts[0]!; // junior
       const ctxB = { ...u10.contexts[0]!, position: "senior" as const };
 
       const distance = privateMethods.trajectoryDistance(ctxA, ctxB, 12, 12);
 
-      // positionDiff = 1, остальное = 0
-      // (1 + 0 + 0 + 0) / 4 = 0.25
-      expect(distance).toBe(0.25);
+      // positionDiff = 1, остальные 6 компонентов = 0
+      // (1 + 0 + 0 + 0 + 0 + 0 + 0) / 7 = 1/7
+      expect(distance).toBeCloseTo(1 / 7, 5);
     });
 
     /**
@@ -252,9 +252,9 @@ describe("TrajectorySimilarityService", () => {
 
       const distance = privateMethods.trajectoryDistance(ctx, ctx, 12, 24);
 
-      // positionDiff = 0, durationDiff = 0.5, domainsDiff = 0, reasonsDiff = 0
-      // (0 + 0.5 + 0 + 0) / 4 = 0.125
-      expect(distance).toBeCloseTo(0.125, 5);
+      // durationDiff = |12-24| / 24 = 0.5, остальные 6 компонентов = 0
+      // (0 + 0.5 + 0 + 0 + 0 + 0 + 0) / 7 = 0.5/7
+      expect(distance).toBeCloseTo(0.5 / 7, 5);
     });
 
     /**
@@ -272,11 +272,9 @@ describe("TrajectorySimilarityService", () => {
 
       const distance = privateMethods.trajectoryDistance(ctxA, ctxB, 12, 12);
 
-      // positionDiff = 0, durationDiff = 0
-      // domainsDiff = 1 (no overlap: backend vs frontend)
-      // reasonsDiff = 0
-      // (0 + 0 + 1 + 0) / 4 = 0.25
-      expect(distance).toBe(0.25);
+      // domainsDiff = 1 (no overlap: backend vs frontend), остальные 6 = 0
+      // (0 + 0 + 1 + 0 + 0 + 0 + 0) / 7 = 1/7
+      expect(distance).toBeCloseTo(1 / 7, 5);
     });
   });
 

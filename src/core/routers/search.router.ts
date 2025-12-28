@@ -4,8 +4,8 @@ import {
   matchedCandidateWithPathSchema,
   pathfinderCandidateSchema,
   pathfinderSearchParamsSchema,
-  scoredMatchedCandidateSchema,
   targetSearchParamsSchema,
+  waymateCandidateSchema,
   waymatesSearchParamsSchema,
 } from "../../shared/schemas.js";
 
@@ -14,7 +14,7 @@ import { publicProcedure, t } from "./trpc.js";
 export const searchRouter = t.router({
   waymates: publicProcedure
     .input(waymatesSearchParamsSchema)
-    .output(z.array(scoredMatchedCandidateSchema))
+    .output(z.array(waymateCandidateSchema))
     .query(async ({ ctx, input }) => {
       return ctx.searchManager.searchWaymates(input);
     }),

@@ -805,76 +805,78 @@ export const dtwMetricsSchema = z.object({
 export type DTWMetrics = z.infer<typeof dtwMetricsSchema>;
 
 // ==========================================
-// === COMPOSITION BLOCKS (defined once) ===
+// === CANDIDATE BASE (unified) ===
 // ==========================================
 
-// Block 1: Core fields
-export const candidateCoreSchema = z.object({
+// Base schema for all candidate types (full, after enrichment with path/trails)
+// matchedContext = context that matched OUR CURRENT context (where candidate was like us)
+// path/trails required - added by PathCollectorService after Cypher query
+export const candidateBaseSchema = z.object({
   userId: userIdSchema.describe("Candidate user ID"),
-  matchedContext: userContextSchema.describe("Context that matched search criteria"),
+  matchedContext: userContextSchema.describe("Context that matched our current context"),
   timeSinceMatchedMonths: z.number().min(0).describe("Months since matched context was created"),
-});
-
-export type CandidateCore = z.infer<typeof candidateCoreSchema>;
-
-// Block 2: Context scoring fields
-export const contextScoringFieldsSchema = z.object({
   contextMatchScore: z.number().min(0).describe("Context match score (raw: matched weights - extra penalties, >= 0)"),
-  isWaymate: z.boolean().describe("True if candidate has same goal as searching user (and hasn't reached it yet)"),
-});
-
-export type ContextScoringFields = z.infer<typeof contextScoringFieldsSchema>;
-
-// Block 3: Path fields (renamed: trajectory → path)
-export const pathFieldsSchema = z.object({
   path: z.array(userContextSchema).describe("Full career path from started_working to current_context"),
   trails: z.array(trailSchema).describe("Learning paths between contexts"),
+  dtwMetrics: dtwMetricsSchema.optional().describe("DTW metrics (when userTrajectory provided)"),
+  dtwTotal: z.number().min(0).max(3).optional().describe("Sum of DTW metrics (0-3)"),
 });
 
-export type PathFields = z.infer<typeof pathFieldsSchema>;
-
-// Block 4: DTW fields
-export const dtwFieldsSchema = z.object({
-  dtwMetrics: dtwMetricsSchema,
-  dtwTotal: z.number().min(0).max(3).describe("Sum of shape + tempo + stability (0-3)"),
-});
-
-export type DTWFields = z.infer<typeof dtwFieldsSchema>;
+export type CandidateBase = z.infer<typeof candidateBaseSchema>;
 
 // ==========================================
 // === FINAL TYPES (composition) ===
 // ==========================================
 
-// Type 1: Core only
-export const matchedCandidateSchema = candidateCoreSchema;
-export type MatchedCandidate = CandidateCore;
-
-// Type 2: Core + Scoring + Optional Path + Optional DTW
-// Unified type for both simple context search and DTW search
-export const scoredMatchedCandidateSchema = candidateCoreSchema
-  .merge(contextScoringFieldsSchema)
-  .merge(pathFieldsSchema.partial())
-  .merge(dtwFieldsSchema.partial());
-export type ScoredMatchedCandidate = z.infer<typeof scoredMatchedCandidateSchema>;
-
-// Type 3: Core + Path (for reverseSearchPathfinders)
-export const matchedCandidateWithPathSchema = candidateCoreSchema.merge(pathFieldsSchema);
-export type MatchedCandidateWithPath = z.infer<typeof matchedCandidateWithPathSchema>;
-
-// Type 4: Pathfinder candidate (dual matching, dual recency)
-// Used by searchPathfinders - finds people who went FROM our context TO our goal
-export const pathfinderCandidateSchema = z.object({
+// Type 1a: Waymate candidate Light (from Cypher, without path/trails)
+// Used for parsing buildWaymatesSearchQuery result before PathCollectorService enrichment
+export const waymateCandidateLightSchema = z.object({
   userId: userIdSchema.describe("Candidate user ID"),
-  matchedContext: userContextSchema.describe("Target context (where they reached our goal)"),
-  referenceContext: userContextSchema.describe("Reference context (where they were like us)"),
+  matchedContext: userContextSchema.describe("Context that matched our current context"),
+  timeSinceMatchedMonths: z.number().min(0).describe("Months since matched context"),
+  contextMatchScore: z.number().min(0).describe("Context match score"),
+  isWaymate: z.boolean().describe("True if candidate has same goal as searching user"),
+});
+export type WaymateCandidateLight = z.infer<typeof waymateCandidateLightSchema>;
+
+// Type 1b: Waymate candidate (full, with path/trails after enrichment)
+export const waymateCandidateSchema = candidateBaseSchema.extend({
+  isWaymate: z.boolean().describe("True if candidate has same goal as searching user"),
+});
+export type WaymateCandidate = z.infer<typeof waymateCandidateSchema>;
+
+// Type 2a: Pathfinder candidate Light (from Cypher, without path/trails)
+// Used for parsing buildPathfinderSearchQuery result
+export const pathfinderCandidateLightSchema = z.object({
+  userId: userIdSchema.describe("Candidate user ID"),
+  matchedContext: userContextSchema.describe("Context where they were like us"),
+  timeSinceMatchedMonths: z.number().min(0).describe("Months since matched context"),
+  contextMatchScore: z.number().min(0).describe("Context match score"),
+  targetContext: userContextSchema.describe("Context where they reached our goal"),
   timeSinceTargetMonths: z.number().min(0).describe("Months since reaching target"),
-  timeSinceReferenceMonths: z.number().min(0).describe("Months since being in reference context"),
-  path: z.array(userContextSchema).describe("Full career path"),
-  trails: z.array(trailSchema).describe("Learning paths between contexts"),
-  dtwMetrics: dtwMetricsSchema.optional().describe("DTW metrics (when userTrajectory provided)"),
-  dtwTotal: z.number().min(0).max(3).optional().describe("Sum of DTW metrics (0-3)"),
+});
+export type PathfinderCandidateLight = z.infer<typeof pathfinderCandidateLightSchema>;
+
+// Type 2b: Pathfinder candidate (full, with path/trails from base)
+// Used by searchPathfinders - finds people who went FROM our context TO our goal
+// matchedContext (from base) = where they were like us
+// targetContext = where they reached our goal
+export const pathfinderCandidateSchema = candidateBaseSchema.extend({
+  targetContext: userContextSchema.describe("Context that matched our goal (where they arrived)"),
+  timeSinceTargetMonths: z.number().min(0).describe("Months since reaching target context"),
 });
 export type PathfinderCandidate = z.infer<typeof pathfinderCandidateSchema>;
+
+// Type 3: Core + Path (for reverseSearchPathfinders)
+// Uses legacy field name for backward compatibility with existing Cypher queries
+export const matchedCandidateWithPathSchema = z.object({
+  userId: userIdSchema.describe("Candidate user ID"),
+  matchedContext: userContextSchema.describe("Context that matched search criteria"),
+  timeSinceMatchedMonths: z.number().min(0).describe("Months since matched context was created"),
+  path: z.array(userContextSchema).describe("Full career path"),
+  trails: z.array(trailSchema).describe("Learning paths between contexts"),
+});
+export type MatchedCandidateWithPath = z.infer<typeof matchedCandidateWithPathSchema>;
 
 // ==========================================
 // === FACETS (for large result sets) ===
@@ -1155,7 +1157,7 @@ export type TelegramLinkResponse = z.infer<typeof telegramLinkResponseSchema>;
  * Contains array of matched candidates with scores.
  */
 export const searchResultResponseSchema = z.object({
-  candidates: z.array(scoredMatchedCandidateSchema),
+  candidates: z.array(waymateCandidateSchema),
   totalCount: z.number(),
 });
 
@@ -1288,7 +1290,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("exploring") }),
   z.object({
     phase: z.literal("showing_exploration_candidates"),
-    candidates: z.array(scoredMatchedCandidateSchema),
+    candidates: z.array(waymateCandidateSchema),
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
@@ -1336,7 +1338,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("searching") }),
   z.object({
     phase: z.literal("showing_results"),
-    results: z.array(scoredMatchedCandidateSchema),
+    results: z.array(waymateCandidateSchema),
     goal: goalSchema.nullable(),
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),

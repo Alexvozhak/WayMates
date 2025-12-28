@@ -1,3 +1,4 @@
+import { DTW_MIN_TRAJECTORY_LENGTH } from "../../../../config/scoring.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { NODE, PHASE } from "../state.js";
@@ -28,11 +29,13 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       userId,
       referenceContext,
       targetContext: storedGoal.targetContext,
+      userTrajectory: state.userTrajectory.length >= DTW_MIN_TRAJECTORY_LENGTH ? state.userTrajectory : undefined,
       referenceRecencyMonths: null,
       targetRecencyMonths: null,
       excludedContextFields: [],
       excludedCreationReasons: [],
       limit: config.CANDIDATES_FETCH_LIMIT,
+      pathLimit: config.CANDIDATES_DISPLAY_LIMIT,
     });
 
     return {

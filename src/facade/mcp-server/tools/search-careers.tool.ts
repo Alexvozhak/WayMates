@@ -12,7 +12,7 @@ import { ValidationError } from "../../errors.js";
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
+import type { UserId, WaymateCandidate } from "../../../shared/schemas.js";
 
 /**
  * MCP params schema for search_careers tool.
@@ -46,12 +46,12 @@ export const mcpSearchCareersParamsSchema = z
 
 export type McpSearchCareersParams = z.infer<typeof mcpSearchCareersParamsSchema>;
 
-export class SearchCareersTool extends BaseTool<McpSearchCareersParams, ScoredMatchedCandidate[]> {
+export class SearchCareersTool extends BaseTool<McpSearchCareersParams, WaymateCandidate[]> {
   constructor(deps: BaseToolDependencies) {
     super(deps, mcpSearchCareersParamsSchema);
   }
 
-  protected async executeImpl(params: McpSearchCareersParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
+  protected async executeImpl(params: McpSearchCareersParams, userId: UserId): Promise<WaymateCandidate[]> {
     const hasAnyField = Object.keys(params.referenceContext).length > 0;
     if (!hasAnyField) {
       throw new ValidationError("At least one field is required in reference context");

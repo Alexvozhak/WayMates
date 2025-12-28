@@ -10,7 +10,7 @@ import {
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { ScoredMatchedCandidate, UserId } from "../../../shared/schemas.js";
+import type { UserId, WaymateCandidate } from "../../../shared/schemas.js";
 
 /**
  * MCP params schema for search_user_careers tool.
@@ -40,12 +40,12 @@ export const mcpSearchUserCareersParamsSchema = z
 
 export type McpSearchUserCareersParams = z.infer<typeof mcpSearchUserCareersParamsSchema>;
 
-export class SearchUserCareersTool extends BaseTool<McpSearchUserCareersParams, ScoredMatchedCandidate[]> {
+export class SearchUserCareersTool extends BaseTool<McpSearchUserCareersParams, WaymateCandidate[]> {
   constructor(deps: BaseToolDependencies) {
     super(deps, mcpSearchUserCareersParamsSchema);
   }
 
-  protected async executeImpl(params: McpSearchUserCareersParams, userId: UserId): Promise<ScoredMatchedCandidate[]> {
+  protected async executeImpl(params: McpSearchUserCareersParams, userId: UserId): Promise<WaymateCandidate[]> {
     const { sessionId: _, recencyThresholdMonths, ...coreParams } = params;
 
     return this.coreClient.client.search.waymates.query({

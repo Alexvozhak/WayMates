@@ -5,10 +5,10 @@ import type {
   FacetField,
   FacetValue,
   MatchedCandidateWithPath,
-  ScoredMatchedCandidate,
+  WaymateCandidate,
 } from "../../../shared/schemas.js";
 
-type CandidateWithContext = MatchedCandidateWithPath | ScoredMatchedCandidate;
+type CandidateWithContext = MatchedCandidateWithPath | WaymateCandidate;
 
 type FacetableField = FacetField | "citizenships";
 
