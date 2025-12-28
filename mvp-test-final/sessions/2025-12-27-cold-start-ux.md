@@ -309,29 +309,93 @@ NLP Reasoning: "multiple messages...focuses on job changes without repeating"
 
 ---
 
+## Сессия 5: CV Parsing + Trail Hallucination Fix (2025-12-28)
+
+**Фокус:** Full flow test, тестирование с реальным CV
+
+### Что сделано
+
+1. **Full flow test** — все фазы cold-start прошли успешно
+2. **parse-confirmation.ts** — добавлен только reasoning logging (1 строка), рефакторинг НЕ нужен
+3. **Тестирование с реальным CV** — KomarovAlex2025.md (4 позиции)
+4. **Баг #13 FIXED** — галлюцинация trails
+
+### Баг #13: Trail Hallucination
+
+**Проблема:** LLM выдумывал trails которых нет в CV ("Leadership Training Program 2023", "Agile PM Certification 2024")
+
+**Root cause:** `planningPrompt` не запрещал выдумывать
+
+**Fix:** Добавлена секция в prompts.ts:
+```
+🚨 CRITICAL — DO NOT INVENT DATA:
+- Extract ONLY explicitly mentioned learning activities
+- Empty incomingTrails is VALID when no learning activities mentioned
+- Formal education degrees belong to educationLevel field, NOT trails
+- No explicit learning mentioned → incomingTrails = []
+```
+
+**Коммиты:**
+- `879a99e` feat(cold-start): add reasoning logging to parse-confirmation
+- `fd5c4ad` fix(cold-start): prevent trail hallucination in planningPrompt
+
+### Обнаруженные баги (зафиксированы в tests_report.md)
+
+| # | Баг | Severity |
+|---|-----|----------|
+| 14 | creationReason неверные (company_changed не проставляется) | 🟡 P1 |
+| 15 | position не из словаря ("grade-2", "team lead") | 🟡 P1 |
+| 16 | skills/domains не нормализованы | 🟡 P1 |
+| 17 | "загрузить резюме" не распознаётся как startStory | 🟢 P2 |
+
+---
+
+## Рефлексия сессии 5
+
+### Ошибки и корректировки
+
+| # | Ошибка | Корректировка | Первопричина |
+|---|--------|---------------|--------------|
+| 1 | Хотел делать рефакторинг parse-confirmation.ts без оценки ценности | "расскажи что сейчас и что будет, зачем, бизнес-ценность какая" | Консистентность ради консистентности |
+| 2 | Спросил про trails вместо изучения документации | "читай код" (+ ссылки на GLOSSARY, value_chain) | Хотел быстрый ответ вместо исследования |
+| 3 | Добавил примеры в промпт fix | "давай только без явных примеров и цитат, только семантика" | Та же ошибка что в сессии 4 |
+
+### Выявленные первопричины
+
+1. **Консистентность ≠ ценность** — "сделать как там" без оценки нужно ли вообще
+2. **Спрашиваю вместо исследования** — документация есть, но проще спросить
+3. **Примеры в промптах** — устойчивая привычка, нужно перечитывать guidelines перед промптами
+
+### Правило для guidelines.md
+
+**Перед любым рефакторингом спросить:**
+1. Какая бизнес-ценность?
+2. Что сломается если НЕ делать?
+3. Код работает? → Возможно менять не нужно
+
+---
+
 ## Открытые задачи
 
-1. **Commit изменений** — pending
-2. **Full flow test** — до сохранения, проверить все фазы
-3. **parse-confirmation.ts** — аналогичный рефакторинг (Record + массив)
+1. **Баг #14-17** — зафиксированы, не критичны для MVP
+2. **Dictionary hints** — проверить инжекцию в contextExtractionPrompt
 
 ---
 
 ## Prompt для rewind
 
 ```
-Продолжаем сессию cold-start UX. Изучи:
-- mvp-test-final/sessions/2025-12-27-cold-start-ux.md (Сессия 4)
+тестим @src/facade/langGraph/cold-start-v2/cold-start-graph.ts ; прочитай полностью ~/projects/WayMatesRemote/mvp-test-final/sessions/2025-12-27-cold-start-ux.md (сессия 5) продолжаем
 
 Сделано:
-- Structured output + reasoning в NLP formatter и decision parsing
-- Рефакторинг parse-story-completion.ts (Record, без хардкода, без кастов)
-- Active listening работает: 1 message → welcome, 2+ → contextual follow-up
+- Full flow test ✅
+- Баг #13 (trail hallucination) FIXED — fd5c4ad
+- Баги #14-17 зафиксированы в tests_report.md
 
 Открыто:
-- Commit изменений
-- parse-confirmation.ts — аналогичный рефакторинг
-- Full flow test
+- Баг #14: creationReason неверные
+- Баг #15-16: position/skills не из словаря (dictHints)
+- Баг #17: "загрузить резюме" intent
 
-Фокус: reasoning = инструмент отладки, eslint.config.mjs читать, UX > техническая корректность.
+Фокус: бизнес-ценность > консистентность, документация > вопросы, семантика > примеры.
 ```
