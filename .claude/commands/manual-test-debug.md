@@ -49,12 +49,13 @@ allowed-tools:
 
 ## База знаний (ОБЯЗАТЕЛЬНО прочитать перед началом)
 
-Прочитать и изучить:
+Прочитать ПОЛНОСТЬЮ (!), изучить, правила - соблюдать, знания - учитывать:
 
 - /home/alex/projects/WayMatesRemote/.claude/context/guidelines.md
 - /home/alex/projects/WayMatesRemote/mvp-test-final/BUSINESS-LOGIC-MVP.md
 - /home/alex/projects/WayMatesRemote/mvp-test-final/KNOWLEDGE-BASE.md
 - /home/alex/projects/WayMatesRemote/mvp-test-final/tests_report.md
+- /home/alex/projects/WayMatesRemote/eslint.config.mjs
 
 **Куда обращаться:**
 | Вопрос | Источник |
@@ -95,8 +96,14 @@ allowed-tools:
    - Готов / Нужно: [что уточнить]
 ```
 
-**КРИТИЧНО:** Приступать ТОЛЬКО когда ВСЕ ТРИ аспекта ≥ 90%.
-Если < 90% — сообщить что не хватает для понимания. **Ждать подтверждения пользователя.**
+**КРИТИЧНО:** сообщать о готовности приступить к коду ТОЛЬКО когда ВСЕ ТРИ аспекта ≥ 90%:
+
+- Понимание что делаешь и зачем
+- Понимание бизнес-логики
+- Понимание смысла происходящего
+
+**Если < 90%:** читай код, grep как принято, или проси помощи. НЕ приступай к правке.
+Если код и доки не помогают, то сообщить пользователю что не хватает для понимания. **Ждать подтверждения пользователя.**
 
 **НЕ делать автоматически:** загружать данные, поднимать инфру, запускать бота.
 
@@ -111,13 +118,13 @@ allowed-tools:
 ```bash
 set -a && source .env.test && set +a
 
-# Использовать УНИКАЛЬНОЕ имя сессии (например, первые буквы задачи или random)
-npx tsx poc/mcp-chat.ts --session cs1 --reset              # сбросить свою сессию
-npx tsx poc/mcp-chat.ts --session cs1 "сообщение"          # отправить в свою сессию
-npx tsx poc/mcp-chat.ts --session cs1 --status             # статус своей сессии
+npx tsx poc/mcp-chat.ts --session cs1 "сообщение"          # отправить
+npx tsx poc/mcp-chat.ts --session cs1 --reset              # сбросить
+npx tsx poc/mcp-chat.ts --session cs1 --status             # статус
+npx tsx poc/mcp-chat.ts --session cs1 --telegramId 123 "msg"  # как существующий user
 
-# Файлы сессий: /tmp/mcp-chat-session-{name}.json
-# Примеры имён: cs1, cs2, alice, bob, test1, debug
+# --telegramId N — привязать сессию к существующему пользователю по telegram_user_id
+# Для profile flow: добавить telegram_user_id в facade.users (Postgres), затем использовать --telegramId
 ```
 
 **Почему важно:**
@@ -148,12 +155,17 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 3. Согласовать fix с пользователем
 4. Реализовать → `npm run facade:rebuild` → проверить
 
-### 3. Конец сессии
+### 3. Матрица тестирования
+
+После успешного теста + коммита — добавить строку в `tests_report.md` → "Матрица тестирования" (по графам: search-graph, cold-start-v2, orchestrator).
+
+### 4. Конец сессии
 
 ```
-1. Обновить файл сессии в mvp-test-final/sessions/
-2. npm run lint:fix && npx tsc --noEmit
-3. Сообщить: сделано / осталось / инсайты
+1. Обновить матрицу тестирования (tests_report.md)
+2. Обновить файл сессии в sessions/
+3. npm run lint:fix && npx tsc --noEmit
+4. Сообщить: сделано / осталось / инсайты
 ```
 
 ---
@@ -254,6 +266,7 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 - Не используй `--session default` или без `--session` — конфликт с другими
 - Не запускай линтер без аргумента fix (делай lint:fix)
 - Не делай руками то что может lint:fix сделать автоматом (например, обновление импорта, после переноса/переименования)
+- НЕ используй SED для батч операций! MCP Filesystem используй, и потом lint:fix исправляет импорты.
 
 **Полный список правил:** `.claude/context/guidelines.md`
 
@@ -266,4 +279,4 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 - Cypher через MCP (read)
 - Добавлять в session logs
 - sequential-thinking для анализа
-- WebSearch для best practices
+- Context7/WebSearch для best practices

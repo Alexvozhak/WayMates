@@ -240,16 +240,44 @@ domains: ["research-and-development"]
 
 ---
 
-### Баг #17: orchestrator — "загрузить резюме" не распознаётся
+### Баг #17: orchestrator — "загрузить резюме" не распознаётся ✅ FIXED
 
 **Отправил:** "хочу загрузить своё резюме"
 
-**Получил:** `system_message` (unknown intent)
+**Было:** `system_message` (unknown intent)
 
-**Ожидаемое:** `startStory` → cold-start flow
+**Стало:** `startStory` → cold-start flow (story_gathering)
 
-**Файл:** `src/facade/services/orchestrator/intent-classifier.ts`
+**Решение:** Добавлена семантика "upload/share CV/resume" в описание startStory.
 
-**Fix:** Добавить в описание startStory семантику "upload CV/resume".
+**Изменённые файлы:**
+- `intent-classifier.ts` — расширено описание startStory
+
+---
+
+## Матрица тестирования
+
+### search-graph
+
+| Коммит | From Phase | Input | Intent | To Phase | Result |
+|--------|------------|-------|--------|----------|--------|
+| c4a692b | confirming_adhoc (no goal) | "покажи похожих" | explore | showing_exploration_candidates | ✅ |
+| c4a692b | confirming_adhoc (no goal) | "хочу стать CTO" | setGoal | showing_goal | ✅ |
+| c4a692b | confirming_adhoc (no goal) | "нет, я middle" | editAdhoc | confirming_adhoc | ✅ |
+| c4a692b | asking_search_mode | "покажи проводников" | searchPathfinders | showing_results | ✅ |
+| c4a692b | showing_goal (profile+goal) | "покажи кто достиг" | validate | asking_after_validate_candidates | ✅ |
+| c4a692b | asking_after_validate (profile) | "хочу изменить цель на CTO" | change | showing_goal | ✅ |
+
+### cold-start-v2
+
+| Коммит | From Phase | Input | Intent | To Phase | Result |
+|--------|------------|-------|--------|----------|--------|
+| | | | | | |
+
+### orchestrator
+
+| Коммит | Input | Expected Intent | Actual Intent | Result |
+|--------|-------|-----------------|---------------|--------|
+| | | | | |
 
 ---
