@@ -14,7 +14,7 @@ type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 // prettier-ignore
 // NODE.generate_answer added to all phases — user can ask meta-questions anytime
 const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
-  [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search_waymates, NODE.explore, NODE.extract_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.validate_goal, NODE.load_existing_goal, NODE.explore, NODE.extract_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_goal,                     buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.delete_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
@@ -87,6 +87,25 @@ const RESULTS_ROUTES: RouteMap = {
   cancel: NODE.cancel,
   unknown: NODE.clarify_intent,
 };
+// Confirming adhoc context routes (hasGoal-dependent)
+const CONFIRMING_WITH_GOAL_ROUTES: RouteMap = {
+  searchWaymates: NODE.search_waymates,
+  searchPathfinders: NODE.search_pathfinders,
+  validate: NODE.validate_goal,
+  editGoal: NODE.load_existing_goal,
+  editAdhoc: NODE.load_context,
+  ask: NODE.generate_answer,
+  cancel: NODE.cancel,
+  unknown: NODE.clarify_intent,
+};
+const CONFIRMING_NO_GOAL_ROUTES: RouteMap = {
+  explore: NODE.explore,
+  setGoal: NODE.extract_goal,
+  editAdhoc: NODE.load_context,
+  ask: NODE.generate_answer,
+  cancel: NODE.cancel,
+  unknown: NODE.clarify_intent,
+};
 
 export function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhase, RouteMap>> {
   const { canClarify, canChangePosition, hasGoal } = flags;
@@ -100,14 +119,7 @@ export function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhas
     cancel: NODE.cancel,
     unknown: NODE.clarify_intent,
   };
-  const confirmingRoutes: RouteMap = {
-    explore: hasGoal ? NODE.search_waymates : NODE.explore,
-    clarify: NODE.load_context,
-    proceed: NODE.extract_goal,
-    ask: NODE.generate_answer,
-    cancel: NODE.cancel,
-    unknown: NODE.clarify_intent,
-  };
+  const confirmingRoutes = hasGoal ? CONFIRMING_WITH_GOAL_ROUTES : CONFIRMING_NO_GOAL_ROUTES;
   const goalRoutes: RouteMap = {
     validate: NODE.validate_goal,
     clarify: canClarify ? NODE.clarify_goal : NODE.set_goal,

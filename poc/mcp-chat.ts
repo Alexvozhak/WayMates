@@ -17,15 +17,24 @@ import { randomUUID } from "node:crypto";
 
 import { McpClient } from "../src/telegram-bot/services/mcp-client.js";
 
-function parseArgs(args: string[]): { sessionName: string; command: string | null; message: string | null } {
+function parseArgs(args: string[]): {
+  sessionName: string;
+  command: string | null;
+  message: string | null;
+  telegramId: number | null;
+} {
   let sessionName = "default";
   let command: string | null = null;
+  let telegramId: number | null = null;
   const messageWords: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--session" && args[i + 1]) {
       sessionName = args[i + 1];
-      i++; // skip next arg
+      i++;
+    } else if (args[i] === "--telegramId" && args[i + 1]) {
+      telegramId = Number(args[i + 1]);
+      i++;
     } else if (args[i] === "--reset") {
       command = "reset";
     } else if (args[i] === "--status") {
@@ -39,6 +48,7 @@ function parseArgs(args: string[]): { sessionName: string; command: string | nul
     sessionName,
     command,
     message: messageWords.length > 0 ? messageWords.join(" ") : null,
+    telegramId,
   };
 }
 
@@ -53,7 +63,11 @@ function getSessionFile(sessionName: string): string {
   return `/tmp/mcp-chat-session-${sessionName}.json`;
 }
 
-async function loadOrCreateSession(client: McpClient, sessionName: string): Promise<Session> {
+async function loadOrCreateSession(
+  client: McpClient,
+  sessionName: string,
+  telegramId?: number | null,
+): Promise<Session> {
   const sessionFile = getSessionFile(sessionName);
 
   // Try to load existing session
@@ -65,7 +79,7 @@ async function loadOrCreateSession(client: McpClient, sessionName: string): Prom
 
   // Create new session via register_telegram
   console.log(`🆕 Creating new session [${sessionName}]...`);
-  const telegramUserId = Date.now(); // number, not string
+  const telegramUserId = telegramId ?? Date.now();
 
   const authResult = await client.callTool("register_telegram", {
     telegramUserId,
@@ -83,7 +97,7 @@ async function loadOrCreateSession(client: McpClient, sessionName: string): Prom
   return session;
 }
 
-async function chat(message: string, sessionName: string): Promise<void> {
+async function chat(message: string, sessionName: string, telegramId?: number | null): Promise<void> {
   console.log(`\n${"=".repeat(60)}`);
   console.log(`→ USER [${sessionName}]: ${message}`);
   console.log("=".repeat(60));
@@ -91,7 +105,7 @@ async function chat(message: string, sessionName: string): Promise<void> {
   const client = await McpClient.create(MCP_URL);
 
   try {
-    const session = await loadOrCreateSession(client, sessionName);
+    const session = await loadOrCreateSession(client, sessionName, telegramId);
 
     const response = await client.callTool("converse", {
       message,
@@ -155,7 +169,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { sessionName, command, message } = parseArgs(args);
+  const { sessionName, command, message, telegramId } = parseArgs(args);
 
   if (command === "reset") {
     reset(sessionName);
@@ -172,7 +186,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  await chat(message, sessionName);
+  await chat(message, sessionName, telegramId);
 }
 
 main().catch(console.error);

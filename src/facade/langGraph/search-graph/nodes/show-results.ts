@@ -5,7 +5,14 @@ import { config } from "../../../env.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
-import type { PathfinderCandidate, WaymateCandidate } from "../../../../shared/schemas.js";
+import type { GenerateChartInput } from "../../../../chart/index.js";
+import type {
+  AdhocContextBase,
+  Goal,
+  PathfinderCandidate,
+  UserContext,
+  WaymateCandidate,
+} from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 /**
@@ -26,6 +33,32 @@ function toChartCandidate(pf: PathfinderCandidate): WaymateCandidate {
   };
 }
 
+type ChartDeps = {
+  userTrajectory: UserContext[];
+  adhocContext: AdhocContextBase | null;
+  storedGoal: Goal | null;
+  candidates: WaymateCandidate[];
+  positionOrder: string[];
+};
+
+function buildResultsChartInput(deps: ChartDeps): GenerateChartInput {
+  const goalValues = extractGoalValues(deps.storedGoal);
+  const base = {
+    candidates: deps.candidates,
+    maxCandidates: config.CANDIDATES_DISPLAY_LIMIT,
+    positionOrder: deps.positionOrder,
+    locale: "ru" as const,
+    existingGoal: Boolean(deps.storedGoal),
+    goalValues,
+  };
+  // Profile mode: user trajectory + candidates + DTW metrics
+  if (deps.userTrajectory.length > 0) {
+    return { mode: "full", userTrajectory: deps.userTrajectory, ...base };
+  }
+  // Adhoc mode: adhoc marker + candidates (no DTW)
+  return { mode: "candidates-only", adhocContext: deps.adhocContext!, ...base };
+}
+
 /**
  * Show results node: displays search results with current goal and waits for user decision.
  * User can change goal, delete goal (return to explore), apply filters, or cancel.
@@ -40,23 +73,21 @@ export const showResultsNode = withLogging<SearchStateType>(
         ? state.pathfinderResults.map((pf) => toChartCandidate(pf))
         : state.searchResults;
 
-    const hasDataForChart = candidates.length > 0 && state.userTrajectory.length > 0;
+    // Chart available for: profile (trajectory) OR adhoc (adhocContext)
+    const hasDataForChart = candidates.length > 0 && (state.userTrajectory.length > 0 || state.adhocContext !== null);
     const shouldGenerateChart = isChartServiceEnabled() && hasDataForChart;
 
     if (shouldGenerateChart) {
       try {
-        const goalValues = extractGoalValues(state.storedGoal);
         const positionOrder = await dictionariesService.getPositionOrder();
-        const result = await generateTrajectoryChart({
-          mode: "full",
+        const chartInput = buildResultsChartInput({
           userTrajectory: state.userTrajectory,
+          adhocContext: state.adhocContext,
+          storedGoal: state.storedGoal,
           candidates,
-          maxCandidates: config.CANDIDATES_DISPLAY_LIMIT,
           positionOrder,
-          locale: "ru",
-          existingGoal: Boolean(state.storedGoal),
-          goalValues,
         });
+        const result = await generateTrajectoryChart(chartInput);
         chartUrl = result.chartUrl;
       } catch (error) {
         logger.error({ err: error }, "Chart generation failed");

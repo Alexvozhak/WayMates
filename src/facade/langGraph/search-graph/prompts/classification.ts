@@ -37,7 +37,7 @@ Return:
 {
   reasoning: "Brief explanation of why this intent fits",
   intent: "<one of: ${validIntents.join(", ")}>",
-  clarificationText/filters/question: (if applicable)
+  filters/question: (if applicable)
 }`;
 }
 
@@ -47,13 +47,12 @@ Return:
 
 // Intent descriptions - keys must match SearchUserIntent (TypeScript enforces completeness)
 const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
-  proceed: `User agrees to continue or move to NEXT STEP
-  Semantic: confirmation, ready to proceed, wants to move forward`,
+  proceed: `User confirms and wants to MOVE FORWARD
+  Semantic: confirmation without new information, agreement to continue`,
   explore: `User wants to SEE SIMILAR PEOPLE without setting a goal
   Semantic: browse, look around, show matches, find similar, explore options`,
   clarify: `User CORRECTS or REFINES current information
-  Semantic: disagreement with shown data, correction, refinement, addition to current context
-  + clarificationText: user's full message`,
+  Semantic: disagreement with shown data, correction, refinement, addition to current context`,
   validate: `User wants to see REAL PEOPLE who achieved similar goals
   Semantic: requests verification, wants proof, asks to check feasibility, see examples
   + filters or null`,
@@ -73,6 +72,12 @@ const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   Semantic: wants similar people, peers, networking, fellow travelers`,
   searchPathfinders: `User wants to see PATHFINDERS (proof of transition)
   Semantic: wants people who made it, proof, who achieved, concrete paths`,
+  setGoal: `User wants to SET a career goal (when no goal exists)
+  Semantic: expresses aspiration, career target, desired position`,
+  editGoal: `User wants to MODIFY existing goal
+  Semantic: adjust target, change destination, update goal`,
+  editAdhoc: `User wants to EDIT their adhoc context
+  Semantic: correction about self, fix current situation data`,
   cancel: `User wants to STOP the flow
   Semantic: stop, exit, abort, cancel`,
   unknown: `Unclear or unrelated`,

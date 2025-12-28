@@ -88,10 +88,13 @@ export const SIMPLE_INTENTS = [
   "delete",
   "searchWaymates",
   "searchPathfinders",
+  "setGoal",
+  "editGoal",
+  "editAdhoc",
   "cancel",
   "unknown",
 ] as const;
-// Complex: have extra fields (clarificationText, filters, question)
+// Complex: have extra fields (filters, question)
 export const COMPLEX_INTENTS = ["validate", "clarify", "filter", "ask"] as const;
 
 export type SimpleIntent = (typeof SIMPLE_INTENTS)[number];
@@ -124,7 +127,6 @@ export const searchStateAnnotation = Annotation.Root({
 
   clarifyRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   newPositionRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
-  clarificationText: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 
   explorationResults: Annotation<WaymateCandidate[]>({ reducer: lastValue, default: () => [] }),
   validationResults: Annotation<MatchedCandidateWithPath[]>({ reducer: lastValue, default: () => [] }),
