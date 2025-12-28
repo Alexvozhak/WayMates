@@ -49,7 +49,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
   },
 
   [PHASE.awaiting_context_confirmation]: (state) => {
-    const { collectedContexts, collectedTrails, currentEntityContext, queue } = state;
+    const { collectedContexts, collectedTrails, currentEntityContext, queue, normalizations } = state;
 
     if (!currentEntityContext) {
       throw new InvalidStateError(PHASE.awaiting_context_confirmation, "currentEntityContext is missing");
@@ -69,6 +69,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
       entity: currentContext,
       relatedTrails: collectedTrails.filter((t) => t.toContextId === currentContext.contextId),
       progress: { current: currentEntityContext.contextIndex + 1, total: queue.length },
+      normalizations,
     };
   },
 

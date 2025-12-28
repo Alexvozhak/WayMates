@@ -1,32 +1,25 @@
 import { AgentInvariantError } from "../../../errors.js";
-import { PHASE } from "../state.js";
+import { NODE, PHASE } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import type { ColdStartStateType } from "../state.js";
 
-export const persistNode = withLogging<ColdStartStateType>(
-  "persist",
-  async (state, _config, { coreClient, normalizerService }) => {
-    const { collectedContexts, collectedTrails, queue, userId } = state;
+export const persistNode = withLogging<ColdStartStateType>(NODE.persist, async (state, _config, { coreClient }) => {
+  const { collectedContexts, collectedTrails, queue, userId } = state;
 
-    if (!collectedContexts || collectedContexts.length === 0) {
-      throw new AgentInvariantError("persistNode", "collectedContexts must not be empty");
-    }
+  if (!collectedContexts || collectedContexts.length === 0) {
+    throw new AgentInvariantError("persistNode", "collectedContexts must not be empty");
+  }
 
-    if (collectedContexts.length !== queue.length) {
-      throw new AgentInvariantError("persistNode", "collectedContexts/queue length mismatch");
-    }
+  if (collectedContexts.length !== queue.length) {
+    throw new AgentInvariantError("persistNode", "collectedContexts/queue length mismatch");
+  }
 
-    const normalizedContexts = await Promise.all(
-      collectedContexts.map((ctx) => normalizerService.normalizeFullContext(ctx, userId)),
-    );
+  await coreClient.client.story.upsertStory.mutate({
+    userId,
+    contexts: collectedContexts,
+    trails: collectedTrails,
+  });
 
-    await coreClient.client.story.upsertStory.mutate({
-      userId,
-      contexts: normalizedContexts,
-      trails: collectedTrails,
-    });
-
-    return { phase: PHASE.saved };
-  },
-);
+  return { phase: PHASE.saved };
+});

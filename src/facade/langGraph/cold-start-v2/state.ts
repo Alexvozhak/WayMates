@@ -4,7 +4,7 @@ import { lastValue } from "../shared/state-utils.js";
 
 import { PHASE } from "./types.js";
 
-import type { ColdStartPhase, CurrentEntityContext, ParsedDecision } from "./types.js";
+import type { ColdStartPhase, CurrentEntityContext, NormalizationEntry, ParsedDecision } from "./types.js";
 import type {
   ContextAgenda,
   ContextOptionalField,
@@ -52,6 +52,7 @@ export const coldStartStateAnnotation = Annotation.Root({
   optionalFields: Annotation<ContextOptionalField[]>({ reducer: lastValue, default: () => [] }),
   clarificationRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   currentEntityContext: Annotation<CurrentEntityContext | undefined>({ reducer: lastValue }),
+  normalizations: Annotation<NormalizationEntry[]>({ reducer: lastValue, default: () => [] }),
 });
 
 export type ColdStartStateType = typeof coldStartStateAnnotation.State;

@@ -1,0 +1,23 @@
+name: cold-start-revert-field
+description: FEAT-050 — revert normalized field → addTerm
+locale: ru
+
+steps:
+  - message: |
+      Привет! Моя карьерная история.
+      Работал программистом grade-2 в веб-студии TechLab.
+      Backend на Python, Django, PostgreSQL.
+      С января 2021 по декабрь 2022 в Москве, Россия.
+      Компания 50 человек, IT сфера.
+      Уволился чтобы развиваться дальше.
+      Это всё.
+    expect:
+      phase: awaiting_plan_confirmation
+
+  - message: подтверждаю план
+    expect:
+      phase: awaiting_context_confirmation
+
+  - message: верни position как было, хочу grade-2
+    expect:
+      phase: awaiting_context_confirmation

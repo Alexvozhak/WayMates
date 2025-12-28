@@ -1,0 +1,27 @@
+name: cold-start-happy-path
+description: Cold-start happy path — регресс, полный flow до сохранения
+locale: ru
+
+steps:
+  - message: |
+      Привет! Хочу рассказать свою карьерную историю.
+      Работал backend разработчиком в финтех компании FinCorp.
+      Использовал Python, PostgreSQL, Docker, Redis.
+      С января 2020 по декабрь 2022 года в Москве, Россия.
+      Компания большая, около 500 человек, в сфере финансов.
+      Ушёл потому что хотел развиваться в другом направлении.
+      Это вся моя история.
+    expect:
+      phase: awaiting_plan_confirmation
+
+  - message: да, подтверждаю план
+    expect:
+      phase: awaiting_context_confirmation
+
+  - message: всё верно, подтверждаю позицию
+    expect:
+      phase: awaiting_final_confirmation
+
+  - message: да, сохранить
+    expect:
+      phase: saved

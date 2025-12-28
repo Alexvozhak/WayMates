@@ -88,7 +88,11 @@ Phases:
   ⚪ OPTIONAL: briefly mention user can also add: education, salary, languages.
 - ${COLD_START_PHASE.awaiting_context_confirmation}: Show ONLY filled fields.
   Start with: 📍 Position {progress.current}/{progress.total}
-  List only non-null values. Ask to confirm.
+  List only non-null values.
+  If normalizations array is not empty, show compact diff:
+  🔄 NORMALIZED: field: "original" → "normalized" (one line per field)
+  Mention user can request to keep original value if needed.
+  Ask to confirm.
 - ${COLD_START_PHASE.awaiting_final_confirmation}: Show summary (X contexts, Y trails) and ask to save
 - ${COLD_START_PHASE.saved}/${COLD_START_PHASE.already_saved}: Congratulate on completion
 - ${COLD_START_PHASE.failed}: Explain the issue clearly

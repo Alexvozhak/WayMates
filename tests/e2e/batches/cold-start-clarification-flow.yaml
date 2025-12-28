@@ -1,0 +1,32 @@
+name: cold-start-clarification-flow
+description: FEAT-050 — реальный flow с clarification (неполная story → уточнение → confirmation)
+locale: ru
+
+steps:
+  - message: хочу рассказать свою карьерную историю
+    expect:
+      phase: story_gathering
+
+  - message: Работал программистом grade-2, бэкенд на Python
+    expect:
+      phase: story_gathering
+
+  - message: это вся моя история
+    expect:
+      phase: awaiting_plan_confirmation
+
+  - message: да, подтверждаю план
+    expect:
+      phase: awaiting_clarification
+
+  - message: в Москве, Россия, компания IT, 50 человек, с 2020 по 2022, ушёл развиваться
+    expect:
+      phase: awaiting_context_confirmation
+
+  - message: подтверждаю позицию
+    expect:
+      phase: awaiting_final_confirmation
+
+  - message: да, сохранить
+    expect:
+      phase: saved

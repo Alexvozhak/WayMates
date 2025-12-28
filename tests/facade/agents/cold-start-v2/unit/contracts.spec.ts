@@ -33,6 +33,7 @@ function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStart
     optionalFields: [],
     clarificationRound: 0,
     currentEntityContext: undefined,
+    normalizations: [],
     ...overrides,
   };
 }

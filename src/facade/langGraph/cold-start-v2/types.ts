@@ -5,9 +5,12 @@ import {
   contextAgendaSchema,
   contextOptionalFieldSchema,
   missingFieldSchema,
+  simpleDictionaryTypeSchema,
   trailSchema,
   userContextSchema,
 } from "../../../shared/schemas.js";
+
+import type { SimpleDictionaryType } from "../../../shared/schemas.js";
 
 export const coldStartPhaseSchema = z.enum([
   "story_gathering",
@@ -54,6 +57,29 @@ export const currentEntityContextSchema = z.object({
 
 export type CurrentEntityContext = z.infer<typeof currentEntityContextSchema>;
 
+/**
+ * STRICT fields that show normalization diff to user.
+ * Skills/city are auto-added silently, not shown in diff.
+ */
+export type StrictNormalizationField = Extract<SimpleDictionaryType, "position" | "role" | "domain" | "industry">;
+
+/** Zod schema for strict normalization fields */
+export const strictNormalizationFieldSchema = simpleDictionaryTypeSchema.extract([
+  "position",
+  "role",
+  "domain",
+  "industry",
+]);
+
+/** Single normalization diff entry */
+export const normalizationEntrySchema = z.object({
+  field: strictNormalizationFieldSchema.describe("Field that was normalized"),
+  original: z.string().describe("Original value from LLM extraction"),
+  normalized: z.string().describe("Canonical value after normalization"),
+});
+
+export type NormalizationEntry = z.infer<typeof normalizationEntrySchema>;
+
 export const decisionSchema = z.object({
   reasoning: z.string().describe("Brief explanation of why this intent was chosen"),
   intent: z.enum(["approve", "edit", "cancel", "continue", "unknown"]),
@@ -82,6 +108,8 @@ export const coldStartStateSchema = z.object({
   clarificationRound: z.number().default(0),
 
   currentEntityContext: currentEntityContextSchema.nullable().default(null),
+
+  normalizations: z.array(normalizationEntrySchema).default([]),
 
   userId: z.string(),
 

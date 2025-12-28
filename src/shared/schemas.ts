@@ -1033,6 +1033,7 @@ export const entityBatchResultClarificationSchema = z.object({
 
 /**
  * Result of processEntityBatchTool execution - confirmation needed.
+ * Includes normalizations array showing what STRICT fields were normalized.
  */
 export const entityBatchResultConfirmationSchema = z.object({
   phase: z.literal("awaiting_context_confirmation"),
@@ -1040,6 +1041,15 @@ export const entityBatchResultConfirmationSchema = z.object({
   entity: userContextSchema,
   relatedTrails: z.array(trailSchema),
   progress: collectionProgressSchema,
+  normalizations: z
+    .array(
+      z.object({
+        field: simpleDictionaryTypeSchema.extract(["position", "role", "domain", "industry"]),
+        original: z.string(),
+        normalized: z.string(),
+      }),
+    )
+    .describe("STRICT fields that were normalized (position/role/domain/industry)"),
 });
 
 /**

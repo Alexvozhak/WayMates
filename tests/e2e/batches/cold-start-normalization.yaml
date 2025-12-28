@@ -1,0 +1,19 @@
+name: cold-start-normalization
+description: FEAT-050 — нормализация STRICT полей (position, role, domain, industry)
+locale: ru
+
+steps:
+  - message: |
+      Привет! Хочу рассказать карьерную историю.
+      Я работал программистом grade-2 в веб-студии "WebDev".
+      Занимался бэкендом на Python, знал Docker и PostgreSQL.
+      Работал с 2020 по 2022 год в Москве, Россия.
+      Компания была небольшая, около 20 человек, в сфере IT.
+      Ушёл потому что захотел попробовать новое.
+      Это вся моя история.
+    expect:
+      phase: awaiting_plan_confirmation
+
+  - message: да, подтверждаю план
+    expect:
+      phase: awaiting_context_confirmation

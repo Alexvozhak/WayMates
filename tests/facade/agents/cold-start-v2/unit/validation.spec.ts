@@ -15,10 +15,33 @@ import {
 } from "../../cold-start/helpers/cold-start-helpers.js";
 
 import type { ColdStartStateType } from "../../../../../src/facade/langGraph/cold-start-v2/state.js";
+import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
 const userStories = new UserStories();
 const U1 = userStories.getStoryBy("U1");
 const U10 = userStories.getStoryBy("U10");
+
+function noop(): void {
+  /* intentionally empty for mock */
+}
+
+function createMockConfig(): LangGraphRunnableConfig {
+  const mockNormalizer = {
+    normalizeFullContext: <T>(ctx: T) => Promise.resolve(ctx),
+  };
+  const mockLogger = { info: noop, error: noop, warn: noop, debug: noop };
+
+  const config: LangGraphRunnableConfig = {
+    configurable: {
+      coreClient: {},
+      normalizerService: mockNormalizer,
+      dictionariesService: {},
+      checkpointService: {},
+      logger: mockLogger,
+    },
+  };
+  return config;
+}
 
 function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStartStateType {
   const firstContext = U1.contexts[0]!;
@@ -41,6 +64,7 @@ function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStart
     optionalFields: [],
     clarificationRound: 0,
     currentEntityContext: { contextIndex: 0, preview: firstContext.position },
+    normalizations: [],
     ...overrides,
   };
 }
@@ -66,10 +90,10 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
    * Тип теста: Unit (no LLM, no DB)
    */
   describe("TC-V1: Valid context → awaiting_context_confirmation", () => {
-    it("returns awaiting_context_confirmation for valid U1 context", () => {
+    it("returns awaiting_context_confirmation for valid U1 context", async () => {
       const state = createMockState();
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_context_confirmation);
       expect(result.missingFields).toEqual([]);
@@ -85,7 +109,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
       expect(validation.success).toBe(true);
     });
 
-    it("validates U10 context with trails", () => {
+    it("validates U10 context with trails", async () => {
       const firstContext = U10.contexts[0]!;
       const trails = U10.trails.filter((t) => t.toContextId === firstContext.contextId);
 
@@ -96,16 +120,16 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
         pendingTrails: trails.map((trail) => toExtractableTrail(trail)),
       });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_context_confirmation);
       expect(result.collectedTrails!.length).toBe(trails.length);
     });
 
-    it("clears pending state after successful validation", () => {
+    it("clears pending state after successful validation", async () => {
       const state = createMockState();
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.pendingContext).toBeNull();
       expect(result.pendingTrails).toEqual([]);
@@ -130,64 +154,64 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
    * Тип теста: Unit (no LLM, no DB)
    */
   describe("TC-V2: Missing required fields → awaiting_clarification", () => {
-    it("returns awaiting_clarification when role is empty", () => {
+    it("returns awaiting_clarification when role is empty", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.role = "";
 
       const state = createMockState({ pendingContext: context });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
       expect(result.missingFields!.length).toBeGreaterThan(0);
       expect(result.clarificationRound).toBe(1);
     });
 
-    it("returns awaiting_clarification when position is empty", () => {
+    it("returns awaiting_clarification when position is empty", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.position = "";
 
       const state = createMockState({ pendingContext: context });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
     });
 
-    it("returns awaiting_clarification when skills array is empty", () => {
+    it("returns awaiting_clarification when skills array is empty", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.skills = [];
 
       const state = createMockState({ pendingContext: context });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
     });
 
-    it("returns awaiting_clarification when domains array is empty", () => {
+    it("returns awaiting_clarification when domains array is empty", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.domains = [];
 
       const state = createMockState({ pendingContext: context });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
     });
 
-    it("returns awaiting_clarification when creationReason array is empty", () => {
+    it("returns awaiting_clarification when creationReason array is empty", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.creationReason = [];
 
       const state = createMockState({ pendingContext: context });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
     });
 
-    it("increments clarificationRound on each validation failure", () => {
+    it("increments clarificationRound on each validation failure", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.role = "";
 
@@ -196,7 +220,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
         clarificationRound: 1,
       });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.clarificationRound).toBe(2);
     });
@@ -222,24 +246,24 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
    * Тип теста: Unit (no LLM, no DB)
    */
   describe("TC-V3: Invalid data types → awaiting_clarification", () => {
-    it("returns awaiting_clarification when createdAt has invalid format", () => {
+    it("returns awaiting_clarification when createdAt has invalid format", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.createdAt = "2024-01-15";
 
       const state = createMockState({ pendingContext: context });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
     });
 
-    it("returns awaiting_clarification when birthYear is out of range", () => {
+    it("returns awaiting_clarification when birthYear is out of range", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.birthYear = 1800;
 
       const state = createMockState({ pendingContext: context });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
     });
@@ -262,7 +286,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
    * Тип теста: Unit (no LLM, no DB)
    */
   describe("TC-E7: Max clarification attempts → failed", () => {
-    it("returns failed when clarificationRound exceeds MAX_CLARIFICATION_ROUNDS (3)", () => {
+    it("returns failed when clarificationRound exceeds MAX_CLARIFICATION_ROUNDS (3)", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.role = "";
 
@@ -271,12 +295,12 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
         clarificationRound: 3,
       });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.failed);
     });
 
-    it("returns awaiting_clarification when clarificationRound is exactly 2", () => {
+    it("returns awaiting_clarification when clarificationRound is exactly 2", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.role = "";
 
@@ -285,13 +309,13 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
         clarificationRound: 2,
       });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
       expect(result.clarificationRound).toBe(3);
     });
 
-    it("fails immediately when clarificationRound is 3 and any validation fails", () => {
+    it("fails immediately when clarificationRound is 3 and any validation fails", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.skills = [];
 
@@ -300,7 +324,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
         clarificationRound: 3,
       });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.failed);
     });
@@ -459,7 +483,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
    * Тип теста: Unit (no LLM, no DB)
    */
   describe("TC-V2.1: Trail validation errors", () => {
-    it("returns awaiting_clarification when trail has invalid trailId", () => {
+    it("returns awaiting_clarification when trail has invalid trailId", async () => {
       const firstContext = U10.contexts[0]!;
 
       const invalidTrail = {
@@ -474,7 +498,7 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
         pendingTrails: [invalidTrail],
       });
 
-      const result = validateContextNode(state);
+      const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
       expect(result.missingFields!.some((m) => m.entityType === "trail")).toBe(true);

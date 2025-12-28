@@ -5,54 +5,93 @@ import { AgentInvariantError } from "../../../errors.js";
 import { logger } from "../../../logger.js";
 import { contextCorrectionModel } from "../../shared-tools/extraction-models.js";
 import { contextCorrectionPrompt } from "../prompts.js";
-import { PHASE } from "../state.js";
+import { NODE, PHASE } from "../types.js";
+import { withLogging } from "../with-logging.js";
 
+import type { CoreClient } from "../../../core-client.js";
 import type { ColdStartStateType, UserContext } from "../state.js";
+import type { NormalizationEntry, StrictNormalizationField } from "../types.js";
 
 function replaceContext(contexts: UserContext[], updated: UserContext): UserContext[] {
   return contexts.map((ctx) => (ctx.contextId === updated.contextId ? updated : ctx));
 }
 
-export async function editContextNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {
-  const { collectedContexts, messages, parsedDecision, currentContextIndex } = state;
-
-  const currentContext = collectedContexts[currentContextIndex];
-  if (!currentContext) {
-    throw new AgentInvariantError("editContextNode", "currentContext must exist", {
-      currentContextIndex,
-      collectedContextsLength: collectedContexts.length,
-    });
+function getContextFieldValue(context: UserContext, field: StrictNormalizationField): string | undefined {
+  if (field === "domain") {
+    return context.domains[0];
   }
-
-  if (!parsedDecision) {
-    throw new AgentInvariantError("editContextNode", "parsedDecision must exist after parse node");
-  }
-
-  const corrections = parsedDecision.editInstructions;
-  const existingContext = currentContext;
-
-  const prompt = contextCorrectionPrompt(existingContext, corrections, messages);
-  const extractedCorrections = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
-
-  const mergedContext = {
-    ...existingContext,
-    ...extractedCorrections,
-    contextId: existingContext.contextId,
-    previousContextId: existingContext.previousContextId,
-    nextContextId: existingContext.nextContextId,
-    createdAt: existingContext.createdAt,
-  };
-
-  const parseResult = userContextSchema.safeParse(mergedContext);
-  if (!parseResult.success) {
-    logger.error({ zodErrors: parseResult.error.flatten() }, "[editContextNode] LLM returned invalid context");
-    return { phase: PHASE.failed };
-  }
-
-  const updatedContexts = replaceContext(collectedContexts, parseResult.data);
-
-  return {
-    collectedContexts: updatedContexts,
-    phase: PHASE.awaiting_context_confirmation,
-  };
+  return context[field];
 }
+
+async function addRevertedTerms(
+  oldContext: UserContext,
+  newContext: UserContext,
+  normalizations: NormalizationEntry[],
+  userId: string,
+  coreClient: CoreClient,
+): Promise<void> {
+  for (const norm of normalizations) {
+    const newValue = getContextFieldValue(newContext, norm.field);
+
+    if (newValue === norm.original) {
+      await coreClient.client.dictionaries.addTerm.mutate({
+        type: norm.field,
+        canonicalName: norm.original,
+        complexity: null,
+        verified: false,
+        createdBy: userId,
+      });
+      logger.info({ field: norm.field, term: norm.original }, "[editContextNode] Added reverted term");
+    }
+  }
+}
+
+export const editContextNode = withLogging<ColdStartStateType>(
+  NODE.edit_context,
+  async (state, _config, { coreClient }) => {
+    const { collectedContexts, messages, parsedDecision, currentContextIndex, normalizations, userId } = state;
+
+    const currentContext = collectedContexts[currentContextIndex];
+    if (!currentContext) {
+      throw new AgentInvariantError("editContextNode", "currentContext must exist", {
+        currentContextIndex,
+        collectedContextsLength: collectedContexts.length,
+      });
+    }
+
+    if (!parsedDecision) {
+      throw new AgentInvariantError("editContextNode", "parsedDecision must exist after parse node");
+    }
+
+    const corrections = parsedDecision.editInstructions;
+    const existingContext = currentContext;
+
+    const prompt = contextCorrectionPrompt(existingContext, corrections, messages);
+    const extractedCorrections = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
+
+    const mergedContext = {
+      ...existingContext,
+      ...extractedCorrections,
+      contextId: existingContext.contextId,
+      previousContextId: existingContext.previousContextId,
+      nextContextId: existingContext.nextContextId,
+      createdAt: existingContext.createdAt,
+    };
+
+    const parseResult = userContextSchema.safeParse(mergedContext);
+    if (!parseResult.success) {
+      logger.error({ zodErrors: parseResult.error.flatten() }, "[editContextNode] LLM returned invalid context");
+      return { phase: PHASE.failed };
+    }
+
+    await addRevertedTerms(existingContext, parseResult.data, normalizations, userId, coreClient);
+
+    const updatedContexts = replaceContext(collectedContexts, parseResult.data);
+
+    return {
+      collectedContexts: updatedContexts,
+      phase: PHASE.awaiting_context_confirmation,
+      normalizations: [],
+    };
+  },
+);

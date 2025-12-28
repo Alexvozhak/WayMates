@@ -6,11 +6,14 @@ import {
 } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
-import { PHASE } from "../state.js";
+import { NODE, PHASE } from "../types.js";
+import { withLogging } from "../with-logging.js";
 
-import type { ContextOptionalField } from "../../../../shared/schemas.js";
+import type { ContextOptionalField, UserId } from "../../../../shared/schemas.js";
+import type { Normalizer } from "../../../services/normalizer.js";
 import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda, MissingField, Trail, UserContext } from "../state.js";
+import type { NormalizationEntry } from "../types.js";
 import type { z } from "zod";
 
 const MAX_QUESTIONS_PER_BATCH = config.LANGCHAIN_MAX_QUESTIONS_PER_BATCH;
@@ -113,57 +116,118 @@ function upsertTrailsForContext(existing: Trail[], newTrails: Trail[], toContext
   return [...filtered, ...newTrails];
 }
 
-export function validateContextNode(state: ColdStartStateType): Partial<ColdStartStateType> {
-  const {
-    pendingContext,
-    pendingTrails,
-    currentContextIndex,
-    queue,
-    clarificationRound,
-    collectedContexts,
-    collectedTrails,
-  } = state;
+type NormalizationResult = {
+  normalizedContext: UserContext;
+  normalizations: NormalizationEntry[];
+};
 
-  const agenda = queue[currentContextIndex];
-  if (!agenda) {
-    throw new AgentInvariantError("validateContextNode", "agenda must exist for currentContextIndex", {
+function collectFieldDiff(
+  field: "position" | "role" | "industry",
+  original: string,
+  normalized: string,
+): NormalizationEntry | null {
+  return original === normalized ? null : { field, original, normalized };
+}
+
+function collectDomainsDiff(originalDomains: string[], normalizedDomains: string[]): NormalizationEntry[] {
+  const entries: NormalizationEntry[] = [];
+
+  for (const [i, original] of originalDomains.entries()) {
+    const normalized = normalizedDomains[i];
+
+    if (original && normalized && original !== normalized) {
+      entries.push({ field: "domain", original, normalized });
+    }
+  }
+
+  return entries;
+}
+
+async function normalizeAndCollectDiff(
+  context: UserContext,
+  userId: UserId,
+  normalizer: Normalizer,
+): Promise<NormalizationResult> {
+  const normalizedContext = await normalizer.normalizeFullContext(context, userId);
+
+  const normalizations: NormalizationEntry[] = [];
+
+  const positionDiff = collectFieldDiff("position", context.position, normalizedContext.position);
+  if (positionDiff) normalizations.push(positionDiff);
+
+  const roleDiff = collectFieldDiff("role", context.role, normalizedContext.role);
+  if (roleDiff) normalizations.push(roleDiff);
+
+  const industryDiff = collectFieldDiff("industry", context.industry, normalizedContext.industry);
+  if (industryDiff) normalizations.push(industryDiff);
+
+  normalizations.push(...collectDomainsDiff(context.domains, normalizedContext.domains));
+
+  return { normalizedContext, normalizations };
+}
+
+export const validateContextNode = withLogging<ColdStartStateType>(
+  NODE.validate_context,
+  async (state, _config, { normalizerService }) => {
+    const {
+      pendingContext,
+      pendingTrails,
       currentContextIndex,
-      queueLength: queue.length,
-    });
-  }
+      queue,
+      clarificationRound,
+      collectedContexts,
+      collectedTrails,
+      userId,
+    } = state;
 
-  if (!pendingContext) {
-    throw new AgentInvariantError("validateContextNode", "pendingContext must exist after extraction");
-  }
-
-  const validation = validateAndCollectMissing(pendingContext, pendingTrails, agenda);
-
-  if (!validation.success) {
-    const nextRound = clarificationRound + 1;
-    if (nextRound > MAX_CLARIFICATION_ROUNDS) {
-      return { phase: PHASE.failed };
+    const agenda = queue[currentContextIndex];
+    if (!agenda) {
+      throw new AgentInvariantError("validateContextNode", "agenda must exist for currentContextIndex", {
+        currentContextIndex,
+        queueLength: queue.length,
+      });
     }
 
+    if (!pendingContext) {
+      throw new AgentInvariantError("validateContextNode", "pendingContext must exist after extraction");
+    }
+
+    const validation = validateAndCollectMissing(pendingContext, pendingTrails, agenda);
+
+    if (!validation.success) {
+      const nextRound = clarificationRound + 1;
+      if (nextRound > MAX_CLARIFICATION_ROUNDS) {
+        return { phase: PHASE.failed };
+      }
+
+      return {
+        phase: PHASE.awaiting_clarification,
+        missingFields: validation.missing,
+        optionalFields: getUnfilledOptionalFields(pendingContext),
+        clarificationRound: nextRound,
+      };
+    }
+
+    const { normalizedContext, normalizations } = await normalizeAndCollectDiff(
+      validation.context,
+      userId,
+      normalizerService,
+    );
+
+    const updatedContexts = upsertContextAtIndex(collectedContexts, normalizedContext, currentContextIndex);
+    const updatedTrails = upsertTrailsForContext(collectedTrails, validation.trails, agenda.contextId);
+
     return {
-      phase: PHASE.awaiting_clarification,
-      missingFields: validation.missing,
-      optionalFields: getUnfilledOptionalFields(pendingContext),
-      clarificationRound: nextRound,
+      phase: PHASE.awaiting_context_confirmation,
+      collectedContexts: updatedContexts,
+      collectedTrails: updatedTrails,
+      normalizations,
+      missingFields: [],
+      clarificationRound: 0,
+      pendingContext: null,
+      pendingTrails: [],
     };
-  }
-
-  const updatedContexts = upsertContextAtIndex(collectedContexts, validation.context, currentContextIndex);
-  const updatedTrails = upsertTrailsForContext(collectedTrails, validation.trails, agenda.contextId);
-
-  return {
-    phase: PHASE.awaiting_context_confirmation,
-    collectedContexts: updatedContexts,
-    collectedTrails: updatedTrails,
-    missingFields: [],
-    clarificationRound: 0,
-    pendingContext: null,
-    pendingTrails: [],
-  };
-}
+  },
+);
 
 export { extractMissingFields, validateAndCollectMissing };

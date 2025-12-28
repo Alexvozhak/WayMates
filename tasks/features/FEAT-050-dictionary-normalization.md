@@ -1,6 +1,6 @@
 # FEAT: Dictionary Normalization в Cold-Start
 
-**Статус:** TODO
+**Статус:** DONE ✅ (2025-12-29)
 **Приоритет:** P1
 **Компонент:** cold-start-v2
 **Оценка:** ~50 LOC (Normalizer уже есть, перенос + diff + edit logic)
