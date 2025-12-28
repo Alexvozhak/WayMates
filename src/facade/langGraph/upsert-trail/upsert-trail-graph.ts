@@ -17,7 +17,7 @@ import { DECISION_ROUTE_MAP, routeAfterDecision, routeAfterValidation, VALIDATIO
 
 import type { UpsertTrailStateType } from "./state.js";
 import type { UpsertTrailResponse } from "./types.js";
-import type { ContextId, UserId } from "../../../shared/schemas.js";
+import type { ContextId, Locale, UserId } from "../../../shared/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
 
 const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);
@@ -65,6 +65,7 @@ export class UpsertTrailGraph {
     threadId: string,
     userId: UserId,
     fromContextId: ContextId | null,
+    locale: Locale,
   ): Promise<UpsertTrailResponse> {
     const config = { configurable: { thread_id: threadId, ...this.deps } };
 
@@ -76,6 +77,7 @@ export class UpsertTrailGraph {
       : await this.compiledGraph.invoke(
           {
             userId,
+            locale,
             fromContextId,
             userResponse: message,
           },

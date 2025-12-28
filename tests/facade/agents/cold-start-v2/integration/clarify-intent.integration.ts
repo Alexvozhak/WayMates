@@ -11,7 +11,7 @@ describe("Cold-Start V2: Clarify Intent (TC-CS-CI)", () => {
 
   const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
-    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, null);
+    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, null, "en");
   };
 
   beforeEach(async () => {

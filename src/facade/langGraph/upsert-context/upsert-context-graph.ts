@@ -22,7 +22,7 @@ import { NODE, phaseSchema, upsertContextStateAnnotation } from "./state.js";
 
 import type { UpsertContextStateType } from "./state.js";
 import type { UpsertContextResponse } from "./types.js";
-import type { UserId } from "../../../shared/schemas.js";
+import type { Locale, UserId } from "../../../shared/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
 
 const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);
@@ -65,7 +65,7 @@ export class UpsertContextGraph {
     this.compiledGraph = createGraphBuilder().compile({ checkpointer: deps.checkpointService.getCheckpointer() });
   }
 
-  async run(message: string, threadId: string, userId: UserId): Promise<UpsertContextResponse> {
+  async run(message: string, threadId: string, userId: UserId, locale: Locale): Promise<UpsertContextResponse> {
     const config = { configurable: { thread_id: threadId, ...this.deps } };
 
     const currentSnapshot = await this.compiledGraph.getState(config);
@@ -76,6 +76,7 @@ export class UpsertContextGraph {
       : await this.compiledGraph.invoke(
           {
             userId,
+            locale,
             userResponse: message,
           },
           config,

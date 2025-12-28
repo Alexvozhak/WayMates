@@ -34,7 +34,7 @@ const envSchema = baseEnvSchema.extend({
   CANDIDATES_DISPLAY_LIMIT: z.coerce.number().int().positive().default(20),
   // Facets threshold (Progressive Disclosure)
   FACETS_MAX_CANDIDATES: z.coerce.number().int().positive().default(10),
-  FACETS_MAX_JSON_SIZE_KB: z.coerce.number().int().positive().default(50),
+  FACETS_MAX_JSON_SIZE_KB: z.coerce.number().int().positive().default(100),
   // Auth configuration
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
   // Server transport configuration

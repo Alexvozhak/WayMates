@@ -5,13 +5,18 @@ import { logger } from "../../logger.js";
 import { GRAPH_PROMPTS } from "./prompts.js";
 
 import type { GraphType } from "./prompts.js";
-import type { AnyGraphResponse } from "../../../shared/schemas.js";
+import type { AnyGraphResponse, Locale } from "../../../shared/schemas.js";
 import type { ChatOpenAI } from "@langchain/openai";
 
 const nlpResponseSchema = z.object({
   reasoning: z.string().describe("Brief explanation of formatting decisions based on phase and data"),
   text: z.string().describe("The formatted response text for user"),
 });
+
+const LANGUAGE_MAP: Record<Locale, string> = {
+  en: "English",
+  ru: "Russian",
+};
 
 export class NlpFormatter {
   private readonly llm: ChatOpenAI;
@@ -20,16 +25,17 @@ export class NlpFormatter {
     this.llm = llm;
   }
 
-  async format(result: AnyGraphResponse, graphType: GraphType): Promise<string> {
+  async format(result: AnyGraphResponse, graphType: GraphType, locale: Locale): Promise<string> {
     const prompt = GRAPH_PROMPTS[graphType];
     const data = JSON.stringify(result, null, 2);
-    const fullPrompt = prompt.replace("{data}", data);
+    const language = LANGUAGE_MAP[locale];
+    const fullPrompt = prompt.replace("{data}", data).replace("{language}", language);
 
     const structuredLlm = this.llm.withStructuredOutput(nlpResponseSchema);
     const response = await structuredLlm.invoke(fullPrompt);
     const parsed = nlpResponseSchema.parse(response);
 
-    logger.info({ reasoning: parsed.reasoning, phase: result.phase }, "NLP formatter reasoning");
+    logger.info({ reasoning: parsed.reasoning, phase: result.phase, locale }, "NLP formatter reasoning");
 
     return parsed.text.trim();
   }

@@ -1,5 +1,9 @@
-import type { ConverseResponse } from "../../shared/schemas.js";
-import type { BotServices } from "../types.js";
+import type { ConverseResponse, Locale } from "../../shared/schemas.js";
+
+const CHART_LINK_LABEL: Record<Locale, string> = {
+  en: "Open trajectory chart",
+  ru: "Открыть график траекторий",
+};
 
 function extractChartUrl(result: ConverseResponse["result"]): string | undefined {
   if ("chartUrl" in result && typeof result.chartUrl === "string") {
@@ -8,21 +12,20 @@ function extractChartUrl(result: ConverseResponse["result"]): string | undefined
   return undefined;
 }
 
-export async function formatResponse(
-  converseResp: ConverseResponse,
-  services: BotServices,
-  languageCode?: string,
-): Promise<string> {
+/**
+ * Format converse response for Telegram.
+ * No LLM translation — Facade already responds in user's language.
+ */
+export function formatResponse(converseResp: ConverseResponse, languageCode?: string): string {
   const { result, message } = converseResp;
+  const locale: Locale = languageCode === "ru" ? "ru" : "en";
 
-  // Skip translation for English (NLP already in English)
-  const needsTranslation = languageCode && languageCode !== "en";
-  let formatted = needsTranslation ? await services.systemMessagePresenter.format(message, languageCode) : message;
+  let formatted = message;
 
-  // Append chart link if present (guaranteed display)
+  // Append chart link if present
   const chartUrl = extractChartUrl(result);
   if (chartUrl) {
-    formatted += `\n\n📊 [Открыть график траекторий](${chartUrl})`;
+    formatted += `\n\n📊 [${CHART_LINK_LABEL[locale]}](${chartUrl})`;
   }
 
   return formatted;

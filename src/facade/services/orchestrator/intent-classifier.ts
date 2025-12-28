@@ -60,7 +60,7 @@ export const userIntentSchema = z.enum([...graphIntentSchema.options, ...nonGrap
 
 // Type-safe: TypeScript enforces all UserIntent keys are present
 const INTENT_DESCRIPTIONS: Record<UserIntent, string> = {
-  startStory: "wants to tell full career story with trajectory",
+  startStory: "wants to tell full career story with trajectory, or upload/share CV/resume",
   startAdhoc: "describes their professional identity or role, wants quick search without saving profile",
   setGoal: "wants to set career goal",
   addContext: "wants to add new career position/context",

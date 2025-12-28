@@ -46,9 +46,11 @@ async function buildCurrentSearchParams(
 ): Promise<SearchStateType["currentSearchParams"]> {
   if (parsed.intent !== "filter" || !parsed.filters) return null;
 
-  const { normalized: fields, rejected: rejectedFields } = await normalizer.normalizeContextFields(
-    parsed.filters.excludedContextFields ?? [],
-  );
+  // Filter out 'skills' — Core API requires skills for ranking when no userTrajectory exists.
+  // See: core/routers/search/waymates.ts (excludedContextFields validation)
+  const requestedFields = (parsed.filters.excludedContextFields ?? []).filter((f) => f !== "skills");
+
+  const { normalized: fields, rejected: rejectedFields } = await normalizer.normalizeContextFields(requestedFields);
 
   const { normalized: reasons, rejected: rejectedReasons } = await normalizer.normalizeReasons(
     parsed.filters.excludedCreationReasons ?? [],

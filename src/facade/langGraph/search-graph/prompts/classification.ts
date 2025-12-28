@@ -29,6 +29,13 @@ export function buildUserIntentPrompt(phase: SearchPhase, flags: RouteFlags): st
 
 CRITICAL: Pick ONE intent from the list below. These are the ONLY valid options.
 
+Context:
+- User is viewing search results with facets (categories like industry, country)
+- Adhoc = user's CURRENT situation (where they are now)
+- Goal = user's TARGET position (where they want to go)
+- Adding criteria to narrow results = edit adhoc
+- Removing criteria to broaden results = filter
+
 Intents:
 
 ${intentSection}
@@ -62,8 +69,8 @@ const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   Semantic: rejection of current goal + new direction`,
   delete: `User wants to REMOVE the goal
   Semantic: delete, remove, clear goal`,
-  filter: `User wants to NARROW DOWN results
-  Semantic: exclude something, filter by criteria, limit scope
+  filter: `User wants to RELAX matching by ignoring a comparison field
+  Semantic: remove restriction, ignore dimension, broaden search
   + filters or null`,
   ask: `User asks a QUESTION about results, capabilities, or the system
   Semantic: why/how/who questions, help requests, meta-questions about bot capabilities
@@ -76,8 +83,8 @@ const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   Semantic: expresses aspiration, career target, desired position`,
   editGoal: `User wants to MODIFY existing goal
   Semantic: adjust target, change destination, update goal`,
-  editAdhoc: `User wants to EDIT their adhoc context
-  Semantic: correction about self, fix current situation data`,
+  editAdhoc: `User wants to NARROW search by adding criteria to their profile
+  Semantic: add industry, specify skill, tighten search, correction about self`,
   cancel: `User wants to STOP the flow
   Semantic: stop, exit, abort, cancel`,
   unknown: `Unclear or unrelated`,

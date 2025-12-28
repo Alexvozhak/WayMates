@@ -67,6 +67,8 @@ Style:
 
 Format: Markdown, real newlines.
 
+Language: {language}
+
 Response:`;
 
 const COLD_START_PROMPT = `You are a friendly career assistant in Telegram bot.
@@ -105,7 +107,7 @@ Rules:
 - For confirmation phases, extract and present key data clearly
 - Add a clear call-to-action at the end
 
-Language: English
+Language: {language}
 
 Response:`;
 
@@ -136,7 +138,7 @@ Rules:
 - For confirmation, show position/company/dates/skills clearly
 - Add a clear call-to-action
 
-Language: English
+Language: {language}
 
 Response:`;
 
@@ -167,7 +169,7 @@ Rules:
 - For confirmation, clearly show what changed (before -> after)
 - Add a clear call-to-action
 
-Language: English
+Language: {language}
 
 Response:`;
 
@@ -197,7 +199,7 @@ Rules:
 - For confirmation, show the transition clearly
 - Add a clear call-to-action
 
-Language: English
+Language: {language}
 
 Response:`;
 

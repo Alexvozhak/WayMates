@@ -23,14 +23,30 @@ export type ChartRenderData = {
   dynamicLevels: DynamicLevels;
 };
 
-const FIELD_LABELS: Record<ChartableField, string> = {
-  position: "Grade",
-  role: "Role",
-  domains: "Domain",
-  countryCode: "Country",
-  cityName: "City",
-  industry: "Industry",
-  salaryExact: "Salary",
+const FIELD_LABELS: Record<Locale, Record<ChartableField, string>> = {
+  en: {
+    position: "Grade",
+    role: "Role",
+    domains: "Domain",
+    countryCode: "Country",
+    cityName: "City",
+    industry: "Industry",
+    salaryExact: "Salary",
+  },
+  ru: {
+    position: "Грейд",
+    role: "Роль",
+    domains: "Домен",
+    countryCode: "Страна",
+    cityName: "Город",
+    industry: "Индустрия",
+    salaryExact: "Зарплата",
+  },
+};
+
+const GOAL_LABELS: Record<Locale, { name: string; hover: string }> = {
+  en: { name: "Your goal", hover: "Goal" },
+  ru: { name: "Ваша цель", hover: "Цель" },
 };
 
 /**
@@ -110,9 +126,10 @@ export class HtmlRenderer {
   }
 
   private buildControls(): string {
+    const labels = FIELD_LABELS[this.data.locale];
     const aspectCheckboxes = this.data.fields
       .map((field) => {
-        const label = FIELD_LABELS[field];
+        const label = labels[field];
         return `<label><input type="checkbox" value="${field}" checked> ${label}</label>`;
       })
       .join("\n            ");
@@ -234,18 +251,14 @@ export class HtmlRenderer {
   }
 
   private buildPlotlyHelpers(): string {
+    const labelsJson = JSON.stringify(FIELD_LABELS[this.data.locale]);
+    const goalLabelsJson = JSON.stringify(GOAL_LABELS[this.data.locale]);
     return `
+    const fieldLabels = ${labelsJson};
+    const goalLabels = ${goalLabelsJson};
     function getFieldConfig(field) {
-      const labels = {
-        position: 'Grade',
-        role: 'Role',
-        domains: 'Domain',
-        cityName: 'City',
-        industry: 'Industry',
-        salaryExact: 'Salary'
-      };
       const levels = chartData.dynamicLevels[field] || [];
-      return { label: labels[field] || field, levels };
+      return { label: fieldLabels[field] || field, levels };
     }
 
     function hasGoal() {
@@ -343,10 +356,10 @@ export class HtmlRenderer {
 
         traces.push({
           x: [new Date(minTime), new Date(maxTime)], y: [yValue, yValue],
-          mode: 'lines', name: 'Ваша цель',
+          mode: 'lines', name: goalLabels.name,
           line: { color: GOAL_STAR_COLOR, width: 2, dash: 'dash' },
           legendgroup: 'goal', showlegend: index === 0,
-          hovertemplate: '<b>Цель: ' + goalValue + '</b><extra></extra>',
+          hovertemplate: '<b>' + goalLabels.hover + ': ' + goalValue + '</b><extra></extra>',
           xaxis: xaxisId, yaxis: yaxisId
         });
       });

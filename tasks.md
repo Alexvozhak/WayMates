@@ -453,7 +453,7 @@ createAgent
 
 1.  [text](src/facade/mcp-server/tools/cold-start.tool.ts) как будто мы не агент должен писать в бд, а trpc ручка - то есть агент возвращает готовую к записе storyinput (только сформировывает), подумай над текущим вариантом и предлагаемым - что чище, правильней, логичней, дай рекомендации, что бы сделали best practice. createSaveCareerDataTool кажется лишним и мне чёт не очень нравиться что мы ручку mcp пробрасываем в агента "await deps.coreClient.client.story.upsertStory.mutate"
 
-2.                    return state as unknown as AgentState; - давай через zod parse
+2.                     return state as unknown as AgentState; - давай через zod parse
 
 3 [](src/facade/langchain/career-collector-agent.ts) строчки 449-474 повторяются
 
@@ -1861,6 +1861,36 @@ sessions/2025-12-27-dtw-for-pathfinders.md
 - **Knowledge Base:** `mvp-test-final/KNOWLEDGE-BASE.md` (секция 11 Search Architecture)
 - **DTW теория:** `docs/business/_archive/DTW_TRAJECTORY_MATCHING.md`
 
+## Правила
+
+**Порог уверенности 90%+ ОБЯЗАТЕЛЕН для:**
+
+- Понимание что делаешь и зачем
+- Понимание бизнес-логики
+- Понимание смысла происходящего
+
+**Если < 90%:** читай код, grep как принято, или проси помощи. НЕ приступай к правке.
+
+**Делай:**
+
+- Перед правкой: `grep` как принято в кодовой базе
+- Batch правки: через `mcp__filesystem__edit_file`
+- Согласовывай: "как было → как предлагаю". Предлагай рекомендацию, потом альтернативы, сравнивай их по: ценность, честность, рациональность, парето, loc+, loc-, чистота архитектуры).
+- Минимальные точечные фиксы
+
+**Не делай:**
+
+- Не угадывай бизнес-логику — спроси
+- Не делай правки без понимания
+- Не используй `sed` — есть MCP filesystem
+- Не используй `redis-cli FLUSHALL` (checkpoints в Postgres!)
+- Не удаляй данные без согласования
+- Не пытайся угодить — честный анализ важнее
+- Не перезапускай инфру (`npm run test:telegram:setup`) без согласования — другие сессии могут работать
+- Не используй `--session default` или без `--session` — конфликт с другими
+- Не запускай линтер без аргумента fix (делай lint:fix)
+- Не делай руками то что может lint:fix сделать автоматом (например, обновление импорта, после переноса/переименования)
+
   Статус: План APPROVED, реализация по шагам 1-8.
 
   Контекст сессии:
@@ -1876,3 +1906,88 @@ sessions/2025-12-27-dtw-for-pathfinders.md
   - src/facade/langGraph/search-graph/nodes/search-pathfinders.ts — Facade
 
   Начни с шага 1: создание trajectoryCollector.
+
+/mvp-implement sessions/2025-12-27-search-unification-refactor.md
+ИЗУЧИ ОБЯЗАТЕЛЬНО:
+
+- **Бизнес-логика поиска:** `mvp-test-final/BUSINESS-LOGIC-MVP.md` (секция 5)
+- **Knowledge Base:** `mvp-test-final/KNOWLEDGE-BASE.md` (секция 11 Search Architecture)
+- **DTW теория:** `docs/business/_archive/DTW_TRAJECTORY_MATCHING.md`
+
+ИЗУЧИ И СОБЛЮДАЙ ОБЯЗАТЕЛЬНО!!! [text](.claude/context/guidelines.md)
+
+Статус: План APPROVED, реализация по шагам 1-8.
+
+Контекст сессии:
+
+- Унификация waymates + pathfinders на одну архитектуру
+- Создание trajectoryCollector (path + trails batch)
+- Исправление бага: trails не попадали в waymates
+- Добавление DTW к pathfinders
+- Консистентные лимиты из env (CANDIDATES_FETCH_LIMIT, CANDIDATES_DISPLAY_LIMIT)
+
+Ключевые файлы:
+
+- src/core/search-manager.ts — основная логика
+- src/cypher/queries/paths.ts — batch query
+- src/facade/langGraph/search-graph/nodes/search-pathfinders.ts — Facade
+
+Начни с шага 1: создание trajectoryCollector.
+
+Прочитай sessions/2025-12-28-dtw-pathfinders-implementation.md и sessions/2025-12-28-search-unification-plan.md
+ИЗУЧИ ОБЯЗАТЕЛЬНО:
+
+- **Бизнес-логика поиска:** `mvp-test-final/BUSINESS-LOGIC-MVP.md` (секция 5)
+- **Knowledge Base:** `mvp-test-final/KNOWLEDGE-BASE.md` (секция 11 Search Architecture)
+- **DTW теория:** `docs/business/_archive/DTW_TRAJECTORY_MATCHING.md`
+
+## Правила
+
+**Порог уверенности 90%+ ОБЯЗАТЕЛЕН для:**
+
+- Понимание что делаешь и зачем
+- Понимание бизнес-логики
+- Понимание смысла происходящего
+
+**Если < 90%:** читай код, grep как принято, или проси помощи. НЕ приступай к правке.
+Контекст:
+
+- DTW для pathfinders УЖЕ реализован и протестирован (smoke test прошёл)
+- План унификации APPROVED
+- Делаем /mvp-implement по фазам 1-4: типы → Cypher → search-manager → Facade/тесты
+- contextMatchScore для pathfinders — считать реально (не hardcode 0)
+
+Начни с Фазы 1: унификация типов в schemas.ts
+
+- CandidateBase с path/trails required
+- WaymateCandidate = base + isWaymate
+- PathfinderCandidate = base + referenceContext + timeSinceReferenceMonths
+- Переименовать timeSinceMatchedMonths → timeSinceTargetMonths
+
+Используй filesystem MCP для batch изменений (breaking changes сразу).
+
+● Итог унификации типов:
+
+Выполнено:
+
+- ✅ ScoredMatchedCandidate → WaymateCandidate
+- ✅ scoredMatchedCandidateSchema → waymateCandidateSchema
+- ✅ Добавлен WaymateCandidateLight для парсинга Cypher
+- ✅ path/trails теперь required в candidateBaseSchema
+
+Структура типов:
+WaymateCandidateLight — парсинг Cypher (без path/trails)
+WaymateCandidate — base + isWaymate (path/trails required)
+
+PathfinderCandidateLight — парсинг Cypher (без path/trails)
+PathfinderCandidate — base + targetContext + timeSinceTargetMonths
+
+Quality gates:
+
+- ✅ tsc: 0 errors
+- ✅ lint: 0 errors, 16 warnings (существующие)
+
+"1. **Переименовать Light → просто buildPathfinderSearchQuery** — старая
+удалена, Light суффикс избыточен 2. **Вынести carryVars в константы** — MATCHED_CONTEXT_VARS,
+REF_CONTEXT_VARS для читаемости 3. **Унифицировать reverseSearchPathfinders** — пока использует старую
+архитектуру (inline path collection)

@@ -5,7 +5,7 @@ import { UpsertContextGraph } from "../../langGraph/upsert-context/upsert-contex
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { McpUpsertContextParams, UserId } from "../../../shared/schemas.js";
+import type { Locale, McpUpsertContextParams, UserId } from "../../../shared/schemas.js";
 import type { UpsertContextResponse } from "../../langGraph/upsert-context/types.js";
 
 export class UpsertContextTool extends BaseTool<McpUpsertContextParams, UpsertContextResponse> {
@@ -15,9 +15,10 @@ export class UpsertContextTool extends BaseTool<McpUpsertContextParams, UpsertCo
 
   protected async executeImpl(params: McpUpsertContextParams, userId: UserId): Promise<UpsertContextResponse> {
     const threadId = `upsert_ctx_${userId}`;
+    const locale: Locale = params.locale ?? "en";
 
     const graph = new UpsertContextGraph(this.graphDeps);
-    const response = await graph.run(params.message, threadId, userId);
+    const response = await graph.run(params.message, threadId, userId, locale);
 
     if (response.phase === PHASE.saved) {
       await this.checkpointService.delete(threadId);

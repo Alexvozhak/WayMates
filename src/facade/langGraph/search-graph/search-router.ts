@@ -15,8 +15,8 @@ type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 // NODE.generate_answer added to all phases — user can ask meta-questions anytime
 const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
   [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.validate_goal, NODE.load_existing_goal, NODE.explore, NODE.extract_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_goal,                     buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.delete_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.asking_after_validate_candidates, buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.asking_after_validate_facets,     buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
@@ -66,6 +66,7 @@ export function getValidIntentsForPhase(phase: SearchPhase, flags: RouteFlags): 
 const EXPLORATION_ROUTES: RouteMap = {
   proceed: NODE.extract_goal,
   clarify: NODE.extract_goal,
+  editAdhoc: NODE.load_context,
   filter: NODE.apply_filters,
   ask: NODE.generate_answer,
   cancel: NODE.cancel,

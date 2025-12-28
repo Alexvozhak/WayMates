@@ -24,7 +24,7 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
 
   const runWorkflow = (message: string): ReturnType<ColdStartGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
-    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, null);
+    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, null, "en");
   };
 
   beforeEach(async () => {

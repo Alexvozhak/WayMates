@@ -17,7 +17,7 @@ import { DECISION_ROUTE_MAP, MERGE_ROUTE_MAP, routeAfterDecision, routeAfterMerg
 
 import type { UpdateContextStateType } from "./state.js";
 import type { UpdateContextResponse } from "./types.js";
-import type { UserContext, UserId } from "../../../shared/schemas.js";
+import type { Locale, UserContext, UserId } from "../../../shared/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
 
 const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);
@@ -65,6 +65,7 @@ export class UpdateContextGraph {
     threadId: string,
     userId: UserId,
     currentContext: UserContext,
+    locale: Locale,
   ): Promise<UpdateContextResponse> {
     const config = { configurable: { thread_id: threadId, ...this.deps } };
 
@@ -76,6 +77,7 @@ export class UpdateContextGraph {
       : await this.compiledGraph.invoke(
           {
             userId,
+            locale,
             currentContext,
             userResponse: message,
           },

@@ -19,7 +19,7 @@ describe("Cold-Start V2: CV Upload (TC-P5..P12)", () => {
 
   const runWorkflow = (message: string, cvText: string | null = null): ReturnType<ColdStartGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
-    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, cvText);
+    return new ColdStartGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, cvText, "en");
   };
 
   beforeEach(async () => {

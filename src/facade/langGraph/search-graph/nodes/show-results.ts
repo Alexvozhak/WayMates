@@ -9,6 +9,7 @@ import type { GenerateChartInput } from "../../../../chart/index.js";
 import type {
   AdhocContextBase,
   Goal,
+  Locale,
   PathfinderCandidate,
   UserContext,
   WaymateCandidate,
@@ -39,6 +40,7 @@ type ChartDeps = {
   storedGoal: Goal | null;
   candidates: WaymateCandidate[];
   positionOrder: string[];
+  locale: Locale;
 };
 
 function buildResultsChartInput(deps: ChartDeps): GenerateChartInput {
@@ -47,7 +49,7 @@ function buildResultsChartInput(deps: ChartDeps): GenerateChartInput {
     candidates: deps.candidates,
     maxCandidates: config.CANDIDATES_DISPLAY_LIMIT,
     positionOrder: deps.positionOrder,
-    locale: "ru" as const,
+    locale: deps.locale,
     existingGoal: Boolean(deps.storedGoal),
     goalValues,
   };
@@ -86,6 +88,7 @@ export const showResultsNode = withLogging<SearchStateType>(
           storedGoal: state.storedGoal,
           candidates,
           positionOrder,
+          locale: state.locale,
         });
         const result = await generateTrajectoryChart(chartInput);
         chartUrl = result.chartUrl;

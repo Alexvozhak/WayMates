@@ -16,13 +16,16 @@ export async function handleVoice(ctx: BotContext): Promise<void> {
   const transcription = await transcribeVoice(ctx, fileId);
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
+  const locale = ctx.from?.language_code === "ru" ? "ru" : "en";
+
   const converseResp = await ctx.services.mcpClient.callTool("converse", {
     sessionId,
     message: transcription,
     requestId: ctx.requestId,
+    locale,
   });
 
-  const formatted = await formatResponse(converseResp, ctx.services, ctx.from?.language_code);
+  const formatted = formatResponse(converseResp, ctx.from?.language_code);
 
   await ctx.reply(formatted, { parse_mode: "Markdown" });
 }

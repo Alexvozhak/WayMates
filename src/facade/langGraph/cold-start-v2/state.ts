@@ -8,6 +8,7 @@ import type { ColdStartPhase, CurrentEntityContext, ParsedDecision } from "./typ
 import type {
   ContextAgenda,
   ContextOptionalField,
+  Locale,
   MissingField,
   Trail,
   UserContext,
@@ -21,6 +22,7 @@ export type { ColdStartPhase, CurrentEntityContext, ParsedDecision } from "./typ
 export type {
   ContextAgenda,
   ContextAgendaBase,
+  Locale,
   MissingField,
   Trail,
   UserContext,
@@ -31,6 +33,7 @@ export const coldStartStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
 
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),
+  locale: Annotation<Locale>({ reducer: lastValue, default: () => "en" }),
   phase: Annotation<ColdStartPhase>({ reducer: lastValue, default: () => PHASE.story_gathering }),
   userResponse: Annotation<string>({ reducer: lastValue, default: () => "" }),
   cvText: Annotation<string | null>({ reducer: lastValue, default: () => null }),

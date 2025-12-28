@@ -8,7 +8,7 @@ import { QueryExecutor } from "../../services/orchestrator/query-executor.servic
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { McpConverseParams, UserId } from "../../../shared/schemas.js";
+import type { Locale, McpConverseParams, UserId } from "../../../shared/schemas.js";
 import type { ConverseResponse } from "../../services/orchestrator/converse-response.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 
@@ -26,14 +26,15 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
 
   protected async executeImpl(params: McpConverseParams, userId: UserId): Promise<ConverseResponse> {
     const message = params.message;
+    const locale: Locale = params.locale ?? "en";
     const intent = await classifyIntent(message);
 
     // 1. Active graph — resume or cancel
-    const activeResult = await this.graphManager.executeActiveGraph(intent, message, userId);
+    const activeResult = await this.graphManager.executeActiveGraph(intent, message, userId, locale);
     if (activeResult) return activeResult;
 
     // 2. Guards — help, cancel, onboarding, state checks
-    const guardResult = await this.flowGuardChecker.check(intent, userId);
+    const guardResult = await this.flowGuardChecker.check(intent, userId, locale);
     if (guardResult) return guardResult;
 
     // 3. Project info — investor, tech, user documentation
@@ -41,11 +42,11 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     if (docContent) return createNlpResponse(docContent);
 
     // 4. Query — getStory, getGoal, deleteGoal, deleteContext, deleteTrail
-    const queryResult = await this.queryExecutor.execute(intent, userId);
+    const queryResult = await this.queryExecutor.execute(intent, userId, locale);
     if (queryResult) return queryResult;
 
     // 5. Graph — cold_start, upsert_context, update_context, upsert_trail, search
-    const graphResult = await this.graphManager.executeNewGraph(intent, message, userId);
+    const graphResult = await this.graphManager.executeNewGraph(intent, message, userId, locale);
     if (graphResult) return graphResult;
 
     return createNlpResponse("I didn't understand. Try 'help' for available commands.");

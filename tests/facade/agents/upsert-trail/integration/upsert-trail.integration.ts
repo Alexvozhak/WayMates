@@ -25,7 +25,7 @@ describe("Upsert-Trail: Integration Tests (TC-UT)", () => {
 
   const runWorkflow = (message: string): ReturnType<UpsertTrailGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
-    return new UpsertTrailGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, null);
+    return new UpsertTrailGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, null, "en");
   };
 
   beforeEach(async () => {

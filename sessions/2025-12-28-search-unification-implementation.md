@@ -1,7 +1,7 @@
 # Сессия: Реализация унификации архитектуры поиска
 
 **Дата:** 2025-12-28
-**Статус:** COMPLETED
+**Статус:** COMPLETED (commit 61f9cb7)
 **План:** `sessions/2025-12-28-search-unification-plan.md`
 
 ---
@@ -13,17 +13,22 @@
 - `candidateBaseSchema` — создан с АДАПТИРОВАННОЙ семантикой:
   - `matchedContext` = где кандидат был как мы (не target!)
   - `timeSinceMatchedMonths` (не переименовано в timeSinceTargetMonths)
-  - `path/trails` — **optional** (adhoc mode не возвращает из Cypher)
-- `ScoredMatchedCandidate` = base + isWaymate
-- `PathfinderCandidate` = base + targetContext + timeSinceTargetMonths + path/trails required
-- `PathfinderCandidateLight` — промежуточный тип для парсинга Cypher (без path/trails)
+  - `path/trails` — **required** в base
+- **Переименование:**
+  - `ScoredMatchedCandidate` → `WaymateCandidate`
+  - `scoredMatchedCandidateSchema` → `waymateCandidateSchema`
+- **Новые типы:**
+  - `WaymateCandidateLight` — парсинг Cypher (без path/trails)
+  - `PathfinderCandidateLight` — парсинг Cypher (без path/trails)
+  - `WaymateCandidate` = base + isWaymate
+  - `PathfinderCandidate` = base + targetContext + timeSinceTargetMonths
 
 ### Фаза 2: Унификация Cypher
 
-- `buildPathfinderSearchQueryLight()` — создан без inline trajectory collection
+- `buildPathfinderSearchQuery()` — теперь Light версия (без inline trajectory)
+- Старая версия с inline trajectory — **удалена** (~220 LOC)
 - `buildSkillsScoringBlock()` — вынесен в `src/cypher/helpers/scoring.ts`
-- Scoring используется в обоих queries (waymates + pathfinders Light)
-- Старый `buildPathfinderSearchQuery` — **удалён** (~220 LOC)
+- Scoring используется в обоих queries (waymates + pathfinders)
 
 ### Фаза 3: Унификация search-manager
 
@@ -32,15 +37,33 @@
 - `computeDTW()` — общий метод для DTW расчёта
 - Сортировка унифицирована: `dtwTotal + contextMatchScore`
 
-### Фаза 4: Тесты
+### Фаза 4: Тесты и Facade
 
 - `goals-integration.integration.ts` — обновлены assertions под новые поля
-- `validate-goal.ts` — обновлён `toChartCandidate()`
-- Integration tests: 84 passed, 3 failed (dictionaries — не связаны)
+- `validate-goal.ts` — обновлён под новые типы
+- Все импорты в facade/chart обновлены на новые имена типов
 
 ---
 
-## Что пошло НЕ по плану
+## Унифицированная архитектура (итог)
+
+```
+Waymates:    Cypher → PathCollectorService → DTW enrichment → sort → slice
+Pathfinders: Cypher → PathCollectorService → DTW enrichment → sort → slice
+```
+
+**Структура типов:**
+```
+candidateBaseSchema (path/trails required)
+├── WaymateCandidateLight     — парсинг Cypher (без path/trails)
+├── WaymateCandidate          — base + isWaymate
+├── PathfinderCandidateLight  — парсинг Cypher (без path/trails)
+└── PathfinderCandidate       — base + targetContext + timeSinceTargetMonths
+```
+
+---
+
+## Рефлексия: Что пошло НЕ по плану
 
 ### 1. Семантика полей — обратная плану
 
@@ -52,65 +75,49 @@
 - base.matchedContext = где были как мы
 - PathfinderCandidate += targetContext (куда пришли)
 
-**Причина:** Я начал реализовывать по плану, не уточнив семантику. Пользователь скорректировал.
+**Первопричина:** Начал реализовывать по памяти плана, не перечитав. Семантика полей была зафиксирована в плане одним способом, а реальная бизнес-логика требовала другого. План отражал технический рефакторинг, не бизнес-семантику.
 
-### 2. path/trails — optional вместо required
+**Урок:** Перед реализацией всегда уточнять бизнес-семантику, даже если есть технический план.
 
-**План:** required в base
-**Реальность:** optional в base, required только в PathfinderCandidate
-
-**Причина:** Waymates adhoc mode — Cypher не возвращает path. Path добавляется через PathCollectorService после.
-
-### 3. Не прочитал план полностью в начале
+### 2. Не прочитал план полностью в начале
 
 Начал реализовывать по памяти, отклонился. Пользователь напомнил: "у тебя же в плане всё есть, мб стоит его полностью прочитать??"
 
----
+**Первопричина:** Самоуверенность + желание быстрее начать кодить.
 
-## Технические решения
+**Урок:** Всегда читать план целиком перед началом реализации.
 
-### carryVars в buildSkillsScoringBlock
+### 3. Несоответствие path/trails optional vs required
 
-Каждый WITH clause в Cypher требует явного перечисления переменных. Helper принимает `carryVars: string[]` — список переменных для "протаскивания" через scoring block.
+**План:** required в base
+**Первоначальная реализация:** optional в base
 
-- Waymates: 11 переменных
-- Pathfinders: 21 переменная (matched* + ref*)
+**Первопричина:** Waymates adhoc mode — Cypher не возвращал path. Но это было до унификации через PathCollectorService. После унификации path всегда есть.
 
-**Это не костыль, но verbose.** Можно улучшить — вынести в константы.
-
-### PathfinderCandidateLight
-
-Промежуточный тип для парсинга Cypher результата (без path/trails). После парсинга обогащается через PathCollectorService → PathfinderCandidate.
+**Урок:** Различать "как есть сейчас" и "как будет после рефакторинга".
 
 ---
 
-## Что стоит проверить
+## Что осталось сделать
 
-1. `npx tsx poc/test-pathfinders.ts` — smoke test для pathfinders с новым flow
-2. Chart с pathfinders — работает ли с новыми типами
-3. Facade search flow — полный E2E тест
-
----
-
-## Что стоит изменить (future)
-
-1. **Переименовать Light → просто buildPathfinderSearchQuery** — старая удалена, Light суффикс избыточен
-2. **Вынести carryVars в константы** — MATCHED_CONTEXT_VARS, REF_CONTEXT_VARS для читаемости
-3. **Унифицировать reverseSearchPathfinders** — пока использует старую архитектуру (inline path collection)
+1. **Тесты:** Запустить полный прогон интеграционных тестов
+2. **Smoke test:** `npx tsx poc/test-pathfinders.ts`
+3. **E2E тест Telegram:** Проверить поисковый flow
+4. **carryVars → константы** (minor, для читаемости)
 
 ---
 
-## Изменённые файлы
+## Изменённые файлы (commit 61f9cb7)
 
 | Файл | Изменение |
 |------|-----------|
-| `src/shared/schemas.ts` | candidateBaseSchema, PathfinderCandidateLight, PathfinderCandidate |
-| `src/cypher/queries/search.ts` | buildPathfinderSearchQueryLight, scoring helper usage, удалён старый query |
+| `src/shared/schemas.ts` | WaymateCandidate*, PathfinderCandidate*, Light schemas |
+| `src/cypher/queries/search.ts` | buildPathfinderSearchQuery (Light), scoring helper |
 | `src/cypher/helpers/scoring.ts` | **NEW** — buildSkillsScoringBlock |
-| `src/cypher/index.ts` | Обновлены экспорты |
-| `src/core/search-manager.ts` | Унифицированный flow для обоих поисков |
-| `src/facade/.../validate-goal.ts` | toChartCandidate под новые типы |
-| `tests/.../goals-integration.integration.ts` | Assertions под новые поля |
+| `src/core/search-manager.ts` | Унифицированный flow, computeDTW |
+| `src/chart/*` | Rename imports |
+| `src/facade/*` | Rename imports |
+| `tests/*` | Updated assertions |
 
 ---
 
@@ -118,18 +125,22 @@
 
 - ✅ `npx tsc --noEmit` — 0 errors
 - ✅ `npm run lint:fix` — 0 errors, 16 warnings (существующие)
-- ✅ `npm run test:integration` — 84 passed
+- ⏳ `npm run test:integration` — требует прогона
 
 ---
 
-## Промпт для продолжения
+## Промпт для продолжения (после rewind)
 
 ```
 Прочитай sessions/2025-12-28-search-unification-implementation.md
 
-Унификация завершена. Что можно сделать:
-1. Переименовать buildPathfinderSearchQueryLight → buildPathfinderSearchQuery
-2. Вынести carryVars в константы
-3. Запустить npx tsx poc/test-pathfinders.ts для smoke test
-4. Унифицировать reverseSearchPathfinders (если нужно)
+Унификация waymates/pathfinders завершена (commit 61f9cb7). Архитектура:
+- Оба поиска: Cypher → PathCollectorService → DTW → sort
+- Типы: WaymateCandidate, PathfinderCandidate (+ Light версии)
+- Skills scoring вынесен в helper
+
+Что нужно:
+1. Запустить интеграционные тесты: npx vitest run tests/core/integration
+2. Smoke test pathfinders: npx tsx poc/test-pathfinders.ts
+3. Проверить E2E telegram test (1 упал на asking_adhoc vs confirming_adhoc)
 ```

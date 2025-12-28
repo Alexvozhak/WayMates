@@ -6,7 +6,7 @@ import { NODE, PHASE } from "../state.js";
 import { DEFAULT_TARGET_SEARCH_PARAMS } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
-import type { MatchedCandidateWithPath, WaymateCandidate } from "../../../../shared/schemas.js";
+import type { Locale, MatchedCandidateWithPath, WaymateCandidate } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 /**
@@ -30,6 +30,7 @@ type ChartDeps = {
   storedGoal: Parameters<typeof extractGoalValues>[0];
   dictionariesService: { getPositionOrder: () => Promise<string[]> };
   candidates: MatchedCandidateWithPath[];
+  locale: Locale;
   logger: { error: (obj: object, msg: string) => void };
 };
 
@@ -45,7 +46,7 @@ async function generateValidationChart(deps: ChartDeps): Promise<string | null> 
       candidates: deps.candidates.map((c) => toChartCandidate(c)),
       maxCandidates: config.CANDIDATES_DISPLAY_LIMIT,
       positionOrder,
-      locale: "ru",
+      locale: deps.locale,
       existingGoal: true,
       goalValues,
     });
@@ -85,7 +86,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
     // Skip chart generation if showing facets (chart won't be used)
     const chartUrl = needsFiltering
       ? null
-      : await generateValidationChart({ storedGoal, dictionariesService, candidates, logger });
+      : await generateValidationChart({ storedGoal, dictionariesService, candidates, locale: state.locale, logger });
 
     return {
       validationResults: candidates,

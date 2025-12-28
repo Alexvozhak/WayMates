@@ -3,7 +3,7 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 import { PHASE } from "../shared/phases.js";
 import { lastValue } from "../shared/state-utils.js";
 
-import type { ContextId, MissingField, Trail, UserId } from "../../../shared/schemas.js";
+import type { ContextId, Locale, MissingField, Trail, UserId } from "../../../shared/schemas.js";
 import type { ParsedDecision } from "../shared/decision.js";
 import type { SimpleConfirmationPhase } from "../shared/phases.js";
 import type { ExtractableTrail } from "../shared-tools/extraction-models.js";
@@ -29,6 +29,7 @@ export type NodeName = (typeof NODE)[keyof typeof NODE];
 export const upsertTrailStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),
+  locale: Annotation<Locale>({ reducer: lastValue, default: () => "en" }),
   phase: Annotation<UpsertTrailPhase>({ reducer: lastValue, default: () => PHASE.extracting }),
   userResponse: Annotation<string>({ reducer: lastValue, default: () => "" }),
   parsedDecision: Annotation<ParsedDecision | null>({ reducer: lastValue, default: () => null }),

@@ -4,6 +4,8 @@
  * Usage:
  *   npx tsx poc/mcp-chat.ts "Привет"
  *   npx tsx poc/mcp-chat.ts "Я backend разработчик"
+ *   npx tsx poc/mcp-chat.ts --locale en "Hello"        # English locale
+ *   npx tsx poc/mcp-chat.ts --locale ru "Привет"       # Russian locale (default)
  *   npx tsx poc/mcp-chat.ts --reset                    # сбросить сессию
  *   npx tsx poc/mcp-chat.ts --session alice "Привет"   # именованная сессия
  *   npx tsx poc/mcp-chat.ts --session alice --reset    # сбросить именованную
@@ -22,10 +24,12 @@ function parseArgs(args: string[]): {
   command: string | null;
   message: string | null;
   telegramId: number | null;
+  locale: "ru" | "en";
 } {
   let sessionName = "default";
   let command: string | null = null;
   let telegramId: number | null = null;
+  let locale: "ru" | "en" = "ru";
   const messageWords: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -34,6 +38,9 @@ function parseArgs(args: string[]): {
       i++;
     } else if (args[i] === "--telegramId" && args[i + 1]) {
       telegramId = Number(args[i + 1]);
+      i++;
+    } else if (args[i] === "--locale" && args[i + 1]) {
+      locale = args[i + 1] === "en" ? "en" : "ru";
       i++;
     } else if (args[i] === "--reset") {
       command = "reset";
@@ -49,6 +56,7 @@ function parseArgs(args: string[]): {
     command,
     message: messageWords.length > 0 ? messageWords.join(" ") : null,
     telegramId,
+    locale,
   };
 }
 
@@ -97,9 +105,14 @@ async function loadOrCreateSession(
   return session;
 }
 
-async function chat(message: string, sessionName: string, telegramId?: number | null): Promise<void> {
+async function chat(
+  message: string,
+  sessionName: string,
+  telegramId: number | null,
+  locale: "ru" | "en",
+): Promise<void> {
   console.log(`\n${"=".repeat(60)}`);
-  console.log(`→ USER [${sessionName}]: ${message}`);
+  console.log(`→ USER [${sessionName}] (locale: ${locale}): ${message}`);
   console.log("=".repeat(60));
 
   const client = await McpClient.create(MCP_URL);
@@ -111,6 +124,7 @@ async function chat(message: string, sessionName: string, telegramId?: number | 
       message,
       sessionId: session.sessionId,
       requestId: randomUUID(),
+      locale,
     });
 
     console.log(`\n← BOT (phase: ${response.result.phase}):`);
@@ -119,6 +133,11 @@ async function chat(message: string, sessionName: string, telegramId?: number | 
     // Pretty print the response
     if (response.message) {
       console.log(response.message);
+    }
+
+    // Show chart URL if available
+    if (response.result.chartUrl) {
+      console.log(`\n📈 Chart: ${response.result.chartUrl}`);
     }
 
     // Show structured data for debugging
@@ -160,7 +179,9 @@ async function main(): Promise<void> {
 
   if (args.length === 0) {
     console.log(`Usage:
-  npx tsx poc/mcp-chat.ts "message"                   — send message (default session)
+  npx tsx poc/mcp-chat.ts "message"                   — send message (default session, ru)
+  npx tsx poc/mcp-chat.ts --locale en "message"       — send message (English locale)
+  npx tsx poc/mcp-chat.ts --locale ru "message"       — send message (Russian locale, default)
   npx tsx poc/mcp-chat.ts --session alice "message"   — send message (named session)
   npx tsx poc/mcp-chat.ts --reset                     — reset default session
   npx tsx poc/mcp-chat.ts --session alice --reset     — reset named session
@@ -169,7 +190,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { sessionName, command, message, telegramId } = parseArgs(args);
+  const { sessionName, command, message, telegramId, locale } = parseArgs(args);
 
   if (command === "reset") {
     reset(sessionName);
@@ -186,7 +207,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  await chat(message, sessionName, telegramId);
+  await chat(message, sessionName, telegramId, locale);
 }
 
 main().catch(console.error);

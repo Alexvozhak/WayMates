@@ -32,7 +32,7 @@ import { responseBuilders } from "./response-builders.js";
 import { coldStartStateAnnotation } from "./state.js";
 import { coldStartPhaseSchema, coldStartStateSchema, NODE, PHASE } from "./types.js";
 
-import type { UserId } from "./state.js";
+import type { Locale, UserId } from "./state.js";
 import type { ColdStartResponse } from "../../../shared/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
 export { PHASE } from "./state.js";
@@ -90,7 +90,13 @@ export class ColdStartGraph {
     this.compiledGraph = createGraphBuilder().compile({ checkpointer: deps.checkpointService.getCheckpointer() });
   }
 
-  async run(message: string, threadId: string, userId: UserId, cvText: string | null): Promise<ColdStartResponse> {
+  async run(
+    message: string,
+    threadId: string,
+    userId: UserId,
+    cvText: string | null,
+    locale: Locale,
+  ): Promise<ColdStartResponse> {
     const config = { configurable: { thread_id: threadId, ...this.deps } };
 
     const currentSnapshot = await this.compiledGraph.getState(config);
@@ -101,6 +107,7 @@ export class ColdStartGraph {
       : await this.compiledGraph.invoke(
           {
             userId,
+            locale,
             userResponse: message,
             cvText,
           },

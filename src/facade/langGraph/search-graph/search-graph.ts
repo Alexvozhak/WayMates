@@ -45,7 +45,7 @@ import { NODE, searchPhaseSchema, searchStateAnnotation } from "./state.js";
 
 import type { SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
-import type { UserId } from "../../../shared/schemas.js";
+import type { Locale, UserId } from "../../../shared/schemas.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 import type { GraphDeps } from "../shared/types.js";
 
@@ -138,6 +138,7 @@ export class SearchGraph {
     threadId: string,
     userId: UserId,
     intent: UserIntent | null,
+    locale: Locale,
   ): Promise<SearchGraphResponse> {
     const config = { configurable: { thread_id: threadId, ...this.deps } };
 
@@ -149,6 +150,7 @@ export class SearchGraph {
       : await this.compiledGraph.invoke(
           {
             userId,
+            locale,
             orchestratorIntent: intent,
             userResponse: message,
           },

@@ -10,6 +10,7 @@ import type {
   AdhocOptionalField,
   CandidateFacets,
   Goal,
+  Locale,
   MatchedCandidateWithPath,
   PathfinderCandidate,
   TargetContext,
@@ -108,6 +109,7 @@ export type AdvisorIntent = "ask" | "action" | "done";
 export const searchStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
   userId: Annotation<UserId>({ reducer: lastValue, default: () => "" }),
+  locale: Annotation<Locale>({ reducer: lastValue, default: () => "en" }),
   phase: Annotation<SearchPhase>({ reducer: lastValue, default: () => PHASE.checking_goal }),
   previousPhase: Annotation<SearchPhase | null>({ reducer: lastValue, default: () => null }),
   userResponse: Annotation<string>({ reducer: lastValue, default: () => "" }),

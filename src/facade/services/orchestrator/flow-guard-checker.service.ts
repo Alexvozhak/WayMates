@@ -2,63 +2,75 @@ import { createNlpResponse } from "./converse-response.js";
 
 import type { ConverseResponse } from "./converse-response.js";
 import type { UserIntent } from "./intent-classifier.js";
-import type { UserId } from "../../../shared/schemas.js";
+import type { Locale, UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
-/**
- * System messages for flow guards - full English, friendly style.
- * Client LLMs translate to user's language (no expansion needed).
- */
-const greetingMessage = `Hey! 👋 I help with career stuff.
+type GuardType = "greeting" | "help" | "unknown" | "cancelNoActive" | "onboarding" | "goalNotSet" | "goalNotSetDelete";
 
-Tell me about yourself — or just write "I'm a backend developer" and let's find similar folks.`;
+const GUARD_MESSAGES: Record<Locale, Record<GuardType, string>> = {
+  en: {
+    greeting: `Hey! 👋 I find people with similar career paths — or those who already made the transition you want.
 
-const helpMessage = `Sure, here's what I can do:
+Tell me about yourself, like "I'm a senior backend developer in Germany".`,
+    help: `I can:
+• Find similar people — by your current profile
+• Find pathfinders — who made the transition you want
+• Save your story — for better matching
 
-• Tell your story — I'll save your career path
-• Set a goal — where do you want to be?
-• Find similar — people like you or who reached your goal
+Describe yourself or your goal.`,
+    unknown: `Didn't get that. Try: "I'm a middle frontend developer in the UK" or "I want to become a tech lead".`,
+    onboarding: `To find matches, I need to know who you are.
 
-Just write naturally, I'll get it.`;
+Tell me your role and level, like "senior QA in backend, working in Poland".`,
+    cancelNoActive: "Nothing to cancel.",
+    goalNotSet: "No goal set. Describe where you want to be.",
+    goalNotSetDelete: "No goal to delete.",
+  },
+  ru: {
+    greeting: `Привет! 👋 Нахожу людей с похожим карьерным путём — или тех, кто уже сделал нужный переход.
 
-const onboardingMessage = `Let's go! Tell me about yourself:
+Расскажи о себе, например "Я senior backend разработчик в России".`,
+    help: `Умею:
+• Найти похожих — по твоему текущему профилю
+• Найти проводников — кто уже сделал нужный переход
+• Сохранить историю — для лучшего матчинга
 
-• Full story — share your career journey
-• Quick search — just describe who you are and we'll find matches`;
+Опиши себя или цель.`,
+    unknown: `Не понял. Попробуй: "Я middle frontend разработчик в Германии" или "хочу стать тимлидом".`,
+    onboarding: `Чтобы найти похожих, нужно знать кто ты.
 
-const cancelNoActiveMessage = "Nothing to cancel right now.";
-const goalNotSetMessage = "You don't have a goal yet. Want to set one?";
-const goalNotSetDeleteMessage = "No goal to delete — you haven't set one yet.";
-
-const unknownMessage = `Hmm, didn't catch that. Try:
-
-• Describe yourself — "I'm a senior frontend dev"
-• Set a goal — "I want to move into data science"
-• Or just say "help"`;
+Опиши роль и уровень, например "senior QA в backend, работаю в Польше".`,
+    cancelNoActive: "Нечего отменять.",
+    goalNotSet: "Цель не установлена. Опиши куда хочешь прийти.",
+    goalNotSetDelete: "Нечего удалять.",
+  },
+};
 
 export class FlowGuardChecker {
   constructor(private readonly coreClient: CoreClient) {}
 
   /* eslint-disable-next-line complexity -- guard conditions are linear and readable */
-  async check(intent: UserIntent, userId: UserId): Promise<ConverseResponse | null> {
+  async check(intent: UserIntent, userId: UserId, locale: Locale): Promise<ConverseResponse | null> {
+    const msg = GUARD_MESSAGES[locale];
+
     // Greeting — friendly opener
     if (intent === "greeting") {
-      return createNlpResponse(greetingMessage);
+      return createNlpResponse(msg.greeting);
     }
 
     // Help
     if (intent === "help") {
-      return createNlpResponse(helpMessage);
+      return createNlpResponse(msg.help);
     }
 
     // Unknown — unclear or garbage input
     if (intent === "unknown") {
-      return createNlpResponse(unknownMessage);
+      return createNlpResponse(msg.unknown);
     }
 
     // Cancel without active graph (active graph handled in ConverseTool)
     if (intent === "cancel") {
-      return createNlpResponse(cancelNoActiveMessage);
+      return createNlpResponse(msg.cancelNoActive);
     }
 
     const state = await this.coreClient.client.user.getState.query({ userId });
@@ -67,17 +79,17 @@ export class FlowGuardChecker {
     if (!state.hasContext) {
       const isStart = intent === "startStory" || intent === "startAdhoc";
       if (!isStart) {
-        return createNlpResponse(onboardingMessage);
+        return createNlpResponse(msg.onboarding);
       }
       return null;
     }
 
     // Goal guards
     if (intent === "getGoal" && !state.hasGoal) {
-      return createNlpResponse(goalNotSetMessage);
+      return createNlpResponse(msg.goalNotSet);
     }
     if (intent === "deleteGoal" && !state.hasGoal) {
-      return createNlpResponse(goalNotSetDeleteMessage);
+      return createNlpResponse(msg.goalNotSetDelete);
     }
 
     return null;

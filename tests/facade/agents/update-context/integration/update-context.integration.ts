@@ -49,7 +49,7 @@ describe("Update-Context: Integration Tests (TC-UPD)", () => {
 
   const runWorkflow = (message: string): ReturnType<UpdateContextGraph["run"]> => {
     const ctx = FacadeTestContext.getInstance();
-    return new UpdateContextGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, currentContext);
+    return new UpdateContextGraph(ctx.getGraphDeps()).run(message, threadId, testUserId, currentContext, "en");
   };
 
   beforeEach(async () => {

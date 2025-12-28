@@ -124,7 +124,7 @@ export async function runSearchGraphWithInitialState(
     });
   }
 
-  const response = await graph.run(message, threadId, userId, intent);
+  const response = await graph.run(message, threadId, userId, intent, "en");
   vi.restoreAllMocks();
   return response;
 }

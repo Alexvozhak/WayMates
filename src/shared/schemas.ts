@@ -69,9 +69,16 @@ export const tokenSchema = z.string().uuid().describe("User token (UUID v7 forma
 
 export const requestIdSchema = z.string().uuid().describe("Request correlation ID for distributed tracing");
 
+/**
+ * User locale for response language.
+ * Defaults to "en" for backward compatibility.
+ */
+export const localeSchema = z.enum(["en", "ru"]).default("en");
+
 export type SessionId = z.infer<typeof sessionIdSchema>;
 export type Token = z.infer<typeof tokenSchema>;
 export type RequestId = z.infer<typeof requestIdSchema>;
+export type Locale = z.infer<typeof localeSchema>;
 
 // User state (for orchestrator routing)
 export const userStateSchema = z.object({
@@ -561,9 +568,15 @@ export type TargetContextSearchFilterNullable = z.infer<typeof targetContextSear
 /**
  * Nullable schema for current context search filters (partial modification).
  * Used in parse-intent for "filter" intent — user modifies current search params.
+ *
+ * NOTE: 'skills' cannot be excluded — Core API requires skills for ranking
+ * when no userTrajectory exists. See: core/routers/search/waymates.ts
  */
 export const currentContextSearchFilterNullableSchema = z.object({
-  excludedContextFields: z.array(contextFieldSchema).nullable(),
+  excludedContextFields: z
+    .array(contextFieldSchema)
+    .nullable()
+    .describe("Fields to exclude from matching. NEVER include 'skills' — required for ranking."),
   excludedCreationReasons: z.array(newContextReasonSchema).nullable(),
   recencyThresholdMonths: z.number().nullable(),
   limit: z.number().nullable(),
@@ -1439,6 +1452,7 @@ export const mcpUpdateContextParamsSchema = z.object({
     ),
   sessionId: sessionIdSchema,
   requestId: requestIdSchema,
+  locale: localeSchema.optional().describe("User language for responses (en/ru, default: en)"),
 });
 
 export type McpUpdateContextParams = z.infer<typeof mcpUpdateContextParamsSchema>;
@@ -1503,6 +1517,7 @@ export const mcpUpsertContextParamsSchema = z.object({
     ),
   sessionId: sessionIdSchema,
   requestId: requestIdSchema,
+  locale: localeSchema.optional().describe("User language for responses (en/ru, default: en)"),
 });
 
 export type McpUpsertContextParams = z.infer<typeof mcpUpsertContextParamsSchema>;
@@ -1515,6 +1530,7 @@ export const mcpConverseParamsSchema = z.object({
   message: z.string().min(1).describe("User message in natural language"),
   sessionId: sessionIdSchema,
   requestId: requestIdSchema,
+  locale: localeSchema.optional().describe("User language for responses (en/ru, default: en)"),
 });
 
 export type McpConverseParams = z.infer<typeof mcpConverseParamsSchema>;
@@ -1528,6 +1544,7 @@ export const mcpColdStartParamsSchema = z.object({
   sessionId: sessionIdSchema,
   requestId: requestIdSchema,
   cvText: z.string().nullable().describe("Parsed anonymized text from PDF resume if provided"),
+  locale: localeSchema.optional().describe("User language for responses (en/ru, default: en)"),
 });
 
 export type McpColdStartParams = z.infer<typeof mcpColdStartParamsSchema>;
@@ -1561,6 +1578,7 @@ export const mcpUpsertTrailParamsSchema = z.object({
     .describe("Source context ID if trail originates from a specific context"),
   sessionId: sessionIdSchema,
   requestId: requestIdSchema,
+  locale: localeSchema.optional().describe("User language for responses (en/ru, default: en)"),
 });
 
 export type McpUpsertTrailParams = z.infer<typeof mcpUpsertTrailParamsSchema>;

@@ -22,17 +22,20 @@ export async function handleConverse(ctx: BotContext): Promise<void> {
 
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
+  const locale = ctx.from.language_code === "ru" ? "ru" : "en";
+
   const converseResp = await ctx.services.messageBatcher.enqueue(ctx.from.id, message, (combined) =>
     ctx.services.mcpClient.callTool("converse", {
       sessionId,
       message: combined,
       requestId: ctx.requestId,
+      locale,
     }),
   );
 
   if (!converseResp) return;
 
-  const formatted = await formatResponse(converseResp, ctx.services, ctx.from.language_code);
+  const formatted = formatResponse(converseResp, ctx.from.language_code);
 
   await ctx.reply(formatted, { parse_mode: "Markdown" });
 }
