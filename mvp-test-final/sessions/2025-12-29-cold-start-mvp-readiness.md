@@ -265,6 +265,82 @@ steps:
 
 ---
 
+## Фаза 8: Ревью batch тестов + Greeting UX (после rewind #2)
+
+### Задача
+Критический анализ batch тестов — выявить "театральные" формулировки и подгонку под бота.
+
+### Что сделано
+
+1. **Greeting полностью переработан** (`flow-guard-checker.service.ts`)
+   - Добавлена ценность waymates/pathfinders
+   - Trade-off adhoc vs cold-start (5 мин vs 30 мин, траектория)
+   - Убраны цитаты-шаблоны для копирования
+
+2. **Batch тесты переписаны на естественный язык**
+   - "да, подтверждаю план" → "да", "ок", "угу"
+   - "выбираю полную историю" → "хочу рассказать историю карьеры"
+   - "подтверждаю позицию" → "да, всё верно"
+
+3. **Intent classifier** — семантика без точных фраз
+
+4. **Type guard fix** — Set вместо includes для `ADHOC_REQUIRED_FIELDS`
+
+5. **Новый batch** — `onboarding-help-question.yaml`
+
+### Результаты тестов
+
+| Batch | Результат |
+|-------|-----------|
+| cold-start-happy-path | ✅ 4/4 |
+| cold-start-clarification-flow | ✅ 7/7 |
+| cold-start-normalization | ✅ 4/4 |
+| cold-start-multi-context | ✅ 5/5 |
+| cold-start-revert-field | ✅ 5/5 |
+| mvp-position-normalization | ✅ 5/5 |
+| mvp-implicit-extraction | ✅ 5/5 |
+| mvp-skills-domains | ❌ 3/5 (требует доработки) |
+
+### Коммит
+
+| Hash | Описание |
+|------|----------|
+| `8604521` | feat(ux): improve greeting with trade-off and natural batch tests |
+
+### Ключевые инсайты
+
+1. **"выбираю X" → getStory** — "выбираю" звучит как "хочу посмотреть", не "хочу рассказать"
+2. **Intent descriptions = семантика** — никаких точных фраз, только смысл
+3. **Greeting без цитат** — описывать возможности, не давать шаблоны
+
+---
+
+## Новый Greeting (RU)
+
+```
+Привет! 👋 Помогаю с карьерными решениями.
+
+Могу найти:
+• Попутчиков — кто сейчас там же и хочет того же
+• Проводников — кто уже прошёл твой путь к цели
+
+• Быстрый поиск (~5 мин) — по текущей позиции
+• Полная история (~30 мин) — кандидаты подобраны с учётом всего пути
+
+Что выберешь?
+```
+
+---
+
+## Что осталось сделать
+
+| Задача | Приоритет |
+|--------|-----------|
+| mvp-skills-domains batch fix | P2 |
+| onboarding-help-question проверить | P2 |
+
+---
+
 ## Prompt для продолжения после rewind
 
 ```
@@ -272,15 +348,16 @@ steps:
 
 Контекст: /home/alex/projects/WayMatesRemote/mvp-test-final/sessions/2025-12-29-cold-start-mvp-readiness.md
 
-Сделано (фазы 1-7):
+Сделано (фазы 1-8):
 - FEAT-051 закрыт (DONE)
-- suggestCancel UX — после 2-го раунда бот предлагает отмену
-- MAX_CLARIFICATION_ROUNDS = 5
-- cold-start-multi-context.yaml создан
-- Театральные тесты удалены (cancel-*, max-rounds)
-- tests_report.md обновлён
+- Greeting переработан — trade-off adhoc/cold-start, ценность waymates/pathfinders
+- Batch тесты с естественными формулировками (7/8 проходят)
+- Intent classifier — семантика без точных фраз
+- Коммит 8604521
 
-Cold-start готов к MVP. Сессия завершена.
+Осталось:
+- mvp-skills-domains batch требует доработки (бот переспрашивает)
+- onboarding-help-question.yaml не проверен
 
 Если нужно продолжить — укажи конкретную задачу.
 ```
