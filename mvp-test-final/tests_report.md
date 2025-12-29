@@ -273,6 +273,9 @@ domains: ["research-and-development"]
 | 8d487c7 | showing_goal | "покажи кто достиг" | validate | asking_after_validate_candidates | ✅ |
 | 8d487c7 | asking_after_validate (0 results) | — | — | honest "no one found" | ✅ |
 | 8d487c7 | asking_search_mode | "попутчики" | searchWaymates | showing_results_facets | ✅ |
+| dbfa2ab | showing_exploration (0 results) | "что ты умеешь?" | ask | advising | ✅ |
+| dbfa2ab | advising | "а какие данные?" | ask | advising (loop) | ✅ |
+| dbfa2ab | advising | "хочу цель CTO" | action | showing_goal | ✅ |
 
 ### cold-start-v2
 

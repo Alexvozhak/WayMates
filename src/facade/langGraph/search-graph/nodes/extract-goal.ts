@@ -6,7 +6,7 @@ import { buildGoalExtractionPrompt } from "../prompts/extraction.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
-import type { AdhocContextBase, FieldFilter, TargetContext } from "../../../../shared/schemas.js";
+import type { AdhocContextBase, FieldFilter, InheritableGoalField, TargetContext } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 const extractionModel = getModel("extraction").withStructuredOutput(targetContextSchema);
@@ -22,18 +22,31 @@ function toFilter(value: string | string[] | null | undefined): FieldFilter | nu
 
 /**
  * Fill missing goal fields from adhocContext.
- * If user didn't specify role/domains/skills/countries → use current context.
+ * Returns filled goal and list of inherited field names.
  */
-function fillFromContext(goal: TargetContext, ctx: AdhocContextBase | null): TargetContext {
-  if (!ctx) return goal;
+function fillFromContext(
+  goal: TargetContext,
+  ctx: AdhocContextBase | null,
+): { filled: TargetContext; inherited: InheritableGoalField[] } {
+  if (!ctx) return { filled: goal, inherited: [] };
+
+  const inherited: InheritableGoalField[] = [];
+  const inherit = <T>(field: InheritableGoalField, goalVal: T, ctxVal: T): T => {
+    if (goalVal != null) return goalVal;
+    if (ctxVal != null) inherited.push(field);
+    return ctxVal;
+  };
 
   return {
-    position: goal.position,
-    role: goal.role ?? toFilter(ctx.role),
-    domains: goal.domains ?? toFilter(ctx.domains),
-    skills: goal.skills ?? toFilter(ctx.skills),
-    countries: goal.countries ?? toFilter(ctx.countryCode),
-    languages: goal.languages,
+    filled: {
+      position: goal.position,
+      role: inherit("role", goal.role, toFilter(ctx.role)),
+      domains: inherit("domains", goal.domains, toFilter(ctx.domains)),
+      skills: inherit("skills", goal.skills, toFilter(ctx.skills)),
+      countries: inherit("countries", goal.countries, toFilter(ctx.countryCode)),
+      languages: inherit("languages", goal.languages, toFilter(ctx.languages)),
+    },
+    inherited,
   };
 }
 
@@ -52,10 +65,13 @@ export const extractGoalNode = withLogging<SearchStateType>(
     ]);
 
     const rawGoal = extracted ? targetContextSchema.parse(extracted) : null;
-    const extractedGoal = rawGoal ? fillFromContext(rawGoal, adhocContext) : null;
+    const { filled: extractedGoal, inherited: inheritedGoalFields } = rawGoal
+      ? fillFromContext(rawGoal, adhocContext)
+      : { filled: null, inherited: [] };
 
     return {
       extractedGoal,
+      inheritedGoalFields,
       userResponse: "",
       phase: PHASE.showing_goal,
       messages: messages.length === 0 ? [new HumanMessage(userResponse)] : messages,

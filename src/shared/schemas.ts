@@ -319,7 +319,13 @@ export const adhocContextRequiredSchema = adhocContextBase
 export type AdhocContextRequired = z.infer<typeof adhocContextRequiredSchema>;
 
 /** Required field names for UI */
-export const ADHOC_REQUIRED_FIELDS: (keyof AdhocContextRequired)[] = ["position", "role", "countryCode", "domains"];
+export const ADHOC_REQUIRED_FIELDS = [
+  "position",
+  "role",
+  "countryCode",
+  "domains",
+] as const satisfies readonly (keyof AdhocContextRequired)[];
+export type AdhocRequiredField = (typeof ADHOC_REQUIRED_FIELDS)[number];
 
 /** Optional field names for UI */
 export const ADHOC_OPTIONAL_FIELDS = [
@@ -464,6 +470,16 @@ export const targetContextSchema = z.object({
 });
 
 export type TargetContext = z.infer<typeof targetContextSchema>;
+
+/** Goal fields inherited from adhocContext when user doesn't specify them (all except position) */
+export const INHERITABLE_GOAL_FIELDS = [
+  "role",
+  "domains",
+  "skills",
+  "countries",
+  "languages",
+] as const satisfies readonly (keyof TargetContext)[];
+export type InheritableGoalField = (typeof INHERITABLE_GOAL_FIELDS)[number];
 
 // ==========================================
 // === SEARCH FILTERS SCHEMAS ===

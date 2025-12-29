@@ -49,6 +49,22 @@
 | **Первопричина** | Забываю что LLM генерирует ответ на языке пользователя (locale). Хардкод = фиксированный язык |
 | **Правило** | Только семантика: "acknowledge goal was deleted". LLM сам переведёт на язык locale |
 
+### 1.7 NLP message зависит от structured data
+
+| | |
+|---|---|
+| **Паттерн ошибки** | NLP prompt говорит "сравни goal с adhocContext", но adhocContext не передаётся в response |
+| **Первопричина** | Не проверяю что данные для инструкции доступны в structured data. Инструкция бесполезна без данных |
+| **Правило** | Инструкция в prompt → проверить что данные есть в response-builder. Иначе LLM не сможет выполнить |
+
+### 1.8 Zod error message vs field description
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Zod safeParse возвращает "Required" вместо human-readable description |
+| **Первопричина** | `.describe()` не попадает в error message. Zod использует стандартные сообщения ошибок |
+| **Правило** | Для human-readable errors создавать маппинг field → message, использовать вместо err.message |
+
 ---
 
 ## 2. Tests
@@ -479,6 +495,14 @@
 | **Первопричина** | Хочу разные структуры для одной "фазы" (напр. `showing_exploration` с `needsFiltering: true/false`) |
 | **Правило** | Разные discriminator values для разных структур: `showing_exploration_candidates` + `showing_exploration_facets`, не один `showing_exploration` с флагом |
 
+### 3.6 Schema inconsistency между связанными типами
+
+| | |
+|---|---|
+| **Паттерн ошибки** | AdhocContext имеет поля (industry, cityName, citizenships) которых нет в TargetContext. Naming: countryCode vs countries |
+| **Первопричина** | Типы создавались в разное время, не сверялись друг с другом |
+| **Правило** | При создании связанных типов — проверять пересечение полей. Заводить FEAT на несоответствия. Унифицировать naming |
+
 ### 5.15 Два источника message (interrupt vs response-builder)
 
 | | |
@@ -751,6 +775,7 @@
 
 | Дата | Изменения |
 |------|-----------|
+| 2025-12-29 | +1.7 NLP message зависит от structured data, +1.8 Zod error message vs field description, +3.6 Schema inconsistency между связанными типами |
 | 2025-12-29 | +1.6 Мультиязычность NLP промптов, расширен 5.6 (template interpolation для фаз), расширен 7.5 (СНАЧАЛА объяснить, ПОТОМ Edit) |
 | 2025-12-29 | +7.27 Правка промпта без проверки схемы, расширен 1.1 (Zod .describe() влияет на LLM) |
 | 2025-12-29 | +7.26 Изобретаю велосипед вместо grep паттерна (scope estimation) |

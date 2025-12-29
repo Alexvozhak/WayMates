@@ -2,7 +2,7 @@
 
 **Дата:** 2025-12-29
 **Ветка:** `feature/search-refactor`
-**Статус:** НЕ ЗАКОММИЧЕНО — нужен коммит search-graph изменений
+**Статус:** 🔄 В ПРОЦЕССЕ — UX баги #1-2 исправлены, #3-4 осталось
 
 ---
 
@@ -25,84 +25,96 @@
 
 ---
 
-## Фаза 5-6: UX консистентность (СДЕЛАНО, НЕ ЗАКОММИЧЕНО)
+## Фаза 5-6: UX консистентность (ЗАКОММИЧЕНО)
 
-### P1-7: Delete goal acknowledgement
-
-**Проблема:** После delete_goal пользователь не понимает что цель удалена.
-
-**Решение (3 файла):**
-1. `delete-goal.ts:18` — `previousPhase: PHASE.deleting_goal`
-2. `response-builders.ts:43,52` — `previousPhase` в exploration responses
-3. `prompts.ts:20-23` — `If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge`
-
-### P1-8: editAdhoc skip confirmation from exploration
-
-**Проблема:** Из exploration editAdhoc → confirming (лишнее прерывание).
-
-**Решение:** `load-context.ts:119-130`:
-```typescript
-const cameFromExploration = state.phase === PHASE.showing_exploration_*;
-if (isValid && cameFromExploration) phase = PHASE.exploring; // skip
-```
-
-**Тесты пройдены:**
-- editAdhoc из exploration → без прерывания ✅
-- editAdhoc из confirming → с прерыванием ✅
+### P1-7: Delete goal acknowledgement ✅
+### P1-8: editAdhoc skip confirmation from exploration ✅
+### P2-12: Advisor flow ✅
 
 ---
 
-## P0 тесты — итог
+## Фаза 7: UX баги из tests_report.md (ТЕКУЩАЯ)
 
-| # | Сценарий | Статус |
-|---|----------|--------|
-| 1 | Explore с 0 результатов | ✅ |
-| 2 | Validation с 0 pathfinders | ✅ |
-| 3 | Clarify goal (add/remove) | ✅ |
-| 4 | Change position limit | ⏸️ edge case |
-| 5 | Search pathfinders | ✅ |
-| 6 | Chart generation failure | ✅ graceful (chartUrl: null работает) |
+### Баг #1: asking_adhoc_context — "aiming for" ✅ FIXED
 
----
+**Проблема:** "Какую позицию ищешь?" — подразумевает ЦЕЛЬ, но нужен ТЕКУЩИЙ уровень.
 
-## Что осталось
+**Решение:**
+1. `load-context.ts` — human-readable messages для missingFields
+2. `schemas.ts` — добавлен `AdhocRequiredField` тип
+3. Изменены сообщения: `"Current grade"`, `"Current role"`, `"Current country of residence"`
 
-1. **Коммит search-graph изменений** — 4 файла:
-   - `src/facade/langGraph/search-graph/nodes/delete-goal.ts`
-   - `src/facade/langGraph/search-graph/nodes/load-context.ts`
-   - `src/facade/langGraph/search-graph/response-builders.ts`
-   - `src/facade/services/nlp-formatter/prompts.ts`
-
-2. **P2-12: Advisor flow** — проверить loop работает
-
-3. **Матрица** — обновить tests_report.md
+**Было:** "Какую позицию ты ищешь?"
+**Стало:** "Какова ваша текущая должность?"
 
 ---
 
-## НЕ коммитить (параллельная работа)
+### Баг #2: showing_goal — молчаливое наследование ✅ FIXED
 
-- `src/facade/langGraph/cold-start-v2/*`
-- `tests/e2e/batches/cold-start-*.yaml`
-- `.env.test`, `src/facade/env.ts`
+**Проблема:** Goal наследует поля из adhocContext без объяснения.
+
+**Решение (5 файлов):**
+1. `schemas.ts` — `INHERITABLE_GOAL_FIELDS`, `InheritableGoalField` тип
+2. `extract-goal.ts` — `fillFromContext` возвращает `{ filled, inherited }`
+3. `state.ts` — `inheritedGoalFields` в state
+4. `response-builders.ts` — передаёт `inheritedGoalFields`
+5. `prompts.ts` — NLP использует список
+
+**Было:** "Вот твоя цель: senior, developer, backend..."
+**Стало:** "Поля, взятые из твоего профиля: роль, область, навыки, страна."
+
+**Бонус:** Добавлено наследование `languages` (было упущено).
+
+---
+
+### Баг #3: showing_results (0) — нет объяснения ⏳ TODO
+
+### Баг #4: asking_search_mode — jargon ⏳ TODO
+
+---
+
+## Архитектурные находки
+
+### FEAT-052: TargetContext missing fields
+
+Создана таска `/tasks/features/FEAT-052-target-context-missing-fields.md`:
+- TargetContext не содержит: industry, cityName, citizenships, educationLevel
+- Naming inconsistency: countryCode vs countries
+- Open questions для уточнения бизнес-логики
+
+---
+
+## Изменённые файлы (НЕ ЗАКОММИЧЕНО)
+
+**search-graph:**
+- `src/facade/langGraph/search-graph/nodes/load-context.ts`
+- `src/facade/langGraph/search-graph/nodes/extract-goal.ts`
+- `src/facade/langGraph/search-graph/response-builders.ts`
+- `src/facade/langGraph/search-graph/state.ts`
+
+**shared:**
+- `src/shared/schemas.ts`
+
+**NLP:**
+- `src/facade/services/nlp-formatter/prompts.ts`
+
+**docs:**
+- `mvp-test-final/tests_report.md`
+- `tasks/features/FEAT-052-target-context-missing-fields.md`
 
 ---
 
 ## Ключевые решения сессии
 
-### Три интента корректировки — чёткие ЗО
+### Goal inheritance — Вариант A
 
-| Intent | Что корректирует | Семантика |
-|--------|------------------|-----------|
-| editAdhoc | adhoc context | "добавь technology в профиль" |
-| filter | search params | "игнорируй страну" (расширить) |
-| clarify | goal | "добавь/убери из цели" |
+При "хочу стать senior" наследуем role/domains/skills/countries/languages из adhocContext.
+**Обоснование:** 80% случаев — рост в своём направлении. Для MVP — меньше вопросов, explicit объяснение.
 
-### Консистентность прерываний (финальная логика)
+### Type-safe field messages
 
-| Откуда | editAdhoc | Прерывание |
-|--------|-----------|------------|
-| confirming_adhoc | ✅ | ДА — первый ввод |
-| exploration_* | ✅ | НЕТ — уже видел результаты |
+`Record<AdhocRequiredField, string>` вместо `Record<string, string>`.
+Type guard `isRequiredField` через `ADHOC_REQUIRED_FIELDS.some()`.
 
 ---
 
@@ -111,21 +123,22 @@ if (isValid && cameFromExploration) phase = PHASE.exploring; // skip
 ```
 Продолжаем sessions/2025-12-29-search-graph-mvp-readiness.md
 
-Статус: 4 файла search-graph НЕ закоммичены.
+Статус: Баги #1, #2 FIXED (не закоммичено). Баги #3, #4 TODO.
 
-ЗАКОММИЧЕНО (8d487c7, 3aea74d, 1a3a395):
-- Facets fallback, hallucination fix, setGoal routing, clarify description
+СДЕЛАНО в этой сессии:
+- Баг #1: asking_adhoc_context — "Current grade" вместо "aiming for"
+- Баг #2: showing_goal — inheritedGoalFields явно показывает унаследованные поля
+- FEAT-052: таска на missing fields в TargetContext
 
-НЕ ЗАКОММИЧЕНО (код готов, lint/tsc пройдены):
-- P1-7: delete-goal acknowledgement (previousPhase)
-- P1-8: load-context skip confirmation from exploration
+ИЗМЕНЁННЫЕ ФАЙЛЫ (lint/tsc ✅):
+- load-context.ts, extract-goal.ts, response-builders.ts, state.ts
+- schemas.ts, prompts.ts
 
 НУЖНО:
-1. git add + commit ТОЛЬКО:
-   - nodes/delete-goal.ts, nodes/load-context.ts
-   - response-builders.ts, services/nlp-formatter/prompts.ts
-2. Проверить P2-12 advisor flow
-3. Обновить матрицу tests_report.md
+1. Баг #3: showing_results (0) — нет объяснения почему 0
+2. Баг #4: asking_search_mode — jargon (pathfinders/waymates)
+3. Коммит после всех багов
+4. Обновить матрицу tests_report.md
 
-НЕ КОММИТИТЬ cold-start файлы — параллельная работа.
+НЕ КОММИТИТЬ cold-start файлы.
 ```

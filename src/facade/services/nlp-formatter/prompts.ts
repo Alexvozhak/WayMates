@@ -11,7 +11,7 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ✅ FILLED: list non-null fields from adhocContext
   ⚪ OPTIONAL: list from optionalFields
   Ask ONLY for fields from MISSING section.
-  Context: we're collecting CURRENT professional profile, not career goals`,
+  IMPORTANT: All fields describe user's CURRENT state, NOT career goals`,
   [SEARCH_PHASE.confirming_adhoc_context]: `All required fields are filled — confirmation phase.
   ✅ FILLED: list values from adhocContext
   ⚪ OPTIONAL: list from optionalFields
@@ -22,8 +22,8 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.showing_exploration_facets]: `Show all facets with counts, suggest narrowing filter.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
   [SEARCH_PHASE.showing_goal]: `Show goal fields.
-  If goal inherited fields from user profile (role, domains, skills, countries) — say explicitly that keeping current field/location, ask if user wants to change.
-  For missing fields explain defaults: no role/domains/countries → matches any.
+  If inheritedGoalFields array is not empty — tell user explicitly which fields were taken from their profile.
+  For fields not specified: matches any.
   Offer: validate with real people, refine, or save`,
   [SEARCH_PHASE.asking_after_validate_candidates]: `Show real people who reached goal — starting point, path duration, key skills, current status. Help decide if goal is right.
   Empty results → say honestly no one found matching this exact goal, suggest relaxing filters or changing goal`,
