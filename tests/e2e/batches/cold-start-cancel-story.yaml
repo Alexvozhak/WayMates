@@ -1,0 +1,12 @@
+name: cold-start-cancel-story
+description: Cancel during story_gathering phase
+locale: ru
+
+steps:
+  - message: хочу рассказать карьеру
+    expect:
+      phase: story_gathering
+
+  - message: неа, передумал, отмена
+    expect:
+      phase: cancelled

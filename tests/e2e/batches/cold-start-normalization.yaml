@@ -17,3 +17,11 @@ steps:
   - message: да, подтверждаю план
     expect:
       phase: awaiting_context_confirmation
+
+  - message: да, всё верно
+    expect:
+      phase: awaiting_final_confirmation
+
+  - message: сохранить
+    expect:
+      phase: saved

@@ -20,3 +20,11 @@ steps:
   - message: гражданство России
     expect:
       phase: awaiting_context_confirmation
+
+  - message: да
+    expect:
+      phase: awaiting_final_confirmation
+
+  - message: сохранить
+    expect:
+      phase: saved

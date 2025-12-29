@@ -1051,6 +1051,7 @@ export const entityBatchResultClarificationSchema = z.object({
   pendingContext: z.record(z.unknown()).describe("Current extracted values (FILLED fields)"),
   missingFields: z.array(missingFieldSchema).describe("Required fields still missing (MISSING)"),
   optionalFields: z.array(contextOptionalFieldSchema).describe("Optional fields user can add (OPTIONAL)"),
+  suggestCancel: z.boolean().optional().describe("True when user repeatedly fails to provide required fields"),
 });
 
 /**

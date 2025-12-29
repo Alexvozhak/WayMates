@@ -5,6 +5,9 @@ import { PHASE } from "./types.js";
 import type { ColdStartPhase, ColdStartState } from "./types.js";
 import type { ColdStartResponse } from "../../../shared/schemas.js";
 
+/** After this many failed clarification attempts, suggest cancel to user */
+const SUGGEST_CANCEL_AFTER_ROUNDS = 2;
+
 type ResponseBuilder<P extends ColdStartPhase> = (state: ColdStartState) => Extract<ColdStartResponse, { phase: P }>;
 
 export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
@@ -45,6 +48,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
       pendingContext: state.pendingContext ?? {},
       missingFields: state.missingFields,
       optionalFields: state.optionalFields,
+      suggestCancel: state.clarificationRound >= SUGGEST_CANCEL_AFTER_ROUNDS,
     };
   },
 

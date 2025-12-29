@@ -24,7 +24,7 @@ const envSchema = baseEnvSchema.extend({
   LANGCHAIN_TEMP_PLANNING: z.coerce.number().min(0).max(1).default(0.1),
   LANGCHAIN_TEMP_AGENT: z.coerce.number().min(0).max(1).default(0.3),
   LANGCHAIN_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
-  LANGCHAIN_MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().positive().default(3),
+  LANGCHAIN_MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().positive().default(5),
   LANGCHAIN_MAX_QUESTIONS_PER_BATCH: z.coerce.number().int().positive().default(5),
   // Rate limiting
   OPENAI_FACADE_RPM_LIMIT: z.coerce.number().int().positive().default(500),

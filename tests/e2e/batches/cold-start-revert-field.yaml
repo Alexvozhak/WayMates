@@ -21,3 +21,11 @@ steps:
   - message: верни position как было, хочу grade-2
     expect:
       phase: awaiting_context_confirmation
+
+  - message: да, подтверждаю
+    expect:
+      phase: awaiting_final_confirmation
+
+  - message: сохранить
+    expect:
+      phase: saved

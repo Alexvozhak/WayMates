@@ -17,8 +17,10 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ⚪ OPTIONAL: list from optionalFields
   DO NOT ask for anything from FILLED section
   Offer: set goal or explore similar people`,
-  [SEARCH_PHASE.showing_exploration_candidates]: "List candidates briefly with key attributes from data",
-  [SEARCH_PHASE.showing_exploration_facets]: "Show all facets with counts, suggest narrowing filter",
+  [SEARCH_PHASE.showing_exploration_candidates]: `List candidates briefly with key attributes from data.
+  If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
+  [SEARCH_PHASE.showing_exploration_facets]: `Show all facets with counts, suggest narrowing filter.
+  If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
   [SEARCH_PHASE.showing_goal]: `Show goal fields.
   If goal inherited fields from user profile (role, domains, skills, countries) — say explicitly that keeping current field/location, ask if user wants to change.
   For missing fields explain defaults: no role/domains/countries → matches any.
@@ -86,7 +88,7 @@ Phases:
 - ${COLD_START_PHASE.awaiting_clarification}: Missing required fields — ask user to provide them.
   Start with: 📍 Position {progress.current}/{progress.total}: {entityPreview}
   ❌ MISSING: list from missingFields array (REQUIRED)
-  Ask for missing field, explain why it's required.
+  If suggestCancel=true: mention these fields are required, offer to cancel if user doesn't want to provide.
   ⚪ OPTIONAL: briefly mention user can also add: education, salary, languages.
 - ${COLD_START_PHASE.awaiting_context_confirmation}: Show ONLY filled fields.
   Start with: 📍 Position {progress.current}/{progress.total}
