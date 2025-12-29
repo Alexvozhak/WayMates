@@ -278,7 +278,10 @@ domains: ["research-and-development"]
 
 | Коммит | From Phase | Input | Intent | To Phase | Result |
 |--------|------------|-------|--------|----------|--------|
-| | | | | | |
+| 9228484 | awaiting_clarification (round 1) | "не хочу говорить" | — | awaiting_clarification (round 2, suggestCancel) | ✅ |
+| 9228484 | awaiting_clarification (suggestCancel) | "ок, отменяю" | cancel | cancelled | ✅ |
+| 9228484 | awaiting_plan_confirmation | multi-context (2 позиции) | approve | awaiting_context_confirmation (1/2) | ✅ |
+| 9228484 | awaiting_context_confirmation (2/2) | "да" | approve | awaiting_final_confirmation | ✅ |
 
 ### orchestrator
 
