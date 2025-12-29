@@ -29,13 +29,13 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   Empty results → say honestly no one found matching this exact goal, suggest relaxing filters or changing goal`,
   [SEARCH_PHASE.asking_after_validate_facets]: "Show facets with counts, suggest filter",
   [SEARCH_PHASE.showing_results]: `Show matches.
-  Empty results → list applied filters from goal, suggest which ONE filter to relax first, offer concrete next step`,
+  Empty results → explain WHY: list filters from goal object (position, domains, skills, countries, industries, etc.), suggest which ONE filter to relax first, offer concrete next step`,
   [SEARCH_PHASE.showing_results_facets]:
     "Show facets with counts. Goal applied but too many results — suggest narrowing by role/country/industry",
-  [SEARCH_PHASE.asking_search_mode]: `Goal saved! Offer two options briefly:
-  • Pathfinders = those who already made this transition
-  • Waymates = peers heading to same goal
-  Keep it short, no walls of text`,
+  [SEARCH_PHASE.asking_search_mode]: `Goal saved! Offer two search options briefly:
+  1. People who already achieved this goal — proof the path works (Pathfinders)
+  2. People heading to the same goal right now — peers to connect with (Waymates)
+  Keep it short and clear`,
   [SEARCH_PHASE.clarifying_goal]: "Ask for more detail about target position",
   [SEARCH_PHASE.advising]: "Answer based on actual data",
   [SEARCH_PHASE.cancelled]: "Acknowledge stop",
@@ -220,3 +220,72 @@ export const GRAPH_PROMPTS: Record<GraphType, string> = {
   update_context: UPDATE_CONTEXT_PROMPT,
   upsert_trail: UPSERT_TRAIL_PROMPT,
 };
+
+// Guard message types (flow-guard-checker)
+export type GuardType =
+  | "greeting"
+  | "help"
+  | "unknown"
+  | "cancelNoActive"
+  | "onboarding"
+  | "goalNotSet"
+  | "goalNotSetDelete"
+  | "storyNotSet";
+
+export const GUARD_DESCRIPTIONS: Record<GuardType, string> = {
+  greeting: `First interaction. Welcome user warmly.
+  Explain service value:
+  • Waymates = peers with same goal, going together
+  • Pathfinders = people who already made desired transition
+  Two modes:
+  • Quick search (~5 min) = by current position
+  • Full history (~30 min) = better matching via career trajectory
+  End with open question about what they prefer`,
+
+  help: `User asks what bot can do.
+  List capabilities briefly:
+  • Find similar people by profile
+  • Find pathfinders who made desired transition
+  • Save career story for better matching
+  Invite to describe themselves or their goal`,
+
+  unknown: `Could not understand user input (garbage or unclear).
+  Politely ask to rephrase.
+  Give concrete examples of valid input:
+  • Describe current position (role, level, country)
+  • Describe career goal`,
+
+  cancelNoActive: `User wants to cancel but no active operation.
+  Simply acknowledge nothing to cancel`,
+
+  onboarding: `User tries action requiring context but has no profile yet.
+  Explain need to know who they are first.
+  Ask for role, level, location`,
+
+  goalNotSet: `User asks about goal but none is set.
+  Inform no goal saved yet.
+  Invite to describe target position`,
+
+  goalNotSetDelete: `User wants to delete goal but none exists.
+  Simply acknowledge nothing to delete`,
+
+  storyNotSet: `User asks to see their story but none saved.
+  Inform no story yet.
+  Offer to share career history`,
+};
+
+export const GUARD_PROMPT = `You are a career buddy in Telegram. Casual, direct, helpful. No corporate speak, no fake enthusiasm.
+
+Situation: {description}
+
+Style:
+- 2-4 sentences, direct
+- One emoji max (at start if appropriate)
+- No walls of text
+- End with clear next step or question
+
+Format: Markdown, real newlines.
+
+Language: {language}
+
+Response:`;

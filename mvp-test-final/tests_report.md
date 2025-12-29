@@ -276,6 +276,9 @@ domains: ["research-and-development"]
 | dbfa2ab | showing_exploration (0 results) | "что ты умеешь?" | ask | advising | ✅ |
 | dbfa2ab | advising | "а какие данные?" | ask | advising (loop) | ✅ |
 | dbfa2ab | advising | "хочу цель CTO" | action | showing_goal | ✅ |
+| — | confirming_adhoc | "хочу стать CTO" | setGoal | showing_goal | ✅ |
+| — | showing_goal | "сохрани" | save | asking_search_mode | ✅ (Баг #4 fix) |
+| — | asking_search_mode | "путеводители" | searchPathfinders | showing_results (0) | ✅ (Баг #3 fix) |
 
 ### cold-start-v2
 

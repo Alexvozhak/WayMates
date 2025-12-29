@@ -2,7 +2,7 @@
 
 **Дата:** 2025-12-29
 **Ветка:** `feature/search-refactor`
-**Статус:** 🔄 В ПРОЦЕССЕ — FEAT-052 реализован, баги #3-4 осталось
+**Статус:** ✅ DONE — FEAT-052 + баги #3-4 + тесты TG-*
 
 ---
 
@@ -76,15 +76,38 @@
 
 ---
 
-## Что осталось
+## Фаза 9: Тесты + баги #3-4 ✅ DONE
 
-### Баги
-- Баг #3: showing_results (0) — нет объяснения почему 0
-- Баг #4: asking_search_mode — jargon (pathfinders/waymates)
+### Что сделано
+
+1. **Тесты для новых фильтров** (`target-search.integration.ts`):
+   - TG-IND-1/2: industries filter (fintech → U7)
+   - TG-CITY-1/2: cities filter (berlin → U1/U2/U5/U6/U14)
+   - TG-CIT-1/2: citizenships filter (de/ru)
+   - TG-EDU-1/2: educationLevels filter (MASTER → U14/U18)
+   - 8 тестов, все проходят
+
+2. **Баг #4: asking_search_mode jargon** (`prompts.ts`):
+   - До: "Pathfinders = those who..., Waymates = peers..."
+   - После: "Люди, которые уже достигли... (Pathfinders)"
+   - ✅ Верифицировано через mcp-chat.ts
+
+3. **Баг #3: showing_results (0) без объяснения** (`prompts.ts`):
+   - До: "Empty results → list applied filters..."
+   - После: "Empty results → explain WHY: list filters from goal object (position, domains, skills, countries, industries, etc.)..."
+   - ✅ Верифицировано через mcp-chat.ts
+
+### Quality Gates
+- ✅ Lint: 0 errors
+- ✅ TSC: 0 errors
+- ✅ Integration tests: 17 passed (target-search)
+
+---
+
+## Что осталось
 
 ### Followup задачи
 - **educationLevel import** — как domains через yaml → Neo4j (сейчас не загружается в тестовую БД)
-- Тесты TG-IND, TG-CITY, TG-CIT, TG-EDU для новых фильтров
 
 ---
 
@@ -104,11 +127,17 @@
 - `src/cypher/helpers/filters.ts`
 - `src/cypher/queries/search.ts`
 
+**nlp-formatter:**
+- `src/facade/services/nlp-formatter/prompts.ts` (баги #3, #4)
+
+**tests:**
+- `tests/core/integration/search-manager/target-search.integration.ts` (+8 тестов)
+
 ---
 
 ## Рефлексия сессии
 
-### Корректировки пользователя
+### Корректировки пользователя (Фаза 8)
 
 1. **`as const` без type-safety**
    - Я: `ADHOC_TO_TARGET_MAPPING = {...} as const`
@@ -129,6 +158,18 @@
    - Пользователь инициировал: "можно ли шаблон?"
    - Решение: `buildTargetFilterCase()` helper
 
+### Корректировки пользователя (Фаза 9)
+
+5. **Закрыл баги без верификации**
+   - Я: пометил баги #3, #4 как completed сразу после правки
+   - Пользователь: "ошибка! закрыл баги, но не проверил их"
+   - Решение: протестировал через mcp-chat.ts, получил подтверждение
+
+6. **Перешёл к задаче без апрува**
+   - Я: начал Баг #4 сразу после тестов
+   - Пользователь: "не приступай к следующей задаче без моего апрува!"
+   - Решение: ждать явный апрув перед каждой задачей
+
 ---
 
 ## Промпт для rewind
@@ -136,29 +177,23 @@
 ```
 Продолжаем sessions/2025-12-29-search-graph-mvp-readiness.md
 
-Статус: FEAT-052 DONE (не закоммичено). Баги #3, #4 TODO.
+Статус: ВСЁ DONE. Готово к коммиту.
 
-СДЕЛАНО в этой части сессии:
+СДЕЛАНО:
 - FEAT-052: TargetContext +4 поля (industries, cities, citizenships, educationLevels)
-- Type-safe ADHOC_TO_TARGET_ENTRIES tuple array
-- DRY helper buildTargetFilterCase() с type: "single" | "multi"
-- fillFromContext refactored на loop по entries
+- Тесты TG-IND, TG-CITY, TG-CIT, TG-EDU (8 тестов, все проходят)
+- Баг #3: showing_results (0) — теперь показывает фильтры и предлагает что ослабить
+- Баг #4: asking_search_mode — убран jargon, понятные формулировки
 
 ИЗМЕНЁННЫЕ ФАЙЛЫ (lint/tsc ✅, integration tests ✅):
 - schemas.ts, extract-goal.ts, extraction.ts
 - normalizer.ts, filters.ts, search.ts
+- prompts.ts (баги #3, #4)
+- target-search.integration.ts (+8 тестов)
 
-НУЖНО:
-1. Баг #3: showing_results (0) — нет объяснения почему 0
-2. Баг #4: asking_search_mode — jargon
-3. Тесты для новых фильтров (tests/core/integration/search-manager/target-search.integration.ts):
-   - TG-IND-1/2: industries (desired fintech → U7, undesired tech → U7/U8)
-   - TG-CITY-1/2: cities (desired berlin → U1/U2/U5/U6/U9/U14)
-   - TG-CIT-1/2: citizenships (desired de → U1/U5/U6/U9/U14, undesired ru → exclude U10-U13)
-   - TG-EDU-1/2: educationLevels (desired MASTER → U14/U18, но требует import)
-   - Задача: регрессия для buildTargetFilterCase(), проверить desired/undesired режимы
-   - Паттерн: аналогично существующим TG1-TG7 (position, domains, skills)
-4. Followup: educationLevel import (как domains через yaml → Neo4j)
+ОСТАЛОСЬ:
+- Followup: educationLevel import (yaml → Neo4j)
+- Коммит изменений
 
 НЕ КОММИТИТЬ cold-start файлы.
 ```

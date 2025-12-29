@@ -1,8 +1,8 @@
 /**
- * Target Search Integration Tests (TG1-TG7)
+ * Target Search Integration Tests (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)
  *
  * Tests reverseSearchPathfinders() with FieldFilter modes (desired/undesired)
- * Uses Batch A+B test data (U1-U18) from globalSetup
+ * Uses Batch A+B test data (U1-U19) from globalSetup
  *
  * Test focus:
  * - TG1: Desired position (include specific position)
@@ -12,6 +12,11 @@
  * - TG5: Desired skills (ANY match)
  * - TG6: Undesired skills (NONE match)
  * - TG7: Combined filters (position + domains + skills)
+ * - TG-LANG-1/2: Languages filter (desired/undesired)
+ * - TG-IND-1/2: Industries filter (fintech → U7)
+ * - TG-CITY-1/2: Cities filter (berlin → U1/U2/U5/U6/U9/U14)
+ * - TG-CIT-1/2: Citizenships filter (de → U1/U5/U6/U9/U14, ru → exclude U10-U13/U19)
+ * - TG-EDU-1/2: EducationLevels filter (MASTER → U14/U18)
  */
 
 import { describe, it, expect } from "vitest";
@@ -32,7 +37,7 @@ const createTargetParams = (userId: UserId, targetContext: TargetContext) =>
     limit: 20,
   });
 
-describe("Target Search (TG1-TG7)", () => {
+describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", () => {
   // Business rule: Desired position filter matches ONLY candidates with exact position.
   // Target search scans ALL contexts (historical + current) to find who reached target.
   it("TG1: Desired position - finds only candidates with specified position", async () => {
@@ -484,5 +489,418 @@ describe("Target Search (TG1-TG7)", () => {
     });
 
     validateAllPaths(results, "TG-LANG-2");
+  });
+
+  /**
+   * TG-IND-1: Desired industries filter (ANY match)
+   *
+   * Given:
+   * - Target with industries: { mode: "desired", values: ["fintech"] }
+   * - U7 has industry: "fintech", others have "tech" or "IT"
+   *
+   * Then:
+   * - Only U7 is returned (only fintech user)
+   * - All results have industry = "fintech"
+   *
+   * Business rule: Desired industries uses ANY match (OR logic)
+   */
+  it("TG-IND-1: Desired industries - finds candidates with specified industry", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+    const u3 = dataManager.getStoryBy("U3");
+
+    console.log("[TG-IND-1] Searching for industries: fintech (desired mode)");
+
+    const results = await searchManager.reverseSearchPathfinders(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          industries: {
+            mode: "desired",
+            values: ["fintech"],
+          },
+        }),
+      ),
+    );
+
+    console.log("[TG-IND-1] Results count:", results.length);
+    console.log(
+      "[TG-IND-1] Matched users:",
+      results.map((r) => ({
+        userId: r.userId,
+        industry: r.matchedContext.industry,
+      })),
+    );
+
+    const u7 = dataManager.getStoryBy("U7");
+    const hasU7 = results.some((r) => r.userId === u7.userId);
+    expect(hasU7).toBe(true);
+
+    results.forEach((r) => {
+      expect(r.matchedContext.industry).toBe("fintech");
+    });
+
+    validateAllPaths(results, "TG-IND-1");
+  });
+
+  /**
+   * TG-IND-2: Undesired industries filter (NONE match)
+   *
+   * Given:
+   * - Target with industries: { mode: "undesired", values: ["fintech"] }
+   * - U7 has industry: "fintech"
+   *
+   * Then:
+   * - U7 is NOT in results
+   * - All results have industry != "fintech"
+   *
+   * Business rule: Undesired industries excludes ALL with that industry
+   */
+  it("TG-IND-2: Undesired industries - excludes candidates with specified industry", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+    const u3 = dataManager.getStoryBy("U3");
+
+    console.log("[TG-IND-2] Excluding industries: fintech (undesired mode)");
+
+    const results = await searchManager.reverseSearchPathfinders(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          industries: {
+            mode: "undesired",
+            values: ["fintech"],
+          },
+        }),
+      ),
+    );
+
+    console.log("[TG-IND-2] Results count:", results.length);
+
+    const u7 = dataManager.getStoryBy("U7");
+    expect(results.find((r) => r.userId === u7.userId)).toBeUndefined();
+
+    results.forEach((r) => {
+      expect(r.matchedContext.industry).not.toBe("fintech");
+    });
+
+    validateAllPaths(results, "TG-IND-2");
+  });
+
+  /**
+   * TG-CITY-1: Desired cities filter (ANY match)
+   *
+   * Given:
+   * - Target with cities: { mode: "desired", values: ["berlin"] }
+   * - U1, U2, U5, U6, U9, U14 have cityName: "berlin"
+   *
+   * Then:
+   * - Berlin users are in results
+   * - All results have cityName = "berlin"
+   *
+   * Business rule: Desired cities uses ANY match (OR logic)
+   */
+  it("TG-CITY-1: Desired cities - finds candidates in specified city", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+    const u3 = dataManager.getStoryBy("U3");
+
+    console.log("[TG-CITY-1] Searching for cities: berlin (desired mode)");
+
+    const results = await searchManager.reverseSearchPathfinders(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          cities: {
+            mode: "desired",
+            values: ["berlin"],
+          },
+        }),
+      ),
+    );
+
+    console.log("[TG-CITY-1] Results count:", results.length);
+    console.log(
+      "[TG-CITY-1] Matched users:",
+      results.map((r) => ({
+        userId: r.userId,
+        cityName: r.matchedContext.cityName,
+      })),
+    );
+
+    const berlinUsers = ["U1", "U2", "U5", "U6", "U9", "U14"] as const;
+    const berlinUserIds = berlinUsers.map((key) => dataManager.getStoryBy(key).userId);
+    const matchedUserIds = new Set(results.map((r) => r.userId));
+    const hasBerlinUsers = berlinUserIds.some((id) => matchedUserIds.has(id));
+    expect(hasBerlinUsers).toBe(true);
+
+    results.forEach((r) => {
+      expect(r.matchedContext.cityName).toBe("berlin");
+    });
+
+    validateAllPaths(results, "TG-CITY-1");
+  });
+
+  /**
+   * TG-CITY-2: Undesired cities filter (NONE match)
+   *
+   * Given:
+   * - Target with cities: { mode: "undesired", values: ["berlin"] }
+   * - U1, U2, U5, U6, U14 have ONLY berlin contexts
+   * - U9 has berlin + munich contexts (found via munich)
+   *
+   * Then:
+   * - Users with ONLY berlin contexts are NOT in results
+   * - All matchedContext.cityName != "berlin"
+   *
+   * Business rule: Undesired cities excludes contexts with that city,
+   * but users with other city contexts can still be found via those contexts.
+   */
+  it("TG-CITY-2: Undesired cities - excludes candidates in specified city", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+    const u3 = dataManager.getStoryBy("U3");
+
+    console.log("[TG-CITY-2] Excluding cities: berlin (undesired mode)");
+
+    const results = await searchManager.reverseSearchPathfinders(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          cities: {
+            mode: "undesired",
+            values: ["berlin"],
+          },
+        }),
+      ),
+    );
+
+    console.log("[TG-CITY-2] Results count:", results.length);
+
+    // Users with ONLY berlin contexts should be excluded
+    // Note: U9 has berlin + munich contexts, can be found via munich
+    const berlinOnlyUsers = ["U1", "U2", "U5", "U6", "U14"] as const;
+    berlinOnlyUsers.forEach((key) => {
+      const user = dataManager.getStoryBy(key);
+      expect(results.find((r) => r.userId === user.userId)).toBeUndefined();
+    });
+
+    // All matched contexts should NOT be berlin
+    results.forEach((r) => {
+      expect(r.matchedContext.cityName).not.toBe("berlin");
+    });
+
+    validateAllPaths(results, "TG-CITY-2");
+  });
+
+  /**
+   * TG-CIT-1: Desired citizenships filter (ANY match)
+   *
+   * Given:
+   * - Target with citizenships: { mode: "desired", values: ["de"] }
+   * - U1, U5, U6, U9, U14 have citizenships: ["de"]
+   *
+   * Then:
+   * - German citizens are in results
+   * - All results have "de" in citizenships
+   *
+   * Business rule: Desired citizenships uses ANY match (OR logic)
+   */
+  it("TG-CIT-1: Desired citizenships - finds candidates with specified citizenship", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+    const u3 = dataManager.getStoryBy("U3");
+
+    console.log("[TG-CIT-1] Searching for citizenships: de (desired mode)");
+
+    const results = await searchManager.reverseSearchPathfinders(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          citizenships: {
+            mode: "desired",
+            values: ["de"],
+          },
+        }),
+      ),
+    );
+
+    console.log("[TG-CIT-1] Results count:", results.length);
+    console.log(
+      "[TG-CIT-1] Matched users:",
+      results.map((r) => ({
+        userId: r.userId,
+        citizenships: r.matchedContext.citizenships,
+      })),
+    );
+
+    const deUsers = ["U1", "U5", "U6", "U9", "U14"] as const;
+    const deUserIds = deUsers.map((key) => dataManager.getStoryBy(key).userId);
+    const matchedUserIds = new Set(results.map((r) => r.userId));
+    const hasDeUsers = deUserIds.some((id) => matchedUserIds.has(id));
+    expect(hasDeUsers).toBe(true);
+
+    results.forEach((r) => {
+      expect(r.matchedContext.citizenships).toContain("de");
+    });
+
+    validateAllPaths(results, "TG-CIT-1");
+  });
+
+  /**
+   * TG-CIT-2: Undesired citizenships filter (NONE match)
+   *
+   * Given:
+   * - Target with citizenships: { mode: "undesired", values: ["ru"] }
+   * - U10, U11, U12, U13, U19 have citizenships: ["ru"]
+   *
+   * Then:
+   * - Russian citizens are NOT in results
+   * - No results have "ru" in citizenships
+   *
+   * Business rule: Undesired citizenships excludes ALL with that citizenship
+   */
+  it("TG-CIT-2: Undesired citizenships - excludes candidates with specified citizenship", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+    const u3 = dataManager.getStoryBy("U3");
+
+    console.log("[TG-CIT-2] Excluding citizenships: ru (undesired mode)");
+
+    const results = await searchManager.reverseSearchPathfinders(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          citizenships: {
+            mode: "undesired",
+            values: ["ru"],
+          },
+        }),
+      ),
+    );
+
+    console.log("[TG-CIT-2] Results count:", results.length);
+
+    const ruUsers = ["U10", "U11", "U12", "U13", "U19"] as const;
+    ruUsers.forEach((key) => {
+      const user = dataManager.getStoryBy(key);
+      expect(results.find((r) => r.userId === user.userId)).toBeUndefined();
+    });
+
+    results.forEach((r) => {
+      const citizenships = r.matchedContext.citizenships || [];
+      expect(citizenships).not.toContain("ru");
+    });
+
+    validateAllPaths(results, "TG-CIT-2");
+  });
+
+  /**
+   * TG-EDU-1: Desired educationLevels filter (ANY match)
+   *
+   * Given:
+   * - Target with educationLevels: { mode: "desired", values: ["MASTER"] }
+   * - U14, U18 have educationLevel: "MASTER"
+   *
+   * Then:
+   * - Users with MASTER are in results
+   * - All results have educationLevel = "MASTER"
+   *
+   * Business rule: Desired educationLevels uses ANY match (OR logic)
+   */
+  it("TG-EDU-1: Desired educationLevels - finds candidates with specified education", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+    const u3 = dataManager.getStoryBy("U3");
+
+    console.log("[TG-EDU-1] Searching for educationLevels: MASTER (desired mode)");
+
+    const results = await searchManager.reverseSearchPathfinders(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          educationLevels: {
+            mode: "desired",
+            values: ["MASTER"],
+          },
+        }),
+      ),
+    );
+
+    console.log("[TG-EDU-1] Results count:", results.length);
+    console.log(
+      "[TG-EDU-1] Matched users:",
+      results.map((r) => ({
+        userId: r.userId,
+        educationLevel: r.matchedContext.educationLevel,
+      })),
+    );
+
+    const masterUsers = ["U14", "U18"] as const;
+    const masterUserIds = masterUsers.map((key) => dataManager.getStoryBy(key).userId);
+    const matchedUserIds = new Set(results.map((r) => r.userId));
+    const hasMasterUsers = masterUserIds.some((id) => matchedUserIds.has(id));
+    expect(hasMasterUsers).toBe(true);
+
+    results.forEach((r) => {
+      expect(r.matchedContext.educationLevel).toBe("MASTER");
+    });
+
+    validateAllPaths(results, "TG-EDU-1");
+  });
+
+  /**
+   * TG-EDU-2: Undesired educationLevels filter (NONE match)
+   *
+   * Given:
+   * - Target with educationLevels: { mode: "undesired", values: ["MASTER"] }
+   * - U14, U18 have educationLevel: "MASTER"
+   *
+   * Then:
+   * - Users with MASTER are NOT in results
+   * - All results have educationLevel != "MASTER"
+   *
+   * Business rule: Undesired educationLevels excludes ALL with that level
+   */
+  it("TG-EDU-2: Undesired educationLevels - excludes candidates with specified education", async () => {
+    const fixture = new FixtureSearchManager(driver);
+    const searchManager = fixture.getSearchManager();
+    const dataManager = new UserStories();
+    const u3 = dataManager.getStoryBy("U3");
+
+    console.log("[TG-EDU-2] Excluding educationLevels: MASTER (undesired mode)");
+
+    const results = await searchManager.reverseSearchPathfinders(
+      createTargetParams(
+        u3.userId,
+        targetContextSchema.parse({
+          educationLevels: {
+            mode: "undesired",
+            values: ["MASTER"],
+          },
+        }),
+      ),
+    );
+
+    console.log("[TG-EDU-2] Results count:", results.length);
+
+    const masterUsers = ["U14", "U18"] as const;
+    masterUsers.forEach((key) => {
+      const user = dataManager.getStoryBy(key);
+      expect(results.find((r) => r.userId === user.userId)).toBeUndefined();
+    });
+
+    results.forEach((r) => {
+      expect(r.matchedContext.educationLevel).not.toBe("MASTER");
+    });
+
+    validateAllPaths(results, "TG-EDU-2");
   });
 });
