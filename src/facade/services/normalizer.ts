@@ -83,11 +83,13 @@ export class Normalizer {
   }
 
   async normalizeTargetContext(context: TargetContext, userId: UserId): Promise<TargetContext> {
-    const [role, position, skills, domains] = await Promise.all([
+    const [role, position, skills, domains, industries, cities] = await Promise.all([
       this.normalizeTargetField("role", context.role, userId),
       this.normalizeTargetField("position", context.position, userId),
       this.normalizeTargetField("skill", context.skills, userId),
       this.normalizeTargetField("domain", context.domains, userId),
+      this.normalizeTargetField("industry", context.industries, userId),
+      this.normalizeTargetField("city", context.cities, userId),
     ]);
 
     return {
@@ -95,8 +97,12 @@ export class Normalizer {
       position,
       skills,
       domains,
+      industries,
+      cities,
       languages: context.languages ?? null,
       countries: context.countries ?? null,
+      citizenships: context.citizenships ?? null,
+      educationLevels: context.educationLevels ?? null,
     };
   }
 

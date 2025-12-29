@@ -132,6 +132,10 @@ const GOAL_FIELD_DESCRIPTIONS: Record<keyof TargetContext, string> = {
   domains: "technical area (WHICH field) — map to KNOWN DOMAINS",
   skills: "specific technologies or competencies — map to KNOWN SKILLS",
   languages: "spoken languages required for role — ISO language codes",
+  industries: "target business sector — map to KNOWN INDUSTRIES",
+  cities: "target city for relocation — map to KNOWN CITIES",
+  citizenships: "required passports for visa or work permit — ISO country codes",
+  educationLevels: "required education degree level — KNOWN EDUCATION LEVELS",
 };
 
 const GOAL_FIELDS_SECTION = Object.entries(GOAL_FIELD_DESCRIPTIONS)

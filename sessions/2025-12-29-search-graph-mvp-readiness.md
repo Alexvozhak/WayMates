@@ -2,7 +2,7 @@
 
 **Дата:** 2025-12-29
 **Ветка:** `feature/search-refactor`
-**Статус:** 🔄 В ПРОЦЕССЕ — UX баги #1-2 исправлены, #3-4 осталось
+**Статус:** 🔄 В ПРОЦЕССЕ — FEAT-052 реализован, баги #3-4 осталось
 
 ---
 
@@ -33,88 +33,101 @@
 
 ---
 
-## Фаза 7: UX баги из tests_report.md (ТЕКУЩАЯ)
+## Фаза 7: UX баги из tests_report.md
 
 ### Баг #1: asking_adhoc_context — "aiming for" ✅ FIXED
-
-**Проблема:** "Какую позицию ищешь?" — подразумевает ЦЕЛЬ, но нужен ТЕКУЩИЙ уровень.
-
-**Решение:**
-1. `load-context.ts` — human-readable messages для missingFields
-2. `schemas.ts` — добавлен `AdhocRequiredField` тип
-3. Изменены сообщения: `"Current grade"`, `"Current role"`, `"Current country of residence"`
-
-**Было:** "Какую позицию ты ищешь?"
-**Стало:** "Какова ваша текущая должность?"
-
----
-
 ### Баг #2: showing_goal — молчаливое наследование ✅ FIXED
 
-**Проблема:** Goal наследует поля из adhocContext без объяснения.
+---
 
-**Решение (5 файлов):**
-1. `schemas.ts` — `INHERITABLE_GOAL_FIELDS`, `InheritableGoalField` тип
-2. `extract-goal.ts` — `fillFromContext` возвращает `{ filled, inherited }`
-3. `state.ts` — `inheritedGoalFields` в state
-4. `response-builders.ts` — передаёт `inheritedGoalFields`
-5. `prompts.ts` — NLP использует список
+## Фаза 8: FEAT-052 — TargetContext missing fields ✅ DONE
 
-**Было:** "Вот твоя цель: senior, developer, backend..."
-**Стало:** "Поля, взятые из твоего профиля: роль, область, навыки, страна."
+### Что сделано
 
-**Бонус:** Добавлено наследование `languages` (было упущено).
+1. **schemas.ts** — расширен TargetContext:
+   - +4 поля: `industries`, `cities`, `citizenships`, `educationLevels`
+   - `ADHOC_TO_TARGET_ENTRIES` — type-safe tuple array (не object с `as const`)
+   - `MappableAdhocField`, `InheritableGoalField` выводятся из entries
+
+2. **extract-goal.ts** — рефакторинг `fillFromContext`:
+   - Loop по `ADHOC_TO_TARGET_ENTRIES` без кастов
+   - Все поля (включая position) теперь наследуются
+
+3. **extraction.ts** — +4 поля в `GOAL_FIELD_DESCRIPTIONS`
+
+4. **normalizer.ts** — +industries, cities нормализация через dictionary
+
+5. **filters.ts** — DRY helper:
+   - `buildTargetFilterCase(field, paramName)` — генерирует CASE expression
+   - `TARGET_FILTER_CONFIG` с `type: "single" | "multi"` (бизнес-семантика)
+
+6. **search.ts** — рефакторинг:
+   - Заменена копипаста (~80 LOC) на loop с helper
+   - `buildReversePathfinderSearchQuery` и `buildPathfinderSearchQuery`
+
+### Quality Gates
+- ✅ Lint: 0 errors
+- ✅ TSC: 0 errors
+- ✅ Integration tests: 87 passed
+
+### Проверка через Neo4j MCP
+- citizenships filter: ✅ работает
+- industries, cities, educationLevels: ✅ синтаксис корректен
 
 ---
 
-### Баг #3: showing_results (0) — нет объяснения ⏳ TODO
+## Что осталось
 
-### Баг #4: asking_search_mode — jargon ⏳ TODO
+### Баги
+- Баг #3: showing_results (0) — нет объяснения почему 0
+- Баг #4: asking_search_mode — jargon (pathfinders/waymates)
 
----
-
-## Архитектурные находки
-
-### FEAT-052: TargetContext missing fields
-
-Создана таска `/tasks/features/FEAT-052-target-context-missing-fields.md`:
-- TargetContext не содержит: industry, cityName, citizenships, educationLevel
-- Naming inconsistency: countryCode vs countries
-- Open questions для уточнения бизнес-логики
+### Followup задачи
+- **educationLevel import** — как domains через yaml → Neo4j (сейчас не загружается в тестовую БД)
+- Тесты TG-IND, TG-CITY, TG-CIT, TG-EDU для новых фильтров
 
 ---
 
 ## Изменённые файлы (НЕ ЗАКОММИЧЕНО)
 
-**search-graph:**
-- `src/facade/langGraph/search-graph/nodes/load-context.ts`
-- `src/facade/langGraph/search-graph/nodes/extract-goal.ts`
-- `src/facade/langGraph/search-graph/response-builders.ts`
-- `src/facade/langGraph/search-graph/state.ts`
-
-**shared:**
+**schemas:**
 - `src/shared/schemas.ts`
 
-**NLP:**
-- `src/facade/services/nlp-formatter/prompts.ts`
+**search-graph:**
+- `src/facade/langGraph/search-graph/nodes/extract-goal.ts`
+- `src/facade/langGraph/search-graph/prompts/extraction.ts`
 
-**docs:**
-- `mvp-test-final/tests_report.md`
-- `tasks/features/FEAT-052-target-context-missing-fields.md`
+**normalizer:**
+- `src/facade/services/normalizer.ts`
+
+**cypher:**
+- `src/cypher/helpers/filters.ts`
+- `src/cypher/queries/search.ts`
 
 ---
 
-## Ключевые решения сессии
+## Рефлексия сессии
 
-### Goal inheritance — Вариант A
+### Корректировки пользователя
 
-При "хочу стать senior" наследуем role/domains/skills/countries/languages из adhocContext.
-**Обоснование:** 80% случаев — рост в своём направлении. Для MVP — меньше вопросов, explicit объяснение.
+1. **`as const` без type-safety**
+   - Я: `ADHOC_TO_TARGET_MAPPING = {...} as const`
+   - Пользователь: "связать с типами"
+   - Решение: `satisfies [keyof AdhocContextBase, keyof TargetContext][]`
 
-### Type-safe field messages
+2. **Касты в циклах**
+   - Я: `Object.keys(...) as MappableAdhocField[]`
+   - Пользователь: "БЕЗ КАСТОВ"
+   - Решение: tuple entries `[key, value]` — итерация type-safe
 
-`Record<AdhocRequiredField, string>` вместо `Record<string, string>`.
-Type guard `isRequiredField` через `ADHOC_REQUIRED_FIELDS.some()`.
+3. **Технические названия**
+   - Я: `isArray` → `contextMultiValue`
+   - Пользователь: "связать с бизнес-логикой"
+   - Решение: `type: "single" | "multi"` — бизнес-семантика
+
+4. **Не предложил DRY helper сразу**
+   - Пользователь инициировал: "можно ли шаблон?"
+   - Решение: `buildTargetFilterCase()` helper
 
 ---
 
@@ -123,22 +136,29 @@ Type guard `isRequiredField` через `ADHOC_REQUIRED_FIELDS.some()`.
 ```
 Продолжаем sessions/2025-12-29-search-graph-mvp-readiness.md
 
-Статус: Баги #1, #2 FIXED (не закоммичено). Баги #3, #4 TODO.
+Статус: FEAT-052 DONE (не закоммичено). Баги #3, #4 TODO.
 
-СДЕЛАНО в этой сессии:
-- Баг #1: asking_adhoc_context — "Current grade" вместо "aiming for"
-- Баг #2: showing_goal — inheritedGoalFields явно показывает унаследованные поля
-- FEAT-052: таска на missing fields в TargetContext
+СДЕЛАНО в этой части сессии:
+- FEAT-052: TargetContext +4 поля (industries, cities, citizenships, educationLevels)
+- Type-safe ADHOC_TO_TARGET_ENTRIES tuple array
+- DRY helper buildTargetFilterCase() с type: "single" | "multi"
+- fillFromContext refactored на loop по entries
 
-ИЗМЕНЁННЫЕ ФАЙЛЫ (lint/tsc ✅):
-- load-context.ts, extract-goal.ts, response-builders.ts, state.ts
-- schemas.ts, prompts.ts
+ИЗМЕНЁННЫЕ ФАЙЛЫ (lint/tsc ✅, integration tests ✅):
+- schemas.ts, extract-goal.ts, extraction.ts
+- normalizer.ts, filters.ts, search.ts
 
 НУЖНО:
 1. Баг #3: showing_results (0) — нет объяснения почему 0
-2. Баг #4: asking_search_mode — jargon (pathfinders/waymates)
-3. Коммит после всех багов
-4. Обновить матрицу tests_report.md
+2. Баг #4: asking_search_mode — jargon
+3. Тесты для новых фильтров (tests/core/integration/search-manager/target-search.integration.ts):
+   - TG-IND-1/2: industries (desired fintech → U7, undesired tech → U7/U8)
+   - TG-CITY-1/2: cities (desired berlin → U1/U2/U5/U6/U9/U14)
+   - TG-CIT-1/2: citizenships (desired de → U1/U5/U6/U9/U14, undesired ru → exclude U10-U13)
+   - TG-EDU-1/2: educationLevels (desired MASTER → U14/U18, но требует import)
+   - Задача: регрессия для buildTargetFilterCase(), проверить desired/undesired режимы
+   - Паттерн: аналогично существующим TG1-TG7 (position, domains, skills)
+4. Followup: educationLevel import (как domains через yaml → Neo4j)
 
 НЕ КОММИТИТЬ cold-start файлы.
 ```

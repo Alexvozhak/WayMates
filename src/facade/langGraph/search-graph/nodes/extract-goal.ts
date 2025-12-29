@@ -1,6 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
 
-import { targetContextSchema } from "../../../../shared/schemas.js";
+import { ADHOC_TO_TARGET_ENTRIES, targetContextSchema } from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildGoalExtractionPrompt } from "../prompts/extraction.js";
 import { NODE, PHASE } from "../state.js";
@@ -21,8 +21,8 @@ function toFilter(value: string | string[] | null | undefined): FieldFilter | nu
 }
 
 /**
- * Fill missing goal fields from adhocContext.
- * Returns filled goal and list of inherited field names.
+ * Fill missing goal fields from adhocContext using ADHOC_TO_TARGET_ENTRIES.
+ * All fields (including position) can be inherited now.
  */
 function fillFromContext(
   goal: TargetContext,
@@ -31,23 +31,19 @@ function fillFromContext(
   if (!ctx) return { filled: goal, inherited: [] };
 
   const inherited: InheritableGoalField[] = [];
-  const inherit = <T>(field: InheritableGoalField, goalVal: T, ctxVal: T): T => {
-    if (goalVal != null) return goalVal;
-    if (ctxVal != null) inherited.push(field);
-    return ctxVal;
-  };
+  const filled = { ...goal };
 
-  return {
-    filled: {
-      position: goal.position,
-      role: inherit("role", goal.role, toFilter(ctx.role)),
-      domains: inherit("domains", goal.domains, toFilter(ctx.domains)),
-      skills: inherit("skills", goal.skills, toFilter(ctx.skills)),
-      countries: inherit("countries", goal.countries, toFilter(ctx.countryCode)),
-      languages: inherit("languages", goal.languages, toFilter(ctx.languages)),
-    },
-    inherited,
-  };
+  for (const [adhocKey, targetKey] of ADHOC_TO_TARGET_ENTRIES) {
+    if (filled[targetKey] != null) continue;
+
+    const filterValue = toFilter(ctx[adhocKey]);
+    if (filterValue == null) continue;
+
+    filled[targetKey] = filterValue;
+    inherited.push(targetKey);
+  }
+
+  return { filled, inherited };
 }
 
 export const extractGoalNode = withLogging<SearchStateType>(

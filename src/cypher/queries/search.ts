@@ -4,7 +4,7 @@
 
 import { buildContextMapProjection } from "../constants/projections.js";
 import { buildWithCollect } from "../helpers/aggregation.js";
-import { buildExcludedReasonsFilter, buildStrictWhereClause } from "../helpers/filters.js";
+import { buildExcludedReasonsFilter, buildStrictWhereClause, buildTargetFilterCase } from "../helpers/filters.js";
 import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
 import { buildSkillsScoringBlock } from "../helpers/scoring.js";
 import { buildFullTrajectoryFromUser, buildUnwindPath } from "../helpers/trajectory.js";
@@ -287,69 +287,23 @@ export function buildReversePathfinderSearchQuery(params: TargetSearchParams): s
   // Build WHERE conditions for target filtering
   const conditions: string[] = ["matchedUser.userId <> $userId"];
 
-  // Position filter (if strict)
-  if ("position" in targetContext) {
-    conditions.push(
-      `
-    CASE
-      WHEN $position IS NULL THEN true
-      WHEN $position.mode = 'desired' THEN matchedPosition.canonicalName IN $position.values
-      WHEN $position.mode = 'undesired' THEN NOT matchedPosition.canonicalName IN $position.values
-      ELSE true
-    END`.trim(),
-    );
-  }
+  // Target context field filters
+  const targetFields: (keyof typeof targetContext)[] = [
+    "position",
+    "countries",
+    "domains",
+    "skills",
+    "languages",
+    "industries",
+    "cities",
+    "citizenships",
+    "educationLevels",
+  ];
 
-  // Country filter (if strict)
-  if ("countryCode" in targetContext) {
-    conditions.push(
-      `
-    CASE
-      WHEN $countries IS NULL THEN true
-      WHEN $countries.mode = 'desired' THEN matchedCountry.name IN $countries.values
-      WHEN $countries.mode = 'undesired' THEN NOT matchedCountry.name IN $countries.values
-      ELSE true
-    END`.trim(),
-    );
-  }
-
-  // Domains filter (if strict)
-  if ("domains" in targetContext) {
-    conditions.push(
-      `
-    CASE
-      WHEN $domains IS NULL THEN true
-      WHEN $domains.mode = 'desired' THEN ANY(item IN matchedDomains WHERE item IN $domains.values)
-      WHEN $domains.mode = 'undesired' THEN NONE(item IN matchedDomains WHERE item IN $domains.values)
-      ELSE true
-    END`.trim(),
-    );
-  }
-
-  // Skills filter (if strict)
-  if ("skills" in targetContext) {
-    conditions.push(
-      `
-    CASE
-      WHEN $skills IS NULL THEN true
-      WHEN $skills.mode = 'desired' THEN ANY(item IN matchedSkills WHERE item IN $skills.values)
-      WHEN $skills.mode = 'undesired' THEN NONE(item IN matchedSkills WHERE item IN $skills.values)
-      ELSE true
-    END`.trim(),
-    );
-  }
-
-  // Languages filter (if strict)
-  if ("languages" in targetContext) {
-    conditions.push(
-      `
-    CASE
-      WHEN $languages IS NULL THEN true
-      WHEN $languages.mode = 'desired' THEN ANY(item IN matchedLanguages WHERE item IN $languages.values)
-      WHEN $languages.mode = 'undesired' THEN NONE(item IN matchedLanguages WHERE item IN $languages.values)
-      ELSE true
-    END`.trim(),
-    );
+  for (const field of targetFields) {
+    if (field in targetContext) {
+      conditions.push(buildTargetFilterCase(field, `$${field}`));
+    }
   }
 
   // Recency filter (if specified) - filters matchedContext (target-matching context)
@@ -440,66 +394,30 @@ RETURN matchedUser.userId AS userId,
  * @param strictFields - Fields to match exactly for reference context
  * @returns Cypher query returning PathfinderCandidateLight
  */
-// eslint-disable-next-line complexity, max-lines-per-function -- Cypher query builder with conditional blocks
+// eslint-disable-next-line max-lines-per-function -- Cypher query builder with conditional blocks
 export function buildPathfinderSearchQuery(params: PathfinderSearchParams, strictFields: ContextField[]): string {
   const { targetContext, targetRecencyMonths, referenceRecencyMonths } = params;
 
   // === PHASE 1: Target matching conditions ===
   const targetConditions: string[] = ["matchedUser.userId <> $userId"];
 
-  if ("position" in targetContext && targetContext.position) {
-    targetConditions.push(
-      `CASE
-      WHEN $position IS NULL THEN true
-      WHEN $position.mode = 'desired' THEN matchedPosition.canonicalName IN $position.values
-      WHEN $position.mode = 'undesired' THEN NOT matchedPosition.canonicalName IN $position.values
-      ELSE true
-    END`,
-    );
-  }
+  // Target context field filters (only if field has value)
+  const targetFilterFields: (keyof typeof targetContext)[] = [
+    "position",
+    "countries",
+    "domains",
+    "skills",
+    "languages",
+    "industries",
+    "cities",
+    "citizenships",
+    "educationLevels",
+  ];
 
-  if ("countryCode" in targetContext && targetContext.countries) {
-    targetConditions.push(
-      `CASE
-      WHEN $countries IS NULL THEN true
-      WHEN $countries.mode = 'desired' THEN matchedCountry.name IN $countries.values
-      WHEN $countries.mode = 'undesired' THEN NOT matchedCountry.name IN $countries.values
-      ELSE true
-    END`,
-    );
-  }
-
-  if ("domains" in targetContext && targetContext.domains) {
-    targetConditions.push(
-      `CASE
-      WHEN $domains IS NULL THEN true
-      WHEN $domains.mode = 'desired' THEN ANY(item IN matchedDomains WHERE item IN $domains.values)
-      WHEN $domains.mode = 'undesired' THEN NONE(item IN matchedDomains WHERE item IN $domains.values)
-      ELSE true
-    END`,
-    );
-  }
-
-  if ("skills" in targetContext && targetContext.skills) {
-    targetConditions.push(
-      `CASE
-      WHEN $skills IS NULL THEN true
-      WHEN $skills.mode = 'desired' THEN ANY(item IN matchedSkills WHERE item IN $skills.values)
-      WHEN $skills.mode = 'undesired' THEN NONE(item IN matchedSkills WHERE item IN $skills.values)
-      ELSE true
-    END`,
-    );
-  }
-
-  if ("languages" in targetContext && targetContext.languages) {
-    targetConditions.push(
-      `CASE
-      WHEN $languages IS NULL THEN true
-      WHEN $languages.mode = 'desired' THEN ANY(item IN matchedLanguages WHERE item IN $languages.values)
-      WHEN $languages.mode = 'undesired' THEN NONE(item IN matchedLanguages WHERE item IN $languages.values)
-      ELSE true
-    END`,
-    );
+  for (const field of targetFilterFields) {
+    if (targetContext[field]) {
+      targetConditions.push(buildTargetFilterCase(field, `$${field}`));
+    }
   }
 
   if (targetRecencyMonths) {

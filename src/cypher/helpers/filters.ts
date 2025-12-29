@@ -2,7 +2,60 @@
  * Filters for WHERE clauses and excluded reasons
  */
 
-import type { ContextField } from "../../shared/schemas.js";
+import type { ContextField, TargetContext } from "../../shared/schemas.js";
+
+// ============================================================================
+// TARGET CONTEXT FILTER HELPERS (desired/undesired mode)
+// ============================================================================
+
+/**
+ * Context value type for filtering.
+ * - "single": candidate has one value (position, city) → use IN/NOT IN
+ * - "multi": candidate has multiple values (skills[], citizenships[]) → use ANY/NONE
+ */
+type ContextValueType = "single" | "multi";
+
+/**
+ * Cypher path configuration for each TargetContext field.
+ */
+const TARGET_FILTER_CONFIG: Record<keyof TargetContext, { path: string; type: ContextValueType }> = {
+  position: { path: "matchedPosition.canonicalName", type: "single" },
+  role: { path: "matchedRole.canonicalName", type: "single" },
+  countries: { path: "matchedCountry.name", type: "single" },
+  domains: { path: "matchedDomains", type: "multi" },
+  skills: { path: "matchedSkills", type: "multi" },
+  languages: { path: "matchedLanguages", type: "multi" },
+  industries: { path: "matchedIndustry.canonicalName", type: "single" },
+  cities: { path: "matchedCity.canonicalName", type: "single" },
+  citizenships: { path: "matchedContext.citizenships", type: "multi" },
+  educationLevels: { path: "matchedContext.educationLevel", type: "single" },
+};
+
+/**
+ * Build CASE expression for a target filter field (desired/undesired mode).
+ *
+ * @param field - TargetContext field name
+ * @param paramName - Cypher parameter name (e.g., "$position")
+ * @returns CASE expression string
+ */
+export function buildTargetFilterCase(field: keyof TargetContext, paramName: string): string {
+  const { path, type } = TARGET_FILTER_CONFIG[field];
+
+  const [desired, undesired] =
+    type === "multi"
+      ? [
+          `ANY(item IN ${path} WHERE item IN ${paramName}.values)`,
+          `NONE(item IN ${path} WHERE item IN ${paramName}.values)`,
+        ]
+      : [`${path} IN ${paramName}.values`, `NOT ${path} IN ${paramName}.values`];
+
+  return `CASE
+      WHEN ${paramName} IS NULL THEN true
+      WHEN ${paramName}.mode = 'desired' THEN ${desired}
+      WHEN ${paramName}.mode = 'undesired' THEN ${undesired}
+      ELSE true
+    END`;
+}
 
 /**
  * Extract prefix from context variable name

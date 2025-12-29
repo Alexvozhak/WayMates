@@ -467,19 +467,41 @@ export const targetContextSchema = z.object({
   domains: fieldFilterSchema.nullable().default(null).describe("Target work domains filter"),
   skills: fieldFilterSchema.nullable().default(null).describe("Target skills filter"),
   languages: fieldFilterSchema.nullable().default(null).describe("Target languages filter"),
+  industries: fieldFilterSchema.nullable().default(null).describe("Target industry filter (business sector)"),
+  cities: fieldFilterSchema.nullable().default(null).describe("Target city filter (for relocation)"),
+  citizenships: fieldFilterSchema
+    .nullable()
+    .default(null)
+    .describe("Required citizenships filter (passport countries)"),
+  educationLevels: fieldFilterSchema.nullable().default(null).describe("Required education level filter"),
 });
 
 export type TargetContext = z.infer<typeof targetContextSchema>;
 
-/** Goal fields inherited from adhocContext when user doesn't specify them (all except position) */
-export const INHERITABLE_GOAL_FIELDS = [
-  "role",
-  "domains",
-  "skills",
-  "countries",
-  "languages",
-] as const satisfies readonly (keyof TargetContext)[];
-export type InheritableGoalField = (typeof INHERITABLE_GOAL_FIELDS)[number];
+/**
+ * Type-safe mapping from AdhocContext field names to TargetContext field names.
+ * Tuple array as source of truth — enables type-safe iteration without casts.
+ *
+ * TypeScript validates both source (AdhocContextBase) and target (TargetContext) field names.
+ */
+export const ADHOC_TO_TARGET_ENTRIES = [
+  ["position", "position"],
+  ["role", "role"],
+  ["domains", "domains"],
+  ["skills", "skills"],
+  ["countryCode", "countries"],
+  ["languages", "languages"],
+  ["industry", "industries"],
+  ["cityName", "cities"],
+  ["citizenships", "citizenships"],
+  ["educationLevel", "educationLevels"],
+] as const satisfies readonly [keyof AdhocContextBase, keyof TargetContext][];
+
+export type MappableAdhocField = (typeof ADHOC_TO_TARGET_ENTRIES)[number][0];
+export type InheritableGoalField = (typeof ADHOC_TO_TARGET_ENTRIES)[number][1];
+
+/** All goal fields that can be inherited from adhocContext */
+export const INHERITABLE_GOAL_FIELDS = ADHOC_TO_TARGET_ENTRIES.map(([_, target]) => target);
 
 // ==========================================
 // === SEARCH FILTERS SCHEMAS ===
