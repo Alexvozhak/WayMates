@@ -2,6 +2,7 @@ import { DTW_MIN_TRAJECTORY_LENGTH } from "../../../../config/scoring.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { pathfinderToChartCandidate, safeGenerateChart } from "../chart-utils.js";
+import { computeFacets, shouldUseFacets } from "../facets.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
@@ -39,22 +40,27 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       pathLimit: config.CANDIDATES_DISPLAY_LIMIT,
     });
 
-    const chartUrl = await safeGenerateChart({
-      mode: "with-goal",
-      userTrajectory,
-      adhocContext,
-      storedGoal,
-      candidates: results.map((c) => pathfinderToChartCandidate(c)),
-      locale,
-      dictionariesService,
-      logger,
-      nodeName: NODE.search_pathfinders,
-    });
+    const needsFiltering = shouldUseFacets(results);
+
+    const chartUrl = needsFiltering
+      ? null
+      : await safeGenerateChart({
+          mode: "with-goal",
+          userTrajectory,
+          adhocContext,
+          storedGoal,
+          candidates: results.map((c) => pathfinderToChartCandidate(c)),
+          locale,
+          dictionariesService,
+          logger,
+          nodeName: NODE.search_pathfinders,
+        });
 
     return {
       pathfinderResults: results,
       searchMode: "pathfinders" as const,
-      phase: PHASE.showing_results,
+      phase: needsFiltering ? PHASE.showing_results_facets : PHASE.showing_results,
+      facets: needsFiltering ? computeFacets(results) : null,
       chartUrl,
     };
   },

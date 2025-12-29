@@ -3,7 +3,7 @@ description: Chart генерируется для searchWaymates с устан�
 locale: ru
 
 steps:
-  - message: Я middle backend разработчик в healthcare, США
+  - message: найди похожих, я middle backend разработчик в healthcare, США
     expect:
       phase: confirming_adhoc_context
       adhocContext.industry: healthcare

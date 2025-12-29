@@ -3,7 +3,7 @@ description: Chart генерируется для searchPathfinders (кто д�
 locale: ru
 
 steps:
-  - message: Я middle backend разработчик в technology, США
+  - message: найди похожих, я middle backend разработчик в technology, США
     expect:
       phase: confirming_adhoc_context
       adhocContext.industry: technology

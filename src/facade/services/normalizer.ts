@@ -50,18 +50,22 @@ export class Normalizer {
     private readonly fuzzyModel: FuzzyModel = defaultFuzzyModel,
   ) {}
 
-  async normalizeAdhocContext(context: AdhocContextBase, userId: UserId): Promise<AdhocContextBase> {
+  /**
+   * Normalize adhoc context by filtering to known dictionary values.
+   * Does NOT add new terms — adhoc is for search, not profile creation.
+   */
+  async normalizeAdhocContext(context: AdhocContextBase, _userId: UserId): Promise<AdhocContextBase> {
     const [role, position, cityName, industry, skills, domains] = await Promise.all([
-      this.normalizeOptionalTerm("role", context.role, userId),
-      this.normalizeOptionalTerm("position", context.position, userId),
-      this.normalizeOptionalTerm("city", context.cityName, userId),
-      this.normalizeOptionalTerm("industry", context.industry, userId),
-      this.normalizeOptionalTerms("skill", context.skills, userId),
-      this.normalizeOptionalTerms("domain", context.domains, userId),
+      this.filterToKnown("role", context.role),
+      this.filterToKnown("position", context.position),
+      this.filterToKnown("city", context.cityName),
+      this.filterToKnown("industry", context.industry),
+      this.filterArrayToKnown("skill", context.skills),
+      this.filterArrayToKnown("domain", context.domains),
     ]);
 
     // Pass-through fields that don't need normalization (ISO codes: countryCode, languages)
-    // Normalized fields override pass-through values
+    // Filtered fields override pass-through values
     return this.removeNullishFields({ ...context, role, position, cityName, industry, skills, domains });
   }
 
@@ -163,6 +167,35 @@ Return: { normalized: string[], rejected: string[] }`;
     const result = await fieldsModel.invoke([new HumanMessage(prompt)]);
 
     return result;
+  }
+
+  /**
+   * Filter term to known value from dictionary.
+   * Unlike normalizeTerm, does NOT add new terms — only matches existing.
+   */
+  private async filterToKnown(type: SimpleDictionaryType, value: string | null): Promise<string | null> {
+    if (!value) return null;
+
+    const dict = await this.dictionaryCache.getSimple(type);
+    const normalized = value.toLowerCase();
+
+    const exact = dict.get(normalized);
+    return exact?.canonicalName ?? null;
+  }
+
+  /**
+   * Filter terms array to only known values from dictionary.
+   * Unlike normalizeTerms, does NOT add new terms — only filters.
+   */
+  private async filterArrayToKnown(type: SimpleDictionaryType, values: string[] | null): Promise<string[] | null> {
+    if (!values || values.length === 0) return null;
+
+    const dict = await this.dictionaryCache.getSimple(type);
+    const known = values
+      .map((v) => dict.get(v.toLowerCase())?.canonicalName)
+      .filter((v): v is string => v !== undefined);
+
+    return known.length > 0 ? known : null;
   }
 
   private async normalizeTargetField(

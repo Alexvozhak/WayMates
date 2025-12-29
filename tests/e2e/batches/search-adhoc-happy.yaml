@@ -3,11 +3,7 @@ description: Adhoc поиск без цели — happy path
 locale: ru
 
 steps:
-  - message: привет
-    expect:
-      phase: system_message
-
-  - message: Я middle backend разработчик, США
+  - message: хочу найти похожих, я middle backend разработчик, США
     expect:
       phase: confirming_adhoc_context
       adhocContext.position: middle

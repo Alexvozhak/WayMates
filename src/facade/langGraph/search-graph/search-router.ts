@@ -66,6 +66,7 @@ export function getValidIntentsForPhase(phase: SearchPhase, flags: RouteFlags): 
 const EXPLORATION_ROUTES: RouteMap = {
   proceed: NODE.extract_goal,
   clarify: NODE.extract_goal,
+  setGoal: NODE.extract_goal,
   editAdhoc: NODE.load_context,
   filter: NODE.apply_filters,
   ask: NODE.generate_answer,

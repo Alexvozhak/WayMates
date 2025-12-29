@@ -23,11 +23,13 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   If goal inherited fields from user profile (role, domains, skills, countries) — say explicitly that keeping current field/location, ask if user wants to change.
   For missing fields explain defaults: no role/domains/countries → matches any.
   Offer: validate with real people, refine, or save`,
-  [SEARCH_PHASE.asking_after_validate_candidates]:
-    "Show real people who reached goal — starting point, path duration, key skills, current status. Help decide if goal is right",
+  [SEARCH_PHASE.asking_after_validate_candidates]: `Show real people who reached goal — starting point, path duration, key skills, current status. Help decide if goal is right.
+  Empty results → say honestly no one found matching this exact goal, suggest relaxing filters or changing goal`,
   [SEARCH_PHASE.asking_after_validate_facets]: "Show facets with counts, suggest filter",
   [SEARCH_PHASE.showing_results]: `Show matches.
   Empty results → list applied filters from goal, suggest which ONE filter to relax first, offer concrete next step`,
+  [SEARCH_PHASE.showing_results_facets]:
+    "Show facets with counts. Goal applied but too many results — suggest narrowing by role/country/industry",
   [SEARCH_PHASE.asking_search_mode]: `Goal saved! Offer two options briefly:
   • Pathfinders = those who already made this transition
   • Waymates = peers heading to same goal

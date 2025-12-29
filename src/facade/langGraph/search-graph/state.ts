@@ -39,6 +39,7 @@ export const searchPhaseSchema = z.enum([
   "deleting_goal",
   "searching",
   "showing_results",
+  "showing_results_facets",
   "advising",
   "cancelled",
   "failed",

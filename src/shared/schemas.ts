@@ -350,6 +350,24 @@ type ContextRequiredField = keyof Pick<
   "position" | "role" | "domains" | "skills" | "industry" | "countryCode" | "cityName" | "citizenships"
 >;
 
+/** Required fields for Trail */
+type TrailRequiredField = keyof Pick<Trail, "skill" | "platform">;
+
+/** Runtime array of required field names for cold-start (type-checked) */
+export const CONTEXT_REQUIRED_FIELDS = [
+  "position",
+  "role",
+  "domains",
+  "skills",
+  "industry",
+  "countryCode",
+  "cityName",
+  "citizenships",
+] as const satisfies readonly ContextRequiredField[];
+
+/** Runtime array of required trail field names (type-checked) */
+export const TRAIL_REQUIRED_FIELDS = ["skill", "platform"] as const satisfies readonly TrailRequiredField[];
+
 /** Optional fields derived from UserContext (nullable fields, excluding system) */
 export type ContextOptionalField = Exclude<keyof UserContext, ContextRequiredField | ContextSystemField>;
 
@@ -970,13 +988,17 @@ export type AddTermInput = z.infer<typeof addTermInputSchema>;
 // === COLD START MCP RESPONSE ===
 // ==========================================
 
+/** Describe strings for LLM structured output (generated from type-checked arrays) */
+const CONTEXT_FIELDS_DESC = CONTEXT_REQUIRED_FIELDS.join(", ");
+const TRAIL_FIELDS_DESC = TRAIL_REQUIRED_FIELDS.join(", ");
+
 /**
  * Base schema for context agenda (what LLM returns during planning).
  * Used by planCareerHistoryTool's structured output.
  */
 export const contextAgendaBaseSchema = z.object({
-  preview: z.string().describe("Human-readable preview: 'Junior Backend в Яндексе 2020-2022'"),
-  incomingTrails: z.array(z.string()).describe("Array of trail preview strings: ['Coursera React course 2022']"),
+  preview: z.string().describe(`Summary of: ${CONTEXT_FIELDS_DESC} — extract only, never invent`),
+  incomingTrails: z.array(z.string()).describe(`Trail info: ${TRAIL_FIELDS_DESC} — only if explicitly mentioned`),
 });
 
 export type ContextAgendaBase = z.infer<typeof contextAgendaBaseSchema>;
@@ -1364,6 +1386,13 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     results: z.array(waymateCandidateSchema),
     goal: goalSchema.nullable(),
     chartUrl: z.string().url().nullable(),
+    appliedFilters: currentAppliedFiltersSchema.nullable(),
+    adhocContext: adhocContextBase.nullable(),
+  }),
+  z.object({
+    phase: z.literal("showing_results_facets"),
+    facets: candidateFacetsSchema,
+    goal: goalSchema.nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
   }),

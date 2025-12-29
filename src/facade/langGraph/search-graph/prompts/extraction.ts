@@ -25,6 +25,7 @@ RULES:
 3. NEVER return empty strings "" — use JSON null instead
 4. NEVER return string representations of null like "null", "/null", "NULL" — use JSON null
 5. If field not explicitly stated → null
+6. domains = TECHNICAL specialization, industry = BUSINESS sector — these are different concepts, never mix
 
 POSITION: Extract ONLY if user explicitly states their seniority level.
 Do NOT infer from years of experience — years ≠ seniority.`;

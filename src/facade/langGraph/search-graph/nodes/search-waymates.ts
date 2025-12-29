@@ -1,4 +1,5 @@
 import { safeGenerateChart } from "../chart-utils.js";
+import { computeFacets, shouldUseFacets } from "../facets.js";
 import { NODE, PHASE } from "../state.js";
 import { DEFAULT_CURRENT_SEARCH_PARAMS } from "../types.js";
 import { withLogging } from "../with-logging.js";
@@ -23,23 +24,28 @@ export const searchWaymatesNode = withLogging<SearchStateType>(
       ...params,
     });
 
-    const chartUrl = await safeGenerateChart({
-      mode: "with-goal",
-      userTrajectory,
-      adhocContext,
-      storedGoal,
-      candidates: results,
-      locale,
-      dictionariesService,
-      logger,
-      nodeName: NODE.search_waymates,
-    });
+    const needsFiltering = shouldUseFacets(results);
+
+    const chartUrl = needsFiltering
+      ? null
+      : await safeGenerateChart({
+          mode: "with-goal",
+          userTrajectory,
+          adhocContext,
+          storedGoal,
+          candidates: results,
+          locale,
+          dictionariesService,
+          logger,
+          nodeName: NODE.search_waymates,
+        });
 
     return {
       searchResults: results,
       currentSearchParams: params,
       searchMode: "waymates" as const,
-      phase: PHASE.showing_results,
+      phase: needsFiltering ? PHASE.showing_results_facets : PHASE.showing_results,
+      facets: needsFiltering ? computeFacets(results) : null,
       chartUrl,
     };
   },

@@ -121,6 +121,14 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     adhocContext: state.adhocContext,
   }),
 
+  [PHASE.showing_results_facets]: (state) => ({
+    phase: PHASE.showing_results_facets,
+    goal: state.storedGoal,
+    appliedFilters: state.currentSearchParams,
+    adhocContext: state.adhocContext,
+    facets: state.facets!,
+  }),
+
   [PHASE.advising]: (state) => ({
     phase: PHASE.advising,
     answerText: state.currentAnswer ?? "",
