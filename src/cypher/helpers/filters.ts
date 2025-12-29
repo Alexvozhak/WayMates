@@ -28,7 +28,7 @@ const TARGET_FILTER_CONFIG: Record<keyof TargetContext, { path: string; type: Co
   industries: { path: "matchedIndustry.canonicalName", type: "single" },
   cities: { path: "matchedCity.canonicalName", type: "single" },
   citizenships: { path: "matchedContext.citizenships", type: "multi" },
-  educationLevels: { path: "matchedContext.educationLevel", type: "single" },
+  educationLevels: { path: "matchedEducationLevel.canonicalName", type: "single" },
 };
 
 /**
@@ -121,8 +121,8 @@ const STRICT_CONDITION_GENERATORS: Record<ContextField, (prefix: string, searchi
 
   educationLevel: (prefix, searchingVar) => `CASE
     WHEN ${searchingVar}.educationLevel IS NULL THEN true
-    WHEN ${prefix}Context.educationLevel IS NULL THEN true
-    ELSE ${prefix}Context.educationLevel = ${searchingVar}.educationLevel
+    WHEN ${prefix}EducationLevel IS NULL THEN true
+    ELSE ${prefix}EducationLevel.canonicalName = ${searchingVar}.educationLevel
   END`,
 
   languages: (prefix, searchingVar) => `CASE

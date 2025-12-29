@@ -12,6 +12,7 @@ const DICTIONARY_LABELS: Record<SimpleDictionaryType, string> = {
   city: "CITIES",
   platform: "PLATFORMS",
   language: "LANGUAGES",
+  education_level: "EDUCATION_LEVELS",
 };
 
 export class DictionariesService {

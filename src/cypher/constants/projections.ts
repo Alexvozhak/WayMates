@@ -53,7 +53,6 @@ ${prefix}Context {
   .birthYear,
   .citizenships,
   .companySize,
-  .educationLevel,
   .salaryExact,
   .salaryMin,
   .salaryMax,
@@ -64,7 +63,8 @@ ${prefix}Context {
   industry: ${prefix}Industry.canonicalName,
   countryCode: ${prefix}Country.name,
   cityName: ${prefix}City.canonicalName,
-  languages: ${prefix}Languages
+  languages: ${prefix}Languages,
+  educationLevel: ${prefix}EducationLevel.canonicalName
 }
   `.trim();
 }
@@ -86,7 +86,6 @@ context {
   .birthYear,
   .citizenships,
   .companySize,
-  .educationLevel,
   .salaryExact,
   .salaryMin,
   .salaryMax,
@@ -97,6 +96,7 @@ context {
   industry: industry.name,
   countryCode: country.name,
   cityName: city.name,
-  languages: languages
+  languages: languages,
+  educationLevel: educationLevel.canonicalName
 }
 `.trim();

@@ -70,7 +70,7 @@ RETURN searchingUser.currentContextId AS currentContextId
  *
  * Returns variables in scope:
  * - matchedUser, matchedContext
- * - matchedPosition, matchedRole, matchedIndustry, matchedCity, matchedCountry
+ * - matchedPosition, matchedRole, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel
  * - matchedDomains (array), matchedSkills (array)
  *
  * @param filterByCurrentContext - If true, filters by currentContextId (searchByUser). If false, searches all contexts (searchAdhoc, searchByTarget)
@@ -165,7 +165,7 @@ export function buildWaymatesSearchQuery(
     ? `
 OPTIONAL MATCH (matchedUser)-[:HAS_GOAL]->(candidateGoal:Goal)
 
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel,
      timeSinceMatchedMonths, contextMatchScore,
      // isWaymate: candidate has same goal as user (same destination)
      CASE
@@ -178,7 +178,7 @@ WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, 
      END AS isWaymate
     `
     : `
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel,
      timeSinceMatchedMonths, contextMatchScore,
      false AS isWaymate
     `;
@@ -188,7 +188,7 @@ ${buildMatchedContextBase(filterByCurrentContext)}
 
 ${whereClause}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
 ${buildExcludedReasonsFilter("matchedContext", [
@@ -202,12 +202,13 @@ ${buildExcludedReasonsFilter("matchedContext", [
   "matchedIndustry",
   "matchedCity",
   "matchedCountry",
+  "matchedEducationLevel",
   "timeSinceMatchedMonths",
 ])}
 
 ${
   skipSkillsPenalty
-    ? `WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+    ? `WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel, timeSinceMatchedMonths,
      0.0 AS contextMatchScore`
     : buildSkillsScoringBlock("$referenceContext", "matchedSkills", [
         "matchedUser",
@@ -220,6 +221,7 @@ ${
         "matchedIndustry",
         "matchedCity",
         "matchedCountry",
+        "matchedEducationLevel",
         "timeSinceMatchedMonths",
       ])
 }
@@ -327,21 +329,21 @@ ${buildMatchedContextBase(false)}
 
 ${whereClause}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 
 // Phase 2-3: Get FULL trajectory from user's current context
-${buildFullTrajectoryFromUser("matchedUser", ["matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceMatchedMonths"])}
+${buildFullTrajectoryFromUser("matchedUser", ["matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "matchedEducationLevel", "timeSinceMatchedMonths"])}
 
 ${buildUnwindPath("matchedPathNodes", "matchedPathContext")}
 
 ${buildOptionalMatchRelationships("matchedPathContext")}
 
-${buildWithCollect("matchedPathContext", ["matchedUser", "matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceMatchedMonths"])}
+${buildWithCollect("matchedPathContext", ["matchedUser", "matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "matchedEducationLevel", "timeSinceMatchedMonths"])}
 
 ORDER BY matchedPathContext.createdAt ASC
 
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceMatchedMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel, timeSinceMatchedMonths,
      collect(${buildContextMapProjection("matchedPath")}) AS trajectory
 
 // Phase 4: Collect trails for this user
@@ -372,7 +374,7 @@ CALL {
   RETURN collect(trail) AS trails
 }
 
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel,
      timeSinceMatchedMonths, trajectory, trails
 ${excludedReasonsCheck}
 
@@ -440,36 +442,36 @@ ${buildMatchedContextBase(false)}
 
 ${targetWhereClause}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel,
      duration.between(datetime(matchedContext.createdAt), datetime()).months AS timeSinceTargetMonths
 
 // Phase 2: Find REFERENCE context (where they were like us, before target)
 MATCH (matchedUser)-[:HAS_CONTEXT]->(refContext:Context)
 ${buildOptionalMatchRelationships("refContext")}
 
-${buildWithCollect("refContext", ["matchedUser", "matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "timeSinceTargetMonths"])}
+${buildWithCollect("refContext", ["matchedUser", "matchedContext", "matchedPosition", "matchedRole", "matchedDomains", "matchedSkills", "matchedLanguages", "matchedIndustry", "matchedCity", "matchedCountry", "matchedEducationLevel", "timeSinceTargetMonths"])}
 
 ${referenceStrictWhere ? referenceStrictWhere + " AND" : "WHERE"}
   refContext.createdAt < matchedContext.createdAt
   ${referenceRecencyCondition}
 
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceTargetMonths,
-     refContext, refPosition, refRole, refDomains, refSkills, refLanguages, refIndustry, refCity, refCountry,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel, timeSinceTargetMonths,
+     refContext, refPosition, refRole, refDomains, refSkills, refLanguages, refIndustry, refCity, refCountry, refEducationLevel,
      duration.between(datetime(refContext.createdAt), datetime()).months AS timeSinceMatchedMonths
 ORDER BY matchedUser.userId, matchedContext.contextId, refContext.createdAt ASC
 
 // Deduplicate: keep oldest refContext per (user, targetContext)
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceTargetMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel, timeSinceTargetMonths,
      collect({
        refContext: refContext, refPosition: refPosition, refRole: refRole, refDomains: refDomains,
-       refSkills: refSkills, refLanguages: refLanguages, refIndustry: refIndustry, refCity: refCity, refCountry: refCountry,
+       refSkills: refSkills, refLanguages: refLanguages, refIndustry: refIndustry, refCity: refCity, refCountry: refCountry, refEducationLevel: refEducationLevel,
        timeSinceMatchedMonths: timeSinceMatchedMonths
      })[0] AS ref
 
 // Unpack ref map
-WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, timeSinceTargetMonths,
+WITH matchedUser, matchedContext, matchedPosition, matchedRole, matchedDomains, matchedSkills, matchedLanguages, matchedIndustry, matchedCity, matchedCountry, matchedEducationLevel, timeSinceTargetMonths,
      ref.refContext AS refContext, ref.refPosition AS refPosition, ref.refRole AS refRole, ref.refDomains AS refDomains,
-     ref.refSkills AS refSkills, ref.refLanguages AS refLanguages, ref.refIndustry AS refIndustry, ref.refCity AS refCity, ref.refCountry AS refCountry,
+     ref.refSkills AS refSkills, ref.refLanguages AS refLanguages, ref.refIndustry AS refIndustry, ref.refCity AS refCity, ref.refCountry AS refCountry, ref.refEducationLevel AS refEducationLevel,
      ref.timeSinceMatchedMonths AS timeSinceMatchedMonths
 
 // Skills scoring on refContext (where they were like us)
@@ -484,6 +486,7 @@ ${buildSkillsScoringBlock("$referenceContext", "refSkills", [
   "matchedIndustry",
   "matchedCity",
   "matchedCountry",
+  "matchedEducationLevel",
   "timeSinceTargetMonths",
   "refContext",
   "refPosition",
@@ -494,6 +497,7 @@ ${buildSkillsScoringBlock("$referenceContext", "refSkills", [
   "refIndustry",
   "refCity",
   "refCountry",
+  "refEducationLevel",
   "timeSinceMatchedMonths",
 ])}
 

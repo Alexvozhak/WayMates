@@ -18,8 +18,10 @@ OPTIONAL MATCH (pl:Platform {verified: true})
 WITH skills, positions, roles, domains, cities, industries, [x IN collect({canonicalName: pl.canonicalName, description: coalesce(pl.description, pl.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS platforms
 OPTIONAL MATCH (l:Language {verified: true})
 WITH skills, positions, roles, domains, cities, industries, platforms, [x IN collect({canonicalName: l.canonicalName, description: coalesce(l.description, l.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS languages
+OPTIONAL MATCH (el:EducationLevel {verified: true})
+WITH skills, positions, roles, domains, cities, industries, platforms, languages, [x IN collect({canonicalName: el.canonicalName, description: coalesce(el.description, el.canonicalName), order: el.order}) WHERE x.canonicalName IS NOT NULL] AS educationLevels
 OPTIONAL MATCH (rs:Reason)
-WITH skills, positions, roles, domains, cities, industries, platforms, languages,
+WITH skills, positions, roles, domains, cities, industries, platforms, languages, educationLevels,
      [x IN collect({canonicalName: rs.canonicalName, description: coalesce(rs.description, rs.canonicalName)}) WHERE x.canonicalName IS NOT NULL] AS reasons
 RETURN {
   skill: skills,
@@ -30,6 +32,7 @@ RETURN {
   industry: industries,
   platform: platforms,
   language: languages,
+  education_level: educationLevels,
   reasons: reasons
 } AS dictionaries
   `.trim();
@@ -70,6 +73,7 @@ function getLabelForSimpleType(type: SimpleDictionaryType): string {
     platform: "Platform",
     language: "Language",
     skill: "Skill",
+    education_level: "EducationLevel",
   };
 
   return labelMap[type];

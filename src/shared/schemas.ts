@@ -131,17 +131,11 @@ export const newContextReasonSchema = z.enum(REASON_CANONICAL_NAMES);
 
 export type NewContextReason = z.infer<typeof newContextReasonSchema>;
 
-export const educationLevelSchema = z.enum([
-  "NONE",
-  "HIGH_SCHOOL",
-  "ASSOCIATE",
-  "BACHELOR",
-  "MASTER",
-  "DOCTORATE",
-  "PROFESSIONAL",
-]);
-
-export type EducationLevel = z.infer<typeof educationLevelSchema>;
+/**
+ * Education level (dictionary-based, like position/industry)
+ * Values loaded from EducationLevel nodes in Neo4j
+ */
+export const educationLevelSchema = z.string().describe("Education level canonical name");
 
 /**
  * ISO 639-1 language code (2-letter lowercase)
@@ -987,6 +981,7 @@ export const dictionariesSchema = z.object({
   industry: z.array(dictionaryEntrySchema),
   platform: z.array(dictionaryEntrySchema),
   language: z.array(dictionaryEntrySchema),
+  education_level: z.array(dictionaryEntrySchema),
   reasons: z.array(dictionaryEntrySchema),
 });
 
@@ -1008,6 +1003,7 @@ const simpleDictionaryTypes = [
   "industry",
   "platform",
   "language",
+  "education_level",
 ] as const satisfies readonly SimpleDictionaryType[];
 
 export const simpleDictionaryTypeSchema = z.enum(simpleDictionaryTypes);

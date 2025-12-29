@@ -55,41 +55,53 @@ export class Normalizer {
    * Does NOT add new terms — adhoc is for search, not profile creation.
    */
   async normalizeAdhocContext(context: AdhocContextBase, _userId: UserId): Promise<AdhocContextBase> {
-    const [role, position, cityName, industry, skills, domains] = await Promise.all([
+    const [role, position, cityName, industry, skills, domains, educationLevel] = await Promise.all([
       this.filterToKnown("role", context.role),
       this.filterToKnown("position", context.position),
       this.filterToKnown("city", context.cityName),
       this.filterToKnown("industry", context.industry),
       this.filterArrayToKnown("skill", context.skills),
       this.filterArrayToKnown("domain", context.domains),
+      this.filterToKnown("education_level", context.educationLevel),
     ]);
 
     // Pass-through fields that don't need normalization (ISO codes: countryCode, languages)
     // Filtered fields override pass-through values
-    return this.removeNullishFields({ ...context, role, position, cityName, industry, skills, domains });
+    return this.removeNullishFields({
+      ...context,
+      role,
+      position,
+      cityName,
+      industry,
+      skills,
+      domains,
+      educationLevel,
+    });
   }
 
   async normalizeFullContext(context: UserContext, userId: UserId): Promise<UserContext> {
-    const [role, position, cityName, industry, skills, domains] = await Promise.all([
+    const [role, position, cityName, industry, skills, domains, educationLevel] = await Promise.all([
       this.normalizeTerm("role", context.role, userId),
       this.normalizeTerm("position", context.position, userId),
       this.normalizeTerm("city", context.cityName, userId),
       this.normalizeTerm("industry", context.industry, userId),
       this.normalizeTerms("skill", context.skills, userId),
       this.normalizeTerms("domain", context.domains, userId),
+      this.normalizeOptionalTerm("education_level", context.educationLevel, userId),
     ]);
 
-    return { ...context, role, position, cityName, industry, skills, domains };
+    return { ...context, role, position, cityName, industry, skills, domains, educationLevel };
   }
 
   async normalizeTargetContext(context: TargetContext, userId: UserId): Promise<TargetContext> {
-    const [role, position, skills, domains, industries, cities] = await Promise.all([
+    const [role, position, skills, domains, industries, cities, educationLevels] = await Promise.all([
       this.normalizeTargetField("role", context.role, userId),
       this.normalizeTargetField("position", context.position, userId),
       this.normalizeTargetField("skill", context.skills, userId),
       this.normalizeTargetField("domain", context.domains, userId),
       this.normalizeTargetField("industry", context.industries, userId),
       this.normalizeTargetField("city", context.cities, userId),
+      this.normalizeTargetField("education_level", context.educationLevels, userId),
     ]);
 
     return {
@@ -99,10 +111,10 @@ export class Normalizer {
       domains,
       industries,
       cities,
+      educationLevels,
       languages: context.languages ?? null,
       countries: context.countries ?? null,
       citizenships: context.citizenships ?? null,
-      educationLevels: context.educationLevels ?? null,
     };
   }
 

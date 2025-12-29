@@ -101,6 +101,11 @@ CALL {
   OPTIONAL MATCH (context)-[r:SPEAKS_FLUENT]->() DELETE r
   RETURN count(*) AS _del_lg
 }
+CALL {
+  WITH context
+  OPTIONAL MATCH (context)-[r:HAS_EDUCATION_LEVEL]->() DELETE r
+  RETURN count(*) AS _del_el
+}
 
 WITH context, user,
      $ctx.position AS position,
@@ -111,7 +116,8 @@ WITH context, user,
      $ctx.countryCode AS countryCode,
      $ctx.cityName AS cityName,
      $ctx.citizenships AS citizenships,
-     $ctx.languages AS languages
+     $ctx.languages AS languages,
+     $ctx.educationLevel AS educationLevel
 
 MERGE (p:Position {canonicalName: position})
 ON CREATE SET p.verified = false, p.createdAt = timestamp(), p.createdBy = "user"
@@ -124,6 +130,12 @@ MERGE (context)-[:HAS_ROLE]->(r)
 MERGE (i:Industry {canonicalName: industry})
 ON CREATE SET i.verified = false, i.createdAt = timestamp(), i.createdBy = "user"
 MERGE (context)-[:IN_INDUSTRY]->(i)
+
+FOREACH (_ IN CASE WHEN educationLevel IS NOT NULL THEN [1] ELSE [] END |
+  MERGE (el:EducationLevel {canonicalName: educationLevel})
+  ON CREATE SET el.verified = true, el.createdAt = timestamp(), el.createdBy = "system"
+  MERGE (context)-[:HAS_EDUCATION_LEVEL]->(el)
+)
 
 WITH context, work_domains, skills, countryCode, cityName, citizenships, languages
 UNWIND work_domains AS wdName

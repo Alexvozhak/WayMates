@@ -59,6 +59,7 @@ export class DictionariesManager {
       industry: [],
       platform: [],
       language: [],
+      education_level: [],
       reasons: [],
     };
   }

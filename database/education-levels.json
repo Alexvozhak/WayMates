@@ -1,0 +1,9 @@
+{
+  "NONE": { "description": "No formal education", "order": 0 },
+  "HIGH_SCHOOL": { "description": "High school diploma", "order": 1 },
+  "ASSOCIATE": { "description": "Associate degree", "order": 2 },
+  "BACHELOR": { "description": "Bachelor's degree", "order": 3 },
+  "MASTER": { "description": "Master's degree", "order": 4 },
+  "DOCTORATE": { "description": "Doctorate/PhD", "order": 5 },
+  "PROFESSIONAL": { "description": "Professional degree (MD, JD, MBA)", "order": 6 }
+}

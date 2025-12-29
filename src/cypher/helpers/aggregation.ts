@@ -55,6 +55,7 @@ export function buildWithCollect(contextVar: string, preserveVars: string[] = []
     `${prefix}Industry`,
     `${prefix}City`,
     `${prefix}Country`,
+    `${prefix}EducationLevel`,
   ];
 
   const allVars = [...preserveVars, ...baseVars].join(", ");

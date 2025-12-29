@@ -17,6 +17,7 @@ CREATE CONSTRAINT skill_canonical_name_unique IF NOT EXISTS FOR (s:Skill) REQUIR
 CREATE CONSTRAINT city_canonical_name_unique IF NOT EXISTS FOR (ci:City) REQUIRE ci.canonicalName IS UNIQUE;
 CREATE CONSTRAINT platform_canonical_name_unique IF NOT EXISTS FOR (p:Platform) REQUIRE p.canonicalName IS UNIQUE;
 CREATE CONSTRAINT language_code_unique IF NOT EXISTS FOR (l:Language) REQUIRE l.code IS UNIQUE;
+CREATE CONSTRAINT education_level_canonical_name_unique IF NOT EXISTS FOR (e:EducationLevel) REQUIRE e.canonicalName IS UNIQUE;
 
 // Indexes for filters
 CREATE INDEX skill_platform_composite IF NOT EXISTS FOR (spn:SkillPlatformNode) ON (spn.skill, spn.platform);
