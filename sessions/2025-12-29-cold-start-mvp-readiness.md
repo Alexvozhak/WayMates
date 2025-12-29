@@ -400,6 +400,63 @@ steps:
 
 ---
 
+## Фаза 10: Guard messages через LLM (после rewind #4)
+
+### Задача
+Заменить hardcoded GUARD_MESSAGES на LLM генерацию с locale поддержкой.
+
+### Что сделано
+
+1. **GUARD_PROMPT + GUARD_DESCRIPTIONS** (`prompts.ts`)
+   - Семантические описания для каждого guardType
+   - Промпт получает ТОЛЬКО одно описание (fix для "все описания" бага)
+
+2. **formatGuard()** (`nlp-formatter.service.ts`)
+   - Новый метод для генерации guard messages через LLM
+   - Подставляет конкретное description по guardType
+
+3. **FlowGuardChecker рефакторинг** (`flow-guard-checker.service.ts`)
+   - Использует NlpFormatter вместо hardcoded strings
+   - GUARD_MESSAGES удалены (-98 LOC)
+   - Разбит на методы для снижения complexity
+
+4. **Help intent fix** (`intent-classifier.ts`)
+   - Расширено описание: "asks what bot can do, what features are available..."
+   - "что ты умеешь?" теперь распознаётся как help
+
+### Результаты тестов
+
+| Input | Locale | Expected Guard | Actual Guard | Result |
+|-------|--------|----------------|--------------|--------|
+| "привет" | ru | greeting | greeting | ✅ |
+| "asdfgh qwerty" | en | unknown | unknown | ✅ |
+| "что ты умеешь?" | ru | help | help | ✅ |
+| "what can you do?" | en | help | help | ✅ |
+
+### Коммит
+
+| Hash | Описание |
+|------|----------|
+| `b9aa8ab` | feat(guards): LLM-based guard messages + help intent fix |
+
+---
+
+## Итоги сессии (все фазы 1-10)
+
+| Область | Статус |
+|---------|--------|
+| FEAT-051 | ✅ DONE |
+| Batch тесты | ✅ 8/8 проходят |
+| Intent classification | ✅ Семантика + help fix |
+| Planning hallucination | ✅ Исправлено |
+| Greeting UX | ✅ Trade-off + ценность |
+| storyNotSet guard | ✅ Добавлен |
+| **Guard messages LLM** | ✅ Реализовано |
+
+**Cold-start полностью готов к MVP.**
+
+---
+
 ## Prompt для продолжения после rewind
 
 ```
@@ -407,13 +464,11 @@ steps:
 
 Контекст сессии: /home/alex/projects/WayMatesRemote/sessions/2025-12-29-cold-start-mvp-readiness.md
 
-Cold-start MVP readiness завершён (фазы 1-9):
+Cold-start MVP readiness завершён (фазы 1-10):
 - Все batch тесты проходят (8/8)
 - FEAT-051 закрыт
-- Коммиты: 8604521, c5c2d67
-
-Отложено:
-- Guard messages через LLM + locale перевод
+- Guard messages через LLM реализованы
+- Коммиты: 8604521, c5c2d67, b9aa8ab
 
 Укажи следующую задачу.
 ```
