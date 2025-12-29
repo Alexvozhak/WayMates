@@ -75,7 +75,7 @@ const INTENT_DESCRIPTIONS: Record<UserIntent, string> = {
   deleteContext: "wants to delete a career position",
   deleteTrail: "wants to delete a learning trail",
   cancel: "wants to cancel current operation",
-  help: "needs help with commands",
+  help: "asks what bot can do, what features are available, needs help, how to use — meta-questions about the service itself",
   greeting: "says hello, hi, hey, good morning — friendly conversation opener",
   projectInvestor: "asks about WayMates business value, investment, accelerator, startup pitch",
   projectTech: "asks about WayMates architecture, tech stack, code quality, engineering",

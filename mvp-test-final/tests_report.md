@@ -291,8 +291,11 @@ domains: ["research-and-development"]
 
 ### orchestrator
 
-| Коммит | Input | Expected Intent | Actual Intent | Result |
-|--------|-------|-----------------|---------------|--------|
-| | | | | |
+| Коммит | Input | Expected Intent | Actual Intent | Guard | Result |
+|--------|-------|-----------------|---------------|-------|--------|
+| — | "привет" (ru) | greeting | greeting | greeting | ✅ |
+| — | "asdfgh qwerty" (en) | unknown | unknown | unknown | ✅ |
+| — | "что ты умеешь?" (ru) | help | help | help | ✅ |
+| — | "what can you do?" (en) | help | help | help | ✅ |
 
 ---
