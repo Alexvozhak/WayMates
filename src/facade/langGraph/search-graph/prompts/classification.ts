@@ -58,8 +58,8 @@ const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   Semantic: confirmation without new information, agreement to continue`,
   explore: `User wants to SEE SIMILAR PEOPLE without setting a goal
   Semantic: browse, look around, show matches, find similar, explore options`,
-  clarify: `User CORRECTS or REFINES current information
-  Semantic: disagreement with shown data, correction, refinement, addition to current context`,
+  clarify: `User MODIFIES goal: adds, removes part, or corrects
+  Semantic: "also want fintech", "remove backend", "change role to architect", partial goal edits`,
   validate: `User wants to see REAL PEOPLE who achieved similar goals
   Semantic: requests verification, wants proof, asks to check feasibility, see examples
   + filters or null`,
