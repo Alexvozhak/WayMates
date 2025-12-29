@@ -7,7 +7,7 @@ import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { AdhocContextBase, AdhocMissingField, AdhocOptionalField } from "../../../../shared/schemas.js";
-import type { SearchStateType } from "../state.js";
+import type { SearchPhase, SearchStateType } from "../state.js";
 
 const extractor = getModel("extraction").withStructuredOutput(adhocContextBase);
 
@@ -116,8 +116,18 @@ export const loadContextNode = withLogging<SearchStateType>(
       const { isValid, missingFields, optionalFields } = validateAdhocContext(adhocContext);
       logger.info({ adhocContext, isValid, missingFields, optionalFields }, "adhoc context after normalize");
 
-      // Return phase for routing: ask for context if invalid, confirm if valid
-      const phase = isValid ? PHASE.confirming_adhoc_context : PHASE.asking_adhoc_context;
+      // Skip confirmation if came from exploration (already saw results)
+      const cameFromExploration =
+        state.phase === PHASE.showing_exploration_candidates || state.phase === PHASE.showing_exploration_facets;
+
+      let phase: SearchPhase;
+      if (!isValid) {
+        phase = PHASE.asking_adhoc_context;
+      } else if (cameFromExploration) {
+        phase = PHASE.exploring;
+      } else {
+        phase = PHASE.confirming_adhoc_context;
+      }
 
       return { adhocContext, missingFields, optionalFields, userResponse: "", phase };
     }

@@ -1,0 +1,14 @@
+name: chart-url-generation
+description: chartUrl генерируется при <10 кандидатах (telecom = 5 backend devs)
+locale: ru
+
+steps:
+  - message: найди похожих, я middle backend разработчик в telecom, США
+    expect:
+      phase: confirming_adhoc_context
+      adhocContext.industry: telecom
+
+  - message: покажи похожих
+    expect:
+      phase: showing_exploration_candidates
+      chartUrl: "!null"

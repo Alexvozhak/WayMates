@@ -205,6 +205,18 @@ logger.warn({ error }, "something went wrong");
 
 **Программный query**: через `langsmith` SDK, см. `docs/architecture/decisions/ADR-018-langsmith-observability.md`
 
+### Adhoc vs Cold-Start Normalization
+
+| Контекст | Поведение normalizer | Причина |
+|----------|---------------------|---------|
+| **cold-start** | `normalizeTerm` — добавляет новые термины в словарь | Пользователь создаёт профиль |
+| **adhoc** | `filterToKnown` — фильтрует к известным | Пользователь только ищет |
+
+**Методы в Normalizer:**
+- `normalizeFullContext` — для cold-start (добавляет термины)
+- `normalizeAdhocContext` — для adhoc (только фильтрация)
+- `filterToKnown`, `filterArrayToKnown` — private helpers для adhoc
+
 ### Dictionary Hints Pollution
 
 LLM extraction получает hints из `getVerifiedDictionaries()` — все `verified: true` entries.

@@ -40,6 +40,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
 
   [PHASE.showing_exploration_candidates]: (state) => ({
     phase: PHASE.showing_exploration_candidates,
+    previousPhase: state.previousPhase,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
     candidates: state.explorationResults,
@@ -48,6 +49,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
 
   [PHASE.showing_exploration_facets]: (state) => ({
     phase: PHASE.showing_exploration_facets,
+    previousPhase: state.previousPhase,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
     facets: state.facets!,

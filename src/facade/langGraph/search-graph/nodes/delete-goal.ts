@@ -15,6 +15,7 @@ export const deleteGoalNode = withLogging<SearchStateType>(NODE.delete_goal, asy
   return {
     storedGoal: null,
     extractedGoal: null,
+    previousPhase: PHASE.deleting_goal,
     phase: PHASE.exploring,
   };
 });
