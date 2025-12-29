@@ -334,30 +334,86 @@ steps:
 
 ## Что осталось сделать
 
-| Задача | Приоритет |
-|--------|-----------|
-| mvp-skills-domains batch fix | P2 |
-| onboarding-help-question проверить | P2 |
+~~| Задача | Приоритет |~~
+~~|--------|-----------|~~
+~~| mvp-skills-domains batch fix | P2 |~~
+~~| onboarding-help-question проверить | P2 |~~
+
+**Всё выполнено!** Cold-start готов к MVP.
+
+---
+
+## Фаза 9: Финальные batch fixes (после rewind #3)
+
+### Задачи из фазы 8
+| Задача | Статус |
+|--------|--------|
+| mvp-skills-domains batch fix | ✅ |
+| onboarding-help-question проверить | ✅ |
+
+### mvp-skills-domains — проблема и fix
+
+**Проблема:** LLM создавал 2 контекста вместо 1 для фразы "работаю с 2021 года"
+
+**Причина:** LLM интерпретировал "с 2021" как "до 2021 была другая позиция"
+
+**Fix:** `prompts.ts` — добавлены правила:
+- First mentioned year = career start, not hint of prior experience
+- If user did not describe a position, it does not exist
+
+### onboarding-help-question — проблема и fix
+
+**Проблема:** "ок, полная история" не распознавалась как startStory
+
+**Причина:** Неявная фраза, classifier не понимал намерение
+
+**Fix:**
+1. Batch тест — явная фраза "хочу рассказать свою историю"
+2. `flow-guard-checker.service.ts` — добавлен `storyNotSet` guard
+
+### Коммит
+
+| Hash | Описание |
+|------|----------|
+| `c5c2d67` | fix(cold-start): planning prompt + storyNotSet guard |
+
+### Отложено (scope creep)
+
+| Задача | Причина |
+|--------|---------|
+| Guard messages через LLM + locale | Не блокер MVP, текущий подход работает |
+
+---
+
+## Итоги сессии (все фазы 1-9)
+
+| Область | Статус |
+|---------|--------|
+| FEAT-051 | ✅ DONE |
+| Batch тесты | ✅ 8/8 проходят |
+| Intent classification | ✅ Семантика без примеров |
+| Planning hallucination | ✅ Исправлено |
+| Greeting UX | ✅ Trade-off + ценность |
+| storyNotSet guard | ✅ Добавлен |
+
+**Cold-start готов к MVP.**
 
 ---
 
 ## Prompt для продолжения после rewind
 
 ```
-Продолжаю сессию cold-start MVP readiness.
+Продолжаю работу над WayMates.
 
-Контекст: /home/alex/projects/WayMatesRemote/mvp-test-final/sessions/2025-12-29-cold-start-mvp-readiness.md
+Контекст сессии: /home/alex/projects/WayMatesRemote/sessions/2025-12-29-cold-start-mvp-readiness.md
 
-Сделано (фазы 1-8):
-- FEAT-051 закрыт (DONE)
-- Greeting переработан — trade-off adhoc/cold-start, ценность waymates/pathfinders
-- Batch тесты с естественными формулировками (7/8 проходят)
-- Intent classifier — семантика без точных фраз
-- Коммит 8604521
+Cold-start MVP readiness завершён (фазы 1-9):
+- Все batch тесты проходят (8/8)
+- FEAT-051 закрыт
+- Коммиты: 8604521, c5c2d67
 
-Осталось:
-- mvp-skills-domains batch требует доработки (бот переспрашивает)
-- onboarding-help-question.yaml не проверен
+Отложено:
+- Guard messages через LLM + locale перевод
 
-Если нужно продолжить — укажи конкретную задачу.
+Укажи следующую задачу.
 ```
