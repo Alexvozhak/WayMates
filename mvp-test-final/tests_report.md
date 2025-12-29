@@ -267,6 +267,12 @@ domains: ["research-and-development"]
 | c4a692b | asking_search_mode | "покажи проводников" | searchPathfinders | showing_results | ✅ |
 | c4a692b | showing_goal (profile+goal) | "покажи кто достиг" | validate | asking_after_validate_candidates | ✅ |
 | c4a692b | asking_after_validate (profile) | "хочу изменить цель на CTO" | change | showing_goal | ✅ |
+| 8d487c7 | confirming_adhoc | "покажи похожих" | explore | showing_exploration_facets | ✅ |
+| 8d487c7 | showing_exploration_facets | "хочу стать CTO" | setGoal | showing_goal | ✅ |
+| 8d487c7 | showing_exploration_facets | "только technology" | editAdhoc | confirming_adhoc | ✅ |
+| 8d487c7 | showing_goal | "покажи кто достиг" | validate | asking_after_validate_candidates | ✅ |
+| 8d487c7 | asking_after_validate (0 results) | — | — | honest "no one found" | ✅ |
+| 8d487c7 | asking_search_mode | "попутчики" | searchWaymates | showing_results_facets | ✅ |
 
 ### cold-start-v2
 
