@@ -4,7 +4,7 @@ locale: ru
 
 steps:
   - message: |
-      Хочу рассказать карьеру.
+      хочу рассказать историю карьеры
       Работал тимлидом в компании DSSL с 2020 по 2023 год.
       Занимался бэкендом, Python и Kubernetes.
       В Москве, сфера технологий.
@@ -12,7 +12,7 @@ steps:
     expect:
       phase: awaiting_plan_confirmation
 
-  - message: да, план верный
+  - message: ок
     expect:
       phase: awaiting_clarification
 
@@ -20,7 +20,7 @@ steps:
     expect:
       phase: awaiting_context_confirmation
 
-  - message: да
+  - message: да, всё верно
     expect:
       phase: awaiting_final_confirmation
 

@@ -4,7 +4,7 @@ locale: ru
 
 steps:
   - message: |
-      Расскажу о себе.
+      хочу рассказать историю карьеры
       Я DevOps инженер в аутсорс компании, город Новосибирск.
       Middle уровень, работаю с 2021 года.
       Мои скиллы: Docker, Kubernetes, Terraform, AWS.
@@ -13,7 +13,7 @@ steps:
     expect:
       phase: awaiting_plan_confirmation
 
-  - message: да верно
+  - message: угу
     expect:
       phase: awaiting_clarification
 
@@ -21,7 +21,7 @@ steps:
     expect:
       phase: awaiting_context_confirmation
 
-  - message: да
+  - message: да, всё верно
     expect:
       phase: awaiting_final_confirmation
 

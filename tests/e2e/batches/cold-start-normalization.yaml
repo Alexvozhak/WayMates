@@ -4,7 +4,7 @@ locale: ru
 
 steps:
   - message: |
-      Привет! Хочу рассказать карьерную историю.
+      хочу рассказать историю карьеры
       Я работал программистом grade-2 в веб-студии "WebDev".
       Занимался бэкендом на Python, знал Docker и PostgreSQL.
       Работал с 2020 по 2022 год в Москве, Россия.
@@ -14,11 +14,11 @@ steps:
     expect:
       phase: awaiting_plan_confirmation
 
-  - message: да, подтверждаю план
+  - message: ок
     expect:
       phase: awaiting_context_confirmation
 
-  - message: да, всё верно
+  - message: угу
     expect:
       phase: awaiting_final_confirmation
 

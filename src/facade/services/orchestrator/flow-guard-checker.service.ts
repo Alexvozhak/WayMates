@@ -9,9 +9,16 @@ type GuardType = "greeting" | "help" | "unknown" | "cancelNoActive" | "onboardin
 
 const GUARD_MESSAGES: Record<Locale, Record<GuardType, string>> = {
   en: {
-    greeting: `Hey! 👋 I find people with similar career paths — or those who already made the transition you want.
+    greeting: `Hey! 👋 I help with career decisions.
 
-Tell me about yourself, like "I'm a senior backend developer in Germany".`,
+I can find:
+• Waymates — same position, same goal, going together
+• Pathfinders — who already made your desired transition
+
+• Quick search (~5 min) — by current position only
+• Full history (~30 min) — candidates matched by your full career path
+
+What works for you?`,
     help: `I can:
 • Find similar people — by your current profile
 • Find pathfinders — who made the transition you want
@@ -27,9 +34,16 @@ Tell me your role and level, like "senior QA in backend, working in Poland".`,
     goalNotSetDelete: "No goal to delete.",
   },
   ru: {
-    greeting: `Привет! 👋 Нахожу людей с похожим карьерным путём — или тех, кто уже сделал нужный переход.
+    greeting: `Привет! 👋 Помогаю с карьерными решениями.
 
-Расскажи о себе, например "Я senior backend разработчик в России".`,
+Могу найти:
+• Попутчиков — кто сейчас там же и хочет того же
+• Проводников — кто уже прошёл твой путь к цели
+
+• Быстрый поиск (~5 мин) — по текущей позиции
+• Полная история (~30 мин) — кандидаты подобраны с учётом всего пути
+
+Что выберешь?`,
     help: `Умею:
 • Найти похожих — по твоему текущему профилю
 • Найти проводников — кто уже сделал нужный переход

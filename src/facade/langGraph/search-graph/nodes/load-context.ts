@@ -1,4 +1,9 @@
-import { ADHOC_OPTIONAL_FIELDS, adhocContextBase, adhocContextRequiredSchema } from "../../../../shared/schemas.js";
+import {
+  ADHOC_OPTIONAL_FIELDS,
+  ADHOC_REQUIRED_FIELDS,
+  adhocContextBase,
+  adhocContextRequiredSchema,
+} from "../../../../shared/schemas.js";
 import { logger } from "../../../logger.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
 import { getModel } from "../../shared-tools/models.js";
@@ -6,7 +11,12 @@ import { buildAdhocClarificationPrompt, buildAdhocExtractionPrompt } from "../pr
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
-import type { AdhocContextBase, AdhocMissingField, AdhocOptionalField } from "../../../../shared/schemas.js";
+import type {
+  AdhocContextBase,
+  AdhocMissingField,
+  AdhocOptionalField,
+  AdhocRequiredField,
+} from "../../../../shared/schemas.js";
 import type { SearchPhase, SearchStateType } from "../state.js";
 
 const extractor = getModel("extraction").withStructuredOutput(adhocContextBase);
@@ -75,10 +85,10 @@ function validateAdhocContext(ctx: AdhocContextBase | null): {
     return {
       isValid: false,
       missingFields: [
-        { field: "position", message: "Level (junior/middle/senior)" },
-        { field: "role", message: "Specialty (backend/frontend/etc)" },
-        { field: "countryCode", message: "Work location country" },
-        { field: "domains", message: "Work area (at least 1)" },
+        { field: "position", message: "Current grade" },
+        { field: "role", message: "Current role" },
+        { field: "countryCode", message: "Current country of residence" },
+        { field: "domains", message: "Work area" },
       ],
       optionalFields,
     };
@@ -90,10 +100,19 @@ function validateAdhocContext(ctx: AdhocContextBase | null): {
     return { isValid: true, missingFields: [], optionalFields };
   }
 
-  const missingFields: AdhocMissingField[] = result.error.errors.map((err) => ({
-    field: err.path.join("."),
-    message: err.message,
-  }));
+  // Use same human-readable messages as ctx === null case (lines 77-82)
+  const fieldMessages: Record<AdhocRequiredField, string> = {
+    position: "Current grade",
+    role: "Current role",
+    countryCode: "Current country of residence",
+    domains: "Work area",
+  };
+  const requiredFieldsSet = new Set<string>(ADHOC_REQUIRED_FIELDS);
+  const isRequiredField = (name: string): name is AdhocRequiredField => requiredFieldsSet.has(name);
+  const missingFields: AdhocMissingField[] = result.error.errors.map((err) => {
+    const fieldName = String(err.path[0] ?? "");
+    return { field: err.path.join("."), message: isRequiredField(fieldName) ? fieldMessages[fieldName] : err.message };
+  });
 
   return { isValid: false, missingFields, optionalFields };
 }

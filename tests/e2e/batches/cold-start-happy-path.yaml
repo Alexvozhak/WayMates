@@ -4,7 +4,7 @@ locale: ru
 
 steps:
   - message: |
-      Привет! Хочу рассказать свою карьерную историю.
+      хочу рассказать историю карьеры
       Работал backend разработчиком в финтех компании FinCorp.
       Использовал Python, PostgreSQL, Docker, Redis.
       С января 2020 по декабрь 2022 года в Москве, Россия.
@@ -14,11 +14,11 @@ steps:
     expect:
       phase: awaiting_plan_confirmation
 
-  - message: да, подтверждаю план
+  - message: да
     expect:
       phase: awaiting_context_confirmation
 
-  - message: всё верно, подтверждаю позицию
+  - message: всё верно
     expect:
       phase: awaiting_final_confirmation
 

@@ -4,7 +4,7 @@ locale: ru
 
 steps:
   - message: |
-      Хочу рассказать свою карьерную историю.
+      хочу рассказать историю карьеры
       Работаю backend разработчиком в Питере, уровень middle.
       Использую TypeScript, Node.js, PostgreSQL.
       Работаю уже 3 года в этой компании.
@@ -12,7 +12,7 @@ steps:
     expect:
       phase: awaiting_plan_confirmation
 
-  - message: подтверждаю план
+  - message: да
     expect:
       phase: awaiting_clarification
 
@@ -20,7 +20,7 @@ steps:
     expect:
       phase: awaiting_context_confirmation
 
-  - message: да
+  - message: да, всё верно
     expect:
       phase: awaiting_final_confirmation
 

@@ -3,7 +3,7 @@ description: FEAT-050 — реальный flow с clarification (неполна
 locale: ru
 
 steps:
-  - message: хочу рассказать свою карьерную историю
+  - message: хочу рассказать историю карьеры
     expect:
       phase: story_gathering
 
@@ -15,15 +15,15 @@ steps:
     expect:
       phase: awaiting_plan_confirmation
 
-  - message: да, подтверждаю план
+  - message: ок
     expect:
       phase: awaiting_clarification
 
-  - message: в Москве, Россия, компания IT, 50 человек, с 2020 по 2022, ушёл развиваться
+  - message: в Москве, небольшая IT контора, с 20 по 22 год
     expect:
       phase: awaiting_context_confirmation
 
-  - message: подтверждаю позицию
+  - message: да
     expect:
       phase: awaiting_final_confirmation
 

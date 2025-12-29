@@ -4,7 +4,7 @@ locale: ru
 
 steps:
   - message: |
-      Привет! Моя карьерная история.
+      хочу рассказать историю карьеры
       Работал программистом grade-2 в веб-студии TechLab.
       Backend на Python, Django, PostgreSQL.
       С января 2021 по декабрь 2022 в Москве, Россия.
@@ -14,7 +14,7 @@ steps:
     expect:
       phase: awaiting_plan_confirmation
 
-  - message: подтверждаю план
+  - message: да
     expect:
       phase: awaiting_context_confirmation
 
@@ -22,7 +22,7 @@ steps:
     expect:
       phase: awaiting_context_confirmation
 
-  - message: да, подтверждаю
+  - message: да, теперь всё верно
     expect:
       phase: awaiting_final_confirmation
 
