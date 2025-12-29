@@ -5,7 +5,15 @@ import type { UserIntent } from "./intent-classifier.js";
 import type { Locale, UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
-type GuardType = "greeting" | "help" | "unknown" | "cancelNoActive" | "onboarding" | "goalNotSet" | "goalNotSetDelete";
+type GuardType =
+  | "greeting"
+  | "help"
+  | "unknown"
+  | "cancelNoActive"
+  | "onboarding"
+  | "goalNotSet"
+  | "goalNotSetDelete"
+  | "storyNotSet";
 
 const GUARD_MESSAGES: Record<Locale, Record<GuardType, string>> = {
   en: {
@@ -32,6 +40,7 @@ Tell me your role and level, like "senior QA in backend, working in Poland".`,
     cancelNoActive: "Nothing to cancel.",
     goalNotSet: "No goal set. Describe where you want to be.",
     goalNotSetDelete: "No goal to delete.",
+    storyNotSet: "No saved story yet. Want to share your career history?",
   },
   ru: {
     greeting: `Привет! 👋 Помогаю с карьерными решениями.
@@ -57,6 +66,7 @@ Tell me your role and level, like "senior QA in backend, working in Poland".`,
     cancelNoActive: "Нечего отменять.",
     goalNotSet: "Цель не установлена. Опиши куда хочешь прийти.",
     goalNotSetDelete: "Нечего удалять.",
+    storyNotSet: "Пока нет сохранённой истории. Хочешь рассказать о карьере?",
   },
 };
 
@@ -96,6 +106,11 @@ export class FlowGuardChecker {
         return createNlpResponse(msg.onboarding);
       }
       return null;
+    }
+
+    // Story guard — no story to show, suggest creating one
+    if (intent === "getStory" && !state.hasContext) {
+      return createNlpResponse(msg.storyNotSet);
     }
 
     // Goal guards

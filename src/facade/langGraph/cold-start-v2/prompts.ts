@@ -264,6 +264,8 @@ POSITIONS:
 - Return exactly that count — no more, no less
 - One described position = one context in output
 - Never infer career progression user did not mention
+- First mentioned year = career start, not a hint of hidden prior experience
+- If user did not describe a position, it does not exist
 
 TRAILS:
 - Include only learning activities user explicitly named

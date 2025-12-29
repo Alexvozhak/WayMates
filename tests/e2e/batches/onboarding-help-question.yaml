@@ -16,6 +16,6 @@ steps:
     expect:
       # should explain waymates concept
 
-  - message: ок, полная история
+  - message: хочу рассказать свою историю
     expect:
       phase: story_gathering
