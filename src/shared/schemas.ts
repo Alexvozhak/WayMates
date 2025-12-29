@@ -492,10 +492,6 @@ export const ADHOC_TO_TARGET_ENTRIES = [
 ] as const satisfies readonly [keyof AdhocContextBase, keyof TargetContext][];
 
 export type MappableAdhocField = (typeof ADHOC_TO_TARGET_ENTRIES)[number][0];
-export type InheritableGoalField = (typeof ADHOC_TO_TARGET_ENTRIES)[number][1];
-
-/** All goal fields that can be inherited from adhocContext */
-export const INHERITABLE_GOAL_FIELDS = ADHOC_TO_TARGET_ENTRIES.map(([_, target]) => target);
 
 // ==========================================
 // === SEARCH FILTERS SCHEMAS ===

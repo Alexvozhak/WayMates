@@ -104,34 +104,77 @@
 
 ---
 
-## Что осталось
+---
 
-### Followup задачи
-- **educationLevel import** — как domains через yaml → Neo4j (сейчас не загружается в тестовую БД)
+## Фаза 10: educationLevel → Dictionary (полная интеграция) ✅ DONE
+
+### Что сделано
+
+Полная миграция educationLevel с enum на dictionary node (как position, industry).
+
+**Database (4 файла):**
+- `database/education-levels.json` — 7 levels с descriptions и order
+- `database/import-education-levels.ts` — import script
+- `scripts/import-education-levels.sh` — shell wrapper (+x)
+- `database/init.cypher` — +constraint для EducationLevel
+
+**Cypher (6 файлов):**
+- `relationships.ts` — +OPTIONAL MATCH для HAS_EDUCATION_LEVEL
+- `filters.ts` — path изменён на `matchedEducationLevel.canonicalName`
+- `aggregation.ts` — +EducationLevel в baseVars (fix scope error)
+- `search.ts` — +matchedEducationLevel во всех WITH/arrays
+- `persistence.ts` — +HAS_EDUCATION_LEVEL relationship creation
+- `dictionaries.ts` — +education_level в query + getLabelForSimpleType
+
+**Projections:**
+- `projections.ts` — educationLevel теперь из JOIN, не из Context property
+
+**Facade (2 файла):**
+- `normalizer.ts` — +educationLevel нормализация в adhoc/full/target
+- `dictionaries.service.ts` — +education_level label
+
+**Shared (1 файл):**
+- `schemas.ts` — enum удалён → z.string(), +education_level в dictionaries
+
+**Core (1 файл):**
+- `dictionaries-manager.ts` — +education_level в emptyDictionaries
+
+**Config:**
+- `package.json` — +import-education-levels.sh в db:init scripts
+
+### Quality Gates
+- ✅ Lint: 0 errors (18 warnings)
+- ✅ TSC: 0 errors
+- ✅ Integration tests: 17 passed (TG-EDU-1, TG-EDU-2 работают с новой архитектурой)
+- ✅ DB init: 7 education levels imported
 
 ---
 
 ## Изменённые файлы (НЕ ЗАКОММИЧЕНО)
 
-**schemas:**
+**Фаза 8-9 (FEAT-052 + баги #3-4):**
 - `src/shared/schemas.ts`
-
-**search-graph:**
 - `src/facade/langGraph/search-graph/nodes/extract-goal.ts`
 - `src/facade/langGraph/search-graph/prompts/extraction.ts`
-
-**normalizer:**
 - `src/facade/services/normalizer.ts`
-
-**cypher:**
 - `src/cypher/helpers/filters.ts`
 - `src/cypher/queries/search.ts`
+- `src/facade/services/nlp-formatter/prompts.ts`
+- `tests/core/integration/search-manager/target-search.integration.ts`
 
-**nlp-formatter:**
-- `src/facade/services/nlp-formatter/prompts.ts` (баги #3, #4)
-
-**tests:**
-- `tests/core/integration/search-manager/target-search.integration.ts` (+8 тестов)
+**Фаза 10 (educationLevel → dictionary):**
+- `database/education-levels.json` (NEW)
+- `database/import-education-levels.ts` (NEW)
+- `scripts/import-education-levels.sh` (NEW)
+- `database/init.cypher`
+- `package.json`
+- `src/cypher/helpers/relationships.ts`
+- `src/cypher/helpers/aggregation.ts`
+- `src/cypher/queries/persistence.ts`
+- `src/cypher/queries/dictionaries.ts`
+- `src/cypher/constants/projections.ts`
+- `src/facade/services/dictionaries.service.ts`
+- `src/core/dictionaries-manager.ts`
 
 ---
 
@@ -172,28 +215,163 @@
 
 ---
 
+## Фаза 11: searchPathfinders → 0 results (regression fix) ✅ DONE
+
+### Проблема
+
+`searchPathfinders` возвращал 0 результатов вместо 9. Прямой Cypher находил 9 кандидатов.
+
+### Root Cause
+
+Фаза 8 (FEAT-052) добавила наследование ВСЕХ полей из `adhocContext` в `targetContext`:
+- `role`, `domains`, `skills`, `countries`, `languages` — было раньше
+- `industries`, `cities`, `citizenships`, `educationLevels` — добавлено в FEAT-052
+
+Когда пользователь говорит "хочу стать senior", goal наследовал ВСЕ поля:
+```json
+{
+  "position": { "mode": "desired", "values": ["senior"] },
+  "role": { "mode": "desired", "values": ["developer"] },  // inherited
+  "industries": { "mode": "desired", "values": ["energy"] },  // inherited
+  "countries": { "mode": "desired", "values": ["US"] }  // inherited
+}
+```
+
+Это делало TARGET фильтр слишком строгим — искали людей которые стали senior **в той же отрасли/стране**.
+
+### Решение (Парето)
+
+**Не наследовать ничего.** Goal содержит только то что пользователь явно указал.
+
+Если хочет конкретику — скажет "хочу стать senior developer в финтехе".
+
+### Что сделано
+
+1. **extract-goal.ts** — убрано наследование:
+   - Удалены `fillFromContext`, `toFilter`, `ADHOC_TO_TARGET_ENTRIES` import
+   - Goal = только LLM extraction
+
+2. **state.ts** — удалено поле `inheritedGoalFields`
+
+3. **response-builders.ts** — убран `inheritedGoalFields` из response
+
+4. **prompts.ts** — улучшен `showing_goal`:
+   - Структурно: `✅ SPECIFIED` + `⚪ NOT SPECIFIED`
+   - Явно говорит что null поля = "будет искать среди всех"
+
+5. **schemas.ts** — удалены:
+   - `InheritableGoalField` type
+   - `INHERITABLE_GOAL_FIELDS` const
+
+### Результат
+
+- До: 0 pathfinders
+- После: 20 pathfinders
+
+### Quality Gates
+- ✅ Lint: 0 errors (18 warnings)
+- ✅ TSC: 0 errors
+- ✅ mcp-chat.ts верификация: работает
+
+---
+
+## Изменённые файлы (НЕ ЗАКОММИЧЕНО)
+
+**Фаза 8-10 (без изменений):**
+- См. выше
+
+**Фаза 11 (searchPathfinders fix):**
+- `src/facade/langGraph/search-graph/nodes/extract-goal.ts` — убрано наследование
+- `src/facade/langGraph/search-graph/state.ts` — удалено inheritedGoalFields
+- `src/facade/langGraph/search-graph/response-builders.ts` — убран inheritedGoalFields
+- `src/facade/services/nlp-formatter/prompts.ts` — улучшен showing_goal
+- `src/shared/schemas.ts` — удалены InheritableGoalField, INHERITABLE_GOAL_FIELDS
+
+---
+
+## Рефлексия сессии
+
+### Корректировки пользователя (Фаза 8)
+
+1. **`as const` без type-safety**
+   - Я: `ADHOC_TO_TARGET_MAPPING = {...} as const`
+   - Пользователь: "связать с типами"
+   - Решение: `satisfies [keyof AdhocContextBase, keyof TargetContext][]`
+
+2. **Касты в циклах**
+   - Я: `Object.keys(...) as MappableAdhocField[]`
+   - Пользователь: "БЕЗ КАСТОВ"
+   - Решение: tuple entries `[key, value]` — итерация type-safe
+
+3. **Технические названия**
+   - Я: `isArray` → `contextMultiValue`
+   - Пользователь: "связать с бизнес-логикой"
+   - Решение: `type: "single" | "multi"` — бизнес-семантика
+
+4. **Не предложил DRY helper сразу**
+   - Пользователь инициировал: "можно ли шаблон?"
+   - Решение: `buildTargetFilterCase()` helper
+
+### Корректировки пользователя (Фаза 9)
+
+5. **Закрыл баги без верификации**
+   - Я: пометил баги #3, #4 как completed сразу после правки
+   - Пользователь: "ошибка! закрыл баги, но не проверил их"
+   - Решение: протестировал через mcp-chat.ts, получил подтверждение
+
+6. **Перешёл к задаче без апрува**
+   - Я: начал Баг #4 сразу после тестов
+   - Пользователь: "не приступай к следующей задаче без моего апрува!"
+   - Решение: ждать явный апрув перед каждой задачей
+
+### Корректировки пользователя (Фаза 11)
+
+7. **Откат без анализа последствий**
+   - Я: нашёл root cause (наследование) → сразу предложил убрать
+   - Пользователь: "перечитай session log — зачем добавляли? что сломается?"
+   - Решение: проанализировать бизнес-ценность (≈0) vs вред (ломает поиск)
+
+8. **Ценность наследования не была оценена**
+   - Наследование добавлялось для "Баг #2: молчаливое наследование"
+   - Но ценность самого наследования не обсуждалась
+   - Парето: не наследовать, явно показать что не указано
+
+9. **Промпт без структуры**
+   - Я: добавил текстовое описание в промпт
+   - Пользователь: "посмотри как в других интентах, структурно"
+   - Решение: паттерн `✅ SPECIFIED` / `⚪ NOT SPECIFIED` как в asking_adhoc_context
+
+---
+
+## Осталось
+
+- [ ] Коммит изменений Фазы 8-11
+- [ ] Прогнать integration tests после коммита
+
+---
+
 ## Промпт для rewind
 
 ```
 Продолжаем sessions/2025-12-29-search-graph-mvp-readiness.md
 
-Статус: ВСЁ DONE. Готово к коммиту.
+Статус: Фаза 11 DONE. Готово к коммиту.
 
-СДЕЛАНО:
-- FEAT-052: TargetContext +4 поля (industries, cities, citizenships, educationLevels)
-- Тесты TG-IND, TG-CITY, TG-CIT, TG-EDU (8 тестов, все проходят)
-- Баг #3: showing_results (0) — теперь показывает фильтры и предлагает что ослабить
-- Баг #4: asking_search_mode — убран jargon, понятные формулировки
+СДЕЛАНО (Фаза 11):
+- Fix: searchPathfinders возвращал 0 вместо 9
+- Root cause: наследование ВСЕХ полей в targetContext делало filter слишком строгим
+- Решение: убрано наследование, goal = только LLM extraction
+- Вычищено: inheritedGoalFields из state, response-builders, schemas
+- Улучшен prompts.ts: showing_goal со структурой ✅ SPECIFIED / ⚪ NOT SPECIFIED
+- Верификация: mcp-chat.ts показывает 20 pathfinders
 
-ИЗМЕНЁННЫЕ ФАЙЛЫ (lint/tsc ✅, integration tests ✅):
-- schemas.ts, extract-goal.ts, extraction.ts
-- normalizer.ts, filters.ts, search.ts
-- prompts.ts (баги #3, #4)
-- target-search.integration.ts (+8 тестов)
+ИЗМЕНЁННЫЕ ФАЙЛЫ (lint/tsc ✅):
+- extract-goal.ts, state.ts, response-builders.ts
+- prompts.ts, schemas.ts
 
 ОСТАЛОСЬ:
-- Followup: educationLevel import (yaml → Neo4j)
-- Коммит изменений
+- Коммит изменений Фазы 8-11
+- Прогнать integration tests
 
-НЕ КОММИТИТЬ cold-start файлы.
+Quality gates: lint ✅, tsc ✅, mcp-chat ✅
 ```

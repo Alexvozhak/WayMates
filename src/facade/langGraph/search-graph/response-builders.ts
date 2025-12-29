@@ -64,7 +64,6 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     return {
       phase: PHASE.showing_goal,
       extractedGoal,
-      inheritedGoalFields: state.inheritedGoalFields,
     };
   },
 

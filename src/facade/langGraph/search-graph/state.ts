@@ -10,7 +10,6 @@ import type {
   AdhocOptionalField,
   CandidateFacets,
   Goal,
-  InheritableGoalField,
   Locale,
   MatchedCandidateWithPath,
   PathfinderCandidate,
@@ -126,7 +125,6 @@ export const searchStateAnnotation = Annotation.Root({
 
   storedGoal: Annotation<Goal | null>({ reducer: lastValue, default: () => null }),
   extractedGoal: Annotation<TargetContext | null>({ reducer: lastValue, default: () => null }),
-  inheritedGoalFields: Annotation<InheritableGoalField[]>({ reducer: lastValue, default: () => [] }),
   targetSearchParams: Annotation<TargetSearchParamsWithFeedback | null>({ reducer: lastValue, default: () => null }),
   currentSearchParams: Annotation<CurrentSearchParamsWithFeedback | null>({ reducer: lastValue, default: () => null }),
 

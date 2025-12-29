@@ -21,10 +21,13 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
   [SEARCH_PHASE.showing_exploration_facets]: `Show all facets with counts, suggest narrowing filter.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
-  [SEARCH_PHASE.showing_goal]: `Show goal fields.
-  If inheritedGoalFields array is not empty — tell user explicitly which fields were taken from their profile.
-  For fields not specified: matches any.
-  Offer: validate with real people, refine, or save`,
+  [SEARCH_PHASE.showing_goal]: `Show goal from extractedGoal.
+  ✅ SPECIFIED: list non-null fields
+  ⚪ NOT SPECIFIED: list null fields — explain these will match any value
+  Example format:
+  "✅ Position: senior
+  ⚪ Role, domains, country, industry — not specified, will search among all. You can add criteria."
+  Offer: validate, refine, or save`,
   [SEARCH_PHASE.asking_after_validate_candidates]: `Show real people who reached goal — starting point, path duration, key skills, current status. Help decide if goal is right.
   Empty results → say honestly no one found matching this exact goal, suggest relaxing filters or changing goal`,
   [SEARCH_PHASE.asking_after_validate_facets]: "Show facets with counts, suggest filter",
