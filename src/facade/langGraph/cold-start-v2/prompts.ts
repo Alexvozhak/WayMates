@@ -245,37 +245,30 @@ IMPORTANT: Use BOTH conversation and CV data to build comprehensive plan:
 }
 
 For each position, return:
-1. preview: Rich label with key info for user validation
-   Format: "Role at Company YYYY-YYYY (skill1, skill2, skill3 | industry)"
-   Example: "Junior Developer at Yandex 2018-2020 (python, django, postgresql | fintech)"
-2. incomingTrails: Learning activities that LED TO this position (from the previous one)
+1. preview: Label for user validation — use ONLY explicitly stated info
+2. incomingTrails: Learning activities that LED TO this position
 
 ═══════════════════════════════════════════════════
 RULES:
 ═══════════════════════════════════════════════════
 - First position has EMPTY incomingTrails array (no prior context to transition from)
-- Trails describe HOW the person transitioned: courses, certifications, bootcamps, self-study
-- Trail preview format: "Platform Course Name YYYY" (e.g., "Coursera Machine Learning 2019")
+- Trails: courses, certifications, bootcamps — ONLY if user mentioned them
 - Include promotions and internal moves as separate positions if significantly different
 - Education → first job counts as first position (no incoming trail needed)
-- Preview MUST include top 3 skills and industry for user to validate early
 
 ═══════════════════════════════════════════════════
-🚨 CRITICAL — DO NOT INVENT DATA:
+🚨 CRITICAL — EXTRACTION RULES:
 ═══════════════════════════════════════════════════
-- Extract ONLY explicitly mentioned learning activities
-- Empty incomingTrails is VALID when no learning activities mentioned
-- Formal education degrees belong to educationLevel field, NOT trails
-- No explicit learning mentioned → incomingTrails = []
+POSITIONS:
+- Count how many distinct job positions user explicitly described
+- Return exactly that count — no more, no less
+- One described position = one context in output
+- Never infer career progression user did not mention
 
-═══════════════════════════════════════════════════
-EXAMPLE OUTPUT:
-═══════════════════════════════════════════════════
-contexts: [
-  { preview: "Intern at Startup 2017-2018 (html, css, javascript | e-commerce)", incomingTrails: [] },
-  { preview: "Junior Python Dev at Yandex 2018-2020 (python, django, postgresql | tech)", incomingTrails: ["CS50 Harvard course 2017"] },
-  { preview: "Senior Backend at Google 2020-2023 (go, kubernetes, grpc | tech)", incomingTrails: ["System Design course 2020", "Go Lang bootcamp 2020"] }
-]`;
+TRAILS:
+- Include only learning activities user explicitly named
+- Empty array when no courses or certifications mentioned
+- University degrees go to educationLevel, not trails`;
 }
 
 function buildContextExtractionRules(hasCv: boolean): string {

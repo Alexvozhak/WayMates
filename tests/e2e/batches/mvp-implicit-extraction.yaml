@@ -1,0 +1,21 @@
+name: mvp-implicit-extraction
+description: Test implicit extraction - city should infer country
+locale: ru
+
+steps:
+  - message: |
+      Хочу рассказать свою карьерную историю.
+      Работаю backend разработчиком в Питере, уровень middle.
+      Использую TypeScript, Node.js, PostgreSQL.
+      Работаю уже 3 года в этой компании.
+      Это вся моя история.
+    expect:
+      phase: awaiting_plan_confirmation
+
+  - message: подтверждаю план
+    expect:
+      phase: awaiting_clarification
+
+  - message: гражданство России
+    expect:
+      phase: awaiting_context_confirmation

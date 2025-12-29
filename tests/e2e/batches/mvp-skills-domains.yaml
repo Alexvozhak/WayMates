@@ -1,0 +1,22 @@
+name: mvp-skills-domains
+description: Test skills and domains extraction - should use dictionary values
+locale: ru
+
+steps:
+  - message: |
+      Расскажу о себе.
+      Я DevOps инженер в аутсорс компании, город Новосибирск.
+      Middle уровень, работаю с 2021 года.
+      Мои скиллы: Docker, Kubernetes, Terraform, AWS.
+      Занимаюсь инфраструктурой и автоматизацией.
+      Всё, это моя текущая позиция.
+    expect:
+      phase: awaiting_plan_confirmation
+
+  - message: да верно
+    expect:
+      phase: awaiting_clarification
+
+  - message: гражданство России
+    expect:
+      phase: awaiting_context_confirmation

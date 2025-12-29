@@ -1,0 +1,21 @@
+name: mvp-position-normalization
+description: Test position extraction - should normalize to dictionary values
+locale: ru
+
+steps:
+  - message: |
+      Хочу рассказать карьеру.
+      Работал тимлидом в компании DSSL с 2020 по 2023 год.
+      Занимался бэкендом, Python и Kubernetes.
+      В Москве, сфера технологий.
+      Это всё.
+    expect:
+      phase: awaiting_plan_confirmation
+
+  - message: да, план верный
+    expect:
+      phase: awaiting_clarification
+
+  - message: гражданство России
+    expect:
+      phase: awaiting_context_confirmation

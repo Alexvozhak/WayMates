@@ -1,7 +1,8 @@
 # FEAT-051: Cold-Start Graph UX Improvements
 
-**Статус:** TODO
+**Статус:** DONE
 **Приоритет:** P1
+**Закрыт:** 2025-12-29
 **Компонент:** cold-start-v2
 **Создан:** 2025-12-29 (из анализа сессии FEAT-050)
 
@@ -195,3 +196,35 @@ Cold-start граф технически solid, но UX требует знач�
 | Revert field | `cold-start-revert-field.yaml` | addTerm flow |
 
 Все тесты прошли ✅
+
+---
+
+## Результаты проверки (2025-12-29)
+
+### Проверенные проблемы
+
+| Проблема | Результат | Комментарий |
+|----------|-----------|-------------|
+| 🔴 P0: Много required полей | ✅ OK | citizenships required by design (visa eligibility) |
+| 🔴 P0: Implicit extraction | ✅ Работает | Питер→ru, Москва→ru корректно |
+| 🟡 P1: Clarification UX | ✅ Работает | Группирует 3+ missing fields |
+| 🟡 P1: Skip optional | ✅ Работает | Optional как hint, не блокируют flow |
+
+### Исправленные баги
+
+1. **Plan hallucination** — LLM выдумывал позиции/курсы при минимальном вводе
+   - Fix: `schemas.ts` — убраны примеры из describe, динамическая генерация из CONTEXT_REQUIRED_FIELDS
+   - Fix: `prompts.ts` — убраны конкретные примеры формата
+
+### Новые типы
+
+```typescript
+// schemas.ts
+export const CONTEXT_REQUIRED_FIELDS = [...] as const satisfies readonly ContextRequiredField[];
+export const TRAIL_REQUIRED_FIELDS = [...] as const satisfies readonly TrailRequiredField[];
+```
+
+### Изменённые файлы
+
+- `src/shared/schemas.ts` — CONTEXT_REQUIRED_FIELDS, TRAIL_REQUIRED_FIELDS, динамический describe
+- `src/facade/langGraph/cold-start-v2/prompts.ts` — убраны конкретные примеры
