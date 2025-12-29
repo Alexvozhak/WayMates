@@ -122,103 +122,9 @@ flowchart TD
     style APPLY_FILTERS fill:#fff3e0
 ```
 
-### Текстовое описание:
-
-```
-[Начало сессии]
-    • Есть активный checkpoint? → Resume соответствующий граф
-    • Нет checkpoint → Проверить UserState
-
-[1] ОНБОРДИНГ (если нет контекста)
-    • "Полная история" → cold_start → hasContext: true
-    • "Быстрый поиск" → собрать adhoc → SearchGraph (без сохранения)
-
-[2] SearchGraph (explore → цель → поиск)
-    • Вход: userId (by_current) ИЛИ adhocContext (adhoc)
-
-    [2.1] check_goal
-        • hasGoal=false → explore (все кандидаты, без фильтрации)
-        • hasGoal=true → search (filtered by Goal) → show_results
-
-    [2.2] explore → show_exploration
-        • "Определился" → extract_goal (LLM извлекает цель из описания)
-        • "Фильтр" → apply_filters (уточнить результаты)
-        • "cancel" → END
-
-    [2.25] apply_filters (уточнение результатов)
-        • LLM парсит CurrentSearchParams из текста пользователя:
-          - excludedContextFields (исключить поля: industry, birthYear...)
-          - excludedCreationReasons (исключить причины смены: company_changed...)
-          - recencyThresholdMonths (только за последние N месяцев)
-          - limit (макс. результатов: 1-100, default 20)
-        • Нормализация через fuzzy matching (user input → canonical values)
-        • Validation: clamping limit [1, 100], recencyThreshold >= 1
-        • Возврат appliedFilters + rejectedFields (feedback что не нашлось)
-        • Повтор explore (без цели) ИЛИ search (с целью)
-
-    [2.3] extract_goal → show_goal
-        • "Проверить" → by_target (показать траектории достигших)
-        • "Уточнить" → clarify_goal → show_goal
-        • "Сохранить" → set_goal → ask_search_mode
-        • "cancel" → END
-
-    [2.4] by_target → show_validation
-        • "Подтвердить" → set_goal → ask_search_mode
-        • "Изменить" → extract_goal
-        • "cancel" → END
-
-    [2.5] set_goal → ask_search_mode (НОВОЕ)
-        После сохранения цели пользователь выбирает режим поиска:
-        • "Проводники" → search_pathfinders (кто прошёл ОТ нас К цели)
-        • "Попутчики" → search_waymates (похожие с той же целью)
-
-[3] РЕЗУЛЬТАТ
-    show_results (показывает результаты + текущую цель):
-        • Если searchMode=pathfinders: люди прошедшие путь
-        • Если searchMode=waymates: peers с той же целью
-        • DTW метрики (если траектория + profile mode)
-
-    Опции после результатов:
-        • "Уточнить цель" → show_goal (можно изменить/проверить)
-        • "Удалить цель" → explore (вернуться к всем кандидатам)
-        • "Фильтр" → apply_filters (уточнить результаты без изменения цели)
-        • "cancel" → END
-```
-
 ---
 
-## 3. User State (состояние пользователя)
-
-| Флаг | Что означает |
-|------|--------------|
-| `hasContext` | Есть сохранённый контекст в БД |
-| `hasGoal` | Есть зафиксированная цель |
-
-**Почему нет флага `skippedOnboarding`:**
-- Режим определяется по активному checkpoint графа
-- "Быстрый поиск" — альтернативный путь, не пропуск
-- adhoc контекст передаётся как параметр в SearchGraph
-
-### Влияние на поиск:
-
-| Флаг | Влияние |
-|------|---------|
-| `hasContext` | Можно делать by_current (иначе только adhoc) |
-| `hasGoal` | by_current/adhoc фильтрует по pathfinders/waymates |
-
-### Переходы:
-
-```
-anonymous → "Полная история" → cold_start → hasContext=true
-          │
-          └→ "Быстрый поиск" → adhoc context (не сохраняется)
-
-hasContext=true → setGoal → hasGoal=true
-```
-
----
-
-## 4. MCP Tools (текущие)
+## 3. MCP Tools (текущие)
 
 | Tool | Роль | Статус |
 |------|------|--------|
@@ -228,11 +134,11 @@ hasContext=true → setGoal → hasGoal=true
 | `converse` | Единая точка входа для диалога | ✅ OK |
 | `set_goal` | Фиксация цели | ✅ OK |
 
-**Примечание:** Поиск реализован через `converse` → SearchGraph → Core API (см. секцию 5).
+**Примечание:** Поиск реализован через `converse` → SearchGraph → Core API (см. секцию 4).
 
 ---
 
-## 5. Логика поиска
+## 4. Логика поиска
 
 ### Три режима поиска (Search Modes)
 
@@ -244,7 +150,7 @@ hasContext=true → setGoal → hasGoal=true
 
 ---
 
-### 5.1 searchWaymates (unified: adhoc + profile)
+### 4.1 searchWaymates (unified: adhoc + profile)
 
 **Определение:** Waymate = человек который:
 1. Похож на нас по контексту (match referenceContext)
@@ -264,7 +170,7 @@ hasContext=true → setGoal → hasGoal=true
 
 ---
 
-### 5.2 searchPathfinders (dual matching)
+### 4.2 searchPathfinders (dual matching)
 
 **Определение:** Pathfinder = человек который:
 1. БЫЛ в контексте похожем на наш (в истории, не сейчас)
@@ -283,7 +189,7 @@ hasContext=true → setGoal → hasGoal=true
 
 ---
 
-### 5.3 reverseSearchPathfinders (валидация цели)
+### 4.3 reverseSearchPathfinders (валидация цели)
 
 **Определение:** ReversePathfinder = человек который:
 1. ДОСТИГ конкретной цели (match targetContext)
@@ -295,7 +201,7 @@ hasContext=true → setGoal → hasGoal=true
 
 ---
 
-### 5.4 Adhoc vs Profile
+### 4.4 Adhoc vs Profile
 
 Adhoc/Profile — это НЕ режим поиска, а **источник referenceContext**:
 
@@ -304,7 +210,7 @@ Adhoc/Profile — это НЕ режим поиска, а **источник ref
 | **Adhoc** | Из сообщения | ❌ | Waymates, Pathfinders |
 | **Profile** | Из DB (user.currentContextId) | ✅ | Все три |
 
-### 5.5 Adhoc Context Validation
+### 4.5 Adhoc Context Validation
 
 **Required fields** (для осмысленного поиска):
 - `position` — уровень (junior/middle/senior)
@@ -324,7 +230,7 @@ Adhoc/Profile — это НЕ режим поиска, а **источник ref
 
 ---
 
-### 5.6 isWaymate (classification)
+### 4.6 isWaymate (classification)
 
 | isWaymate | Значение |
 |-----------|----------|
@@ -333,7 +239,7 @@ Adhoc/Profile — это НЕ режим поиска, а **источник ref
 
 ---
 
-### 5.7 SearchParams Filtering
+### 4.7 SearchParams Filtering
 
 Применяется ко ВСЕМ типам поиска.
 
@@ -348,7 +254,7 @@ Adhoc/Profile — это НЕ режим поиска, а **источник ref
 
 ---
 
-### 5.8 DTW метрики (Trajectory Similarity)
+### 4.8 DTW метрики (Trajectory Similarity)
 
 DTW (Dynamic Time Warping) сравнивает траектории пользователя и кандидата.
 
@@ -403,7 +309,7 @@ DTW (Dynamic Time Warping) сравнивает траектории польз�
 
 ---
 
-## 6. Conversation Router
+## 5. Conversation Router
 
 Техническая архитектура описана в [ADR-030-conversation-orchestrator](../architecture/decisions/ADR-030-conversation-orchestrator.md).
 
@@ -411,7 +317,7 @@ DTW (Dynamic Time Warping) сравнивает траектории польз�
 
 ---
 
-## 7. Решённые вопросы
+## 6. Решённые вопросы
 
 | # | Вопрос | Решение |
 |---|--------|---------|
@@ -420,7 +326,7 @@ DTW (Dynamic Time Warping) сравнивает траектории польз�
 
 ---
 
-## 8. UX-требования
+## 7. UX-требования
 
 ### Роль токсичного пользователя
 
@@ -473,7 +379,7 @@ DTW (Dynamic Time Warping) сравнивает траектории польз�
 
 ---
 
-## 9. Не MVP (Future)
+## 8. Не MVP (Future)
 
 - Ведение профиля (upsert_context, upsert_trail после MVP)
 - Follow кандидатов

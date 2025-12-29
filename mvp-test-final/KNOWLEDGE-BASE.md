@@ -283,14 +283,7 @@ load_context (из БД) → check_goal
 
 ### Валидация adhocContext
 
-**Required поля** (ADHOC_REQUIRED_FIELDS):
-- position (junior, senior)
-- role (backend, frontend)
-- countryCode
-- domains[] (1+ элемент)
-
-**Optional поля** (ADHOC_OPTIONAL_FIELDS):
-- skills, industry, companySize, cityName, citizenships, birthYear, educationLevel, languages
+> Список полей (required/optional) → см. [BUSINESS-LOGIC-MVP.md](./BUSINESS-LOGIC-MVP.md#45-adhoc-context-validation)
 
 **Flow валидации:** `adhocContextBase (nullable)` → LLM extraction → `adhocContextRequiredSchema (.omit().extend())` → Zod safeParse → `missingFields[]`
 
