@@ -766,23 +766,115 @@ Schema → Core (save) → Neo4j → Core (read) → Response
 
 ---
 
-## Промпт для продолжения (после FEAT-056)
+---
+
+## Фаза 14: FEAT-056 Reasoning Refactor (завершена)
+
+### Что сделано
+
+1. **Создана утилита `withReasoning()`** в `src/facade/utils/llm-schemas.ts`:
+   ```typescript
+   export function withReasoning<T extends z.ZodRawShape>(
+     schema: z.ZodObject<T>,
+     describe = "Explain your extraction step by step"
+   ): z.ZodObject<{ reasoning: z.ZodString } & T>
+   ```
+
+2. **Применена к 18 местам в 16 файлах:**
+
+   | Schema | Файлы | Мест |
+   |--------|-------|------|
+   | `planOutputSchema` | plan-career.ts | 1 |
+   | `extractableContextSchema` | cold-start, upsert-context, update-context, shared-tools, extraction-models | 7 |
+   | `extractableTrailSchema` | cold-start, upsert-trail, shared-tools | 4 |
+   | `targetContextSchema` | extract-goal, clarify-goal | 2 |
+   | `adhocContextBase` | load-context.ts | 1 |
+   | `advisorIntentSchema` | parse-advisor-intent.ts | 1 |
+   | `linkTrailSchema` | link-contexts-with-trail.tool.ts | 1 |
+   | `contextCorrectionModel` | extraction-models.ts | 1 |
+
+3. **Паттерн использования:**
+   ```typescript
+   const { reasoning, ...extracted } = await model.invoke(...);
+   logger.info({ reasoning }, "context extraction reasoning");
+   // extracted — без reasoning, идёт в response
+   ```
+
+### Проверки
+
+- `npm run lint:fix` — ✅ 0 errors
+- `npx tsc --noEmit` — ✅ passed
+- `npm run facade:rebuild` — ✅
+- Batch test `feat-053-salary-feedback.yaml` — ✅ 6/6 phase assertions
+
+### Логи reasoning
 
 ```
-Продолжаем сессию после FEAT-056.
+"plan career reasoning" — "1. Junior Backend Python/SQL in startup for $50k..."
+"context extraction reasoning" — "The user started as junior backend..."
+"parse_confirmation reasoning" — "The user responded with 'да'..."
+"NLP formatter reasoning" — "The response is formatted to present..."
+```
 
-Прочитай sessions/2025-12-30-test-fixes-session.md (Фаза 13)
+### Коммит: PENDING
+
+Изменения готовы к коммиту.
+
+---
+
+## TODO: Следующая сессия
+
+### 1. Закоммитить FEAT-056
+- 16 файлов с reasoning refactor
+- contextAgendaBaseSchema (salary в preview describe)
+- batch тест feat-053-salary-feedback.yaml
+
+### 2. Исправить feedback копирование
+- **Проблема:** feedback копируется на все позиции в cold-start
+- **Файл:** cold-start extraction/planning
+
+### 3. Cold-Start тесты (9 failed)
+- LLM flakiness — FEAT-056 reasoning может помочь
+
+### 4. appliedFilters
+- ✅ ГОТОВО (1cff7b7) — natural language format
+
+---
+
+## Рефлексия Фазы 14
+
+### Ошибки в этой фазе
+
+1. **Неправильные пути к logger**
+   - Написал `../logger.js` вместо `../../../logger.js` в 11 файлах
+   - TypeScript caught this → исправил все
+
+2. **Return type на `withReasoning()`**
+   - ESLint требовал explicit return type
+   - Добавил: `z.ZodObject<{ reasoning: z.ZodString } & T>`
+
+### Что сделано правильно
+
+- Последовательное применение — все 18 мест обновлены одинаково
+- Проверка через lint + tsc + batch test
+- Reasoning логируется корректно, не утекает в response
+
+---
+
+## Промпт для продолжения
+
+```
+Продолжаем sessions/2025-12-30-test-fixes-session.md после Фазы 14.
 
 Статус:
-- FEAT-056 reasoning refactor — ✅ ГОТОВО (предположительно)
+- FEAT-056 reasoning refactor — ✅ ГОТОВО (16 файлов, lint+tsc пройден)
 - appliedFilters — ✅ ГОТОВО (1cff7b7)
 - feedback в Core — ✅ УЖЕ БЫЛО
 
 TODO по приоритету:
-1. Запустить batch тест feat-053-salary-feedback.yaml — проверить что reasoning помог
-2. Исправить feedback копирование в cold-start (feedback одинаковый на всех позициях)
-3. Закоммитить pending changes (contextAgendaBaseSchema, batch тест)
-4. Cold-Start тесты (9 failed)
+1. Закоммитить FEAT-056 + pending changes
+2. Исправить feedback копирование в cold-start
+3. Cold-Start тесты (9 failed)
 
-Начни с: npm run facade:rebuild && batch тест
+Инфра уже работает: docker ps показывает 5 healthy containers.
 ```

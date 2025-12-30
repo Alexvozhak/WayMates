@@ -1,5 +1,7 @@
 import { HumanMessage } from "@langchain/core/messages";
 
+import { logger } from "../../../logger.js";
+import { withReasoning } from "../../../utils/llm-schemas.js";
 import { extractableContextSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildContextExtractionPrompt } from "../prompts.js";
@@ -8,7 +10,9 @@ import { withLogging } from "../with-logging.js";
 
 import type { UpsertContextStateType } from "../state.js";
 
-const extractionModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
+const extractionModel = getModel("extraction").withStructuredOutput(
+  withReasoning(extractableContextSchema, "Explain what career context you extracted and why")
+);
 
 export const extractContextNode = withLogging<UpsertContextStateType>(
   NODE.extract_context,
@@ -19,10 +23,11 @@ export const extractContextNode = withLogging<UpsertContextStateType>(
     const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
     const prompt = buildContextExtractionPrompt(hints);
 
-    const extracted = await extractionModel.invoke([
+    const { reasoning, ...extracted } = await extractionModel.invoke([
       { role: "system", content: prompt },
       { role: "user", content: inputText },
     ]);
+    logger.info({ reasoning }, "upsert context extraction reasoning");
 
     return {
       extractedContext: extracted,

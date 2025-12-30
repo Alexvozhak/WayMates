@@ -3,6 +3,7 @@ import { tool } from "langchain";
 import { z } from "zod";
 
 import { logger } from "../../logger.js";
+import { withReasoning } from "../../utils/llm-schemas.js";
 
 import { extractableTrailSchema } from "./extraction-models.js";
 import { getModel } from "./models.js";
@@ -12,7 +13,9 @@ export type { ExtractableTrail } from "./extraction-models.js";
 
 import type { ExtractableTrail } from "./extraction-models.js";
 
-const trailExtractionModel = getModel("extraction").withStructuredOutput(extractableTrailSchema);
+const trailExtractionModel = getModel("extraction").withStructuredOutput(
+  withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why")
+);
 
 /**
  * Extract ONE career transition (trail) from text using structured output.
@@ -48,7 +51,8 @@ If multiple transitions present, extract FIRST one only.
 Return null if no transition found.`;
 
     try {
-      const extracted = await trailExtractionModel.invoke([new HumanMessage(prompt)]);
+      const { reasoning, ...extracted } = await trailExtractionModel.invoke([new HumanMessage(prompt)]);
+      logger.info({ reasoning }, "single trail extraction reasoning");
 
       if (!extracted) {
         return null;

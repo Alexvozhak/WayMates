@@ -2,6 +2,8 @@ import { HumanMessage } from "@langchain/core/messages";
 import { v7 as uuidv7 } from "uuid";
 
 import { AgentInvariantError } from "../../../errors.js";
+import { logger } from "../../../logger.js";
+import { withReasoning } from "../../../utils/llm-schemas.js";
 import { extractableContextSchema, extractableTrailSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
 import { contextExtractionPrompt, trailExtractionPrompt } from "../prompts.js";
@@ -13,8 +15,12 @@ import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/ex
 import type { ColdStartStateType, ContextAgenda } from "../state.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
-const contextExtractionModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
-const trailExtractionModel = getModel("extraction").withStructuredOutput(extractableTrailSchema);
+const contextExtractionModel = getModel("extraction").withStructuredOutput(
+  withReasoning(extractableContextSchema, "Explain what career context you extracted and why")
+);
+const trailExtractionModel = getModel("extraction").withStructuredOutput(
+  withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why")
+);
 
 function getLinkedContextIds(
   queue: ContextAgenda[],
@@ -41,7 +47,8 @@ async function extractAllTrails(
 
   const trailPromises = agenda.incomingTrails.map(async (trailPreview): Promise<ExtractableTrail> => {
     const prompt = trailExtractionPrompt(messages, trailPreview);
-    const extracted = await trailExtractionModel.invoke([new HumanMessage(prompt)]);
+    const { reasoning, ...extracted } = await trailExtractionModel.invoke([new HumanMessage(prompt)]);
+    logger.info({ reasoning }, "trail extraction reasoning");
 
     return {
       ...extracted,
@@ -63,7 +70,8 @@ async function extractContextData(
   dictHints: string,
 ): Promise<ExtractableContext> {
   const prompt = contextExtractionPrompt(messages, agenda.preview, cvText, dictHints);
-  const extracted = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
+  const { reasoning, ...extracted } = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
+  logger.info({ reasoning }, "context extraction reasoning");
   const { previousId, nextId } = getLinkedContextIds(queue, contextIndex);
 
   return {

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
 import { logger } from "../../logger.js";
+import { withReasoning } from "../../utils/llm-schemas.js";
 
 import { getModel } from "./models.js";
 
@@ -14,7 +15,9 @@ const linkTrailSchema = trailSchema.omit({
   toContextId: true,
 });
 
-const linkModel = getModel("extraction").withStructuredOutput(linkTrailSchema);
+const linkModel = getModel("extraction").withStructuredOutput(
+  withReasoning(linkTrailSchema, "Explain what transition you identified between these positions")
+);
 
 /**
  * Link TWO contexts with a trail (transition) between them.
@@ -74,7 +77,8 @@ export const linkContextsWithTrailTool = tool(
     const prompt = buildTransitionPrompt(fromContext, toContext, text);
 
     try {
-      const extracted = await linkModel.invoke([new HumanMessage(prompt)]);
+      const { reasoning, ...extracted } = await linkModel.invoke([new HumanMessage(prompt)]);
+      logger.info({ reasoning }, "link trail extraction reasoning");
 
       if (!extracted) {
         return null;

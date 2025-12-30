@@ -1,6 +1,8 @@
 import { HumanMessage } from "@langchain/core/messages";
 
 import { targetContextSchema } from "../../../../shared/schemas.js";
+import { logger } from "../../../logger.js";
+import { withReasoning } from "../../../utils/llm-schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildGoalExtractionPrompt } from "../prompts/extraction.js";
 import { NODE, PHASE } from "../state.js";
@@ -8,7 +10,9 @@ import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
 
-const extractionModel = getModel("extraction").withStructuredOutput(targetContextSchema);
+const extractionModel = getModel("extraction").withStructuredOutput(
+  withReasoning(targetContextSchema, "Explain what career goal you extracted and why")
+);
 
 /**
  * Extract goal from user message.
@@ -25,10 +29,11 @@ export const extractGoalNode = withLogging<SearchStateType>(
     const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
     const prompt = buildGoalExtractionPrompt(hints);
 
-    const extracted = await extractionModel.invoke([
+    const { reasoning, ...extracted } = await extractionModel.invoke([
       { role: "system", content: prompt },
       { role: "user", content: textToExtract },
     ]);
+    logger.info({ reasoning }, "goal extraction reasoning");
 
     const extractedGoal = extracted ? targetContextSchema.parse(extracted) : null;
 

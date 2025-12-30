@@ -3,6 +3,28 @@ import { z } from "zod";
 import type { ZodTypeAny } from "zod";
 
 /**
+ * Wraps a Zod object schema by adding a reasoning field at the beginning.
+ * LLM writes reasoning first (chain of thought), then fills other fields.
+ *
+ * Usage: wrap schema inline, log reasoning explicitly, destructure to exclude.
+ *
+ * @example
+ * const schema = withReasoning(baseSchema, "Explain your extraction");
+ * const result = await model.withStructuredOutput(schema).invoke(...);
+ * logger.info({ reasoning: result.reasoning }, "extraction reasoning");
+ * const { reasoning, ...data } = result;
+ */
+export function withReasoning<T extends z.ZodRawShape>(
+  schema: z.ZodObject<T>,
+  describe = "Explain your extraction step by step"
+): z.ZodObject<{ reasoning: z.ZodString } & T> {
+  return z.object({
+    reasoning: z.string().describe(describe),
+    ...schema.shape,
+  });
+}
+
+/**
  * Makes a single field nullable.
  * - Already nullable → return as-is
  * - Optional → unwrap and make nullable

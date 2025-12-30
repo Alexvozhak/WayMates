@@ -1,5 +1,5 @@
 import { trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
-import { makeNullable } from "../../utils/llm-schemas.js";
+import { makeNullable, withReasoning } from "../../utils/llm-schemas.js";
 
 import { getModel } from "./models.js";
 
@@ -14,5 +14,5 @@ export const extractableContextSchema = makeNullable(userContextSchemaBase);
 export type ExtractableContext = z.infer<typeof extractableContextSchema>;
 
 export const contextCorrectionModel = getModel("extraction")
-  .withStructuredOutput(extractableContextSchema)
+  .withStructuredOutput(withReasoning(extractableContextSchema, "Explain what corrections you applied"))
   .withRetry({ stopAfterAttempt: 2 });

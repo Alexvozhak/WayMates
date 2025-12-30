@@ -6,6 +6,7 @@ import {
 } from "../../../../shared/schemas.js";
 import { logger } from "../../../logger.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
+import { withReasoning } from "../../../utils/llm-schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildAdhocClarificationPrompt, buildAdhocExtractionPrompt } from "../prompts/extraction.js";
 import { NODE, PHASE } from "../state.js";
@@ -19,14 +20,17 @@ import type {
 } from "../../../../shared/schemas.js";
 import type { SearchPhase, SearchStateType } from "../state.js";
 
-const extractor = getModel("extraction").withStructuredOutput(adhocContextBase);
+const extractor = getModel("extraction").withStructuredOutput(
+  withReasoning(adhocContextBase, "Explain what context you extracted from the user message")
+);
 
 async function extractAdhocContext(message: string, hints: string): Promise<AdhocContextBase | null> {
   const prompt = buildAdhocExtractionPrompt(hints);
-  const extracted = await extractor.invoke([
+  const { reasoning, ...extracted } = await extractor.invoke([
     { role: "system", content: prompt },
     { role: "user", content: message },
   ]);
+  logger.info({ reasoning }, "adhoc context extraction reasoning");
 
   if (!extracted) return null;
 
@@ -50,10 +54,11 @@ async function clarifyAdhocContext(
 ): Promise<AdhocContextBase | null> {
   const prompt = buildAdhocClarificationPrompt(hints, JSON.stringify(existing), message);
 
-  const updated = await extractor.invoke([
+  const { reasoning, ...updated } = await extractor.invoke([
     { role: "system", content: prompt },
     { role: "user", content: message },
   ]);
+  logger.info({ reasoning }, "adhoc context clarification reasoning");
 
   if (!updated) return existing;
   return adhocContextBase.parse(updated);

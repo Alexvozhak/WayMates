@@ -67,7 +67,8 @@ export const editContextNode = withLogging<ColdStartStateType>(
     const existingContext = currentContext;
 
     const prompt = contextCorrectionPrompt(existingContext, corrections, messages);
-    const extractedCorrections = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
+    const { reasoning, ...extractedCorrections } = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
+    logger.info({ reasoning }, "context correction reasoning");
 
     const mergedContext = {
       ...existingContext,

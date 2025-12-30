@@ -4,13 +4,16 @@ import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
 import { logger } from "../../logger.js";
+import { withReasoning } from "../../utils/llm-schemas.js";
 
 import { extractableContextSchema } from "./extraction-models.js";
 import { getModel } from "./models.js";
 
 import type { ExtractableContext } from "./extraction-models.js";
 
-const contextExtractionModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
+const contextExtractionModel = getModel("extraction").withStructuredOutput(
+  withReasoning(extractableContextSchema, "Explain what career context you extracted and why")
+);
 
 /**
  * Extract ONE career context from text using STRICT UserContext schema.
@@ -54,7 +57,8 @@ If multiple positions present, extract FIRST one only.
 Return null if no career position found.`;
 
     try {
-      const extracted = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
+      const { reasoning, ...extracted } = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
+      logger.info({ reasoning }, "single context extraction reasoning");
 
       if (!extracted) {
         return null;

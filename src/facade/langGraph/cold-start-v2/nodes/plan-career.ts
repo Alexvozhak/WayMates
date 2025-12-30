@@ -3,15 +3,20 @@ import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
 import { contextAgendaBaseSchema } from "../../../../shared/schemas.js";
+import { logger } from "../../../logger.js";
+import { withReasoning } from "../../../utils/llm-schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { planningPrompt } from "../prompts.js";
 import { PHASE } from "../state.js";
 
 import type { ColdStartStateType, ContextAgenda, ContextAgendaBase } from "../state.js";
 
-const planOutputSchema = z.object({
-  contexts: z.array(contextAgendaBaseSchema),
-});
+const planOutputSchema = withReasoning(
+  z.object({
+    contexts: z.array(contextAgendaBaseSchema),
+  }),
+  "List the career positions you identified chronologically"
+);
 
 const planningModel = getModel("planning").withStructuredOutput(planOutputSchema);
 
@@ -27,7 +32,8 @@ export async function planCareerNode(state: ColdStartStateType): Promise<Partial
   const { messages, cvText } = state;
 
   const prompt = planningPrompt(messages, cvText);
-  const planOutput = await planningModel.invoke([new HumanMessage(prompt)]);
+  const { reasoning, ...planOutput } = await planningModel.invoke([new HumanMessage(prompt)]);
+  logger.info({ reasoning }, "plan career reasoning");
 
   if (!planOutput || planOutput.contexts.length === 0) {
     return {

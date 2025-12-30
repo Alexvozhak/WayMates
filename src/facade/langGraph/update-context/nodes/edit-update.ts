@@ -1,5 +1,7 @@
 import { HumanMessage } from "@langchain/core/messages";
 
+import { logger } from "../../../logger.js";
+import { withReasoning } from "../../../utils/llm-schemas.js";
 import { extractableContextSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildUpdateClarificationPrompt } from "../prompts.js";
@@ -8,7 +10,9 @@ import { withLogging } from "../with-logging.js";
 
 import type { UpdateContextStateType } from "../state.js";
 
-const editModel = getModel("extraction").withStructuredOutput(extractableContextSchema);
+const editModel = getModel("extraction").withStructuredOutput(
+  withReasoning(extractableContextSchema, "Explain what corrections you applied and why")
+);
 
 export const editUpdateNode = withLogging<UpdateContextStateType>(
   NODE.edit_update,
@@ -19,10 +23,11 @@ export const editUpdateNode = withLogging<UpdateContextStateType>(
     const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
     const prompt = buildUpdateClarificationPrompt(hints, JSON.stringify(mergedContext, null, 2), corrections);
 
-    const edited = await editModel.invoke([
+    const { reasoning, ...edited } = await editModel.invoke([
       { role: "system", content: prompt },
       { role: "user", content: corrections },
     ]);
+    logger.info({ reasoning }, "update context edit reasoning");
 
     return {
       extractedUpdates: edited,

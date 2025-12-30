@@ -1,5 +1,7 @@
 import { HumanMessage } from "@langchain/core/messages";
 
+import { logger } from "../../../logger.js";
+import { withReasoning } from "../../../utils/llm-schemas.js";
 import { extractableTrailSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildTrailExtractionPrompt } from "../prompts.js";
@@ -8,7 +10,9 @@ import { withLogging } from "../with-logging.js";
 
 import type { UpsertTrailStateType } from "../state.js";
 
-const extractionModel = getModel("extraction").withStructuredOutput(extractableTrailSchema);
+const extractionModel = getModel("extraction").withStructuredOutput(
+  withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why")
+);
 
 export const extractTrailNode = withLogging<UpsertTrailStateType>(
   NODE.extract_trail,
@@ -19,10 +23,11 @@ export const extractTrailNode = withLogging<UpsertTrailStateType>(
     const hints = await dictionariesService.buildHints(["skill"]);
     const prompt = buildTrailExtractionPrompt(hints);
 
-    const extracted = await extractionModel.invoke([
+    const { reasoning, ...extracted } = await extractionModel.invoke([
       { role: "system", content: prompt },
       { role: "user", content: inputText },
     ]);
+    logger.info({ reasoning }, "upsert trail extraction reasoning");
 
     return {
       extractedTrail: extracted,
