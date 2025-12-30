@@ -1020,6 +1020,7 @@ export type AddTermInput = z.infer<typeof addTermInputSchema>;
 
 /** Describe strings for LLM structured output (generated from type-checked arrays) */
 const CONTEXT_FIELDS_DESC = CONTEXT_REQUIRED_FIELDS.join(", ");
+const CONTEXT_OPTIONAL_DESC = CONTEXT_OPTIONAL_FIELDS.join(", ");
 const TRAIL_FIELDS_DESC = TRAIL_REQUIRED_FIELDS.join(", ");
 
 /**
@@ -1027,7 +1028,11 @@ const TRAIL_FIELDS_DESC = TRAIL_REQUIRED_FIELDS.join(", ");
  * Used by planCareerHistoryTool's structured output.
  */
 export const contextAgendaBaseSchema = z.object({
-  preview: z.string().describe(`Summary of: ${CONTEXT_FIELDS_DESC} — extract only, never invent`),
+  preview: z
+    .string()
+    .describe(
+      `Summary with period (YYYY-YYYY): ${CONTEXT_FIELDS_DESC}; optional if mentioned: ${CONTEXT_OPTIONAL_DESC} — extract only, never invent`,
+    ),
   incomingTrails: z.array(z.string()).describe(`Trail info: ${TRAIL_FIELDS_DESC} — only if explicitly mentioned`),
 });
 

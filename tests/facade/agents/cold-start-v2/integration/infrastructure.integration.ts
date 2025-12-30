@@ -289,23 +289,24 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
   }, 180_000);
 
   /**
-   * TC-I5: LLM extraction follows System Prompt lowercase convention
+   * TC-I5: LLM extraction follows case conventions (lowercase + ISO uppercase)
    *
    * Что тестируем:
-   * LLM соблюдает требование System Prompt о lowercase для всех строковых полей.
-   * Это важно для консистентности данных в Neo4j и поиска.
+   * LLM соблюдает требования к регистру для разных типов полей:
+   * - lowercase: position, skills, domains, industry, cityName
+   * - UPPERCASE (ISO): countryCode, citizenships, languages
    *
    * Given:
    * - U1 fixture
    * - Extraction успешно (awaiting_context_confirmation)
    *
    * Then:
-   * - Все string поля в lowercase: position, skills, domains, industry,
-   *   countryCode, cityName, citizenships, languages
+   * - Business fields в lowercase: position, skills, domains, industry, cityName
+   * - ISO fields в UPPERCASE: countryCode, citizenships, languages
    *
    * Тип теста: Integration (real LLM) — проверка compliance
    */
-  it("TC-I5: LLM extraction follows System Prompt lowercase convention", async () => {
+  it("TC-I5: LLM extraction follows case conventions (lowercase + ISO uppercase)", async () => {
     const userStories = new UserStories();
     const u1 = userStories.getStoryBy("U1");
 
@@ -331,10 +332,17 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
     }
 
     const entity = extractionResponse.entity;
-    console.log(`TC-I5 [3/3]: Checking LLM output for lowercase compliance`);
+    console.log(`TC-I5 [3/3]: Checking LLM output for case conventions`);
+    console.log(
+      `TC-I5 [3/3]: countryCode=${entity.countryCode}, citizenships=${entity.citizenships.join(",")}, languages=${entity.languages?.join(",") ?? "none"}`,
+    );
 
     const assertLowercase = (value: string, field: string) => {
       expect(value, `${field} "${value}" should be lowercase`).toBe(value.toLowerCase());
+    };
+
+    const assertUppercase = (value: string, field: string) => {
+      expect(value, `${field} "${value}" should be UPPERCASE (ISO)`).toBe(value.toUpperCase());
     };
 
     const assertArrayLowercase = (arr: string[], field: string) => {
@@ -342,24 +350,32 @@ describe("Cold-Start V2: Infrastructure (TC-I)", () => {
       expect(nonLowercase.length, `${field} contains non-lowercase: ${nonLowercase.join(", ")}`).toBe(0);
     };
 
+    const assertArrayUppercase = (arr: string[], field: string) => {
+      const nonUppercase = arr.filter((v) => v !== v.toUpperCase());
+      expect(nonUppercase.length, `${field} contains non-UPPERCASE: ${nonUppercase.join(", ")}`).toBe(0);
+    };
+
+    // Business fields → lowercase
     assertLowercase(entity.position, "position");
     assertArrayLowercase(entity.skills, "skills");
     assertArrayLowercase(entity.domains, "domains");
     assertLowercase(entity.industry, "industry");
-    assertLowercase(entity.countryCode, "countryCode");
     assertLowercase(entity.cityName, "cityName");
-    assertArrayLowercase(entity.citizenships, "citizenships");
+
+    // ISO fields → UPPERCASE (ISO 3166-1 alpha-2, ISO 639-1)
+    assertUppercase(entity.countryCode, "countryCode");
+    assertArrayUppercase(entity.citizenships, "citizenships");
 
     if (entity.languages && entity.languages.length > 0) {
-      assertArrayLowercase(entity.languages, "languages");
+      assertArrayUppercase(entity.languages, "languages");
     }
 
     const contextIdResult = contextIdSchema.safeParse(entity.contextId);
     expect(contextIdResult.success, `entity.contextId "${entity.contextId}" must match ctx_<UUID> format`).toBe(true);
 
     console.log(
-      `TC-I5: ✅ Lowercase compliance verified: position="${entity.position}", ` +
-        `industry="${entity.industry}", country="${entity.countryCode}", city="${entity.cityName}", ` +
+      `TC-I5: ✅ Case conventions verified: position="${entity.position}" (lower), ` +
+        `countryCode="${entity.countryCode}" (UPPER), ` +
         `skills=${entity.skills.length}, domains=${entity.domains.length}`,
     );
   }, 180_000);

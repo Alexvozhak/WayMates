@@ -13,13 +13,11 @@ type StoryDecisionIntent = (typeof STORY_DECISION_INTENTS)[number];
 
 // Semantic descriptions - no literal examples, only meaning
 const STORY_DECISION_DESCRIPTIONS: Record<StoryDecisionIntent, string> = {
-  approve: `User signals COMPLETION and has career content
-  Semantic: finality, ready to proceed, nothing more to add
-  Condition: CV provided OR conversation contains work positions`,
+  approve: `User signals COMPLETION and has WORK experience
+  Condition: CV/conversation describes at least one JOB position (employment, not just education)`,
 
   continue: `DEFAULT - keep gathering story
-  Semantic: sharing info, greeting, unclear, claims no experience
-  Note: "no experience" always continues (ask about internships, freelance)`,
+  Use when: greeting, sharing info, unclear, OR only education without work experience`,
 
   cancel: `User wants to STOP the flow
   Semantic: abort, exit, give up`,
@@ -43,8 +41,10 @@ ${cvSection}${conversationSection}DECISION (pick ONE):
 
 ${intentSection}
 
-PRIORITY: "no experience" claim → always CONTINUE (even with completion signal).
-Simply mentioning a job does NOT mean done — user may have more positions.`;
+CRITICAL RULES:
+1. Education-only background without employment → CONTINUE (ask about internships, freelance)
+2. Claims of lacking work history → CONTINUE (dig deeper)
+3. APPROVE requires at least one described employment position (not just education)`;
 }
 
 export async function parseStoryCompletionNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {

@@ -8,7 +8,7 @@ const intentParser = getModel("deterministic").withStructuredOutput(decisionSche
 
 const CONFIRMATION_PROMPT = `Classify user intent. Response may be in any language.
 
-APPROVE: User signals agreement, acceptance, or readiness to proceed. Any affirmative response — even brief acknowledgments — indicates approval.
+APPROVE: User signals agreement, acceptance, readiness to proceed, or intent to finalize/persist data.
 EDIT: User explicitly wants to change, modify, or correct something specific.
 CANCEL: User explicitly wants to stop, cancel, or abort completely.
 UNKNOWN: User provides unrelated content or asks a question instead of responding to the confirmation.`;

@@ -322,14 +322,15 @@ CAREER MODEL (key dimensions):
 - INDUSTRY: Company's business sector — map to KNOWN INDUSTRIES
 - CREATION REASON: Why this context was created — map to KNOWN REASONS
 
-OPTIONAL FIELDS (include ONLY if user explicitly mentioned):
+OPTIONAL FIELDS (include ONLY if user explicitly mentioned FOR THIS SPECIFIC POSITION):
 ═══════════════════════════════════════════════════
 - salaryExact: exact annual salary in USD (if user gives precise number like "120k" or "150000")
 - salaryMin/salaryMax: salary range in USD (if user gives range like "100-150k")
   Note: Use EITHER exact OR range, not both. Convert to annual USD.
-- feedback: user's insight about this position — satisfaction, difficulty, recommendation (max 200 chars)
-  Extract ONLY if genuinely useful for others deciding on similar path. Normalize to insight.
-  If low value or generic → return null.
+- feedback: user's reflection about the position being extracted (max 200 chars)
+  CRITICAL: Extract ONLY feedback user gave about the position in preview above.
+  Ignore feedback about other positions mentioned in conversation.
+  If no specific feedback for this position → return null.
 
 EXTRACTION RULES:
 - Extract ONLY explicitly mentioned information
