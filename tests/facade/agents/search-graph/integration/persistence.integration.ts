@@ -32,7 +32,7 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
    *
    * Что тестируем:
    * После сохранения цели она персистится в Neo4j.
-   * Следующий запуск с чистым checkpoint должен пропустить explore.
+   * Следующий запуск с чистым checkpoint должен показать goal для review.
    *
    * Given:
    * - User: U1 (без goal)
@@ -40,11 +40,12 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
    * Flow:
    * - Turn 1: "ищу работу" → explore → showing_exploration
    * - Turn 2: "хочу стать senior" → extract_goal → showing_goal
-   * - Turn 3: "save" → set_goal → search → showing_results
+   * - Turn 3: "save" → set_goal → asking_search_mode (new flow!)
+   * - Turn 4: "проводники" → search_pathfinders → showing_results
    *
    * Then:
    * - Goal exists in Neo4j after Turn 3
-   * - New run with clean checkpoint → showing_results (skips explore)
+   * - New run with clean checkpoint → showing_goal (review)
    *
    * Тип теста: Integration (multi-turn, Neo4j persistence)
    */
@@ -63,9 +64,9 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
     const turn2 = await runGraph("хочу стать senior разработчиком");
     expect(turn2.phase).toBe(PHASE.showing_goal);
 
-    // Turn 3: save goal
+    // Turn 3: save goal → asking_search_mode (new flow)
     const turn3 = await runGraph("save");
-    expect(turn3.phase).toBe(PHASE.showing_results);
+    expect(turn3.phase).toBe(PHASE.asking_search_mode);
 
     // Verify: goal persisted in Neo4j
     goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
@@ -77,6 +78,10 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
       `Expected position to contain "senior", got: ${JSON.stringify(positionValues)}`,
     ).toBe(true);
 
+    // Turn 4: choose search mode → showing_pathfinder_results
+    const turn4 = await runGraph("проводники");
+    expect(turn4.phase).toBe(PHASE.showing_pathfinder_results);
+
     // Verify: new session with clean checkpoint shows goal for review first (new architecture)
     await ctx.checkpointService.delete(threadId);
     const newSession = await runGraph("покажи результаты");
@@ -85,7 +90,7 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
     );
 
     console.log("TC-SG-PS1: ✅ Goal saved to Neo4j, new session shows goal for review");
-  }, 180_000);
+  }, 240_000);
 
   /**
    * TC-SG-PS2: delete_goal removes from Neo4j → explore
@@ -98,11 +103,12 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
    *
    * Flow:
    * - Turn 1: "покажи" → showing_goal (review existing goal first)
-   * - Turn 2: "save" → showing_results (confirm and search)
-   * - Turn 3: "delete" → delete_goal → explore → showing_exploration
+   * - Turn 2: "save" → asking_search_mode (new flow!)
+   * - Turn 3: "проводники" → showing_results
+   * - Turn 4: "delete" → delete_goal → explore → showing_exploration
    *
    * Then:
-   * - Goal deleted from Neo4j after Turn 3
+   * - Goal deleted from Neo4j after Turn 4
    * - Phase: showing_exploration
    *
    * Тип теста: Integration (multi-turn, Neo4j persistence)
@@ -125,18 +131,22 @@ describe("SearchGraph: Persistence (TC-SG-PS)", () => {
     const turn1 = await runGraph("покажи результаты");
     expect(turn1.phase, "User with goal MUST see goal for review first").toBe(PHASE.showing_goal);
 
-    // Turn 2: confirm to get search results (delete is only available from showing_results)
+    // Turn 2: confirm → asking_search_mode (new flow)
     const turn2 = await runGraph("save");
-    expect(turn2.phase, "After confirm, user MUST see search results").toBe(PHASE.showing_results);
+    expect(turn2.phase, "After confirm, user MUST choose search mode").toBe(PHASE.asking_search_mode);
 
-    // Turn 3: delete goal
-    const turn3 = await runGraph("delete");
-    expect(turn3.phase, "After delete, user should return to exploration").toBe(PHASE.showing_exploration_candidates);
+    // Turn 3: choose mode → showing_pathfinder_results (delete is only available from results)
+    const turn3 = await runGraph("проводники");
+    expect(turn3.phase, "After mode selection, user MUST see search results").toBe(PHASE.showing_pathfinder_results);
+
+    // Turn 4: delete goal
+    const turn4 = await runGraph("delete");
+    expect(turn4.phase, "After delete, user should return to exploration").toBe(PHASE.showing_exploration_candidates);
 
     // Verify: goal deleted from Neo4j
     goal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
     expect(goal, "Goal MUST be deleted from Neo4j after 'delete' command").toBeNull();
 
     console.log("TC-SG-PS2: ✅ Goal deleted from Neo4j, returned to explore");
-  }, 240_000);
+  }, 300_000);
 });

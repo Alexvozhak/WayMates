@@ -10,7 +10,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -18,15 +18,15 @@
       "skills": [
         "react"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "languages": [
-        "en"
+        "EN"
       ],
       "role": "developer"
     },
@@ -39,7 +39,7 @@
         "position_changed"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -47,15 +47,15 @@
       "skills": [
         "react"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "languages": [
-        "en"
+        "EN"
       ],
       "role": "developer"
     }

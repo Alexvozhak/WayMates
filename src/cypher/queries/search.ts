@@ -406,6 +406,7 @@ export function buildPathfinderSearchQuery(params: PathfinderSearchParams, stric
   // Target context field filters (only if field has value)
   const targetFilterFields: (keyof typeof targetContext)[] = [
     "position",
+    "role",
     "countries",
     "domains",
     "skills",

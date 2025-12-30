@@ -1,14 +1,22 @@
 name: chart-url-generation
-description: chartUrl генерируется при <10 кандидатах (telecom = 5 backend devs)
+description: chartUrl генерируется при <10 кандидатах (consulting = 3 pathfinders)
 locale: ru
 
 steps:
-  - message: найди похожих, я middle backend разработчик в telecom, США
+  - message: найди похожих, я middle backend разработчик в consulting, США
     expect:
       phase: confirming_adhoc_context
-      adhocContext.industry: telecom
+      adhocContext.industry: consulting
 
-  - message: покажи похожих
+  - message: хочу стать senior
     expect:
-      phase: showing_exploration_candidates
+      phase: showing_goal
+
+  - message: сохрани
+    expect:
+      phase: asking_search_mode
+
+  - message: покажи проводников
+    expect:
+      phase: showing_results
       chartUrl: "!null"

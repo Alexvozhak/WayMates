@@ -19,6 +19,8 @@ export const showExplorationNode = withLogging<SearchStateType>(NODE.show_explor
 
   return {
     userResponse: String(userResponse),
+    currentSearchParams: state.currentSearchParams,
+    targetSearchParams: state.targetSearchParams,
     // Keep phase as set by explore - don't override
   };
 });

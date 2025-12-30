@@ -281,11 +281,11 @@ function buildContextExtractionRules(hasCv: boolean): string {
 - If conflict exists, prioritize conversation (user's latest input)\n\n`
     : "";
 
-  return `${cvMergeNote}- All terms: lowercase-kebab-case (e.g., "machine-learning", "data-science")
-- cityName: lowercase (e.g., "berlin", "san-francisco")
-- countryCode: residence country, ISO alpha-2 (e.g., "de", "ru")
-- citizenships: nationality/passport countries array, ISO alpha-2 (e.g., ["de"], ["ru", "il"])
-- languages: B2+ proficiency languages, ISO 639-1 (e.g., ["en", "de"])
+  return `${cvMergeNote}- All terms: lowercase-kebab-case
+- cityName: lowercase
+- countryCode: residence country, ISO 3166-1 alpha-2
+- citizenships: nationality/passport countries array, ISO 3166-1 alpha-2
+- languages: B2+ proficiency languages, ISO 639-1
 - DO NOT invent data - extract ONLY what is explicitly mentioned`;
 }
 
@@ -318,7 +318,7 @@ CAREER MODEL (key dimensions):
 ═══════════════════════════════════════════════════
 - ROLE: Profession type (WHAT you do) — map to KNOWN ROLES
 - POSITION: Seniority level (HOW experienced) — map to KNOWN POSITIONS
-- DOMAINS: Technical area (WHICH field) — map to KNOWN DOMAINS
+- DOMAINS: Technical specialization area (answers 'what kind of developer/engineer?') — map to KNOWN DOMAINS
 - INDUSTRY: Company's business sector — map to KNOWN INDUSTRIES
 - CREATION REASON: Why this context was created — map to KNOWN REASONS
 

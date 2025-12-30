@@ -13,7 +13,7 @@
  * - TG6: Undesired skills (NONE match)
  * - TG7: Combined filters (position + domains + skills)
  * - TG-LANG-1/2: Languages filter (desired/undesired)
- * - TG-IND-1/2: Industries filter (fintech → U7)
+ * - TG-IND-1/2: Industries filter (finance → U7)
  * - TG-CITY-1/2: Cities filter (berlin → U1/U2/U5/U6/U9/U14)
  * - TG-CIT-1/2: Citizenships filter (de → U1/U5/U6/U9/U14, ru → exclude U10-U13/U19)
  * - TG-EDU-1/2: EducationLevels filter (MASTER → U14/U18)
@@ -404,7 +404,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
         targetContextSchema.parse({
           languages: {
             mode: "desired",
-            values: ["en", "fr"],
+            values: ["EN", "FR"],
           },
         }),
       ),
@@ -433,7 +433,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
 
     results.forEach((r) => {
       const languages = r.matchedContext.languages || [];
-      const hasMatch = languages.some((lang) => ["en", "fr"].includes(lang));
+      const hasMatch = languages.some((lang) => ["EN", "FR"].includes(lang));
       expect(hasMatch).toBe(true);
     });
 
@@ -455,7 +455,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
         targetContextSchema.parse({
           languages: {
             mode: "undesired",
-            values: ["en"],
+            values: ["EN"],
           },
         }),
       ),
@@ -484,7 +484,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
 
     results.forEach((r) => {
       const languages = r.matchedContext.languages || [];
-      const hasEn = languages.includes("en");
+      const hasEn = languages.includes("EN");
       expect(hasEn).toBe(false);
     });
 
@@ -495,12 +495,12 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
    * TG-IND-1: Desired industries filter (ANY match)
    *
    * Given:
-   * - Target with industries: { mode: "desired", values: ["fintech"] }
-   * - U7 has industry: "fintech", others have "tech" or "IT"
+   * - Target with industries: { mode: "desired", values: ["finance"] }
+   * - U7 has industry: "finance", others have "tech" or "IT"
    *
    * Then:
-   * - Only U7 is returned (only fintech user)
-   * - All results have industry = "fintech"
+   * - Only U7 is returned (only finance user)
+   * - All results have industry = "finance"
    *
    * Business rule: Desired industries uses ANY match (OR logic)
    */
@@ -510,7 +510,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
     const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
-    console.log("[TG-IND-1] Searching for industries: fintech (desired mode)");
+    console.log("[TG-IND-1] Searching for industries: finance (desired mode)");
 
     const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
@@ -518,7 +518,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
         targetContextSchema.parse({
           industries: {
             mode: "desired",
-            values: ["fintech"],
+            values: ["finance"],
           },
         }),
       ),
@@ -538,7 +538,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
     expect(hasU7).toBe(true);
 
     results.forEach((r) => {
-      expect(r.matchedContext.industry).toBe("fintech");
+      expect(r.matchedContext.industry).toBe("finance");
     });
 
     validateAllPaths(results, "TG-IND-1");
@@ -548,12 +548,12 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
    * TG-IND-2: Undesired industries filter (NONE match)
    *
    * Given:
-   * - Target with industries: { mode: "undesired", values: ["fintech"] }
-   * - U7 has industry: "fintech"
+   * - Target with industries: { mode: "undesired", values: ["finance"] }
+   * - U7 has industry: "finance"
    *
    * Then:
    * - U7 is NOT in results
-   * - All results have industry != "fintech"
+   * - All results have industry != "finance"
    *
    * Business rule: Undesired industries excludes ALL with that industry
    */
@@ -563,7 +563,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
     const dataManager = new UserStories();
     const u3 = dataManager.getStoryBy("U3");
 
-    console.log("[TG-IND-2] Excluding industries: fintech (undesired mode)");
+    console.log("[TG-IND-2] Excluding industries: finance (undesired mode)");
 
     const results = await searchManager.reverseSearchPathfinders(
       createTargetParams(
@@ -571,7 +571,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
         targetContextSchema.parse({
           industries: {
             mode: "undesired",
-            values: ["fintech"],
+            values: ["finance"],
           },
         }),
       ),
@@ -583,7 +583,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
     expect(results.find((r) => r.userId === u7.userId)).toBeUndefined();
 
     results.forEach((r) => {
-      expect(r.matchedContext.industry).not.toBe("fintech");
+      expect(r.matchedContext.industry).not.toBe("finance");
     });
 
     validateAllPaths(results, "TG-IND-2");
@@ -724,7 +724,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
         targetContextSchema.parse({
           citizenships: {
             mode: "desired",
-            values: ["de"],
+            values: ["DE"],
           },
         }),
       ),
@@ -746,7 +746,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
     expect(hasDeUsers).toBe(true);
 
     results.forEach((r) => {
-      expect(r.matchedContext.citizenships).toContain("de");
+      expect(r.matchedContext.citizenships).toContain("DE");
     });
 
     validateAllPaths(results, "TG-CIT-1");
@@ -779,7 +779,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
         targetContextSchema.parse({
           citizenships: {
             mode: "undesired",
-            values: ["ru"],
+            values: ["RU"],
           },
         }),
       ),
@@ -795,7 +795,7 @@ describe("Target Search (TG1-TG7, TG-LANG, TG-IND, TG-CITY, TG-CIT, TG-EDU)", ()
 
     results.forEach((r) => {
       const citizenships = r.matchedContext.citizenships || [];
-      expect(citizenships).not.toContain("ru");
+      expect(citizenships).not.toContain("RU");
     });
 
     validateAllPaths(results, "TG-CIT-2");

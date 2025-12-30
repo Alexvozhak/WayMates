@@ -75,11 +75,12 @@ describe("SearchGraph: Goal Check (TC-SG-GC)", () => {
   }, 120_000);
 
   /**
-   * TC-SG-GC2: Has goal → show goal for review → confirm → search
+   * TC-SG-GC2: Has goal → show goal for review → confirm → choose mode → search
    *
    * Что тестируем:
    * Пользователь с существующей целью сначала видит цель для review.
-   * После confirm — выполняется поиск и показываются результаты.
+   * После confirm — выбор режима поиска (pathfinders/waymates).
+   * После выбора режима — показываются результаты.
    * Тест использует relaxed filters для matching с fixtures.
    *
    * Given:
@@ -88,11 +89,13 @@ describe("SearchGraph: Goal Check (TC-SG-GC)", () => {
    *
    * Flow:
    * - Turn 1: "покажи результаты" → load_existing_goal → show_goal (review)
-   * - Turn 2: "save" → set_goal → search → showing_results
+   * - Turn 2: "save" → set_goal → asking_search_mode
+   * - Turn 3: "проводники" → search_pathfinders → showing_results
    *
    * Then:
    * - Turn 1: Phase = showing_goal (goal review before search)
-   * - Turn 2: Phase = showing_results, results.length > 0
+   * - Turn 2: Phase = asking_search_mode (choose pathfinders/waymates)
+   * - Turn 3: Phase = showing_results, results.length > 0
    *
    * Тип теста: Integration (multi-turn, real LLM, relaxed filters via helper)
    */
@@ -127,24 +130,34 @@ describe("SearchGraph: Goal Check (TC-SG-GC)", () => {
 
     console.log("Turn 1: ✅ Goal shown for review");
 
-    // Turn 2: User confirms to run search
+    // Turn 2: User confirms → asking_search_mode (new flow)
     const turn2 = await runGraph("save");
     expect(
       turn2.phase,
-      "After confirm, user MUST see search results. " +
-        "If this fails, check: (1) routeAfterParseSearchIntent, (2) set_goal → search edge",
-    ).toBe(PHASE.showing_results);
+      "After confirm, user MUST choose search mode (pathfinders/waymates). " +
+        "If this fails, check: (1) routeAfterSetGoal, (2) set_goal → ask_search_mode edge",
+    ).toBe(PHASE.asking_search_mode);
 
-    if (turn2.phase !== PHASE.showing_results) {
+    console.log("Turn 2: ✅ Asking search mode");
+
+    // Turn 3: User chooses pathfinders → showing_pathfinder_results
+    const turn3 = await runGraph("проводники");
+    expect(
+      turn3.phase,
+      "After mode selection, user MUST see search results. " +
+        "If this fails, check: (1) routeAfterParseSearchModeIntent, (2) search_pathfinders edge",
+    ).toBe(PHASE.showing_pathfinder_results);
+
+    if (turn3.phase !== PHASE.showing_pathfinder_results) {
       expect.fail("Type guard failed after strict assertion");
     }
 
     // With relaxed filters, we should get matching results
     expect(
-      turn2.results.length,
+      turn3.results.length,
       "Search with relaxed filters MUST return results (excludes geo/personal fields)",
     ).toBeGreaterThan(0);
 
-    console.log(`Turn 2: ✅ Search complete (${turn2.results.length} results)`);
-  }, 180_000);
+    console.log(`Turn 3: ✅ Search complete (${turn3.results.length} results)`);
+  }, 240_000);
 });

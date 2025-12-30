@@ -29,5 +29,7 @@ export const askSearchModeNode = withLogging<SearchStateType>(NODE.ask_search_mo
   return {
     userResponse: String(userResponse),
     phase: PHASE.asking_search_mode,
+    currentSearchParams: state.currentSearchParams,
+    targetSearchParams: state.targetSearchParams,
   };
 });

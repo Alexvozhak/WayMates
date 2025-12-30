@@ -41,12 +41,13 @@ describe("SearchGraph: Search Results (TC-SG-SR)", () => {
    *
    * Flow:
    * - Turn 1: "покажи результаты" → load_existing_goal → show_goal
-   * - Turn 2: "save" → set_goal → search → showing_results
-   * - Turn 3: "покажи без учёта индустрии" → apply_filters → search → showing_results
+   * - Turn 2: "save" → set_goal → asking_search_mode (new flow!)
+   * - Turn 3: "проводники" → search_pathfinders → showing_results
+   * - Turn 4: "покажи без учёта индустрии" → apply_filters → search → showing_results
    *
    * Then:
-   * - Turn 3: phase = showing_results (NOT showing_exploration!)
-   * - Turn 3: appliedFilters.excludedContextFields contains "industry"
+   * - Turn 4: phase = showing_results (NOT showing_exploration!)
+   * - Turn 4: appliedFilters.excludedContextFields contains "industry"
    *
    * Тип теста: Integration (multi-turn, real LLM)
    */
@@ -69,43 +70,51 @@ describe("SearchGraph: Search Results (TC-SG-SR)", () => {
     const turn1 = await runGraph("покажи результаты");
     expect(turn1.phase, "Turn 1: User with goal MUST see goal for review first").toBe(PHASE.showing_goal);
 
-    console.log("TC-SG-SR2 [1/3]: ✅ Goal shown for review");
+    console.log("TC-SG-SR2 [1/4]: ✅ Goal shown for review");
 
-    // Turn 2: Confirm to get search results
+    // Turn 2: Confirm → asking_search_mode (new flow)
     const turn2 = await runGraph("save");
-    expect(turn2.phase, "Turn 2: After confirm, user MUST see search results").toBe(PHASE.showing_results);
+    expect(turn2.phase, "Turn 2: After confirm, user MUST choose search mode").toBe(PHASE.asking_search_mode);
 
-    if (turn2.phase !== PHASE.showing_results) {
+    console.log("TC-SG-SR2 [2/4]: ✅ Asking search mode");
+
+    // Turn 3: Choose mode → showing_pathfinder_results
+    const turn3 = await runGraph("проводники");
+    expect(turn3.phase, "Turn 3: After mode selection, user MUST see search results").toBe(
+      PHASE.showing_pathfinder_results,
+    );
+
+    if (turn3.phase !== PHASE.showing_pathfinder_results) {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    const resultsBeforeFilter = turn2.results.length;
-    console.log(`TC-SG-SR2 [2/3]: ✅ Search results (${resultsBeforeFilter} results)`);
+    const resultsBeforeFilter = turn3.results.length;
+    console.log(`TC-SG-SR2 [3/4]: ✅ Search results (${resultsBeforeFilter} results)`);
 
-    // Turn 3: Apply filter intent → should stay in search results (not exploration)
-    const turn3 = await runGraph("покажи без учёта индустрии");
+    // Turn 4: Apply filter intent → should stay in search results (not exploration)
+    const turn4 = await runGraph("покажи без учёта индустрии");
 
     expect(
-      turn3.phase,
-      "Turn 3: Filter intent WITH goal MUST return to search results (not exploration). " +
+      turn4.phase,
+      "Turn 4: Filter intent WITH goal MUST return to search results (not exploration). " +
         "If showing_exploration, check routeAfterApplyFilters — should route to search when storedGoal present",
-    ).toBe(PHASE.showing_results);
+    ).toBe(PHASE.showing_pathfinder_results);
 
-    if (turn3.phase !== PHASE.showing_results) {
+    if (turn4.phase !== PHASE.showing_pathfinder_results) {
       expect.fail("Type guard failed after strict assertion");
     }
 
-    expect(turn3.appliedFilters, "Turn 3: appliedFilters MUST be present").toBeDefined();
+    expect(turn4.appliedFilters, "Turn 4: appliedFilters MUST be present").toBeDefined();
 
-    const excludedFields = turn3.appliedFilters?.excludedContextFields ?? [];
+    const excludedFields = turn4.appliedFilters?.excludedContextFields ?? [];
     const hasIndustryExcluded = excludedFields.some((f) => f.toLowerCase().includes("industry"));
 
     expect(
       hasIndustryExcluded,
-      `Turn 3: LLM MUST extract "industry" from filter message, got: ${JSON.stringify(excludedFields)}`,
+      `Turn 4: LLM MUST extract "industry" from filter message, got: ${JSON.stringify(excludedFields)}`,
     ).toBe(true);
 
-    console.log(`TC-SG-SR2 [3/3]: ✅ Filter applied → search results (${turn3.results.length} results)`);
+    console.log(`TC-SG-SR2 [4/4]: ✅ Filter applied → search results (${turn4.results.length} results)`);
     console.log(`  Excluded fields: ${excludedFields.join(", ")}`);
-  }, 240_000);
+  }, 300_000);
 });

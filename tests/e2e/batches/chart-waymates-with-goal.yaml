@@ -3,10 +3,10 @@ description: Chart генерируется для searchWaymates с устан�
 locale: ru
 
 steps:
-  - message: найди похожих, я middle backend разработчик в healthcare, США
+  - message: найди похожих, я middle backend разработчик в consulting, США
     expect:
       phase: confirming_adhoc_context
-      adhocContext.industry: healthcare
+      adhocContext.industry: consulting
 
   - message: хочу стать senior
     expect:

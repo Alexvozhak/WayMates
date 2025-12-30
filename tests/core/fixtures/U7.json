@@ -8,7 +8,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "fintech",
+      "industry": "finance",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -17,12 +17,12 @@
         "java",
         "spring"
       ],
-      "countryCode": "gb",
+      "countryCode": "GB",
       "cityName": "london",
       "birthYear": 1994,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "gb"
+        "GB"
       ],
       "role": "developer"
     }

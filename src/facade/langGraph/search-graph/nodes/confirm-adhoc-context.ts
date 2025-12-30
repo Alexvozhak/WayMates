@@ -72,6 +72,8 @@ export const confirmAdhocContextNode = withLogging<SearchStateType>(
       userResponse: String(userResponse),
       storedGoal,
       phase: PHASE.confirming_adhoc_context,
+      currentSearchParams: state.currentSearchParams,
+      targetSearchParams: state.targetSearchParams,
     };
   },
 );

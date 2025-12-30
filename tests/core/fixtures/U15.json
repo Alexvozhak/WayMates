@@ -8,19 +8,19 @@
         "started_working"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "midsize",
       "domains": [
-        "Backend"
+        "backend"
       ],
       "skills": [
         "python"
       ],
-      "countryCode": "us",
+      "countryCode": "US",
       "cityName": "san-francisco",
       "birthYear": 1992,
       "citizenships": [
-        "us"
+        "US"
       ],
       "role": "developer"
     }

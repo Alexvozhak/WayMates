@@ -108,12 +108,16 @@ export const parseSearchIntentNode = withLogging<SearchStateType>(
       "intent classification with reasoning",
     );
 
-    const targetSearchParams =
+    // Only update targetSearchParams if intent=validate from showing_goal, otherwise preserve existing
+    const newTargetParams =
       phase === PHASE.showing_goal && extractedGoal
         ? await buildTargetSearchParams(parsed, extractedGoal, normalizerService)
         : null;
+    const targetSearchParams = newTargetParams ?? state.targetSearchParams;
 
-    const currentSearchParams = await buildCurrentSearchParams(parsed, normalizerService);
+    // Only update currentSearchParams if intent=filter, otherwise preserve existing
+    const newSearchParams = await buildCurrentSearchParams(parsed, normalizerService);
+    const currentSearchParams = newSearchParams ?? state.currentSearchParams;
 
     const updatedRound = computeNewPositionRound(phase, parsed.intent, newPositionRound);
 

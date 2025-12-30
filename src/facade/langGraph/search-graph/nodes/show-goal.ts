@@ -26,6 +26,8 @@ export const showGoalNode = withLogging<SearchStateType>(NODE.show_goal, (state,
     return {
       userResponse: stateUserResponse,
       phase: PHASE.showing_goal,
+      currentSearchParams: state.currentSearchParams,
+      targetSearchParams: state.targetSearchParams,
     };
   }
 
@@ -38,5 +40,7 @@ export const showGoalNode = withLogging<SearchStateType>(NODE.show_goal, (state,
   return {
     userResponse: String(userResponse),
     phase: PHASE.showing_goal,
+    currentSearchParams: state.currentSearchParams,
+    targetSearchParams: state.targetSearchParams,
   };
 });

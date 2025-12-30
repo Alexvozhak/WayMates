@@ -75,8 +75,10 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     const ctx = TelegramTestContext.getInstance();
     console.log("[E2E Turn 1] Sending adhoc context...");
 
+    // countryCode is REQUIRED for valid adhoc context (position, role, countryCode, domains)
+    // Using USA because fixtures contain junior backend users in US (U5, etc.)
     const turn1 = await ctx.mcpClient.callTool("converse", {
-      message: "Быстрый поиск: я junior backend разработчик",
+      message: "Быстрый поиск: я junior backend разработчик, США",
       sessionId,
       requestId: randomUUID(),
     });
@@ -173,8 +175,9 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
 
   async function executeSaveAndSearchTurn(sessionId: SessionId) {
     const ctx = TelegramTestContext.getInstance();
-    console.log("[E2E Turn 5] Saving goal and searching...");
+    console.log("[E2E Turn 5] Saving goal...");
 
+    // Turn 5: Save goal → asking_search_mode (new flow)
     const turn5 = await ctx.mcpClient.callTool("converse", {
       message: "сохрани",
       sessionId,
@@ -182,21 +185,9 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     });
 
     console.log(`[E2E Turn 5] Response phase: ${turn5.result.phase}`);
-    expect(turn5.result.phase, "Turn 5: save intent MUST persist goal and show search results").toBe("showing_results");
-
-    if (turn5.result.phase !== "showing_results") {
-      expect.fail("Type guard failed after strict assertion");
-    }
-
-    console.log(`[E2E Turn 5] Results: ${turn5.result.results.length}`);
-    expect(
-      turn5.result.results.length,
-      "Turn 5: With relaxed filters + middle backend goal, MUST return pathfinders (U3, U8, U10, U11)",
-    ).toBeGreaterThanOrEqual(2);
-    expect(
-      turn5.result.results.length,
-      "Turn 5: Results should not exceed expected pathfinders count",
-    ).toBeLessThanOrEqual(5);
+    expect(turn5.result.phase, "Turn 5: save intent MUST persist goal and ask for search mode").toBe(
+      "asking_search_mode",
+    );
 
     // Verify goal persisted to Neo4j
     const savedGoal = await ctx.coreClient.client.goal.getByUser.query({ userId: testUserId });
@@ -209,27 +200,58 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
       `Turn 5: Saved goal MUST contain "middle", got: ${JSON.stringify(savedPositionValues)}`,
     ).toBe(true);
 
+    console.log("[E2E Turn 5] Goal saved, choosing search mode...");
+
+    // Turn 6: Choose search mode → showing_results
+    console.log("[E2E Turn 6] Choosing pathfinders mode...");
+
+    const turn6 = await ctx.mcpClient.callTool("converse", {
+      message: "проводники",
+      sessionId,
+      requestId: randomUUID(),
+    });
+
+    console.log(`[E2E Turn 6] Response phase: ${turn6.result.phase}`);
+    expect(turn6.result.phase, "Turn 6: search mode selection MUST show search results").toBe(
+      "showing_pathfinder_results",
+    );
+
+    if (turn6.result.phase !== "showing_pathfinder_results") {
+      expect.fail("Type guard failed after strict assertion");
+    }
+
+    console.log(`[E2E Turn 6] Results: ${turn6.result.results.length}`);
+    expect(
+      turn6.result.results.length,
+      "Turn 6: With relaxed filters + middle backend goal, MUST return pathfinders (U3, U8, U10, U11)",
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      turn6.result.results.length,
+      "Turn 6: Results should not exceed expected pathfinders count",
+    ).toBeLessThanOrEqual(5);
+
     // Note: path is only returned for DTW-enabled searches (user with trajectory)
     // For adhoc search, path may be undefined - that's expected behavior
-    console.log("[E2E Turn 5] Search completed with goal filter applied");
+    console.log("[E2E Turn 6] Search completed with goal filter applied");
   }
 
   // ========== Test case ==========
 
   /**
-   * E2E-SG-01: Full adhoc → confirm → explore → filters → goal → save flow
+   * E2E-SG-01: Full adhoc → confirm → explore → filters → goal → save → mode → results flow
    *
    * Сценарий:
    * Пользователь без профиля делает quick search, подтверждает контекст, применяет фильтры,
-   * формирует цель и получает результаты.
+   * формирует цель, выбирает режим поиска и получает результаты.
    *
    * Given:
    * - User без сохранённого контекста
    * - Fixtures: U3, U8, U10, U11 (junior/middle backend траектории)
    *
    * Flow:
-   * 1. Turn 1: adhoc context "Быстрый поиск: я junior backend разработчик"
+   * 1. Turn 1: adhoc context "Быстрый поиск: я junior backend разработчик, США"
    *    → startAdhoc intent → confirming_adhoc_context (спросить что дальше)
+   *    Note: countryCode REQUIRED for valid adhoc context
    *
    * 2. Turn 2: proceed to exploration "давай посмотрим похожих"
    *    → proceed intent → explore → showing_exploration
@@ -242,8 +264,11 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
    *    → clarify intent → extract_goal → showing_goal
    *    → extractedGoal contains "middle" + "backend"
    *
-   * 5. Turn 5: save + search "сохрани"
-   *    → save intent → set_goal → search → showing_results
+   * 5. Turn 5: save goal "сохрани"
+   *    → save intent → set_goal → asking_search_mode (new flow!)
+   *
+   * 6. Turn 6: choose search mode "проводники"
+   *    → search_pathfinders → showing_results
    *    → results.length >= 2 (pathfinders: U3, U8, U10, U11)
    *
    * Then:
@@ -260,5 +285,5 @@ describe("E2E: SearchGraph via Telegram Bot MCP", () => {
     await executeSaveAndSearchTurn(testSessionId);
 
     console.log("E2E-SG-01: ✅ Full adhoc → confirm → explore → filters → goal → save flow completed successfully");
-  }, 300_000); // 5 min timeout for full E2E flow with LLM calls
+  }, 360_000); // 6 min timeout for full E2E flow with LLM calls
 });

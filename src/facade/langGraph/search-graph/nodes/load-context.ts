@@ -148,7 +148,15 @@ export const loadContextNode = withLogging<SearchStateType>(
         phase = PHASE.confirming_adhoc_context;
       }
 
-      return { adhocContext, missingFields, optionalFields, userResponse: "", phase };
+      return {
+        adhocContext,
+        missingFields,
+        optionalFields,
+        userResponse: "",
+        phase,
+        currentSearchParams: state.currentSearchParams,
+        targetSearchParams: state.targetSearchParams,
+      };
     }
 
     const story = await coreClient.client.story.getStory.query({ userId: state.userId });
@@ -158,6 +166,8 @@ export const loadContextNode = withLogging<SearchStateType>(
       userContext,
       userTrajectory: story.contexts,
       phase: PHASE.checking_goal,
+      currentSearchParams: state.currentSearchParams,
+      targetSearchParams: state.targetSearchParams,
     };
   },
 );

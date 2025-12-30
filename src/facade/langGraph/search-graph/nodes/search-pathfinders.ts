@@ -13,10 +13,11 @@ import type { SearchStateType } from "../state.js";
  *
  * Value for user: proof of transition, concrete trajectories, time estimates.
  */
+/* eslint-disable complexity -- pathfinders node has more validation/params than waymates */
 export const searchPathfindersNode = withLogging<SearchStateType>(
   NODE.search_pathfinders,
   async (state, _config, { coreClient, dictionariesService, logger }) => {
-    const { userId, adhocContext, userContext, userTrajectory, storedGoal, locale } = state;
+    const { userId, adhocContext, userContext, userTrajectory, storedGoal, locale, currentSearchParams } = state;
 
     if (!storedGoal) {
       throw new AgentInvariantError(NODE.search_pathfinders, "storedGoal required for pathfinder search");
@@ -27,18 +28,20 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       throw new AgentInvariantError(NODE.search_pathfinders, "referenceContext required (adhoc or profile)");
     }
 
-    const results = await coreClient.client.search.pathfinders.query({
+    const searchParams = {
       userId,
       referenceContext,
       targetContext: storedGoal.targetContext,
       userTrajectory: userTrajectory.length >= DTW_MIN_TRAJECTORY_LENGTH ? userTrajectory : undefined,
-      referenceRecencyMonths: null,
+      referenceRecencyMonths: currentSearchParams?.recencyThresholdMonths ?? null,
       targetRecencyMonths: null,
-      excludedContextFields: [],
-      excludedCreationReasons: [],
+      excludedContextFields: currentSearchParams?.excludedContextFields ?? [],
+      excludedCreationReasons: currentSearchParams?.excludedCreationReasons ?? [],
       limit: config.CANDIDATES_FETCH_LIMIT,
       pathLimit: config.CANDIDATES_DISPLAY_LIMIT,
-    });
+    };
+
+    const results = await coreClient.client.search.pathfinders.query(searchParams);
 
     const needsFiltering = shouldUseFacets(results);
 
@@ -59,9 +62,10 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
     return {
       pathfinderResults: results,
       searchMode: "pathfinders" as const,
-      phase: needsFiltering ? PHASE.showing_results_facets : PHASE.showing_results,
+      phase: needsFiltering ? PHASE.showing_results_facets : PHASE.showing_pathfinder_results,
       facets: needsFiltering ? computeFacets(results) : null,
       chartUrl,
     };
   },
 );
+/* eslint-enable complexity */

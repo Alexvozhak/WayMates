@@ -36,9 +36,10 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
    * - Intent: startAdhoc (pre-parsed)
    *
    * Flow:
-   * - Turn 1: "Я junior backend разработчик" (startAdhoc intent)
+   * - Turn 1: "Я junior backend разработчик, Россия" (startAdhoc intent)
    *   → load_context извлекает adhocContext через LLM
    *   → confirm_adhoc_context (interrupt: "что дальше?")
+   *   Note: countryCode REQUIRED for valid adhoc context
    *
    * - Turn 2: "глянуть похожих" (proceed intent, no goal)
    *   → explore → showing_exploration
@@ -47,7 +48,10 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
    *   → extract_goal → showing_goal
    *
    * - Turn 4: "сохрани"
-   *   → set_goal → search → showing_results
+   *   → set_goal → asking_search_mode (choose pathfinders/waymates)
+   *
+   * - Turn 5: "проводники"
+   *   → search_pathfinders → showing_results
    *
    * Then:
    * - Turn 1: phase = confirming_adhoc_context
@@ -59,9 +63,11 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
    * - Turn 3: phase = showing_goal
    * - Turn 3: extractedGoal.position contains "middle"
    *
-   * - Turn 4: phase = showing_results
-   * - Turn 4: results.length >= 2 && <= 5 (multiple candidates found)
-   * - Turn 4: goal saved to Neo4j
+   * - Turn 4: phase = asking_search_mode (new flow!)
+   *
+   * - Turn 5: phase = showing_results
+   * - Turn 5: results.length >= 2 && <= 5 (multiple candidates found)
+   * - Turn 5: goal saved to Neo4j
    *
    * Тип теста: E2E Integration (adhoc mode + multi-turn + LLM + Neo4j + search)
    */
@@ -74,8 +80,10 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
 
     // ================================================================================
     // Turn 1: adhoc context extraction → confirm (startAdhoc intent → LLM extraction)
+    // Note: countryCode is REQUIRED for valid adhoc context (position, role, countryCode, domains)
+    // Using USA because fixtures contain junior backend users in US (U5, etc.)
     // ================================================================================
-    const turn1 = await runGraph("Я junior backend разработчик", GRAPH_INTENT.startAdhoc);
+    const turn1 = await runGraph("Я junior backend разработчик, США", GRAPH_INTENT.startAdhoc);
 
     expect(turn1.phase, "Turn 1: adhoc mode MUST confirm extracted context before exploration").toBe(
       PHASE.confirming_adhoc_context,
@@ -137,15 +145,15 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
     console.log(`Turn 3: ✅ Goal extracted (position: ${positionValues})`);
 
     // ================================================================================
-    // Turn 4: Save goal + Search (set_goal → search → showing_results)
+    // Turn 4: Save goal → asking_search_mode (new flow: choose pathfinders/waymates)
     // ================================================================================
     const turn4 = await runGraph("сохрани");
 
-    expect(turn4.phase, "Turn 4: Save intent MUST persist goal to Neo4j and show search results").toBe(
-      PHASE.showing_results,
+    expect(turn4.phase, "Turn 4: Save intent MUST persist goal and ask for search mode (pathfinders/waymates)").toBe(
+      PHASE.asking_search_mode,
     );
 
-    if (turn4.phase !== PHASE.showing_results) {
+    if (turn4.phase !== PHASE.asking_search_mode) {
       expect.fail("Type guard failed after strict assertion");
     }
 
@@ -159,22 +167,37 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
       `Expected saved goal to contain "middle", got: ${JSON.stringify(savedPositionValues)}`,
     ).toBe(true);
 
+    console.log(`Turn 4: ✅ Goal saved → asking_search_mode`);
+
+    // ================================================================================
+    // Turn 5: Choose search mode → showing_results
+    // ================================================================================
+    const turn5 = await runGraph("проводники");
+
+    expect(turn5.phase, "Turn 5: Search mode selection MUST return search results").toBe(
+      PHASE.showing_pathfinder_results,
+    );
+
+    if (turn5.phase !== PHASE.showing_pathfinder_results) {
+      expect.fail("Type guard failed after strict assertion");
+    }
+
     // Verify: search results returned
     expect(
-      turn4.results.length,
-      "Turn 4: Search MUST return at least 2 pathfinders (relaxed filters allow multiple matches). " +
+      turn5.results.length,
+      "Turn 5: Search MUST return at least 2 pathfinders (relaxed filters allow multiple matches). " +
         "Fixtures contain 8+ candidates with middle backend trajectories (U3, U8, U10, U11, U15, U17, U19, ...).",
     ).toBeGreaterThanOrEqual(2);
 
     expect(
-      turn4.results.length,
-      "Turn 4: Search SHOULD NOT return too many results (sanity check for scoring). " +
+      turn5.results.length,
+      "Turn 5: Search SHOULD NOT return too many results (sanity check for scoring). " +
         "If this fails, check if relaxed filters are TOO relaxed or scoring is broken.",
     ).toBeLessThanOrEqual(5);
 
-    console.log(`Turn 4: ✅ E2E complete! Results: ${turn4.results.length} candidates found, goal saved to Neo4j`);
-    console.log(`  Candidates: ${turn4.results.map((r) => `${r.userId.slice(0, 8)}...`).join(", ")}`);
-  }, 300_000); // 5 minutes timeout for 4-turn LLM calls
+    console.log(`Turn 5: ✅ E2E complete! Results: ${turn5.results.length} candidates found, goal saved to Neo4j`);
+    console.log(`  Candidates: ${turn5.results.map((r) => `${r.userId.slice(0, 8)}...`).join(", ")}`);
+  }, 360_000); // 6 minutes timeout for 5-turn LLM calls
 
   /**
    * TC-SG-E2E-02: No context extracted → asking_adhoc_context
@@ -188,7 +211,8 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
    *
    * Flow:
    * - Turn 1: команда без контекста → LLM extraction = null → asking_adhoc_context
-   * - Turn 2: "Я senior frontend" → extraction → confirming_adhoc_context
+   * - Turn 2: "Я senior frontend, Германия" → extraction → confirming_adhoc_context
+   *   Note: countryCode REQUIRED for valid adhoc context
    *
    * Then:
    * - Turn 1: phase = asking_adhoc_context
@@ -211,11 +235,12 @@ describe("SearchGraph: E2E (TC-SG-E2E)", () => {
     console.log(`Turn 1: ✅ No context extracted → asking_adhoc_context`);
 
     // ================================================================================
-    // Turn 2: User provides context → should confirm
+    // Turn 2: User provides context with countryCode → should confirm
+    // Note: countryCode is REQUIRED for valid adhoc context (position, role, countryCode, domains)
     // ================================================================================
-    const turn2 = await runGraph("Я senior frontend разработчик");
+    const turn2 = await runGraph("Я senior frontend разработчик, Германия");
 
-    expect(turn2.phase, "Turn 2: After user provides context, MUST confirm extracted context").toBe(
+    expect(turn2.phase, "Turn 2: After user provides context with countryCode, MUST confirm extracted context").toBe(
       PHASE.confirming_adhoc_context,
     );
 

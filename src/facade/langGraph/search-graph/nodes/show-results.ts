@@ -1,6 +1,6 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { NODE } from "../state.js";
+import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -12,18 +12,20 @@ import type { SearchStateType } from "../state.js";
  * Chart is generated in search_waymates/search_pathfinders nodes (before interrupt).
  */
 export const showResultsNode = withLogging<SearchStateType>(NODE.show_results, (state, _config, _deps) => {
-  // Phase is already set by search_waymates/search_pathfinders node
-  // chartUrl is already in state from those nodes
+  // When returning from advisor, restore previousPhase
+  const phase = state.phase === PHASE.advising && state.previousPhase ? state.previousPhase : state.phase;
+
   const userResponse = interrupt({
     type: "show_results",
     results: state.searchResults,
     goal: state.storedGoal,
     chartUrl: state.chartUrl,
-    phase: state.phase,
+    phase,
   });
 
   return {
     userResponse: String(userResponse),
-    // Keep phase as set by search nodes - don't override
+    phase,
+    previousPhase: null,
   };
 });

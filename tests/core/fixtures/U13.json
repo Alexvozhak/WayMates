@@ -9,22 +9,22 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
-        "data science"
+        "data-science"
       ],
       "skills": [
         "python",
         "sql",
         "pandas"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-d86cefe91b07",
       "role": "analyst"
@@ -37,10 +37,10 @@
         "position_changed"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
-        "data science",
+        "data-science",
         "machine learning"
       ],
       "skills": [
@@ -51,12 +51,12 @@
         "tensorflow",
         "statistics"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-df04ddd77920",
       "role": "analyst"
@@ -69,7 +69,7 @@
         "position_changed"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend",
@@ -87,12 +87,12 @@
         "mlops",
         "kubernetes"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "role": "analyst"
     }

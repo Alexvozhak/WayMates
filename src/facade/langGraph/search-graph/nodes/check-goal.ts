@@ -10,5 +10,7 @@ export const checkGoalNode = withLogging<SearchStateType>(NODE.check_goal, async
   return {
     storedGoal: goal,
     phase: goal ? PHASE.searching : PHASE.exploring,
+    currentSearchParams: state.currentSearchParams,
+    targetSearchParams: state.targetSearchParams,
   };
 });

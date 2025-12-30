@@ -732,7 +732,7 @@ describe("StoryManager Integration Tests", () => {
       );
       expect(contextResult.records).toHaveLength(1);
       const dbLanguages = contextResult.records[0]!.get("languages");
-      expect(dbLanguages).toEqual(["en"]);
+      expect(dbLanguages).toEqual(["EN"]);
 
       const languagesResult = await withReadSession(driver, (tx) =>
         tx.run(
@@ -743,7 +743,7 @@ describe("StoryManager Integration Tests", () => {
         ),
       );
       expect(languagesResult.records).toHaveLength(1);
-      expect(languagesResult.records[0]!.get("code")).toBe("en");
+      expect(languagesResult.records[0]!.get("code")).toBe("EN");
       expect(languagesResult.records[0]!.get("canonicalName")).toBe("English");
 
       const u4 = testDataManager.getStoryBy("U4");
@@ -771,7 +771,7 @@ describe("StoryManager Integration Tests", () => {
       );
       expect(u4LanguagesResult.records).toHaveLength(2);
       const codes = u4LanguagesResult.records.map((r) => r.get("code"));
-      expect(codes).toEqual(["de", "en"]);
+      expect(codes).toEqual(["DE", "EN"]);
 
       const u3 = testDataManager.getStoryBy("U3");
       const u3Context = u3.contexts[0];

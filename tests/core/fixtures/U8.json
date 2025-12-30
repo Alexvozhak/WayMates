@@ -10,7 +10,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "IT",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -37,7 +37,7 @@
         "skills_changed"
       ],
       "position": "middle",
-      "industry": "IT",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -66,11 +66,11 @@
         "company_changed"
       ],
       "position": "senior",
-      "industry": "IT",
+      "industry": "technology",
       "companySize": "medium",
       "domains": [
         "backend",
-        "DevOps"
+        "devops"
       ],
       "skills": [
         "python",
@@ -96,12 +96,12 @@
         "position_changed"
       ],
       "position": "tech lead",
-      "industry": "IT",
+      "industry": "technology",
       "companySize": "large",
       "domains": [
         "backend",
-        "DevOps",
-        "Architecture"
+        "devops",
+        "architecture"
       ],
       "skills": [
         "python",

@@ -9,7 +9,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -19,12 +19,12 @@
         "css",
         "javascript"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-c491d0899078",
       "role": "developer"
@@ -38,7 +38,7 @@
         "company_changed"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -51,12 +51,12 @@
         "redux",
         "typescript"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-cb598c1f393a",
       "role": "developer"
@@ -69,7 +69,7 @@
         "position_changed"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -85,12 +85,12 @@
         "graphql",
         "testing"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "nextContextId": "ctx_019a6ea7-18c1-75bc-9276-cd8fdbd86e81",
       "role": "developer"
@@ -104,7 +104,7 @@
         "company_changed"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend",
@@ -125,13 +125,13 @@
         "architecture",
         "mentoring"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru",
-        "de"
+        "RU",
+        "DE"
       ],
       "role": "developer"
     }

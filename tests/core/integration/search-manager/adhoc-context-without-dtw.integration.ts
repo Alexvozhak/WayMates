@@ -178,7 +178,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
       expect(u4Result.matchedContext.position).toBe("junior");
       expect(u4Result.matchedContext.domains).toContain("frontend");
       expect(u4Result.matchedContext.skills).toEqual(["svelte"]);
-      expect(u4Result.matchedContext.countryCode).toBe("us");
+      expect(u4Result.matchedContext.countryCode).toBe("US");
     }
 
     const u2 = dataManager.getStoryBy("U2");
@@ -218,7 +218,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(results.find((r) => r.userId === u2.userId)).toBeDefined();
     expect(results.find((r) => r.userId === u6.userId)).toBeDefined();
 
-    const germanResults = results.filter((r) => r.matchedContext.countryCode === "de");
+    const germanResults = results.filter((r) => r.matchedContext.countryCode === "DE");
     expect(germanResults.length).toBeGreaterThanOrEqual(2);
     console.log(`[AC3] German results count: ${germanResults.length} (expected >= 2)`);
   });
@@ -819,7 +819,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     if (u4Result) {
       console.log("[SC7] U4 languages field:", u4Result.matchedContext.languages);
       expect(u4Result.matchedContext.languages).toBeDefined();
-      expect(u4Result.matchedContext.languages).toEqual(expect.arrayContaining(["en", "de"]));
+      expect(u4Result.matchedContext.languages).toEqual(expect.arrayContaining(["EN", "DE"]));
       expect(u4Result.matchedContext.languages).toHaveLength(2);
     }
 
@@ -834,7 +834,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     expect(u1InU3Search).toBeDefined();
     if (u1InU3Search) {
       console.log("[SC7] U1 languages field:", u1InU3Search.matchedContext.languages);
-      expect(u1InU3Search.matchedContext.languages).toEqual(["en"]);
+      expect(u1InU3Search.matchedContext.languages).toEqual(["EN"]);
     }
   });
 });

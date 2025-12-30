@@ -106,16 +106,16 @@ MERGE RULES:
 const ADHOC_FIELD_DESCRIPTIONS: Record<keyof AdhocContextBase, string> = {
   position: "seniority level (junior/middle/senior) — map to KNOWN POSITIONS",
   role: "profession type (WHAT you do) — map to KNOWN ROLES",
-  domains: "technical specialization — map to KNOWN DOMAINS",
+  domains: "technical specialization area (answers 'what kind of developer/engineer?') — map to KNOWN DOMAINS",
   skills: "specific technologies or tools — map to KNOWN SKILLS",
   industry: "business sector — map to KNOWN INDUSTRIES",
   companySize: "company size category (startup, SMB, enterprise)",
   cityName: "city where you work",
-  countryCode: "work location country — ISO country code",
-  citizenships: "passport countries (nationalities) — array of ISO country codes",
+  countryCode: "work location country — ISO 3166-1 alpha-2",
+  citizenships: "passport countries (nationalities) — ISO 3166-1 alpha-2",
   birthYear: "year of birth (for demographics)",
   educationLevel: "highest education level achieved",
-  languages: "spoken languages with proficiency — ISO language codes",
+  languages: "spoken languages — ISO 639-1",
 };
 
 const ADHOC_FIELDS_SECTION = Object.entries(ADHOC_FIELD_DESCRIPTIONS)
@@ -128,13 +128,13 @@ const ADHOC_FIELDS_SECTION = Object.entries(ADHOC_FIELD_DESCRIPTIONS)
 const GOAL_FIELD_DESCRIPTIONS: Record<keyof TargetContext, string> = {
   position: "seniority level (HOW experienced) — map to KNOWN POSITIONS",
   role: "profession type (WHAT you do) — map to KNOWN ROLES",
-  countries: "target work location (WHERE you want to work) — ISO country codes",
-  domains: "technical area (WHICH field) — map to KNOWN DOMAINS",
+  countries: "target work location — ISO 3166-1 alpha-2",
+  domains: "technical specialization area (answers 'what kind of developer/engineer?') — map to KNOWN DOMAINS",
   skills: "specific technologies or competencies — map to KNOWN SKILLS",
-  languages: "spoken languages required for role — ISO language codes",
+  languages: "spoken languages required — ISO 639-1",
   industries: "target business sector — map to KNOWN INDUSTRIES",
   cities: "target city for relocation — map to KNOWN CITIES",
-  citizenships: "required passports for visa or work permit — ISO country codes",
+  citizenships: "required passports — ISO 3166-1 alpha-2",
   educationLevels: "required education degree level — KNOWN EDUCATION LEVELS",
 };
 

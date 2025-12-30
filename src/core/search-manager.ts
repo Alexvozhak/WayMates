@@ -142,7 +142,6 @@ export class SearchManager {
     // Step 1: Get light candidates (without path/trails)
     const lightCandidates = await this.db.read(async (tx) => {
       const result = await tx.run(query, queryParams);
-
       return result.records.map((record) => pathfinderCandidateLightSchema.parse(record.toObject()));
     });
 

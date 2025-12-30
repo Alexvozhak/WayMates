@@ -8,22 +8,22 @@
         "started_working"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "enterprise",
       "domains": [
-        "Backend"
+        "backend"
       ],
       "skills": [
         "python"
       ],
-      "countryCode": "us",
+      "countryCode": "US",
       "cityName": "new york",
       "birthYear": 1988,
       "educationLevel": "MASTER",
       "salaryMin": 60000,
       "salaryMax": 80000,
       "citizenships": [
-        "us"
+        "US"
       ],
       "role": "developer"
     }

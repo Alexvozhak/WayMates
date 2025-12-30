@@ -10,7 +10,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -18,12 +18,12 @@
       "skills": [
         "go"
       ],
-      "countryCode": "fr",
+      "countryCode": "FR",
       "cityName": "paris",
       "birthYear": 1988,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "fr"
+        "FR"
       ],
       "role": "developer"
     },
@@ -36,7 +36,7 @@
         "position_changed"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -44,12 +44,12 @@
       "skills": [
         "go"
       ],
-      "countryCode": "fr",
+      "countryCode": "FR",
       "cityName": "paris",
       "birthYear": 1988,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "fr"
+        "FR"
       ],
       "role": "developer"
     }

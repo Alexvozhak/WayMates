@@ -9,7 +9,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -19,12 +19,12 @@
         "fastapi",
         "rest-api"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-f10e241448a4",
       "role": "developer"
@@ -37,7 +37,7 @@
         "position_changed"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -50,12 +50,12 @@
         "redis",
         "docker"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "nextContextId": "ctx_019a6ea7-18c0-743c-ade8-f6fb4b034c5b",
       "role": "developer"
@@ -68,7 +68,7 @@
         "position_changed"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend",
@@ -85,12 +85,12 @@
         "microservices",
         "aws"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "role": "developer"
     }

@@ -10,7 +10,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "small",
       "domains": [
         "frontend"
@@ -19,12 +19,12 @@
         "javascript",
         "react"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1996,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "role": "developer"
     },
@@ -38,7 +38,7 @@
         "skills_changed"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "small",
       "domains": [
         "frontend"
@@ -48,12 +48,12 @@
         "react",
         "typescript"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1996,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "role": "developer"
     },
@@ -67,7 +67,7 @@
         "domain_changed"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "medium",
       "domains": [
         "frontend",
@@ -80,12 +80,12 @@
         "nodejs",
         "postgresql"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "munich",
       "birthYear": 1996,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "role": "developer"
     },
@@ -99,10 +99,10 @@
         "company_changed"
       ],
       "position": "engineering manager",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "large",
       "domains": [
-        "Management",
+        "management",
         "backend"
       ],
       "skills": [
@@ -112,12 +112,12 @@
         "postgresql",
         "leadership"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "munich",
       "birthYear": 1996,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "role": "developer"
     }

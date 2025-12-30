@@ -8,20 +8,20 @@
         "started_working"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "enterprise",
       "domains": [
-        "DevOps"
+        "devops"
       ],
       "skills": [
         "kubernetes"
       ],
-      "countryCode": "gb",
+      "countryCode": "GB",
       "cityName": "london",
       "birthYear": 1988,
       "educationLevel": "HIGH_SCHOOL",
       "citizenships": [
-        "gb"
+        "GB"
       ],
       "role": "devops"
     }

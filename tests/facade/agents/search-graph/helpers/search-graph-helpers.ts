@@ -119,7 +119,15 @@ export async function runSearchGraphWithInitialState(
         const modifiedInput = { ...input, ...initialStateOverrides };
         return originalInvoke(modifiedInput, config);
       }
-      // Resume calls: pass through unchanged
+      // Resume calls: also inject state overrides via Command.update()
+      // This ensures currentSearchParams persists across multi-turn conversations
+      if (input instanceof Command && initialStateOverrides) {
+        const resumeWithUpdates = new Command({
+          resume: input.resume,
+          update: { ...initialStateOverrides },
+        });
+        return originalInvoke(resumeWithUpdates, config);
+      }
       return originalInvoke(input, config);
     });
   }

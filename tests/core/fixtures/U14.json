@@ -8,7 +8,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -16,12 +16,12 @@
       "skills": [
         "react"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1995,
       "educationLevel": "MASTER",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d73",
       "role": "developer"
@@ -34,7 +34,7 @@
         "position_changed"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -43,12 +43,12 @@
         "react",
         "kubernetes"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1995,
       "educationLevel": "MASTER",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "nextContextId": "ctx_019a6ea7-18be-770d-85a1-ea515ab10d74",
       "role": "developer"
@@ -61,7 +61,7 @@
         "position_changed"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend",
@@ -72,12 +72,12 @@
         "kubernetes",
         "golang"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1995,
       "educationLevel": "MASTER",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "role": "developer"
     }

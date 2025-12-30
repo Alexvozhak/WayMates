@@ -44,7 +44,7 @@ export const searchWaymatesNode = withLogging<SearchStateType>(
       searchResults: results,
       currentSearchParams: params,
       searchMode: "waymates" as const,
-      phase: needsFiltering ? PHASE.showing_results_facets : PHASE.showing_results,
+      phase: needsFiltering ? PHASE.showing_results_facets : PHASE.showing_waymate_results,
       facets: needsFiltering ? computeFacets(results) : null,
       chartUrl,
     };

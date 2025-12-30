@@ -29,11 +29,11 @@ describe("Facade Normalizer Integration Tests", () => {
     expect(result.skills).toContain("react");
   });
 
-  // Business rule: 2-tier normalization catches typos when exact match fails (Pyton → Python via LLM).
-  // Prevents duplicate skills in database while maintaining user input fidelity.
-  it("FN2: Fuzzy match via LLM - typo corrected to canonical", async () => {
+  // Business rule: Adhoc normalization uses filterToKnown (exact match only, no LLM fuzzy).
+  // Unknown terms are REMOVED, not corrected — adhoc is for search, not profile creation.
+  it("FN2: Unknown term filtered out - adhoc removes non-dictionary terms", async () => {
     const context = adhocContextBase.parse({
-      skills: ["Pyton"],
+      skills: ["Pyton"], // typo, not in dictionary
     });
 
     const result = await ctx.normalizerService.normalizeAdhocContext(
@@ -41,15 +41,15 @@ describe("Facade Normalizer Integration Tests", () => {
       "usr_01933ec5-0102-0000-0000-000000000002",
     );
 
-    expect(result.skills).toEqual(["python"]);
+    // Adhoc mode: unknown skills are filtered out (not added to dictionary)
+    expect(result.skills).toBeUndefined();
   });
 
-  // Business rule: Unknown terms (not in dictionary, LLM can't match) create unverified entries.
-  // Admin reviews unverified terms asynchronously; immediate user flow is not blocked.
-  it("FN3: Save unverified term - unknown skill created with verified=false", async () => {
-    const unknownSkill = "QuantumHyperLang";
+  // Business rule: Mixed known/unknown terms — only known terms are kept.
+  // Adhoc filters to dictionary values, unknown terms silently dropped.
+  it("FN3: Mixed terms - only known skills kept, unknown filtered out", async () => {
     const context = adhocContextBase.parse({
-      skills: [unknownSkill],
+      skills: ["Python", "QuantumHyperLang"], // Python exists, QuantumHyperLang doesn't
     });
 
     const result = await ctx.normalizerService.normalizeAdhocContext(
@@ -57,15 +57,15 @@ describe("Facade Normalizer Integration Tests", () => {
       "usr_01933ec5-0103-0000-0000-000000000003",
     );
 
-    expect(result.skills).toEqual([unknownSkill.toLowerCase()]);
+    // Only known skill "python" is kept
+    expect(result.skills).toEqual(["python"]);
   });
 
-  // Business rule: New skills created with complexity=null (requires admin verification for scoring).
-  // Skills without complexity don't participate in weighted scoring until admin assigns value.
-  it("FN4: Skills complexity=null - new skill created with null complexity", async () => {
-    const newSkill = "BrandNewSkill123";
+  // Business rule: All unknown terms → skills field removed entirely.
+  // Adhoc search proceeds without skills filter (broader search).
+  it("FN4: All unknown terms - skills field removed from result", async () => {
     const context = adhocContextBase.parse({
-      skills: [newSkill],
+      skills: ["BrandNewSkill123", "AnotherUnknown"],
     });
 
     const result = await ctx.normalizerService.normalizeAdhocContext(
@@ -73,12 +73,8 @@ describe("Facade Normalizer Integration Tests", () => {
       "usr_01933ec5-0104-0000-0000-000000000004",
     );
 
-    // Verify normalizer returns the new skill in canonical lowercase format
-    expect(result.skills).toEqual([newSkill.toLowerCase()]);
-
-    // Note: New skills created with verified=false (pending admin review)
-    // getVerified() filters by verified=true, so unverified skills won't appear
-    // This is correct behavior - unverified skills can still be used for matching
+    // All unknown → field removed (null filtered by removeNullishFields)
+    expect(result.skills).toBeUndefined();
   });
 
   // Business rule: Multiple fields (skills, domains) normalized in parallel for performance.
@@ -98,15 +94,17 @@ describe("Facade Normalizer Integration Tests", () => {
     expect(result.domains).toHaveLength(2);
   });
 
-  // Business rule: Full context normalization (all 5 fields) maintains field semantics.
-  // Each field (position, skills, domains, industry, cityName) normalized independently.
-  it("FN6: Full UserContext - all fields normalized correctly", async () => {
+  // Business rule: Full context normalization maintains field semantics.
+  // Each field (position, skills, domains, industry) normalized independently.
+  // Note: Only dictionary-known values are kept (adhoc = filterToKnown, not fuzzy match).
+  // Note: cityName has NO dictionary, so it's always filtered out in adhoc mode.
+  it("FN6: Full UserContext - all known fields normalized correctly", async () => {
     const context = adhocContextBase.parse({
-      position: "senior",
-      skills: ["Python"],
-      domains: ["Backend"],
-      industry: "Fintech",
-      cityName: "Berlin",
+      position: "Senior", // exists in dictionary
+      skills: ["Python"], // exists in dictionary
+      domains: ["Backend"], // exists in dictionary
+      industry: "Finance", // exists in dictionary (NOT "Fintech"!)
+      // Note: cityName not tested — no cities dictionary for adhoc filterToKnown
     });
 
     const result = await ctx.normalizerService.normalizeAdhocContext(
@@ -117,8 +115,8 @@ describe("Facade Normalizer Integration Tests", () => {
     expect(result.position).toBe("senior");
     expect(result.skills).toEqual(["python"]);
     expect(result.domains).toEqual(["backend"]);
-    expect(result.industry).toBe("fintech");
-    expect(result.cityName).toBe("berlin");
+    expect(result.industry).toBe("finance");
+    // cityName is undefined because no cities dictionary for adhoc filtering
   });
 
   // Business rule: TargetContext preserves FieldFilter mode (desired/undesired) while normalizing values.

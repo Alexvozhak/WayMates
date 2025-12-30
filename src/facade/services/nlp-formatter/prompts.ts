@@ -31,8 +31,11 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.asking_after_validate_candidates]: `Show real people who reached goal — starting point, path duration, key skills, current status. Help decide if goal is right.
   Empty results → say honestly no one found matching this exact goal, suggest relaxing filters or changing goal`,
   [SEARCH_PHASE.asking_after_validate_facets]: "Show facets with counts, suggest filter",
-  [SEARCH_PHASE.showing_results]: `Show matches.
-  Empty results → explain WHY: list filters from goal object (position, domains, skills, countries, industries, etc.), suggest which ONE filter to relax first, offer concrete next step`,
+  [SEARCH_PHASE.showing_waymate_results]: `Show waymates — people heading to the same goal.
+  Empty results → explain WHY: list filters from goal object, suggest which ONE filter to relax first, offer concrete next step`,
+  [SEARCH_PHASE.showing_pathfinder_results]: `Show pathfinders — people who already achieved the goal.
+  Show: their starting point, how long the transition took, key skills.
+  Empty results → explain WHY: list filters from goal object, suggest which ONE filter to relax first, offer concrete next step`,
   [SEARCH_PHASE.showing_results_facets]:
     "Show facets with counts. Goal applied but too many results — suggest narrowing by role/country/industry",
   [SEARCH_PHASE.asking_search_mode]: `Goal saved! Offer two search options briefly:

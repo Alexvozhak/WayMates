@@ -37,6 +37,8 @@ export const extractGoalNode = withLogging<SearchStateType>(
       userResponse: "",
       phase: PHASE.showing_goal,
       messages: messages.length === 0 ? [new HumanMessage(userResponse)] : messages,
+      currentSearchParams: state.currentSearchParams,
+      targetSearchParams: state.targetSearchParams,
     };
   },
 );

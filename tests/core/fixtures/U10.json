@@ -10,7 +10,7 @@
         "started_working"
       ],
       "position": "junior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -20,12 +20,12 @@
         "nodejs",
         "rest-api"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "role": "developer"
     },
@@ -38,7 +38,7 @@
         "position_changed"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend"
@@ -51,12 +51,12 @@
         "postgresql",
         "docker"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "role": "developer"
     },
@@ -68,7 +68,7 @@
         "position_changed"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "backend",
@@ -85,12 +85,12 @@
         "microservices",
         "kubernetes"
       ],
-      "countryCode": "ru",
+      "countryCode": "RU",
       "cityName": "Moscow",
       "birthYear": 1995,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "ru"
+        "RU"
       ],
       "role": "developer"
     }

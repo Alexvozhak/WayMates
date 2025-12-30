@@ -14,7 +14,7 @@ import type { SearchStateType } from "../state.js";
  *    - Must clear userResponse so show_goal does interrupt
  *
  * 2. show_results → load_existing_goal (user wants to change goal)
- *    - phase = "showing_results"
+ *    - phase = "showing_waymate_results" or "showing_pathfinder_results"
  *    - userResponse contains interrupt response (e.g., "change")
  *    - Must preserve userResponse for show_goal to use
  */
@@ -30,6 +30,8 @@ export const loadExistingGoalNode = withLogging<SearchStateType>(NODE.load_exist
   return {
     extractedGoal: storedGoal.targetContext,
     clarifyRound: 0,
+    currentSearchParams: state.currentSearchParams,
+    targetSearchParams: state.targetSearchParams,
     ...(isFromCheckGoal && { userResponse: "" }),
   };
 });

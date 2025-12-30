@@ -21,7 +21,8 @@ const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, No
   [PHASE.asking_after_validate_candidates, buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.asking_after_validate_facets,     buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.asking_search_mode,               buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_results,                  buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_waymate_results,          buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_pathfinder_results,       buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
 ]);
 
 // Static route maps (not phase-dependent)
@@ -140,7 +141,8 @@ export function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhas
     [PHASE.asking_after_validate_candidates]: validateRoutes,
     [PHASE.asking_after_validate_facets]: validateRoutes,
     [PHASE.asking_search_mode]: SEARCH_MODE_ROUTES,
-    [PHASE.showing_results]: RESULTS_ROUTES,
+    [PHASE.showing_waymate_results]: RESULTS_ROUTES,
+    [PHASE.showing_pathfinder_results]: RESULTS_ROUTES,
   } satisfies Partial<Record<SearchPhase, RouteMap>>;
 }
 
@@ -163,7 +165,8 @@ export const PARSE_INTENT_ALL_DESTINATIONS = {
   ...availableNodesByPhase(PHASE.asking_after_validate_candidates),
   ...availableNodesByPhase(PHASE.asking_after_validate_facets),
   ...availableNodesByPhase(PHASE.asking_search_mode),
-  ...availableNodesByPhase(PHASE.showing_results),
+  ...availableNodesByPhase(PHASE.showing_waymate_results),
+  ...availableNodesByPhase(PHASE.showing_pathfinder_results),
 };
 
 export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
@@ -210,5 +213,10 @@ export function routeAfterAdvisor(state: SearchStateType): NodeName {
 }
 
 export function isTerminalPhase(phase: SearchPhase): boolean {
-  return phase === PHASE.showing_results || phase === PHASE.cancelled || phase === PHASE.failed;
+  return (
+    phase === PHASE.showing_waymate_results ||
+    phase === PHASE.showing_pathfinder_results ||
+    phase === PHASE.cancelled ||
+    phase === PHASE.failed
+  );
 }

@@ -10,7 +10,7 @@
         "started_working"
       ],
       "position": "middle",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -19,12 +19,12 @@
         "react",
         "typescript"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1993,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "role": "developer"
     },
@@ -37,7 +37,7 @@
         "position_changed"
       ],
       "position": "senior",
-      "industry": "tech",
+      "industry": "technology",
       "companySize": "startup",
       "domains": [
         "frontend"
@@ -47,12 +47,12 @@
         "typescript",
         "node.js"
       ],
-      "countryCode": "de",
+      "countryCode": "DE",
       "cityName": "berlin",
       "birthYear": 1993,
       "educationLevel": "BACHELOR",
       "citizenships": [
-        "de"
+        "DE"
       ],
       "role": "developer"
     }

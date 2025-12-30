@@ -138,14 +138,14 @@ export type NewContextReason = z.infer<typeof newContextReasonSchema>;
 export const educationLevelSchema = z.string().describe("Education level canonical name");
 
 /**
- * ISO 639-1 language code (2-letter lowercase)
+ * ISO 639-1 language code (2-letter uppercase)
  * Valid codes defined in database/languages.json
  */
 export const languageCodeSchema = z
   .string()
   .length(2)
-  .regex(/^[a-z]{2}$/, "Language code must be lowercase ISO 639-1 format")
-  .describe("ISO 639-1 language code (e.g., 'en', 'de', 'ru')");
+  .regex(/^[A-Z]{2}$/, "Language code must be uppercase ISO 639-1 format")
+  .describe("ISO 639-1 language code");
 
 export type LanguageCode = z.infer<typeof languageCodeSchema>;
 
@@ -216,9 +216,9 @@ const userContextSchemaBase = z.object({
   skills: z.array(z.string()).min(1).describe("Skill names"),
   industry: z.string().describe("Company industry"),
   companySize: z.string().nullable().default(null).describe("Company size (optional for synthetic users)"),
-  countryCode: z.string().describe("Location country code"),
+  countryCode: z.string().describe("ISO 3166-1 alpha-2 country code"),
   cityName: z.string().describe("Location city name"),
-  citizenships: z.array(z.string()).describe("Nationality/passport countries (differs from work location countryCode)"),
+  citizenships: z.array(z.string()).describe("ISO 3166-1 alpha-2 country codes"),
   birthYear: z.number().min(1950).nullable().default(null).describe("Birth year (optional for synthetic users)"),
   educationLevel: educationLevelSchema.nullable().default(null).describe("Education level"),
 
@@ -306,7 +306,7 @@ export const adhocContextRequiredSchema = adhocContextBase
   .extend({
     position: z.string().min(1).describe("Level (junior/middle/senior)"),
     role: z.string().min(1).describe("Specialty (backend/frontend/etc)"),
-    countryCode: z.string().min(1).describe("Work location country"),
+    countryCode: z.string().min(1).describe("ISO 3166-1 alpha-2 country code"),
     domains: z.array(z.string()).min(1).describe("Work area (at least 1)"),
   });
 
@@ -1413,8 +1413,16 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("deleting_goal") }),
   z.object({ phase: z.literal("searching") }),
   z.object({
-    phase: z.literal("showing_results"),
+    phase: z.literal("showing_waymate_results"),
     results: z.array(waymateCandidateSchema),
+    goal: goalSchema.nullable(),
+    chartUrl: z.string().url().nullable(),
+    appliedFilters: currentAppliedFiltersSchema.nullable(),
+    adhocContext: adhocContextBase.nullable(),
+  }),
+  z.object({
+    phase: z.literal("showing_pathfinder_results"),
+    results: z.array(pathfinderCandidateSchema),
     goal: goalSchema.nullable(),
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
