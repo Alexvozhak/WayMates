@@ -1,19 +1,45 @@
-export const UPDATE_EXTRACTION_PROMPT = `Extract updates from user's message and apply to their current context.
+/**
+ * Builds update extraction prompt with injected dictionary hints.
+ * @param hints - Pre-built hints string from DictionariesService.buildHints()
+ */
+export function buildUpdateExtractionPrompt(hints: string): string {
+  return `Extract updates from user's message to apply to their current context.
+${hints}
 
-You are given the CURRENT_CONTEXT and a USER_REQUEST. Your task is to:
-1. Identify what fields the user wants to change
-2. Return ONLY the changed fields with new values
+IMPORTANT - distinguish these fields:
+- role: profession type (WHAT you do) — map to KNOWN ROLES
+- position: seniority level (HOW experienced) — map to KNOWN POSITIONS
+- domains: technical specialization area — map to KNOWN DOMAINS
+- skills: specific technologies/tools — map to KNOWN SKILLS
+- industry: business sector — map to KNOWN INDUSTRIES
 
 RULES:
-- Only return fields that need to be updated
-- For array fields (skills, domains, languages): return the FULL new array (not just additions)
-- Preserve original values for fields not mentioned
-- Keep contextId, previousContextId, nextContextId unchanged
-- All values in lowercase-kebab-case where applicable`;
+- Only return fields that need to be updated (null for unchanged)
+- For array fields (skills, domains, languages): return the FULL new array
+- Map user input to KNOWN dictionary values (case-insensitive matching)
+- Languages use ISO 639-1 UPPERCASE codes, countryCode uses ISO 3166-1 UPPERCASE codes
+- Return null for fields not mentioned in user's message`;
+}
 
-export const UPDATE_EDIT_PROMPT = `Apply corrections to the updated context.
+/**
+ * Builds update clarification prompt for editing proposed changes.
+ * @param hints - Dictionary hints for validation
+ * @param currentUpdate - JSON of the proposed update to modify
+ * @param userCorrections - User's correction request
+ */
+export function buildUpdateClarificationPrompt(hints: string, currentUpdate: string, userCorrections: string): string {
+  return `Apply user's corrections to the proposed context update.
+${hints}
 
-The user wants to change some fields in the proposed update.
-Apply their corrections and return the complete updated context.
+CURRENT PROPOSED UPDATE:
+${currentUpdate}
 
-Preserve all fields, changing only what the user explicitly requested.`;
+USER CORRECTIONS:
+${userCorrections}
+
+MERGE RULES:
+- Apply the user's requested changes to the proposed update
+- Keep all other fields from the proposed update unchanged
+- Map corrected values to KNOWN dictionary values
+- Return the complete updated context with corrections applied`;
+}

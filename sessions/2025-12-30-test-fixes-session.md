@@ -208,31 +208,56 @@ a0a4993 fix(search-graph): discriminated union for results + state propagation +
 
 ---
 
-## TODO: Упавшие тесты для следующей сессии
+## Фаза 8: Рефакторинг Upsert/Update-Context по эталону Search-Graph (завершена)
 
-### Update-Context (5 тестов) — ISO uppercase регрессия
+### Проблема
 
-| Тест | Причина | Решение |
-|------|---------|---------|
-| TC-UPD-E1 | lowercase languages в fixture | Изменить fixture на uppercase |
-| TC-UPD-M1 | lowercase languages в fixture | Изменить fixture на uppercase |
-| TC-UPD-E2 | lowercase languages в fixture | Изменить fixture на uppercase |
-| TC-UPD-DEC1 | lowercase languages в fixture | Изменить fixture на uppercase |
-| TC-UPD-E3 | lowercase languages в fixture | Изменить fixture на uppercase |
+При анализе TC-UPD-M1 и TC-UC-E3 выявлены архитектурные проблемы:
+- **Update-Context:** extraction БЕЗ hints (LLM не знает валидные значения)
+- **Upsert-Context:** edit node БЕЗ hints
+- **Оба графа:** merge перезаписывает существующие значения null'ами из LLM
 
-**Файл:** `tests/facade/agents/update-context/integration/update-context.integration.ts`
-**Решение:** Найти fixtures с lowercase languages и заменить на uppercase.
+### Решение — полный рефакторинг по эталону search-graph
 
-### Upsert-Context (2 теста)
+**Изменённые файлы (7):**
 
-| Тест | Причина | Решение |
-|------|---------|---------|
-| TC-UC-E1 | `role: "backend developer"` vs `"developer"` | LLM extraction issue — уточнить prompt или ослабить assertion |
-| TC-UC-E3 | `industry: "fintech"` не существует | Заменить на `"finance"` в тесте |
+| Файл | Изменение |
+|------|-----------|
+| `update-context/prompts.ts` | Новые функции `buildUpdateExtractionPrompt(hints)`, `buildUpdateClarificationPrompt()` |
+| `update-context/nodes/extract-updates.ts` | withLogging + hints injection |
+| `update-context/nodes/edit-update.ts` | withLogging + hints |
+| `update-context/nodes/merge-context.ts` | `isMeaningfulValue()` + filter nulls before merge |
+| `upsert-context/prompts.ts` | Расширен extraction prompt, добавлен `buildContextClarificationPrompt()` |
+| `upsert-context/nodes/edit-context.ts` | withLogging + hints |
 
-**Файл:** `tests/facade/agents/upsert-context/integration/upsert-context.integration.ts`
+**Ключевые изменения в merge-context.ts:**
+```typescript
+// Фильтрация пустых значений перед merge
+function isMeaningfulValue(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (value === "") return false;
+  if (Array.isArray(value) && value.length === 0) return false;
+  return true;
+}
 
-### Cold-Start (9 тестов)
+// Merge только meaningful значений
+const meaningfulUpdates = Object.fromEntries(
+  Object.entries(extractedUpdates).filter(([, value]) => isMeaningfulValue(value)),
+);
+```
+
+### Результаты
+
+| Граф | До рефакторинга | После |
+|------|-----------------|-------|
+| Update-Context | 1/5 ✅ | **5/5 ✅** |
+| Upsert-Context | 3/5 ✅ | **5/5 ✅** |
+
+---
+
+## TODO: Осталось для следующей сессии
+
+### Cold-Start (9 тестов) — LLM flakiness
 
 | Тест | Причина | Решение |
 |------|---------|---------|
@@ -240,6 +265,10 @@ a0a4993 fix(search-graph): discriminated union for results + state propagation +
 | TC-P*, TC-E*, TC-S* | LLM flakiness | Возможно нужен retry или prompt tuning |
 
 **Файл:** `tests/facade/agents/cold-start-v2/integration/`
+
+### Коммит
+
+Нужно закоммитить изменения Фазы 8
 
 ---
 
@@ -324,29 +353,26 @@ Phase УЖЕ служит discriminator'ом для response — использ�
 
 Прочитай sessions/2025-12-30-test-fixes-session.md
 
-Статус (Фаза 6-7 завершены):
+Статус (Фаза 8 завершена):
 - Search-Graph: 18/18 ✅
 - Core Integration: 95/95 ✅
-- Коммит: a0a4993
+- Update-Context: 5/5 ✅
+- Upsert-Context: 5/5 ✅
+- Коммит Фазы 6-7: a0a4993
+- Фаза 8: НЕ закоммичена
 
-Осталось исправить (ISO uppercase регрессия + LLM issues):
+Сделано в Фазе 8:
+- Рефакторинг upsert/update-context по эталону search-graph
+- Добавлены hints в extraction и edit nodes
+- Исправлен merge (фильтрация null/empty перед spread)
 
-1. Update-Context (5 тестов) — lowercase languages в fixtures
-   - Файл: tests/facade/agents/update-context/integration/update-context.integration.ts
-   - Решение: найти/заменить lowercase languages на uppercase
-
-2. Upsert-Context (2 теста)
-   - TC-UC-E1: role extraction — "backend developer" vs "developer"
-   - TC-UC-E3: fintech → finance
-   - Файл: tests/facade/agents/upsert-context/integration/upsert-context.integration.ts
-
-3. Cold-Start (9 тестов) — LLM flakiness
-   - TC-D3: trails extraction
+Осталось:
+1. Закоммитить изменения Фазы 8
+2. Cold-Start (9 тестов) — LLM flakiness
    - Файл: tests/facade/agents/cold-start-v2/integration/
 
 Следующий шаг:
-1. Исправить update-context fixtures (ISO uppercase)
-2. Исправить upsert-context tests (fintech → finance, role assertion)
-3. Прогнать facade тесты
-4. Коммит
+1. git status — проверить изменения
+2. Коммит: "refactor(upsert/update-context): hints injection + null filtering"
+3. Прогнать cold-start тесты для диагностики
 ```
