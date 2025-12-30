@@ -8,10 +8,10 @@ const intentParser = getModel("deterministic").withStructuredOutput(decisionSche
 
 const CONFIRMATION_PROMPT = `Classify user intent. Response may be in any language.
 
-APPROVE: User confirms, agrees, accepts, or wants to proceed/save.
-EDIT: User wants to change, modify, or correct something.
-CANCEL: User wants to stop, cancel, or abort completely.
-UNKNOWN: Cannot determine intent with confidence.`;
+APPROVE: User signals agreement, acceptance, or readiness to proceed. Any affirmative response — even brief acknowledgments — indicates approval.
+EDIT: User explicitly wants to change, modify, or correct something specific.
+CANCEL: User explicitly wants to stop, cancel, or abort completely.
+UNKNOWN: User provides unrelated content or asks a question instead of responding to the confirmation.`;
 
 export async function parseConfirmationNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {
   const { userResponse } = state;

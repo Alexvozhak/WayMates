@@ -3,10 +3,10 @@ description: Chart генерируется для searchPathfinders (кто д�
 locale: ru
 
 steps:
-  - message: найди похожих, я middle backend разработчик в technology, США
+  - message: найди похожих, я middle backend разработчик в consulting, США
     expect:
       phase: confirming_adhoc_context
-      adhocContext.industry: technology
+      adhocContext.industry: consulting
 
   - message: хочу стать senior
     expect:
