@@ -17,21 +17,21 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ⚪ OPTIONAL: list from optionalFields
   DO NOT ask for anything from FILLED section
   Offer: set goal or explore similar people`,
-  [SEARCH_PHASE.showing_exploration_candidates]: `List candidates briefly with key attributes from data.
-  Show appliedFilters semantically:
-  - recencyThresholdMonths → "transitions in last N months"
-  - excludedContextFields → "excluded fields: X, Y"
-  - excludedCreationReasons → "excluded transitions: X, Y"
-  - If all null/empty → "searching without filters"
-  - If rejectedFields not empty → "⚠️ not recognized: X, Y"
+  [SEARCH_PHASE.showing_exploration_candidates]: `🔍 Start with brief search context (1-2 sentences, natural language):
+  - Who we're looking for (from adhocContext: role, position, country)
+  - MUST mention recencyThresholdMonths if set: "за последние N месяцев"
+  - MUST mention exclusions if not empty
+  - ⚠️ rejectedFields if not empty
+  DON'T list empty/null filters. Keep it conversational.
+  THEN list candidates briefly with key attributes.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
-  [SEARCH_PHASE.showing_exploration_facets]: `Show all facets with counts, suggest narrowing filter.
-  Show appliedFilters semantically:
-  - recencyThresholdMonths → "transitions in last N months"
-  - excludedContextFields → "excluded fields: X, Y"
-  - excludedCreationReasons → "excluded transitions: X, Y"
-  - If all null/empty → "searching without filters"
-  - If rejectedFields not empty → "⚠️ not recognized: X, Y"
+  [SEARCH_PHASE.showing_exploration_facets]: `🔍 Start with brief search context (1-2 sentences, natural language):
+  - Who we're looking for (from adhocContext)
+  - MUST mention recencyThresholdMonths if set
+  - MUST mention exclusions if not empty
+  - ⚠️ rejectedFields if not empty
+  DON'T list empty/null filters. Keep it conversational.
+  THEN show facets with counts, suggest narrowing filter.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
   [SEARCH_PHASE.showing_goal]: `Show goal from extractedGoal.
   ✅ SPECIFIED: list non-null fields
@@ -40,43 +40,42 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   "✅ Position: senior
   ⚪ Role, domains, country, industry — not specified, will search among all. You can add criteria."
   Offer: validate, refine, or save`,
-  [SEARCH_PHASE.asking_after_validate_candidates]: `Show real people who reached goal — starting point, path duration, key skills, current status. Help decide if goal is right.
-  Show appliedFilters semantically:
-  - recencyThresholdMonths → "reached goal in last N months"
-  - excludedCreationReasons → "excluded transitions: X, Y"
-  - If all null/empty → "searching without filters"
-  - If rejectedFields not empty → "⚠️ not recognized: X, Y"
-  Empty results → show what filters were applied, suggest which ONE to relax first`,
-  [SEARCH_PHASE.asking_after_validate_facets]: `Show facets with counts, suggest filter.
-  Show appliedFilters semantically:
-  - recencyThresholdMonths → "reached goal in last N months"
-  - excludedCreationReasons → "excluded transitions: X, Y"
-  - If all null/empty → "searching without filters"
-  - If rejectedFields not empty → "⚠️ not recognized: X, Y"`,
-  [SEARCH_PHASE.showing_waymate_results]: `Show waymates — people heading to the same goal.
-  Show appliedFilters semantically:
-  - recencyThresholdMonths → "active in last N months"
-  - excludedContextFields → "excluded fields: X, Y"
-  - excludedCreationReasons → "excluded transitions: X, Y"
-  - If all null/empty → "searching without filters"
-  - If rejectedFields not empty → "⚠️ not recognized: X, Y"
-  Empty results → show what filters were applied + goal criteria, suggest which ONE to relax first`,
-  [SEARCH_PHASE.showing_pathfinder_results]: `Show pathfinders — people who already achieved the goal.
-  Show: their starting point, how long the transition took, key skills.
-  Show appliedFilters semantically:
-  - recencyThresholdMonths → "achieved goal in last N months"
-  - excludedContextFields → "excluded fields: X, Y"
-  - excludedCreationReasons → "excluded transitions: X, Y"
-  - If all null/empty → "searching without filters"
-  - If rejectedFields not empty → "⚠️ not recognized: X, Y"
-  Empty results → show what filters were applied + goal criteria, suggest which ONE to relax first`,
-  [SEARCH_PHASE.showing_results_facets]: `Show facets with counts. Goal applied but too many results — suggest narrowing by role/country/industry.
-  Show appliedFilters semantically:
-  - recencyThresholdMonths → "active in last N months"
-  - excludedContextFields → "excluded fields: X, Y"
-  - excludedCreationReasons → "excluded transitions: X, Y"
-  - If all null/empty → "searching without filters"
-  - If rejectedFields not empty → "⚠️ not recognized: X, Y"`,
+  [SEARCH_PHASE.asking_after_validate_candidates]: `🔍 Start with brief context (natural language):
+  - What goal we're validating
+  - MUST mention recencyThresholdMonths if set
+  - MUST mention exclusions if not empty
+  - ⚠️ rejectedFields if not empty
+  DON'T list empty/null filters.
+  THEN show real people who reached goal — starting point, path duration, key skills.
+  Empty results → mention the goal criteria, suggest broadening search`,
+  [SEARCH_PHASE.asking_after_validate_facets]: `🔍 Start with brief context (natural language):
+  - What goal we're validating
+  - MUST mention recencyThresholdMonths if set
+  - MUST mention exclusions if not empty
+  DON'T list empty/null filters.
+  THEN show facets with counts, suggest filter.`,
+  [SEARCH_PHASE.showing_waymate_results]: `🔍 Start with brief context (natural language):
+  - Mention the shared goal
+  - MUST mention recencyThresholdMonths if set
+  - MUST mention exclusions if not empty
+  - ⚠️ rejectedFields if not empty
+  DON'T list empty/null filters.
+  THEN show waymates — people heading to the same goal.
+  Empty results → mention goal criteria, suggest broadening search`,
+  [SEARCH_PHASE.showing_pathfinder_results]: `🔍 Start with brief context (natural language):
+  - Mention the goal user wants to reach
+  - MUST mention recencyThresholdMonths if set
+  - MUST mention exclusions if not empty
+  - ⚠️ rejectedFields if not empty
+  DON'T list empty/null filters.
+  THEN show pathfinders — starting point, transition duration, key skills.
+  Empty results → mention goal criteria, suggest broadening search`,
+  [SEARCH_PHASE.showing_results_facets]: `🔍 Start with brief context (natural language):
+  - Mention the goal and current search scope
+  - MUST mention recencyThresholdMonths if set
+  - MUST mention exclusions if not empty
+  DON'T list empty/null filters.
+  THEN show facets with counts. Suggest narrowing by role/country/industry.`,
   [SEARCH_PHASE.asking_search_mode]: `Goal saved! Offer two search options briefly:
   1. People who already achieved this goal — proof the path works (Pathfinders)
   2. People heading to the same goal right now — peers to connect with (Waymates)
