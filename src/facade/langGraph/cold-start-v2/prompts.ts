@@ -260,7 +260,8 @@ RULES:
 🚨 CRITICAL — EXTRACTION RULES:
 ═══════════════════════════════════════════════════
 POSITIONS:
-- Count how many distinct job positions user explicitly described
+- Count how many distinct WORK positions user explicitly described
+- Education is NOT a position — only paid work experience counts
 - Return exactly that count — no more, no less
 - One described position = one context in output
 - Never infer career progression user did not mention
