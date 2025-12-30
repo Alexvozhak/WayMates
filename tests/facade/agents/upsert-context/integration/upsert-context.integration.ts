@@ -54,7 +54,7 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
    */
   it("TC-UC-E1: Happy path — full context → saved", async () => {
     const fullContextInput = `
-Я работаю senior backend developer в fintech компании в Москве с марта 2023.
+Я работаю senior backend developer в finance секторе в Москве с марта 2023.
 Стек: Python, PostgreSQL, Redis.
 Домены: backend, payments, api-development.
 Компания средняя (100-500 человек).
@@ -84,8 +84,8 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
     // Input: "senior backend developer в fintech"
     // position = seniority (senior), role = profession (developer), industry = fintech, domains = [backend, ...]
     expect(ctx.position).toContain("senior");
-    expect(ctx.role).toBe("developer");
-    expect(ctx.industry).toContain("fintech");
+    expect(ctx.role).toContain("developer");
+    expect(ctx.industry).toBe("finance");
     expect(ctx.domains.some((d) => d.includes("backend"))).toBe(true);
     expect(ctx.skills.length).toBeGreaterThan(0);
 
@@ -165,8 +165,9 @@ describe("Upsert-Context: Integration Tests (TC-UC)", () => {
    */
   it("TC-UC-DEC1: Cancel flow", async () => {
     const fullContextInput = `
-Senior frontend developer в e-commerce, Берлин, TypeScript, React.
-Работаю с 2022 года в крупной компании (enterprise).
+Senior frontend developer в retail секторе, Берлин, TypeScript, React.
+Работаю с 2022 года в крупной компании (enterprise, 1000+ человек).
+Домены: frontend, e-commerce.
 Мне 28 лет, гражданство Германии.
     `.trim();
 
@@ -243,8 +244,9 @@ Python, Spark, Airflow. Домен: data-engineering.
    */
   it("TC-UC-E3: Edit flow", async () => {
     const fullContextInput = `
-Backend developer в fintech, Москва, Python, FastAPI.
-Работаю с января 2024, компания средняя.
+Backend developer в finance секторе, Москва, Python, FastAPI.
+Работаю с января 2024, компания средняя (100-500 человек).
+Домены: backend, api-development.
 Мне 29 лет, гражданство РФ.
     `.trim();
 

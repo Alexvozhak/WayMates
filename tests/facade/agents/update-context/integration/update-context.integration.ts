@@ -35,7 +35,7 @@ function createTestContext(contextId: string): UserContext {
     salaryExact: 200000,
     salaryMin: null,
     salaryMax: null,
-    languages: ["ru", "en"],
+    languages: ["RU", "EN"],
     feedback: null,
   };
 }
