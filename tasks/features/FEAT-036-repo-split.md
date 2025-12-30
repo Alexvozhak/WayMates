@@ -8,288 +8,338 @@
 
 ---
 
-## Цель
+## Бизнес-цели
 
-Подготовить кодовую базу к разделению на два репозитория:
-- **waymates-core/** (private) — core + cypher (бизнес-логика, Cypher запросы)
-- **waymates-app/** (public) — shared, facade, telegram-bot, chart (презентация для работодателей)
+### 1. Поиск работы (Founding Engineer Web3)
+- Public repo как **portfolio piece** для работодателей
+- Показать: архитектуру, code quality, tech stack
+- НЕ показать: секретную бизнес-логику
+
+### 2. Защита интеллектуальной собственности
+- **Cypher запросы** — сложная логика Neo4j, scoring, matching
+- **LangGraph промпты** — тюнинг LLM, system prompts, extraction
+- **Neo4j схема** — структура графа (database/init.cypher)
+- **Бизнес-логика core** — SearchManager, StoryManager, algorithms
+
+### 3. Параллельное развитие
+- Возможность развивать WayMates параллельно с работой
+- Удобная структура для solo-разработки
+- Один git clone для работы, но защищённый public view
 
 ---
 
-## Проблема
+## Что секретно vs публично
 
-Сейчас `facade` зависит от `core` через tRPC type inference:
+### PRIVATE (waymates-private repo)
+
+| Компонент | LOC | Причина секретности |
+|-----------|-----|---------------------|
+| `src/core/` | 1,454 | Бизнес-логика, scoring algorithms |
+| `src/cypher/` | 1,686 | Neo4j запросы, matching logic |
+| `src/prompts/` (новая) | ~1,086 | LLM тюнинг, extraction prompts |
+| `database/init.cypher` | ~200 | Схема графа, constraints, indexes |
+
+**Итого private:** ~4,426 LOC
+
+### PUBLIC (waymates-app repo)
+
+| Компонент | LOC | Что показывает |
+|-----------|-----|----------------|
+| `src/facade/` (без prompts) | ~7,000 | LangGraph структура, MCP tools |
+| `src/telegram-bot/` | 1,077 | grammY handlers, UX |
+| `src/chart/` | 1,718 | Визуализация |
+| `src/shared/` | 1,544 | Zod schemas, types, utils |
+
+**Итого public:** ~11,339 LOC
+
+---
+
+## Архитектура: Git Submodule
+
+```
+waymates-app/                    (PUBLIC repo — portfolio)
+├── src/
+│   ├── shared/                  # Schemas, logger, env, contracts
+│   ├── facade/                  # LangGraph agents, MCP server
+│   │   └── langGraph/
+│   │       └── cold-start-v2/
+│   │           ├── nodes/       # ПУБЛИЧНО — структура графа
+│   │           ├── state.ts     # ПУБЛИЧНО — типы состояния
+│   │           └── index.ts     # Импорт prompts из submodule
+│   ├── telegram-bot/            # ПУБЛИЧНО
+│   └── chart/                   # ПУБЛИЧНО
+├── private/                     ← Git submodule → waymates-private
+├── README.md                    # Описание проекта, скриншоты
+├── LICENSE                      # Restrictive (см. ниже)
+└── docs/
+    └── architecture.md          # Диаграммы для работодателей
+
+waymates-private/                (PRIVATE repo — submodule)
+├── core/                        # Бизнес-логика
+├── cypher/                      # Neo4j запросы
+├── prompts/                     # LLM промпты
+│   ├── cold-start.ts
+│   ├── search-graph.ts
+│   ├── upsert-context.ts
+│   ├── upsert-trail.ts
+│   └── update-context.ts
+└── database/
+    └── init.cypher              # Схема Neo4j
+```
+
+---
+
+## Дизайн решения
+
+### Этап 1: Вынос промптов в отдельную папку
+
+**Текущая структура:**
+```
+src/facade/langGraph/cold-start-v2/prompts.ts
+src/facade/langGraph/update-context/prompts.ts
+src/facade/langGraph/upsert-context/prompts.ts
+src/facade/langGraph/upsert-trail/prompts.ts
+src/facade/langGraph/search-graph/prompts/*.ts
+src/facade/services/nlp-formatter/prompts.ts
+```
+
+**Новая структура:**
+```
+src/prompts/                     ← Все промпты здесь (private)
+├── cold-start.ts
+├── search-graph/
+│   ├── extraction.ts
+│   ├── clarification.ts
+│   └── index.ts
+├── upsert-context.ts
+├── upsert-trail.ts
+├── update-context.ts
+└── nlp-formatter.ts
+```
+
+**Импорты после рефакторинга:**
+```typescript
+// До:
+import { extractionPrompt } from "./prompts.js";
+
+// После:
+import { coldStartPrompts } from "../../../prompts/cold-start.js";
+// Или через alias:
+import { coldStartPrompts } from "@prompts/cold-start.js";
+```
+
+### Этап 2: ICoreApi interface (без изменений)
 
 ```typescript
-// shared/types.ts
-export type { AppRouter } from "../core/routers/app.router.js";
-
-// facade/core-client.ts
-import type { AppRouter } from "../shared/types.js";
-const client = createTRPCProxyClient<AppRouter>(...);
-```
-
-После split путь `../core/...` не существует — нужен явный контракт.
-
----
-
-## Решение: ICoreApi Interface
-
-Создать явный интерфейс API в shared. Facade использует интерфейс, не реализацию.
-
-### Структура после split
-
-```
-waymates-core/              (private repo)
-└── src/
-    └── core/
-        ├── routers/        # tRPC роутеры
-        ├── cypher/         # Cypher запросы (перенести из src/cypher/)
-        ├── managers/       # SearchManager, StoryManager, etc.
-        └── index.ts
-
-waymates-app/               (public repo)
-└── src/
-    ├── shared/             # schemas, logger, env, core-api-contract
-    ├── facade/             # MCP Server, LangGraph agents
-    ├── telegram-bot/
-    └── chart/
-```
-
----
-
-## Дизайн
-
-### 1. Новый файл: `src/shared/core-api-contract.ts` (~80 LOC)
-
-```typescript
-import type {
-  // IDs
-  UserId, ContextId, TrailId,
-  // Search
-  AdhocSearchParams, TargetSearchParams, UserSearchParamsBase,
-  ScoredMatchedCandidate, MatchedCandidateWithPath,
-  // Story
-  StoryInput, UpsertStoryResult, UserContext, Trail,
-  // Context
-  UpsertContextInput, UpsertSingleContextResult, CoreUpdateContextParams,
-  // Trail
-  UpsertTrailInput, UpsertSingleTrailResult,
-  // Goal
-  CreateGoalInput, Goal, OperationResult,
-  // Dictionaries
-  Dictionaries, AddTermInput,
-  // User
-  UserState,
-} from "./schemas.js";
-
-/**
- * Core API контракт — интерфейс для tRPC client wrapper.
- * Позволяет разделить репозитории: facade импортирует только интерфейс.
- */
+// src/shared/core-api-contract.ts
 export interface ICoreApi {
-  search: {
-    adhoc(params: AdhocSearchParams): Promise<ScoredMatchedCandidate[]>;
-    byUser(params: UserSearchParamsBase): Promise<ScoredMatchedCandidate[]>;
-    byTarget(params: TargetSearchParams): Promise<MatchedCandidateWithPath[]>;
-  };
+  search: { ... };
+  story: { ... };
+  context: { ... };
+  trail: { ... };
+  goal: { ... };
+  dictionaries: { ... };
+  user: { ... };
+}
+```
 
-  story: {
-    upsertStory(input: StoryInput): Promise<UpsertStoryResult>;
-    getStory(userId: UserId): Promise<{ contexts: UserContext[]; trails: Trail[] }>;
-    deleteStory(userId: UserId): Promise<{ deletedContexts: number; deletedTrails: number }>;
-  };
+### Этап 3: IPrompts interface
 
-  context: {
-    upsertContext(input: UpsertContextInput): Promise<UpsertSingleContextResult>;
-    update(input: CoreUpdateContextParams): Promise<UserContext>;
-    delete(userId: UserId, contextId: ContextId): Promise<void>;
+```typescript
+// src/shared/prompts-contract.ts
+export interface IPrompts {
+  coldStart: {
+    systemPrompt: string;
+    extractionPrompt: (context: string) => string;
+    clarificationPrompt: (field: string) => string;
   };
-
-  trail: {
-    upsert(input: UpsertTrailInput): Promise<UpsertSingleTrailResult>;
-    delete(userId: UserId, trailId: TrailId): Promise<void>;
+  searchGraph: {
+    extractionPrompt: string;
+    clarificationPrompt: string;
   };
+  // ... остальные
+}
+```
 
-  goal: {
-    set(input: CreateGoalInput): Promise<{ goalId: string }>;
-    getByUser(userId: UserId): Promise<Goal | null>;
-    delete(userId: UserId): Promise<OperationResult>;
-  };
+**Использование в facade:**
+```typescript
+// src/facade/langGraph/cold-start-v2/nodes/extract.ts
+import type { IPrompts } from "../../../shared/prompts-contract.js";
 
-  dictionaries: {
-    getVerified(): Promise<Dictionaries>;
-    addTerm(input: AddTermInput): Promise<void>;
-  };
-
-  user: {
-    getState(userId: UserId): Promise<UserState>;
+export function createExtractNode(prompts: IPrompts["coldStart"]) {
+  return async (state: State) => {
+    const result = await llm.invoke(prompts.extractionPrompt(state.context));
+    // ...
   };
 }
 ```
 
-### 2. Перенести схемы в `src/shared/schemas.ts`
-
-Из `src/core/schemas.ts` добавить:
+### Этап 4: Dependency Injection для prompts
 
 ```typescript
-export const upsertSingleContextResultSchema = z.object({
-  success: z.boolean(),
-  contextId: contextIdSchema,
-});
+// src/facade/bootstrap.ts
+import { prompts } from "../private/prompts/index.js"; // Submodule
+import { createColdStartGraph } from "./langGraph/cold-start-v2/index.js";
 
-export const upsertSingleTrailResultSchema = z.object({
-  success: z.boolean(),
-  trailId: trailIdSchema,
-});
-
-export type UpsertSingleContextResult = z.infer<typeof upsertSingleContextResultSchema>;
-export type UpsertSingleTrailResult = z.infer<typeof upsertSingleTrailResultSchema>;
+export const coldStartGraph = createColdStartGraph({ prompts: prompts.coldStart });
 ```
-
-### 3. Рефакторинг `src/facade/core-client.ts` (~70 LOC)
-
-```typescript
-import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
-import { CoreApiError } from "./errors.js";
-import type { ICoreApi } from "../shared/core-api-contract.js";
-
-export class CoreClient implements ICoreApi {
-  private trpc: ReturnType<typeof createTRPCProxyClient<any>>;
-
-  constructor(coreUrl: string) {
-    this.trpc = createTRPCProxyClient({
-      links: [httpBatchLink({ url: coreUrl })],
-    });
-  }
-
-  search = {
-    adhoc: (params) => this.trpc.search.adhoc.query(params),
-    byUser: (params) => this.trpc.search.byUser.query(params),
-    byTarget: (params) => this.trpc.search.byTarget.query(params),
-  };
-
-  story = {
-    upsertStory: (input) => this.trpc.story.upsertStory.mutate(input),
-    getStory: (userId) => this.trpc.story.getStory.query({ userId }),
-    deleteStory: (userId) => this.trpc.story.deleteStory.mutate({ userId }),
-  };
-
-  context = {
-    upsertContext: (input) => this.trpc.context.upsertContext.mutate(input),
-    update: (input) => this.trpc.context.update.mutate(input),
-    delete: (userId, contextId) => this.trpc.context.delete.mutate({ userId, contextId }),
-  };
-
-  trail = {
-    upsert: (input) => this.trpc.trail.upsert.mutate(input),
-    delete: (userId, trailId) => this.trpc.trail.delete.mutate({ userId, trailId }),
-  };
-
-  goal = {
-    set: (input) => this.trpc.goal.set.mutate(input),
-    getByUser: (userId) => this.trpc.goal.getByUser.query({ userId }),
-    delete: (userId) => this.trpc.goal.delete.mutate({ userId }),
-  };
-
-  dictionaries = {
-    getVerified: () => this.trpc.dictionaries.getVerified.query(),
-    addTerm: (input) => this.trpc.dictionaries.addTerm.mutate(input),
-  };
-
-  user = {
-    getState: (userId) => this.trpc.user.getState.query({ userId }),
-  };
-
-  async withErrorHandling<T>(operation: () => Promise<T>, context: string): Promise<T> {
-    try {
-      return await operation();
-    } catch (error) {
-      throw new CoreApiError(`Core API ${context} failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-}
-```
-
-### 4. Рефакторинг вызовов в facade (~30 файлов)
-
-**До:**
-```typescript
-await this.coreClient.client.search.byTarget.query({ ... });
-await coreClient.client.story.getStory.query({ userId });
-```
-
-**После:**
-```typescript
-await this.coreClient.search.byTarget({ ... });
-await coreClient.story.getStory(userId);
-```
-
-**Затронутые файлы:**
-- `services/dictionaries-cache.ts`
-- `services/normalizer.ts`
-- `services/orchestrator/*.ts` (4 файла)
-- `mcp-server/tools/*.ts` (~10 файлов)
-- `langGraph/*/nodes/*.ts` (~15 файлов)
-
-### 5. Удалить устаревшие файлы
-
-| Файл | Причина |
-|------|---------|
-| `src/shared/types.ts` | Заменён на `core-api-contract.ts` |
-| `src/core/schemas.ts` | Схемы перенесены в `shared/schemas.ts` |
 
 ---
 
-## Acceptance Criteria
+## Лицензия для public repo
 
-- [ ] `src/shared/core-api-contract.ts` создан с `ICoreApi` interface
-- [ ] Схемы `upsertSingleContextResultSchema`, `upsertSingleTrailResultSchema` перенесены в `shared/schemas.ts`
-- [ ] `src/facade/core-client.ts` реализует `ICoreApi`
-- [ ] Все вызовы `.client.xxx.query/mutate()` заменены на `.xxx()`
-- [ ] `src/shared/types.ts` удалён
-- [ ] `src/core/schemas.ts` удалён (или очищен)
-- [ ] `npm run lint` — 0 errors
-- [ ] `npx tsc --noEmit` — 0 errors
-- [ ] Все тесты проходят (unit + integration)
+```markdown
+# LICENSE
+
+Copyright (c) 2024-2025 Alexey Komarov
+
+This source code is provided for EDUCATIONAL and PORTFOLIO purposes only.
+
+## You MAY:
+- View and study the code structure and architecture
+- Reference this project in discussions and interviews
+- Use small code snippets (< 50 lines) with attribution
+
+## You MAY NOT:
+- Copy substantial portions of this codebase
+- Create derivative works based on this code
+- Use this code for commercial purposes
+- Deploy this code or derivatives as a service
+- Remove or modify this license notice
+
+## Full source code:
+The complete source code including proprietary components is available
+under NDA for potential employers and partners.
+
+Contact: alexvozhak@gmail.com
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+```
 
 ---
 
 ## План реализации
 
-| # | Шаг | LOC |
-|---|-----|-----|
-| 1 | Перенести схемы в `shared/schemas.ts` | +20 |
-| 2 | Создать `shared/core-api-contract.ts` | +80 |
-| 3 | Рефакторинг `facade/core-client.ts` | ~70 |
-| 4 | Рефакторинг вызовов в facade (~30 файлов) | -60 |
-| 5 | Удалить `shared/types.ts` | -2 |
-| 6 | Удалить `core/schemas.ts` | -21 |
-| 7 | lint + tsc + tests | — |
+### Фаза A: Подготовка промптов (~2-3 часа)
 
-**Итого:** ~100 LOC нового кода, ~30 файлов затронуто
+| # | Шаг | LOC | Файлов |
+|---|-----|-----|--------|
+| A1 | Создать `src/prompts/` директорию | — | 1 |
+| A2 | Перенести все prompts.ts в `src/prompts/` | ~1,086 | 10 |
+| A3 | Обновить импорты в facade (~20 файлов) | ~40 | 20 |
+| A4 | Создать `src/shared/prompts-contract.ts` | ~100 | 1 |
+| A5 | lint + tsc | — | — |
+
+### Фаза B: ICoreApi interface (из старого плана, ~2 часа)
+
+| # | Шаг | LOC | Файлов |
+|---|-----|-----|--------|
+| B1 | Перенести схемы в `shared/schemas.ts` | +20 | 1 |
+| B2 | Создать `shared/core-api-contract.ts` | +80 | 1 |
+| B3 | Рефакторинг `facade/core-client.ts` | ~70 | 1 |
+| B4 | Рефакторинг вызовов в facade | -60 | ~30 |
+| B5 | Удалить `shared/types.ts`, `core/schemas.ts` | -23 | 2 |
+| B6 | lint + tsc + tests | — | — |
+
+### Фаза C: Физический split (~1-2 часа)
+
+| # | Шаг | Описание |
+|---|-----|----------|
+| C1 | Создать `waymates-private` repo на GitHub | Private repo |
+| C2 | Перенести core/, cypher/, prompts/, database/ | git mv + push |
+| C3 | Добавить submodule в waymates-app | git submodule add |
+| C4 | Настроить paths в tsconfig.json | Alias @prompts, @core |
+| C5 | Добавить LICENSE в public repo | Restrictive license |
+| C6 | Обновить README.md | Описание + скриншоты |
+| C7 | Проверить что всё работает | npm run build + tests |
 
 ---
 
-## Что остаётся после этой задачи
+## Acceptance Criteria
 
-Кодовая база готова к физическому split:
-- Facade не импортирует из core напрямую
-- Контракт API определён в shared
-- Типы в shared/schemas.ts
+### Фаза A (Prompts)
+- [ ] Все промпты перенесены в `src/prompts/`
+- [ ] `IPrompts` interface создан в `shared/prompts-contract.ts`
+- [ ] Все импорты обновлены
+- [ ] `npm run lint` — 0 errors
+- [ ] `npx tsc --noEmit` — 0 errors
 
-**Следующий шаг (отдельная задача):**
-- Создание двух репозиториев
-- Настройка CI/CD
-- Перенос файлов
+### Фаза B (Core API)
+- [ ] `ICoreApi` interface создан
+- [ ] `CoreClient` реализует `ICoreApi`
+- [ ] Все `.client.xxx.query/mutate()` заменены
+- [ ] Старые файлы удалены
+- [ ] Все тесты проходят
+
+### Фаза C (Physical Split)
+- [ ] `waymates-private` repo создан (private)
+- [ ] `waymates-app` repo создан (public)
+- [ ] Submodule работает
+- [ ] `git clone --recurse-submodules` работает
+- [ ] LICENSE добавлен
+- [ ] README с описанием и скриншотами
+- [ ] Build и tests проходят в обоих repo
 
 ---
 
-## Связь с Фазой 3 MVP
+## Что видит работодатель
 
-Эта задача — **подготовительный этап** для Фазы 3 (Repo Split) из MVP-RELEASE-PLAN.md.
+После split работодатель видит `waymates-app`:
 
-После выполнения FEAT-035:
-1. Можно безопасно разделить код на два репо
-2. Facade продолжит работать через HTTP с core
-3. Public репо не содержит секретной логики (Cypher)
+```
+waymates-app/
+├── README.md                    # Описание, скриншоты, tech stack
+├── LICENSE                      # "Portfolio purposes only"
+├── docs/
+│   └── architecture.md          # Диаграммы C4, sequence
+├── src/
+│   ├── shared/                  # Zod schemas, types
+│   ├── facade/                  # LangGraph structure, MCP tools
+│   ├── telegram-bot/            # grammY handlers
+│   └── chart/                   # Visualization
+└── private/                     # "This is a git submodule"
+    └── README.md                # "Private components, contact for access"
+```
+
+**Что показывает:**
+- ✅ Архитектура и структура кода
+- ✅ TypeScript, Zod, LangGraph использование
+- ✅ MCP Server implementation
+- ✅ Telegram bot с grammY
+- ✅ Code quality (ESLint, types)
+
+**Что НЕ показывает:**
+- ❌ Cypher запросы и scoring
+- ❌ LLM промпты
+- ❌ Neo4j схема
+- ❌ Бизнес-логика core
+
+---
+
+## Риски и mitigation
+
+| Риск | Mitigation |
+|------|------------|
+| Submodule complexity | Документация + скрипт для clone |
+| Broken imports | TypeScript path aliases |
+| CI/CD для двух repo | GitHub Actions с submodule checkout |
+| Работодатель хочет полный код | "Available under NDA" + screen share |
+
+---
+
+## Связь с другими задачами
+
+- **FEAT-032 (Pino)**: Должен быть выполнен до split (logger в shared)
+- **FEAT-033 (Sentry)**: Должен быть выполнен до split (error handling)
+- **Фаза 7 (Deploy)**: После split деплой только public части
+
+---
+
+## Оценка трудозатрат
+
+| Фаза | Время | Сложность |
+|------|-------|-----------|
+| A (Prompts) | 2-3 часа | Средняя (много файлов) |
+| B (Core API) | 2 часа | Средняя (уже спроектировано) |
+| C (Physical Split) | 1-2 часа | Низкая (механическая работа) |
+| **Итого** | **5-7 часов** | |

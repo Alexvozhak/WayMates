@@ -276,7 +276,9 @@ load_context (из БД) → check_goal
 | `asking_after_validate_candidates`   | Показываем pathfinders (< threshold)          |
 | `asking_after_validate_facets`       | Показываем facets pathfinders (>= threshold)  |
 | `asking_search_mode`                 | Выбор режима: pathfinders или waymates        |
-| `showing_results`                    | Финальные результаты с pathfinder/waymate     |
+| `showing_waymate_results`            | Результаты waymates (WaymateCandidate[])      |
+| `showing_pathfinder_results`         | Результаты pathfinders (PathfinderCandidate[])|
+| `showing_results_facets`             | Facets для фильтрации результатов             |
 
 **PHASE = response schema** — определяет структуру ответа (discriminatedUnion).
 **NODE = execution unit** — определяет бизнес-логику.

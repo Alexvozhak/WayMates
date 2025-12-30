@@ -257,6 +257,14 @@
 | **Первопричина** | Тороплюсь исправить баг |
 | **Правило** | Debug логи — временные. Добавил → понял → удалил. Для production есть Pino + LangSmith |
 
+### Изменил код — не применил изменения
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Добавил debug/fix, запустил проверку, не вижу эффекта — забыл rebuild |
+| **Первопричина** | Не различаю какой код где выполняется. Тесты могут запускать код in-process или через Docker — разные точки входа |
+| **Правило** | После изменения: (1) определить ГДЕ код исполняется (in-process vs container), (2) выполнить соответствующий rebuild. Чеклист: edit → build → deploy → verify |
+
 ### Hardcoded строки в промптах
 
 | | |
@@ -728,4 +736,12 @@
 | **Паттерн ошибки** | `const result = interrupt({...}); return { chartUrl }` — chartUrl никогда не попадает в state |
 | **Первопричина** | Не понимаю что `interrupt()` выбрасывает исключение для остановки графа. Код после него не выполняется |
 | **Правило** | Данные для response готовить ДО interrupt или в предыдущей ноде. Паттерн: `explore` (готовит chartUrl) → `show_exploration` (только interrupt) |
+
+### State params не propagate между nodes
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Инжектирую params (currentSearchParams) через test helper, но они теряются после первого node |
+| **Первопричина** | Node не возвращает поле в return → LangGraph использует default из annotation (null). Params исчезают |
+| **Правило** | Nodes которые НЕ меняют params должны возвращать их: `return { ...result, currentSearchParams: state.currentSearchParams }`. Альтернатива: parse node перезаписывает `newParams ?? state.params` |
 

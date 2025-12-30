@@ -457,18 +457,86 @@ steps:
 
 ---
 
+## Фаза 11: Batch тесты + Search-Graph fixes (после rewind #5)
+
+### Задача
+Прогнать все batch тесты кроме search, исправить упавшие.
+
+### Что сделано
+
+1. **cold-start-clarification-flow fix** — "ок" не распознавался как approve
+   - **Причина:** LLM классифицировал как `unknown` ("short response... uncertain")
+   - **Fix:** Семантическое усиление `CONFIRMATION_PROMPT`:
+     ```
+     - APPROVE: User confirms, agrees, accepts...
+     + APPROVE: User signals agreement... Any affirmative response — even brief acknowledgments — indicates approval.
+     ```
+   - **Файл:** `parse-confirmation.ts`
+
+2. **education-levels.json** — order начинался с 0, schema требовала >=1
+   - **Fix:** Сдвинули order +1 (NONE=1...PROFESSIONAL=7) — консистентно с Position
+   - **Файлы:** `database/education-levels.json`, Neo4j data
+
+3. **chart-pathfinders test** — industry=technology давал >10 кандидатов → facets
+   - **Fix:** Изменили на industry=energy (6 кандидатов → results)
+
+4. **searchPathfinders возвращал 0 вместо 9** (коммит `a3773c4`)
+   - **Root cause:** Наследование ВСЕХ полей adhocContext в goal делало filter слишком строгим
+   - **Fix:** Goal = только LLM extraction, убрано `inheritedGoalFields`
+   - **Улучшен `prompts.ts`:** showing_goal структура ✅ SPECIFIED / ⚪ NOT SPECIFIED
+
+### Результаты batch тестов
+
+| Batch | Результат |
+|-------|-----------|
+| cold-start-happy-path | ✅ 4/4 |
+| cold-start-clarification-flow | ✅ 7/7 |
+| cold-start-normalization | ✅ 4/4 |
+| cold-start-revert-field | ✅ 5/5 |
+| cold-start-multi-context | ✅ 5/5 |
+| mvp-position-normalization | ✅ 5/5 |
+| mvp-implicit-extraction | ✅ 5/5 |
+| mvp-skills-domains | ✅ 5/5 |
+| onboarding-help-question | ✅ 1/1 |
+| chart-pathfinders | ✅ 6/6 |
+| chart-url-generation | ✅ 6/6 |
+| explore-facets-fallback | ✅ 6/6 |
+
+### Коммиты
+
+| Hash | Описание |
+|------|----------|
+| `a3773c4` | fix(search): remove goal field inheritance, fix pathfinders 0 results |
+
+---
+
+## Итоги сессии (все фазы 1-11)
+
+| Область | Статус |
+|---------|--------|
+| FEAT-051 | ✅ DONE |
+| Cold-start batch тесты | ✅ 9/9 |
+| Search-graph batch тесты | ✅ 3/3 (chart + explore) |
+| Intent classification | ✅ Семантика |
+| Confirmation classification | ✅ Усилено для кратких ответов |
+| Goal inheritance | ✅ Убрано (было причиной 0 results) |
+
+**Все 12 batch тестов проходят. MVP готов.**
+
+---
+
 ## Prompt для продолжения после rewind
 
 ```
-Продолжаю работу над WayMates.
+Продолжаю сессию cold-start MVP.
 
-Контекст сессии: /home/alex/projects/WayMatesRemote/sessions/2025-12-29-cold-start-mvp-readiness.md
+Контекст: /home/alex/projects/WayMatesRemote/sessions/2025-12-29-cold-start-mvp-readiness.md
 
-Cold-start MVP readiness завершён (фазы 1-10):
-- Все batch тесты проходят (8/8)
-- FEAT-051 закрыт
-- Guard messages через LLM реализованы
-- Коммиты: 8604521, c5c2d67, b9aa8ab
+Статус (Фаза 11):
+- Все 12 batch тестов проходят
+- searchPathfinders fix закоммичен (a3773c4)
+- education-levels order консистентен с position (>=1)
+- CONFIRMATION_PROMPT усилен для кратких ответов
 
-Укажи следующую задачу.
+MVP batch покрытие готово. Укажи следующую задачу.
 ```
