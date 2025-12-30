@@ -322,6 +322,14 @@ CAREER MODEL (key dimensions):
 - INDUSTRY: Company's business sector — map to KNOWN INDUSTRIES
 - CREATION REASON: Why this context was created — map to KNOWN REASONS
 
+OPTIONAL FIELDS (include ONLY if user explicitly mentioned):
+═══════════════════════════════════════════════════
+- salaryExact: exact annual salary in USD (if user gives precise number like "120k" or "150000")
+- salaryMin/salaryMax: salary range in USD (if user gives range like "100-150k")
+  Note: Use EITHER exact OR range, not both. Convert to annual USD.
+- feedback: user's personal reflection on this position (max 200 chars)
+  Extract key insight, not verbatim quote. Focus on what made this role special or challenging.
+
 EXTRACTION RULES:
 - Extract ONLY explicitly mentioned information
 - Map user terms to KNOWN values when possible

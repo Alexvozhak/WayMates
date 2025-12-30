@@ -84,7 +84,13 @@ export const ASPECT_CONFIGS: Record<ChartableField, AspectConfig> = {
   salaryExact: {
     field: "salaryExact",
     labels: { ru: "Зарплата", en: "Salary" },
-    extractValue: (ctx: UserContext) => ctx.salaryExact ?? null,
+    extractValue: (ctx: UserContext) => {
+      if (ctx.salaryExact != null) return ctx.salaryExact;
+      if (ctx.salaryMin != null && ctx.salaryMax != null) {
+        return Math.round((ctx.salaryMin + ctx.salaryMax) / 2);
+      }
+      return ctx.salaryMin ?? ctx.salaryMax ?? null;
+    },
     getLevels: () => [], // numeric - no levels
   },
 };
