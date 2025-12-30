@@ -327,8 +327,9 @@ OPTIONAL FIELDS (include ONLY if user explicitly mentioned):
 - salaryExact: exact annual salary in USD (if user gives precise number like "120k" or "150000")
 - salaryMin/salaryMax: salary range in USD (if user gives range like "100-150k")
   Note: Use EITHER exact OR range, not both. Convert to annual USD.
-- feedback: user's personal reflection on this position (max 200 chars)
-  Extract key insight, not verbatim quote. Focus on what made this role special or challenging.
+- feedback: user's insight about this position — satisfaction, difficulty, recommendation (max 200 chars)
+  Extract ONLY if genuinely useful for others deciding on similar path. Normalize to insight.
+  If low value or generic → return null.
 
 EXTRACTION RULES:
 - Extract ONLY explicitly mentioned information

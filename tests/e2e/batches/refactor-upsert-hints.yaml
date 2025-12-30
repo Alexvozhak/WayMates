@@ -1,0 +1,39 @@
+name: refactor-upsert-hints
+description: |
+  Refactor: upsert/update-context hints injection + null filtering
+  Коммит: 9d690e5
+  Проверяем: LLM видит словари (hints), null не перезаписывает существующие поля
+locale: ru
+
+steps:
+  # === Подготовка: создаём профиль через cold-start ===
+  - message: |
+      расскажу карьеру: работаю senior backend developer в финтехе,
+      python, postgresql, docker. живу в США, гражданин России.
+      это вся история.
+    expect:
+      phase: awaiting_plan_confirmation
+
+  - message: да
+    expect:
+      phase: awaiting_context_confirmation
+
+  - message: всё верно
+    expect:
+      phase: awaiting_final_confirmation
+
+  - message: сохранить
+    expect:
+      phase: saved
+
+  # === Test: update-context partial update ===
+  # Добавляем industry без потери существующих полей
+  - message: хочу обновить профиль - добавь что я работаю в healthcare
+    expect:
+      phase: update_context_saved
+      check:
+        # industry должен обновиться
+        # position, role, skills НЕ должны стать null
+        - updatedContext.industry == "healthcare"
+        - updatedContext.position != null
+        - updatedContext.skills != null

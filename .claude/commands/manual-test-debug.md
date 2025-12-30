@@ -155,6 +155,15 @@ docker logs waymates-facade-test --tail 30 | grep -E "intent|reasoning"
 3. Согласовать fix с пользователем
 4. Реализовать → `npm run facade:rebuild` → проверить
 
+### 2.1 Batch тесты
+
+**Директория:** `tests/e2e/batches/*.yaml`
+
+```bash
+set -a && source .env.test && set +a
+OPENROUTER_API_KEY=<key> npx tsx poc/mcp-chat.ts --batch tests/e2e/batches/<name>.yaml
+```
+
 ### 3. Матрица тестирования
 
 После успешного теста + коммита — добавить строку в `tests_report.md` → "Матрица тестирования" (по графам: search-graph, cold-start-v2, orchestrator).

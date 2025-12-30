@@ -26,7 +26,8 @@
       "citizenships": [
         "US"
       ],
-      "role": "developer"
+      "role": "developer",
+      "feedback": "Первые 6 мес тонул в легаси. Спасло — нашёл ментора в компании. Не стесняйтесь просить помощи, это ускоряет рост в 2-3 раза."
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-badf138904c0",
@@ -54,7 +55,8 @@
       "citizenships": [
         "US"
       ],
-      "role": "developer"
+      "role": "developer",
+      "feedback": "Застрял на middle на год. Понял что нужен devops опыт для senior. Начал учить Docker по вечерам — это открыло двери."
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-bfdc78c3b1b2",
@@ -85,7 +87,8 @@
       "citizenships": [
         "US"
       ],
-      "role": "developer"
+      "role": "developer",
+      "feedback": "Переезд в SF стоил того — зарплата x2, но расходы x1.5. Нетворкинг здесь на другом уровне, двери открываются быстрее."
     },
     {
       "contextId": "ctx_019a6ea7-18c0-743c-ade8-c384e8c836e4",
@@ -117,7 +120,8 @@
       "citizenships": [
         "US"
       ],
-      "role": "developer"
+      "role": "developer",
+      "feedback": "Самое сложное в tech lead — делегировать. Первый квартал делал всё сам и выгорел. Научился доверять команде — стало легче и эффективнее."
     }
   ],
   "trails": []

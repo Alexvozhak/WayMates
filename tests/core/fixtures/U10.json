@@ -92,7 +92,8 @@
       "citizenships": [
         "RU"
       ],
-      "role": "developer"
+      "role": "developer",
+      "feedback": "challenging path but worth every step"
     }
   ],
   "trails": [
@@ -105,7 +106,8 @@
       "totalDurationWeeks": 8,
       "courseName": "TypeScript Fundamentals",
       "ratingCourse": 4,
-      "ratingPlatform": 5
+      "ratingPlatform": 5,
+      "userFeedback": "Отличный старт в TS. Автор объясняет типы через реальные примеры. Единственное — устаревшие части про namespace, но core знания актуальны."
     },
     {
       "trailId": "trl_019a6ea7-18c0-743c-ade8-f00000000002",
@@ -116,7 +118,8 @@
       "totalDurationWeeks": 12,
       "courseName": "System Design Patterns",
       "ratingCourse": 5,
-      "ratingPlatform": 4
+      "ratingPlatform": 4,
+      "userFeedback": "Курс топовый для подготовки к system design интервью. Реальные кейсы от экс-FAANG инженеров. Стоит каждого потраченного часа."
     }
   ]
 }

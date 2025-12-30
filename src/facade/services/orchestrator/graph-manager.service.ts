@@ -21,9 +21,10 @@ type GraphInput = { type: GraphType; message: string; userId: UserId; intent: Gr
 const INTENT_TO_GRAPH: Record<GraphIntent, GraphType> = {
   startStory: "cold_start",
   startAdhoc: "search",
-  addContext: "upsert_context",
-  updateContext: "update_context",
-  addTrail: "upsert_trail",
+  // MVP: Disabled CRUD operations
+  // addContext: "upsert_context",
+  // updateContext: "update_context",
+  // addTrail: "upsert_trail",
   search: "search",
   setGoal: "search",
 };

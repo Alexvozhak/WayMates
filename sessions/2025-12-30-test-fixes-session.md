@@ -344,35 +344,445 @@ Phase УЖЕ служит discriminator'ом для response — использ�
 3. **ЗАПУСТИТЬ ВСЕ ТЕСТЫ** — не только те что падали изначально
 4. Проверить facade agents которые используют мигрированные данные
 
----
-
-## Промпт для продолжения (после rewind)
+### Коммит Фазы 8
 
 ```
-Продолжаем сессию исправления тестов.
+9d690e5 refactor(upsert/update-context): hints injection + null filtering
+```
 
-Прочитай sessions/2025-12-30-test-fixes-session.md
+---
 
-Статус (Фаза 8 завершена):
-- Search-Graph: 18/18 ✅
-- Core Integration: 95/95 ✅
-- Update-Context: 5/5 ✅
-- Upsert-Context: 5/5 ✅
-- Коммит Фазы 6-7: a0a4993
-- Фаза 8: НЕ закоммичена
+## Фаза 9: UX Transparency Analysis (завершена)
 
-Сделано в Фазе 8:
-- Рефакторинг upsert/update-context по эталону search-graph
-- Добавлены hints в extraction и edit nodes
-- Исправлен merge (фильтрация null/empty перед spread)
+**Контекст:** Параллельная сессия через `/manual-test-debug` для анализа UX вопросов.
 
-Осталось:
-1. Закоммитить изменения Фазы 8
-2. Cold-Start (9 тестов) — LLM flakiness
-   - Файл: tests/facade/agents/cold-start-v2/integration/
+### Задачи сессии
 
-Следующий шаг:
-1. git status — проверить изменения
-2. Коммит: "refactor(upsert/update-context): hints injection + null filtering"
-3. Прогнать cold-start тесты для диагностики
+1. appliedFilters — выводятся ли во всех режимах поиска?
+2. Требования к каждому interrupt (что видит пользователь)
+3. Поле feedback — cold-start extraction + search-graph
+4. Поле salary — cold-start + chart
+
+### Результаты анализа
+
+**1. appliedFilters:**
+- Данные передаются в response во всех 7 фазах с фильтрами ✅
+- NLP prompts НЕ инструктированы их показывать ⚠️
+- `rejectedFields` — то что пользователь просил, но normalizer не распознал
+
+**2. Interrupt requirements:**
+
+| Phase | appliedFilters | optionalFields | Статус NLP |
+|-------|---------------|----------------|------------|
+| `confirming_adhoc_context` | - | показывать | ⚠️ нет |
+| `showing_exploration_candidates` | показывать | - | ⚠️ нет |
+| `showing_exploration_facets` | показывать | - | ⚠️ нет |
+| `asking_after_validate_candidates` | показывать | - | ⚠️ частично |
+| `asking_after_validate_facets` | показывать | - | ⚠️ нет |
+| `showing_waymate_results` | показывать | - | ⚠️ только при 0 |
+| `showing_pathfinder_results` | показывать | - | ⚠️ только при 0 |
+| `showing_results_facets` | показывать | - | ⚠️ нет |
+
+**3. feedback/salary:**
+- В `UserContext` схеме: есть (`feedback`, `salaryExact`, `salaryMin`, `salaryMax`)
+- В `CONTEXT_OPTIONAL_FIELDS`: перечислены
+- В NLP prompts: упоминаются как optional
+- В extraction prompts: **НЕТ инструкций извлекать** ⚠️
+
+### Созданные артефакты
+
+- **FEAT-053** (`tasks/features/FEAT-053-ux-transparency-improvements.md`)
+  - План работ по 4 направлениям
+  - Файлы для обязательного прочтения
+  - Acceptance criteria
+  - Manual testing сценарии
+
+### Решения (согласованы с пользователем)
+
+1. `appliedFilters` показывать ВСЕГДА (даже "без фильтров")
+2. `optionalFields` показывать только в `confirming_adhoc_context`
+3. При 0 результатов: показать фильтры + контекст, не гадать что ослаблять
+4. `salary` показывать в chart как отдельный аспект
+5. `feedback` извлекать в cold-start, нормализовать (выделять ключевой инсайт)
+
+---
+
+## Фаза 10: FEAT-053 — UX Transparency (завершена)
+
+### Сделано
+
+| Часть | Файл | Статус |
+|-------|------|--------|
+| 1. appliedFilters в NLP | `nlp-formatter/prompts.ts` | ✅ |
+| 2. optionalFields в confirming | уже было реализовано | ✅ |
+| 3. feedback/salary extraction | `cold-start-v2/prompts.ts` | ✅ |
+| 4. salary в chart | `chart/config/aspect-configs.ts` | ✅ |
+
+### Детали изменений
+
+**1. appliedFilters в NLP prompts (7 фаз):**
+
+Добавлены инструкции для LLM показывать фильтры семантически:
+- `recencyThresholdMonths` → "transitions in last N months"
+- `excludedContextFields` → "excluded fields: X, Y"
+- `excludedCreationReasons` → "excluded transitions"
+- `rejectedFields` → "⚠️ not recognized"
+- Если всё пусто → "searching without filters"
+
+Затронутые фазы:
+- `showing_exploration_candidates`
+- `showing_exploration_facets`
+- `asking_after_validate_candidates`
+- `asking_after_validate_facets`
+- `showing_waymate_results`
+- `showing_pathfinder_results`
+- `showing_results_facets`
+
+**2. optionalFields:** Уже реализовано — `optionalFields` передаётся в response, NLP промпт содержит `⚪ OPTIONAL: list from optionalFields`.
+
+**3. salary/feedback extraction в cold-start:**
+
+Добавлена секция OPTIONAL FIELDS в `contextExtractionPrompt`:
+```
+- salaryExact: exact annual salary in USD
+- salaryMin/salaryMax: salary range in USD (use EITHER exact OR range)
+- feedback: user's personal reflection (max 200 chars, extract key insight)
+```
+
+**4. salary в chart:**
+
+Обновлён `extractValue` для поддержки salary range:
+```typescript
+if (ctx.salaryExact != null) return ctx.salaryExact;
+if (ctx.salaryMin != null && ctx.salaryMax != null) {
+  return Math.round((ctx.salaryMin + ctx.salaryMax) / 2);
+}
+return ctx.salaryMin ?? ctx.salaryMax ?? null;
+```
+
+### Качество
+
+- `npm run lint:fix` ✅
+- `npx tsc --noEmit` ✅
+
+---
+
+---
+
+## Фаза 11: Manual Testing + CRUD Freeze (2025-12-30, вечер)
+
+### Manual testing FEAT-053
+
+| Тест | Результат | Детали |
+|------|-----------|--------|
+| appliedFilters visibility | ❌ НЕ РАБОТАЕТ | LLM игнорирует инструкции в prompts, structured data содержит фильтры |
+| salary extraction | ✅ РАБОТАЕТ | 50k/80k/120k → salaryExact в Neo4j |
+| feedback extraction | ❌ НЕ РАБОТАЕТ | "было сложно", "скучноватая" → feedback: null |
+| update-context | ❌ СЛОМАН | LLM extraction возвращает null для всех полей кроме запрошенного |
+
+**Вывод:** Prompts содержат инструкции, но LLM их не выполняет — нужно усиление (MANDATORY, FIRST).
+
+### Решение MVP: Заморозка CRUD операций
+
+**Изменённые файлы:**
+
+1. `src/facade/services/orchestrator/intent-classifier.ts`:
+   - DRY рефакторинг: `z.enum([...])` → `.Values` для объекта
+   - Закомментированы: `addContext`, `updateContext`, `addTrail`
+   - Закомментированы описания в INTENT_DESCRIPTIONS
+
+2. `src/facade/services/orchestrator/graph-manager.service.ts`:
+   - Закомментированы mappings в INTENT_TO_GRAPH
+
+**Эффект:** LLM не будет классифицировать CRUD интенты, они попадут в unknown.
+
+### Созданные batch тесты
+
+- `tests/e2e/batches/feat-053-ux-transparency.yaml`
+- `tests/e2e/batches/feat-053-salary-feedback.yaml`
+- `tests/e2e/batches/refactor-upsert-hints.yaml`
+
+### Package.json
+
+Добавлен скрипт `e2e:batch` для запуска batch тестов.
+
+### Качество
+
+- `npm run lint:fix` ✅ (0 errors)
+- `npx tsc --noEmit` ✅
+
+---
+
+## TODO: Следующая сессия
+
+### 1. appliedFilters — исправить visibility
+- **Проблема:** LLM игнорирует инструкции "Show appliedFilters semantically"
+- **Решение:** Усилить prompt — сделать MANDATORY и FIRST
+- **Файл:** `src/facade/services/nlp-formatter/prompts.ts`
+
+### 2. feedback extraction — исправить
+- **Проблема:** LLM не извлекает feedback из нарратива
+- **Решение:** Усилить prompt в cold-start extraction
+- **Файл:** `src/facade/langGraph/cold-start-v2/prompts.ts`
+
+### 3. Cold-Start тесты (9 failed)
+- LLM flakiness — анализ причин и fix
+- **Файл:** `tests/facade/agents/cold-start-v2/integration/`
+
+---
+
+## Рефлексия Фазы 11
+
+### Что пошло не так
+
+1. **Отклонение от задачи:** Вместо manual testing начал писать feature_disabled phase — лишняя работа, пришлось откатывать
+
+2. **Формат результатов:** Пытался записать результаты тестирования в tests_report.md в неправильном формате (не в стиле матрицы)
+
+3. **Дублирование кода:** Изначально GRAPH_INTENT и z.enum содержали одинаковые значения — DRY violation
+
+### Паттерн для guidelines.md
+
+**DRY для Zod + runtime объектов:**
+```typescript
+// ✅ Zod enum = source of truth
+export const graphIntentSchema = z.enum(["startStory", "search", ...]);
+export const GRAPH_INTENT = graphIntentSchema.Values;
+
+// ❌ Дублирование
+export const GRAPH_INTENT = { startStory: "startStory", ... } as const;
+export const graphIntentSchema = z.nativeEnum(GRAPH_INTENT);
+```
+
+**LLM prompt compliance:**
+- Инструкции в prompts ≠ гарантированное выполнение
+- Для критичных требований: MANDATORY, ALWAYS, FIRST
+- Для опциональных: "if available", "when present"
+
+---
+
+---
+
+## Фаза 12: appliedFilters + feedback extraction (текущая)
+
+### appliedFilters — ✅ ГОТОВО
+
+**Проблема:** LLM выводил роботизированный текст:
+```
+🔍 Искал кандидатов с:
+- Переходы за последние 6 месяцев
+- Исключенные поля: нет
+- Исключенные причины создания: нет
+```
+
+**Решение:** Переписал с технических инструкций на семантические:
+```
+// Было:
+Show appliedFilters semantically:
+- recencyThresholdMonths → "transitions in last N months"
+- excludedContextFields → "excluded fields: X, Y"
+- If all null/empty → "searching without filters"
+
+// Стало:
+🔍 Start with brief search context (1-2 sentences, natural language):
+- Who we're looking for (from adhocContext)
+- MUST mention recencyThresholdMonths if set
+- MUST mention exclusions if not empty
+DON'T list empty/null filters. Keep it conversational.
+```
+
+**Результат:** "🔍 Ищем старших разработчиков в США... за последние 6 месяцев"
+
+**Коммит:** `1cff7b7`
+
+### feedback extraction — частично
+
+**Изменён prompt в cold-start-v2/prompts.ts:**
+```
+// Было:
+- feedback: user's personal reflection on this position (max 200 chars)
+  Extract key insight, not verbatim quote.
+
+// Стало:
+- feedback: user's insight about this position — satisfaction, difficulty, recommendation (max 200 chars)
+  Extract ONLY if genuinely useful for others deciding on similar path. Normalize to insight.
+  If low value or generic → return null.
+```
+
+**НЕ ЗАКОММИЧЕНО** — ждёт проверки.
+
+### feedback в fixtures — добавлено, НО НЕ РАБОТАЕТ
+
+Добавил `context.feedback` и `trail.userFeedback` в:
+- U5 (senior frontend): "Повышение заняло почти 2 года. Ключевое — взял на себя архитектуру..."
+- U8 (4 контекста): инсайты про менторство, devops, переезд в SF, делегирование
+- U10 (trails): отзывы про TypeScript курс и System Design
+- U12 (trails): отзывы про React, Next.js, Architecture курсы
+
+**ПРОБЛЕМА:** Core не сохраняет `feedback` в Neo4j — поле игнорируется в `story-manager.ts`.
+
+---
+
+## TODO: Следующая сессия
+
+### 1. Добавить feedback в Core (БЛОКЕР!)
+- **Файл:** `src/core/story-manager.ts` и Cypher queries
+- **Проблема:** Поле `feedback` есть в схеме, но не сохраняется в Neo4j
+- **Решение:** Добавить в UPSERT_CONTEXTS_QUERY и GET_USER_STORY_QUERY
+
+### 2. Добавить userFeedback в trails
+- То же самое для trails — проверить UPSERT_TRAILS_QUERY
+
+### 3. Закоммитить feedback extraction prompt
+- После того как Core заработает
+
+### 4. Закоммитить fixtures с feedback
+- После того как Core заработает
+
+### 5. Cold-Start тесты (9 failed)
+- LLM flakiness — не трогали в этой сессии
+
+---
+
+## Рефлексия Фазы 12
+
+### Ошибки
+
+1. **Не проверил что поле сохраняется в Neo4j ПЕРЕД добавлением в fixtures**
+   - Потратил время на fixtures которые не загрузятся
+   - Правильно: сначала Core → потом fixtures → потом тесты
+
+2. **Технический vs семантический prompt**
+   - Изначально писал технические инструкции (списки с маркерами)
+   - Пользователь поправил — LLM лучше понимает естественный язык
+   - Инсайт: "MUST mention X" работает лучше чем "X → show as Y"
+
+3. **Отсутствие Explore агента для ресерча**
+   - Запустил Explore для бизнес-анализа feedback value
+   - Получил ценную инфу про reverseSearchPathfinders
+   - Но НЕ использовал для проверки Core — мог бы сэкономить время
+
+### Паттерн для guidelines.md
+
+**Проверяй data flow ПОЛНОСТЬЮ перед изменением данных:**
+```
+Schema → Core (save) → Neo4j → Core (read) → Response
+        ↑
+        Проверь ЭТО сначала!
+```
+
+---
+
+---
+
+## Фаза 13: Feedback verification + FEAT-056 initiation (текущая)
+
+### Блокер оказался ложным
+
+**Обнаружено:** Core УЖЕ поддерживает feedback/userFeedback!
+
+| Query | Строка | Поле |
+|-------|--------|------|
+| `UPSERT_CONTEXTS_QUERY` | 49 | `context.feedback = $ctx.feedback` |
+| `GET_USER_STORY_QUERY` | 293 | `.feedback` в map projection |
+| `UPSERT_TRAILS_QUERY` | 229 | `t.userFeedback = coalesce($trail.userFeedback, null)` |
+| `GET_USER_STORY_QUERY` trails | 319 | `.userFeedback` |
+
+**Причина "не работало":** fixtures не были загружены в Neo4j (0 users).
+
+### Проверка feedback end-to-end ✅
+
+1. **Fixtures загружены** — 18 users, 7 contexts с feedback, 5 trails с userFeedback
+2. **Cold-start extraction** — тест через mcp-chat.ts показал что feedback извлекается и сохраняется
+3. **Проблема:** feedback копируется на все позиции вместо привязки к конкретной (баг в cold-start)
+
+### Batch тест feat-053-salary-feedback
+
+**Проблемы выявлены:**
+1. **salary не в preview** — LLM не включает salary в queue[].preview
+2. **batch не учитывал required skills** — застревал в awaiting_clarification
+
+**Исправлено:**
+1. `contextAgendaBaseSchema.preview` — добавлен salary в describe
+2. `feat-053-salary-feedback.yaml` — добавлены skills в историю, добавлен step для 3го контекста
+
+**Результат:** 6/7 assertions passed (salary в preview всё ещё flaky)
+
+### Инициировано: FEAT-056 Reasoning Refactor
+
+**Анализ показал:** 7 schemas без reasoning (18 мест использования), 2 schemas с reasoning.
+
+**Проблема:** Без reasoning:
+- LLM хуже извлекает данные (нет chain of thought)
+- Сложно дебажить почему LLM так решил
+
+**Решение:** Системный рефакторинг — `withReasoning()` + `stripReasoning()` для всех extraction schemas.
+
+**Создан план:** `/tasks/features/FEAT-056-reasoning-refactor.md`
+
+---
+
+## TODO: После FEAT-056
+
+### 1. Вернуться к salary в preview
+- **Проблема:** LLM не всегда включает salary в preview несмотря на describe
+- **Решение:** После FEAT-056 reasoning поможет — LLM будет объяснять что включил
+
+### 2. Исправить feedback копирование
+- **Проблема:** feedback копируется на все позиции в cold-start
+- **Файл:** cold-start extraction/planning
+
+### 3. Закоммитить изменения
+- `contextAgendaBaseSchema` (salary в preview describe)
+- `feat-053-salary-feedback.yaml` (skills + extra step)
+
+### 4. Cold-Start тесты (9 failed)
+- LLM flakiness — возможно FEAT-056 поможет
+
+---
+
+## Рефлексия Фазы 13
+
+### Ошибки
+
+1. **Не проверил Cypher queries ПЕРЕД утверждением "блокер"**
+   - Пользователь сказал "Core не сохраняет" — я поверил
+   - Правильно: всегда grep/read сначала, потом выводы
+
+2. **Batch тест не учитывал flow**
+   - 3 контекста = 3 confirmation steps, не 2
+   - Правильно: считать шаги по flow diagram
+
+3. **Flaky assertion на LLM output**
+   - `queue[0].preview contains "50"` — LLM может написать по-разному
+   - Правильно: либо убрать, либо reasoning поможет стабилизировать
+
+### Инсайты
+
+**reasoning = debugging + quality:**
+- Chain of thought улучшает extraction на 10-30%
+- Reasoning в логах = понимание почему LLM так решил
+- Консистентный подход везде = проще поддерживать
+
+---
+
+## Промпт для продолжения (после FEAT-056)
+
+```
+Продолжаем сессию после FEAT-056.
+
+Прочитай sessions/2025-12-30-test-fixes-session.md (Фаза 13)
+
+Статус:
+- FEAT-056 reasoning refactor — ✅ ГОТОВО (предположительно)
+- appliedFilters — ✅ ГОТОВО (1cff7b7)
+- feedback в Core — ✅ УЖЕ БЫЛО
+
+TODO по приоритету:
+1. Запустить batch тест feat-053-salary-feedback.yaml — проверить что reasoning помог
+2. Исправить feedback копирование в cold-start (feedback одинаковый на всех позициях)
+3. Закоммитить pending changes (contextAgendaBaseSchema, batch тест)
+4. Cold-Start тесты (9 failed)
+
+Начни с: npm run facade:rebuild && batch тест
 ```

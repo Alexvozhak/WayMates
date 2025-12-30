@@ -133,7 +133,8 @@
         "RU",
         "DE"
       ],
-      "role": "developer"
+      "role": "developer",
+      "feedback": "Frontend to fullstack was scary at first. Key insight: backend is simpler than it looks if you know JS well. Now I can build anything end-to-end"
     }
   ],
   "trails": [
@@ -146,7 +147,8 @@
       "totalDurationWeeks": 4,
       "courseName": "React Complete Guide",
       "ratingCourse": 4,
-      "ratingPlatform": 3
+      "ratingPlatform": 3,
+      "userFeedback": "Бесплатный курс на YouTube, качество на уровне платных. Минус — нет структуры, пришлось самому составлять план. Для самоорганизованных — идеально."
     },
     {
       "trailId": "trl_019a6ea7-18c1-75bc-9276-f00000000002",
@@ -157,7 +159,8 @@
       "totalDurationWeeks": 6,
       "courseName": "Next.js Mastery",
       "ratingCourse": 5,
-      "ratingPlatform": 5
+      "ratingPlatform": 5,
+      "userFeedback": "Лучший курс по Next.js. После него сразу взяли на проект с SSR. Автор обновляет материал под новые версии — это редкость на Udemy."
     },
     {
       "trailId": "trl_019a6ea7-18c1-75bc-9276-f00000000003",
@@ -168,7 +171,8 @@
       "totalDurationWeeks": 10,
       "courseName": "Software Architecture Fundamentals",
       "ratingCourse": 5,
-      "ratingPlatform": 4
+      "ratingPlatform": 4,
+      "userFeedback": "Сертификат помог пройти HR-фильтр в крупной компании. Сам материал можно найти бесплатно, но структура и проекты стоят денег."
     }
   ]
 }

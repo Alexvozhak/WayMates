@@ -2,55 +2,34 @@ import { z } from "zod";
 
 import { getModel } from "../../langGraph/shared-tools/models.js";
 
-export const GRAPH_INTENT = {
-  startStory: "startStory",
-  startAdhoc: "startAdhoc",
-  setGoal: "setGoal",
-  addContext: "addContext",
-  updateContext: "updateContext",
-  addTrail: "addTrail",
-  search: "search",
-} as const;
-
-export const NON_GRAPH_INTENT = {
-  getStory: "getStory",
-  getGoal: "getGoal",
-  deleteGoal: "deleteGoal",
-  deleteContext: "deleteContext",
-  deleteTrail: "deleteTrail",
-  cancel: "cancel",
-  help: "help",
-  greeting: "greeting",
-  projectInvestor: "projectInvestor",
-  projectTech: "projectTech",
-  projectUser: "projectUser",
-  unknown: "unknown",
-} as const;
-
+// Zod enum = source of truth, .Values for runtime access
 export const graphIntentSchema = z.enum([
-  GRAPH_INTENT.startStory,
-  GRAPH_INTENT.startAdhoc,
-  GRAPH_INTENT.setGoal,
-  GRAPH_INTENT.addContext,
-  GRAPH_INTENT.updateContext,
-  GRAPH_INTENT.addTrail,
-  GRAPH_INTENT.search,
+  "startStory",
+  "startAdhoc",
+  "setGoal",
+  // MVP: Disabled CRUD operations — cold_start and search only
+  // "addContext",
+  // "updateContext",
+  // "addTrail",
+  "search",
 ]);
+export const GRAPH_INTENT = graphIntentSchema.Values;
 
 export const nonGraphIntentSchema = z.enum([
-  NON_GRAPH_INTENT.getStory,
-  NON_GRAPH_INTENT.getGoal,
-  NON_GRAPH_INTENT.deleteGoal,
-  NON_GRAPH_INTENT.deleteContext,
-  NON_GRAPH_INTENT.deleteTrail,
-  NON_GRAPH_INTENT.cancel,
-  NON_GRAPH_INTENT.help,
-  NON_GRAPH_INTENT.greeting,
-  NON_GRAPH_INTENT.projectInvestor,
-  NON_GRAPH_INTENT.projectTech,
-  NON_GRAPH_INTENT.projectUser,
-  NON_GRAPH_INTENT.unknown,
+  "getStory",
+  "getGoal",
+  "deleteGoal",
+  "deleteContext",
+  "deleteTrail",
+  "cancel",
+  "help",
+  "greeting",
+  "projectInvestor",
+  "projectTech",
+  "projectUser",
+  "unknown",
 ]);
+export const NON_GRAPH_INTENT = nonGraphIntentSchema.Values;
 
 export type GraphIntent = z.infer<typeof graphIntentSchema>;
 export type NonGraphIntent = z.infer<typeof nonGraphIntentSchema>;
@@ -65,9 +44,10 @@ const INTENT_DESCRIPTIONS: Record<UserIntent, string> = {
   startAdhoc:
     "explicitly asks for SEARCH or FIND similar people, wants quick lookup without saving — focus on FINDING candidates",
   setGoal: "wants to set career goal",
-  addContext: "wants to add new career position/context",
-  updateContext: "wants to update/edit current position details",
-  addTrail: "wants to add learning trail (course, certification, bootcamp)",
+  // MVP: Disabled CRUD operations
+  // addContext: "wants to add new career position/context",
+  // updateContext: "wants to update/edit current position details",
+  // addTrail: "wants to add learning trail (course, certification, bootcamp)",
   search: "wants to find similar careers",
   getStory: "wants to see saved career story",
   getGoal: "wants to see current goal",
