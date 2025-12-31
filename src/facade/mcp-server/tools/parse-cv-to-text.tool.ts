@@ -31,27 +31,40 @@ CRITICAL: This is an anonymous platform. DO NOT extract:
 - URLs to personal profiles (LinkedIn, GitHub, etc.)
 - Any personally identifiable information
 
+IMPORTANT: Skills MUST be distributed per position, NOT in a separate section.
+- Look at the "Skills" section and assign each skill to the position(s) where it was actually used
+- If a skill appears in job description bullets, include it in that position's skills
+- If skill is listed generally, assign it to the most recent position where it could have been used
+- DO NOT create a separate "Skills and Technologies" section at the end
+
 Include (ANONYMIZED):
-- Work experience: position title, industry type, company size, dates, skills used
+- Work experience: position title, industry type, company size, dates, skills used IN THAT ROLE
 - Education: degree level, field of study, year (NO university names)
-- Skills and technologies (technical skills, languages, tools)
 - Certifications and courses (skill names, platforms, NO personal details)
 - Languages spoken (if mentioned)
 - Location: country and city only
+- Citizenship (if mentioned)
 
 Format requirements:
-- Use clear markdown headers (# for main sections, ## for subsections)
+- Use clear markdown headers (## for each position)
 - For work experience: "## Position Title (Start Year - End Year)"
 - Under each position add: "Industry: [type], Company Size: [size], Location: [city, country]"
+- Under each position add: "Skills: [list of skills used in THIS specific role]"
 - Replace company names with descriptions like "Large Tech Company", "Mid-size Fintech", "Startup in E-commerce"
 - Keep original language (do not translate)
 
 Example format:
 ## Senior Backend Engineer (2020 - 2023)
 Industry: Fintech, Company Size: 50-200, Location: Moscow, Russia
+Skills: Python, PostgreSQL, Kubernetes, Docker
 - Developed high-load payment processing systems
-- Technologies: Python, PostgreSQL, Kubernetes
 - Led team of 5 developers
+
+## Junior Developer (2018 - 2020)
+Industry: E-commerce, Company Size: 10-50, Location: Moscow, Russia
+Skills: JavaScript, React, Node.js
+- Built frontend components
+- Maintained REST APIs
 
 Output ONLY the anonymized markdown, no meta-commentary.`;
 

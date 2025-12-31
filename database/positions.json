@@ -7,7 +7,7 @@
   "tech_lead": { "description": "tech lead", "order": 5 },
   "engineering_manager": { "description": "engineering manager", "order": 6 },
   "project_manager": { "description": "project manager", "order": 6 },
-  "senior_project_manager": { "description": "senior project manager", "order": 7 },
+  "technical_project_manager": { "description": "technical project manager", "order": 7 },
   "program_manager": { "description": "program manager", "order": 7 },
   "product_manager": { "description": "product manager", "order": 6 },
   "engineering_director": { "description": "engineering director", "order": 8 },

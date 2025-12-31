@@ -1,0 +1,91 @@
+{
+  "userId": "usr_019b0055-0000-7000-8000-000000000001",
+  "currentContextId": "ctx_019b0055-0000-7000-8000-000000000003",
+  "contexts": [
+    {
+      "contextId": "ctx_019b0055-0000-7000-8000-000000000001",
+      "previousContextId": null,
+      "nextContextId": "ctx_019b0055-0000-7000-8000-000000000002",
+      "createdAt": "2016-01-01T00:00:00Z",
+      "creationReason": ["started_working"],
+      "position": "middle",
+      "role": "developer",
+      "domains": ["backend", "mobile"],
+      "skills": ["c++", "python", "qt5", "android"],
+      "industry": "technology",
+      "companySize": "small",
+      "countryCode": "RU",
+      "cityName": "Rostov-on-Don",
+      "citizenships": ["RU"],
+      "birthYear": 1994,
+      "educationLevel": "BACHELOR",
+      "feedback": "7 years in embedded taught me patience and attention to detail. Warning: staying too long in one place can limit growth."
+    },
+    {
+      "contextId": "ctx_019b0055-0000-7000-8000-000000000002",
+      "previousContextId": "ctx_019b0055-0000-7000-8000-000000000001",
+      "nextContextId": "ctx_019b0055-0000-7000-8000-000000000003",
+      "createdAt": "2023-05-01T00:00:00Z",
+      "creationReason": ["company_changed", "position_changed"],
+      "position": "team lead",
+      "role": "developer",
+      "domains": ["backend", "security"],
+      "skills": ["typescript", "nestjs", "postgresql", "docker"],
+      "industry": "technology",
+      "companySize": "medium",
+      "countryCode": "RU",
+      "cityName": "Rostov-on-Don",
+      "citizenships": ["RU"],
+      "birthYear": 1994,
+      "educationLevel": "BACHELOR",
+      "feedback": "Leading a team of 7 was challenging but rewarding. Key lesson: hire slow, fire fast."
+    },
+    {
+      "contextId": "ctx_019b0055-0000-7000-8000-000000000003",
+      "previousContextId": "ctx_019b0055-0000-7000-8000-000000000002",
+      "nextContextId": null,
+      "createdAt": "2025-04-01T00:00:00Z",
+      "creationReason": ["company_changed", "position_changed", "role_changed"],
+      "position": "technical project manager",
+      "role": "manager",
+      "domains": ["management", "backend"],
+      "skills": ["typescript", "python", "go", "docker", "terraform", "prometheus"],
+      "industry": "fintech",
+      "companySize": "large",
+      "countryCode": "RU",
+      "cityName": "Rostov-on-Don",
+      "citizenships": ["RU"],
+      "birthYear": 1994,
+      "educationLevel": "BACHELOR",
+      "feedback": "Fintech opened doors to blockchain and web3. Remote work culture is amazing but requires discipline."
+    }
+  ],
+  "trails": [
+    {
+      "trailId": "trl_019b0055-0000-7000-8000-000000000001",
+      "fromContextId": "ctx_019b0055-0000-7000-8000-000000000001",
+      "toContextId": "ctx_019b0055-0000-7000-8000-000000000002",
+      "skill": "typescript",
+      "platform": "udemy",
+      "totalDurationWeeks": 8,
+      "schedule": {"sessionsPerWeek": 4, "hoursPerSession": 2},
+      "courseName": "Understanding TypeScript",
+      "ratingCourse": 5,
+      "ratingPlatform": 4,
+      "userFeedback": "Best TS course out there. Tip: wait for Udemy sales — never pay full price."
+    },
+    {
+      "trailId": "trl_019b0055-0000-7000-8000-000000000002",
+      "fromContextId": "ctx_019b0055-0000-7000-8000-000000000002",
+      "toContextId": "ctx_019b0055-0000-7000-8000-000000000003",
+      "skill": "terraform",
+      "platform": "pluralsight",
+      "totalDurationWeeks": 6,
+      "schedule": {"sessionsPerWeek": 3, "hoursPerSession": 2},
+      "courseName": "Terraform Deep Dive",
+      "ratingCourse": 4,
+      "ratingPlatform": 5,
+      "userFeedback": "Solid course for infrastructure as code. Company paid for subscription — ask HR!"
+    }
+  ]
+}

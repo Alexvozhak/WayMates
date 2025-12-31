@@ -286,10 +286,21 @@ async function runBatch(filePath: string): Promise<void> {
 
       if (step.expect) {
         const results = checkAssertions(response, step.expect);
+        let stepFailed = false;
         for (const result of results) {
           console.log(`      ← ${result.message}`);
           totalAssertions++;
-          if (result.passed) passedAssertions++;
+          if (result.passed) {
+            passedAssertions++;
+          } else {
+            stepFailed = true;
+          }
+        }
+
+        // Early exit on first failure
+        if (stepFailed) {
+          console.log(`\n      ⛔ Stopping batch: assertion failed`);
+          break;
         }
       }
 

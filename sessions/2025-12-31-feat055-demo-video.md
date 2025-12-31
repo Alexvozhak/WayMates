@@ -1,103 +1,146 @@
 # Session: FEAT-055 Demo Video
 
 **Дата:** 2025-12-31
-**Фокус:** Подготовка демо видео для pre-seed — фикстуры, DTW, batch тесты
+**Фокус:** Подготовка демо видео для pre-seed — фикстуры, DTW, batch тесты, CV парсинг
 
 ---
 
 ## Сделано
 
-### Phase 1-2: Фикстуры и DTW (ЗАВЕРШЕНО)
+### Phase 1-6.1: Завершено в предыдущих сессиях
 
-1. **Обновлён FEAT-055** (`tasks/features/FEAT-055-demo-video.md`):
-   - Добавлен полный контекст DTW (формулы, бизнес-интерпретация)
-   - Траектория Alex из CV (4 контекста)
-   - 10 фикстур с feedbacks (включая warnings/negative experience)
-   - Словари из `database/` для reference
-   - Зависимости файлов для чтения
+- 10 demo фикстур созданы
+- DTW unit test прошёл
+- demo-adhoc.yaml 9/9 ✅
+- setGoal routing bug fix
+- Dictionary/fixtures mismatch fixes
 
-2. **10 demo фикстур созданы** (`tests/core/fixtures/Demo-*.json`):
-   - 4 Pathfinders (IdealPathfinder, SprintPathfinder, AltRoutePathfinder, DirectPathfinder)
-   - 4 Waymates (IdealWaymate, SprintWaymate, AltWaymate, DirectWaymate)
-   - 2 ReversePathfinders (PMToFounder, DSToFounder)
-   - Каждый context с feedback (до 200 символов)
-   - Trails с userFeedback на каждом переходе
+### Phase 6.2: strictFields fix (ЗАВЕРШЕНО)
 
-3. **DTW unit test прошёл** (11/11 tests):
-   - Shape контраст ~0.3 между Ideal (0.839) и Alt (0.539)
-   - Метрики дают визуальное различие для Spider Chart
+**Проблема:** Pathfinder search возвращал 0 результатов для cold-start user.
 
-### Phase 3: Batch test adhoc (В ПРОЦЕССЕ)
+**Root cause:** `strictFields` по умолчанию включал ВСЕ поля (кроме skills).
 
-1. **Intent classifier исправлен** (`src/facade/services/orchestrator/intent-classifier.ts`):
-   - `startAdhoc` теперь семантический: "lightweight temporary search without creating persistent profile"
-   - Убраны точные ключевые слова — LLM понимает намерение
+**Fix:** Добавлен `DEFAULT_EXCLUDED_CONTEXT_FIELDS` в Facade.
 
-2. **Словари загружены** в Neo4j (roles, positions, domains, etc.)
+### Phase 6.3: Dictionary sync (ЗАВЕРШЕНО)
 
-3. **Кэш Redis** — была проблема с пустым кэшем roles, исправлено через:
-   - `docker exec waymates-redis-test redis-cli DEL "waymates:dict:role"`
-   - `docker restart waymates-facade-test`
+- Словари обновлены в Neo4j (positions, roles)
+- LLM извлекает: `technical project manager` / `manager` / `fintech`
 
-4. **demo-adhoc.yaml** — 6/8 assertions прошли, flow работает:
-   - `confirming_adhoc_context` → `showing_exploration_candidates` → `showing_goal` → `asking_search_mode` → `showing_pathfinder_results` → `advising`
+### Phase 6.4: Fixtures + Batch test (ТЕКУЩАЯ СЕССИЯ)
+
+**Сделано:**
+1. ✅ Обновлены ВСЕ Demo-*Pathfinder.json — matched context:
+   - position: `"technical project manager"`
+   - role: `"manager"`
+   - domains: `["management", "backend"]`
+   - industry: `"fintech"`
+   - countryCode: `"RU"`
+
+2. ✅ Обновлены ВСЕ Demo-*Waymate.json — текущий контекст аналогично
+
+3. ✅ Обновлён Demo-Alex.json — ctx3 с правильными position/role
+
+4. ✅ Обновлён `demo-cold-start.yaml` step 7:
+   ```yaml
+   message: "change domain devops to backend, add skills: docker, terraform, prometheus, ethers.js"
+   ```
+
+5. ✅ Импортированы фикстуры: `npx tsx scripts/import-demo-fixtures.ts`
+
+6. ✅ Проверено через Neo4j MCP:
+   - 4 Pathfinders найдены (matched + target context)
+   - 4 Waymates найдены (current context)
+   - Context domains: `["management", "backend"]` ✅
+   - Context domains (extracted): `["backend", "management"]` ✅
+
+7. ✅ Goal сохраняется правильно:
+   ```json
+   {"position":{"mode":"desired","values":["head of engineering"]}, "countries":{"values":["NL"]}, ...}
+   ```
+
+**Проблема (НЕ РЕШЕНА):**
+- Batch test: `chartUrl: null` — pathfinders не находятся
+- Goal сохранён, domains совпадают, но search возвращает 0
+
+---
+
+## Обнаруженные проблемы
+
+### Goal хранится как JSON blob, не properties
+
+**Проблема:** Goal.targetContext = JSON string. Нельзя искать через Cypher напрямую.
+
+**Моя ошибка:** Проверял `g.position`, `g.domains` — всегда null. На самом деле `g.targetContext` содержит JSON.
+
+**Создан:** `tasks/features/FEAT-057-goal-graph-storage.md` — план рефакторинга.
 
 ---
 
 ## Осталось сделать
 
-### Phase 3: Batch test adhoc (ПРОДОЛЖИТЬ)
-- [ ] Финализировать demo-adhoc.yaml — запустить полный прогон
-- [ ] Убедиться что Chart URL генерируется
+### Критично (для демо)
 
-### Phase 4: Batch test cold-start
-- [ ] Создать `demo-cold-start.yaml` с CV markdown из `KomarovAlex2025.md`
-- [ ] Протестировать что cold-start парсит 4 контекста
+- [ ] **Дебаг pathfinder search** — почему 0 результатов при правильных данных?
+  - Goal: `{"position": "head of engineering", "countries": ["NL"], "domains": ["ai"]}`
+  - Target в фикстурах: `position: "head of engineering"`, `countryCode: "NL"`, `domains: ["ai", "platform", "management"]`
+  - Возможно mismatch в domains (Goal=["ai"], fixtures=["ai","platform","management"])
 
-### Phase 5: Goal для Waymates
-- [ ] Решить как устанавливать Goal для waymates фикстур:
-  - Вариант A: Setup скрипт `scripts/setup-demo-goals.ts`
-  - Вариант B: В grammY тесте перед демо
-  - Вариант C: Cypher в init.cypher
+- [ ] Прогнать demo-cold-start.yaml — chartUrl не null
+- [ ] Убедиться что Advisor цитирует feedbacks
 
-### Phase 6: grammY e2e tests
-- [ ] Создать `tests/telegram-bot/e2e/demo-video-1.e2e.ts` (adhoc)
-- [ ] Создать `tests/telegram-bot/e2e/demo-video-2.e2e.ts` (PDF upload)
-- [ ] Отправка `Profile.pdf` через Telegram API
+### Phase 7: grammY e2e tests
+
+- [ ] `tests/telegram-bot/e2e/demo-video-1.e2e.ts` (adhoc)
+- [ ] `tests/telegram-bot/e2e/demo-video-2.e2e.ts` (PDF upload)
 
 ### Финал
+
 - [ ] Записать Video 1 (adhoc, ≤3.5 мин)
-- [ ] Записать Video 2 (cold-start + DTW, ≤5.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt (не блокирует демо)
+
+- [ ] FEAT-057: Goal как properties, не JSON blob
 
 ---
 
 ## Ключевые артефакты
 
-| Файл | Назначение |
-|------|------------|
-| `tasks/features/FEAT-055-demo-video.md` | Полный план с контекстом |
-| `tests/core/fixtures/Demo-*.json` | 10 demo фикстур |
-| `tests/e2e/batches/demo-adhoc.yaml` | Batch test adhoc flow |
-| `KomarovAlex2025.md` | CV markdown для cold-start |
-| `Profile.pdf` | CV PDF для grammY e2e |
+| Файл | Статус |
+|------|--------|
+| `tests/core/fixtures/Demo-*.json` | ✅ Обновлены |
+| `tests/e2e/batches/demo-cold-start.yaml` | ✅ Step 7 с clarification |
+| `tasks/features/FEAT-057-goal-graph-storage.md` | ✅ Создан |
 
 ---
 
 ## Проблемы и решения
 
-### 1. Intent classifier требовал точные слова
-**Проблема:** `startAdhoc` требовал "find" или "search" в сообщении.
-**Решение:** Изменил описание на семантическое без ключевых слов.
+### LLM извлекает devops, фикстуры требуют backend
 
-### 2. Role не извлекался из "backend developer"
-**Проблема:** LLM извлекал `role: "developer"`, но normalizer терял его.
-**Причина:** Redis кэш roles был пустой `[]` (загружен до импорта словарей).
-**Решение:** `redis-cli DEL "waymates:dict:role"` + restart facade.
+**Проблема:** LLM извлекает `domains: ["devops", "management"]` из CV Technical PM.
 
-### 3. Словари не импортировались
-**Проблема:** `db:test:init` не импортировал roles.
-**Причина:** Скрипт импорта падал молча.
-**Решение:** Запустить `scripts/import-roles.sh test` вручную.
+**Решение:** Добавить clarification в batch test:
+```yaml
+message: "change domain devops to backend, add skills: ..."
+```
+
+**НЕ ДЕЛАТЬ:** Менять фикстуры под LLM extraction. Фикстуры = бизнес-требования.
+
+### Goal.targetContext — JSON blob
+
+**Факт:** В Neo4j `(:Goal {targetContext: '{"position": ...}'})` — не отдельные properties.
+
+**Проверка:**
+```cypher
+-- Правильно:
+MATCH (g:Goal) RETURN g.targetContext
+
+-- Неправильно (всегда null):
+MATCH (g:Goal) RETURN g.position
+```
 
 ---
 
@@ -106,16 +149,21 @@
 ```
 Продолжаем FEAT-055 Demo Video.
 
-**Статус:** Phase 1-2 завершены (фикстуры + DTW тест), Phase 3 в процессе.
+ПРОЧИТАЙ ПОЛНОСТЬЮ: `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md`
 
-**Контекст сессии:** `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md`
+**Статус:** Phase 6.4. Фикстуры обновлены, импортированы. Batch test НЕ проходит.
 
-**Следующий шаг:** Финализировать demo-adhoc.yaml batch test (6/8 уже прошли).
+**Проблема:** pathfinders не находятся, chartUrl = null. Данные правильные:
+- 4 Pathfinders в Neo4j с matched context = ["management", "backend"]
+- Goal сохранён: position="head of engineering", countries=["NL"], domains=["ai"]
+- Target в фикстурах: position="head of engineering", countryCode="NL", domains=["ai","platform","management"]
 
-**Инфра:** Словари загружены, кэш исправлен. Facade пересобран.
+**Гипотеза:** domains mismatch между Goal (["ai"]) и target context (["ai","platform","management"])?
 
-Запусти batch test:
-```bash
-set -a && source .env.test && set +a && OPENROUTER_API_KEY=<key> timeout 180 npx tsx poc/mcp-chat.ts --batch tests/e2e/batches/demo-adhoc.yaml
-```
+**Следующий шаг:**
+1. Проверить Cypher query searchPathfinders — как он матчит Goal с target context
+2. Или расширить Goal domains при извлечении
+
+**Команда для batch test:**
+set -a && source .env.test && set +a && OPENROUTER_API_KEY=sk-or-v1-... timeout 300 npx tsx poc/mcp-chat.ts --session demo-cs-v5 --reset --batch tests/e2e/batches/demo-cold-start.yaml
 ```

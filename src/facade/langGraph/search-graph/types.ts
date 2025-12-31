@@ -3,6 +3,20 @@ import { z } from "zod";
 import { currentSearchParamsBaseSchema, targetSearchParamsBaseSchema } from "../../../shared/schemas.js";
 import { config } from "../../env.js";
 
+import type { ContextField } from "../../../shared/schemas.js";
+
+/**
+ * Default excluded fields for career search (waymates, pathfinders).
+ * These fields are not relevant for career trajectory matching.
+ */
+export const DEFAULT_EXCLUDED_CONTEXT_FIELDS: ContextField[] = [
+  "cityName",
+  "companySize",
+  "birthYear",
+  "educationLevel",
+  "languages",
+];
+
 export const targetSearchParamsWithFeedbackSchema = targetSearchParamsBaseSchema.extend({
   rejectedReasons: z.array(z.string()),
 });
@@ -25,7 +39,7 @@ export const DEFAULT_RECENCY_THRESHOLD_MONTHS = null; // No filter by default (e
 
 /** Default current search params (adhoc/byUser) */
 export const DEFAULT_CURRENT_SEARCH_PARAMS: CurrentSearchParamsWithFeedback = {
-  excludedContextFields: [],
+  excludedContextFields: [...DEFAULT_EXCLUDED_CONTEXT_FIELDS],
   excludedCreationReasons: [],
   recencyThresholdMonths: DEFAULT_RECENCY_THRESHOLD_MONTHS,
   limit: config.CANDIDATES_FETCH_LIMIT,

@@ -9,5 +9,6 @@
   "architect": "architect",
   "secops": "secops",
   "designer": "designer",
-  "dba": "dba"
+  "dba": "dba",
+  "manager": "manager"
 }

@@ -333,9 +333,24 @@ OPTIONAL FIELDS (include ONLY if user explicitly mentioned FOR THIS SPECIFIC POS
   Ignore feedback about other positions mentioned in conversation.
   If no specific feedback for this position → return null.
 
-EXTRACTION RULES:
-- Extract ONLY explicitly mentioned information
-- Map user terms to KNOWN values when possible
+═══════════════════════════════════════════════════
+SKILLS EXTRACTION (special rules):
+═══════════════════════════════════════════════════
+CVs often list skills separately from positions. Use semantic reasoning to match skills to THIS position.
+
+1. EXPLICIT: Extract skills directly mentioned in position description
+2. INFERRED: If CV has Summary/Tech stack, match skills to position by:
+   - Position title keywords (language/framework names in title)
+   - Industry/domain alignment (fintech → likely different stack than embedded)
+   - Chronological logic (older positions → older tech, newer → modern stack)
+   - Task descriptions (what tools would be needed for described work)
+
+Include both explicit and reasonably inferred skills — user reviews and corrects.
+
+═══════════════════════════════════════════════════
+GENERAL EXTRACTION RULES:
+═══════════════════════════════════════════════════
+- Map user terms to KNOWN dictionary values when possible
 - For creationReason, infer from context (first job = started_working, new company = company_changed, etc.)
 - Return null for fields not mentioned`;
 }

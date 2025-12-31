@@ -80,7 +80,7 @@ Recognized for driving technical initiatives, contributing to open-source projec
 
 ---
 
-### Software Engineer, Grade 2
+### Middle Software Engineer
 **Research Institute** — August 2016 – May 2023
 
 - **Power Supply System Control Unit:**

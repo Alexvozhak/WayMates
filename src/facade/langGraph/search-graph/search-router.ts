@@ -31,7 +31,12 @@ export const LOAD_CONTEXT_ROUTE_MAP = buildRouteMap([
   NODE.ask_adhoc_context,
   NODE.check_goal,
 ]);
-export const CHECK_GOAL_ROUTE_MAP = buildRouteMap([NODE.search_waymates, NODE.explore, NODE.load_existing_goal]);
+export const CHECK_GOAL_ROUTE_MAP = buildRouteMap([
+  NODE.search_waymates,
+  NODE.explore,
+  NODE.load_existing_goal,
+  NODE.extract_goal,
+]);
 export const APPLY_FILTERS_ROUTE_MAP = buildRouteMap([NODE.explore, NODE.search_waymates, NODE.search_pathfinders]);
 export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.parse_search_intent, NODE.show_results]);
 
@@ -198,6 +203,8 @@ export function routeAfterLoadContext(state: SearchStateType): NodeName {
 }
 
 export function routeAfterCheckGoal(state: SearchStateType): NodeName {
+  // If user explicitly wants to set goal, go to extract_goal
+  if (state.orchestratorIntent === "setGoal") return NODE.extract_goal;
   return state.storedGoal ? NODE.load_existing_goal : NODE.explore;
 }
 

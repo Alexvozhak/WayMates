@@ -4,7 +4,7 @@ locale: en
 
 steps:
   # Step 1: Casual adhoc intent + full context
-  - message: Hey, I'm just browsing, not ready to commit yet. I'm a senior backend developer, TypeScript and Python, 9 years in web3/infrastructure, based in Russia
+  - message: Hey, I'm just browsing, not ready to commit yet. I'm a senior backend developer, TypeScript and Python, 9 years experience, based in Russia
     expect:
       phase: confirming_adhoc_context
       adhocContext.position: senior
@@ -13,6 +13,7 @@ steps:
   - message: Show me similar people
     expect:
       phase: showing_exploration_candidates
+      chartUrl: "!null"
 
   # Step 3: Set goal
   - message: I want to become head of engineering in Netherlands, AI/ML startup, around 200k salary
@@ -28,6 +29,7 @@ steps:
   - message: Show me people who made this transition
     expect:
       phase: showing_pathfinder_results
+      chartUrl: "!null"
 
   # Step 6: Ask advisor
   - message: What skills did they all need for this transition?

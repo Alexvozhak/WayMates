@@ -4,6 +4,7 @@ import { AgentInvariantError } from "../../../errors.js";
 import { pathfinderToChartCandidate, safeGenerateChart } from "../chart-utils.js";
 import { computeFacets, shouldUseFacets } from "../facets.js";
 import { NODE, PHASE } from "../state.js";
+import { DEFAULT_EXCLUDED_CONTEXT_FIELDS } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -35,7 +36,10 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       userTrajectory: userTrajectory.length >= DTW_MIN_TRAJECTORY_LENGTH ? userTrajectory : undefined,
       referenceRecencyMonths: currentSearchParams?.recencyThresholdMonths ?? null,
       targetRecencyMonths: null,
-      excludedContextFields: currentSearchParams?.excludedContextFields ?? [],
+      excludedContextFields: [
+        ...DEFAULT_EXCLUDED_CONTEXT_FIELDS,
+        ...(currentSearchParams?.excludedContextFields ?? []),
+      ],
       excludedCreationReasons: currentSearchParams?.excludedCreationReasons ?? [],
       limit: config.CANDIDATES_FETCH_LIMIT,
       pathLimit: config.CANDIDATES_DISPLAY_LIMIT,
