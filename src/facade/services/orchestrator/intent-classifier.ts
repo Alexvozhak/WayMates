@@ -42,7 +42,7 @@ const INTENT_DESCRIPTIONS: Record<UserIntent, string> = {
   startStory:
     "wants to tell about themselves, share career background, create profile, save full career history, upload CV — focus on SHARING information, not on searching",
   startAdhoc:
-    "explicitly asks for SEARCH or FIND similar people, wants quick lookup without saving — focus on FINDING candidates",
+    "wants lightweight temporary search without creating persistent profile — one-time lookup, no commitment to save career data",
   setGoal: "wants to set career goal",
   // MVP: Disabled CRUD operations
   // addContext: "wants to add new career position/context",
