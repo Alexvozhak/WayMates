@@ -21,8 +21,8 @@ const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, No
   [PHASE.asking_after_validate_candidates, buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.asking_after_validate_facets,     buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.asking_search_mode,               buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_waymate_results,          buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_pathfinder_results,       buildRouteMap([NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_waymate_results,          buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.show_results, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_pathfinder_results,       buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.show_results, NODE.clarify_intent, NODE.cancel])],
 ]);
 
 // Static route maps (not phase-dependent)
@@ -38,7 +38,6 @@ export const CHECK_GOAL_ROUTE_MAP = buildRouteMap([
   NODE.extract_goal,
 ]);
 export const APPLY_FILTERS_ROUTE_MAP = buildRouteMap([NODE.explore, NODE.search_waymates, NODE.search_pathfinders]);
-export const ADVISOR_ROUTE_MAP = buildRouteMap([NODE.generate_answer, NODE.parse_search_intent, NODE.show_results]);
 
 // =============================================================================
 // ROUTES: маппинг intent → node (фабрика с state-dependent параметрами)
@@ -87,11 +86,14 @@ const SEARCH_MODE_ROUTES: RouteMap = {
   unknown: NODE.clarify_intent,
 };
 const RESULTS_ROUTES: RouteMap = {
+  searchWaymates: NODE.search_waymates,
+  searchPathfinders: NODE.search_pathfinders,
   filter: NODE.apply_filters,
   clarify: NODE.load_existing_goal,
   change: NODE.extract_goal,
   delete: NODE.delete_goal,
   ask: NODE.generate_answer,
+  done: NODE.show_results,
   cancel: NODE.cancel,
   unknown: NODE.clarify_intent,
 };
@@ -175,13 +177,10 @@ export const PARSE_INTENT_ALL_DESTINATIONS = {
 };
 
 export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
-  const { phase, previousPhase, clarifyRound, newPositionRound, searchUserIntent, storedGoal } = state;
+  const { phase, clarifyRound, newPositionRound, searchUserIntent, storedGoal } = state;
 
   if (phase === PHASE.failed) return NODE.cancel;
   if (!searchUserIntent) throw new AgentInvariantError("routeAfterParseSearchIntent", "searchUserIntent missing");
-
-  // Use previousPhase when returning from advisor
-  const effectivePhase = phase === PHASE.advising && previousPhase ? previousPhase : phase;
 
   const flags: RouteFlags = {
     canClarify: clarifyRound < MAX_CLARIFY_ROUNDS,
@@ -190,8 +189,8 @@ export function routeAfterParseSearchIntent(state: SearchStateType): NodeName {
   };
 
   const routes = createIntentRoutes(flags);
-  const phaseRoutes = routes[effectivePhase];
-  const defaultRoute = effectivePhase === PHASE.showing_goal ? NODE.set_goal : NODE.cancel;
+  const phaseRoutes = routes[phase];
+  const defaultRoute = phase === PHASE.showing_goal ? NODE.set_goal : NODE.cancel;
 
   return phaseRoutes?.[searchUserIntent] ?? defaultRoute;
 }
@@ -211,12 +210,6 @@ export function routeAfterCheckGoal(state: SearchStateType): NodeName {
 export function routeAfterApplyFilters(state: SearchStateType): NodeName {
   if (!state.storedGoal) return NODE.explore;
   return state.searchMode === "pathfinders" ? NODE.search_pathfinders : NODE.search_waymates;
-}
-
-export function routeAfterAdvisor(state: SearchStateType): NodeName {
-  if (state.advisorIntent === "ask") return NODE.generate_answer;
-  if (state.advisorIntent === "action") return NODE.parse_search_intent;
-  return NODE.show_results;
 }
 
 export function isTerminalPhase(phase: SearchPhase): boolean {

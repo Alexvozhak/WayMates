@@ -64,6 +64,7 @@ OPTIONAL MATCH (${contextVar})-[:USES_SKILL]->(${prefix}Skill:Skill)
 OPTIONAL MATCH (${contextVar})-[:IN_INDUSTRY]->(${prefix}Industry:Industry)
 OPTIONAL MATCH (${contextVar})-[:IN_CITY]->(${prefix}City:City)
 OPTIONAL MATCH (${contextVar})-[:IN_COUNTRY]->(${prefix}Country:Country)
+OPTIONAL MATCH (${contextVar})-[:CITIZEN_OF]->(${prefix}Citizenship:Country)
 OPTIONAL MATCH (${contextVar})-[:SPEAKS_FLUENT]->(${prefix}Language:Language)
 OPTIONAL MATCH (${contextVar})-[:HAS_EDUCATION_LEVEL]->(${prefix}EducationLevel:EducationLevel)
   `.trim();

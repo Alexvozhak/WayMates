@@ -5,6 +5,10 @@ import { Command } from "@langchain/langgraph";
 import { AgentInvariantError } from "../../../../../src/facade/errors.js";
 import { config } from "../../../../../src/facade/env.js";
 import { SearchGraph } from "../../../../../src/facade/langGraph/search-graph/search-graph.js";
+import {
+  DEFAULT_EXCLUDED_CONTEXT_FIELDS,
+  DEFAULT_RECENCY_THRESHOLD_MONTHS,
+} from "../../../../../src/facade/langGraph/search-graph/types.js";
 import { targetContextSchema } from "../../../../../src/shared/schemas.js";
 
 import type {
@@ -27,33 +31,26 @@ import type { UserIntent } from "../../../../../src/facade/services/orchestrator
 export const TEST_USER_ID: UserId = "usr_019a6ea7-18be-770d-85a1-ea515ab10d65";
 
 /**
- * Relaxed recency threshold for test fixtures.
- * Fixtures have contexts from 2022, so 12 months is too restrictive.
- */
-const TEST_RECENCY_THRESHOLD_MONTHS = 120;
-
-/**
- * Relaxed filters for test fixtures matching.
- * Excludes geo/personal fields that vary across fixtures (countryCode, cityName, birthYear, languages).
- * Allows matching on core professional fields (position, domains, industry, etc).
+ * Test filters using production defaults.
+ * Uses DEFAULT_EXCLUDED_CONTEXT_FIELDS and DEFAULT_RECENCY_THRESHOLD_MONTHS.
+ * Tests must match real behavior — no special exclusions.
  */
 export const RELAXED_FILTERS: CurrentSearchParamsWithFeedback = {
-  excludedContextFields: ["countryCode", "cityName", "birthYear", "languages"],
+  excludedContextFields: [...DEFAULT_EXCLUDED_CONTEXT_FIELDS],
   excludedCreationReasons: [],
-  recencyThresholdMonths: TEST_RECENCY_THRESHOLD_MONTHS,
+  recencyThresholdMonths: DEFAULT_RECENCY_THRESHOLD_MONTHS,
   limit: config.CANDIDATES_FETCH_LIMIT,
   pathLimit: config.CANDIDATES_DISPLAY_LIMIT,
   rejectedFields: [],
 };
 
 /**
- * Relaxed target search params for validate_goal.
- * Uses extended recency threshold for test fixtures (2022 data).
+ * Test target search params using production defaults.
  */
 export const RELAXED_TARGET_FILTERS: TargetSearchParamsWithFeedback = {
   targetContext: targetContextSchema.parse({}),
   excludedCreationReasons: [],
-  recencyThresholdMonths: TEST_RECENCY_THRESHOLD_MONTHS,
+  recencyThresholdMonths: DEFAULT_RECENCY_THRESHOLD_MONTHS,
   limit: config.CANDIDATES_FETCH_LIMIT,
   rejectedReasons: [],
 };

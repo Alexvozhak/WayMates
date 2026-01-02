@@ -64,6 +64,7 @@ export function buildWithCollect(contextVar: string, preserveVars: string[] = []
 WITH ${allVars},
      collect(DISTINCT ${prefix}WorkDomain.canonicalName) AS ${prefix}Domains,
      collect(DISTINCT ${prefix}Skill.canonicalName) AS ${prefix}Skills,
+     collect(DISTINCT ${prefix}Citizenship.name) AS ${prefix}Citizenships,
      collect(DISTINCT ${prefix}Language.code) AS ${prefix}Languages
   `.trim();
 }

@@ -65,8 +65,6 @@ export class Normalizer {
       this.filterToKnown("education_level", context.educationLevel),
     ]);
 
-    // Pass-through fields that don't need normalization (ISO codes: countryCode, languages)
-    // Filtered fields override pass-through values
     return this.removeNullishFields({
       ...context,
       role,
@@ -76,6 +74,8 @@ export class Normalizer {
       skills,
       domains,
       educationLevel,
+      countryCode: context.countryCode?.toUpperCase() ?? null,
+      citizenships: context.citizenships?.map((c) => c.toUpperCase()) ?? null,
     });
   }
 
@@ -90,7 +90,18 @@ export class Normalizer {
       this.normalizeOptionalTerm("education_level", context.educationLevel, userId),
     ]);
 
-    return { ...context, role, position, cityName, industry, skills, domains, educationLevel };
+    return {
+      ...context,
+      role,
+      position,
+      cityName,
+      industry,
+      skills,
+      domains,
+      educationLevel,
+      countryCode: context.countryCode.toUpperCase(),
+      citizenships: context.citizenships.map((c) => c.toUpperCase()),
+    };
   }
 
   async normalizeTargetContext(context: TargetContext, userId: UserId): Promise<TargetContext> {

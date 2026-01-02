@@ -1,7 +1,7 @@
 import { getModel } from "../../shared-tools/models.js";
 import { AdvisorContextBuilder } from "../advisor-context-builder.js";
 import { ADVISOR_SYSTEM_PROMPT } from "../prompts/advisor.js";
-import { NODE, PHASE } from "../state.js";
+import { NODE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -9,6 +9,7 @@ import type { SearchStateType } from "../state.js";
 /**
  * Generate answer node: creates advisor response based on search context.
  * Business logic only — no interrupt. Saves answer to state for show_answer.
+ * Phase stays unchanged (showing_*_results) — no separate advising phase.
  */
 export const generateAnswerNode = withLogging<SearchStateType>(NODE.generate_answer, async (state, _config, _deps) => {
   const question = state.advisorQuestion ?? state.userResponse;
@@ -38,12 +39,8 @@ export const generateAnswerNode = withLogging<SearchStateType>(NODE.generate_ans
 
   const answerText = typeof response.content === "string" ? response.content : String(response.content);
 
-  // Save previous phase only on first entry to advisor (not during Q&A loop)
-  const previousPhase = state.phase === PHASE.advising ? state.previousPhase : state.phase;
-
   return {
     currentAnswer: answerText,
-    phase: PHASE.advising,
-    previousPhase,
+    // Phase unchanged — stay in showing_*_results
   };
 });

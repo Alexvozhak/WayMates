@@ -54,7 +54,7 @@
       "companySize": "medium",
       "countryCode": "RU",
       "cityName": "Moscow",
-      "citizenships": ["DE"],
+      "citizenships": ["RU"],
       "birthYear": 1988,
       "educationLevel": "MASTER",
       "feedback": "Technical PM in Russian fintech taught stakeholder management. Warning: RU salaries cap at senior — relocation is inevitable for 200k+."
@@ -66,7 +66,7 @@
       "createdAt": "2025-03-01T00:00:00Z",
       "creationReason": ["position_changed", "role_changed", "location_changed"],
       "position": "head of engineering",
-      "role": "architect",
+      "role": "manager",
       "domains": ["ai", "platform", "management"],
       "skills": ["python", "typescript", "pytorch", "kubernetes", "terraform", "aws"],
       "industry": "technology",

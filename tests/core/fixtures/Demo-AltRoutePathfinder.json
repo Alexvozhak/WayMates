@@ -54,7 +54,7 @@
       "companySize": "large",
       "countryCode": "RU",
       "cityName": "Moscow",
-      "citizenships": ["UA"],
+      "citizenships": ["RU"],
       "birthYear": 1992,
       "educationLevel": "BACHELOR",
       "feedback": "Technical PM in fintech opened leadership doors. Warning: managing devs while still coding is exhausting. Pick one focus."
@@ -66,7 +66,7 @@
       "createdAt": "2025-06-01T00:00:00Z",
       "creationReason": ["position_changed", "location_changed"],
       "position": "head of engineering",
-      "role": "architect",
+      "role": "manager",
       "domains": ["ai", "platform", "management"],
       "skills": ["typescript", "python", "go", "kubernetes", "terraform", "pytorch", "aws"],
       "industry": "technology",

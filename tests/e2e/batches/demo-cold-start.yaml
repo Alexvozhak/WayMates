@@ -17,7 +17,7 @@ steps:
       - Programmed in TypeScript, Python, Vyper, Go
 
       ## Backend Team Lead (2023 - 2025)
-      Industry: Security Systems, Company Size: Mid-size, Location: Rostov-on-Don, Russia
+      Industry: Security, Company Size: Mid-size, Location: Rostov-on-Don, Russia
       - Led team of 7 developers
       - Increased team velocity by 30%
       - Achieved 2x growth of technical teams
@@ -30,7 +30,7 @@ steps:
       - Established testing processes and QA team collaboration
 
       ## Software Engineer (C++/Embedded) (2016 - 2023)
-      Industry: Research & Development, Company Size: Small, Location: Rostov-on-Don, Russia
+      Industry: Research, Company Size: Small, Location: Rostov-on-Don, Russia
       - Designed and developed comprehensive power management systems for UAV applications
       - STM32 microcontroller programming
       - Qt5 GUI development
@@ -110,12 +110,28 @@ steps:
       phase: showing_pathfinder_results
       chartUrl: "!null"
 
-  # Step 13: Ask advisor - who matches best
+  # Step 13: Ask advisor - who matches best (answer in answerText, phase stays)
   - message: Which of these candidates matches my trajectory best and why?
     expect:
-      phase: advising
+      phase: showing_pathfinder_results
+      answerText: "!null"
 
-  # Step 14: Ask advisor - recommendations from all
+  # Step 14: Ask advisor - recommendations from all (answer in answerText, phase stays)
   - message: What key recommendations can you give me based on all found pathfinders?
     expect:
-      phase: advising
+      phase: showing_pathfinder_results
+      answerText: "!null"
+
+  # === Part 3: Search waymates ===
+
+  # Step 15: Search waymates
+  - message: Show me waymates
+    expect:
+      phase: showing_waymate_results
+      chartUrl: "!null"
+
+  # Step 16: Ask advisor about waymates (answer in answerText, phase stays)
+  - message: What do these candidates have in common?
+    expect:
+      phase: showing_waymate_results
+      answerText: "!null"

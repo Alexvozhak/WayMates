@@ -105,6 +105,23 @@ export default defineConfig(() => {
             env: loadEnv("test", process.cwd(), ""),
           },
         },
+        // Demo fixtures tests (loads Demo-*.json, isolated from U1-U18)
+        {
+          test: {
+            name: "integration-demo-fixtures",
+            include: ["tests/core/integration/search-manager/demo-fixtures.integration.ts"],
+            pool: "threads",
+            poolOptions: {
+              threads: {
+                isolate: false,
+                singleThread: true,
+              },
+            },
+            setupFiles: ["./tests/core/helpers/drivers/demo-fixtures-driver.ts"],
+            testTimeout: INTEGRATION_TEST_TIMEOUT,
+            env: loadEnv("test", process.cwd(), ""),
+          },
+        },
         // Goals CRUD tests (sequential, isolated data reload per test)
         {
           test: {

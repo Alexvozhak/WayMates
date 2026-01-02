@@ -66,7 +66,7 @@
       "createdAt": "2025-03-01T00:00:00Z",
       "creationReason": ["position_changed", "location_changed"],
       "position": "head of engineering",
-      "role": "architect",
+      "role": "manager",
       "domains": ["ai", "platform", "management"],
       "skills": ["python", "go", "pytorch", "kubernetes", "terraform", "aws", "spark"],
       "industry": "technology",

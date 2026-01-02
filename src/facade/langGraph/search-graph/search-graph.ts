@@ -18,7 +18,6 @@ import { extractGoalNode } from "./nodes/extract-goal.js";
 import { generateAnswerNode } from "./nodes/generate-answer.js";
 import { loadContextNode } from "./nodes/load-context.js";
 import { loadExistingGoalNode } from "./nodes/load-existing-goal.js";
-import { parseAdvisorIntentNode } from "./nodes/parse-advisor-intent.js";
 import { parseSearchIntentNode } from "./nodes/parse-search-intent.js";
 import { searchPathfindersNode } from "./nodes/search-pathfinders.js";
 import { searchWaymatesNode } from "./nodes/search-waymates.js";
@@ -30,12 +29,10 @@ import { showResultsNode } from "./nodes/show-results.js";
 import { validateGoalNode } from "./nodes/validate-goal.js";
 import { responseBuilders } from "./response-builders.js";
 import {
-  ADVISOR_ROUTE_MAP,
   APPLY_FILTERS_ROUTE_MAP,
   CHECK_GOAL_ROUTE_MAP,
   LOAD_CONTEXT_ROUTE_MAP,
   PARSE_INTENT_ALL_DESTINATIONS,
-  routeAfterAdvisor,
   routeAfterApplyFilters,
   routeAfterCheckGoal,
   routeAfterLoadContext,
@@ -83,7 +80,6 @@ export function createGraphBuilder() {
     .addNode(NODE.apply_filters, applyFiltersNode)
     .addNode(NODE.generate_answer, generateAnswerNode)
     .addNode(NODE.show_answer, showAnswerNode)
-    .addNode(NODE.parse_advisor_intent, parseAdvisorIntentNode)
     .addNode(NODE.cancel, cancelNode)
 
     .addEdge(START, NODE.load_context)
@@ -115,10 +111,9 @@ export function createGraphBuilder() {
     .addEdge(NODE.delete_goal, NODE.explore)
     .addConditionalEdges(NODE.apply_filters, routeAfterApplyFilters, APPLY_FILTERS_ROUTE_MAP)
 
-    // Advisor flow: generate_answer → show_answer → parse_advisor_intent → (ask: loop, done: END)
+    // Advisor flow: generate_answer → show_answer → parse_search_intent (unified routing)
     .addEdge(NODE.generate_answer, NODE.show_answer)
-    .addEdge(NODE.show_answer, NODE.parse_advisor_intent)
-    .addConditionalEdges(NODE.parse_advisor_intent, routeAfterAdvisor, ADVISOR_ROUTE_MAP)
+    .addEdge(NODE.show_answer, NODE.parse_search_intent)
 
     .addEdge(NODE.cancel, END);
 }

@@ -87,5 +87,7 @@ const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   Semantic: add industry, specify skill, tighten search, correction about self`,
   cancel: `User wants to STOP the flow
   Semantic: stop, exit, abort, cancel`,
+  done: `User is SATISFIED and finished asking questions
+  Semantic: thanks, that's all, enough, satisfied, finished`,
   unknown: `Unclear or unrelated`,
 };

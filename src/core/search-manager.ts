@@ -69,10 +69,9 @@ export class SearchManager {
     const isProfileMode = !params.referenceContext;
 
     // Step 1: Search candidates (without path)
-    const candidates = await this.searchByContext(
-      { ...params, referenceContext },
-      isProfileMode, // filterByCurrentContext only in profile mode
-    );
+    // Always search ALL contexts of candidates (filterByCurrentContext = false)
+    // We want to find people who HAD similar context, not only those who CURRENTLY have it
+    const candidates = await this.searchByContext({ ...params, referenceContext }, false);
 
     if (candidates.length === 0) {
       return [];

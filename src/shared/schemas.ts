@@ -508,6 +508,7 @@ export const contextFieldSchema = z.enum(
     "skills",
     "industry",
     "countryCode",
+    "citizenships",
     "cityName",
     "companySize",
     "birthYear",
@@ -1424,6 +1425,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
+    answerText: z.string().nullable(),
   }),
   z.object({
     phase: z.literal("showing_pathfinder_results"),
@@ -1432,6 +1434,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
+    answerText: z.string().nullable(),
   }),
   z.object({
     phase: z.literal("showing_results_facets"),
@@ -1439,10 +1442,6 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
     goal: goalSchema.nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
-  }),
-  z.object({
-    phase: z.literal("advising"),
-    answerText: z.string(),
   }),
   z.object({ phase: z.literal("cancelled") }),
   z.object({ phase: z.literal("failed") }),

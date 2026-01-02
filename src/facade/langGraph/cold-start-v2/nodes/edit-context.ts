@@ -48,7 +48,7 @@ async function addRevertedTerms(
 
 export const editContextNode = withLogging<ColdStartStateType>(
   NODE.edit_context,
-  async (state, _config, { coreClient }) => {
+  async (state, _config, { coreClient, normalizerService }) => {
     const { collectedContexts, messages, parsedDecision, currentContextIndex, normalizations, userId } = state;
 
     const currentContext = collectedContexts[currentContextIndex];
@@ -85,9 +85,11 @@ export const editContextNode = withLogging<ColdStartStateType>(
       return { phase: PHASE.failed };
     }
 
-    await addRevertedTerms(existingContext, parseResult.data, normalizations, userId, coreClient);
+    const normalizedContext = await normalizerService.normalizeFullContext(parseResult.data, userId);
 
-    const updatedContexts = replaceContext(collectedContexts, parseResult.data);
+    await addRevertedTerms(existingContext, normalizedContext, normalizations, userId, coreClient);
+
+    const updatedContexts = replaceContext(collectedContexts, normalizedContext);
 
     return {
       collectedContexts: updatedContexts,

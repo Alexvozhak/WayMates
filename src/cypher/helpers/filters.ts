@@ -27,7 +27,7 @@ const TARGET_FILTER_CONFIG: Record<keyof TargetContext, { path: string; type: Co
   languages: { path: "matchedLanguages", type: "multi" },
   industries: { path: "matchedIndustry.canonicalName", type: "single" },
   cities: { path: "matchedCity.canonicalName", type: "single" },
-  citizenships: { path: "matchedContext.citizenships", type: "multi" },
+  citizenships: { path: "matchedCitizenships", type: "multi" },
   educationLevels: { path: "matchedEducationLevel.canonicalName", type: "single" },
 };
 
@@ -102,6 +102,11 @@ const STRICT_CONDITION_GENERATORS: Record<ContextField, (prefix: string, searchi
   countryCode: (prefix, searchingVar) => `CASE
     WHEN ${searchingVar}.countryCode IS NULL THEN true
     ELSE ${prefix}Country.name = ${searchingVar}.countryCode
+  END`,
+
+  citizenships: (prefix, searchingVar) => `CASE
+    WHEN ${searchingVar}.citizenships IS NULL THEN true
+    ELSE all(cit IN ${searchingVar}.citizenships WHERE cit IN ${prefix}Citizenships)
   END`,
 
   cityName: (prefix, searchingVar) => `CASE

@@ -11,7 +11,7 @@
  * Batch mode:
  *   npx tsx poc/mcp-chat.ts --batch tests/e2e/batches/search-adhoc.yaml
  *
- * Session хранится в /tmp/mcp-chat-session-{name}.json
+ * Session хранится в .claude/sessions/mcp-chat-{name}.json (сохраняется между reboot)
  */
 
 import fs from "node:fs";
@@ -100,7 +100,9 @@ function parseArgs(args: string[]): ParsedArgs {
 // === Session Management ===
 
 function getSessionFile(sessionName: string): string {
-  return `/tmp/mcp-chat-session-${sessionName}.json`;
+  const dir = `${process.cwd()}/.claude/sessions`;
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return `${dir}/mcp-chat-${sessionName}.json`;
 }
 
 async function loadOrCreateSession(

@@ -3,6 +3,8 @@
 // Extract structured data from user messages (adhoc context, goal)
 // ============================================================================
 
+import { DECOMPOSITION_RULES } from "../../shared/prompts.js";
+
 import type { AdhocContextBase, TargetContext } from "../../../../shared/schemas.js";
 
 // ============================================================================
@@ -18,7 +20,7 @@ export function buildAdhocExtractionPrompt(hints: string): string {
 ${hints}
 Fields to extract (map to KNOWN values from hints):
 ${ADHOC_FIELDS_SECTION}
-
+${DECOMPOSITION_RULES}
 RULES:
 1. Extract ONLY from self-descriptions
 2. Commands and requests are NOT self-descriptions → return null for ALL fields
@@ -26,9 +28,7 @@ RULES:
 4. NEVER return string representations of null like "null", "/null", "NULL" — use JSON null
 5. If field not explicitly stated → null
 6. domains = TECHNICAL specialization, industry = BUSINESS sector — these are different concepts, never mix
-
-POSITION: Extract ONLY if user explicitly states their seniority level.
-Do NOT infer from years of experience — years ≠ seniority.`;
+7. Do NOT infer position from years of experience — years ≠ seniority`;
 }
 
 /**
@@ -104,9 +104,9 @@ MERGE RULES:
 // All fields from AdhocContextBase — maximum context capture
 // Type-safe: TypeScript enforces all AdhocContextBase keys are present
 const ADHOC_FIELD_DESCRIPTIONS: Record<keyof AdhocContextBase, string> = {
-  position: "seniority level (junior/middle/senior) — map to KNOWN POSITIONS",
-  role: "profession type (WHAT you do) — map to KNOWN ROLES",
-  domains: "technical specialization area (answers 'what kind of developer/engineer?') — map to KNOWN DOMAINS",
+  position: "job title or seniority — map to KNOWN POSITIONS",
+  role: "profession function — map to KNOWN ROLES",
+  domains: "technical area — map to KNOWN DOMAINS",
   skills: "specific technologies or tools — map to KNOWN SKILLS",
   industry: "business sector — map to KNOWN INDUSTRIES",
   companySize: "company size category (startup, SMB, enterprise)",

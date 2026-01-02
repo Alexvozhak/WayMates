@@ -40,7 +40,6 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
 
   [PHASE.showing_exploration_candidates]: (state) => ({
     phase: PHASE.showing_exploration_candidates,
-    previousPhase: state.previousPhase,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
     candidates: state.explorationResults,
@@ -49,7 +48,6 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
 
   [PHASE.showing_exploration_facets]: (state) => ({
     phase: PHASE.showing_exploration_facets,
-    previousPhase: state.previousPhase,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
     facets: state.facets!,
@@ -121,6 +119,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     chartUrl: state.chartUrl,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
+    answerText: state.currentAnswer,
   }),
 
   [PHASE.showing_pathfinder_results]: (state) => ({
@@ -130,6 +129,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     chartUrl: state.chartUrl,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
+    answerText: state.currentAnswer,
   }),
 
   [PHASE.showing_results_facets]: (state) => ({
@@ -138,11 +138,6 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
     facets: state.facets!,
-  }),
-
-  [PHASE.advising]: (state) => ({
-    phase: PHASE.advising,
-    answerText: state.currentAnswer ?? "",
   }),
 
   [PHASE.cancelled]: () => ({

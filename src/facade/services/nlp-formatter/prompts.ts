@@ -81,7 +81,6 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   2. People heading to the same goal right now — peers to connect with (Waymates)
   Keep it short and clear`,
   [SEARCH_PHASE.clarifying_goal]: "Ask for more detail about target position",
-  [SEARCH_PHASE.advising]: "Answer based on actual data",
   [SEARCH_PHASE.cancelled]: "Acknowledge stop",
   [SEARCH_PHASE.failed]: "Acknowledge error, offer retry",
 };

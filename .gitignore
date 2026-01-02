@@ -95,3 +95,6 @@ tree/
 
 # Generated chart HTML outputs
 poc/*.html
+
+# MCP chat sessions (local dev)
+.claude/sessions/

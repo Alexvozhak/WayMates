@@ -13,15 +13,17 @@ export class SelectivityService {
   private readonly explainPatterns: Record<ContextField, string> = {
     position: "MATCH (c:Context {position: $fieldValue})",
     role: "MATCH (c:Context)-[:HAS_ROLE]->(r:Role {canonicalName: $fieldValue})",
-    domains: "MATCH (c:Context) WHERE ANY(d IN $fieldValue WHERE d IN c.domains)",
-    skills: "MATCH (c:Context) WHERE ANY(s IN $fieldValue WHERE s IN c.skills)",
+    domains: "MATCH (c:Context) WHERE ALL(d IN $fieldValue WHERE d IN c.domains)",
+    skills: "MATCH (c:Context) WHERE ALL(s IN $fieldValue WHERE s IN c.skills)",
     industry: "MATCH (c:Context {industry: $fieldValue})",
     companySize: "MATCH (c:Context {companySize: $fieldValue})",
     countryCode: "MATCH (c:Context {countryCode: $fieldValue})",
+    citizenships: "MATCH (c:Context) WHERE ALL(cit IN $fieldValue WHERE cit IN c.citizenships)",
     cityName: "MATCH (c:Context {cityName: $fieldValue})",
     birthYear: "MATCH (c:Context {birthYear: $fieldValue})",
     educationLevel: "MATCH (c:Context {educationLevel: $fieldValue})",
-    languages: "MATCH (c:Context)-[:SPEAKS_FLUENT]->(l:Language) WHERE l.code IN $fieldValue",
+    languages:
+      "MATCH (c:Context)-[:SPEAKS_FLUENT]->(l:Language) WHERE ALL(lang IN $fieldValue WHERE lang IN [(c)-[:SPEAKS_FLUENT]->(lang:Language) | lang.code])",
   };
 
   constructor(private db: DatabaseContext) {}
@@ -59,6 +61,7 @@ export class SelectivityService {
       industry: context.industry,
       companySize: context.companySize,
       countryCode: context.countryCode,
+      citizenships: context.citizenships,
       cityName: context.cityName,
       birthYear: context.birthYear,
       educationLevel: context.educationLevel,

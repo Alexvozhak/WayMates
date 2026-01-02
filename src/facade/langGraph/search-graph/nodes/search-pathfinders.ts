@@ -1,4 +1,5 @@
 import { DTW_MIN_TRAJECTORY_LENGTH } from "../../../../config/scoring.js";
+import { adhocContextBase } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { pathfinderToChartCandidate, safeGenerateChart } from "../chart-utils.js";
@@ -24,7 +25,8 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       throw new AgentInvariantError(NODE.search_pathfinders, "storedGoal required for pathfinder search");
     }
 
-    const referenceContext = adhocContext ?? userContext;
+    // Convert userContext to adhocContext format (strips extra fields like contextId, dates)
+    const referenceContext = adhocContext ?? (userContext ? adhocContextBase.parse(userContext) : null);
     if (!referenceContext) {
       throw new AgentInvariantError(NODE.search_pathfinders, "referenceContext required (adhoc or profile)");
     }

@@ -1,3 +1,5 @@
+import { DECOMPOSITION_RULES } from "../shared/prompts.js";
+
 import type { UserContext } from "../../../shared/schemas.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
@@ -284,8 +286,8 @@ function buildContextExtractionRules(hasCv: boolean): string {
 
   return `${cvMergeNote}- All terms: lowercase-kebab-case
 - cityName: lowercase
-- countryCode: residence country, ISO 3166-1 alpha-2
-- citizenships: nationality/passport countries array, ISO 3166-1 alpha-2
+- countryCode: residence country, ISO 3166-1 alpha-2 UPPERCASE
+- citizenships: nationality/passport countries array, ISO 3166-1 alpha-2 UPPERCASE
 - languages: B2+ proficiency languages, ISO 639-1
 - DO NOT invent data - extract ONLY what is explicitly mentioned`;
 }
@@ -314,6 +316,7 @@ FORMAT RULES (STRICT):
 ═══════════════════════════════════════════════════
 ${buildContextExtractionRules(!!cvText)}
 
+${DECOMPOSITION_RULES}
 ═══════════════════════════════════════════════════
 CAREER MODEL (key dimensions):
 ═══════════════════════════════════════════════════

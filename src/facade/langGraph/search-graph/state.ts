@@ -41,7 +41,6 @@ export const searchPhaseSchema = z.enum([
   "showing_waymate_results",
   "showing_pathfinder_results",
   "showing_results_facets",
-  "advising",
   "cancelled",
   "failed",
 ]);
@@ -74,7 +73,6 @@ export const nodeSchema = z.enum([
   "apply_filters",
   "generate_answer",
   "show_answer",
-  "parse_advisor_intent",
   "cancel",
 ]);
 
@@ -95,6 +93,7 @@ export const SIMPLE_INTENTS = [
   "editGoal",
   "editAdhoc",
   "cancel",
+  "done",
   "unknown",
 ] as const;
 // Complex: have extra fields (filters, question)
@@ -105,8 +104,6 @@ export type ComplexIntent = (typeof COMPLEX_INTENTS)[number];
 export type SearchUserIntent = SimpleIntent | ComplexIntent;
 
 export type SearchMode = "waymates" | "pathfinders";
-
-export type AdvisorIntent = "ask" | "action" | "done";
 
 export const searchStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),
@@ -143,7 +140,6 @@ export const searchStateAnnotation = Annotation.Root({
   searchMode: Annotation<SearchMode | null>({ reducer: lastValue, default: () => null }),
 
   // Advisor mode state
-  advisorIntent: Annotation<AdvisorIntent | null>({ reducer: lastValue, default: () => null }),
   advisorQuestion: Annotation<string | null>({ reducer: lastValue, default: () => null }),
   currentAnswer: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 });

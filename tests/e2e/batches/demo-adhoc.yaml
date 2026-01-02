@@ -1,21 +1,20 @@
 name: demo-adhoc
-description: Demo Video 1 - Adhoc search flow (English)
+description: Demo Video 1 - Adhoc search flow with facets (English)
 locale: en
 
 steps:
-  # Step 1: Casual adhoc intent + full context
-  - message: Hey, I'm just browsing, not ready to commit yet. I'm a senior backend developer, TypeScript and Python, 9 years experience, based in Russia
+  # Step 1: Casual adhoc intent + full context (matches Demo fixtures reference context)
+  - message: Hey, I'm just browsing. I'm a technical project manager in fintech, managing backend teams, based in Russia
     expect:
       phase: confirming_adhoc_context
-      adhocContext.position: senior
+      adhocContext.position: technical project manager
 
-  # Step 2: Confirm and explore
+  # Step 2: Confirm and explore → shows candidates (9 demo fixtures)
   - message: Show me similar people
     expect:
       phase: showing_exploration_candidates
-      chartUrl: "!null"
 
-  # Step 3: Set goal
+  # Step 3: Set goal (transitions from facets to goal)
   - message: I want to become head of engineering in Netherlands, AI/ML startup, around 200k salary
     expect:
       phase: showing_goal
@@ -25,13 +24,14 @@ steps:
     expect:
       phase: asking_search_mode
 
-  # Step 5: Search pathfinders
+  # Step 5: Search pathfinders (should find our 4 demo pathfinders)
   - message: Show me people who made this transition
     expect:
       phase: showing_pathfinder_results
       chartUrl: "!null"
 
-  # Step 6: Ask advisor
+  # Step 6: Ask advisor (answer comes in answerText, phase stays showing_pathfinder_results)
   - message: What skills did they all need for this transition?
     expect:
-      phase: advising
+      phase: showing_pathfinder_results
+      answerText: "!null"
