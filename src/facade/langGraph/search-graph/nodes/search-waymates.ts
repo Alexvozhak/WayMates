@@ -38,6 +38,7 @@ export const searchWaymatesNode = withLogging<SearchStateType>(
           dictionariesService,
           logger,
           nodeName: NODE.search_waymates,
+          excludedContextFields: params.excludedContextFields,
         });
 
     return {

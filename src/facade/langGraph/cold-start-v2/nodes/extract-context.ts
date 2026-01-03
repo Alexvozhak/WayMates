@@ -16,10 +16,10 @@ import type { ColdStartStateType, ContextAgenda } from "../state.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 const contextExtractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableContextSchema, "Explain what career context you extracted and why")
+  withReasoning(extractableContextSchema, "Explain what career context you extracted and why"),
 );
 const trailExtractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why")
+  withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why"),
 );
 
 function getLinkedContextIds(
@@ -79,7 +79,8 @@ async function extractContextData(
     contextId: agenda.contextId,
     previousContextId: previousId,
     nextContextId: nextId,
-    createdAt: new Date().toISOString(),
+    // Use extracted createdAt (from preview period), fallback to now if LLM didn't extract
+    createdAt: extracted.createdAt ?? new Date().toISOString(),
   };
 }
 

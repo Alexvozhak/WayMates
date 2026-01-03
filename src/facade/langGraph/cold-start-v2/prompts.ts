@@ -292,6 +292,7 @@ function buildContextExtractionRules(hasCv: boolean): string {
 - DO NOT invent data - extract ONLY what is explicitly mentioned`;
 }
 
+/* eslint-disable max-lines-per-function -- prompt template with multiple sections */
 export function contextExtractionPrompt(
   messages: BaseMessage[],
   preview: string,
@@ -355,8 +356,18 @@ GENERAL EXTRACTION RULES:
 ═══════════════════════════════════════════════════
 - Map user terms to KNOWN dictionary values when possible
 - For creationReason, infer from context (first job = started_working, new company = company_changed, etc.)
-- Return null for fields not mentioned`;
+- Return null for fields not mentioned
+
+═══════════════════════════════════════════════════
+createdAt FIELD (CRITICAL for career timeline):
+═══════════════════════════════════════════════════
+Extract the START DATE of this position from preview period (e.g., "2016-2020" → "2016-01-01").
+- Format: ISO 8601 (YYYY-MM-DDT00:00:00Z)
+- Use January 1st if only year is given
+- Use 1st of month if month is given without day
+- This date determines position order on career trajectory chart`;
 }
+/* eslint-enable max-lines-per-function */
 
 export function trailExtractionPrompt(messages: BaseMessage[], trailPreview: string): string {
   const text = serializeMessages(messages);

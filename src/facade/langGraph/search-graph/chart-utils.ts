@@ -1,7 +1,12 @@
-import { extractGoalValues, generateTrajectoryChart, isChartServiceEnabled } from "../../../chart/index.js";
+import {
+  CHARTABLE_FIELDS,
+  extractGoalValues,
+  generateTrajectoryChart,
+  isChartServiceEnabled,
+} from "../../../chart/index.js";
 import { config } from "../../env.js";
 
-import type { GenerateChartInput } from "../../../chart/index.js";
+import type { ChartableField, GenerateChartInput } from "../../../chart/index.js";
 import type {
   AdhocContextBase,
   Goal,
@@ -56,6 +61,7 @@ type BaseChartDeps = {
   dictionariesService: DictionariesService;
   logger: Logger;
   nodeName: string;
+  excludedContextFields: string[];
 };
 
 type ExploreChartDeps = BaseChartDeps & {
@@ -77,12 +83,19 @@ type GoalOnlyChartDeps = BaseChartDeps & {
 
 export type ChartGenerationDeps = ExploreChartDeps | WithGoalChartDeps | GoalOnlyChartDeps;
 
+function toChartableFields(fields: string[]): ChartableField[] {
+  const chartableSet = new Set<string>(CHARTABLE_FIELDS);
+  return fields.filter((f): f is ChartableField => chartableSet.has(f));
+}
+
 function buildChartInput(deps: ChartGenerationDeps, positionOrder: string[]): GenerateChartInput {
+  const excludedOverlapFields = toChartableFields(deps.excludedContextFields);
   const base = {
     candidates: deps.candidates,
     maxCandidates: config.CANDIDATES_DISPLAY_LIMIT,
     positionOrder,
     locale: deps.locale,
+    excludedOverlapFields,
   };
 
   if (deps.mode === "explore") {

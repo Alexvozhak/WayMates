@@ -22,6 +22,7 @@ type BaseBuildInput = {
   locale: Locale;
   existingGoal: boolean;
   goalValues: GoalValues;
+  excludedOverlapFields: ChartableField[];
 };
 
 type FullModeBuildInput = BaseBuildInput & {
@@ -73,6 +74,7 @@ export class ChartBuilder {
       locale: this.input.locale,
       goalValues: this.input.goalValues,
       dynamicLevels: this.dynamicLevels,
+      excludedOverlapFields: this.input.excludedOverlapFields,
     });
 
     return renderer.render();

@@ -20,9 +20,14 @@ export type AspectConfig = {
   getLevels: () => string[];
 };
 
+/** Fields that store arrays and should use intersection for overlap comparison */
+export const ARRAY_OVERLAP_FIELDS: ChartableField[] = ["domains"];
+
 export type TrajectoryPoint = {
   timestamp: number;
   values: Partial<Record<ChartableField, string | number | null>>;
+  /** Raw arrays for fields that need intersection-based overlap (e.g., domains) */
+  rawArrays?: Partial<Record<ChartableField, string[]>>;
 };
 
 export type ProcessedTrajectory = {
@@ -81,6 +86,8 @@ type BaseChartInput = {
   existingGoal: boolean;
   selectedFields?: ChartableField[];
   goalValues?: GoalValues;
+  /** Fields excluded from search — also excluded from Overlap calculation */
+  excludedOverlapFields: ChartableField[];
 };
 
 export type FullModeInput = BaseChartInput & {

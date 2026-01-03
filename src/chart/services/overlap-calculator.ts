@@ -1,3 +1,5 @@
+import { ARRAY_OVERLAP_FIELDS } from "../types.js";
+
 import type { WaymateCandidate } from "../../shared/schemas.js";
 import type {
   ChartableField,
@@ -142,8 +144,8 @@ export class OverlapCalculator {
     userValue: string | number,
     field: ChartableField,
   ): Omit<OverlapPeriod, "candidateId"> | null {
-    const candValue = candPoint.values[field];
-    if (candValue !== userValue) return null;
+    const valuesMatch = this.checkFieldMatch(userPoint, candPoint, userValue, field);
+    if (!valuesMatch) return null;
 
     const overlapStart = Math.max(userPoint.timestamp, candPoint.timestamp);
     const overlapEnd = Math.min(userNext.timestamp, candNext.timestamp);
@@ -156,6 +158,36 @@ export class OverlapCalculator {
       endTime: overlapEnd,
       value: userValue,
     };
+  }
+
+  /**
+   * Check if field values match. For array fields (e.g., domains), uses intersection.
+   */
+  private checkFieldMatch(
+    userPoint: TrajectoryPoint,
+    candPoint: TrajectoryPoint,
+    userValue: string | number,
+    field: ChartableField,
+  ): boolean {
+    if (ARRAY_OVERLAP_FIELDS.includes(field)) {
+      return this.checkArrayIntersection(userPoint, candPoint, field);
+    }
+    return candPoint.values[field] === userValue;
+  }
+
+  /**
+   * Check if rawArrays have any intersection for the given field.
+   */
+  private checkArrayIntersection(
+    userPoint: TrajectoryPoint,
+    candPoint: TrajectoryPoint,
+    field: ChartableField,
+  ): boolean {
+    const userArray = userPoint.rawArrays?.[field] ?? [];
+    const candArray = candPoint.rawArrays?.[field] ?? [];
+    if (userArray.length === 0 || candArray.length === 0) return false;
+    const candSet = new Set(candArray);
+    return userArray.some((v) => candSet.has(v));
   }
 
   private intersectIntervalArrays(a: Interval[], b: Interval[]): Interval[] {

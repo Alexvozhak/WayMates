@@ -21,6 +21,7 @@ export type ChartRenderData = {
   locale: Locale;
   goalValues: GoalValues;
   dynamicLevels: DynamicLevels;
+  excludedOverlapFields: ChartableField[];
 };
 
 const FIELD_LABELS: Record<Locale, Record<ChartableField, string>> = {
@@ -231,6 +232,7 @@ export class HtmlRenderer {
       timeRange: this.data.timeRange,
       goalValues: this.data.goalValues,
       dynamicLevels: this.data.dynamicLevels,
+      excludedOverlapFields: this.data.excludedOverlapFields,
     });
 
     return `<script>
@@ -267,6 +269,12 @@ export class HtmlRenderer {
 
     function getSelectedFields() {
       return Array.from(document.querySelectorAll('#aspect-checkboxes input:checked')).map(input => input.value);
+    }
+
+    function getOverlapFields() {
+      const selected = getSelectedFields();
+      const excluded = chartData.excludedOverlapFields || [];
+      return selected.filter(f => !excluded.includes(f));
     }
 
     function getEnabledCandidates() {
@@ -370,6 +378,17 @@ export class HtmlRenderer {
   // eslint-disable-next-line max-lines-per-function -- JS string generation
   private buildOverlapFunctions(): string {
     return `
+    const ARRAY_OVERLAP_FIELDS = ['domains'];
+
+    function checkFieldMatch(userPoint, candPoint, field) {
+      if (ARRAY_OVERLAP_FIELDS.includes(field)) {
+        const userArr = userPoint.rawArrays?.[field] || [];
+        const candArr = candPoint.rawArrays?.[field] || [];
+        return userArr.some(v => candArr.includes(v));
+      }
+      return userPoint.values[field] === candPoint.values[field];
+    }
+
     function findFieldOverlaps(userPoints, candPoints, field) {
       const overlaps = [];
       for (let ui = 0; ui < userPoints.length - 1; ui++) {
@@ -380,7 +399,7 @@ export class HtmlRenderer {
         for (let ci = 0; ci < candPoints.length - 1; ci++) {
           const candPoint = candPoints[ci];
           const candNext = candPoints[ci + 1];
-          if (candPoint.values[field] !== userValue) continue;
+          if (!checkFieldMatch(userPoint, candPoint, field)) continue;
           const overlapStart = Math.max(userPoint.timestamp, candPoint.timestamp);
           const overlapEnd = Math.min(userNext.timestamp, candNext.timestamp);
           if (overlapStart < overlapEnd) overlaps.push({ start: overlapStart, end: overlapEnd });
@@ -417,13 +436,15 @@ export class HtmlRenderer {
         window.enabledCandidateIndices = [];
         return [];
       }
+      // Exclude fields that were excluded from search (case-insensitive comparison not needed for overlap)
+      const overlapFields = fields.filter(f => !chartData.excludedOverlapFields.includes(f));
       const traces = [];
       const userTraj = chartData.trajectories[0];
       const candidates = chartData.trajectories.slice(1).filter(c => enabledCandidates.includes(c.id));
       const summaries = [];
 
       candidates.forEach((cand, idx) => {
-        const periods = findFullOverlaps(userTraj, cand, fields);
+        const periods = findFullOverlaps(userTraj, cand, overlapFields);
         summaries.push({ candidateId: cand.id, candidateLabel: cand.label, candidateColor: cand.color, periods,
           totalDays: periods.reduce((sum, p) => sum + Math.round((p.end - p.start) / MS_PER_DAY), 0),
           longestStreakDays: Math.max(0, ...periods.map(p => Math.round((p.end - p.start) / MS_PER_DAY)))
@@ -444,6 +465,7 @@ export class HtmlRenderer {
 
     function buildConnectionShapes(fields, enabledCandidates, overlapDomain) {
       const shapes = [];
+      const overlapFields = fields.filter(f => !chartData.excludedOverlapFields.includes(f));
       const userTraj = chartData.trajectories[0];
       const candidates = chartData.trajectories.slice(1).filter(c => enabledCandidates.includes(c.id));
       if (candidates.length === 0) return shapes;
@@ -451,7 +473,7 @@ export class HtmlRenderer {
       const slotHeight = domainHeight / candidates.length;
 
       candidates.forEach((cand, idx) => {
-        const periods = findFullOverlaps(userTraj, cand, fields);
+        const periods = findFullOverlaps(userTraj, cand, overlapFields);
         const yPaper = overlapDomain[0] + (idx + 0.5) * slotHeight;
         periods.forEach((period) => {
           shapes.push({ type: 'line', x0: period.start, x1: period.start, y0: yPaper, y1: 0.95, xref: 'x', yref: 'paper',
@@ -514,14 +536,16 @@ export class HtmlRenderer {
         const domainTop = chartAreaTop - index * (subplotHeight + gap);
         const domainBottom = domainTop - subplotHeight + gap;
 
+        const levelCount = config.levels.length;
+        const tickSize = levelCount > 12 ? 7 : levelCount > 8 ? 8 : 10;
         layout[yaxisKey] = {
           title: { text: config.label, font: { size: 12 } },
           domain: [Math.max(domainBottom, chartAreaBottom), domainTop],
           anchor: index === 0 ? 'x' : 'x' + (index + 1),
-          tickmode: config.levels.length > 0 ? 'array' : 'auto',
-          tickvals: config.levels.length > 0 ? config.levels.map((_, i) => i) : undefined,
-          ticktext: config.levels.length > 0 ? config.levels : undefined,
-          tickfont: { size: 10 }
+          tickmode: levelCount > 0 ? 'array' : 'auto',
+          tickvals: levelCount > 0 ? config.levels.map((_, i) => i) : undefined,
+          ticktext: levelCount > 0 ? config.levels : undefined,
+          tickfont: { size: tickSize }
         };
         layout[xaxisKey] = { type: 'date', anchor: index === 0 ? 'y' : 'y' + (index + 1), showticklabels: false };
       });
@@ -574,7 +598,7 @@ export class HtmlRenderer {
       const axes = ['Shape', 'Tempo', 'Alignment', 'Shape'];
       const userTraj = chartData.trajectories[0];
       traces.push({ type: 'scatterpolar', r: [1, 1, 1, 1], theta: axes, fill: 'toself',
-        fillcolor: userTraj.color + '10', mode: 'lines+markers', name: userTraj.label + ' (reference)',
+        fillcolor: userTraj.color + '40', mode: 'lines+markers', name: userTraj.label + ' (reference)',
         line: { color: userTraj.color, width: 2, dash: 'dash' }, marker: { size: 5, color: userTraj.color },
         hovertemplate: '%{theta}: 100%<extra>' + userTraj.label + '</extra>' });
 
@@ -586,7 +610,7 @@ export class HtmlRenderer {
         const tempo = metric.perField.domains || 0;
         const alignment = metric.perField.cityName || 0;
         traces.push({ type: 'scatterpolar', r: [shape, tempo, alignment, shape], theta: axes, fill: 'toself',
-          fillcolor: traj.color + '18', mode: 'lines+markers', name: traj.label,
+          fillcolor: traj.color + '30', mode: 'lines+markers', name: traj.label,
           line: { color: traj.color, width: 2 }, marker: { size: 6, color: traj.color },
           hovertemplate: '%{theta}: %{r:.0%}<extra>' + traj.label + '</extra>' });
       });
@@ -606,8 +630,8 @@ export class HtmlRenderer {
         polar: {
           radialaxis: {
             visible: true, range: [0, 1], tickmode: 'array', tickvals: [0.25, 0.5, 0.75, 1],
-            ticktext: ['25%', '50%', '75%', '100%'],
-            tickfont: { size: 12, color: '#000', family: 'system-ui, sans-serif', weight: 700 },
+            ticktext: ['', '', '', ''],
+            tickfont: { size: 10 },
             gridcolor: '#e5e7eb', linecolor: '#9ca3af', angle: 90
           },
           angularaxis: {
@@ -624,6 +648,7 @@ export class HtmlRenderer {
 
     function renderChart() {
       const fields = getSelectedFields();
+      const overlapFields = getOverlapFields();
       const enabledCandidates = getEnabledCandidates();
       const showConnectionLines = getShowConnectionLines();
 
@@ -636,10 +661,10 @@ export class HtmlRenderer {
       const traces = buildAllTraces(fields, enabledCandidates);
       const goalLineTraces = buildGoalLineTraces(fields);
       const { layout, overlapAxisNum, overlapDomain } = buildLayout(fields, enabledCandidates);
-      const overlapTraces = buildOverlapTraces(fields, 'y' + overlapAxisNum, enabledCandidates);
+      const overlapTraces = buildOverlapTraces(overlapFields, 'y' + overlapAxisNum, enabledCandidates);
       const allTraces = [...traces, ...goalLineTraces, ...overlapTraces];
 
-      if (showConnectionLines) layout.shapes = buildConnectionShapes(fields, enabledCandidates, overlapDomain);
+      if (showConnectionLines) layout.shapes = buildConnectionShapes(overlapFields, enabledCandidates, overlapDomain);
 
       const goalMarkers = buildGoalMarkerShapesAndAnnotations(enabledCandidates);
       layout.shapes = [...(layout.shapes || []), ...goalMarkers.shapes];

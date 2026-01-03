@@ -84,7 +84,16 @@ export class ChartService {
   }
 
   private normalizeInput(input: GenerateChartInput): ChartBuildInput {
-    const { candidates, maxCandidates, positionOrder, locale, existingGoal, selectedFields, goalValues } = input;
+    const {
+      candidates,
+      maxCandidates,
+      positionOrder,
+      locale,
+      existingGoal,
+      selectedFields,
+      goalValues,
+      excludedOverlapFields,
+    } = input;
 
     const baseInput = {
       candidates: candidates.slice(0, maxCandidates),
@@ -93,6 +102,7 @@ export class ChartService {
       locale,
       existingGoal,
       goalValues: goalValues ?? {},
+      excludedOverlapFields,
     };
 
     if (input.mode === "full") {

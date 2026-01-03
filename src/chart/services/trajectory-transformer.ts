@@ -55,7 +55,7 @@ function buildUserTrajectory(userTrajectory: UserContext[], locale: Locale): Pro
     color: USER_COLOR,
     width: 2.5,
     isWaymate: false,
-    points,
+    points: addNowSentinel(points),
   };
 }
 
@@ -130,9 +130,9 @@ function buildCandidateTrajectory(
 
 function extractCandidatePoints(path: UserContext[] | undefined, matchedContext: UserContext): TrajectoryPoint[] {
   if (path && path.length > 0) {
-    return path.map((ctx) => extractPointValues(ctx));
+    return addNowSentinel(path.map((ctx) => extractPointValues(ctx)));
   }
-  return [extractPointValues(matchedContext)];
+  return addNowSentinel([extractPointValues(matchedContext)]);
 }
 
 function extractPointValues(ctx: UserContext): TrajectoryPoint {
@@ -143,5 +143,23 @@ function extractPointValues(ctx: UserContext): TrajectoryPoint {
   return {
     timestamp: new Date(ctx.createdAt).getTime(),
     values,
+    rawArrays: { domains: ctx.domains },
   };
+}
+
+/**
+ * Add a sentinel "now" point to create a period from last context to present.
+ * This allows overlap calculation for the current/latest context.
+ */
+function addNowSentinel(points: TrajectoryPoint[]): TrajectoryPoint[] {
+  if (points.length === 0) return points;
+
+  const lastPoint = points.at(-1)!;
+  const nowSentinel: TrajectoryPoint = {
+    timestamp: Date.now(),
+    values: { ...lastPoint.values },
+    ...(lastPoint.rawArrays && { rawArrays: { ...lastPoint.rawArrays } }),
+  };
+
+  return [...points, nowSentinel];
 }

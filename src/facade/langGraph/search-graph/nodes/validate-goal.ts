@@ -34,6 +34,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
     const needsFiltering = shouldUseFacets(candidates);
 
     // Skip chart generation if showing facets (chart won't be used)
+    // goal-only mode: no user trajectory → no overlap calculation → excludedContextFields N/A
     const chartUrl = needsFiltering
       ? null
       : await safeGenerateChart({
@@ -46,6 +47,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
           dictionariesService,
           logger,
           nodeName: NODE.validate_goal,
+          excludedContextFields: [],
         });
 
     return {

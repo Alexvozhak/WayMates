@@ -37,6 +37,7 @@ export const exploreNode = withLogging<SearchStateType>(
           dictionariesService,
           logger,
           nodeName: NODE.explore,
+          excludedContextFields: params.excludedContextFields,
         });
 
     return {

@@ -63,6 +63,7 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
           dictionariesService,
           logger,
           nodeName: NODE.search_pathfinders,
+          excludedContextFields: searchParams.excludedContextFields,
         });
 
     return {
