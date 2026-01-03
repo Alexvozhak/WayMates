@@ -73,8 +73,7 @@ function addNowSentinel(points: TrajectoryPoint[]): TrajectoryPoint[] {
 
 ### 7. Infrastructure
 
-**Redis AOF Persistence:**
-- `docker-compose.yml` — `command: redis-server --appendonly yes` + volume
+**Redis AOF:** ❌ ОТКАЧЕНО — не нужен (session files уже в `.claude/sessions/`, checkpoints в Postgres)
 
 **Две команды facade:rebuild:**
 - `npm run facade:rebuild` — сохраняет checkpoints

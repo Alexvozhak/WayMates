@@ -87,7 +87,7 @@ type BaseChartInput = {
   selectedFields?: ChartableField[];
   goalValues?: GoalValues;
   /** Fields excluded from search — also excluded from Overlap calculation */
-  excludedOverlapFields: ChartableField[];
+  excludedOverlapFields?: ChartableField[];
 };
 
 export type FullModeInput = BaseChartInput & {

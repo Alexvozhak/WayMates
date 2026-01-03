@@ -114,13 +114,13 @@ export class HtmlRenderer {
     .buttons-group { display: flex; gap: 10px; align-items: flex-end; padding-bottom: 5px; }
     #export-btn { background: #10b981; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
     #export-btn:hover { background: #059669; }
-    #main-chart { }
+    #main-chart { width: 100%; }
     #metrics { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     #metrics table { width: 100%; border-collapse: collapse; }
     #metrics th, #metrics td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
     #metrics th { background: #f3f4f6; font-weight: 600; }
-    #charts-row { display: flex; gap: 20px; margin-bottom: 20px; }
-    #main-chart-container { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    #charts-row { display: flex; gap: 20px; margin-bottom: 20px; align-items: flex-start; }
+    #main-chart-container { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: visible; }
     #spider-chart-container { width: 350px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     #spider-chart-container h4 { margin: 0 0 10px 0; font-size: 14px; color: #374151; }
   </style>`;
@@ -437,7 +437,8 @@ export class HtmlRenderer {
         return [];
       }
       // Exclude fields that were excluded from search (case-insensitive comparison not needed for overlap)
-      const overlapFields = fields.filter(f => !chartData.excludedOverlapFields.includes(f));
+      const excluded = chartData.excludedOverlapFields || [];
+      const overlapFields = fields.filter(f => !excluded.includes(f));
       const traces = [];
       const userTraj = chartData.trajectories[0];
       const candidates = chartData.trajectories.slice(1).filter(c => enabledCandidates.includes(c.id));
@@ -465,7 +466,8 @@ export class HtmlRenderer {
 
     function buildConnectionShapes(fields, enabledCandidates, overlapDomain) {
       const shapes = [];
-      const overlapFields = fields.filter(f => !chartData.excludedOverlapFields.includes(f));
+      const excluded = chartData.excludedOverlapFields || [];
+      const overlapFields = fields.filter(f => !excluded.includes(f));
       const userTraj = chartData.trajectories[0];
       const candidates = chartData.trajectories.slice(1).filter(c => enabledCandidates.includes(c.id));
       if (candidates.length === 0) return shapes;
@@ -535,19 +537,31 @@ export class HtmlRenderer {
         const xaxisKey = index === 0 ? 'xaxis' : 'xaxis' + (index + 1);
         const domainTop = chartAreaTop - index * (subplotHeight + gap);
         const domainBottom = domainTop - subplotHeight + gap;
+        const domainMid = (domainTop + Math.max(domainBottom, chartAreaBottom)) / 2;
 
         const levelCount = config.levels.length;
-        const tickSize = levelCount > 12 ? 7 : levelCount > 8 ? 8 : 10;
+        const tickSize = levelCount > 15 ? 6 : levelCount > 10 ? 7 : levelCount > 6 ? 8 : 10;
         layout[yaxisKey] = {
-          title: { text: config.label, font: { size: 12 } },
           domain: [Math.max(domainBottom, chartAreaBottom), domainTop],
           anchor: index === 0 ? 'x' : 'x' + (index + 1),
           tickmode: levelCount > 0 ? 'array' : 'auto',
           tickvals: levelCount > 0 ? config.levels.map((_, i) => i) : undefined,
           ticktext: levelCount > 0 ? config.levels : undefined,
-          tickfont: { size: tickSize }
+          tickfont: { size: tickSize, color: '#6b7280' },
+          automargin: true
         };
         layout[xaxisKey] = { type: 'date', anchor: index === 0 ? 'y' : 'y' + (index + 1), showticklabels: false };
+
+        // Vertical aspect label - fixed X position for alignment
+        layout.annotations.push({
+          text: '<b>' + config.label + '</b>',
+          xref: 'paper', yref: 'paper',
+          x: -0.08, y: domainMid,
+          textangle: -90,
+          xanchor: 'center', yanchor: 'middle',
+          font: { size: 14, color: '#1e3a5f' },
+          showarrow: false
+        });
       });
 
       const overlapAxisNum = numFields + 1;

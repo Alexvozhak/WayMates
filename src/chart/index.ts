@@ -102,7 +102,7 @@ export class ChartService {
       locale,
       existingGoal,
       goalValues: goalValues ?? {},
-      excludedOverlapFields,
+      excludedOverlapFields: excludedOverlapFields ?? [],
     };
 
     if (input.mode === "full") {
