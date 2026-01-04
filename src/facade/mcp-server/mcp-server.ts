@@ -2,6 +2,7 @@ import { FastMCP } from "fastmcp";
 
 import {
   mcpAuthParamsSchema,
+  mcpCancelAllGraphsParamsSchema,
   mcpColdStartParamsSchema,
   mcpConverseParamsSchema,
   mcpDeleteContextParamsSchema,
@@ -22,6 +23,7 @@ import { throwToolError } from "../errors.js";
 import { logger } from "../logger.js";
 
 import { AuthTool } from "./tools/auth.tool.js";
+import { CancelAllGraphsTool } from "./tools/cancel-all-graphs.tool.js";
 import { ColdStartTool } from "./tools/cold-start.tool.js";
 import { ConverseTool } from "./tools/converse.tool.js";
 import { DeleteContextTool } from "./tools/delete-context.tool.js";
@@ -60,6 +62,7 @@ export type FacadeServerDependencies = {
 
 type ToolInstances = {
   auth: AuthTool;
+  cancelAllGraphs: CancelAllGraphsTool;
   coldStart: ColdStartTool;
   converse: ConverseTool;
   getStory: GetStoryTool;
@@ -91,6 +94,7 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
 
   return {
     auth: new AuthTool(deps.authService, logger),
+    cancelAllGraphs: new CancelAllGraphsTool(toolDeps),
     coldStart: new ColdStartTool(toolDeps),
     converse: new ConverseTool(toolDeps),
     getStory: new GetStoryTool(toolDeps),
@@ -107,6 +111,24 @@ function createToolInstances(deps: FacadeServerDependencies): ToolInstances {
     deleteTrail: new DeleteTrailTool(toolDeps),
     parseCvToText: new ParseCvToTextTool(toolDeps),
   };
+}
+
+function registerCancelAllGraphsTool(server: FastMCP, tool: CancelAllGraphsTool): void {
+  server.addTool({
+    name: "cancel_all_graphs",
+    description:
+      "Cancel all active LangGraph sessions for user. Clears all graph checkpoints. " +
+      "Use on /start to ensure clean state before new conversation.",
+    parameters: mcpCancelAllGraphsParamsSchema,
+    execute: async (args: unknown) => {
+      const params = mcpCancelAllGraphsParamsSchema.parse(args);
+      const result = await tool.execute(params);
+      if (result.ok) {
+        return JSON.stringify({ success: true }, null, 2);
+      }
+      throwToolError(result.error);
+    },
+  });
 }
 
 function registerAuthTool(server: FastMCP, tool: AuthTool): void {
@@ -398,6 +420,7 @@ function registerTelegramAuthTools(server: FastMCP, authService: AuthService): v
 function registerTools(server: FastMCP, tools: ToolInstances, authService: AuthService): void {
   registerAuthTool(server, tools.auth);
   registerTelegramAuthTools(server, authService);
+  registerCancelAllGraphsTool(server, tools.cancelAllGraphs);
   registerConverseTool(server, tools.converse);
   registerColdStartTool(server, tools.coldStart);
   registerParseCvToTextTool(server, tools.parseCvToText);
@@ -413,9 +436,9 @@ function registerTools(server: FastMCP, tools: ToolInstances, authService: AuthS
 export function createMcpServer(deps: FacadeServerDependencies): FastMCP {
   const server = new FastMCP({
     name: "waymates-facade",
-    version: "3.2.0",
+    version: "3.3.0",
     instructions:
-      "WayMates MCP Server. Provides 18 tools for career operations: " +
+      "WayMates MCP Server. Provides 19 tools for career operations: " +
       "Main entry (converse), " +
       "Auth (auth, register_telegram, link_telegram), " +
       "Cold Start (cold_start, parse_cv_to_text), " +

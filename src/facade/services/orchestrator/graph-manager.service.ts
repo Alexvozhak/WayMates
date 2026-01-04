@@ -38,6 +38,13 @@ export class GraphManager {
     this.nlpFormatter = new NlpFormatter(getModel("agent"));
   }
 
+  async cancelAllActiveGraphs(userId: UserId): Promise<void> {
+    for (const type of GRAPH_TYPES) {
+      const threadId = `${type}_${userId}`;
+      await this.deps.checkpointService.delete(threadId);
+    }
+  }
+
   async executeActiveGraph(
     intent: UserIntent,
     message: string,

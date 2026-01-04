@@ -638,26 +638,224 @@ return telegramifyMarkdown(formatted, "escape");
 
 ---
 
+### Phase 7.3: UX Analysis + FEAT-059 Plan ✅
+
+**Статус:** ЗАВЕРШЕНО
+
+**Что сделано:**
+1. Прогнан demo-video-2-telegram.ts — получен фидбек (9 проблем)
+2. Глубокий анализ каждой проблемы через sequential-thinking
+3. Найден главный root cause + создан план исправлений
+
+**Критический Root Cause найден:**
+
+```
+/start НЕ очищает checkpoint
+→ pending interrupt от предыдущей сессии
+→ первое сообщение resume-ит его
+→ "Hey, I'm just browsing" классифицируется как explore
+→ бот сразу показывает candidates (вместо confirm)
+```
+
+**Доказательство из логов facade:**
+```
+1767537581071 - Tool execution completed (phase=confirming_adhoc_context)
+1767537581083 - Tool execution started  (НОВЫЙ CALL!) — 12ms!
+```
+
+**9 проблем → 5 phases fix:**
+
+| Phase | Fix | LOC |
+|-------|-----|-----|
+| 1. Critical Flow | Очистка checkpoint при /start, prompt консистентный с routing | ~50 |
+| 2. Locale | i18n в document.ts | ~20 |
+| 3. Advisor Data | rename searchResults→waymateResults, fix generate-answer | ~40 |
+| 4. Dictionary | questionType в ask schema | ~40 |
+| 5. Vision | Chart screenshotter + multimodal LLM | ~90 |
+
+**Routing анализ:**
+
+```typescript
+// БЕЗ ЦЕЛИ (CONFIRMING_NO_GOAL_ROUTES):
+- explore, setGoal, editAdhoc, ask, cancel, unknown
+
+// С ЦЕЛЬЮ (CONFIRMING_WITH_GOAL_ROUTES):
+- searchWaymates, searchPathfinders, validate, editGoal, editAdhoc, ask, cancel, unknown
+```
+
+**Несоответствие найдено:**
+- Prompt говорит "Offer: set goal or explore similar people"
+- НЕ упоминает editAdhoc, ask
+- НЕ различает случаи с целью и без
+
+**Артефакты созданы:**
+- `tasks/features/FEAT-059-demo-video-ux-fixes.md` — полный план работ
+
+**Commit:**
+```
+9bd1e26 feat(FEAT-055): GramJS demo scripts, telegramify-markdown, UX fixes plan
+```
+
+---
+
+## Осталось сделать
+
+### FEAT-059: Demo Video UX Fixes (READY_FOR_WORK)
+
+**Phase 1: Critical Flow (~50 LOC)**
+- [ ] Очистка checkpoint при /start
+- [ ] Prompt консистентный с routing
+- [ ] Убрать хардкод русского в confirm-adhoc-context.ts
+
+**Phase 2: Locale (~20 LOC)**
+- [ ] i18n в document.ts
+
+**Phase 3: Advisor Data (~40 LOC)**
+- [ ] rename searchResults → waymateResults
+- [ ] Fix generate-answer для pathfinders/exploration
+- [ ] Skills limit constant
+
+**Phase 4: Dictionary Questions (~40 LOC)**
+- [ ] questionType в ask schema
+
+**Phase 5: Vision для Charts (~90 LOC)**
+- [ ] Chart screenshotter service
+- [ ] Multimodal LLM call
+
+### Финал
+
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt
+
+- [ ] FEAT-057: Goal как graph properties
+- [ ] FEAT-058: Удалить абстракцию Phases (→ interrupt payload = response)
+
+---
+
+## Рефлексия сессии (Phase 7.3)
+
+### Anti-patterns (Phase 7.3)
+
+37. **Долгий анализ логов вместо простой гипотезы** — 30+ минут анализировал timestamps в логах, хотя root cause (checkpoint не очищается при /start) можно было найти за 5 минут проверкой handlers/start.ts. Урок: **при unexpected behavior после /start — сначала проверить что /start делает с state**
+
+38. **Предложил regex-парсинг для словарей** — пользователь напомнил "ручной парсинг строк строго запрещен". Урок: **перед предложением решения — проверить guidelines.md на запреты**
+
+39. **Не понял вопрос "что пошло не так в тесте"** — продолжал объяснять timestamps вместо простого ответа "checkpoint от предыдущей сессии resume-ился". Урок: **если пользователь переспрашивает — значит объяснение непонятное, переформулировать проще**
+
+40. **Не нашёл routing сразу** — пользователь попросил "найти routing где в зависимости от наличия цели свои интенты". Это было в search-router.ts строки 101-118, но я искал в других местах. Урок: **routing logic → search-router.ts (source of truth)**
+
+41. **Предложил "убрать explore из prompt" без проверки routing** — правильный fix: сделать prompt КОНСИСТЕНТНЫМ с routing, а не менять routing под prompt. Урок: **routing = source of truth, prompt должен отражать routing**
+
+---
+
+## Полезные ссылки
+
+### Документация
+- `tasks/features/FEAT-059-demo-video-ux-fixes.md` — полный план UX fixes
+
+### Routing (source of truth)
+- `src/facade/langGraph/search-graph/search-router.ts:101-118` — CONFIRMING_WITH_GOAL_ROUTES / CONFIRMING_NO_GOAL_ROUTES
+- `src/facade/langGraph/search-graph/search-router.ts:64-68` — getValidIntentsForPhase()
+
+### Prompts
+- `src/facade/services/nlp-formatter/prompts.ts:15-19` — confirming_adhoc_context description
+
+### Vision example
+- `src/facade/mcp-server/tools/parse-cv-to-text.tool.ts:90-113` — multimodal LLM call
+
+---
+
+### Phase 7.4: FEAT-059 Implementation — cancel_all_graphs ✅
+
+**Статус:** Phase 1.1 ЗАВЕРШЕНО, проверено
+
+**Что сделано:**
+
+1. **Новый MCP tool `cancel_all_graphs`:**
+   - `src/shared/schemas.ts` — добавлены `mcpCancelAllGraphsParamsSchema` + `cancelAllGraphsResponseSchema`
+   - `src/facade/services/orchestrator/graph-manager.service.ts:41-46` — метод `cancelAllActiveGraphs(userId)`
+   - `src/facade/mcp-server/tools/cancel-all-graphs.tool.ts` — новый tool (20 LOC)
+   - `src/facade/mcp-server/mcp-server.ts` — регистрация tool (версия 3.3.0)
+
+2. **Telegram bot integration:**
+   - `src/telegram-bot/services/tool-registry.ts` — добавлен `cancel_all_graphs`
+   - `src/telegram-bot/handlers/start.ts` — вызов `cancel_all_graphs` перед welcome
+
+**Верификация:**
+```bash
+# Создал сессию с cold_start flow (awaiting_plan_confirmation)
+npx tsx poc/mcp-chat.ts --session test-cancel "I'm a backend developer in Russia"
+
+# Вызвал cancel_all_graphs напрямую → {"success": true}
+
+# Следующее сообщение начало НОВЫЙ flow (asking_adhoc_context)
+# вместо resume старого cold_start
+```
+
+**Результат:** /start теперь очищает все checkpoints → предсказуемый flow ✅
+
+---
+
+## Осталось сделать
+
+### FEAT-059: Demo Video UX Fixes
+
+**Phase 1: Critical Flow (~50 LOC)** — частично
+- [x] Очистка checkpoint при /start ✅
+- [ ] **Prompt консистентный с routing** ← СЛЕДУЮЩИЙ ШАГ
+- [ ] Убрать хардкод русского в confirm-adhoc-context.ts
+
+**Phase 2: Locale (~20 LOC)**
+- [ ] i18n в document.ts
+
+**Phase 3: Advisor Data (~40 LOC)**
+- [ ] Fix generate-answer для pathfinders
+- [ ] Skills limit constant
+
+**Phase 4: Cleanup (~10 LOC)**
+- [ ] Убрать buildConfirmMessage из confirm-adhoc-context.ts
+
+**Phase 5-6: Отложено (не блокирует demo)**
+
+### Финал
+
+- [ ] Lint + tsc + batch tests
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+---
+
+## Рефлексия сессии (Phase 7.4)
+
+### Anti-patterns
+
+42. **Не протестировал новый код до перехода к следующей задаче** — создал cancel_all_graphs tool, обновил todo на Phase 1.2 БЕЗ проверки что tool работает. Пользователь спросил "poc не нужно сделать проверить новый код?". Урок: **после создания нового tool/feature — ОБЯЗАТЕЛЬНО poc тест перед переходом дальше**
+
+43. **Предложил два подхода (MCP tool vs converse param) но не дал чёткую рекомендацию сразу** — пользователь попросил "нужны твои рекомендации, сравнение, аргументы". Урок: **при предложении вариантов — СРАЗУ давать рекомендацию с обоснованием (таблица сравнения + аргументы + итог)**
+
+---
+
 ## Промпт для продолжения после rewind
 
 ```
-Продолжаем FEAT-055 Demo Video — Phase 7.3 PDF upload test.
+Продолжаем FEAT-055 Demo Video — реализация FEAT-059 UX Fixes.
 
-ПРОЧИТАЙ: `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md`
+ПРОЧИТАЙ ultrathink:
+1. `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md` — Phase 7.4
+2. `/home/alex/projects/WayMatesRemote/tasks/features/FEAT-059-demo-video-ux-fixes.md`
 
-**Статус:**
-- demo-video-1-telegram.ts — 6/6 ✅
-- telegramify-markdown установлен ✅
-- parse_mode: "MarkdownV2" ✅
+**Сделано в Phase 7.4:**
+- cancel_all_graphs MCP tool ✅ (создан + протестирован)
+- /start очищает checkpoints ✅
 
 **Следующий шаг:**
-- Протестировать demo-video-2-telegram.ts (PDF cold-start flow)
+Phase 1.2: Prompt консистентность с routing
+- Файл: `src/facade/services/nlp-formatter/prompts.ts:15-19`
+- Сделать prompt для confirming_adhoc_context консистентным с routing:
+  - БЕЗ цели: explore, setGoal, editAdhoc, ask
+  - С целью: searchWaymates, searchPathfinders, validate, editGoal, editAdhoc, ask
 
-**Запуск:**
-```bash
-set -a && source .env.test && set +a
-npm run bot:test &
-sleep 5
-npx tsx poc/demo-video-2-telegram.ts
-```
+После Phase 1.2 → Phase 4 (cleanup русского) → Phase 2 (i18n) → Phase 3 (advisor)
 ```

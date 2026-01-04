@@ -1731,3 +1731,20 @@ export const parseCvToTextResponseSchema = z.object({
 });
 
 export type ParseCvToTextResponse = z.infer<typeof parseCvToTextResponseSchema>;
+
+/**
+ * Params for cancel_all_graphs MCP tool.
+ * Cancels all active LangGraph sessions for user (clears checkpoints).
+ */
+export const mcpCancelAllGraphsParamsSchema = z.object({
+  sessionId: sessionIdSchema,
+  requestId: requestIdSchema,
+});
+
+export type McpCancelAllGraphsParams = z.infer<typeof mcpCancelAllGraphsParamsSchema>;
+
+export const cancelAllGraphsResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+export type CancelAllGraphsResponse = z.infer<typeof cancelAllGraphsResponseSchema>;

@@ -1,6 +1,8 @@
 import {
+  cancelAllGraphsResponseSchema,
   converseResponseSchema,
   mcpAuthParamsSchema,
+  mcpCancelAllGraphsParamsSchema,
   mcpConverseParamsSchema,
   mcpParseCvToTextParamsSchema,
   mcpTelegramLinkParamsSchema,
@@ -22,6 +24,10 @@ export const TOOL_REGISTRY = {
   auth: {
     paramsSchema: mcpAuthParamsSchema,
     responseSchema: telegramRegisterResponseSchema,
+  },
+  cancel_all_graphs: {
+    paramsSchema: mcpCancelAllGraphsParamsSchema,
+    responseSchema: cancelAllGraphsResponseSchema,
   },
   register_telegram: {
     paramsSchema: mcpTelegramRegisterParamsSchema,
