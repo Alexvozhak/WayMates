@@ -506,34 +506,158 @@ npx tsx poc/test-chart-overlap.ts
 
 ---
 
+### Phase 7: GramJS Telegram e2e tests ✅
+
+**Статус:** ЗАВЕРШЕНО
+
+**Что сделано:**
+1. **Commit** `19fa27f` — Phase 6.15 изменения закоммичены ✅
+2. **GramJS скрипты созданы:**
+   - `poc/demo-video-1-telegram.ts` — adhoc flow (6 шагов)
+   - `poc/demo-video-2-telegram.ts` — cold-start + PDF (16 шагов)
+
+### Phase 7.1: Event Handler вместо Polling ✅
+
+**Проблема:** `getLastBotMessage()` использовал GetHistory polling — получал СТАРЫЕ сообщения бота от предыдущих диалогов.
+
+**Research (Context7 + WebSearch):**
+- [GramJS Updates Events](https://painor.gitbook.io/gramjs/getting-started/updates-events)
+- [NewMessage class](https://gram.js.org/beta/classes/custom.NewMessage.html)
+
+**Best Practice:** Event Handler вместо Polling:
+```typescript
+import { NewMessage } from "telegram/events";
+
+function waitForBotReply(client: TelegramClient, botUsername: string, timeout: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      client.removeEventHandler(handler, event);
+      reject(new Error(`Timeout`));
+    }, timeout);
+
+    const event = new NewMessage({ chats: [botUsername] });
+    const handler = (e: NewMessageEvent): void => {
+      if (e.message.out) return;
+      clearTimeout(timer);
+      client.removeEventHandler(handler, event);
+      resolve(e.message.text ?? "");
+    };
+    client.addEventHandler(handler, event);
+  });
+}
+```
+
+**Паттерн использования:**
+```typescript
+const replyPromise = waitForBotReply(client, BOT, WAIT_MS);  // 1. Подписка
+await sendMessage(client, step.message);                      // 2. Отправка
+const response = await replyPromise;                          // 3. Ждём event
+```
+
+### Phase 7.2: Markdown конвертер ✅
+
+**Проблема:** Бот падал с `GrammyError: can't parse entities` — LLM генерировал невалидный Markdown (незакрытые `**`).
+
+**Research (Context7 + WebSearch):**
+- [telegramify-markdown](https://github.com/skoropadas/telegramify-markdown) — npm пакет
+- ⭐ 87 stars, 📦 2064 downloads/week, обновлён 17 Dec 2025
+
+**Корневая причина:**
+| LLM генерирует | Telegram ожидает |
+|----------------|------------------|
+| Стандартный Markdown (GitHub/CommonMark) | Telegram MarkdownV2 (другой синтаксис + escaping) |
+
+**Решение (индустриальный стандарт):**
+```bash
+npm install telegramify-markdown
+```
+
+```typescript
+// format-response.ts
+import telegramifyMarkdown from "telegramify-markdown";
+
+return telegramifyMarkdown(formatted, "escape");
+```
+
+**Изменённые файлы:**
+| Файл | Изменение |
+|------|-----------|
+| `package.json` | +telegramify-markdown |
+| `src/telegram-bot/presenters/format-response.ts` | +telegramifyMarkdown() |
+| `src/telegram-bot/handlers/converse.ts` | parse_mode: "MarkdownV2" |
+| `src/telegram-bot/handlers/document.ts` | parse_mode: "MarkdownV2" |
+| `src/telegram-bot/handlers/voice.ts` | parse_mode: "MarkdownV2" |
+| `poc/demo-video-1-telegram.ts` | WAIT_MS: 45000, waitForBotReply() |
+| `poc/demo-video-2-telegram.ts` | waitForBotReply() |
+
+**Результат:** demo-video-1-telegram.ts — 6/6 ✅
+
+---
+
+## Осталось сделать
+
+### Phase 7: GramJS Telegram e2e tests ✅ DONE
+
+- [x] Fix `getLastBotMessage()` → заменён на `waitForBotReply()` с Event Handler
+- [x] Протестировать demo-video-1-telegram.ts — 6/6 ✅
+- [ ] Протестировать demo-video-2-telegram.ts (PDF upload)
+
+### Финал
+
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt
+
+- [ ] FEAT-057: Goal как graph properties
+- [ ] FEAT-058: Удалить абстракцию Phases (→ interrupt payload = response)
+
+---
+
+## Рефлексия сессии (Phase 7)
+
+### Anti-patterns (Phase 7.0 — предыдущая сессия)
+
+29. **Не понял требование** — пользователь сказал "телеграм e2e тесты", я создал MCP integration тесты. Пользователь указал пример `poc/e2e-variant2-llm-user-prod.ts` — я должен был СРАЗУ прочитать его. Урок: **при указании примера — сначала читай пример, потом делай**
+
+30. **Создал код без понимания контекста** — сделал MCP тесты потому что уже знал инфраструктуру telegram-bot/integration. Не спросил "как именно тесты должны работать?". Урок: **если требование неоднозначно — уточнять ДО начала реализации**
+
+31. **getLastBotMessage без фильтрации по времени** — классическая ошибка при работе с chat history. Telegram GetHistory возвращает все сообщения, нужно фильтровать по дате. Урок: **при получении истории чата — всегда фильтровать по времени отправки**
+
+### Anti-patterns (Phase 7.1-7.2 — текущая сессия)
+
+32. **Написал "предположительно" про код который уже читал** — пользователь указал что файлы были прочитаны в начале сессии, а я писал "предположительно". Урок: **не писать "предположительно" если файл уже прочитан — использовать конкретику**
+
+33. **Предложил костыльный sanitize вместо best practice** — первое решение было ручной sanitize Markdown (подсчёт `**`). Пользователь спросил "это best practice?". Урок: **СНАЧАЛА искать индустриальные решения (Context7 + WebSearch), ПОТОМ предлагать**
+
+34. **Не проверил популярность решения** — рекомендовал библиотеку без проверки stars/downloads. Пользователь попросил статистику. Урок: **при рекомендации библиотеки — СРАЗУ давать статистику (stars, downloads, last update)**
+
+35. **Объяснял без конкретики** — первые объяснения были абстрактными. Пользователь переспрашивал "что значит?". Урок: **объяснять на КОНКРЕТНЫХ примерах с визуализацией (таблицы, временные шкалы)**
+
+36. **Polling вместо Event Handler** — изначально предложил fix через afterDate (всё ещё polling). Best practice — Event Handler (`NewMessage`). Урок: **при работе с real-time данными — Event Handler > Polling**
+
+---
+
 ## Промпт для продолжения после rewind
 
 ```
-Продолжаем FEAT-055 Demo Video.
+Продолжаем FEAT-055 Demo Video — Phase 7.3 PDF upload test.
 
 ПРОЧИТАЙ: `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md`
 
-**Статус:** Phase 6.15 ЗАВЕРШЕНО. Все тесты проходят, готово к commit.
+**Статус:**
+- demo-video-1-telegram.ts — 6/6 ✅
+- telegramify-markdown установлен ✅
+- parse_mode: "MarkdownV2" ✅
 
-**Результаты:**
-- demo-adhoc.yaml: 9/9 ✅
-- demo-cold-start.yaml: 21/21 ✅
-- Overlap #1: 2800d (распределён по timeline 2016-2026) ✅
-- Advisor: без галлюцинаций ✅
-- Chart layout: Spider рядом с таблицей, Total = 68% (2.03/3.00) ✅
+**Следующий шаг:**
+- Протестировать demo-video-2-telegram.ts (PDF cold-start flow)
 
-**Что было сделано (Phase 6.15):**
-1. Overlap fix — коррекции в batch test диалоге (domains/industry extraction)
-2. Advisor fix — RESPONSE RULES без примеров "Google"
-3. Chart layout — spider в #metrics-row, Total %, margin 180
-
-**Что дальше:**
-1. Commit изменений
-2. Phase 7: grammY e2e tests
-3. Записать демо видео
-
-**Перед batch test — cleanup:**
-```cypher
-MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055' DETACH DELETE u
+**Запуск:**
+```bash
+set -a && source .env.test && set +a
+npm run bot:test &
+sleep 5
+npx tsx poc/demo-video-2-telegram.ts
 ```
 ```

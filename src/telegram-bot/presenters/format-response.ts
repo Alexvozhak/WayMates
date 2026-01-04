@@ -1,3 +1,5 @@
+import telegramifyMarkdown from "telegramify-markdown";
+
 import type { ConverseResponse, Locale } from "../../shared/schemas.js";
 
 const CHART_LINK_LABEL: Record<Locale, string> = {
@@ -28,5 +30,6 @@ export function formatResponse(converseResp: ConverseResponse, languageCode?: st
     formatted += `\n\n📊 [${CHART_LINK_LABEL[locale]}](${chartUrl})`;
   }
 
-  return formatted;
+  // Convert standard Markdown to Telegram MarkdownV2
+  return telegramifyMarkdown(formatted, "escape");
 }
