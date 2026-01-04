@@ -57,8 +57,8 @@ steps:
     expect:
       phase: awaiting_context_confirmation
 
-  # Step 3: Context 1 (Software Engineer) - add missing skills
-  - message: "add skills: qt5, android"
+  # Step 3: Context 1 (Software Engineer) - fix domains, industry, add skills
+  - message: "change domains to backend and mobile, change industry to technology, add skills: qt5, android"
     expect:
       phase: awaiting_context_confirmation
 
@@ -67,8 +67,8 @@ steps:
     expect:
       phase: awaiting_context_confirmation
 
-  # Step 5: Context 2 (Backend Team Lead) - add tech skills (LLM extracts only methodologies)
-  - message: "add skills: c++, qt, docker, groovy"
+  # Step 5: Context 2 (Backend Team Lead) - fix industry, add tech skills
+  - message: "change industry to technology, add skills: c++, qt, docker, groovy"
     expect:
       phase: awaiting_context_confirmation
 

@@ -399,68 +399,110 @@ LLM не знал как декомпозировать "Technical Project Manag
 - [x] **demo-adhoc.yaml** — 9/9 ✅
 - [x] **demo-cold-start.yaml** — 21/21 ✅ (один прогон)
 
-### Phase 6.14: Pathfinder search debugging (текущая сессия)
+### Phase 6.14: Pathfinder search debugging ✅
 
-**Статус:** В процессе — найдена но НЕ решена root cause
+**Статус:** ЗАВЕРШЕНО
 
 **Проблемы найдены и исправлены:**
 
 1. **Roles verified=false** — после `import-demo-fixtures.ts` roles пересоздаются с `verified=false` через `persistence.ts`. Normalizer не может найти "manager" в словаре → role отфильтровывается.
    - **Fix:** Запускать `db:test:init` ПОСЛЕ `import-demo-fixtures.ts`
-   - **Изменённые файлы:** нет (workflow fix)
 
 2. **userContext → adhocContextBase conversion** — pathfinder search в profile mode передавал `userContext` (с extra полями contextId, dates) вместо `adhocContextBase` в Core.
    - **Fix:** `adhocContextBase.parse(userContext)` в `search-pathfinders.ts:29`
-   - **Изменённые файлы:** `src/facade/langGraph/search-graph/nodes/search-pathfinders.ts`
 
-3. **Мусорные users в БД** — adhoc/cold-start batch tests создают users которые остаются и попадают в результаты следующих поисков.
+3. **Мусорные users в БД** — batch tests создают users которые остаются и попадают в результаты.
    - **Fix:** Чистить users перед batch test: `MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055' DETACH DELETE u`
-   - **Открытый вопрос:** Добавить cleanup в batch test setup?
 
-**Проблема НЕ решена:**
+### Phase 6.15: Overlap + Advisor + Chart Layout ✅
 
-Pathfinder search через API возвращает 0 results, хотя:
-- Cypher напрямую в MCP Neo4j находит 4 pathfinders ✅
-- queryParams в Core логируются корректно ✅
-- `referenceContext` конвертируется правильно ✅
+**Статус:** ЗАВЕРШЕНО
 
-**Debug logging показал:**
-```
-[SearchManager] pathfinder Cypher returned 0 records
-```
+| # | Проблема | Причина | Fix | Файл |
+|---|----------|---------|-----|------|
+| 1 | Overlap только справа | LLM extraction давал неправильные domains/industry | Коррекции в batch test диалоге | `tests/e2e/batches/demo-cold-start.yaml` |
+| 2 | Advisor галлюцинации "Google" | Пример "Senior at Google" в промпте | RESPONSE RULES без конкретных примеров | `src/facade/langGraph/search-graph/prompts/advisor.ts` |
+| 3 | Spider сверху вместо рядом с таблицей | Layout #charts-row | Новый #metrics-row (flex) | `src/chart/builders/html-renderer.ts` |
+| 4 | Total без контекста (2.70) | Формат toFixed(2) | 68% (2.03/3.00) — процент + raw | `src/chart/builders/html-renderer.ts:195-196` |
+| 5 | Domain labels обрезались | margin.l: 150 | margin.l: 180 | `src/chart/builders/html-renderer.ts:533` |
 
-**Гипотеза:** Проблема в том как Neo4j интерпретирует `$referenceContext.position` в WHERE clause. Cypher использует object property access (`$referenceContext.position`), но при передаче через tRPC/Neo4j driver что-то теряется.
-
-**Созданные артефакты:**
-- `poc/test-pathfinder-search.ts` — quick test без 2-минутного cold-start flow
-- Debug logging в `search-manager.ts` и `search-pathfinders.ts`
-
-**TODO для следующей сессии:**
-- [ ] Логировать generated Cypher query в search-manager.ts
-- [ ] Выполнить ТОТ ЖЕ query с ТЕМИ ЖЕ params напрямую в MCP Neo4j
-- [ ] Проверить что `$referenceContext.position` работает в Neo4j driver
-- [ ] Если не работает → destructure referenceContext в queryParams
+**Результаты:**
+- demo-cold-start.yaml: **21/21 ✅** (219s)
+- Overlap #1: **2800d** распределён по timeline (2016-2026)
+- Advisor: без галлюцинаций
+- Chart: Spider рядом с таблицей, Total = 68% (2.03/3.00)
 
 ---
 
-## Рефлексия сессии (Phase 6.13-6.14)
+## Осталось сделать
+
+### Готово к commit ✅
+
+Все тесты проходят:
+- [x] demo-adhoc.yaml: 9/9 ✅
+- [x] demo-cold-start.yaml: 21/21 ✅
+- [x] Advisor без галлюцинаций ✅
+- [x] Chart layout правильный ✅
+- [x] Overlap распределён по timeline ✅
+
+### Phase 7: grammY e2e tests
+
+- [ ] `tests/telegram-bot/e2e/demo-video-1.e2e.ts` (adhoc)
+- [ ] `tests/telegram-bot/e2e/demo-video-2.e2e.ts` (PDF upload через `Profile.pdf`)
+
+### Финал
+
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt
+
+- [ ] FEAT-057: Goal как graph properties
+- [ ] FEAT-058: Удалить абстракцию Phases (→ interrupt payload = response)
+
+---
+
+## Рефлексия сессии (Phase 6.13-6.15)
 
 ### Anti-patterns (Phase 6.13)
 
 15. **Не сравнил промпты перед дебагом** — потратил время на логи facade/core вместо простого diff adhoc vs cold-start промптов. Урок: при расхождении поведения двух flow → сначала сравнить промпты
-16. **Добавил неинформативный пример** — `"Software Engineer" → position: "middle" or "senior"` без контекста — ни о чём. Урок: примеры должны быть конкретными с полным контекстом, или вообще не добавлять
-17. **Не подумал о переиспользовании** — добавил DECOMPOSITION в cold-start копипастом вместо shared constant. Урок: при дублировании логики → сразу выносить в общий модуль
-18. **Normalizer добавляет мусор** — при cold-start normalizer вызывает `normalizeTerm()` который добавляет non-canonical terms если fuzzy match не сработал. Урок: проверять что normalizer не загрязняет словари
-19. **Продолжал batch test после первого расхождения** — нужно останавливаться сразу и диагностировать. Урок: первое расхождение = стоп, анализ
-20. **Не спросил о возможности унификации** — adhoc и cold-start имеют похожие промпты, но я не предложил их объединить. Урок: при обнаружении дублирования → сразу спросить "можно ли объединить?"
+16. **Добавил неинформативный пример** — `"Software Engineer" → position: "middle" or "senior"` без контекста. Урок: примеры должны быть конкретными с полным контекстом
+17. **Не подумал о переиспользовании** — добавил DECOMPOSITION в cold-start копипастом вместо shared constant. Урок: при дублировании → сразу выносить в общий модуль
+18. **Normalizer добавляет мусор** — `normalizeTerm()` добавляет non-canonical terms. Урок: проверять что normalizer не загрязняет словари
+19. **Продолжал batch test после первого расхождения**. Урок: первое расхождение = стоп, анализ
+20. **Не спросил о возможности унификации**. Урок: при обнаружении дублирования → сразу спросить
 
 ### Anti-patterns (Phase 6.14)
 
-21. **Не проверил Redis cache сразу** — при проблеме с role=null потратил время на debug промптов, когда проблема была в `verified=false` и Redis cache. Урок: при normalizer проблемах → сначала проверить Redis cache и dictionary verified status
-22. **Долгий feedback loop** — использовал 2+ минутный cold-start batch test вместо создания quick test script. Урок: для отладки создать minimal reproduction script СРАЗУ
-23. **Инкрементальный debug logging** — добавлял logging по одному вместо comprehensive logging сразу. Урок: при непонятном поведении → добавить logging на ВСЕХ уровнях (facade → core → cypher) за один раз
-24. **Не понял разницу типов** — userContext ≠ adhocContextBase, типы разные. Урок: при передаче данных между слоями → проверять что типы совместимы
-25. **Не логировал generated query** — видел что Cypher возвращает 0, но не видел КАКОЙ query выполняется. Урок: при Cypher debugging → логировать И query И params
+21. **Не проверил Redis cache сразу**. Урок: при normalizer проблемах → сначала проверить Redis cache и dictionary verified status
+22. **Долгий feedback loop** — 2+ мин batch test вместо quick test script. Урок: создать minimal reproduction script СРАЗУ
+23. **Инкрементальный debug logging**. Урок: добавить logging на ВСЕХ уровнях за один раз
+24. **Не понял разницу типов** — userContext ≠ adhocContextBase. Урок: проверять что типы совместимы
+25. **Не логировал generated query**. Урок: при Cypher debugging → логировать И query И params
+
+### Anti-patterns (Phase 6.15)
+
+26. **Смотрел СТАРЫЕ chart URLs** — пользователь дал старые URLs, а фиксы были в новых. Урок: при визуальной проверке фиксов → сначала уточнить какие артефакты актуальны
+27. **Начал анализ fixtures вместо чтения отчётов** — пользователь дал готовые отчёты с root cause, но я начал свой анализ. Урок: если есть готовый контекст — сначала прочитать его ПОЛНОСТЬЮ
+28. **LLM копирует примеры буквально** — примеры "Google" в промпте → LLM подставлял "Google". Урок: примеры в промптах должны быть абстрактными (Candidate #N) или вообще отсутствовать
+
+---
+
+## Команды для проверки
+
+```bash
+# Cleanup garbage users
+MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055' DETACH DELETE u
+
+# Batch tests
+set -a && source .env.test && set +a
+OPENROUTER_API_KEY=sk-or-v1-... npx tsx poc/mcp-chat.ts --session demo-adhoc --reset --batch tests/e2e/batches/demo-adhoc.yaml
+OPENROUTER_API_KEY=sk-or-v1-... npx tsx poc/mcp-chat.ts --session demo-cs --reset --batch tests/e2e/batches/demo-cold-start.yaml
+
+# Quick chart test
+npx tsx poc/test-chart-overlap.ts
+```
 
 ---
 
@@ -469,41 +511,29 @@ Pathfinder search через API возвращает 0 results, хотя:
 ```
 Продолжаем FEAT-055 Demo Video.
 
-ПРОЧИТАЙ ПОЛНОСТЬЮ: `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md`
+ПРОЧИТАЙ: `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md`
 
-**Статус:** Phase 6.14 В ПРОЦЕССЕ. Pathfinder search debugging — найдена но НЕ решена root cause.
+**Статус:** Phase 6.15 ЗАВЕРШЕНО. Все тесты проходят, готово к commit.
 
-**Контекст:**
+**Результаты:**
 - demo-adhoc.yaml: 9/9 ✅
-- demo-cold-start.yaml: 21/21 ✅ (был один успешный прогон), но после перезапуска инфры → 12/13 fail (chartUrl=null)
-- DECOMPOSITION_RULES вынесены в shared, используются в adhoc и cold-start ✅
-- userContext → adhocContextBase conversion добавлена ✅
+- demo-cold-start.yaml: 21/21 ✅
+- Overlap #1: 2800d (распределён по timeline 2016-2026) ✅
+- Advisor: без галлюцинаций ✅
+- Chart layout: Spider рядом с таблицей, Total = 68% (2.03/3.00) ✅
 
-**Нерешённая проблема:**
-Pathfinder search через API возвращает 0 results:
-- Cypher напрямую в MCP Neo4j находит 4 pathfinders ✅
-- queryParams в Core логируются корректно ✅
-- `[SearchManager] pathfinder Cypher returned 0 records` ❌
+**Что было сделано (Phase 6.15):**
+1. Overlap fix — коррекции в batch test диалоге (domains/industry extraction)
+2. Advisor fix — RESPONSE RULES без примеров "Google"
+3. Chart layout — spider в #metrics-row, Total %, margin 180
 
-**Гипотеза:** `$referenceContext.position` в WHERE clause не работает через Neo4j driver (object property access).
+**Что дальше:**
+1. Commit изменений
+2. Phase 7: grammY e2e tests
+3. Записать демо видео
 
-**TODO (критично):**
-- [ ] Логировать generated Cypher query в search-manager.ts
-- [ ] Выполнить ТОТ ЖЕ query с ТЕМИ ЖЕ params напрямую в MCP Neo4j
-- [ ] Если `$referenceContext.position` не работает → destructure referenceContext в queryParams
-
-**Quick test (без 2-минутного cold-start):**
-```bash
-set -a && source .env.test && set +a && npx tsx poc/test-pathfinder-search.ts
-```
-
-**Перед тестом — cleanup:**
+**Перед batch test — cleanup:**
 ```cypher
 MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055' DETACH DELETE u
 ```
-
-**Ключевые файлы:**
-- `src/core/search-manager.ts` — debug logging добавлен
-- `src/facade/langGraph/search-graph/nodes/search-pathfinders.ts` — adhocContextBase.parse() добавлен
-- `poc/test-pathfinder-search.ts` — quick test script
 ```

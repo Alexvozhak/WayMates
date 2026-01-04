@@ -69,14 +69,6 @@ export class HtmlRenderer {
   }
 
   private buildHtmlDocument(): string {
-    const showDtwSection = this.data.mode === "full" && this.hasDtwData;
-    const spiderSection = showDtwSection
-      ? `<div id="spider-chart-container">
-      <h4>DTW Similarity</h4>
-      <div id="spider-chart"></div>
-    </div>`
-      : "";
-
     return `<!DOCTYPE html>
 <html lang="${this.data.locale}">
 <head>
@@ -88,13 +80,10 @@ export class HtmlRenderer {
 </head>
 <body>
   ${this.buildControls()}
-  <div id="charts-row">
-    <div id="main-chart-container">
-      <div id="main-chart"></div>
-    </div>
-    ${spiderSection}
+  <div id="main-chart-container">
+    <div id="main-chart"></div>
   </div>
-  ${this.buildMetricsTable()}
+  ${this.buildMetricsSection()}
   ${this.buildScript()}
 </body>
 </html>`;
@@ -115,13 +104,14 @@ export class HtmlRenderer {
     #export-btn { background: #10b981; color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
     #export-btn:hover { background: #059669; }
     #main-chart { width: 100%; }
-    #metrics { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    #main-chart-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: visible; }
+    #metrics-row { display: flex; gap: 20px; align-items: flex-start; }
+    #metrics { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    #metrics h4 { margin: 0 0 15px 0; font-size: 14px; color: #374151; }
     #metrics table { width: 100%; border-collapse: collapse; }
     #metrics th, #metrics td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
     #metrics th { background: #f3f4f6; font-weight: 600; }
-    #charts-row { display: flex; gap: 20px; margin-bottom: 20px; align-items: flex-start; }
-    #main-chart-container { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: visible; }
-    #spider-chart-container { width: 350px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    #spider-chart-container { width: 380px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     #spider-chart-container h4 { margin: 0 0 10px 0; font-size: 14px; color: #374151; }
   </style>`;
   }
@@ -179,8 +169,16 @@ export class HtmlRenderer {
   `;
   }
 
-  private buildMetricsTable(): string {
+  private buildMetricsSection(): string {
     if (!this.hasDtwData) return "";
+
+    const showSpider = this.data.mode === "full";
+    const spiderHtml = showSpider
+      ? `<div id="spider-chart-container">
+        <h4>DTW Similarity</h4>
+        <div id="spider-chart"></div>
+      </div>`
+      : "";
 
     const headers = ["#", "Type", "Shape", "Tempo", "Alignment", "Total"];
     const sortedMetrics = this.data.metrics.toSorted((a, b) => b.overall - a.overall);
@@ -194,7 +192,8 @@ export class HtmlRenderer {
         const shape = metric.perField.position ? `${Math.round(metric.perField.position * 100)}%` : "—";
         const tempo = metric.perField.domains ? `${Math.round(metric.perField.domains * 100)}%` : "—";
         const alignment = metric.perField.cityName ? `${Math.round(metric.perField.cityName * 100)}%` : "—";
-        const total = metric.overall > 0 ? metric.overall.toFixed(2) : "—";
+        const totalPercent = metric.overall > 0 ? `${Math.round((metric.overall / 3) * 100)}%` : "—";
+        const totalSum = metric.overall > 0 ? `(${metric.overall.toFixed(2)}/3.00)` : "";
 
         return `
         <tr data-candidate-id="${metric.candidateId}">
@@ -203,20 +202,23 @@ export class HtmlRenderer {
           <td>${shape}</td>
           <td>${tempo}</td>
           <td>${alignment}</td>
-          <td><strong>${total}</strong></td>
+          <td><strong>${totalPercent}</strong> <span style="color:#9ca3af;font-size:12px;">${totalSum}</span></td>
         </tr>`;
       })
       .join("\n");
 
     return `
-    <div id="metrics">
-      <h4>Trajectory Similarity Metrics</h4>
-      <table>
-        <thead>
-          <tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div id="metrics-row">
+      <div id="metrics">
+        <h4>Trajectory Similarity Metrics</h4>
+        <table>
+          <thead>
+            <tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      ${spiderHtml}
     </div>
   `;
   }
@@ -520,27 +522,48 @@ export class HtmlRenderer {
       const chartAreaTop = 0.95;
       const chartAreaBottom = isCandidatesOnly ? 0.05 : overlapHeight + 0.05;
       const chartHeight = chartAreaTop - chartAreaBottom;
-      const subplotHeight = chartHeight / numFields;
       const gap = 0.015;
+
+      // Calculate proportional heights based on level counts (more levels = more height)
+      const levelCounts = fields.map(f => Math.max(getFieldConfig(f).levels.length, 2));
+      const totalLevels = levelCounts.reduce((sum, c) => sum + c, 0);
+      const totalGaps = (numFields - 1) * gap;
+      const availableHeight = chartHeight - totalGaps;
+      const subplotHeights = levelCounts.map(count => availableHeight * (count / totalLevels));
+
+      // Calculate extra height for fields with many levels (>5 levels need more space)
+      const maxLevels = Math.max(...levelCounts);
+      const extraHeightPerField = maxLevels > 5 ? (maxLevels - 5) * 15 : 0;
+      const baseHeight = isCandidatesOnly ? 300 + numFields * (160 + extraHeightPerField) : 300 + numFields * (160 + extraHeightPerField) + Math.max(candidates.length, 2) * 40;
 
       const layout = {
         title: { text: '${this.title}', font: { size: 18 } },
         showlegend: true, legend: { x: 1.02, y: 1, xanchor: 'left' },
         hovermode: 'closest',
-        height: isCandidatesOnly ? 300 + numFields * 160 : 300 + numFields * 160 + Math.max(candidates.length, 2) * 40,
-        margin: { l: 150, r: 150, t: 60 }, annotations: [], shapes: []
+        height: baseHeight,
+        margin: { l: 180, r: 150, t: 60 }, annotations: [], shapes: []
       };
+
+      // Pre-calculate cumulative heights for domain positioning
+      let cumulativeHeight = 0;
+      const domainTops = subplotHeights.map((h, i) => {
+        const top = chartAreaTop - cumulativeHeight - (i > 0 ? gap : 0);
+        cumulativeHeight += h + (i > 0 ? gap : 0);
+        return top;
+      });
 
       fields.forEach((field, index) => {
         const config = getFieldConfig(field);
         const yaxisKey = index === 0 ? 'yaxis' : 'yaxis' + (index + 1);
         const xaxisKey = index === 0 ? 'xaxis' : 'xaxis' + (index + 1);
-        const domainTop = chartAreaTop - index * (subplotHeight + gap);
-        const domainBottom = domainTop - subplotHeight + gap;
+        const domainTop = domainTops[index];
+        const domainBottom = domainTop - subplotHeights[index];
         const domainMid = (domainTop + Math.max(domainBottom, chartAreaBottom)) / 2;
 
         const levelCount = config.levels.length;
-        const tickSize = levelCount > 15 ? 6 : levelCount > 10 ? 7 : levelCount > 6 ? 8 : 10;
+        const tickSize = levelCount > 12 ? 6 : levelCount > 8 ? 7 : levelCount > 5 ? 8 : 10;
+        // Add extra spacing between Y-axis labels when crowded
+        const tickPadding = levelCount > 5 ? 8 : 3;
         layout[yaxisKey] = {
           domain: [Math.max(domainBottom, chartAreaBottom), domainTop],
           anchor: index === 0 ? 'x' : 'x' + (index + 1),
@@ -548,6 +571,7 @@ export class HtmlRenderer {
           tickvals: levelCount > 0 ? config.levels.map((_, i) => i) : undefined,
           ticktext: levelCount > 0 ? config.levels : undefined,
           tickfont: { size: tickSize, color: '#6b7280' },
+          ticklabelstandoff: tickPadding,
           automargin: true
         };
         layout[xaxisKey] = { type: 'date', anchor: index === 0 ? 'y' : 'y' + (index + 1), showticklabels: false };
@@ -562,6 +586,7 @@ export class HtmlRenderer {
           font: { size: 14, color: '#1e3a5f' },
           showarrow: false
         });
+
       });
 
       const overlapAxisNum = numFields + 1;

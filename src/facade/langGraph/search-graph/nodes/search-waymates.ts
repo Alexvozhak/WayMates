@@ -18,11 +18,14 @@ export const searchWaymatesNode = withLogging<SearchStateType>(
 
     const params = currentSearchParams ?? { ...DEFAULT_CURRENT_SEARCH_PARAMS };
 
-    const results = await coreClient.client.search.waymates.query({
+    const allResults = await coreClient.client.search.waymates.query({
       userId,
       referenceContext: adhocContext ?? undefined,
       ...params,
     });
+
+    // Filter to only show actual waymates (same goal) — user asked for waymates, not just similar people
+    const results = allResults.filter((candidate) => candidate.isWaymate);
 
     const needsFiltering = shouldUseFacets(results);
 
