@@ -25,6 +25,14 @@
 | **Первопричина** | Не понимаю что LLM не знает канонические значения проекта и будет выдумывать ("Information Technology" вместо "backend") |
 | **Правило** | Словари = source of truth. Инжектировать position, domain, skill, industry в промпт. LLM сопоставляет семантически |
 
+### "map to KNOWN X" без проверки buildHints
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Добавляю "map to KNOWN EDUCATION LEVELS" в field description, но education_level не в buildHints() вызовах |
+| **Первопричина** | Предполагаю что словарь инжектируется, не проверяю. Hint без словаря = LLM угадывает |
+| **Правило** | "map to KNOWN X" валиден ТОЛЬКО если X есть в `buildHints([..., "x"])`. Чеклист: (1) grep buildHints по ВСЕМ flows, (2) добавить тип в массив, (3) добавить описание в prompt секцию |
+
 ### Multilingual input
 
 | | |
@@ -744,4 +752,28 @@
 | **Паттерн ошибки** | Инжектирую params (currentSearchParams) через test helper, но они теряются после первого node |
 | **Первопричина** | Node не возвращает поле в return → LangGraph использует default из annotation (null). Params исчезают |
 | **Правило** | Nodes которые НЕ меняют params должны возвращать их: `return { ...result, currentSearchParams: state.currentSearchParams }`. Альтернатива: parse node перезаписывает `newParams ?? state.params` |
+
+### undefined теряется в JSON.stringify
+
+| | |
+|---|---|
+| **Паттерн ошибки** | `answerText: state.currentAnswer` где currentAnswer может быть undefined |
+| **Первопричина** | `JSON.stringify({a: undefined})` → `{}` (поле пропадает). NLP formatter не видит поле вообще |
+| **Правило** | Явно конвертировать undefined в null: `answerText: state.currentAnswer ?? null`. JSON сохранит поле со значением null |
+
+### Prompt "X FIRST, then Y" → LLM делает оба
+
+| | |
+|---|---|
+| **Паттерн ошибки** | "Show answer FIRST, then brief results summary" — LLM показывал и answer и results |
+| **Первопричина** | LLM буквально выполняет инструкцию. "FIRST, then" = последовательность, не выбор |
+| **Правило** | Для условного выбора: "Show ONLY the answer. Do NOT show results/goal/filters." Явно указывать что НЕ делать |
+
+### Debug от конца к началу
+
+| | |
+|---|---|
+| **Паттерн ошибки** | Искал проблему в classification, хотя баг был в response-builder |
+| **Первопричина** | Debug "по потоку" (от начала к концу). Но если конечный результат неверный, эффективнее идти от конца |
+| **Правило** | При проблеме с output: (1) проверить что NLP formatter получил, (2) проверить что response-builder вернул, (3) потом classification. От конца к началу |
 

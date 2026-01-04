@@ -9,11 +9,16 @@ allowed-tools:
     "Glob",
     "TodoWrite",
     "Task",
+    "SlashCommand",
     "AskUserQuestion",
+    "WebSearch",
+    "WebFetch",
     "mcp__neo4j-cypher__read_neo4j_cypher",
     "mcp__neo4j-cypher__get_neo4j_schema",
     "mcp__filesystem__search_files",
     "mcp__filesystem__read_multiple_files",
+    "mcp__context7__resolve-library-id",
+    "mcp__context7__get-library-docs",
     "Bash(npm run:*)",
     "Bash(npx tsc:*)",
     "Bash(git status:*)",
@@ -56,6 +61,7 @@ allowed-tools:
 - /home/alex/projects/WayMatesRemote/mvp-test-final/KNOWLEDGE-BASE.md
 - /home/alex/projects/WayMatesRemote/mvp-test-final/tests_report.md
 - /home/alex/projects/WayMatesRemote/eslint.config.mjs
+- /home/alex/projects/WayMatesRemote/mvp-test-final/latest-news.md
 
 **Куда обращаться:**
 | Вопрос | Источник |

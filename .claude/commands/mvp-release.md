@@ -15,6 +15,8 @@ allowed-tools:
     "WebFetch",
     "mcp__context7__resolve-library-id",
     "mcp__context7__get-library-docs",
+    "mcp__neo4j-cypher__read_neo4j_cypher",
+    "mcp__neo4j-cypher__get_neo4j_schema",
     "mcp__memory__search_nodes",
     "mcp__memory__read_graph",
     "mcp__memory__create_entities",
@@ -31,6 +33,7 @@ allowed-tools:
     "Bash(find:*)",
     "Bash(tree:*)",
     "Bash(wc:*)",
+    "mcp__sequential-thinking__sequentialthinking",
   ]
 ---
 
@@ -61,6 +64,10 @@ Read vitest.config.ts
 
 # 5. Инфраструктура (если нужно)
 Read .claude/routers/infrastructure/router.md
+
+Read /home/alex/projects/WayMatesRemote/.claude/context/guidelines.md
+Read /home/alex/projects/WayMatesRemote/mvp-test-final/BUSINESS-LOGIC-MVP.md
+Read /home/alex/projects/WayMatesRemote/mvp-test-final/KNOWLEDGE-BASE.md
 ```
 
 ---

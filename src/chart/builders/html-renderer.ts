@@ -32,7 +32,7 @@ const FIELD_LABELS: Record<Locale, Record<ChartableField, string>> = {
     countryCode: "Country",
     cityName: "City",
     industry: "Industry",
-    salaryExact: "Salary",
+    salaryExact: "Salary (USD)",
   },
   ru: {
     position: "Грейд",
@@ -41,7 +41,7 @@ const FIELD_LABELS: Record<Locale, Record<ChartableField, string>> = {
     countryCode: "Страна",
     cityName: "Город",
     industry: "Индустрия",
-    salaryExact: "Зарплата",
+    salaryExact: "Зарплата (USD)",
   },
 };
 

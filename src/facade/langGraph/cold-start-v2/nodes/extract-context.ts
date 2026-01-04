@@ -103,6 +103,7 @@ export const extractContextNode = withLogging<ColdStartStateType>(
       "domain",
       "skill",
       "industry",
+      "education_level",
       "reasons",
     ]);
 

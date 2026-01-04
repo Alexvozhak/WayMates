@@ -14,7 +14,7 @@ import type { SearchStateType } from "../state.js";
 export const showResultsNode = withLogging<SearchStateType>(NODE.show_results, (state, _config, _deps) => {
   const userResponse = interrupt({
     type: "show_results",
-    results: state.searchResults,
+    results: state.waymatesResults,
     goal: state.storedGoal,
     chartUrl: state.chartUrl,
     phase: state.phase,

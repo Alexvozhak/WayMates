@@ -329,6 +329,7 @@ CAREER MODEL (key dimensions):
 
 OPTIONAL FIELDS (include ONLY if user explicitly mentioned FOR THIS SPECIFIC POSITION):
 ═══════════════════════════════════════════════════
+- educationLevel: highest degree achieved — map to KNOWN EDUCATION LEVELS
 - salaryExact: exact annual salary in USD (if user gives precise number like "120k" or "150000")
 - salaryMin/salaryMax: salary range in USD (if user gives range like "100-150k")
   Note: Use EITHER exact OR range, not both. Convert to annual USD.

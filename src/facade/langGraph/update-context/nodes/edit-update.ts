@@ -11,7 +11,7 @@ import { withLogging } from "../with-logging.js";
 import type { UpdateContextStateType } from "../state.js";
 
 const editModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableContextSchema, "Explain what corrections you applied and why")
+  withReasoning(extractableContextSchema, "Explain what corrections you applied and why"),
 );
 
 export const editUpdateNode = withLogging<UpdateContextStateType>(
@@ -20,7 +20,14 @@ export const editUpdateNode = withLogging<UpdateContextStateType>(
     const { mergedContext, parsedDecision, messages } = state;
 
     const corrections = parsedDecision?.editInstructions ?? "";
-    const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
+    const hints = await dictionariesService.buildHints([
+      "role",
+      "position",
+      "domain",
+      "skill",
+      "industry",
+      "education_level",
+    ]);
     const prompt = buildUpdateClarificationPrompt(hints, JSON.stringify(mergedContext, null, 2), corrections);
 
     const { reasoning, ...edited } = await editModel.invoke([

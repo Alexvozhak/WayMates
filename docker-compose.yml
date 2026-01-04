@@ -213,6 +213,30 @@ services:
       start_period: 15s
     restart: "no"
 
+  telegram-bot-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: telegram-bot-test
+    container_name: waymates-telegram-bot-test
+    profiles: ["test"]
+    network_mode: host
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      FACADE_MCP_URL: http://localhost:${FACADE_HTTP_PORT}/mcp
+      REDIS_URL: redis://localhost:${REDIS_PORT}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      TELEGRAM_PRESENTER_RPM_LIMIT: ${TELEGRAM_PRESENTER_RPM_LIMIT:-60}
+      TELEGRAM_PRESENTER_MAX_CONCURRENT: ${TELEGRAM_PRESENTER_MAX_CONCURRENT:-5}
+    depends_on:
+      facade-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    restart: "no"
+
   # ============================================================================
   # TOOLS
   # ============================================================================

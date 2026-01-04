@@ -11,7 +11,7 @@ import { withLogging } from "../with-logging.js";
 import type { UpdateContextStateType } from "../state.js";
 
 const extractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableContextSchema, "Explain what updates you extracted and why")
+  withReasoning(extractableContextSchema, "Explain what updates you extracted and why"),
 );
 
 export const extractUpdatesNode = withLogging<UpdateContextStateType>(
@@ -20,7 +20,14 @@ export const extractUpdatesNode = withLogging<UpdateContextStateType>(
     const { messages, userResponse, currentContext } = state;
 
     const inputText = messages.length === 0 ? userResponse : messages.map((m) => m.content).join("\n");
-    const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
+    const hints = await dictionariesService.buildHints([
+      "role",
+      "position",
+      "domain",
+      "skill",
+      "industry",
+      "education_level",
+    ]);
     const prompt = buildUpdateExtractionPrompt(hints);
 
     const { reasoning, ...extracted } = await extractionModel.invoke([

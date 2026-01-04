@@ -5,11 +5,16 @@ import type { BotContext } from "../types.js";
 export async function handleStart(ctx: BotContext): Promise<void> {
   try {
     // Clear all active graph checkpoints to ensure clean state
+    // Ignore errors if session doesn't exist yet (nothing to cancel)
     const sessionId = await ctx.services.sessionService.getSessionId(ctx);
-    await ctx.services.mcpClient.callTool("cancel_all_graphs", {
-      sessionId,
-      requestId: ctx.requestId,
-    });
+    try {
+      await ctx.services.mcpClient.callTool("cancel_all_graphs", {
+        sessionId,
+        requestId: ctx.requestId,
+      });
+    } catch {
+      // Session may not exist yet — nothing to cancel, continue
+    }
 
     const welcomeMsg = await ctx.services.welcomePresenter.format(
       {

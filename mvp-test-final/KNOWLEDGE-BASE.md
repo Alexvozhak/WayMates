@@ -114,13 +114,14 @@ src/
 
 ### Docker сервисы (test profile)
 
-| Сервис     | Контейнер              | Порт |
-| ---------- | ---------------------- | ---- |
-| Neo4j      | waymates-neo4j-test    | 7689 |
-| PostgreSQL | waymates-postgres-test | 5433 |
-| Redis      | waymates-redis-test    | 6380 |
-| Core API   | waymates-core-test     | 9000 |
-| Facade MCP | waymates-facade-test   | 3001 |
+| Сервис       | Контейнер                   | Порт |
+| ------------ | --------------------------- | ---- |
+| Neo4j        | waymates-neo4j-test         | 7689 |
+| PostgreSQL   | waymates-postgres-test      | 5433 |
+| Redis        | waymates-redis-test         | 6380 |
+| Core API     | waymates-core-test          | 9000 |
+| Facade MCP   | waymates-facade-test        | 3001 |
+| Telegram Bot | waymates-telegram-bot-test  | -    |
 
 ### Команды запуска
 
@@ -131,7 +132,7 @@ npm run test:telegram:setup
 # Загрузить Kaggle данные (225 пользователей)
 set -a && source .env.test && set +a && npx tsx scripts/import-kaggle.ts
 
-# Запустить бота
+# Запустить бота (локально)
 npm run bot:test
 
 # Логи
@@ -139,14 +140,30 @@ docker logs waymates-facade-test -f
 docker logs waymates-core-test -f
 ```
 
+### Telegram Bot в Docker (рекомендуемый способ)
+
+```bash
+# Запуск/остановка
+npm run bot:docker:up       # Запустить бота в Docker
+npm run bot:docker:down     # Остановить
+npm run bot:docker:restart  # Пересобрать и перезапустить
+npm run bot:docker:clean    # Перезапуск с очисткой Redis сессий
+npm run bot:docker:logs     # Логи
+```
+
+**Преимущества Docker бота:**
+- Автоматически стартует при `npm run test:telegram:setup`
+- Перезапускается при `npm run facade:rebuild`
+- Изолирован от локальных процессов
+
 ### Hot Reload (после изменений в facade)
 
 ```bash
 # 1. Пересобрать facade + сбросить checkpoints
 npm run facade:rebuild
 
-# 2. Перезапустить бота (MCP сессия теряется!)
-npm run bot:kill && npm run bot:test
+# 2. Бот в Docker перезапускается автоматически
+# Для локального бота: npm run bot:kill && npm run bot:test
 ```
 
 ### Хранилища данных

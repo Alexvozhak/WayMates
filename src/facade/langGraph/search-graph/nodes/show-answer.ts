@@ -13,7 +13,7 @@ import type { SearchStateType } from "../state.js";
 export const showAnswerNode = withLogging<SearchStateType>(NODE.show_answer, (state, _config, _deps) => {
   const userResponse = interrupt({
     type: "show_answer",
-    answerText: state.currentAnswer,
+    answerText: state.answerText,
     phase: state.phase,
   });
 

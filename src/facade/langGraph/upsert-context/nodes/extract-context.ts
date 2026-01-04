@@ -11,7 +11,7 @@ import { withLogging } from "../with-logging.js";
 import type { UpsertContextStateType } from "../state.js";
 
 const extractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableContextSchema, "Explain what career context you extracted and why")
+  withReasoning(extractableContextSchema, "Explain what career context you extracted and why"),
 );
 
 export const extractContextNode = withLogging<UpsertContextStateType>(
@@ -20,7 +20,14 @@ export const extractContextNode = withLogging<UpsertContextStateType>(
     const { messages, userResponse } = state;
     const inputText = messages.length === 0 ? userResponse : messages.map((m) => m.content).join("\n");
 
-    const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
+    const hints = await dictionariesService.buildHints([
+      "role",
+      "position",
+      "domain",
+      "skill",
+      "industry",
+      "education_level",
+    ]);
     const prompt = buildContextExtractionPrompt(hints);
 
     const { reasoning, ...extracted } = await extractionModel.invoke([

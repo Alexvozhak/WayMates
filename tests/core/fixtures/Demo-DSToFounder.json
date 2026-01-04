@@ -76,8 +76,8 @@
       "citizenships": ["US"],
       "birthYear": 1990,
       "educationLevel": "PHD",
-      "salaryMin": 185000,
-      "salaryMax": 225000,
+      "salaryMin": 200000,
+      "salaryMax": 240000,
       "feedback": "AI startup leaders care about infra costs more than model accuracy. Learn to optimize GPU spend before you scale."
     }
   ],

@@ -1,4 +1,7 @@
-import type { Goal, UserContext, WaymateCandidate } from "../../../shared/schemas.js";
+import type { CandidateBase, Goal, UserContext } from "../../../shared/schemas.js";
+
+/** Max skills to show in advisor context (prevents prompt bloat) */
+export const ADVISOR_SKILLS_LIMIT = 10;
 
 type GoalCriteria = NonNullable<Goal["targetContext"]>;
 type CriterionValue = { values: string[]; mode?: string } | null | undefined;
@@ -8,25 +11,25 @@ function formatGoalPart(name: string, criterion: CriterionValue): string | null 
   return `${name}: ${criterion.values.join(", ")}`;
 }
 
-function formatDtwLine(c: WaymateCandidate): string | null {
+function formatDtwLine(c: CandidateBase): string | null {
   if (!c.dtwMetrics) return null;
   const { shapeSimilarity, tempoSimilarity, alignmentScore } = c.dtwMetrics;
   const total = c.dtwTotal?.toFixed(2) ?? "?";
   return `  DTW: shape=${shapeSimilarity.toFixed(2)}, tempo=${tempoSimilarity.toFixed(2)}, alignment=${alignmentScore.toFixed(2)} | total=${total}`;
 }
 
-function formatPathLine(c: WaymateCandidate): string | null {
+function formatPathLine(c: CandidateBase): string | null {
   if (!c.path?.length) return null;
   return `  Path: ${c.path.map((p) => p.position).join(" → ")}`;
 }
 
-function formatTrailsLine(c: WaymateCandidate): string | null {
+function formatTrailsLine(c: CandidateBase): string | null {
   if (!c.trails?.length) return null;
   return `  Trails: ${c.trails.map((t) => `${t.skill}@${t.platform}`).join(", ")}`;
 }
 
-function formatCandidateDetail(c: WaymateCandidate, index: number): string {
-  const type = c.isWaymate ? " (waymate)" : "";
+function formatCandidateDetail(c: CandidateBase, index: number): string {
+  const type = "isWaymate" in c && c.isWaymate ? " (waymate)" : "";
   const header = `#${index + 1}${type}: ${c.matchedContext.position} ${c.matchedContext.role}`;
   const feedback = c.matchedContext.feedback ? `  Feedback: "${c.matchedContext.feedback}"` : null;
 
@@ -49,7 +52,7 @@ export class AdvisorContextBuilder {
 
     const lines = trajectory.map(
       (ctx, i) =>
-        `  ${i + 1}. ${ctx.position} | ${ctx.role} | ${ctx.domains.join(", ")} | ${ctx.skills.slice(0, 5).join(", ")}${ctx.skills.length > 5 ? "..." : ""}`,
+        `  ${i + 1}. ${ctx.position} | ${ctx.role} | ${ctx.domains.join(", ")} | ${ctx.skills.slice(0, ADVISOR_SKILLS_LIMIT).join(", ")}${ctx.skills.length > ADVISOR_SKILLS_LIMIT ? "..." : ""}`,
     );
 
     this.sections.push(`USER TRAJECTORY (${trajectory.length}):\n${lines.join("\n")}`);
@@ -83,25 +86,25 @@ export class AdvisorContextBuilder {
     return this;
   }
 
-  addCandidates(candidates: WaymateCandidate[]): this {
+  addCandidates(candidates: CandidateBase[]): this {
     if (candidates.length === 0) return this;
 
     const lines = candidates.map((c, i) => {
-      const type = c.isWaymate ? "[waymate]" : "";
+      const type = "isWaymate" in c && c.isWaymate ? "[waymate]" : "";
       const dtw = c.dtwMetrics
         ? `DTW: ${c.dtwMetrics.shapeSimilarity.toFixed(2)}/${c.dtwMetrics.tempoSimilarity.toFixed(2)}/${c.dtwMetrics.alignmentScore.toFixed(2)}=${c.dtwTotal?.toFixed(2) ?? "?"}`
         : "";
       const ctx = c.matchedContext;
       const feedback = ctx.feedback ? ` — "${ctx.feedback}"` : "";
 
-      return `  #${i + 1}${type} ${ctx.position} ${ctx.role} | ${ctx.skills.slice(0, 4).join(", ")} | ${dtw}${feedback}`;
+      return `  #${i + 1}${type} ${ctx.position} ${ctx.role} | ${ctx.skills.slice(0, ADVISOR_SKILLS_LIMIT).join(", ")} | ${dtw}${feedback}`;
     });
 
     this.sections.push(`CANDIDATES (${candidates.length}):\n${lines.join("\n")}`);
     return this;
   }
 
-  addCandidateDetails(candidates: WaymateCandidate[]): this {
+  addCandidateDetails(candidates: CandidateBase[]): this {
     if (candidates.length === 0) return this;
 
     const details = candidates.map((c, i) => formatCandidateDetail(c, i));

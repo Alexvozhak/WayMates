@@ -21,7 +21,7 @@ import type {
 import type { SearchPhase, SearchStateType } from "../state.js";
 
 const extractor = getModel("extraction").withStructuredOutput(
-  withReasoning(adhocContextBase, "Explain what context you extracted from the user message")
+  withReasoning(adhocContextBase, "Explain what context you extracted from the user message"),
 );
 
 async function extractAdhocContext(message: string, hints: string): Promise<AdhocContextBase | null> {
@@ -126,7 +126,14 @@ export const loadContextNode = withLogging<SearchStateType>(
   NODE.load_context,
   async (state, _config, { coreClient, normalizerService, dictionariesService }) => {
     if (state.orchestratorIntent === GRAPH_INTENT.startAdhoc) {
-      const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
+      const hints = await dictionariesService.buildHints([
+        "role",
+        "position",
+        "domain",
+        "skill",
+        "industry",
+        "education_level",
+      ]);
 
       // If we have existing context, clarify (merge). Otherwise, extract from scratch.
       const existing = state.adhocContext;

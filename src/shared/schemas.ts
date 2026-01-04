@@ -292,6 +292,8 @@ export const adhocContextBase = z.object({
   birthYear: z.number().min(1950).nullable().default(null),
   educationLevel: educationLevelSchema.nullable().default(null),
   languages: z.array(languageCodeSchema).nullable().default(null),
+  salaryMin: z.number().nullable().default(null).describe("Minimum current salary (annual, USD)"),
+  salaryMax: z.number().nullable().default(null).describe("Maximum current salary (annual, USD)"),
 });
 
 export type AdhocContextBase = z.infer<typeof adhocContextBase>;
@@ -331,6 +333,8 @@ export const ADHOC_OPTIONAL_FIELDS = [
   "birthYear",
   "educationLevel",
   "languages",
+  "salaryMin",
+  "salaryMax",
 ] as const satisfies readonly (keyof AdhocContextBase)[];
 
 export type AdhocOptionalField = (typeof ADHOC_OPTIONAL_FIELDS)[number];
@@ -468,6 +472,8 @@ export const targetContextSchema = z.object({
     .default(null)
     .describe("Required citizenships filter (passport countries)"),
   educationLevels: fieldFilterSchema.nullable().default(null).describe("Required education level filter"),
+  salaryMin: z.number().nullable().default(null).describe("Minimum desired salary (annual, USD)"),
+  salaryMax: z.number().nullable().default(null).describe("Maximum desired salary (annual, USD)"),
 });
 
 export type TargetContext = z.infer<typeof targetContextSchema>;

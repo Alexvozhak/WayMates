@@ -114,12 +114,12 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
 
   [PHASE.showing_waymate_results]: (state) => ({
     phase: PHASE.showing_waymate_results,
-    results: state.searchResults,
+    results: state.waymatesResults,
     goal: state.storedGoal,
     chartUrl: state.chartUrl,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
-    answerText: state.currentAnswer,
+    answerText: state.answerText ?? null,
   }),
 
   [PHASE.showing_pathfinder_results]: (state) => ({
@@ -129,7 +129,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     chartUrl: state.chartUrl,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
-    answerText: state.currentAnswer,
+    answerText: state.answerText ?? null,
   }),
 
   [PHASE.showing_results_facets]: (state) => ({

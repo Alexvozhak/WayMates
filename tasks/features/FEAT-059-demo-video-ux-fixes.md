@@ -32,7 +32,15 @@ Demo video — ключевой артефакт для презентации �
 **Файлы:**
 - `src/telegram-bot/handlers/start.ts` — добавить вызов cancelActiveGraphs
 
-#### 1.2 Prompt консистентный с routing
+#### 1.2 Auto-greeting для нового пользователя
+**Проблема:** Без /start пользователь не видит welcome message.
+
+**Решение:** При первом сообщении нового user (без cached sessionId) — показать welcome перед обработкой message.
+
+**Файлы:**
+- `src/telegram-bot/handlers/converse.ts` — проверка isNewUser, показ welcome
+
+#### 1.3 Prompt консистентный с routing
 **Проблема:** NLP prompt говорит "Offer: set goal or explore similar people", но routing поддерживает больше интентов (editAdhoc, ask). Prompt не различает случаи с целью и без.
 
 **Решение:** Обновить prompt для confirming_adhoc_context — показывать опции в зависимости от hasGoal.
@@ -40,7 +48,19 @@ Demo video — ключевой артефакт для презентации �
 **Файлы:**
 - `src/facade/services/nlp-formatter/prompts.ts` — строки 15-19
 
-#### 1.3 Убрать хардкод русского в confirm-adhoc-context
+#### 1.4 Структурный вывод в confirm_adhoc_context
+**Проблема:** confirm не показывает структурно что заполнено и что опционально (как в других нодах).
+
+**Решение:** Добавить в prompt:
+```
+✅ FILLED: list values from adhocContext
+⚪ OPTIONAL: list from optionalFields
+```
+
+**Файлы:**
+- `src/facade/services/nlp-formatter/prompts.ts` — confirming_adhoc_context description
+
+#### 1.5 Убрать хардкод русского в confirm-adhoc-context
 **Проблема:** `buildConfirmMessage` содержит русский текст ("навыки:", "контекст не указан", "Окей..."), хотя locale может быть "en".
 
 **Решение:** Убрать buildConfirmMessage — он не используется в финальном ответе (NLP formatter формирует текст). Оставить только structured data в interrupt.
@@ -92,6 +112,17 @@ Demo video — ключевой артефакт для презентации �
 **Файлы:**
 - `src/facade/langGraph/search-graph/advisor-context-builder.ts`
 
+#### 3.4 Prefix в результатах поиска
+**Проблема:** Непонятно какой тип поиска — pathfinders, waymates, или explore.
+
+**Решение:** Добавить в NLP prompt для результатов:
+- `🔎 Pathfinders:` для showing_pathfinder_results
+- `🤝 Waymates:` для showing_waymate_results
+- `🔍 Similar people:` для showing_exploration_candidates
+
+**Файлы:**
+- `src/facade/services/nlp-formatter/prompts.ts` — SEARCH_PHASE_DESCRIPTIONS
+
 ---
 
 ### Phase 4: Dictionary Questions (~40 LOC)
@@ -121,6 +152,22 @@ Demo video — ключевой артефакт для презентации �
 - `src/facade/langGraph/search-graph/prompts/advisor.ts` — CHART_ANALYSIS_PROMPT
 
 **Контекст для промпта:** Секция "4.8 DTW метрики" из `docs/mvp_final/BUSINESS-LOGIC-MVP.md`
+
+---
+
+### Phase 6: Demo Script Polish (~10 LOC)
+
+#### 6.1 Разговорные messages в demo скриптах
+**Проблема:** Messages в demo скриптах слишком формальные ("Show me people who made this transition").
+
+**Решение:** Заменить на разговорный стиль:
+- "cool, show me who already made it"
+- "what about people going the same way?"
+- "any skills they all needed?"
+
+**Файлы:**
+- `poc/demo-video-1-telegram.ts`
+- `poc/demo-video-2-telegram.ts`
 
 ---
 
@@ -159,12 +206,16 @@ Demo video — ключевой артефакт для презентации �
 ## Acceptance Criteria
 
 - [ ] После /start pending interrupts очищаются
+- [ ] Новый пользователь видит welcome без /start (auto-greeting)
 - [ ] confirm_adhoc_context показывает опции консистентные с routing
+- [ ] confirm_adhoc_context выводит структурно (✅ FILLED / ⚪ OPTIONAL)
 - [ ] document.ts использует i18n
 - [ ] generate-answer выбирает candidates по фазе (waymates/pathfinders/exploration)
 - [ ] Skills limit вынесен в константу
+- [ ] Результаты имеют prefix (🔎 Pathfinders / 🤝 Waymates / 🔍 Similar)
 - [ ] Вопросы про словари получают ответ с данными из БД
 - [ ] Вопросы про chart получают ответ с Vision анализом
+- [ ] Demo скрипты используют разговорный стиль
 
 ---
 
@@ -172,12 +223,13 @@ Demo video — ключевой артефакт для презентации �
 
 | Phase | LOC | Файлы |
 |-------|-----|-------|
-| 1. Critical Flow | ~50 | 3 |
+| 1. Critical Flow | ~70 | 4 |
 | 2. Locale | ~20 | 3 |
-| 3. Advisor Data | ~40 | 5+ |
+| 3. Advisor Data | ~50 | 6 |
 | 4. Dictionary | ~40 | 3 |
 | 5. Vision | ~90 | 3 |
-| **Total** | **~240** | **~15** |
+| 6. Demo Script | ~10 | 2 |
+| **Total** | **~280** | **~18** |
 
 ---
 

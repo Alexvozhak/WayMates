@@ -40,6 +40,7 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
           "skills",
           "industry",
           "companySize",
+          "citizenships",
         ],
       }),
     );
@@ -93,6 +94,7 @@ describe("User Context Search WITHOUT DTW (UN1-UN4)", () => {
           "skills",
           "industry",
           "companySize",
+          "citizenships",
         ],
       }),
     );

@@ -16,6 +16,11 @@ ENV NODE_ENV=test
 ENV FACADE_TRANSPORT=http
 CMD ["npx", "tsx", "src/facade/index.ts"]
 
+# Telegram Bot для тестов
+FROM base AS telegram-bot-test
+ENV NODE_ENV=test
+CMD ["npx", "tsx", "src/telegram-bot/index.ts"]
+
 # Core для production (будущее - SaaS)
 FROM base AS core-production
 ENV NODE_ENV=production

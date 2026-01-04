@@ -11,7 +11,7 @@ import { withLogging } from "../with-logging.js";
 import type { SearchStateType } from "../state.js";
 
 const extractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(targetContextSchema, "Explain what career goal you extracted and why")
+  withReasoning(targetContextSchema, "Explain what career goal you extracted and why"),
 );
 
 /**
@@ -26,7 +26,14 @@ export const extractGoalNode = withLogging<SearchStateType>(
     const { messages, userResponse } = state;
     const textToExtract = userResponse || "";
 
-    const hints = await dictionariesService.buildHints(["role", "position", "domain", "skill", "industry"]);
+    const hints = await dictionariesService.buildHints([
+      "role",
+      "position",
+      "domain",
+      "skill",
+      "industry",
+      "education_level",
+    ]);
     const prompt = buildGoalExtractionPrompt(hints);
 
     const { reasoning, ...extracted } = await extractionModel.invoke([

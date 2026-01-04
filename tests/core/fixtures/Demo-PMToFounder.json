@@ -76,8 +76,8 @@
       "citizenships": ["GB"],
       "birthYear": 1989,
       "educationLevel": "MASTER",
-      "salaryMin": 195000,
-      "salaryMax": 235000,
+      "salaryMin": 200000,
+      "salaryMax": 240000,
       "feedback": "CTO is 80% product decisions, 20% code. Warning: 4 hours daily in stakeholder calls. If you hate meetings, stay IC."
     }
   ],

@@ -131,7 +131,7 @@ export const searchStateAnnotation = Annotation.Root({
 
   explorationResults: Annotation<WaymateCandidate[]>({ reducer: lastValue, default: () => [] }),
   validationResults: Annotation<MatchedCandidateWithPath[]>({ reducer: lastValue, default: () => [] }),
-  searchResults: Annotation<WaymateCandidate[]>({ reducer: lastValue, default: () => [] }),
+  waymatesResults: Annotation<WaymateCandidate[]>({ reducer: lastValue, default: () => [] }),
   pathfinderResults: Annotation<PathfinderCandidate[]>({ reducer: lastValue, default: () => [] }),
   chartUrl: Annotation<string | null>({ reducer: lastValue, default: () => null }),
   facets: Annotation<CandidateFacets | null>({ reducer: lastValue, default: () => null }),
@@ -141,7 +141,7 @@ export const searchStateAnnotation = Annotation.Root({
 
   // Advisor mode state
   advisorQuestion: Annotation<string | null>({ reducer: lastValue, default: () => null }),
-  currentAnswer: Annotation<string | null>({ reducer: lastValue, default: () => null }),
+  answerText: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 });
 
 export type SearchStateType = typeof searchStateAnnotation.State;

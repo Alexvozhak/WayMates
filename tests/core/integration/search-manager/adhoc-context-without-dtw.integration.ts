@@ -52,7 +52,7 @@ const createAdhocSearchParams = (
   referenceContext,
   limit: 10,
   pathLimit: 10,
-  excludedContextFields: ["languages"],
+  excludedContextFields: ["languages", "citizenships"],
   excludedCreationReasons: [],
   recencyThresholdMonths: null,
   ...overrides,
@@ -131,7 +131,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
     // Note: skills are ALWAYS included in scoring (penalties) to rank candidates
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
-      excludedContextFields: ["birthYear", "countryCode", "cityName", "languages"],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "languages", "citizenships"],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -206,7 +206,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     });
 
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
-      excludedContextFields: ["countryCode", "cityName", "birthYear", "languages"],
+      excludedContextFields: ["countryCode", "cityName", "birthYear", "languages", "citizenships"],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -252,6 +252,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "companySize",
         "birthYear",
         "languages",
+        "citizenships",
       ],
     });
     const results = await searchManager.searchWaymates(params);
@@ -306,6 +307,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "countryCode",
         "cityName",
         "companySize",
+        "citizenships",
       ],
       excludedCreationReasons: ["position_changed"],
     });
@@ -357,7 +359,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     console.log("[AC6] Expected: U1, U2 (fresh); NOT U3, U4 (> 6 months old)");
 
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
-      excludedContextFields: ["birthYear", "countryCode", "cityName", "languages"],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "languages", "citizenships"],
       recencyThresholdMonths: 6,
     });
     const results = await searchManager.searchWaymates(params);
@@ -462,6 +464,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "cityName",
         "birthYear",
         "languages",
+        "citizenships",
       ],
     });
     const results = await searchManager.searchWaymates(params);
@@ -504,7 +507,16 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
 
     // ADR-011: Skills excluded → penalty=0 (U14 with [react] has same score as U15 with [python])
     const params = createAdhocSearchParams(u15.userId, adhocContextBase.parse(u15Context), {
-      excludedContextFields: ["position", "domains", "skills", "companySize", "countryCode", "cityName", "birthYear"],
+      excludedContextFields: [
+        "position",
+        "domains",
+        "skills",
+        "companySize",
+        "countryCode",
+        "cityName",
+        "birthYear",
+        "citizenships",
+      ],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -551,6 +563,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "cityName",
         "birthYear",
         "educationLevel",
+        "citizenships",
       ],
     });
     const results = await searchManager.searchWaymates(params);
@@ -595,6 +608,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
         "cityName",
         "birthYear",
         "educationLevel",
+        "citizenships",
       ],
       limit: 20, // ADR-011: skills excluded → contextMatchScore=0 for all → order by recency only
     });
@@ -664,7 +678,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1Context = u1.contexts[0]!;
 
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
-      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills", "citizenships"],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -700,7 +714,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u4Context = u4.contexts[0]!;
 
     const params = createAdhocSearchParams(u4.userId, adhocContextBase.parse(u4Context), {
-      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills", "citizenships"],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -736,7 +750,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1Context = u1.contexts[0]!;
 
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
-      excludedContextFields: ["languages", "birthYear", "countryCode", "cityName", "domains", "skills"],
+      excludedContextFields: ["languages", "birthYear", "countryCode", "cityName", "domains", "skills", "citizenships"],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -768,7 +782,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u3Context = u3.contexts[0]!;
 
     const params = createAdhocSearchParams(u3.userId, adhocContextBase.parse(u3Context), {
-      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills", "citizenships"],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -804,7 +818,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     const u1Context = u1.contexts[0]!;
 
     const params = createAdhocSearchParams(u1.userId, adhocContextBase.parse(u1Context), {
-      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills", "citizenships"],
     });
     const results = await searchManager.searchWaymates(params);
 
@@ -826,7 +840,7 @@ describe("Adhoc Context Search (AC1-AC6)", () => {
     // Verify null languages are returned correctly (backward compatibility)
     const u3 = dataManager.getStoryBy("U3");
     const u3Params = createAdhocSearchParams(u3.userId, adhocContextBase.parse(u3.contexts[0]!), {
-      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills"],
+      excludedContextFields: ["birthYear", "countryCode", "cityName", "domains", "skills", "citizenships"],
     });
     const u3Results = await searchManager.searchWaymates(u3Params);
 

@@ -12,7 +12,7 @@ import { getModel } from "./models.js";
 import type { ExtractableContext } from "./extraction-models.js";
 
 const contextExtractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableContextSchema, "Explain what career context you extracted and why")
+  withReasoning(extractableContextSchema, "Explain what career context you extracted and why"),
 );
 
 /**
@@ -51,7 +51,7 @@ REQUIRED FIELDS:
 ═══════════════════════════════════════════════════
 OPTIONAL FIELDS:
 ═══════════════════════════════════════════════════
-- educationLevel, salaryExact/salaryMin/salaryMax, languages, feedback
+- educationLevel, salaryExact/salaryMin/salaryMax (USD), languages, feedback
 
 If multiple positions present, extract FIRST one only.
 Return null if no career position found.`;

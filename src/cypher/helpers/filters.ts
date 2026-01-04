@@ -16,9 +16,10 @@ import type { ContextField, TargetContext } from "../../shared/schemas.js";
 type ContextValueType = "single" | "multi";
 
 /**
- * Cypher path configuration for each TargetContext field.
+ * Cypher path configuration for categorical TargetContext fields.
+ * Note: salaryMin/salaryMax are numeric fields handled separately in search queries.
  */
-const TARGET_FILTER_CONFIG: Record<keyof TargetContext, { path: string; type: ContextValueType }> = {
+const TARGET_FILTER_CONFIG: Partial<Record<keyof TargetContext, { path: string; type: ContextValueType }>> = {
   position: { path: "matchedPosition.canonicalName", type: "single" },
   role: { path: "matchedRole.canonicalName", type: "single" },
   countries: { path: "matchedCountry.name", type: "single" },
@@ -31,15 +32,22 @@ const TARGET_FILTER_CONFIG: Record<keyof TargetContext, { path: string; type: Co
   educationLevels: { path: "matchedEducationLevel.canonicalName", type: "single" },
 };
 
+/** Categorical fields that support desired/undesired mode filtering */
+export type CategoricalTargetField = Exclude<keyof TargetContext, "salaryMin" | "salaryMax">;
+
 /**
  * Build CASE expression for a target filter field (desired/undesired mode).
  *
- * @param field - TargetContext field name
+ * @param field - Categorical TargetContext field name (not salary fields)
  * @param paramName - Cypher parameter name (e.g., "$position")
  * @returns CASE expression string
  */
-export function buildTargetFilterCase(field: keyof TargetContext, paramName: string): string {
-  const { path, type } = TARGET_FILTER_CONFIG[field];
+export function buildTargetFilterCase(field: CategoricalTargetField, paramName: string): string {
+  const config = TARGET_FILTER_CONFIG[field];
+  if (!config) {
+    throw new Error(`No filter config for field: ${field}`);
+  }
+  const { path, type } = config;
 
   const [desired, undesired] =
     type === "multi"

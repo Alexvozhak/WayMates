@@ -9,6 +9,9 @@ const REFERENCE_DATA_LABELS = [
   "City",
   "Industry",
   "Platform",
+  "Role",
+  "EducationLevel",
+  "Country",
 ] as const;
 
 export class DatabaseFixture {
@@ -25,16 +28,11 @@ export class DatabaseFixture {
   async cleanTestData(): Promise<void> {
     const session = this.driver.session();
     try {
+      // Build WHERE clause from REFERENCE_DATA_LABELS to avoid hardcoded duplicates
+      const excludeConditions = REFERENCE_DATA_LABELS.map((label) => `NOT n:${label}`).join("\n          AND ");
       await session.run(`
         MATCH (n)
-        WHERE NOT n:Language
-          AND NOT n:Skill
-          AND NOT n:Reason
-          AND NOT n:Position
-          AND NOT n:WorkDomain
-          AND NOT n:City
-          AND NOT n:Industry
-          AND NOT n:Platform
+        WHERE ${excludeConditions}
         DETACH DELETE n
       `);
     } finally {

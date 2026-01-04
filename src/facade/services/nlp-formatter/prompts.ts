@@ -1,8 +1,27 @@
 import { PHASE as COLD_START_PHASE } from "../../langGraph/cold-start-v2/types.js";
 import { PHASE as SEARCH_PHASE } from "../../langGraph/search-graph/state.js";
 import { PHASE as SIMPLE_PHASE } from "../../langGraph/shared/phases.js";
+import { ADHOC_FIELD_DESCRIPTIONS, GOAL_FIELD_DESCRIPTIONS } from "../../langGraph/shared/prompts.js";
 
 import type { SearchPhase } from "../../langGraph/search-graph/state.js";
+
+// Generate field lists from type-safe descriptions (single source of truth)
+const CANDIDATE_FIELDS = Object.keys(ADHOC_FIELD_DESCRIPTIONS).join(", ");
+const GOAL_FIELDS = Object.keys(GOAL_FIELD_DESCRIPTIONS).join(", ");
+
+// Reusable format blocks for structured responses
+const CONTEXT_BLOCK = `👤 Your context:
+  ✅ SPECIFIED: list non-null adhocContext fields with values
+  ⚪ NOT SET: list null fields`;
+
+const GOAL_BLOCK = `🎯 Goal:
+  ✅ SPECIFIED: list non-null goal fields with values
+  ⚪ NOT SET: list null fields — will match any`;
+
+const FILTERS_BLOCK = `🔍 Filters:
+  • recency: [recencyThresholdMonths value or "any time"]
+  • excluded: [excludedContextFields list or "none"]
+  ⚠️ Show rejectedFields if not empty`;
 
 // Type-safe: TypeScript enforces all SearchPhase keys are present
 const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
@@ -15,71 +34,85 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.confirming_adhoc_context]: `All required fields are filled — confirmation phase.
   ✅ FILLED: list values from adhocContext
   ⚪ OPTIONAL: list from optionalFields
-  DO NOT ask for anything from FILLED section
-  Offer: set goal or explore similar people`,
-  [SEARCH_PHASE.showing_exploration_candidates]: `🔍 Start with brief search context (1-2 sentences, natural language):
-  - Who we're looking for (from adhocContext: role, position, country)
-  - MUST mention recencyThresholdMonths if set: "за последние N месяцев"
-  - MUST mention exclusions if not empty
-  - ⚠️ rejectedFields if not empty
-  DON'T list empty/null filters. Keep it conversational.
-  THEN list candidates briefly with key attributes.
-  If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
-  [SEARCH_PHASE.showing_exploration_facets]: `🔍 Start with brief search context (1-2 sentences, natural language):
-  - Who we're looking for (from adhocContext)
-  - MUST mention recencyThresholdMonths if set
-  - MUST mention exclusions if not empty
-  - ⚠️ rejectedFields if not empty
-  DON'T list empty/null filters. Keep it conversational.
-  THEN show facets with counts, suggest narrowing filter.
-  If previousPhase = ${SEARCH_PHASE.deleting_goal} → acknowledge goal was deleted`,
-  [SEARCH_PHASE.showing_goal]: `Show goal from extractedGoal.
-  ✅ SPECIFIED: list non-null fields
-  ⚪ NOT SPECIFIED: list null fields — explain these will match any value
-  Example format:
-  "✅ Position: senior
-  ⚪ Role, domains, country, industry — not specified, will search among all. You can add criteria."
-  Offer: validate, refine, or save`,
-  [SEARCH_PHASE.asking_after_validate_candidates]: `🔍 Start with brief context (natural language):
-  - What goal we're validating
-  - MUST mention recencyThresholdMonths if set
-  - MUST mention exclusions if not empty
-  - ⚠️ rejectedFields if not empty
-  DON'T list empty/null filters.
-  THEN show real people who reached goal — starting point, path duration, key skills.
-  Empty results → mention the goal criteria, suggest broadening search`,
-  [SEARCH_PHASE.asking_after_validate_facets]: `🔍 Start with brief context (natural language):
-  - What goal we're validating
-  - MUST mention recencyThresholdMonths if set
-  - MUST mention exclusions if not empty
-  DON'T list empty/null filters.
-  THEN show facets with counts, suggest filter.`,
-  [SEARCH_PHASE.showing_waymate_results]: `🔍 Start with brief context (natural language):
-  - Mention the shared goal
-  - MUST mention recencyThresholdMonths if set
-  - MUST mention exclusions if not empty
-  - ⚠️ rejectedFields if not empty
-  DON'T list empty/null filters.
-  THEN show waymates — people heading to the same goal.
-  Empty results → mention goal criteria, suggest broadening search`,
-  [SEARCH_PHASE.showing_pathfinder_results]: `🔍 Start with brief context (natural language):
-  - Mention the goal user wants to reach
-  - MUST mention recencyThresholdMonths if set
-  - MUST mention exclusions if not empty
-  - ⚠️ rejectedFields if not empty
-  DON'T list empty/null filters.
-  THEN show pathfinders — starting point, transition duration, key skills.
-  Empty results → mention goal criteria, suggest broadening search`,
-  [SEARCH_PHASE.showing_results_facets]: `🔍 Start with brief context (natural language):
-  - Mention the goal and current search scope
-  - MUST mention recencyThresholdMonths if set
-  - MUST mention exclusions if not empty
-  DON'T list empty/null filters.
-  THEN show facets with counts. Suggest narrowing by role/country/industry.`,
-  [SEARCH_PHASE.asking_search_mode]: `Goal saved! Offer two search options briefly:
-  1. People who already achieved this goal — proof the path works (Pathfinders)
-  2. People heading to the same goal right now — peers to connect with (Waymates)
-  Keep it short and clear`,
+  DO NOT ask for anything from FILLED section.
+  Check hasGoal field to determine available options:
+  - If hasGoal=false: explore similar people, set a goal, edit context, or ask a question
+  - If hasGoal=true: search pathfinders/waymates, validate goal, edit goal, edit context, or ask a question
+  Offer options naturally based on hasGoal value.`,
+  [SEARCH_PHASE.showing_exploration_candidates]: `Show results from explorationResults array:
+  📊 **Explore** — people with similar background
+  ${CONTEXT_BLOCK}
+  ${FILTERS_BLOCK}
+  📋 Results: [explorationResults.length] similar people
+  IMPORTANT: List candidates from explorationResults array. Each has matchedContext.
+  Each context with fields: ${CANDIDATE_FIELDS}
+  CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
+  If previousPhase = ${SEARCH_PHASE.deleting_goal} → first acknowledge goal deleted.
+  End with: set goal, filter, or ask question.`,
+  [SEARCH_PHASE.showing_exploration_facets]: `Structured format:
+  📊 **Explore** — people with similar background
+  ${CONTEXT_BLOCK}
+  ${FILTERS_BLOCK}
+  📋 Results: [totalCount] people — showing facets to narrow down
+  Show facets with counts, suggest filter.
+  If previousPhase = ${SEARCH_PHASE.deleting_goal} → first acknowledge goal deleted.`,
+  [SEARCH_PHASE.showing_goal]: `Show goal ONLY from extractedGoal data. NEVER invent or assume values.
+  Use structured format:
+  ✅ SPECIFIED: list non-null fields with values (${GOAL_FIELDS})
+  ❌ REQUIRED: position is required — if null, ask user to specify
+  ⚪ OPTIONAL: list null optional fields — will match any value
+  CRITICAL: Show ONLY what is in extractedGoal. If field is null — it goes to OPTIONAL, not SPECIFIED.
+  End with: validate (check who reached this), refine (add criteria), or save.`,
+  [SEARCH_PHASE.asking_after_validate_candidates]: `Structured format:
+  📊 **Validate Goal** — checking who already reached this position
+  ${GOAL_BLOCK}
+  ${FILTERS_BLOCK}
+  📋 Results: [count] people who reached this goal
+  List: starting point → goal position, transition duration, key skills.
+  Empty results → show goal criteria, suggest broadening or changing goal.
+  End with: save goal, change goal, or filter.`,
+  [SEARCH_PHASE.asking_after_validate_facets]: `Structured format:
+  📊 **Validate Goal** — checking who already reached this position
+  ${GOAL_BLOCK}
+  ${FILTERS_BLOCK}
+  📋 Results: [totalCount] people — showing facets
+  Show facets with counts, suggest filter to narrow.`,
+  [SEARCH_PHASE.showing_waymate_results]: `Check answerText field first:
+  If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
+  If answerText is null/empty → Show results from waymatesResults array:
+  📊 **Waymates** — people heading to the same goal (peers to connect)
+  ${GOAL_BLOCK}
+  ${FILTERS_BLOCK}
+  📋 Results: [waymatesResults.length] waymates
+  IMPORTANT: List candidates from waymatesResults array. Each has matchedContext.
+  Each context with fields: ${CANDIDATE_FIELDS}
+  CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
+  If waymatesResults is empty → show goal criteria, suggest broadening.
+  End with: switch to pathfinders, filter, or refine goal.`,
+  [SEARCH_PHASE.showing_pathfinder_results]: `Check answerText field first:
+  If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
+  If answerText is null/empty → Show results from pathfinderResults array:
+  📊 **Pathfinders** — people who already achieved this goal (proof the path works)
+  ${GOAL_BLOCK}
+  ${FILTERS_BLOCK}
+  📋 Results: [pathfinderResults.length] pathfinders
+  IMPORTANT: List candidates from pathfinderResults array. Each has matchedContext and targetContext.
+  Show: matchedContext (starting point) → targetContext (reached goal), timeSinceTargetMonths.
+  Each context with fields: ${CANDIDATE_FIELDS}
+  CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
+  If pathfinderResults is empty → show goal criteria, suggest broadening.
+  End with: switch to waymates, filter, or refine goal.`,
+  [SEARCH_PHASE.showing_results_facets]: `Structured format:
+  📊 **Results** — too many to show, use facets to narrow
+  ${GOAL_BLOCK}
+  ${FILTERS_BLOCK}
+  📋 Results: [totalCount] people — showing facets
+  Show facets with counts. Suggest narrowing by role/country/industry.`,
+  [SEARCH_PHASE.asking_search_mode]: `Goal saved. DO NOT repeat goal details — user just confirmed them.
+  Offer two search options briefly:
+  1. Pathfinders — people who already achieved this (proof the path works)
+  2. Waymates — people heading to the same goal (peers to connect)
+  Just ask which one. 2-3 sentences max.`,
   [SEARCH_PHASE.clarifying_goal]: "Ask for more detail about target position",
   [SEARCH_PHASE.cancelled]: "Acknowledge stop",
   [SEARCH_PHASE.failed]: "Acknowledge error, offer retry",
@@ -110,7 +143,8 @@ Style:
 - 2-4 sentences, direct
 - No excitement phrases, no excessive emoji
 - Never invent data
-- Candidates: role @ company, key skills from actual data
+- Candidates: ${CANDIDATE_FIELDS} from actual data
+- Salary always in USD (e.g. "$150k USD" or "150,000 USD")
 
 Format: Markdown, real newlines.
 
@@ -132,7 +166,7 @@ Phases:
   Start with: 📍 Position {progress.current}/{progress.total}: {entityPreview}
   ❌ MISSING: list from missingFields array (REQUIRED)
   If suggestCancel=true: mention these fields are required, offer to cancel if user doesn't want to provide.
-  ⚪ OPTIONAL: briefly mention user can also add: education, salary, languages.
+  ⚪ OPTIONAL: briefly mention user can also add: education, salary (USD), languages.
 - ${COLD_START_PHASE.awaiting_context_confirmation}: Show ONLY filled fields.
   Start with: 📍 Position {progress.current}/{progress.total}
   List only non-null values.
@@ -148,7 +182,7 @@ Optional fields user might want to share (suggest naturally during story_gatheri
 - languages: B2+ proficiency — helps international job matching
 - citizenships: passport countries — affects visa and relocation eligibility
 - educationLevel: formal education — relevant for positions requiring degrees
-- salary range: compensation info — helps compare with similar trajectories
+- salary (USD): annual compensation — helps compare with similar trajectories
 - feedback: personal insight on career transitions — valuable for others
 
 Rules:
@@ -179,7 +213,7 @@ Optional fields user might want to add (suggest naturally during confirmation):
 - languages: B2+ proficiency — helps international job matching
 - citizenships: passport countries — affects visa and relocation eligibility
 - educationLevel: formal education — relevant for positions requiring degrees
-- salary range: compensation info — helps compare with similar trajectories
+- salary (USD): annual compensation — helps compare with similar trajectories
 - feedback: personal insight on this career position — valuable for others
 
 Rules:
@@ -210,7 +244,7 @@ Optional fields user might want to update (suggest naturally during confirmation
 - languages: B2+ proficiency — helps international job matching
 - citizenships: passport countries — affects visa and relocation eligibility
 - educationLevel: formal education — relevant for positions requiring degrees
-- salary range: compensation info — helps compare with similar trajectories
+- salary (USD): annual compensation — helps compare with similar trajectories
 - feedback: personal insight on this career position — valuable for others
 
 Rules:

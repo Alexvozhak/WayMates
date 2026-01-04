@@ -95,8 +95,8 @@
       "citizenships": ["RU", "NL"],
       "birthYear": 1996,
       "educationLevel": "BACHELOR",
-      "salaryMin": 190000,
-      "salaryMax": 230000,
+      "salaryMin": 200000,
+      "salaryMax": 240000,
       "feedback": "CTO at 28 in AI startup. Warning: burnout hit twice on this path. Now I negotiate mandatory vacation in every contract."
     }
   ],

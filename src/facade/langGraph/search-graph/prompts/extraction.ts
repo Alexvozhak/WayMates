@@ -3,9 +3,7 @@
 // Extract structured data from user messages (adhoc context, goal)
 // ============================================================================
 
-import { DECOMPOSITION_RULES } from "../../shared/prompts.js";
-
-import type { AdhocContextBase, TargetContext } from "../../../../shared/schemas.js";
+import { ADHOC_FIELD_DESCRIPTIONS, DECOMPOSITION_RULES, GOAL_FIELD_DESCRIPTIONS } from "../../shared/prompts.js";
 
 // ============================================================================
 // EXPORTED FUNCTIONS (public API)
@@ -97,46 +95,12 @@ MERGE RULES:
 }
 
 // ============================================================================
-// LOCAL TYPES AND CONSTANTS
+// LOCAL CONSTANTS (generated from shared field descriptions)
 // ============================================================================
-
-// Fields we extract from user's professional self-description
-// All fields from AdhocContextBase — maximum context capture
-// Type-safe: TypeScript enforces all AdhocContextBase keys are present
-const ADHOC_FIELD_DESCRIPTIONS: Record<keyof AdhocContextBase, string> = {
-  position: "job title or seniority — map to KNOWN POSITIONS",
-  role: "profession function — map to KNOWN ROLES",
-  domains: "technical area — map to KNOWN DOMAINS",
-  skills: "specific technologies or tools — map to KNOWN SKILLS",
-  industry: "business sector — map to KNOWN INDUSTRIES",
-  companySize: "company size category (startup, SMB, enterprise)",
-  cityName: "city where you work",
-  countryCode: "work location country — ISO 3166-1 alpha-2",
-  citizenships: "passport countries (nationalities) — ISO 3166-1 alpha-2",
-  birthYear: "year of birth (for demographics)",
-  educationLevel: "highest education level achieved",
-  languages: "spoken languages — ISO 639-1",
-};
 
 const ADHOC_FIELDS_SECTION = Object.entries(ADHOC_FIELD_DESCRIPTIONS)
   .map(([field, desc]) => `- ${field}: ${desc}`)
   .join("\n");
-
-// Fields we extract from user's career goal description
-// All fields from TargetContext — maximum filtering options
-// Type-safe: TypeScript enforces all TargetContext keys are present
-const GOAL_FIELD_DESCRIPTIONS: Record<keyof TargetContext, string> = {
-  position: "seniority level (HOW experienced) — map to KNOWN POSITIONS",
-  role: "profession type (WHAT you do) — map to KNOWN ROLES",
-  countries: "target work location — ISO 3166-1 alpha-2",
-  domains: "technical specialization area (answers 'what kind of developer/engineer?') — map to KNOWN DOMAINS",
-  skills: "specific technologies or competencies — map to KNOWN SKILLS",
-  languages: "spoken languages required — ISO 639-1",
-  industries: "target business sector — map to KNOWN INDUSTRIES",
-  cities: "target city for relocation — map to KNOWN CITIES",
-  citizenships: "required passports — ISO 3166-1 alpha-2",
-  educationLevels: "required education degree level — KNOWN EDUCATION LEVELS",
-};
 
 const GOAL_FIELDS_SECTION = Object.entries(GOAL_FIELD_DESCRIPTIONS)
   .map(([field, desc]) => `- ${field}: ${desc}`)

@@ -837,25 +837,465 @@ npx tsx poc/mcp-chat.ts --session test-cancel "I'm a backend developer in Russia
 
 ---
 
+### Phase 7.5: UX Prompts Refactoring ✅
+
+**Статус:** ЗАВЕРШЕНО, требуется отладка
+
+**Что сделано:**
+
+1. **Phase 1.2-1.3: prompts.ts + confirm-adhoc-context.ts**
+   - Conditional description для `confirming_adhoc_context` (hasGoal=true/false)
+   - Удалён buildConfirmMessage (~40 LOC dead code)
+
+2. **Structured format для result phases:**
+   - `CONTEXT_BLOCK`, `GOAL_BLOCK`, `FILTERS_BLOCK` — reusable format blocks
+   - Все result phases (exploration, waymates, pathfinders, validate) используют структурный формат
+
+3. **DRY field descriptions:**
+   - `HINTS` object в `shared/prompts.ts` — общие hints (map to KNOWN...)
+   - `ADHOC_FIELD_DESCRIPTIONS` — перенесено из extraction.ts
+   - `GOAL_FIELD_DESCRIPTIONS` — перенесено из extraction.ts
+   - Единый source of truth для extraction и NLP formatter
+
+4. **education_level:**
+   - Добавлен в `HINTS` ("map to KNOWN EDUCATION LEVELS")
+   - Добавлен в `buildHints()` вызовы (7 файлов):
+     - search-graph: load-context, extract-goal
+     - cold-start-v2: extract-context
+     - upsert-context: extract-context, edit-context
+     - update-context: extract-updates, edit-update
+   - Добавлен в cold-start prompt (OPTIONAL FIELDS секция)
+
+5. **asking_search_mode fix:**
+   - Убрано повторение цели ("DO NOT repeat goal details")
+   - Краткий формат: "Goal saved. Choose: Pathfinders or Waymates"
+
+**Изменённые файлы:**
+
+| Файл | Изменение |
+|------|-----------|
+| `src/facade/langGraph/shared/prompts.ts` | +HINTS, +ADHOC_FIELD_DESCRIPTIONS, +GOAL_FIELD_DESCRIPTIONS |
+| `src/facade/langGraph/search-graph/prompts/extraction.ts` | -локальные описания, +import из shared |
+| `src/facade/services/nlp-formatter/prompts.ts` | +structured blocks, +CANDIDATE_FIELDS/GOAL_FIELDS |
+| `src/facade/langGraph/search-graph/nodes/confirm-adhoc-context.ts` | -buildConfirmMessage dead code |
+| `src/facade/langGraph/cold-start-v2/prompts.ts` | +educationLevel в OPTIONAL FIELDS |
+| 7 файлов с buildHints | +education_level |
+
+**GramJS тест:** 6/6 ✅
+
+**Новая проблема найдена (для следующей сессии):**
+```
+Step 6: "What skills did they all need for this transition?"
+Expected: advisor answer (showing_pathfinder_results с answerText)
+Actual: searchPathfinders вызвался повторно → новый showing_pathfinder_results БЕЗ answerText
+```
+
+**Вероятная причина:** `done` intent не срабатывает, или routing некорректный после show_answer.
+
+---
+
+## Осталось сделать
+
+### FEAT-059: Demo Video UX Fixes
+
+**Phase 1: Critical Flow** — ✅ ЗАВЕРШЕНО
+- [x] Очистка checkpoint при /start ✅
+- [x] Prompt консистентный с routing ✅
+- [x] Structured format для result phases ✅
+- [x] DRY field descriptions ✅
+
+**Требует отладки:**
+- [ ] **Step 6 advisor bug** — "What skills..." вызывает searchPathfinders вместо advisor answer
+
+**Phase 2-5: Отложено** (ждут отладки Phase 1)
+
+### Финал
+
+- [ ] Lint + tsc + batch tests
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+---
+
+## Рефлексия сессии (Phase 7.5)
+
+### Anti-patterns
+
+44. **"@ company" в промпте без проверки данных** — написал "role @ company" хотя в WayMates компании анонимизированы. Урок: **перед написанием формата — проверить какие данные реально доступны в схеме**
+
+45. **Копипаста field descriptions вместо DRY** — изначально предложил скопировать ADHOC_FIELD_DESCRIPTIONS в shared/prompts.ts. Пользователь указал "дублируются же!". Урок: **при переносе констант — сразу удалять из источника и импортировать**
+
+46. **Не связал описания с Zod schema** — пользователь спросил "нет single truth". Правильно: описания должны быть связаны с типами через Record<keyof Type, string>. Урок: **описания полей = Record<keyof SchemaType, string> для type safety**
+
+47. **Общие hints не вынесены в константы** — "map to KNOWN POSITIONS" повторялось в adhoc и goal descriptions. Пользователь указал на DRY. Урок: **повторяющиеся фрагменты в описаниях → выносить в HINTS object**
+
+48. **Добавил "map to KNOWN EDUCATION LEVELS" без проверки buildHints** — пользователь спросил "словари предоставляют education levels?". Оказалось education_level НЕ был в buildHints вызовах. Урок: **hint "map to KNOWN X" валиден ТОЛЬКО если X есть в buildHints()**
+
+49. **Не проверил ВСЕ места с buildHints** — пропустил cold-start и другие flows. Урок: **grep buildHints перед изменением — обновить ВСЕ места**
+
+50. **Не добавил education в cold-start prompt** — после добавления в buildHints, пользователь спросил "в coldstart промпт тоже нужно?". Урок: **если поле добавляется в hints — добавить его описание в СООТВЕТСТВУЮЩУЮ секцию промпта**
+
+---
+
+## Полезные ссылки
+
+### DRY Architecture
+- `src/facade/langGraph/shared/prompts.ts` — HINTS, FIELD_DESCRIPTIONS (source of truth)
+- `src/facade/langGraph/search-graph/prompts/extraction.ts` — импортирует из shared
+- `src/facade/services/nlp-formatter/prompts.ts` — импортирует из shared
+
+### Structured format blocks
+- `CONTEXT_BLOCK` — "👤 Your context: ✅ SPECIFIED / ⚪ NOT SET"
+- `GOAL_BLOCK` — "🎯 Goal: ✅ SPECIFIED / ⚪ NOT SET"
+- `FILTERS_BLOCK` — "🔍 Filters: recency / excluded / rejectedFields"
+
+### buildHints locations (7 files)
+- `search-graph/nodes/load-context.ts:129`
+- `search-graph/nodes/extract-goal.ts:29`
+- `cold-start-v2/nodes/extract-context.ts:100`
+- `upsert-context/nodes/extract-context.ts:23`
+- `upsert-context/nodes/edit-context.ts:23`
+- `update-context/nodes/extract-updates.ts:23`
+- `update-context/nodes/edit-update.ts:23`
+
+---
+
+### Phase 7.6: Advisor Bug Fix + Docker Bot ✅
+
+**Статус:** ЗАВЕРШЕНО
+
+**Что сделано:**
+
+1. **Step 6 advisor bug — 3 fix'а:**
+
+   | Проблема | Root Cause | Fix |
+   |----------|------------|-----|
+   | ask intent не распознавался | classification prompt не указывал что results УЖЕ показаны | +PHASE_CONTEXT в `classification.ts` |
+   | answerText не передавался в NLP | JSON.stringify убирает undefined поля | `answerText: state.currentAnswer ?? null` |
+   | NLP показывал results вместо answer | prompt требовал "answer + results summary" | "Show ONLY the answer" |
+
+2. **"@ company" → ${CANDIDATE_FIELDS}:**
+   - prompts.ts:139 — заменено на DRY константу
+
+3. **Telegram bot в Docker:**
+   - Dockerfile: +target `telegram-bot-test`
+   - docker-compose.yml: +service `telegram-bot-test` (profile: test)
+   - package.json: +npm scripts `bot:docker:up/down/restart/clean/logs`
+
+**Изменённые файлы:**
+
+| Файл | Изменение |
+|------|-----------|
+| `src/facade/langGraph/search-graph/prompts/classification.ts` | +PHASE_CONTEXT map |
+| `src/facade/langGraph/search-graph/response-builders.ts` | `?? null` для answerText |
+| `src/facade/services/nlp-formatter/prompts.ts` | "Show ONLY the answer" + ${CANDIDATE_FIELDS} |
+| `Dockerfile` | +telegram-bot-test target |
+| `docker-compose.yml` | +telegram-bot-test service |
+| `package.json` | +bot:docker:* scripts |
+
+**Результат:** GramJS тест 6/6 ✅, Step 6 показывает advisor answer
+
+---
+
+## Осталось сделать
+
+### FEAT-059: Demo Video UX Fixes — ✅ ЗАВЕРШЕНО
+
+- [x] Очистка checkpoint при /start ✅
+- [x] Prompt консистентный с routing ✅
+- [x] Structured format для result phases ✅
+- [x] DRY field descriptions ✅
+- [x] Step 6 advisor bug ✅
+- [x] "@ company" → CANDIDATE_FIELDS ✅
+- [x] Docker bot ✅
+
+### FEAT-060: Salary в Goal (СЛЕДУЮЩАЯ СЕССИЯ)
+
+**Текущее состояние:**
+- AdhocContext: ✅ salaryExact, salaryMin, salaryMax
+- TargetContext (goal): ❌ нет salary
+- Cypher query-builders: ❌ нет фильтрации по salary
+
+**Что нужно:**
+1. **Schema**: добавить в `TargetContext` (schemas.ts:457-471):
+   ```typescript
+   salaryMin: fieldFilterSchema.nullable()
+   salaryMax: fieldFilterSchema.nullable()
+   ```
+
+2. **Extraction prompt**: научить LLM извлекать target salary (extraction.ts)
+
+3. **Cypher query-builders**: WHERE clause для salary range:
+   ```cypher
+   WHERE target.salaryExact >= $salaryMin
+     AND target.salaryExact <= $salaryMax
+   ```
+
+4. **NLP prompts**: показывать salary в goal summary
+
+**Оценка:** ~30-50 LOC
+
+### Финал
+
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt
+
+- [ ] FEAT-057: Goal как graph properties
+- [ ] FEAT-058: Удалить абстракцию Phases (→ interrupt payload = response)
+
+---
+
+## Рефлексия сессии (Phase 7.6)
+
+### Anti-patterns
+
+51. **undefined vs null в JSON.stringify** — не учёл что `JSON.stringify({a: undefined})` → `{}` (поле пропадает). Fix: `value ?? null`. Урок: **при передаче данных через JSON — явно конвертировать undefined в null**
+
+52. **"Show answer FIRST, then results"** — LLM буквально показывал и answer и results. Нужно было "Show ONLY the answer". Урок: **в промптах с условиями — явно указывать что НЕ делать**
+
+53. **Не проверил весь data flow до NLP formatter** — проблема была в response-builder (undefined → пропадает из JSON), но сначала искал в classification. Урок: **debug от конца (NLP input) к началу, не наоборот**
+
+---
+
+## Полезные ссылки
+
+### Phase Context (classification)
+- `src/facade/langGraph/search-graph/prompts/classification.ts:10-14` — PHASE_CONTEXT map
+
+### Response builders (answerText)
+- `src/facade/langGraph/search-graph/response-builders.ts:122,132` — `?? null`
+
+### Docker bot
+- `Dockerfile:19-22` — telegram-bot-test target
+- `docker-compose.yml:216-236` — telegram-bot-test service
+- `package.json:12-16` — bot:docker:* scripts
+
+---
+
+### Phase 7.7: FEAT-060 Salary в Goal ✅
+
+**Статус:** ЗАВЕРШЕНО (остались minor fixes для Phase 7.8)
+
+**Что сделано:**
+
+1. **Schema updates:**
+   - `TargetContext` — добавлены `salaryMin`, `salaryMax` (z.number().nullable())
+   - `AdhocContextBase` — добавлены `salaryMin`, `salaryMax` (z.number().nullable())
+   - `CategoricalTargetField` type — исключает salary из categorical filters
+
+2. **Field descriptions (DRY):**
+   - `GOAL_FIELD_DESCRIPTIONS` — `salaryMin`, `salaryMax` с примерами (e.g. 150000, 250000)
+   - `ADHOC_FIELD_DESCRIPTIONS` — `salaryMin`, `salaryMax` (current salary)
+
+3. **Cypher query-builders:**
+   - `buildPathfinderSearchQuery` — salary filter: `WHERE salary >= $salaryMin`
+   - `buildReversePathfinderSearchQuery` — salary filter
+   - Logic: "Goal minimum only" (candidate.salary >= goal.salaryMin)
+
+4. **NLP prompts refactoring:**
+   - **Explicit array names** — галлюцинации LLM фиксятся через явное указание массивов
+   - `explorationResults` для showing_exploration_candidates
+   - `waymatesResults` для showing_waymate_results (переименовано из searchResults!)
+   - `pathfinderResults` для showing_pathfinder_results
+
+5. **Demo fixtures:**
+   - Все pathfinders обновлены: salary >= 200k (было 175-195k)
+   - Файлы: IdealPathfinder, DirectPathfinder, AltRoutePathfinder, SprintPathfinder, DSToFounder, PMToFounder
+
+6. **Rename для консистентности:**
+   - `searchResults` → `waymatesResults` в 5 файлах state/nodes
+
+**Изменённые файлы:**
+
+| Файл | Изменение |
+|------|-----------|
+| `src/shared/schemas.ts` | +salaryMin/Max в TargetContext и AdhocContextBase |
+| `src/facade/langGraph/shared/prompts.ts` | +salary в GOAL_FIELD_DESCRIPTIONS и ADHOC_FIELD_DESCRIPTIONS |
+| `src/cypher/queries/search.ts` | +salary CASE filter в 2 queries |
+| `src/cypher/helpers/filters.ts` | +CategoricalTargetField type, Partial<Record> |
+| `src/facade/services/normalizer.ts` | +salaryMin/Max passthrough |
+| `src/facade/services/nlp-formatter/prompts.ts` | Explicit array names + currentAnswer check |
+| `src/facade/langGraph/search-graph/state.ts` | searchResults → waymatesResults |
+| `src/facade/langGraph/search-graph/nodes/*.ts` | searchResults → waymatesResults |
+| `tests/core/fixtures/Demo-*.json` | salary >= 200k |
+| `tests/core/integration/search-manager/demo-fixtures.integration.ts` | +salaryMin/Max в test context |
+
+**Результат:** GramJS тест 6/6 ✅, salary extraction работает
+
+---
+
+## Осталось сделать
+
+### Phase 7.8: Minor Salary Fixes (СЛЕДУЮЩАЯ СЕССИЯ)
+
+**3 проблемы найдены:**
+
+1. **ADHOC_OPTIONAL_FIELDS не содержит salary:**
+   - `src/shared/schemas.ts:327-336` — добавить `salaryMin`, `salaryMax`
+   - Иначе в "Optional fields" не показывается salary
+
+2. **Единицы измерения не консистентны:**
+   - Везде должно быть USD явно
+   - Prompts: "annual salary in USD"
+   - NLP: "💰 Salary: $200k+ USD"
+
+3. **Ask intent не распарсился (Step 6):**
+   - "What skills..." классифицировался как searchPathfinders вместо ask
+   - Нужно проверить classification prompt
+
+**Оценка:** ~20 LOC
+
+### Финал
+
+- [ ] Phase 7.8 minor fixes
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt
+
+- [ ] FEAT-057: Goal как graph properties
+- [ ] FEAT-058: Удалить абстракцию Phases
+
+---
+
+## Рефлексия сессии (Phase 7.7)
+
+### Anti-patterns
+
+54. **Числовые поля в categorical config** — изначально добавил salary в TARGET_FILTER_CONFIG (для mode: desired/undesired). Salary — числовое поле, нужно отдельную логику. Урок: **различать categorical (mode + values[]) vs numeric (range) фильтры**
+
+55. **Неконсистентные описания полей** — написал `salaryMax: "optional"` а `salaryMin` без optional. Пользователь указал. Урок: **описания полей должны быть консистентны по формату**
+
+56. **Абстрактные имена массивов в prompts** — `📋 Results: [count]` вместо `📋 Results: [pathfinderResults.length]`. LLM галлюцинировал "need more info". Урок: **в prompts с данными — ЯВНО указывать имена полей откуда брать данные**
+
+57. **Не переименовал searchResults сразу** — создал waymatesResults но оставил searchResults. Пользователь указал на неконсистентность. Урок: **при добавлении новых полей результатов — сразу проверить naming consistency**
+
+58. **Не добавил salary в ADHOC_OPTIONAL_FIELDS** — добавил в schema но забыл про list optional fields. Урок: **при добавлении optional field — проверить ADHOC_OPTIONAL_FIELDS**
+
+59. **sed вместо MCP filesystem** — попытался использовать sed для batch rename. Пользователь запретил. Урок: **batch edits — MCP filesystem, не sed**
+
+---
+
+### Phase 7.8: Minor Salary Fixes ✅
+
+**Статус:** ЗАВЕРШЕНО
+
+**Что сделано:**
+
+1. **ADHOC_OPTIONAL_FIELDS + salary:**
+   - `schemas.ts:327` — добавлены `salaryMin`, `salaryMax` в массив
+   - `schemas.ts:295-296` — добавлены `.describe()` с USD
+
+2. **USD везде (7 мест):**
+   - `nlp-formatter/prompts.ts` — 5 мест "salary (USD)"
+   - `html-renderer.ts` — chart labels "Salary (USD)" / "Зарплата (USD)"
+   - `extract-single-context.tool.ts` — optional fields с "(USD)"
+
+3. **Ask intent fix (Step 6):**
+   - **Root cause:** `currentAnswer` в state, но `answerText` в response-builders → NLP не видел answer
+   - **Fix:** Унификация — переименовано `currentAnswer` → `answerText` везде:
+     - `state.ts:144` — `answerText` вместо `currentAnswer`
+     - `generate-answer.ts:60` — `answerText`
+     - `show-answer.ts:16` — `state.answerText`
+     - `response-builders.ts:122,132` — `state.answerText`
+   - **NLP prompts:** "Check answerText field first"
+
+4. **Advisor генерирует ответ по правильным candidates:**
+   - `generate-answer.ts:10-21` — `getCandidatesForPhase()` helper
+   - Использует `pathfinderResults` для showing_pathfinder_results
+   - Использует `explorationResults` для showing_exploration_candidates
+   - Использует `waymatesResults` для остальных phases
+   - **Type fix:** `CandidateBase` вместо `WaymateCandidate` в advisor-context-builder
+
+5. **ADVISOR_SKILLS_LIMIT константа:**
+   - `advisor-context-builder.ts:4` — `export const ADVISOR_SKILLS_LIMIT = 10`
+   - Используется в `generate-answer.ts` и `advisor-context-builder.ts`
+
+6. **NLP не требует optional fields:**
+   - `prompts.ts` — "CRITICAL: NULL values in adhocContext are OPTIONAL"
+   - Добавлено в 3 phases: exploration, waymates, pathfinders
+
+7. **Infra fixes:**
+   - `start.ts` — graceful handling если сессии нет (try-catch для cancel_all_graphs)
+   - `package.json` — `facade:rebuild` теперь перезапускает бота автоматически
+
+**Изменённые файлы:**
+
+| Файл | Изменение |
+|------|-----------|
+| `src/shared/schemas.ts` | +salaryMin/Max в ADHOC_OPTIONAL_FIELDS + describe() |
+| `src/facade/services/nlp-formatter/prompts.ts` | +USD, +answerText check, +CRITICAL NULL values |
+| `src/chart/builders/html-renderer.ts` | Salary (USD) labels |
+| `src/facade/langGraph/shared-tools/extract-single-context.tool.ts` | (USD) in optional |
+| `src/facade/langGraph/search-graph/state.ts` | currentAnswer → answerText |
+| `src/facade/langGraph/search-graph/nodes/generate-answer.ts` | +getCandidatesForPhase, +ADVISOR_SKILLS_LIMIT |
+| `src/facade/langGraph/search-graph/nodes/show-answer.ts` | state.answerText |
+| `src/facade/langGraph/search-graph/response-builders.ts` | state.answerText |
+| `src/facade/langGraph/search-graph/advisor-context-builder.ts` | +ADVISOR_SKILLS_LIMIT, CandidateBase |
+| `src/telegram-bot/handlers/start.ts` | try-catch для cancel_all_graphs |
+| `package.json` | facade:rebuild + bot:docker:restart |
+
+**Результат:** GramJS тест 6/6 ✅, Step 6 показывает advisor answer, salary с USD везде
+
+---
+
+## Осталось сделать
+
+### Финал
+
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt
+
+- [ ] FEAT-057: Goal как graph properties
+- [ ] FEAT-058: Удалить абстракцию Phases
+
+---
+
+## Рефлексия сессии (Phase 7.8)
+
+### Anti-patterns
+
+60. **Разные имена для одного поля** — `currentAnswer` в state, `answerText` в response. LLM путался. Урок: **одно поле = одно имя везде**
+
+61. **ADHOC_OPTIONAL_FIELDS без describe()** — добавил поля в массив но забыл `.describe()` с USD. Урок: **при добавлении optional field — проверить describe() в Zod schema**
+
+62. **Generate-answer использовал waymatesResults всегда** — не проверял phase. Для pathfinders нужны pathfinderResults. Урок: **при работе с candidates — проверять какой phase активен**
+
+63. **facade:rebuild не перезапускал бота** — старые MCP connections оставались. Урок: **при пересборке facade — перезапустить всех клиентов (bot)**
+
+64. **Hardcoded slice(0, 5)** — не использовал константу. Урок: **magic numbers → константы**
+
+65. **NLP требовал optional fields** — NULL в adhocContext интерпретировался как "missing". Урок: **явно указывать в prompts что NULL = OPTIONAL**
+
+---
+
 ## Промпт для продолжения после rewind
 
 ```
-Продолжаем FEAT-055 Demo Video — реализация FEAT-059 UX Fixes.
+Продолжаем FEAT-055 Demo Video — финализация.
 
-ПРОЧИТАЙ ultrathink:
-1. `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md` — Phase 7.4
-2. `/home/alex/projects/WayMatesRemote/tasks/features/FEAT-059-demo-video-ux-fixes.md`
+ПРОЧИТАЙ:
+1. `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md` — Phase 7.8 ЗАВЕРШЕНО
 
-**Сделано в Phase 7.4:**
-- cancel_all_graphs MCP tool ✅ (создан + протестирован)
-- /start очищает checkpoints ✅
+**Сделано в Phase 7.8:**
+- ADHOC_OPTIONAL_FIELDS + salaryMin/salaryMax ✅
+- USD везде (7 мест) ✅
+- Ask intent Step 6 fix (currentAnswer → answerText унификация) ✅
+- getCandidatesForPhase() — advisor по правильным candidates ✅
+- ADVISOR_SKILLS_LIMIT константа ✅
+- NLP не требует optional fields ✅
+- facade:rebuild перезапускает бота ✅
+- GramJS тест 6/6 ✅
 
-**Следующий шаг:**
-Phase 1.2: Prompt консистентность с routing
-- Файл: `src/facade/services/nlp-formatter/prompts.ts:15-19`
-- Сделать prompt для confirming_adhoc_context консистентным с routing:
-  - БЕЗ цели: explore, setGoal, editAdhoc, ask
-  - С целью: searchWaymates, searchPathfinders, validate, editGoal, editAdhoc, ask
+**Осталось:**
+- Записать Video 1 (adhoc, ≤3.5 мин)
+- Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
 
-После Phase 1.2 → Phase 4 (cleanup русского) → Phase 2 (i18n) → Phase 3 (advisor)
+**Тесты:**
+set -a && source .env.test && set +a
+OPENROUTER_API_KEY=sk-or-v1-... npx tsx poc/demo-video-1-telegram.ts
 ```

@@ -4,7 +4,12 @@
 
 import { buildContextMapProjection } from "../constants/projections.js";
 import { buildWithCollect } from "../helpers/aggregation.js";
-import { buildExcludedReasonsFilter, buildStrictWhereClause, buildTargetFilterCase } from "../helpers/filters.js";
+import {
+  type CategoricalTargetField,
+  buildExcludedReasonsFilter,
+  buildStrictWhereClause,
+  buildTargetFilterCase,
+} from "../helpers/filters.js";
 import { buildOptionalMatchRelationships } from "../helpers/relationships.js";
 import { buildSkillsScoringBlock } from "../helpers/scoring.js";
 import { buildFullTrajectoryFromUser, buildUnwindPath } from "../helpers/trajectory.js";
@@ -291,8 +296,8 @@ export function buildReversePathfinderSearchQuery(params: TargetSearchParams): s
   // Build WHERE conditions for target filtering
   const conditions: string[] = ["matchedUser.userId <> $userId"];
 
-  // Target context field filters
-  const targetFields: (keyof typeof targetContext)[] = [
+  // Target context field filters (categorical only, salary handled separately)
+  const targetFields: CategoricalTargetField[] = [
     "position",
     "countries",
     "domains",
@@ -305,9 +310,18 @@ export function buildReversePathfinderSearchQuery(params: TargetSearchParams): s
   ];
 
   for (const field of targetFields) {
-    if (field in targetContext) {
+    if (targetContext[field]) {
       conditions.push(buildTargetFilterCase(field, `$${field}`));
     }
+  }
+
+  // Salary filter: candidate salary >= goal.salaryMin
+  if (targetContext.salaryMin != null) {
+    conditions.push(`CASE
+      WHEN matchedContext.salaryMin IS NOT NULL THEN matchedContext.salaryMin >= $salaryMin
+      WHEN matchedContext.salaryExact IS NOT NULL THEN matchedContext.salaryExact >= $salaryMin
+      ELSE true
+    END`);
   }
 
   // Recency filter (if specified) - filters matchedContext (target-matching context)
@@ -405,8 +419,8 @@ export function buildPathfinderSearchQuery(params: PathfinderSearchParams, stric
   // === PHASE 1: Target matching conditions ===
   const targetConditions: string[] = ["matchedUser.userId <> $userId"];
 
-  // Target context field filters (only if field has value)
-  const targetFilterFields: (keyof typeof targetContext)[] = [
+  // Target context field filters (categorical only, salary handled separately)
+  const targetFilterFields: CategoricalTargetField[] = [
     "position",
     "role",
     "countries",
@@ -423,6 +437,15 @@ export function buildPathfinderSearchQuery(params: PathfinderSearchParams, stric
     if (targetContext[field]) {
       targetConditions.push(buildTargetFilterCase(field, `$${field}`));
     }
+  }
+
+  // Salary filter: candidate salary >= goal.salaryMin
+  if (targetContext.salaryMin != null) {
+    targetConditions.push(`CASE
+      WHEN matchedContext.salaryMin IS NOT NULL THEN matchedContext.salaryMin >= $salaryMin
+      WHEN matchedContext.salaryExact IS NOT NULL THEN matchedContext.salaryExact >= $salaryMin
+      ELSE true
+    END`);
   }
 
   if (targetRecencyMonths) {

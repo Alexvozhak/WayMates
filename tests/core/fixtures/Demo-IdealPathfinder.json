@@ -76,8 +76,8 @@
       "citizenships": ["RU", "NL"],
       "birthYear": 1991,
       "educationLevel": "MASTER",
-      "salaryMin": 180000,
-      "salaryMax": 220000,
+      "salaryMin": 200000,
+      "salaryMax": 240000,
       "feedback": "Head of Engineering is 80% people management, 20% tech decisions. Warning: burnout is real at this level. Set boundaries early."
     }
   ],

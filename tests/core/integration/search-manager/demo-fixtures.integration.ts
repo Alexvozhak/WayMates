@@ -42,6 +42,8 @@ const ALEX_REFERENCE_CONTEXT: AdhocContextBase = {
   birthYear: null,
   educationLevel: null,
   languages: null,
+  salaryMin: null,
+  salaryMax: null,
 };
 
 describe("Demo Fixtures — Real Dialog Flow", () => {

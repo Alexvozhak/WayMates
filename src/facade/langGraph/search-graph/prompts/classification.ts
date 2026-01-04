@@ -4,9 +4,17 @@
 // ============================================================================
 
 import { getValidIntentsForPhase } from "../search-router.js";
+import { PHASE } from "../state.js";
 
 import type { RouteFlags } from "../search-router.js";
 import type { SearchPhase, SearchUserIntent } from "../state.js";
+
+// Phase-specific context hints for intent classification
+const PHASE_CONTEXT: Partial<Record<SearchPhase, string>> = {
+  [PHASE.showing_pathfinder_results]: "Pathfinder results are ALREADY displayed. Questions about shown results = ask.",
+  [PHASE.showing_waymate_results]: "Waymate results are ALREADY displayed. Questions about shown results = ask.",
+  [PHASE.asking_search_mode]: "Goal just saved. User choosing between pathfinders and waymates.",
+};
 
 // ============================================================================
 // EXPORTED FUNCTIONS (public API)
@@ -24,17 +32,18 @@ export function buildUserIntentPrompt(phase: SearchPhase, flags: RouteFlags): st
   }
 
   const intentSection = validIntents.map((intent) => `${intent} — ${INTENT_DESCRIPTIONS[intent]}`).join("\n\n");
+  const phaseHint = PHASE_CONTEXT[phase] ?? "";
 
   return `Classify user's intent in career search conversation.
 
 CRITICAL: Pick ONE intent from the list below. These are the ONLY valid options.
 
 Context:
-- User is viewing search results with facets (categories like industry, country)
 - Adhoc = user's CURRENT situation (where they are now)
 - Goal = user's TARGET position (where they want to go)
 - Adding criteria to narrow results = edit adhoc
 - Removing criteria to broaden results = filter
+${phaseHint ? `- ${phaseHint}` : ""}
 
 Intents:
 

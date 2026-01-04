@@ -76,8 +76,8 @@
       "citizenships": ["UA", "PL"],
       "birthYear": 1992,
       "educationLevel": "BACHELOR",
-      "salaryMin": 175000,
-      "salaryMax": 210000,
+      "salaryMin": 200000,
+      "salaryMax": 240000,
       "feedback": "Frontend background helps build user-centric AI products. Warning: AI hype means lots of fake startups. Due diligence."
     }
   ],
