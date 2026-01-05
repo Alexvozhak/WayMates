@@ -14,11 +14,11 @@ export async function handleDocument(ctx: BotContext): Promise<void> {
 
   // Only accept PDF files
   if (document.mime_type !== "application/pdf") {
-    await ctx.reply("Пока поддерживаются только PDF файлы. Отправь резюме в формате PDF.");
+    await ctx.reply(ctx.t("doc-pdf-only"));
     return;
   }
 
-  await ctx.reply("📄 Обрабатываю резюме...");
+  await ctx.reply(ctx.t("doc-processing"));
 
   // Download file from Telegram
   const file = await ctx.api.getFile(document.file_id);
@@ -44,7 +44,7 @@ export async function handleDocument(ctx: BotContext): Promise<void> {
   // Send parsed CV text to converse for career story extraction
   const converseResp = await ctx.services.mcpClient.callTool("converse", {
     sessionId,
-    message: `Вот моё резюме:\n\n${parsedText}`,
+    message: `${ctx.t("doc-cv-prefix")}\n\n${parsedText}`,
     requestId: ctx.requestId,
     locale,
   });

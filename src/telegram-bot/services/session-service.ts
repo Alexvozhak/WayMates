@@ -62,4 +62,14 @@ export class SessionService {
     const cacheKey = `telegram:session:${userId}:sessionId`;
     await this.redis.setex(cacheKey, 1800, sessionId);
   }
+
+  async hasSession(ctx: BotContext): Promise<boolean> {
+    const telegramUserId = ctx.from?.id;
+    if (!telegramUserId) {
+      return false;
+    }
+    const cacheKey = `telegram:session:${telegramUserId}:sessionId`;
+    const cachedSessionId = await this.redis.get(cacheKey);
+    return cachedSessionId !== null;
+  }
 }

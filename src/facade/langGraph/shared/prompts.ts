@@ -44,6 +44,26 @@ export const ADHOC_FIELD_DESCRIPTIONS: Record<keyof AdhocContextBase, string> = 
  * Field descriptions for goal extraction.
  * Single source of truth for extraction prompts and NLP formatter.
  */
+/**
+ * Fields to show in NLP output (excludes verbose fields: role, companySize, educationLevel).
+ */
+export const NLP_CANDIDATE_FIELDS = (
+  [
+    "position",
+    "domains",
+    "skills",
+    "industry",
+    "cityName",
+    "countryCode",
+    "citizenships",
+    "birthYear",
+    "languages",
+    "salaryExact",
+    "salaryMin",
+    "salaryMax",
+  ] as const
+).join(", ");
+
 export const GOAL_FIELD_DESCRIPTIONS: Record<keyof TargetContext, string> = {
   position: `seniority level — ${HINTS.position}`,
   role: `profession type — ${HINTS.role}`,

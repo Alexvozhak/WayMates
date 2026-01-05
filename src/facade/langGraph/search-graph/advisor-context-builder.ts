@@ -118,6 +118,12 @@ export class AdvisorContextBuilder {
     return this;
   }
 
+  addDictionaries(hints: string): this {
+    if (!hints.trim()) return this;
+    this.sections.push(`AVAILABLE DICTIONARIES:\n${hints}`);
+    return this;
+  }
+
   build(): string {
     return this.sections.join("\n\n");
   }

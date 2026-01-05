@@ -74,6 +74,12 @@ function extractAdvisorQuestion(parsed: ParsedIntent): string | null {
   return parsed.question;
 }
 
+function extractQuestionType(parsed: ParsedIntent): "general" | "dictionary" | "chart" | null {
+  if (parsed.intent !== "ask") return null;
+  if (!("questionType" in parsed)) return null;
+  return parsed.questionType;
+}
+
 function computeNewPositionRound(
   phase: SearchStateType["phase"],
   intent: ParsedIntent["intent"],
@@ -123,6 +129,7 @@ export const parseSearchIntentNode = withLogging<SearchStateType>(
       targetSearchParams,
       currentSearchParams,
       advisorQuestion: extractAdvisorQuestion(parsed),
+      questionType: extractQuestionType(parsed),
       newPositionRound: updatedRound,
     };
   },

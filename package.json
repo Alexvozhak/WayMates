@@ -12,7 +12,7 @@
     "bot:docker:up": "docker compose --env-file .env.test --profile test up --build -d telegram-bot-test",
     "bot:docker:down": "docker compose --env-file .env.test --profile test stop telegram-bot-test && docker compose --env-file .env.test --profile test rm -f telegram-bot-test",
     "bot:docker:restart": "npm run bot:docker:down && npm run bot:docker:up",
-    "bot:docker:clean": "npm run bot:docker:down && docker exec waymates-redis-test redis-cli KEYS 'bot:*' | xargs -r docker exec -i waymates-redis-test redis-cli DEL && docker exec waymates-redis-test redis-cli KEYS 'session:*' | xargs -r docker exec -i waymates-redis-test redis-cli DEL && npm run bot:docker:up",
+    "bot:docker:clean": "npm run bot:docker:down && docker exec waymates-redis-test redis-cli KEYS 'telegram:session:*' | xargs -r docker exec -i waymates-redis-test redis-cli DEL && docker exec waymates-redis-test redis-cli --scan | grep -E '^[0-9]+$' | xargs -r docker exec -i waymates-redis-test redis-cli DEL && npm run bot:docker:up",
     "bot:docker:logs": "docker logs -f waymates-telegram-bot-test",
     "facade:rebuild": "docker compose --env-file .env.test --profile test up --build -d facade-test --wait && npm run bot:docker:restart && echo 'Facade + bot rebuilt, checkpoints preserved. Use :clean if state schema changed.'",
     "facade:rebuild:clean": "docker compose --env-file .env.test --profile test up --build -d facade-test --wait && docker exec waymates-postgres-test psql -U postgres -d waymates_facade_test -c 'TRUNCATE facade.checkpoints, facade.checkpoint_writes, facade.checkpoint_blobs CASCADE;' && npm run bot:docker:restart && echo 'Facade + bot rebuilt, checkpoints CLEARED.'",

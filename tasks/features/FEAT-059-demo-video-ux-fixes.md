@@ -205,13 +205,13 @@ Demo video — ключевой артефакт для презентации �
 
 ## Acceptance Criteria
 
-- [ ] После /start pending interrupts очищаются
-- [ ] Новый пользователь видит welcome без /start (auto-greeting)
-- [ ] confirm_adhoc_context показывает опции консистентные с routing
-- [ ] confirm_adhoc_context выводит структурно (✅ FILLED / ⚪ OPTIONAL)
-- [ ] document.ts использует i18n
-- [ ] generate-answer выбирает candidates по фазе (waymates/pathfinders/exploration)
-- [ ] Skills limit вынесен в константу
+- [x] После /start pending interrupts очищаются (Phase 7.4)
+- [x] Новый пользователь видит welcome без /start (auto-greeting) ✅ 2025-01-05
+- [x] confirm_adhoc_context показывает опции консистентные с routing (Phase 7.5)
+- [x] confirm_adhoc_context выводит структурно (✅ FILLED / ⚪ OPTIONAL) (Phase 7.5)
+- [x] document.ts использует i18n ✅ 2025-01-05
+- [x] generate-answer выбирает candidates по фазе (Phase 7.8)
+- [x] Skills limit вынесен в константу (Phase 7.8)
 - [ ] Результаты имеют prefix (🔎 Pathfinders / 🤝 Waymates / 🔍 Similar)
 - [ ] Вопросы про словари получают ответ с данными из БД
 - [ ] Вопросы про chart получают ответ с Vision анализом

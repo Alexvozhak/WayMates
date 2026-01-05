@@ -33,3 +33,8 @@ error-internal_error = Внутренняя ошибка сервера. Мы у
 error-postgres_connection_failed = Проблемы с подключением к базе данных. Попробуйте позже.
 error-postgres_query_failed = Ошибка при выполнении запроса. Попробуйте позже.
 error-rate_limit = ⏱ Слишком много запросов. Подождите несколько секунд и попробуйте снова.
+
+# === Document Upload ===
+doc-pdf-only = Пока поддерживаются только PDF файлы. Отправьте резюме в формате PDF.
+doc-processing = 📄 Обрабатываю резюме...
+doc-cv-prefix = Вот моё резюме:

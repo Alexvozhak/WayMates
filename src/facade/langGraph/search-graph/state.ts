@@ -141,6 +141,7 @@ export const searchStateAnnotation = Annotation.Root({
 
   // Advisor mode state
   advisorQuestion: Annotation<string | null>({ reducer: lastValue, default: () => null }),
+  questionType: Annotation<"general" | "dictionary" | "chart" | null>({ reducer: lastValue, default: () => null }),
   answerText: Annotation<string | null>({ reducer: lastValue, default: () => null }),
 });
 

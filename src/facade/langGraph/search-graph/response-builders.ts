@@ -44,6 +44,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     adhocContext: state.adhocContext,
     candidates: state.explorationResults,
     chartUrl: state.chartUrl,
+    answerText: state.answerText ?? null,
   }),
 
   [PHASE.showing_exploration_facets]: (state) => ({
@@ -51,6 +52,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
     facets: state.facets!,
+    answerText: state.answerText ?? null,
   }),
 
   [PHASE.extracting_goal]: () => ({

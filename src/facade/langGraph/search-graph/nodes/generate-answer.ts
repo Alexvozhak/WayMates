@@ -1,3 +1,4 @@
+import { simpleDictionaryTypeSchema } from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { ADVISOR_SKILLS_LIMIT, AdvisorContextBuilder } from "../advisor-context-builder.js";
 import { ADVISOR_SYSTEM_PROMPT } from "../prompts/advisor.js";
@@ -6,6 +7,8 @@ import { withLogging } from "../with-logging.js";
 
 import type { CandidateBase } from "../../../../shared/schemas.js";
 import type { SearchStateType } from "../state.js";
+
+const ALL_DICTIONARY_TYPES = simpleDictionaryTypeSchema.options;
 
 function getCandidatesForPhase(state: SearchStateType): CandidateBase[] {
   switch (state.phase) {
@@ -25,39 +28,55 @@ function getCandidatesForPhase(state: SearchStateType): CandidateBase[] {
  * Generate answer node: creates advisor response based on search context.
  * Business logic only — no interrupt. Saves answer to state for show_answer.
  * Phase stays unchanged (showing_*_results) — no separate advising phase.
+ *
+ * Handles questionType:
+ * - "general": uses candidates + trajectory context
+ * - "dictionary": injects all dictionary values for reference
+ * - "chart": (future) will use vision to analyze chart
  */
-export const generateAnswerNode = withLogging<SearchStateType>(NODE.generate_answer, async (state, _config, _deps) => {
-  const question = state.advisorQuestion ?? state.userResponse;
+export const generateAnswerNode = withLogging<SearchStateType>(
+  NODE.generate_answer,
+  async (state, _config, { dictionariesService }) => {
+    const question = state.advisorQuestion ?? state.userResponse;
+    const questionType = state.questionType ?? "general";
 
-  const hasTrajectory = state.userTrajectory.length > 0;
+    const hasTrajectory = state.userTrajectory.length > 0;
 
-  const builder = new AdvisorContextBuilder();
+    const builder = new AdvisorContextBuilder();
 
-  if (hasTrajectory) {
-    builder.addUserTrajectory(state.userTrajectory);
-  } else {
-    builder.addUserContext(state.userContext);
-  }
+    if (hasTrajectory) {
+      builder.addUserTrajectory(state.userTrajectory);
+    } else {
+      builder.addUserContext(state.userContext);
+    }
 
-  const candidates = getCandidatesForPhase(state);
+    const candidates = getCandidatesForPhase(state);
 
-  const context = builder
-    .addGoal(state.storedGoal)
-    .addCandidates(candidates)
-    .addCandidateDetails(candidates.slice(0, ADVISOR_SKILLS_LIMIT))
-    .addChart(state.chartUrl)
-    .build();
+    builder
+      .addGoal(state.storedGoal)
+      .addCandidates(candidates)
+      .addCandidateDetails(candidates.slice(0, ADVISOR_SKILLS_LIMIT))
+      .addChart(state.chartUrl);
 
-  const model = getModel("agent");
-  const response = await model.invoke([
-    { role: "system", content: ADVISOR_SYSTEM_PROMPT },
-    { role: "user", content: `${context}\n\nQUESTION: ${question}` },
-  ]);
+    // For dictionary questions, inject all available dictionary values
+    if (questionType === "dictionary") {
+      const hints = await dictionariesService.buildHints(ALL_DICTIONARY_TYPES);
+      builder.addDictionaries(hints);
+    }
 
-  const answerText = typeof response.content === "string" ? response.content : String(response.content);
+    const context = builder.build();
 
-  return {
-    answerText,
-    // Phase unchanged — stay in showing_*_results
-  };
-});
+    const model = getModel("agent");
+    const response = await model.invoke([
+      { role: "system", content: ADVISOR_SYSTEM_PROMPT },
+      { role: "user", content: `${context}\n\nQUESTION: ${question}` },
+    ]);
+
+    const answerText = typeof response.content === "string" ? response.content : String(response.content);
+
+    return {
+      answerText,
+      // Phase unchanged — stay in showing_*_results
+    };
+  },
+);

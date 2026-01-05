@@ -33,3 +33,8 @@ error-internal_error = Internal server error. We're already working on a fix.
 error-postgres_connection_failed = Database connection issues. Please try again later.
 error-postgres_query_failed = Query execution error. Please try again later.
 error-rate_limit = ⏱ Too many requests. Please wait a few seconds and try again.
+
+# === Document Upload ===
+doc-pdf-only = Only PDF files are supported. Please send your resume as a PDF.
+doc-processing = 📄 Processing your resume...
+doc-cv-prefix = Here's my resume:

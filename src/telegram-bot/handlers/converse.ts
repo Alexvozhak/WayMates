@@ -20,7 +20,17 @@ export async function handleConverse(ctx: BotContext): Promise<void> {
     return;
   }
 
+  // Auto-greeting for new users (no /start required)
+  const isNewUser = !(await ctx.services.sessionService.hasSession(ctx));
   const sessionId = await ctx.services.sessionService.getSessionId(ctx);
+
+  if (isNewUser) {
+    const welcomeMsg = await ctx.services.welcomePresenter.format(
+      { hasStory: false, userName: ctx.from.first_name },
+      ctx.from.language_code,
+    );
+    await ctx.reply(welcomeMsg);
+  }
 
   const locale = ctx.from.language_code === "ru" ? "ru" : "en";
 

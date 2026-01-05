@@ -34,6 +34,7 @@ const intentWithFiltersSchema = z.object({
       intent: z.literal("ask"),
       reasoning: z.string(),
       question: z.string(),
+      questionType: z.enum(["general", "dictionary", "chart"]),
       filters: z.null(),
     }),
     z.object({

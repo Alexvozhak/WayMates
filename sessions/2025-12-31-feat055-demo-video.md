@@ -1273,29 +1273,186 @@ Actual: searchPathfinders вызвался повторно → новый showi
 
 ---
 
+### Phase 7.9: FEAT-059 Доработки (текущая сессия)
+
+**Статус:** ЧАСТИЧНО ЗАВЕРШЕНО
+
+**Что сделано:**
+
+1. **#2 Auto-greeting для новых пользователей:**
+   - `session-service.ts:50-59` — `hasSession(ctx): Promise<boolean>`
+   - `converse.ts:11-19` — показ welcome без /start
+   - Проверено: GramJS тест получает 2 ответа (welcome + response) ✅
+
+2. **#5 i18n в document.ts:**
+   - `en.ftl` / `ru.ftl` — добавлены 3 ключа: `doc-pdf-only`, `doc-processing`, `doc-cv-prefix`
+   - `document.ts:17,21,47` — заменён хардкод на `ctx.t()`
+
+3. **Phase 4: Dictionary Questions:**
+   - `parse-intent.ts` — добавлен `questionType: z.enum(["general", "dictionary", "chart"])`
+   - `classification.ts` — описание questionType с DICTIONARY_LABELS константой
+   - `state.ts:145` — добавлено `questionType` поле
+   - `parse-search-intent.ts` — extractQuestionType()
+   - `generate-answer.ts` — dictionary hints injection через buildHints()
+   - `advisor-context-builder.ts` — addDictionaries()
+   - `response-builders.ts` — answerText в exploration phases
+   - `nlp-formatter/prompts.ts` — answerText check в exploration prompts
+   - **Проверено:** "What industries are available?" возвращает 17 индустрий ✅
+
+**Изменённые файлы:**
+
+| Файл | Изменение |
+|------|-----------|
+| `src/telegram-bot/services/session-service.ts` | +hasSession() |
+| `src/telegram-bot/handlers/converse.ts` | +auto-greeting |
+| `src/telegram-bot/locales/en.ftl` | +3 ключа document upload |
+| `src/telegram-bot/locales/ru.ftl` | +3 ключа document upload |
+| `src/telegram-bot/handlers/document.ts` | ctx.t() вместо хардкода |
+| `src/facade/langGraph/search-graph/nodes/parse-intent.ts` | +questionType |
+| `src/facade/langGraph/search-graph/prompts/classification.ts` | +DICTIONARY_TYPES_LIST |
+| `src/facade/langGraph/search-graph/state.ts` | +questionType |
+| `src/facade/langGraph/search-graph/nodes/parse-search-intent.ts` | +extractQuestionType |
+| `src/facade/langGraph/search-graph/nodes/generate-answer.ts` | +dictionary hints |
+| `src/facade/langGraph/search-graph/advisor-context-builder.ts` | +addDictionaries() |
+| `src/facade/langGraph/search-graph/response-builders.ts` | +answerText exploration |
+| `src/facade/services/nlp-formatter/prompts.ts` | +answerText check exploration |
+| `src/facade/services/dictionaries.service.ts` | export DICTIONARY_LABELS |
+
+---
+
+## Осталось сделать
+
+### FEAT-059 Продолжение (СЛЕДУЮЩАЯ СЕССИЯ)
+
+**3 проблемы найдены в GramJS тесте:**
+
+| # | Проблема | Причина | Приоритет |
+|---|----------|---------|-----------|
+| 1 | Step 2: Waymates вместо Explore | storedGoal в Neo4j от прошлых тестов | 🔴 Critical |
+| 2 | Step 5: message is too long | 5 pathfinders + детали = >4096 chars | 🟡 Medium |
+| 3 | Step 6: answerText не показывается | answerText не попадает в NLP данные | 🔴 Critical |
+
+**Debug notes:**
+- Step 2: Нужно удалить Goal из Neo4j перед тестом: `MATCH (u:User)-[r:HAS_GOAL]->(g:Goal) WHERE u.telegramUserId = 379154408 DELETE r, g`
+- Step 5: Лимитировать длину NLP output или количество candidates
+- Step 6: answerText = null в finalSnapshot.values — нужен debug response flow
+
+**Phase 5: Vision для Charts (~60 LOC)** — отложено
+
+### Финал
+
+- [ ] Fix 3 проблемы GramJS теста
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt
+
+- [ ] FEAT-057: Goal как graph properties
+- [ ] FEAT-058: Удалить абстракцию Phases
+
+---
+
+### Phase 7.10: Message Length Fix ✅
+
+**Статус:** ЗАВЕРШЕНО
+
+**Что сделано:**
+
+1. **Step 5 "message is too long" fix:**
+   - Root cause: NLP генерировал >4096 chars (5 pathfinders × ~1000 chars)
+   - Fix 1: `CANDIDATES_DISPLAY_LIMIT` = 4 (было 20) в `env.ts` + `.env.test`
+   - Fix 2: Убраны verbose поля из NLP: `role`, `companySize`, `educationLevel`
+   - Fix 3: Создан `NLP_CANDIDATE_FIELDS` в `shared/prompts.ts`
+
+2. **Salary display fix:**
+   - Добавлен `salaryExact` в `NLP_CANDIDATE_FIELDS` (pathfinders используют его)
+   - Обновлён NLP prompt: "use salaryExact if set, otherwise salaryMin-salaryMax range"
+
+3. **Step 2 fix:** Goal очищается через `MATCH (u:User)-[r:HAS_GOAL]->(g:Goal) WHERE u.telegramUserId = 379154408 DELETE r, g`
+
+4. **Step 6 fix:** answerText flow работал корректно (проблема была в Step 5)
+
+**Изменённые файлы:**
+
+| Файл | Изменение |
+|------|-----------|
+| `src/facade/env.ts:34` | CANDIDATES_DISPLAY_LIMIT = 4 |
+| `.env.test:52` | CANDIDATES_DISPLAY_LIMIT=4 |
+| `src/facade/langGraph/shared/prompts.ts:50-52` | +NLP_CANDIDATE_FIELDS (без role, companySize, educationLevel) |
+| `src/facade/services/nlp-formatter/prompts.ts:4,150` | import NLP_CANDIDATE_FIELDS, salary format instruction |
+
+**GramJS тест:** 6/6 ✅ Demo Video 1 Complete!
+
+---
+
+## Осталось сделать
+
+### Phase 5: Vision для Charts (~60 LOC) — СЛЕДУЮЩАЯ СЕССИЯ
+
+- [ ] Chart screenshotter service (Puppeteer)
+- [ ] Multimodal LLM call для описания chart
+- [ ] Integration с generate-answer
+
+### Финал
+
+- [ ] Записать Video 1 (adhoc, ≤3.5 мин)
+- [ ] Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+
+### Tech Debt
+
+- [ ] FEAT-057: Goal как graph properties
+- [ ] FEAT-058: Удалить абстракцию Phases
+
+---
+
+## Рефлексия сессии (Phase 7.10)
+
+### Anti-patterns
+
+70. **Не проверил различие схем AdhocContext vs ContextForStorage** — `NLP_CANDIDATE_FIELDS` использовал поля из `AdhocContextBase` (`salaryMin/Max`), но pathfinders используют `ContextForStorage` (`salaryExact`). Урок: **при работе с candidates — проверять какая схема используется (adhoc vs storage)**
+
+71. **Предложил новую env переменную вместо использования существующей** — хотел создать `NLP_CANDIDATES_LIMIT`, но `CANDIDATES_DISPLAY_LIMIT` уже есть. Урок: **grep существующие переменные перед созданием новой**
+
+---
+
+## Полезные ссылки
+
+### Message Length Fix
+- `src/facade/env.ts:34` — CANDIDATES_DISPLAY_LIMIT
+- `src/facade/langGraph/shared/prompts.ts:50-52` — NLP_CANDIDATE_FIELDS
+
+### Схемы salary
+- `AdhocContextBase` — salaryMin, salaryMax (user input)
+- `ContextForStorage` — salaryExact, salaryMin, salaryMax (DB storage)
+- Pathfinders используют ContextForStorage (matchedContext, targetContext)
+
+---
+
 ## Промпт для продолжения после rewind
 
 ```
-Продолжаем FEAT-055 Demo Video — финализация.
+Продолжаем FEAT-059 Demo Video UX Fixes — Phase 5: Vision для Charts.
 
 ПРОЧИТАЙ:
-1. `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md` — Phase 7.8 ЗАВЕРШЕНО
+1. `/home/alex/projects/WayMatesRemote/sessions/2025-12-31-feat055-demo-video.md` — Phase 7.10
+2. `/home/alex/projects/WayMatesRemote/tasks/features/FEAT-059-demo-video-ux-fixes.md`
 
-**Сделано в Phase 7.8:**
-- ADHOC_OPTIONAL_FIELDS + salaryMin/salaryMax ✅
-- USD везде (7 мест) ✅
-- Ask intent Step 6 fix (currentAnswer → answerText унификация) ✅
-- getCandidatesForPhase() — advisor по правильным candidates ✅
-- ADVISOR_SKILLS_LIMIT константа ✅
-- NLP не требует optional fields ✅
-- facade:rebuild перезапускает бота ✅
-- GramJS тест 6/6 ✅
+**Сделано в Phase 7.10:**
+- ✅ Step 5 fix: CANDIDATES_DISPLAY_LIMIT=4, NLP_CANDIDATE_FIELDS (без verbose полей)
+- ✅ Salary fix: добавлен salaryExact, prompt для range формата
+- ✅ GramJS тест 6/6 проходит
 
-**Осталось:**
-- Записать Video 1 (adhoc, ≤3.5 мин)
-- Записать Video 2 (cold-start + DTW + PDF, ≤5.5 мин)
+**Phase 5: Vision для Charts (~60 LOC):**
+1. Chart screenshotter service (Puppeteer snapshot HTML → image)
+2. Multimodal LLM call для описания chart (аналог parse-cv-to-text.tool.ts:90-113)
+3. Integration: questionType="chart" → generate-answer использует vision
 
-**Тесты:**
+**Референсы:**
+- Multimodal LLM: `src/facade/mcp-server/tools/parse-cv-to-text.tool.ts:90-113`
+- Chart URL: `state.chartUrl` (R2 public URL)
+
+**Команды:**
 set -a && source .env.test && set +a
+npm run facade:rebuild
 OPENROUTER_API_KEY=sk-or-v1-... npx tsx poc/demo-video-1-telegram.ts
 ```

@@ -3,8 +3,11 @@
 // Classify user intent within SearchGraph
 // ============================================================================
 
+import { DICTIONARY_LABELS } from "../../../services/dictionaries.service.js";
 import { getValidIntentsForPhase } from "../search-router.js";
 import { PHASE } from "../state.js";
+
+const DICTIONARY_TYPES_LIST = Object.keys(DICTIONARY_LABELS).join("/");
 
 import type { RouteFlags } from "../search-router.js";
 import type { SearchPhase, SearchUserIntent } from "../state.js";
@@ -83,7 +86,8 @@ const INTENT_DESCRIPTIONS: Record<SearchUserIntent, string> = {
   + filters or null`,
   ask: `User asks a QUESTION about results, capabilities, or the system
   Semantic: why/how/who questions, help requests, meta-questions about bot capabilities
-  + question: user's question text`,
+  + question: user's question text
+  + questionType: "general" (about results/candidates), "dictionary" (what ${DICTIONARY_TYPES_LIST} exist), "chart" (about the visualization)`,
   searchWaymates: `User wants to see WAYMATES (peers with same goal)
   Semantic: wants similar people, peers, networking, fellow travelers`,
   searchPathfinders: `User wants to see PATHFINDERS (proof of transition)

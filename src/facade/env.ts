@@ -31,7 +31,7 @@ const envSchema = baseEnvSchema.extend({
   OPENAI_FACADE_MAX_CONCURRENT: z.coerce.number().int().positive().default(10),
   // Search limits (fixed, not user-configurable)
   CANDIDATES_FETCH_LIMIT: z.coerce.number().int().positive().default(50),
-  CANDIDATES_DISPLAY_LIMIT: z.coerce.number().int().positive().default(20),
+  CANDIDATES_DISPLAY_LIMIT: z.coerce.number().int().positive().default(4),
   // Facets threshold (Progressive Disclosure)
   FACETS_MAX_CANDIDATES: z.coerce.number().int().positive().default(10),
   FACETS_MAX_JSON_SIZE_KB: z.coerce.number().int().positive().default(100),

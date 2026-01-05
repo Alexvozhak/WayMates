@@ -1,12 +1,11 @@
 import { PHASE as COLD_START_PHASE } from "../../langGraph/cold-start-v2/types.js";
 import { PHASE as SEARCH_PHASE } from "../../langGraph/search-graph/state.js";
 import { PHASE as SIMPLE_PHASE } from "../../langGraph/shared/phases.js";
-import { ADHOC_FIELD_DESCRIPTIONS, GOAL_FIELD_DESCRIPTIONS } from "../../langGraph/shared/prompts.js";
+import { GOAL_FIELD_DESCRIPTIONS, NLP_CANDIDATE_FIELDS } from "../../langGraph/shared/prompts.js";
 
 import type { SearchPhase } from "../../langGraph/search-graph/state.js";
 
-// Generate field lists from type-safe descriptions (single source of truth)
-const CANDIDATE_FIELDS = Object.keys(ADHOC_FIELD_DESCRIPTIONS).join(", ");
+// Use NLP_CANDIDATE_FIELDS from shared (excludes verbose: role, companySize, educationLevel)
 const GOAL_FIELDS = Object.keys(GOAL_FIELD_DESCRIPTIONS).join(", ");
 
 // Reusable format blocks for structured responses
@@ -39,17 +38,21 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   - If hasGoal=false: explore similar people, set a goal, edit context, or ask a question
   - If hasGoal=true: search pathfinders/waymates, validate goal, edit goal, edit context, or ask a question
   Offer options naturally based on hasGoal value.`,
-  [SEARCH_PHASE.showing_exploration_candidates]: `Show results from explorationResults array:
+  [SEARCH_PHASE.showing_exploration_candidates]: `Check answerText field first:
+  If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
+  If answerText is null/empty → Show results from explorationResults array:
   📊 **Explore** — people with similar background
   ${CONTEXT_BLOCK}
   ${FILTERS_BLOCK}
   📋 Results: [explorationResults.length] similar people
   IMPORTANT: List candidates from explorationResults array. Each has matchedContext.
-  Each context with fields: ${CANDIDATE_FIELDS}
+  Each context with fields: ${NLP_CANDIDATE_FIELDS}
   CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → first acknowledge goal deleted.
   End with: set goal, filter, or ask question.`,
-  [SEARCH_PHASE.showing_exploration_facets]: `Structured format:
+  [SEARCH_PHASE.showing_exploration_facets]: `Check answerText field first:
+  If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
+  If answerText is null/empty → Structured format:
   📊 **Explore** — people with similar background
   ${CONTEXT_BLOCK}
   ${FILTERS_BLOCK}
@@ -85,7 +88,7 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ${FILTERS_BLOCK}
   📋 Results: [waymatesResults.length] waymates
   IMPORTANT: List candidates from waymatesResults array. Each has matchedContext.
-  Each context with fields: ${CANDIDATE_FIELDS}
+  Each context with fields: ${NLP_CANDIDATE_FIELDS}
   CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
   If waymatesResults is empty → show goal criteria, suggest broadening.
   End with: switch to pathfinders, filter, or refine goal.`,
@@ -98,7 +101,7 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   📋 Results: [pathfinderResults.length] pathfinders
   IMPORTANT: List candidates from pathfinderResults array. Each has matchedContext and targetContext.
   Show: matchedContext (starting point) → targetContext (reached goal), timeSinceTargetMonths.
-  Each context with fields: ${CANDIDATE_FIELDS}
+  Each context with fields: ${NLP_CANDIDATE_FIELDS}
   CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
   If pathfinderResults is empty → show goal criteria, suggest broadening.
   End with: switch to waymates, filter, or refine goal.`,
@@ -143,8 +146,8 @@ Style:
 - 2-4 sentences, direct
 - No excitement phrases, no excessive emoji
 - Never invent data
-- Candidates: ${CANDIDATE_FIELDS} from actual data
-- Salary always in USD (e.g. "$150k USD" or "150,000 USD")
+- Candidates: ${NLP_CANDIDATE_FIELDS} from actual data
+- Salary: use salaryExact if set, otherwise salaryMin-salaryMax range (e.g. "$200k-$240k USD")
 
 Format: Markdown, real newlines.
 
