@@ -1352,6 +1352,24 @@ Actual: searchPathfinders вызвался повторно → новый showi
 
 ---
 
+### Phase 7.11: Chart Vision Analysis — ⏸️ DEFERRED to post-MVP
+
+**Статус:** ОТЛОЖЕНО
+
+**Причина:**
+- chartUrl — это HTML файл (Plotly.js интерактивный), не PNG
+- Для Vision нужен screenshot: Puppeteer открывает HTML → PNG → Base64 → LLM Vision API
+- Требует headless Chrome в Docker на PaaS
+- Альтернатива Browserless.io добавляет внешнюю зависимость + cost
+
+**Решение:** Откладываем на post-MVP. Задача занесена в MVP-RELEASE-PLAN.md как P2.
+
+**Документация обновлена:**
+- `tasks/features/FEAT-059-demo-video-ux-fixes.md` — Phase 5 помечен как DEFERRED
+- `docs/mvp_final/MVP-RELEASE-PLAN.md` — добавлен Chart Vision Analysis как P2 POST-MVP
+
+---
+
 ### Phase 7.10: Message Length Fix ✅
 
 **Статус:** ЗАВЕРШЕНО
@@ -1387,9 +1405,13 @@ Actual: searchPathfinders вызвался повторно → новый showi
 
 ## Осталось сделать
 
-### Phase 5: Vision для Charts (~60 LOC) — СЛЕДУЮЩАЯ СЕССИЯ
+### FEAT-059: Demo Video UX Fixes — ✅ DONE
 
-- [ ] Chart screenshotter service (Puppeteer)
+Все фазы выполнены, кроме Phase 5 (Vision) который отложен на post-MVP.
+
+### Phase 5: Vision для Charts — ⏸️ DEFERRED to post-MVP
+
+- [ ] Chart screenshotter service (Puppeteer) — требует headless Chrome на PaaS
 - [ ] Multimodal LLM call для описания chart
 - [ ] Integration с generate-answer
 

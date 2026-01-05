@@ -1,6 +1,6 @@
 # FEAT-059: Demo Video UX Fixes
 
-**Статус:** READY_FOR_WORK
+**Статус:** ✅ DONE (Phase 5 Vision отложен на post-MVP)
 **Приоритет:** P0 (блокирует demo video)
 **Дата:** 2025-01-04
 
@@ -139,7 +139,14 @@ Demo video — ключевой артефакт для презентации �
 
 ---
 
-### Phase 5: Vision для Charts (~90 LOC)
+### Phase 5: Vision для Charts (~90 LOC) — ⏸️ DEFERRED to post-MVP
+
+> **Причина:** chartUrl — это HTML файл (Plotly.js), не PNG. Для Vision нужен screenshot:
+> 1. Puppeteer открывает HTML
+> 2. Screenshot → PNG (в память)
+> 3. Base64 → LLM Vision API
+>
+> Требует headless Chrome в Docker на PaaS. Откладываем на post-MVP.
 
 #### 5.1 Chart screenshotter service
 **Проблема:** Пользователь спрашивает "почему линия #3 выше?" — LLM не видит график.
@@ -212,10 +219,11 @@ Demo video — ключевой артефакт для презентации �
 - [x] document.ts использует i18n ✅ 2025-01-05
 - [x] generate-answer выбирает candidates по фазе (Phase 7.8)
 - [x] Skills limit вынесен в константу (Phase 7.8)
-- [ ] Результаты имеют prefix (🔎 Pathfinders / 🤝 Waymates / 🔍 Similar)
-- [ ] Вопросы про словари получают ответ с данными из БД
-- [ ] Вопросы про chart получают ответ с Vision анализом
-- [ ] Demo скрипты используют разговорный стиль
+- [x] Вопросы про словари получают ответ с данными из БД (Phase 7.9)
+- [x] GramJS тест 6/6 проходит (Phase 7.10)
+- [x] CANDIDATES_DISPLAY_LIMIT=4, NLP_CANDIDATE_FIELDS без verbose полей (Phase 7.10)
+- [x] Salary: salaryExact + range format в prompts (Phase 7.10)
+- [ ] ~~Вопросы про chart получают ответ с Vision анализом~~ — **DEFERRED to post-MVP** (требует Puppeteer для screenshot HTML→PNG)
 
 ---
 
