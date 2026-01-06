@@ -65,6 +65,7 @@ function createMockState(overrides: Partial<ColdStartStateType> = {}): ColdStart
     clarificationRound: 0,
     currentEntityContext: { contextIndex: 0, preview: firstContext.position },
     normalizations: [],
+    rolePositionSuggestions: [],
     ...overrides,
   };
 }

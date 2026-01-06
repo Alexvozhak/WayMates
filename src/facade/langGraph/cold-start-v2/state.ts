@@ -14,6 +14,7 @@ import type {
   UserContext,
   UserId,
 } from "../../../shared/schemas.js";
+import type { RolePositionSuggestion } from "../../services/normalizer.js";
 import type { ExtractableContext, ExtractableTrail } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
@@ -53,6 +54,7 @@ export const coldStartStateAnnotation = Annotation.Root({
   clarificationRound: Annotation<number>({ reducer: lastValue, default: () => 0 }),
   currentEntityContext: Annotation<CurrentEntityContext | undefined>({ reducer: lastValue }),
   normalizations: Annotation<NormalizationEntry[]>({ reducer: lastValue, default: () => [] }),
+  rolePositionSuggestions: Annotation<RolePositionSuggestion[]>({ reducer: lastValue, default: () => [] }),
 });
 
 export type ColdStartStateType = typeof coldStartStateAnnotation.State;

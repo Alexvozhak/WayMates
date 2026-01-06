@@ -7,7 +7,7 @@ import { PHASE } from "../state.js";
 import type { ColdStartStateType } from "../state.js";
 
 export function clarifyFieldsNode(state: ColdStartStateType): Partial<ColdStartStateType> {
-  const { missingFields, currentEntityContext } = state;
+  const { missingFields, rolePositionSuggestions, currentEntityContext } = state;
 
   if (!currentEntityContext) {
     throw new AgentInvariantError("clarifyFieldsNode", "currentEntityContext must be set before clarification");
@@ -20,10 +20,17 @@ export function clarifyFieldsNode(state: ColdStartStateType): Partial<ColdStartS
     message: mf.zodMessage,
   }));
 
+  const suggestions = rolePositionSuggestions.map((s) => ({
+    field: s.field,
+    original: s.original,
+    options: s.suggestions,
+  }));
+
   const userResponse = interrupt({
     type: "clarification",
     message: "Please provide missing information:",
     questions,
+    suggestions,
     entity: currentEntityContext.preview,
     phase: PHASE.awaiting_clarification,
   });

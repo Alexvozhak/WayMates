@@ -80,7 +80,7 @@ export function routeNextNodeAfterClarifyIntent(state: ColdStartStateType): Node
 
 export function routeNextNodeAfterValidation(state: ColdStartStateType): NodeName {
   if (state.phase === PHASE.failed) return NODE.cancel;
-  if (state.missingFields.length > 0) return NODE.clarify_fields;
+  if (state.missingFields.length > 0 || state.rolePositionSuggestions.length > 0) return NODE.clarify_fields;
   return NODE.show_context;
 }
 

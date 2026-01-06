@@ -15,12 +15,12 @@ export function createMockFuzzyModel(): FuzzyModel {
     invoke(messages: HumanMessage[]): Promise<FuzzyMatchResult> {
       const content = messages[0]?.content;
       if (typeof content !== "string") {
-        return Promise.resolve({ canonical: null, confidence: "low", reasoning: "No content" });
+        return Promise.resolve({ canonical: null, suggestions: [], reasoning: "No content" });
       }
 
       const valueMatch = content.match(/Find the canonical name for "([^"]+)"/);
       if (!valueMatch?.[1]) {
-        return Promise.resolve({ canonical: null, confidence: "low", reasoning: "Could not parse value" });
+        return Promise.resolve({ canonical: null, suggestions: [], reasoning: "Could not parse value" });
       }
 
       const value = valueMatch[1].toLowerCase().trim();
@@ -28,7 +28,7 @@ export function createMockFuzzyModel(): FuzzyModel {
 
       return Promise.resolve({
         canonical,
-        confidence: canonical ? "high" : "low",
+        suggestions: canonical ? [canonical] : [],
         reasoning: canonical ? `Matched typo "${value}" to "${canonical}"` : "No match found",
       });
     },

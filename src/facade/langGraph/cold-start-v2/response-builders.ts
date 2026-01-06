@@ -31,8 +31,11 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
   },
 
   [PHASE.awaiting_clarification]: (state) => {
-    if (state.missingFields.length === 0) {
-      throw new InvalidStateError(PHASE.awaiting_clarification, "missingFields is empty");
+    const hasMissingFields = state.missingFields.length > 0;
+    const hasSuggestions = state.rolePositionSuggestions.length > 0;
+
+    if (!hasMissingFields && !hasSuggestions) {
+      throw new InvalidStateError(PHASE.awaiting_clarification, "missingFields and rolePositionSuggestions are empty");
     }
 
     const currentAgenda = state.queue[state.currentContextIndex];
@@ -49,6 +52,7 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
       missingFields: state.missingFields,
       optionalFields: state.optionalFields,
       suggestCancel: state.clarificationRound >= SUGGEST_CANCEL_AFTER_ROUNDS,
+      rolePositionSuggestions: hasSuggestions ? state.rolePositionSuggestions : undefined,
     };
   },
 

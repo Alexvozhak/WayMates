@@ -10,7 +10,7 @@ import { NODE, PHASE } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
 import type { ContextOptionalField, UserId } from "../../../../shared/schemas.js";
-import type { Normalizer } from "../../../services/normalizer.js";
+import type { Normalizer, RolePositionSuggestion } from "../../../services/normalizer.js";
 import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda, MissingField, Trail, UserContext } from "../state.js";
 import type { NormalizationEntry } from "../types.js";
@@ -119,15 +119,8 @@ function upsertTrailsForContext(existing: Trail[], newTrails: Trail[], toContext
 type NormalizationResult = {
   normalizedContext: UserContext;
   normalizations: NormalizationEntry[];
+  rolePositionSuggestions: RolePositionSuggestion[];
 };
-
-function collectFieldDiff(
-  field: "position" | "role" | "industry",
-  original: string,
-  normalized: string,
-): NormalizationEntry | null {
-  return original === normalized ? null : { field, original, normalized };
-}
 
 function collectDomainsDiff(originalDomains: string[], normalizedDomains: string[]): NormalizationEntry[] {
   const entries: NormalizationEntry[] = [];
@@ -148,22 +141,42 @@ async function normalizeAndCollectDiff(
   userId: UserId,
   normalizer: Normalizer,
 ): Promise<NormalizationResult> {
-  const normalizedContext = await normalizer.normalizeFullContext(context, userId);
-
   const normalizations: NormalizationEntry[] = [];
+  const rolePositionSuggestions: RolePositionSuggestion[] = [];
 
-  const positionDiff = collectFieldDiff("position", context.position, normalizedContext.position);
-  if (positionDiff) normalizations.push(positionDiff);
+  // Normalize role/position with suggestions support
+  const [roleResult, positionResult] = await Promise.all([
+    normalizer.normalizeTermWithResult("role", context.role, userId),
+    normalizer.normalizeTermWithResult("position", context.position, userId),
+  ]);
 
-  const roleDiff = collectFieldDiff("role", context.role, normalizedContext.role);
-  if (roleDiff) normalizations.push(roleDiff);
+  let role = context.role;
+  let position = context.position;
 
-  const industryDiff = collectFieldDiff("industry", context.industry, normalizedContext.industry);
-  if (industryDiff) normalizations.push(industryDiff);
+  if (roleResult.status === "suggestions") {
+    rolePositionSuggestions.push(roleResult);
+  } else if (roleResult.value !== context.role) {
+    normalizations.push({ field: "role", original: context.role, normalized: roleResult.value });
+    role = roleResult.value;
+  }
 
+  if (positionResult.status === "suggestions") {
+    rolePositionSuggestions.push(positionResult);
+  } else if (positionResult.value !== context.position) {
+    normalizations.push({ field: "position", original: context.position, normalized: positionResult.value });
+    position = positionResult.value;
+  }
+
+  // Normalize other fields (open dictionaries — always success)
+  const normalizedContext = await normalizer.normalizeFullContext({ ...context, role, position }, userId);
+
+  // Collect diffs for industry/domains
+  if (context.industry !== normalizedContext.industry) {
+    normalizations.push({ field: "industry", original: context.industry, normalized: normalizedContext.industry });
+  }
   normalizations.push(...collectDomainsDiff(context.domains, normalizedContext.domains));
 
-  return { normalizedContext, normalizations };
+  return { normalizedContext, normalizations, rolePositionSuggestions };
 }
 
 export const validateContextNode = withLogging<ColdStartStateType>(
@@ -208,7 +221,7 @@ export const validateContextNode = withLogging<ColdStartStateType>(
       };
     }
 
-    const { normalizedContext, normalizations } = await normalizeAndCollectDiff(
+    const { normalizedContext, normalizations, rolePositionSuggestions } = await normalizeAndCollectDiff(
       validation.context,
       userId,
       normalizerService,
@@ -222,6 +235,7 @@ export const validateContextNode = withLogging<ColdStartStateType>(
       collectedContexts: updatedContexts,
       collectedTrails: updatedTrails,
       normalizations,
+      rolePositionSuggestions,
       missingFields: [],
       clarificationRound: 0,
       pendingContext: null,

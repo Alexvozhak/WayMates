@@ -5,6 +5,7 @@ import {
   contextAgendaSchema,
   contextOptionalFieldSchema,
   missingFieldSchema,
+  rolePositionSuggestionSchema,
   simpleDictionaryTypeSchema,
   trailSchema,
   userContextSchema,
@@ -28,27 +29,30 @@ export type ColdStartPhase = z.infer<typeof coldStartPhaseSchema>;
 /** Alias for coldStartPhaseSchema.Values for shorter access: PHASE.failed */
 export const PHASE = coldStartPhaseSchema.Values;
 
-export const NODE = {
-  gather_story: "gather_story",
-  parse_story_decision: "parse_story_decision",
-  plan_career: "plan_career",
-  show_plan: "show_plan",
-  parse_plan_decision: "parse_plan_decision",
-  extract_context: "extract_context",
-  validate_context: "validate_context",
-  clarify_fields: "clarify_fields",
-  clarify_intent: "clarify_intent",
-  show_context: "show_context",
-  parse_context_decision: "parse_context_decision",
-  edit_context: "edit_context",
-  next_context: "next_context",
-  show_final: "show_final",
-  parse_final_decision: "parse_final_decision",
-  persist: "persist",
-  cancel: "cancel",
-} as const;
+export const nodeNameSchema = z.enum([
+  "gather_story",
+  "parse_story_decision",
+  "plan_career",
+  "show_plan",
+  "parse_plan_decision",
+  "extract_context",
+  "validate_context",
+  "clarify_fields",
+  "clarify_intent",
+  "show_context",
+  "parse_context_decision",
+  "edit_context",
+  "next_context",
+  "show_final",
+  "parse_final_decision",
+  "persist",
+  "cancel",
+]);
 
-export type NodeName = (typeof NODE)[keyof typeof NODE];
+export type NodeName = z.infer<typeof nodeNameSchema>;
+
+/** Alias for nodeNameSchema.Values for shorter access: NODE.persist */
+export const NODE = nodeNameSchema.Values;
 
 export const currentEntityContextSchema = z.object({
   contextIndex: z.number().describe("Index in queue (0-based)"),
@@ -110,6 +114,7 @@ export const coldStartStateSchema = z.object({
   currentEntityContext: currentEntityContextSchema.nullable().default(null),
 
   normalizations: z.array(normalizationEntrySchema).default([]),
+  rolePositionSuggestions: z.array(rolePositionSuggestionSchema).default([]),
 
   userId: z.string(),
 

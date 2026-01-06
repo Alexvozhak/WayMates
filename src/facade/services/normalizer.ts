@@ -1,12 +1,19 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { z } from "zod";
 
-import { CONTEXT_FIELD_NAMES, contextFieldSchema, newContextReasonSchema } from "../../shared/schemas.js";
+import {
+  CONTEXT_FIELD_NAMES,
+  contextFieldSchema,
+  isClosedDictionary,
+  newContextReasonSchema,
+} from "../../shared/schemas.js";
 import { getModel } from "../langGraph/shared-tools/models.js";
+import { withReasoning } from "../utils/llm-schemas.js";
 
 import type { DictionaryCache } from "./dictionaries-cache.js";
 import type {
   AdhocContextBase,
+  ClosedDictionaryType,
   DictionaryEntry,
   FieldFilter,
   SimpleDictionaryType,
@@ -18,13 +25,26 @@ import type { CoreClient } from "../core-client.js";
 import type { BaseMessageLike } from "@langchain/core/messages";
 import type { Runnable } from "@langchain/core/runnables";
 
-const fuzzyMatchResultSchema = z.object({
-  canonical: z.string().nullable().describe("Matched canonical name from dictionary, or null if no match"),
-  confidence: z.enum(["high", "medium", "low"]).describe("Confidence level of the match"),
-  reasoning: z.string().describe("Brief explanation of the matching decision"),
+const fuzzyMatchBaseSchema = z.object({
+  canonical: z.string().nullable().describe("Best matched canonical name from dictionary, or null if no match"),
+  suggestions: z.array(z.string()).max(3).describe("Up to 3 closest matches from dictionary, ordered by relevance"),
 });
 
+const fuzzyMatchResultSchema = withReasoning(fuzzyMatchBaseSchema, "Explain matching decision");
 export type FuzzyMatchResult = z.infer<typeof fuzzyMatchResultSchema>;
+
+// === Normalization Result Types ===
+type NormalizeSuccess = { status: "success"; value: string };
+type NormalizeSuggestions = {
+  status: "suggestions";
+  field: ClosedDictionaryType;
+  original: string;
+  suggestions: string[];
+};
+export type NormalizeResult = NormalizeSuccess | NormalizeSuggestions;
+
+// Narrowed for cold-start: only role/position (not education_level)
+export type RolePositionSuggestion = NormalizeSuggestions & { field: "role" | "position" };
 
 const normalizeReasonsResultSchema = z.object({
   normalized: z.array(newContextReasonSchema).describe("Array of matched canonical reason IDs from dictionary"),
@@ -201,6 +221,43 @@ Return: { normalized: string[], rejected: string[] }`;
   }
 
   /**
+   * Normalize term with suggestions support for closed dictionaries.
+   * - Closed (role, position, education_level): returns suggestions if no match
+   * - Open (skill, domain, etc.): inserts new term if no match
+   */
+  async normalizeTermWithResult(type: SimpleDictionaryType, value: string, userId: UserId): Promise<NormalizeResult> {
+    const dict = await this.dictionaryCache.getSimple(type);
+    const normalized = value.toLowerCase();
+
+    // Step 1: Exact match
+    const exact = dict.get(normalized);
+    if (exact) return { status: "success", value: exact.canonicalName };
+
+    // Step 2: Fuzzy match via LLM
+    const fuzzyResult = await this.invokeFuzzyModel(value, dict, type);
+
+    if (fuzzyResult.canonical) {
+      return { status: "success", value: fuzzyResult.canonical };
+    }
+
+    // Step 3: Closed dictionary — return suggestions, do NOT insert
+    if (isClosedDictionary(type)) {
+      return { status: "suggestions", field: type, suggestions: fuzzyResult.suggestions, original: value };
+    }
+
+    // Step 4: Open dictionary — insert new term
+    await this.coreClient.client.dictionaries.addTerm.mutate({
+      type,
+      canonicalName: normalized,
+      complexity: null,
+      verified: false,
+      createdBy: userId,
+    });
+
+    return { status: "success", value: normalized };
+  }
+
+  /**
    * Filter term to known value from dictionary.
    * Unlike normalizeTerm, does NOT add new terms — only matches existing.
    */
@@ -253,65 +310,57 @@ Return: { normalized: string[], rejected: string[] }`;
     return this.normalizeTerm(type, value, userId);
   }
 
-  private async normalizeOptionalTerms(
-    type: SimpleDictionaryType,
-    values: string[] | null | undefined,
-    userId: UserId,
-  ): Promise<string[] | null> {
-    if (!values) return null;
-    return this.normalizeTerms(type, values, userId);
-  }
-
   private async normalizeTerm(type: SimpleDictionaryType, value: string, userId: UserId): Promise<string> {
-    const isEmpty = !value || value.trim() === "";
-    if (isEmpty) {
-      return "";
-    }
-
-    const dict = await this.dictionaryCache.getSimple(type);
-    const normalized = value.toLowerCase();
-
-    // Step 1: Exact match
-    const exact = dict.get(normalized);
-    if (exact) return exact.canonicalName;
-
-    // Step 2: Fuzzy match via LLM
-    if (dict.size > 0) {
-      const fuzzy = await this.invokeFuzzyModel(value, dict);
-      if (fuzzy) return fuzzy;
-    }
-
-    // Step 3: Insert new term
-    await this.coreClient.client.dictionaries.addTerm.mutate({
-      type,
-      canonicalName: normalized,
-      complexity: null,
-      verified: false,
-      createdBy: userId,
-    });
-
-    return normalized;
+    const result = await this.normalizeTermWithResult(type, value, userId);
+    return result.status === "success" ? result.value : result.original.toLowerCase();
   }
 
-  private async invokeFuzzyModel(value: string, dict: Map<string, DictionaryEntry>): Promise<string | null> {
+  private async invokeFuzzyModel(
+    value: string,
+    dict: Map<string, DictionaryEntry>,
+    type: SimpleDictionaryType,
+  ): Promise<{ canonical: string | null; suggestions: string[] }> {
     const dictEntries = [...dict.values()].map((e) => `"${e.canonicalName}"`).join(", ");
+
+    const typeHint = isClosedDictionary(type) ? this.getClosedDictionaryHint(type) : "";
+
     const prompt = `You are a term normalization assistant for career data.
 
 Dictionary: ${dictEntries}
 
 Task: Find the canonical name for "${value}" from the dictionary above.
+${typeHint}
 Rules:
-- Handle typos (e.g., "Pyton" → "python")
-- Handle translation (e.g., "питон" → "python")
-- Handle case variations (e.g., "PYTHON" → "python")
-- If no good match (similarity < 0.7), return null
-- NO hallucinations - only use provided dictionary`;
+- Handle typos, translations, and case variations
+- Return up to 3 closest matches in "suggestions" ordered by relevance
+- Set canonical to the best match, or null if similarity < 0.7
+- ONLY use values from provided dictionary`;
 
     const result = await this.fuzzyModel.invoke([new HumanMessage(prompt)]);
 
-    if (!result.canonical) return null;
+    const validSuggestions = result.suggestions
+      .map((s) => dict.get(s.toLowerCase())?.canonicalName)
+      .filter((s): s is string => s !== undefined);
 
-    return dict.get(result.canonical.toLowerCase())?.canonicalName ?? null;
+    return {
+      canonical: result.canonical ? (dict.get(result.canonical.toLowerCase())?.canonicalName ?? null) : null,
+      suggestions: validSuggestions,
+    };
+  }
+
+  private getClosedDictionaryHint(type: ClosedDictionaryType): string {
+    switch (type) {
+      case "position": {
+        return `
+IMPORTANT: "position" = SENIORITY LEVEL (career stage), NOT job title.
+Job titles without explicit seniority should map to appropriate level based on context.`;
+      }
+      case "role": {
+        return `
+IMPORTANT: "role" = PROFESSIONAL SPECIALIZATION (what the person does).
+Job titles should map to the core profession type.`;
+      }
+    }
   }
 
   private removeNullishFields<T extends Record<string, unknown>>(obj: T): T {

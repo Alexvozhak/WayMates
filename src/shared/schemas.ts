@@ -214,11 +214,11 @@ const userContextSchemaBase = z.object({
   role: z.string().min(1).describe("Profession type: developer, qa, devops, sysadmin, analyst, etc."),
   domains: z.array(z.string()).min(1).describe("Work domains (technical areas)"),
   skills: z.array(z.string()).min(1).describe("Skill names"),
-  industry: z.string().describe("Company industry"),
+  industry: z.string().min(1).describe("Company industry"),
   companySize: z.string().nullable().default(null).describe("Company size (optional for synthetic users)"),
-  countryCode: z.string().describe("ISO 3166-1 alpha-2 country code"),
-  cityName: z.string().describe("Location city name"),
-  citizenships: z.array(z.string()).describe("ISO 3166-1 alpha-2 country codes"),
+  countryCode: z.string().min(1).describe("ISO 3166-1 alpha-2 country code"),
+  cityName: z.string().min(1).describe("Location city name"),
+  citizenships: z.array(z.string().min(1)).min(1).describe("ISO 3166-1 alpha-2 country codes"),
   birthYear: z.number().min(1950).nullable().default(null).describe("Birth year (optional for synthetic users)"),
   educationLevel: educationLevelSchema.nullable().default(null).describe("Education level"),
 
@@ -1011,6 +1011,25 @@ const simpleDictionaryTypes = [
 
 export const simpleDictionaryTypeSchema = z.enum(simpleDictionaryTypes);
 
+// === CLOSED vs OPEN dictionaries ===
+// Closed: fixed set, user cannot add new values (must select from suggestions)
+// Open: user can add new values (skills, cities, etc.)
+const closedDictionaryTypes = ["role", "position"] as const satisfies readonly SimpleDictionaryType[];
+export type ClosedDictionaryType = (typeof closedDictionaryTypes)[number];
+export type OpenDictionaryType = Exclude<SimpleDictionaryType, ClosedDictionaryType>;
+
+const closedDictionarySet = new Set<string>(closedDictionaryTypes);
+export const isClosedDictionary = (type: SimpleDictionaryType): type is ClosedDictionaryType =>
+  closedDictionarySet.has(type);
+
+export const rolePositionSuggestionSchema = z.object({
+  field: z.enum(["role", "position"]).describe("Which closed dictionary field needs selection"),
+  original: z.string().describe("User's original input that didn't match dictionary"),
+  suggestions: z.array(z.string()).describe("Up to 3 closest matches from dictionary"),
+});
+
+export type RolePositionSuggestionResponse = z.infer<typeof rolePositionSuggestionSchema>;
+
 export const addTermInputSchema = z.object({
   type: simpleDictionaryTypeSchema,
   canonicalName: z.string().min(1),
@@ -1094,6 +1113,7 @@ export const entityBatchResultClarificationSchema = z.object({
   missingFields: z.array(missingFieldSchema).describe("Required fields still missing (MISSING)"),
   optionalFields: z.array(contextOptionalFieldSchema).describe("Optional fields user can add (OPTIONAL)"),
   suggestCancel: z.boolean().optional().describe("True when user repeatedly fails to provide required fields"),
+  rolePositionSuggestions: z.array(rolePositionSuggestionSchema).optional().describe("Suggestions for role/position"),
 });
 
 /**
