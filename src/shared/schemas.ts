@@ -348,6 +348,15 @@ type ContextSystemField = keyof Pick<
   "contextId" | "previousContextId" | "nextContextId" | "createdAt" | "creationReason"
 >;
 
+/** Runtime array of system field names (type-checked) — never show to user */
+export const CONTEXT_SYSTEM_FIELDS = [
+  "contextId",
+  "previousContextId",
+  "nextContextId",
+  "createdAt",
+  "creationReason",
+] as const satisfies readonly ContextSystemField[];
+
 /** Required fields that USER must provide in cold-start (linked to UserContext) */
 type ContextRequiredField = keyof Pick<
   UserContext,

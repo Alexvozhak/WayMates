@@ -6,7 +6,7 @@ import { logger } from "../../../logger.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";
 import { extractableContextSchema, extractableTrailSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
-import { contextExtractionPrompt, trailExtractionPrompt } from "../prompts.js";
+import { contextClarificationPrompt, contextExtractionPrompt, trailExtractionPrompt } from "../prompts.js";
 import { NODE } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
@@ -84,10 +84,51 @@ async function extractContextData(
   };
 }
 
+function dedupeArray<T>(arr: T[] | null | undefined): T[] | null {
+  if (!arr || arr.length === 0) return arr ?? null;
+  return [...new Set(arr)];
+}
+
+async function clarifyContext(
+  pending: ExtractableContext,
+  missingFieldNames: string[],
+  userResponse: string,
+  dictHints: string,
+): Promise<ExtractableContext> {
+  const prompt = contextClarificationPrompt(pending, missingFieldNames, userResponse, dictHints);
+  const { reasoning, ...merged } = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
+  logger.info({ reasoning, missingFieldNames }, "context clarification reasoning");
+
+  return {
+    ...merged,
+    contextId: pending.contextId,
+    previousContextId: pending.previousContextId,
+    nextContextId: pending.nextContextId,
+    createdAt: merged.createdAt ?? pending.createdAt,
+    // Dedupe arrays in case LLM duplicated values during merge
+    skills: dedupeArray(merged.skills),
+    domains: dedupeArray(merged.domains) ?? [],
+    citizenships: dedupeArray(merged.citizenships),
+    languages: dedupeArray(merged.languages),
+    creationReason: dedupeArray(merged.creationReason) ?? [],
+  };
+}
+
+/* eslint-disable complexity -- unified clarification for missingFields + suggestions */
 export const extractContextNode = withLogging<ColdStartStateType>(
   NODE.extract_context,
   async (state, _config, { dictionariesService }) => {
-    const { messages, queue, currentContextIndex, cvText } = state;
+    const {
+      messages,
+      queue,
+      currentContextIndex,
+      cvText,
+      pendingContext,
+      missingFields,
+      rolePositionSuggestions,
+      collectedContexts,
+      userResponse,
+    } = state;
 
     const agenda = queue[currentContextIndex];
     if (!agenda) {
@@ -107,10 +148,21 @@ export const extractContextNode = withLogging<ColdStartStateType>(
       "reasons",
     ]);
 
-    const [contextData, trailsData] = await Promise.all([
-      extractContextData(messages, agenda, queue, currentContextIndex, cvText, dictHints),
-      extractAllTrails(messages, agenda, queue, currentContextIndex),
-    ]);
+    // Determine base context for clarification (unified for missingFields and suggestions)
+    const existingCollected = collectedContexts[currentContextIndex];
+    const baseContext = pendingContext ?? existingCollected ?? null;
+    const clarifyFields =
+      missingFields.length > 0 ? missingFields.map((f) => f.field) : rolePositionSuggestions.map((s) => s.field);
+    const needsClarification = baseContext && clarifyFields.length > 0 && userResponse;
+
+    const contextData = needsClarification
+      ? await clarifyContext(baseContext, clarifyFields, userResponse, dictHints)
+      : await extractContextData(messages, agenda, queue, currentContextIndex, cvText, dictHints);
+
+    // Only extract trails on fresh extraction (not during clarification)
+    const trailsData = needsClarification
+      ? state.pendingTrails
+      : await extractAllTrails(messages, agenda, queue, currentContextIndex);
 
     return {
       pendingContext: contextData,
@@ -122,3 +174,4 @@ export const extractContextNode = withLogging<ColdStartStateType>(
     };
   },
 );
+/* eslint-enable complexity */

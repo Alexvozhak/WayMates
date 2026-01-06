@@ -1,3 +1,4 @@
+import { CONTEXT_SYSTEM_FIELDS } from "../../../shared/schemas.js";
 import { PHASE as COLD_START_PHASE } from "../../langGraph/cold-start-v2/types.js";
 import { PHASE as SEARCH_PHASE } from "../../langGraph/search-graph/state.js";
 import { PHASE as SIMPLE_PHASE } from "../../langGraph/shared/phases.js";
@@ -7,6 +8,11 @@ import type { SearchPhase } from "../../langGraph/search-graph/state.js";
 
 // Use NLP_CANDIDATE_FIELDS from shared (excludes verbose: role, companySize, educationLevel)
 const GOAL_FIELDS = Object.keys(GOAL_FIELD_DESCRIPTIONS).join(", ");
+const SYSTEM_FIELDS = CONTEXT_SYSTEM_FIELDS.join(", ");
+
+// Dictionary terms should NOT be translated (keep in English)
+const NO_TRANSLATE_INSTRUCTION = `IMPORTANT: Keep ALL dictionary values and technical terms in their original form.
+Do NOT translate field values from the data. Only translate surrounding text and UI labels.`;
 
 // Reusable format blocks for structured responses
 const CONTEXT_BLOCK = `👤 Your context:
@@ -21,6 +27,13 @@ const FILTERS_BLOCK = `🔍 Filters:
   • recency: [recencyThresholdMonths value or "any time"]
   • excluded: [excludedContextFields list or "none"]
   ⚠️ Show rejectedFields if not empty`;
+
+const OPTIONAL_FIELDS_HINT = `Optional fields user might want to share:
+- languages: B2+ proficiency — helps international job matching
+- citizenships: nationality — affects visa and relocation eligibility
+- educationLevel: formal education — relevant for positions requiring degrees
+- salary (USD): annual compensation — helps compare with similar trajectories
+- feedback: personal insight on career transitions — valuable for others`;
 
 // Type-safe: TypeScript enforces all SearchPhase keys are present
 const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
@@ -147,11 +160,12 @@ Style:
 - No excitement phrases, no excessive emoji
 - Never invent data
 - Candidates: ${NLP_CANDIDATE_FIELDS} from actual data
-- Salary: use salaryExact if set, otherwise salaryMin-salaryMax range (e.g. "$200k-$240k USD")
+- Salary: use salaryExact if set; if salaryMin=salaryMax show single value; otherwise show range
 
 Format: Markdown, real newlines.
 
 Language: {language}
+${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
@@ -165,28 +179,27 @@ Phases:
   1 message → Welcome, ask to share career story
   2+ messages → Ask contextual follow-up about what user mentioned. Focus on job changes or learning experiences. Never repeat user's words. If user signals done, accept. Match user's language.
 - ${COLD_START_PHASE.awaiting_plan_confirmation}: Present career plan (N contexts) and ask for confirmation
-- ${COLD_START_PHASE.awaiting_clarification}: Missing required fields — ask user to provide them.
-  Start with: 📍 Position {progress.current}/{progress.total}: {entityPreview}
-  ❌ MISSING: list from missingFields array (REQUIRED)
-  If suggestCancel=true: mention these fields are required, offer to cancel if user doesn't want to provide.
-  ⚪ OPTIONAL: briefly mention user can also add: education, salary (USD), languages.
-- ${COLD_START_PHASE.awaiting_context_confirmation}: Show ONLY filled fields.
+- ${COLD_START_PHASE.awaiting_clarification}: Show current context + missing fields.
   Start with: 📍 Position {progress.current}/{progress.total}
-  List only non-null values.
-  If normalizations array is not empty, show compact diff:
-  🔄 NORMALIZED: field: "original" → "normalized" (one line per field)
-  Mention user can request to keep original value if needed.
+  Show filled fields from pendingContext (same format as confirmation).
+  ❌ MISSING: list fields from missingFields array — use FIELD NAME only, rephrase technical zodMessage to user-friendly (e.g. "Expected array, received null" → just ask for the field naturally)
+  Note: citizenships = nationality countries, countryCode = where user works (different!)
+  If suggestCancel=true: offer to cancel if user cannot provide required fields.
+  ⚪ OPTIONAL: briefly mention education, salary (USD), languages.
+- ${COLD_START_PHASE.awaiting_context_confirmation}: Show complete context for confirmation.
+  Start with: 📍 Position {progress.current}/{progress.total}
+  Calculate PERIOD from createdAt year. Last context: "YYYY-present".
+  List only non-null values. NEVER show system fields: ${SYSTEM_FIELDS}.
+  If normalizations array not empty: 🔄 NORMALIZED: field: "original" → "normalized"
   Ask to confirm.
-- ${COLD_START_PHASE.awaiting_final_confirmation}: Show summary (X contexts, Y trails) and ask to save
+- ${COLD_START_PHASE.awaiting_final_confirmation}: Show summary with timeline.
+  For each context, calculate period: from createdAt year to next context's createdAt year.
+  Last context: "YYYY-present". Example: "2016-2020 → 2020-2023 → 2023-present".
+  Show: position, role, period. Ask to save.
 - ${COLD_START_PHASE.saved}/${COLD_START_PHASE.already_saved}: Congratulate on completion
 - ${COLD_START_PHASE.failed}: Explain the issue clearly
 
-Optional fields user might want to share (suggest naturally during story_gathering or confirmation):
-- languages: B2+ proficiency — helps international job matching
-- citizenships: passport countries — affects visa and relocation eligibility
-- educationLevel: formal education — relevant for positions requiring degrees
-- salary (USD): annual compensation — helps compare with similar trajectories
-- feedback: personal insight on career transitions — valuable for others
+${OPTIONAL_FIELDS_HINT}
 
 Rules:
 - Use emojis sparingly (one per section max)
@@ -196,6 +209,7 @@ Rules:
 - Add a clear call-to-action at the end
 
 Language: {language}
+${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
@@ -212,12 +226,7 @@ Phases:
 - ${SIMPLE_PHASE.cancelled}: Operation cancelled
 - ${SIMPLE_PHASE.failed}: Explain error from message field
 
-Optional fields user might want to add (suggest naturally during confirmation):
-- languages: B2+ proficiency — helps international job matching
-- citizenships: passport countries — affects visa and relocation eligibility
-- educationLevel: formal education — relevant for positions requiring degrees
-- salary (USD): annual compensation — helps compare with similar trajectories
-- feedback: personal insight on this career position — valuable for others
+${OPTIONAL_FIELDS_HINT}
 
 Rules:
 - Use emojis sparingly (one per section max)
@@ -227,6 +236,7 @@ Rules:
 - Add a clear call-to-action
 
 Language: {language}
+${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
@@ -243,12 +253,7 @@ Phases:
 - ${SIMPLE_PHASE.cancelled}: Operation cancelled
 - ${SIMPLE_PHASE.failed}: Explain error from message field
 
-Optional fields user might want to update (suggest naturally during confirmation):
-- languages: B2+ proficiency — helps international job matching
-- citizenships: passport countries — affects visa and relocation eligibility
-- educationLevel: formal education — relevant for positions requiring degrees
-- salary (USD): annual compensation — helps compare with similar trajectories
-- feedback: personal insight on this career position — valuable for others
+${OPTIONAL_FIELDS_HINT}
 
 Rules:
 - Use emojis sparingly (one per section max)
@@ -258,6 +263,7 @@ Rules:
 - Add a clear call-to-action
 
 Language: {language}
+${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
@@ -288,6 +294,7 @@ Rules:
 - Add a clear call-to-action
 
 Language: {language}
+${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
@@ -367,5 +374,6 @@ Style:
 Format: Markdown, real newlines.
 
 Language: {language}
+${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;

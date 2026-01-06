@@ -23,6 +23,12 @@ export class ParseCvToTextTool extends BaseTool<McpParseCvToTextParams, ParseCvT
 
   private readonly systemPrompt = `Convert this resume/CV to ANONYMIZED structured markdown for a career transition platform.
 
+EXTRACTION ORDER: Process the document systematically to ensure completeness.
+1. First, scan the ENTIRE document and identify ALL work positions mentioned
+2. Order positions chronologically from OLDEST (earliest start date) to NEWEST (most recent)
+3. Extract and format EACH position - do not skip any, especially older/earlier roles
+4. Verify you have captured every position before finishing
+
 CRITICAL: This is an anonymous platform. DO NOT extract:
 - Names (first name, last name, any personal names)
 - Email addresses

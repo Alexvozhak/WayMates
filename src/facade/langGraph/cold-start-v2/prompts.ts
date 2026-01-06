@@ -1,7 +1,22 @@
+import { CONTEXT_REQUIRED_FIELDS } from "../../../shared/schemas.js";
 import { DECOMPOSITION_RULES } from "../shared/prompts.js";
 
 import type { UserContext } from "../../../shared/schemas.js";
 import type { BaseMessage } from "@langchain/core/messages";
+
+/** Rule: each position is extracted independently, no field inheritance between positions */
+const POSITION_INDEPENDENCE_RULE = `
+🚨 POSITION INDEPENDENCE (CRITICAL):
+Each position is extracted INDEPENDENTLY. For fields [${CONTEXT_REQUIRED_FIELDS.join(", ")}]:
+- Extract ONLY values explicitly stated for THIS specific position in preview
+- Do NOT inherit or copy from other positions in conversation
+- If a field was mentioned for another position but not this one → return null
+- Missing fields will be clarified separately for each position`;
+
+/** Current date for relative date calculations in prompts */
+export function getCurrentDateContext(): string {
+  return `Current date: ${new Date().toISOString().split("T")[0]}`;
+}
 
 function serializeMessages(messages: BaseMessage[]): string {
   return messages.map((m) => `${m.type}: ${m.content}`).join("\n");
@@ -220,6 +235,8 @@ export function planningPrompt(messages: BaseMessage[], cvText: string | null): 
 
   return `Analyze career history and create a collection plan.
 
+${getCurrentDateContext()}
+
 CONVERSATION:
 ${messagesText}
 ${
@@ -257,6 +274,8 @@ RULES:
 - Trails: courses, certifications, bootcamps — ONLY if user mentioned them
 - Include promotions and internal moves as separate positions if significantly different
 - Education → first job counts as first position (no incoming trail needed)
+- Relative start dates: "N years ago started" means START year = current year - N, END = current year
+- If no end date explicitly stated, assume position continues to present day
 
 ═══════════════════════════════════════════════════
 🚨 CRITICAL — EXTRACTION RULES:
@@ -284,12 +303,14 @@ function buildContextExtractionRules(hasCv: boolean): string {
 - If conflict exists, prioritize conversation (user's latest input)\n\n`
     : "";
 
-  return `${cvMergeNote}- All terms: lowercase-kebab-case
-- cityName: lowercase
+  return `${cvMergeNote}FORMAT RULES:
+- All terms use lowercase-kebab-case format
 - countryCode: residence country, ISO 3166-1 alpha-2 UPPERCASE
 - citizenships: nationality/passport countries array, ISO 3166-1 alpha-2 UPPERCASE
 - languages: B2+ proficiency languages, ISO 639-1
-- DO NOT invent data - extract ONLY what is explicitly mentioned`;
+- cityName: null unless user explicitly mentioned a city name
+- DO NOT invent or guess data - extract ONLY what user explicitly stated
+- If user did not mention a field, return null - NEVER assume or infer`;
 }
 
 /* eslint-disable max-lines-per-function -- prompt template with multiple sections */
@@ -308,6 +329,7 @@ ${cvText}\n`
     : "";
 
   return `Extract career context for: "${preview}"
+${getCurrentDateContext()}
 ${dictHints}
 CONVERSATION:
 ${text}
@@ -358,6 +380,7 @@ GENERAL EXTRACTION RULES:
 - Map user terms to KNOWN dictionary values when possible
 - For creationReason, infer from context (first job = started_working, new company = company_changed, etc.)
 - Return null for fields not mentioned
+${POSITION_INDEPENDENCE_RULE}
 
 ═══════════════════════════════════════════════════
 createdAt FIELD (CRITICAL for career timeline):
@@ -440,4 +463,40 @@ RULES:
 - Preserve ALL other fields unchanged
 - Return the COMPLETE context object with correction applied
 - All values in lowercase-kebab-case where applicable`;
+}
+
+export function contextClarificationPrompt(
+  pendingContext: Record<string, unknown>,
+  missingFields: string[],
+  userResponse: string,
+  dictHints: string,
+): string {
+  return `Update the existing career context based on user's clarification.
+${dictHints}
+═══════════════════════════════════════════════════
+CURRENT CONTEXT (partially extracted):
+═══════════════════════════════════════════════════
+${JSON.stringify(pendingContext, null, 2)}
+
+═══════════════════════════════════════════════════
+MISSING FIELDS (user was asked to provide):
+═══════════════════════════════════════════════════
+${missingFields.join(", ")}
+
+═══════════════════════════════════════════════════
+USER RESPONSE:
+═══════════════════════════════════════════════════
+"${userResponse}"
+
+═══════════════════════════════════════════════════
+MERGE RULES:
+═══════════════════════════════════════════════════
+- User response is answering questions about MISSING FIELDS above
+- Extract values for missing fields from user response (map to KNOWN values from hints)
+- KEEP all existing values unchanged
+- Return the COMPLETE context with ALL fields
+- Do NOT duplicate values in arrays — if value already exists, skip it
+- All terms: lowercase-kebab-case
+- countryCode = country of RESIDENCE (where user works), citizenships = PASSPORT countries (nationality)
+- Both use ISO 3166-1 alpha-2 UPPERCASE`;
 }

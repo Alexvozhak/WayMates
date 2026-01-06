@@ -230,6 +230,9 @@ export const validateContextNode = withLogging<ColdStartStateType>(
     const updatedContexts = upsertContextAtIndex(collectedContexts, normalizedContext, currentContextIndex);
     const updatedTrails = upsertTrailsForContext(collectedTrails, validation.trails, agenda.contextId);
 
+    // If suggestions need user input, keep pendingContext for merge in extract_context
+    const hasSuggestions = rolePositionSuggestions.length > 0;
+
     return {
       phase: PHASE.awaiting_context_confirmation,
       collectedContexts: updatedContexts,
@@ -238,8 +241,8 @@ export const validateContextNode = withLogging<ColdStartStateType>(
       rolePositionSuggestions,
       missingFields: [],
       clarificationRound: 0,
-      pendingContext: null,
-      pendingTrails: [],
+      pendingContext: hasSuggestions ? normalizedContext : null,
+      pendingTrails: hasSuggestions ? validation.trails : [],
     };
   },
 );

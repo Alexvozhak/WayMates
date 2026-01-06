@@ -13,14 +13,15 @@ type StoryDecisionIntent = (typeof STORY_DECISION_INTENTS)[number];
 
 // Semantic descriptions - no literal examples, only meaning
 const STORY_DECISION_DESCRIPTIONS: Record<StoryDecisionIntent, string> = {
-  approve: `User signals COMPLETION and has WORK experience
-  Condition: CV/conversation describes at least one JOB position (employment, not just education)`,
+  approve: `User EXPLICITLY signals story is COMPLETE
+  REQUIRED: explicit completion phrase indicating nothing more to add
+  Having work experience alone is NOT enough — user must SAY they finished`,
 
   continue: `DEFAULT - keep gathering story
-  Use when: greeting, sharing info, unclear, OR only education without work experience`,
+  Use when: user shares info, asks questions, OR no explicit completion signal
+  Describing positions is sharing info, NOT completion — user may have more`,
 
-  cancel: `User wants to STOP the flow
-  Semantic: abort, exit, give up`,
+  cancel: `User wants to STOP the flow entirely, give up, abort`,
 };
 
 function serializeMessages(messages: BaseMessage[]): string {

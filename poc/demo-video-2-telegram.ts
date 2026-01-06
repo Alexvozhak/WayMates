@@ -7,6 +7,7 @@
  * Env vars needed:
  *   TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_SESSION
  *   TELEGRAM_BOT_USERNAME (default: @WayMates_bot)
+ *   Database env: POSTGRES_*, NEO4J_*
  *
  * Usage:
  *   npx tsx poc/demo-video-2-telegram.ts
@@ -14,6 +15,8 @@
 
 import path from "node:path";
 import bigInt from "big-integer";
+import neo4j from "neo4j-driver";
+import pg from "pg";
 import { Api, sessions, TelegramClient } from "telegram";
 import { NewMessage } from "telegram/events";
 
@@ -123,13 +126,20 @@ async function runDemo(client: TelegramClient): Promise<void> {
   await startReply;
 
   // Step 1: Upload PDF
+  // Bot sends TWO messages: "Processing..." (immediate) + Career Plan (after ~20s)
   console.log("\n[Step 1] Uploading PDF CV...");
   console.log(`         File: ${PDF_PATH}`);
-  const pdfReply = waitForBotReply(client, BOT, WAIT_MS);
+  const processingReply = waitForBotReply(client, BOT, WAIT_MS);
   await sendPdf(client, PDF_PATH);
 
-  console.log(`         Waiting for CV processing...`);
-  const response = await pdfReply;
+  console.log(`         Waiting for "Processing..." message...`);
+  const processingMsg = await processingReply;
+  console.log(`         Bot: ${processingMsg.slice(0, 50)}...`);
+
+  // Wait for the actual Career Plan (second message)
+  console.log(`         Waiting for Career Plan...`);
+  const careerPlanReply = waitForBotReply(client, BOT, 60_000); // 60s for CV parsing
+  const response = await careerPlanReply;
   const preview = response.split("\n").slice(0, 3).join(" ").slice(0, 100);
   console.log(`         Bot: ${preview}...`);
 

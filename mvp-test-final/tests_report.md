@@ -2,11 +2,35 @@
 
 **Дата:** 2025-12-26
 **Ветка:** `feature/search-refactor`
-**Тестировщик:** Claude (роль токсичного пользователя)
+**Тестировщик:** Claude (две роли)
 
-## ВАЖНО! Ты как пользователь не знаешь код и возможности проекта! не мухлюй! Ведя себя так, как будто ты реальный пользователь впервые пробуешь нашу платформу, веди диалог естественно, не делай того, о чем тебе не рассказывали - полагайся только на подсказки в ответах
+---
 
-## Критерии оценки
+## Роли тестировщика
+
+### 🎭 Роль 1: Токсичный пользователь
+
+**ВАЖНО!** Ты как пользователь не знаешь код и возможности проекта! Не мухлюй! Веди себя так, как будто ты реальный пользователь впервые пробуешь платформу, веди диалог естественно, не делай того, о чем тебе не рассказывали — полагайся только на подсказки в ответах.
+
+### 🔧 Роль 2: Программист-наблюдатель
+
+Параллельно с диалогом следи за техническими аспектами:
+- **Фазы (phase)** — корректный переход? ожидаемая фаза?
+- **Интенты (intent)** — правильно классифицирован?
+- **Reasoning** — читай логи `withReasoning()` wrapper, понимай ПОЧЕМУ LLM принял решение
+- **State transitions** — данные не теряются между фазами?
+- **Structured data** — соответствует тому что показано пользователю?
+
+**Как смотреть reasoning:**
+```bash
+docker logs waymates-facade-test --tail 100 | grep -E "reasoning|intent|extracted"
+```
+
+При обнаружении расхождений — документировать, согласовать fix с пользователем, исправить.
+
+---
+
+## Критерии оценки (UX — роль пользователя)
 
 1. Диалог как с душевно больным
 2. Переспросы
@@ -17,6 +41,37 @@
 7. Непонятно зачем спрашивают
 8. Непонятно что отвечать
 9. Общее впечатление
+10. **Техническая утечка** — Zod errors, internal field names, JSON в user-facing output
+11. **Консистентность формата** — одно поле = один формат везде ("Mid-level Developer" ≠ "middle")
+12. **Inference без объяснения** — LLM наследует/выводит данные молча (откуда взялось?)
+
+## Критерии оценки (Technical — роль программиста)
+
+13. **Фаза некорректна** — phase не соответствует этапу workflow
+14. **Intent misclassification** — запрос классифицирован неверно
+15. **State corruption** — данные потерялись/изменились между фазами
+16. **Reasoning подозрительный** — LLM объясняет решение нелогично или противоречиво
+
+## Severity Guide
+
+| Level | Описание | Действие |
+|-------|----------|----------|
+| 🔴 Blocker | Нельзя продолжить flow | Фиксить немедленно |
+| 🟠 Critical | Потеря данных/смысла | Фиксить до коммита |
+| 🟡 Major | Раздражает, ухудшает UX | Фиксить в этой сессии |
+| 🟢 Minor | Косметика | Документировать, фиксить позже |
+
+## Workflow тестирования
+
+1. **Найти проблему** — документировать с severity
+2. **Определить root cause** — код/промпт/конфиг
+3. **Решить когда фиксить**:
+   - 🔴🟠 — сразу
+   - 🟡 — после окончания мини-диалога
+   - 🟢 — в конце сессии или отложить
+4. **Согласовать fix** — рекомендация + альтернативы + сравнение (честность, ценность, простота, парето)
+5. **Исправить** — код/промпт
+6. **Верифицировать** — повторить сценарий
 
 ## Детали багов
 
@@ -155,6 +210,7 @@ Tell me about your career history.
 **Контекст:** citizenships — обязательное поле по бизнес-требованиям (visa/relocation eligibility).
 
 **UX улучшен в коммите `0a6e592`:**
+
 - Clarification показывает `📍 Position 1/2` + почему поле required
 - Предлагает OPTIONAL поля (education, salary, languages)
 - После MAX_CLARIFICATION_ROUNDS (3) → failed (защита от бесконечного цикла)
@@ -166,6 +222,7 @@ Tell me about your career history.
 **Отправил:** Полное резюме (4 позиции, без упомянутых курсов/сертификатов)
 
 **Было:**
+
 ```
 2. Middle Developer at DSSL
    - Incoming Trail: ["Leadership Training Program 2023"]
@@ -176,16 +233,19 @@ Tell me about your career history.
 **Проблема:** LLM выдумывает trails которых нет в резюме.
 
 **Стало:**
+
 ```
 incomingTrails: []  (для всех контекстов)
 ```
 
 **Решение:** Добавлены explicit rules в `planningPrompt`:
+
 - Extract ONLY explicitly mentioned learning activities
 - Empty incomingTrails is VALID
 - Formal education → educationLevel field, NOT trails
 
 **Изменённые файлы:**
+
 - `prompts.ts` — секция "DO NOT INVENT DATA"
 
 ---
@@ -195,6 +255,7 @@ incomingTrails: []  (для всех контекстов)
 **Контекст:** CV с 4 позициями: Research Institute → DSSL (Middle) → DSSL (Lead) → Lido
 
 **Получил:**
+
 ```
 Position 2 (DSSL Middle): creationReason: ["started_working"]  ← должен быть company_changed
 Position 3 (DSSL Lead): creationReason: ["company_changed"]  ← неверно, та же компания
@@ -212,6 +273,7 @@ Position 4 (Lido): creationReason: ["started_working"]  ← должен быт�
 ### Баг #15: extract_context — position не из словаря (cold-start-v2)
 
 **Получил:**
+
 ```
 position: "grade-2"
 position: "team lead"
@@ -229,6 +291,7 @@ position: "project manager"
 ### Баг #16: extract_context — skills/domains не нормализованы (cold-start-v2)
 
 **Получил:**
+
 ```
 skills: ["project management", "team leadership"]
 domains: ["research-and-development"]
@@ -251,51 +314,7 @@ domains: ["research-and-development"]
 **Решение:** Добавлена семантика "upload/share CV/resume" в описание startStory.
 
 **Изменённые файлы:**
+
 - `intent-classifier.ts` — расширено описание startStory
-
----
-
-## Матрица тестирования
-
-### search-graph
-
-| Коммит | From Phase | Input | Intent | To Phase | Result |
-|--------|------------|-------|--------|----------|--------|
-| c4a692b | confirming_adhoc (no goal) | "покажи похожих" | explore | showing_exploration_candidates | ✅ |
-| c4a692b | confirming_adhoc (no goal) | "хочу стать CTO" | setGoal | showing_goal | ✅ |
-| c4a692b | confirming_adhoc (no goal) | "нет, я middle" | editAdhoc | confirming_adhoc | ✅ |
-| c4a692b | asking_search_mode | "покажи проводников" | searchPathfinders | showing_results | ✅ |
-| c4a692b | showing_goal (profile+goal) | "покажи кто достиг" | validate | asking_after_validate_candidates | ✅ |
-| c4a692b | asking_after_validate (profile) | "хочу изменить цель на CTO" | change | showing_goal | ✅ |
-| 8d487c7 | confirming_adhoc | "покажи похожих" | explore | showing_exploration_facets | ✅ |
-| 8d487c7 | showing_exploration_facets | "хочу стать CTO" | setGoal | showing_goal | ✅ |
-| 8d487c7 | showing_exploration_facets | "только technology" | editAdhoc | confirming_adhoc | ✅ |
-| 8d487c7 | showing_goal | "покажи кто достиг" | validate | asking_after_validate_candidates | ✅ |
-| 8d487c7 | asking_after_validate (0 results) | — | — | honest "no one found" | ✅ |
-| 8d487c7 | asking_search_mode | "попутчики" | searchWaymates | showing_results_facets | ✅ |
-| dbfa2ab | showing_exploration (0 results) | "что ты умеешь?" | ask | advising | ✅ |
-| dbfa2ab | advising | "а какие данные?" | ask | advising (loop) | ✅ |
-| dbfa2ab | advising | "хочу цель CTO" | action | showing_goal | ✅ |
-| — | confirming_adhoc | "хочу стать CTO" | setGoal | showing_goal | ✅ |
-| — | showing_goal | "сохрани" | save | asking_search_mode | ✅ (Баг #4 fix) |
-| — | asking_search_mode | "путеводители" | searchPathfinders | showing_results (0) | ✅ (Баг #3 fix) |
-
-### cold-start-v2
-
-| Коммит | From Phase | Input | Intent | To Phase | Result |
-|--------|------------|-------|--------|----------|--------|
-| 9228484 | awaiting_clarification (round 1) | "не хочу говорить" | — | awaiting_clarification (round 2, suggestCancel) | ✅ |
-| 9228484 | awaiting_clarification (suggestCancel) | "ок, отменяю" | cancel | cancelled | ✅ |
-| 9228484 | awaiting_plan_confirmation | multi-context (2 позиции) | approve | awaiting_context_confirmation (1/2) | ✅ |
-| 9228484 | awaiting_context_confirmation (2/2) | "да" | approve | awaiting_final_confirmation | ✅ |
-
-### orchestrator
-
-| Коммит | Input | Expected Intent | Actual Intent | Guard | Result |
-|--------|-------|-----------------|---------------|-------|--------|
-| — | "привет" (ru) | greeting | greeting | greeting | ✅ |
-| — | "asdfgh qwerty" (en) | unknown | unknown | unknown | ✅ |
-| — | "что ты умеешь?" (ru) | help | help | help | ✅ |
-| — | "what can you do?" (en) | help | help | help | ✅ |
 
 ---

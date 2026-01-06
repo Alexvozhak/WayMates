@@ -425,7 +425,7 @@ FOREACH (ctx IN contexts | DETACH DELETE ctx)
 FOREACH (tr IN trails | DETACH DELETE tr)
 WITH u, deletedContexts, deletedTrails
 WHERE u IS NOT NULL
-DELETE u
+DETACH DELETE u
 RETURN {
   success: true,
   deletedContexts: deletedContexts,

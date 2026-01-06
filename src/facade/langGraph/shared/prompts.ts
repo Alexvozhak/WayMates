@@ -32,7 +32,7 @@ export const ADHOC_FIELD_DESCRIPTIONS: Record<keyof AdhocContextBase, string> = 
   companySize: "company size category (startup, SMB, enterprise)",
   cityName: `city where you work — ${HINTS.cities}`,
   countryCode: `work location country — ${HINTS.countryCode}`,
-  citizenships: `passport countries — ${HINTS.citizenships}`,
+  citizenships: `nationality countries — ${HINTS.citizenships}`,
   birthYear: "year of birth (for demographics)",
   educationLevel: `highest degree achieved — ${HINTS.education}`,
   languages: `spoken languages — ${HINTS.languages}`,
@@ -101,9 +101,10 @@ ROLE EXTRACTION:
 - ROLE is REQUIRED — extract it from the title structure
 
 DOMAINS EXTRACTION:
-- Include BOTH technical area AND functional area if present
+- DOMAINS = broad disciplines or specialization AREAS, not implementation tools
+- Include BOTH technical discipline AND functional area if present
 - If the person manages or leads teams → include management in domains
-- If the person works in a technical area → include that technical domain
+- Consult KNOWN DOMAINS hints to understand what semantic pattern belongs here
 
 INDUSTRY PRECISION:
 - Use the EXACT industry user mentioned if it exists in KNOWN INDUSTRIES

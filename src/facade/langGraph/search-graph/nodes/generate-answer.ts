@@ -40,6 +40,17 @@ export const generateAnswerNode = withLogging<SearchStateType>(
     const question = state.advisorQuestion ?? state.userResponse;
     const questionType = state.questionType ?? "general";
 
+    const candidates = getCandidatesForPhase(state);
+
+    // Guard: no candidates → fixed message, skip LLM to prevent hallucination
+    if (candidates.length === 0) {
+      return {
+        answerText:
+          "No candidates found matching your criteria. " +
+          "Try adjusting your goal parameters or search with different filters.",
+      };
+    }
+
     const hasTrajectory = state.userTrajectory.length > 0;
 
     const builder = new AdvisorContextBuilder();
@@ -49,8 +60,6 @@ export const generateAnswerNode = withLogging<SearchStateType>(
     } else {
       builder.addUserContext(state.userContext);
     }
-
-    const candidates = getCandidatesForPhase(state);
 
     builder
       .addGoal(state.storedGoal)
