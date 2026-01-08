@@ -28,9 +28,10 @@ Do NOT translate field values from the data. Only translate surrounding text and
 Brand terms (keep exactly as-is): ${BRAND_TERMS.join(", ")}`;
 
 // Reusable format blocks for structured responses
-const CONTEXT_BLOCK = `👤 Your context (ONLY from adhocContext object — NOT from appliedFilters or candidates):
-  ✅ SPECIFIED: list non-null adhocContext fields with values
-  ⚪ NOT SET: list null adhocContext fields`;
+const CONTEXT_BLOCK = `👤 Your context (STRICTLY from adhocContext JSON object):
+  ✅ SPECIFIED: fields where adhocContext.field is NOT null
+  ⚪ NOT SET: fields where adhocContext.field IS null
+  NEVER use values from candidates or appliedFilters for context display`;
 
 const GOAL_BLOCK = `🎯 Goal:
   ✅ SPECIFIED: list non-null goal fields with values
@@ -189,7 +190,7 @@ Style:
 - No excitement phrases, no excessive emoji
 - Never invent data
 - Candidates: ${NLP_CANDIDATE_FIELDS} from actual data — omit null/empty fields
-- Salary: show only if has value; use salaryExact if set; if salaryMin=salaryMax show single value; otherwise show range
+- Salary (USD, annual): show only if has value; use salaryExact if set; if salaryMin=salaryMax show single value; otherwise show range
 
 Format: Markdown, real newlines.
 
