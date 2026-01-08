@@ -51,6 +51,7 @@ export const searchWaymatesNode = withLogging<SearchStateType>(
       phase: needsFiltering ? PHASE.showing_results_facets : PHASE.showing_waymate_results,
       facets: needsFiltering ? computeFacets(results) : null,
       chartUrl,
+      answerText: null, // Clear previous advisor answer
     };
   },
 );

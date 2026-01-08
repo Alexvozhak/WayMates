@@ -46,6 +46,7 @@ export const exploreNode = withLogging<SearchStateType>(
       phase: needsFiltering ? PHASE.showing_exploration_facets : PHASE.showing_exploration_candidates,
       facets: needsFiltering ? computeFacets(results) : null,
       chartUrl,
+      answerText: null, // Clear previous advisor answer
     };
   },
 );

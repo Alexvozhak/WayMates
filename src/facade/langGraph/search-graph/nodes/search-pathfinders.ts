@@ -73,6 +73,7 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       phase: needsFiltering ? PHASE.showing_results_facets : PHASE.showing_pathfinder_results,
       facets: needsFiltering ? computeFacets(results) : null,
       chartUrl,
+      answerText: null, // Clear previous advisor answer
     };
   },
 );
