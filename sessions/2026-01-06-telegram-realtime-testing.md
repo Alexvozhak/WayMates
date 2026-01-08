@@ -1289,3 +1289,387 @@ npx tsx poc/telegram-chat.ts --start
 - Касты запрещены — использовать Zod
 - Валидация locale — в Zod schema (MCP boundary)
 ```
+
+---
+
+## Phase 12 Session Report
+
+**Дата:** 2026-01-08
+**Коммит:** `0412659cda6ed3300c0eb3e831616dff00b372e5`
+**Сессия:** /manual-test-debug continuation — Goal MERGE, extraction fixes, UX polish
+
+---
+
+### ✅ СДЕЛАНО
+
+| # | Изменение | Файлы |
+|---|-----------|-------|
+| 1 | **Goal MERGE fix** — создаёт User через MERGE для adhoc users | `cypher/queries/goals.ts` |
+| 2 | **Goal UPSERT preserves createdAt** — `coalesce(originalCreatedAt, $createdAt)` | `cypher/queries/goals.ts` |
+| 3 | **Extraction: убрана галлюцинация "management"** — было правило "include management for leads" | `shared/prompts.ts` DECOMPOSITION_RULES |
+| 4 | **Position = seniority only** — "ONLY the seniority/grade level" | `shared/prompts.ts` |
+| 5 | **hasValue() shared utility** — вынесен из 3 файлов + проверка `number === 0` | `shared/state-utils.ts` |
+| 6 | **GOAL_OPTIONAL_FIELDS + GOAL_FIELD_DISPLAY_NAMES** | `schemas.ts`, `shared/prompts.ts` |
+| 7 | **Optional fields: построчно с ⚪, без "not set"** | `nlp-formatter/prompts.ts` |
+| 8 | **Tests:** удалён D6 (unverified), DTW threshold 0.7→0.65 | `dictionaries.integration.ts`, `dtw-demo-fixtures.spec.ts` |
+
+---
+
+### 🔧 КЛЮЧЕВЫЕ ФИКСЫ
+
+**1. Goal MERGE для adhoc users**
+
+```cypher
+-- ДО: MATCH (searchingUser:User {userId: $userId}) — падал для новых users
+-- ПОСЛЕ:
+MERGE (searchingUser:User {userId: $userId})
+WITH searchingUser
+OPTIONAL MATCH (searchingUser)-[r:HAS_GOAL]->(oldGoal:Goal)
+WITH searchingUser, oldGoal.createdAt AS originalCreatedAt, r, oldGoal
+DELETE r, oldGoal
+WITH searchingUser, originalCreatedAt
+CREATE (searchingUser)-[:HAS_GOAL]->(g:Goal {
+  createdAt: coalesce(originalCreatedAt, $createdAt),  -- preserves original
+  ...
+})
+```
+
+**2. DECOMPOSITION_RULES — убрано правило management**
+
+```diff
+- If the person manages or leads teams → include management in domains
++ Extract ONLY domains explicitly mentioned by user — do NOT infer from position level
+```
+
+**3. hasValue() — shared + number check**
+
+```typescript
+// Было дублировано в: load-context.ts, validate-context.ts, extract-context.ts
+// Теперь один раз в shared/state-utils.ts:
+export function hasValue(value: unknown): boolean {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "string") return value.length > 0;
+  if (typeof value === "number") return value !== 0;  // ← salary fix
+  return true;
+}
+```
+
+**4. Optional fields format**
+
+```
+-- ДО (single line): ⚪ Optional: Skills, Company size, City...
+-- ПОСЛЕ (per line):
+⚪ Skills
+⚪ Company size
+⚪ City
+```
+
+---
+
+### 📚 РЕФЛЕКСИЯ Phase 12
+
+| # | Моё неправильное действие | Что должен был сделать | Первопричина |
+|---|--------------------------|------------------------|--------------|
+| 1 | `mcp-chat.ts` вместо `telegram-chat.ts` | Читать команду внимательно (пользователь указал POC) | Невнимательность |
+| 2 | Подыгрывал LLM "более структурированным вводом" | Разбираться ПОЧЕМУ extraction не работает | Быстрый фикс симптома |
+| 3 | Не нашёл source "management" сразу | grep по "management" в prompts.ts | DECOMPOSITION_RULES был в shared, не искал |
+| 4 | hasValue() дублировал в 3 файлах | Сразу вынести в shared | Копипаста из других нод |
+| 5 | Предлагал inline hasValue() | DRY — вынести в shared | Пользователь скорректировал |
+| 6 | lint:fix без аргументов | lint:fix (не просто lint) | Привычка |
+
+**Ключевые уроки:**
+
+1. **Extraction bugs:** Сначала grep по симптому ("management") → найти source → исправить
+2. **DRY:** Если функция копируется 3+ раз → shared utility
+3. **hasValue:** `number === 0` тоже "пустое" для salary
+4. **Тестирование:** Читать ответ бота → анализировать → НЕ подыгрывать
+
+---
+
+### 📁 Изменённые файлы (ЗАКОММИЧЕНО)
+
+```
+src/cypher/queries/goals.ts                  — MERGE User + preserve createdAt
+src/shared/schemas.ts                        — GOAL_OPTIONAL_FIELDS, goalOptionalFieldSchema
+src/facade/langGraph/shared/prompts.ts       — GOAL_FIELD_DISPLAY_NAMES, DECOMPOSITION_RULES fix
+src/facade/langGraph/shared/state-utils.ts   — hasValue() shared
+src/facade/langGraph/search-graph/response-builders.ts — goalOptionalFields
+src/facade/langGraph/search-graph/prompts/extraction.ts — rule 8: no array expansion
+src/facade/langGraph/search-graph/nodes/load-context.ts — import hasValue
+src/facade/langGraph/cold-start-v2/nodes/extract-context.ts — import hasValue
+src/facade/langGraph/cold-start-v2/nodes/validate-context.ts — import hasValue
+src/facade/services/nlp-formatter/prompts.ts — per-line optional, labels
+tests/core/integration/dictionaries-manager/dictionaries.integration.ts — removed D6
+tests/core/unit/dtw-demo-fixtures.spec.ts    — threshold 0.7→0.65
+```
+
+---
+
+### 🎯 TODO для следующей сессии
+
+**Тестирование:**
+1. 🟡 E2E тест полного flow: /start → quick search → goal → pathfinders
+2. 🟡 Проверить Chart с ru/en локалями
+
+**Cleanup:**
+3. 🟡 Удалить debug logging из set-goal.ts, search-pathfinders.ts
+4. 🟡 Обновить tests_report.md матрицу тестирования
+
+---
+
+### 🚀 Промпт для продолжения (после rewind)
+
+```
+ПРОЧИТАЙ:
+1. `/home/alex/projects/WayMatesRemote/sessions/2026-01-06-telegram-realtime-testing.md` — Phase 12 (закоммичено)
+
+**Контекст Phase 12 (закоммичено 0412659):**
+- Goal MERGE fix — adhoc users теперь могут сохранять Goal
+- Extraction: убрана галлюцинация "management", position = seniority only
+- hasValue() вынесен в shared/state-utils.ts + проверка number===0
+- Optional fields показываются построчно с ⚪, без "not set"
+- GOAL_OPTIONAL_FIELDS + GOAL_FIELD_DISPLAY_NAMES добавлены
+- Tests: D6 удалён, DTW threshold понижен
+
+**TODO:**
+1. 🟡 E2E тест: /start → quick search → goal → pathfinders
+2. 🟡 Chart с ru/en локалями
+3. 🟡 Удалить debug logging
+4. 🟡 Обновить tests_report.md
+
+**Правила из Phase 12:**
+- Extraction bugs: grep по симптому → найти source → fix
+- DRY: 3+ копий = shared utility
+- hasValue: number === 0 тоже "пустое"
+- Тестирование: НЕ подыгрывать LLM, анализировать ответы
+```
+
+---
+
+## Phase 13 Session Report
+
+**Дата:** 2026-01-08
+**Сессия:** /manual-test-debug — NLP prompt fixes, E2E testing
+
+---
+
+### ✅ СДЕЛАНО
+
+| # | Изменение | Файлы |
+|---|-----------|-------|
+| 1 | **Excluded fields → human-readable** | `nlp-formatter/prompts.ts` — FIELD_NAMES_MAPPING в инструкции |
+| 2 | **Informal tone (ты вместо Вы)** | `nlp-formatter/prompts.ts` — добавлено "Tone: informal second person singular" |
+| 3 | **NLP не спрашивает missing fields в show_results** | `nlp-formatter/prompts.ts` — "NEVER ask user for more context fields when showing results" |
+| 4 | **No-goal формулировка** | `nlp-formatter/prompts.ts` — "explore where people from similar context ended up" |
+| 5 | **DRY: PATHFINDERS_DESC + WAYMATES_DESC** | `nlp-formatter/prompts.ts` — константы для описаний |
+| 6 | **Waymates description fix** | "people from same context aiming for same goal" (убрано "peers to connect") |
+
+---
+
+### ✅ E2E ТЕСТЫ ПРОЙДЕНЫ
+
+**Adhoc flow:**
+- /start → "быстрый поиск" → context → explore → goal → pathfinders/waymates ✅
+- Tone: "Твой контекст" (не "Ваш")
+- Результаты показываются без запроса missing fields
+
+**Cold-start flow:**
+- /start → PDF upload → 3 позиции извлечены → save → search ✅
+- Career story сохранена корректно
+
+---
+
+### 🐛 НАЙДЕННЫЕ БАГИ (НЕ исправлены)
+
+| # | Баг | Root Cause | Priority |
+|---|-----|------------|----------|
+| 1 | **Cold-start clarification теряет данные** | Разные ноды используют разные промпты для отображения позиции | 🔴 P0 |
+| 2 | **Optional fields в cold-start — технические имена** | NLP prompt для cold-start не использует FIELD_DISPLAY_NAMES | 🟡 P1 |
+| 3 | **"2" и "быстрый" не понимаются как startAdhoc** | Intent classifier не распознаёт numbered options | 🟡 P2 |
+| 4 | **RU термины pathfinders/waymates** | Нужны human-friendly названия ("проводники"/"однопутники"?) | 🟡 P2 |
+
+---
+
+### 📁 Изменённые файлы (НЕ закоммичено!)
+
+```
+src/facade/services/nlp-formatter/prompts.ts
+  - PATHFINDERS_DESC, WAYMATES_DESC constants
+  - Tone: informal second person singular
+  - excluded fields → human-readable labels
+  - NEVER ask for missing fields in show_results
+  - No-goal: "explore where people ended up"
+```
+
+---
+
+### 📚 РЕФЛЕКСИЯ Phase 13
+
+| # | Моё неправильное действие | Что должен был сделать | Первопричина |
+|---|--------------------------|------------------------|--------------|
+| 1 | Тестировал PDF после "быстрый поиск" (adhoc) | Чистый cold-start: /start → сразу PDF | Не структурировал тест-план |
+| 2 | Предлагал примеры в промптах ("ты", "tu", "du") | ТОЛЬКО семантика: "informal second person singular" | Привычка к примерам |
+| 3 | Дублировал waymates description | DRY: вынести в константу сразу | Пользователь скорректировал |
+| 4 | Не заметил баг clarification сразу | Анализировать КАЖДЫЙ странный вывод | Спешка к завершению |
+
+**Ключевые уроки:**
+- **Структурированное тестирование:** /start → один flow полностью, потом другой
+- **Промпты:** ТОЛЬКО семантика, никаких literal примеров
+- **DRY сразу:** Если description повторяется — константа
+- **Cold-start clarification:** Разные ноды должны использовать ОДИН промпт для отображения
+
+---
+
+### 🎯 TODO для следующей сессии
+
+**Критично:**
+1. 🔴 **lint:fix + tsc + commit** изменений Phase 13
+2. 🔴 **Cold-start clarification теряет данные** — DRY: один промпт для отображения позиции во всех нодах
+
+**После коммита:**
+3. 🟡 Optional fields в cold-start — использовать FIELD_DISPLAY_NAMES
+4. 🟡 RU термины для pathfinders/waymates — обсудить варианты
+5. 🟡 Intent "2"/"быстрый" → startAdhoc
+6. 🟡 Обновить tests_report.md
+
+---
+
+### 🚀 Промпт для продолжения (после rewind)
+
+```
+ПРОЧИТАЙ:
+1. `/home/alex/projects/WayMatesRemote/sessions/2026-01-06-telegram-realtime-testing.md` — Phase 13
+
+**Контекст Phase 13 (НЕ закоммичено):**
+- NLP prompts: informal tone, excluded→human-readable, no-goal formulation
+- DRY: PATHFINDERS_DESC + WAYMATES_DESC constants
+- E2E adhoc + cold-start тесты пройдены
+
+**Критичный баг:**
+🔴 Cold-start clarification теряет данные — разные ноды используют разные промпты.
+   При clarification позиции часть полей исчезает (skills, domains).
+   Нужен DRY: ОДИН промпт для отображения позиции во всех нодах.
+
+**TODO:**
+1. 🔴 lint:fix + tsc + commit Phase 13
+2. 🔴 Fix cold-start clarification — DRY промпт отображения
+3. 🟡 Optional fields в cold-start → FIELD_DISPLAY_NAMES
+4. 🟡 RU термины pathfinders/waymates
+
+**Изменённый файл:**
+- src/facade/services/nlp-formatter/prompts.ts
+
+**Правила:**
+- ТОЛЬКО семантика в промптах
+- DRY: повторяется → константа
+- Тестировать один flow полностью, потом другой
+```
+
+---
+
+## Phase 13 (продолжение) — Cold-start fixes
+
+**Дата:** 2026-01-08
+**Сессия:** /manual-test-debug — Cold-start clarification fixes
+
+---
+
+### ✅ ИСПРАВЛЕНО
+
+| # | Баг | Fix | Файл |
+|---|-----|-----|------|
+| 1 | **Suggestions не показывает все поля** | `COLD_START_CONTEXT_DISPLAY` константа — single source of truth | `nlp-formatter/prompts.ts` |
+| 2 | **position="null" строка** | Инструкция "use JSON null (NOT string 'null')" | `cold-start-v2/prompts.ts` |
+| 3 | **Optional fields — технические имена** | "show optionalFields with human-readable labels from mapping" | `nlp-formatter/prompts.ts` |
+
+---
+
+### 🐛 НЕПОЧИНЕННЫЕ БАГИ
+
+| # | Баг | Root Cause | Priority | Где фиксить |
+|---|-----|------------|----------|-------------|
+| 1 | **companySize="undisclosed" показывается как filled** | Placeholder value, должно быть optional | 🟡 P1 | Extraction или hasValue check |
+| 2 | **"2"/"быстрый" не понимаются как startAdhoc** | Intent classifier не распознаёт numbered options | 🟡 P2 | `intent-classifier.ts` |
+| 3 | **RU термины pathfinders/waymates** | Нужны human-friendly названия | 🟡 P2 | Обсудить терминологию |
+| 4 | **Debug logging в response-builders** | Временный код для отладки | 🟢 P3 | Удалить после стабилизации |
+
+---
+
+### 📁 Изменённые файлы (НЕ закоммичено!)
+
+```
+src/facade/services/nlp-formatter/prompts.ts
+  - COLD_START_CONTEXT_DISPLAY constant (DRY)
+  - Optional fields → human-readable labels
+
+src/facade/langGraph/cold-start-v2/prompts.ts
+  - "use JSON null (NOT string 'null')"
+
+src/facade/langGraph/cold-start-v2/response-builders.ts
+  - Debug logging для pendingContext + rolePositionSuggestions
+```
+
+---
+
+### 📚 РЕФЛЕКСИЯ Phase 13 (продолжение)
+
+| # | Моё неправильное действие | Что должен был сделать | Первопричина |
+|---|--------------------------|------------------------|--------------|
+| 1 | Предложил hardcoded список полей в промпте | DRY: константа или ссылка на "same format as missing" | Привычка к явным спискам |
+| 2 | Предложил fix в normalizer для "null" строки | Фиксить в extraction (root cause) | Хотел быстрый fix вместо правильного |
+| 3 | Не сразу понял что structured data содержит ВСЕ поля | Добавить logging раньше для диагностики | Делал предположения вместо проверки |
+
+**Ключевые уроки:**
+- **Single source of truth:** Константа лучше дублирования инструкций
+- **Fix at root cause:** Extraction prompt > normalizer hack
+- **Debug logging:** Добавлять сразу при непонятном поведении
+- **Альтернативы:** Всегда предлагать варианты и сравнивать
+
+---
+
+### 🎯 TODO для следующей сессии
+
+**Закоммитить:**
+1. 🔴 `git add && git commit` — все изменения Phase 13
+
+**После коммита:**
+2. 🟡 **companySize="undisclosed"** — должно быть optional, не filled
+3. 🟡 **Intent "2"/"быстрый"** → startAdhoc
+4. 🟡 **RU термины** — обсудить pathfinders/waymates
+5. 🟢 **Удалить debug logging** из response-builders.ts
+
+**E2E тесты:**
+6. 🟡 Полный cold-start flow с PDF до сохранения
+7. 🟡 Chart verification с ru/en локалями
+
+---
+
+### 🚀 Промпт для продолжения (после rewind)
+
+```
+ПРОЧИТАЙ:
+1. `/home/alex/projects/WayMatesRemote/sessions/2026-01-06-telegram-realtime-testing.md` — Phase 13 (продолжение)
+
+**Контекст Phase 13 (НЕ закоммичено):**
+- COLD_START_CONTEXT_DISPLAY — DRY для clarification context
+- position="null" → JSON null в extraction prompt
+- Optional fields → human-readable labels
+
+**Изменённые файлы:**
+- src/facade/services/nlp-formatter/prompts.ts
+- src/facade/langGraph/cold-start-v2/prompts.ts
+- src/facade/langGraph/cold-start-v2/response-builders.ts (debug logging)
+
+**TODO:**
+1. 🔴 Commit Phase 13 изменений
+2. 🟡 companySize="undisclosed" → optional
+3. 🟡 Intent "2"/"быстрый" → startAdhoc
+4. 🟡 RU термины pathfinders/waymates
+5. 🟢 Удалить debug logging
+
+**Правила:**
+- DRY: single source of truth для промптов
+- Fix at root cause, не хаки в downstream
+- Debug logging добавлять сразу при непонятном поведении
+```

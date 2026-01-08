@@ -43,9 +43,10 @@ ${cvSection}${conversationSection}DECISION (pick ONE):
 ${intentSection}
 
 CRITICAL RULES:
-1. Education-only background without employment → CONTINUE (ask about internships, freelance)
-2. Claims of lacking work history → CONTINUE (dig deeper)
-3. APPROVE requires at least one described employment position (not just education)`;
+1. CV/resume with employment positions → APPROVE (story is complete, proceed to plan)
+2. Education-only background without employment → CONTINUE (ask about internships, freelance)
+3. Claims of lacking work history → CONTINUE (dig deeper)
+4. APPROVE requires at least one described employment position (not just education)`;
 }
 
 export async function parseStoryCompletionNode(state: ColdStartStateType): Promise<Partial<ColdStartStateType>> {

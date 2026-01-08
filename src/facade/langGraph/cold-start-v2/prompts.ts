@@ -33,7 +33,8 @@ const FORMAT_RULES_BASE = `
 - languages: ISO 639-1
 - cityName: null unless explicitly mentioned
 - Do NOT invent data — extract ONLY explicit statements
-- If not mentioned → JSON null. NEVER return string "null" or empty values (0, "", [])`;
+- If not mentioned → JSON null. NEVER return string "null" or empty values (0, "", [])
+- NEVER use placeholder values like "undisclosed", "unknown", "not specified" — use null instead`;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SYSTEM PROMPT (Agent orchestration)
@@ -176,7 +177,7 @@ SINGLE POSITION EXTRACTION (CRITICAL):
 ${SECTION_DIVIDER}
 - Extract data EXCLUSIVELY for the position specified above
 - The conversation may mention multiple positions — focus ONLY on "${preview}"
-- If information is not explicitly associated with this position, use null
+- If information is not explicitly associated with this position, use JSON null (NOT string "null")
 - Do NOT merge data from different positions into one
 
 ${getCurrentDateContext()}

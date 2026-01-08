@@ -19,9 +19,13 @@ const GOAL_FIELD_NAMES_MAPPING = Object.entries(GOAL_FIELD_DISPLAY_NAMES)
   .map(([key, label]) => `${key} → "${label}"`)
   .join(", ");
 
+// Brand terms — keep in original form, never translate
+const BRAND_TERMS = ["Pathfinders", "Waymates", "WayMates"] as const;
+
 // Dictionary terms should NOT be translated (keep in English)
 const NO_TRANSLATE_INSTRUCTION = `IMPORTANT: Keep ALL dictionary values and technical terms in their original form.
-Do NOT translate field values from the data. Only translate surrounding text and UI labels.`;
+Do NOT translate field values from the data. Only translate surrounding text and UI labels.
+Brand terms (keep exactly as-is): ${BRAND_TERMS.join(", ")}`;
 
 // Reusable format blocks for structured responses
 const CONTEXT_BLOCK = `👤 Your context:
@@ -34,8 +38,15 @@ const GOAL_BLOCK = `🎯 Goal:
 
 const FILTERS_BLOCK = `🔍 Filters:
   • recency: [recencyThresholdMonths value or "any time"]
-  • excluded: [excludedContextFields list or "none"]
+  • excluded: [excludedContextFields — convert to human-readable labels: ${FIELD_NAMES_MAPPING}. Show "none" if empty]
   ⚠️ Show rejectedFields if not empty`;
+
+// Search mode descriptions (DRY: used in results and mode selection)
+const PATHFINDERS_DESC = "people from same context who already achieved this goal";
+const WAYMATES_DESC = "people from same context aiming for same goal";
+
+// Cold-start context display (DRY: single source of truth for both clarification types)
+const COLD_START_CONTEXT_DISPLAY = `✅ FILLED: show ALL non-null fields from pendingContext (use human-readable labels from mapping)`;
 
 const OPTIONAL_FIELDS_HINT = `Optional fields user might want to share:
 - languages: B2+ proficiency — helps international job matching
@@ -58,10 +69,10 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   NEVER write "not set" or any value after label
   Labels: ${FIELD_NAMES_MAPPING}
   DO NOT ask for anything from FILLED section.
-  Check hasGoal field to determine available options:
-  - If hasGoal=false: explore similar people, set a goal, edit context, or ask a question
-  - If hasGoal=true: search pathfinders/waymates, validate goal, edit goal, edit context, or ask a question
-  Offer options naturally based on hasGoal value.`,
+  Check hasGoal field to determine next step:
+  - If hasGoal=false: suggest exploring where people from similar context ended up (what goals they achieved)
+  - If hasGoal=true: state the goal clearly, then offer pathfinders/waymates search
+  Be direct about the logical next action.`,
   [SEARCH_PHASE.showing_exploration_candidates]: `Check answerText field first:
   If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
   If answerText is null/empty → Show results from explorationResults array:
@@ -108,7 +119,7 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.showing_waymate_results]: `Check answerText field first:
   If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
   If answerText is null/empty → Show results from waymatesResults array:
-  📊 **Waymates** — people heading to the same goal (peers to connect)
+  📊 **Waymates** — ${WAYMATES_DESC}
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
   📋 Results: [waymatesResults.length] waymates
@@ -120,7 +131,7 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.showing_pathfinder_results]: `Check answerText field first:
   If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
   If answerText is null/empty → Show results from pathfinderResults array:
-  📊 **Pathfinders** — people who already achieved this goal (proof the path works)
+  📊 **Pathfinders** — ${PATHFINDERS_DESC}
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
   📋 Results: [pathfinderResults.length] pathfinders
@@ -138,8 +149,8 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   Show facets with counts. Suggest narrowing by role/country/industry.`,
   [SEARCH_PHASE.asking_search_mode]: `Goal saved. DO NOT repeat goal details — user just confirmed them.
   Offer two search options briefly:
-  1. Pathfinders — people who already achieved this (proof the path works)
-  2. Waymates — people heading to the same goal (peers to connect)
+  1. Pathfinders — ${PATHFINDERS_DESC}
+  2. Waymates — ${WAYMATES_DESC}
   Just ask which one. 2-3 sentences max.`,
   [SEARCH_PHASE.clarifying_goal]: `Goal incomplete — ask user to specify target position.
   DO NOT show any extractedGoal data (it may be empty or have placeholder values like salary 0).
@@ -168,9 +179,10 @@ ${SEARCH_PHASES_SECTION}
 
 Transparency:
 - Show what criteria are used
-- For missing fields explain default search behavior in user terms
+- For search filters with missing values, explain default behavior (matches any)
 - Recency = how recently people made this transition
 - Empty results → honest, actionable suggestions
+- NEVER ask user for more context fields when showing results
 
 Style:
 - 2-4 sentences, direct
@@ -182,6 +194,7 @@ Style:
 Format: Markdown, real newlines.
 
 Language: ${locale}
+Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
@@ -210,14 +223,15 @@ Phases:
 
   clarificationType="missing" → Ask for missing required fields:
     Start with: 📍 Position {progress.current}/{progress.total}
-    ✅ FILLED: show only non-null fields from pendingContext (use human-readable labels)
+    ${COLD_START_CONTEXT_DISPLAY}
     ❌ MISSING: list missingFields (use human-readable labels from mapping above)
-    ⚪ OPTIONAL: show optionalFields if not empty
+    ⚪ OPTIONAL: show optionalFields with human-readable labels from mapping
     If suggestCancel=true: offer to cancel
 
   clarificationType="suggestions" → Ask to CHOOSE from options:
     Start with: 📍 Position {progress.current}/{progress.total}
-    ✅ FILLED: show only non-null fields from pendingContext (use human-readable labels)
+    ${COLD_START_CONTEXT_DISPLAY}
+    Then show suggestions:
     For each item in rolePositionSuggestions:
       Show human-readable field name + options separated by " / ".
       Example: "Position level: junior / middle / senior?"
@@ -245,6 +259,7 @@ Rules:
 - Add a clear call-to-action at the end
 
 Language: ${locale}
+Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
@@ -275,6 +290,7 @@ Rules:
 - Add a clear call-to-action
 
 Language: ${locale}
+Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
@@ -305,6 +321,7 @@ Rules:
 - Add a clear call-to-action
 
 Language: ${locale}
+Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
@@ -339,6 +356,7 @@ Rules:
 - Add a clear call-to-action
 
 Language: ${locale}
+Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;

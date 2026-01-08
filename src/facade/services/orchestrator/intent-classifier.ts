@@ -40,9 +40,9 @@ export const userIntentSchema = z.enum([...graphIntentSchema.options, ...nonGrap
 // Type-safe: TypeScript enforces all UserIntent keys are present
 const INTENT_DESCRIPTIONS: Record<UserIntent, string> = {
   startStory:
-    "wants to tell about themselves, share career background, create profile, save full career history, upload CV — focus on SHARING information, not on searching",
+    "wants to tell about themselves, share career background, create profile, save full career history, upload CV — focus on SHARING information, not on searching. Option '1' after greeting",
   startAdhoc:
-    "wants lightweight temporary search without creating persistent profile — one-time lookup, no commitment to save career data",
+    "wants lightweight temporary search without creating persistent profile — one-time lookup, no commitment to save career data. Option '2' after greeting",
   setGoal: "wants to set career goal",
   // MVP: Disabled CRUD operations
   // addContext: "wants to add new career position/context",

@@ -1,4 +1,5 @@
 import { InvalidStateError } from "../../errors.js";
+import { logger } from "../../logger.js";
 
 import { PHASE } from "./types.js";
 
@@ -54,13 +55,23 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
       ? "Please provide the missing information."
       : "Please choose the correct option for the highlighted field.";
 
+    const filteredPendingContext = filterNullValues(state.pendingContext);
+    logger.info(
+      {
+        pendingContext: filteredPendingContext,
+        clarificationType,
+        rolePositionSuggestions: state.rolePositionSuggestions,
+      },
+      "awaiting_clarification structured data",
+    );
+
     return {
       phase: PHASE.awaiting_clarification,
       message,
       clarificationType,
       entityPreview: currentAgenda.preview,
       progress: { current: state.currentContextIndex + 1, total: state.queue.length },
-      pendingContext: filterNullValues(state.pendingContext),
+      pendingContext: filteredPendingContext,
       missingFields: state.missingFields,
       optionalFields: state.optionalFields,
       suggestCancel: state.clarificationRound >= SUGGEST_CANCEL_AFTER_ROUNDS,
