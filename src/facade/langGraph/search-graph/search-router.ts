@@ -14,7 +14,7 @@ type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 // prettier-ignore
 // NODE.generate_answer added to all phases — user can ask meta-questions anytime
 const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
-  [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.validate_goal, NODE.load_existing_goal, NODE.explore, NODE.extract_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.validate_goal, NODE.load_existing_goal, NODE.explore, NODE.extract_goal, NODE.load_context, NODE.delete_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.clarifying_goal,                  buildRouteMap([NODE.extract_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
@@ -107,6 +107,7 @@ const CONFIRMING_WITH_GOAL_ROUTES: RouteMap = {
   validate: NODE.validate_goal,
   editGoal: NODE.load_existing_goal,
   editAdhoc: NODE.load_context,
+  delete: NODE.delete_goal,
   ask: NODE.generate_answer,
   cancel: NODE.cancel,
   unknown: NODE.clarify_intent,
