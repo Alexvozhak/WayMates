@@ -15,12 +15,13 @@ type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 // NODE.generate_answer added to all phases — user can ask meta-questions anytime
 const PARSE_INTENT_ROUTE_MAPS = new Map<SearchPhase, Partial<Record<NodeName, NodeName>>>([
   [PHASE.confirming_adhoc_context,         buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.validate_goal, NODE.load_existing_goal, NODE.explore, NODE.extract_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.clarify_goal, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.showing_goal,                     buildRouteMap([NODE.validate_goal, NODE.clarify_goal, NODE.set_goal, NODE.delete_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.asking_after_validate_candidates, buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.asking_after_validate_facets,     buildRouteMap([NODE.set_goal, NODE.clarify_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
-  [PHASE.asking_search_mode,               buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_exploration_candidates,   buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_exploration_facets,       buildRouteMap([NODE.extract_goal, NODE.apply_filters, NODE.load_context, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.clarifying_goal,                  buildRouteMap([NODE.extract_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.showing_goal,                     buildRouteMap([NODE.validate_goal, NODE.extract_goal, NODE.set_goal, NODE.delete_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.asking_after_validate_candidates, buildRouteMap([NODE.set_goal, NODE.extract_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.asking_after_validate_facets,     buildRouteMap([NODE.set_goal, NODE.extract_goal, NODE.extract_goal, NODE.apply_filters, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
+  [PHASE.asking_search_mode,               buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.extract_goal, NODE.delete_goal, NODE.generate_answer, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_waymate_results,          buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.show_results, NODE.clarify_intent, NODE.cancel])],
   [PHASE.showing_pathfinder_results,       buildRouteMap([NODE.search_waymates, NODE.search_pathfinders, NODE.load_existing_goal, NODE.extract_goal, NODE.delete_goal, NODE.apply_filters, NODE.generate_answer, NODE.show_results, NODE.clarify_intent, NODE.cancel])],
 ]);
@@ -81,6 +82,8 @@ const EXPLORATION_ROUTES: RouteMap = {
 const SEARCH_MODE_ROUTES: RouteMap = {
   searchWaymates: NODE.search_waymates,
   searchPathfinders: NODE.search_pathfinders,
+  change: NODE.extract_goal,
+  delete: NODE.delete_goal,
   ask: NODE.generate_answer,
   cancel: NODE.cancel,
   unknown: NODE.clarify_intent,
@@ -122,7 +125,7 @@ export function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhas
 
   const validateRoutes: RouteMap = {
     save: NODE.set_goal,
-    clarify: canClarify ? NODE.clarify_goal : NODE.set_goal,
+    clarify: canClarify ? NODE.extract_goal : NODE.set_goal,
     change: canChangePosition ? NODE.extract_goal : NODE.set_goal,
     filter: NODE.apply_filters,
     ask: NODE.generate_answer,
@@ -132,9 +135,16 @@ export function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhas
   const confirmingRoutes = hasGoal ? CONFIRMING_WITH_GOAL_ROUTES : CONFIRMING_NO_GOAL_ROUTES;
   const goalRoutes: RouteMap = {
     validate: NODE.validate_goal,
-    clarify: canClarify ? NODE.clarify_goal : NODE.set_goal,
+    clarify: canClarify ? NODE.extract_goal : NODE.set_goal,
     save: NODE.set_goal,
     delete: NODE.delete_goal,
+    ask: NODE.generate_answer,
+    cancel: NODE.cancel,
+    unknown: NODE.clarify_intent,
+  };
+  // clarifying_goal: user specifies target position (goal was empty)
+  const clarifyingGoalRoutes: RouteMap = {
+    clarify: NODE.extract_goal,
     ask: NODE.generate_answer,
     cancel: NODE.cancel,
     unknown: NODE.clarify_intent,
@@ -144,6 +154,7 @@ export function createIntentRoutes(flags: RouteFlags): Partial<Record<SearchPhas
     [PHASE.confirming_adhoc_context]: confirmingRoutes,
     [PHASE.showing_exploration_candidates]: EXPLORATION_ROUTES,
     [PHASE.showing_exploration_facets]: EXPLORATION_ROUTES,
+    [PHASE.clarifying_goal]: clarifyingGoalRoutes,
     [PHASE.showing_goal]: goalRoutes,
     [PHASE.asking_after_validate_candidates]: validateRoutes,
     [PHASE.asking_after_validate_facets]: validateRoutes,
@@ -168,6 +179,7 @@ export const PARSE_INTENT_ALL_DESTINATIONS = {
   ...availableNodesByPhase(PHASE.confirming_adhoc_context),
   ...availableNodesByPhase(PHASE.showing_exploration_candidates),
   ...availableNodesByPhase(PHASE.showing_exploration_facets),
+  ...availableNodesByPhase(PHASE.clarifying_goal),
   ...availableNodesByPhase(PHASE.showing_goal),
   ...availableNodesByPhase(PHASE.asking_after_validate_candidates),
   ...availableNodesByPhase(PHASE.asking_after_validate_facets),

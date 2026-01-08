@@ -7,6 +7,7 @@ import {
 import { logger } from "../../../logger.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";
+import { hasValue } from "../../shared/state-utils.js";
 import { getModel } from "../../shared-tools/models.js";
 import { buildAdhocClarificationPrompt, buildAdhocExtractionPrompt } from "../prompts/extraction.js";
 import { NODE, PHASE } from "../state.js";
@@ -62,16 +63,6 @@ async function clarifyAdhocContext(
 
   if (!updated) return existing;
   return adhocContextBase.parse(updated);
-}
-
-/**
- * Check if optional field has a value.
- */
-function hasValue(value: unknown): boolean {
-  if (value == null) return false;
-  if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === "string") return value.length > 0;
-  return true;
 }
 
 /**

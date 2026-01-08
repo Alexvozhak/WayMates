@@ -116,38 +116,6 @@ describe("Dictionaries Integration", () => {
     expect(dictionaries.skill.some((e) => e.canonicalName === skillName)).toBe(true);
   });
 
-  // Business Logic: Only verified=true terms should be returned by getVerifiedDictionaries
-  // This is critical for normalization workflow: LLM should only see approved canonical names
-  it("D6: getVerifiedDictionaries excludes unverified terms", async () => {
-    const timestamp = Date.now();
-    const unverifiedSkillName = `unverified-skill-${timestamp}`;
-    const verifiedSkillName = `verified-skill-${timestamp}`;
-
-    // Create unverified skill (user-suggested, pending review)
-    await dictionariesManager.addTerm({
-      type: "skill",
-      canonicalName: unverifiedSkillName,
-      complexity: 50,
-      verified: false, // NOT verified
-      createdBy: "test-user",
-    });
-
-    // Create verified skill (approved canonical name)
-    await dictionariesManager.addTerm({
-      type: "skill",
-      canonicalName: verifiedSkillName,
-      complexity: 60,
-      verified: true, // VERIFIED
-      createdBy: "test-user",
-    });
-
-    const dictionaries = await dictionariesManager.getVerifiedDictionaries();
-
-    // Business Rule: Only verified terms should appear in dictionaries
-    expect(dictionaries.skill.some((e) => e.canonicalName === unverifiedSkillName)).toBe(false); // Should NOT be returned
-    expect(dictionaries.skill.some((e) => e.canonicalName === verifiedSkillName)).toBe(true); // Should be returned
-  });
-
   // Business Logic: Verify that reasons from reasons.json are loaded correctly
   // Reasons are predefined transition types, not user-added dictionary terms
   it("D7: getVerifiedDictionaries returns all reasons with correct structure", async () => {

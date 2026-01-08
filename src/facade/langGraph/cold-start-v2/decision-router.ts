@@ -42,7 +42,7 @@ function createDecisionRoutes(hasMoreContexts: boolean): Partial<Record<ColdStar
   // prettier-ignore
   return {
     [PHASE.story_gathering]:              { approve: NODE.plan_career,     continue: NODE.gather_story, cancel: NODE.cancel, unknown: NODE.clarify_intent },
-    [PHASE.awaiting_plan_confirmation]:   { approve: NODE.extract_context, edit: NODE.gather_story,     cancel: NODE.cancel, unknown: NODE.clarify_intent },
+    [PHASE.awaiting_plan_confirmation]:   { approve: NODE.extract_context, continue: NODE.extract_context, edit: NODE.gather_story, cancel: NODE.cancel, unknown: NODE.clarify_intent },
     [PHASE.awaiting_context_confirmation]:{ approve: hasMoreContexts ? NODE.next_context : NODE.show_final, edit: NODE.edit_context, cancel: NODE.cancel, unknown: NODE.clarify_intent },
     [PHASE.awaiting_final_confirmation]:  { approve: NODE.persist,         edit: NODE.show_context,     cancel: NODE.cancel, unknown: NODE.clarify_intent },
   } satisfies Partial<Record<ColdStartPhase, RouteMap>>;

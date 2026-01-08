@@ -49,7 +49,7 @@ async function addRevertedTerms(
 export const editContextNode = withLogging<ColdStartStateType>(
   NODE.edit_context,
   async (state, _config, { coreClient, normalizerService }) => {
-    const { collectedContexts, messages, parsedDecision, currentContextIndex, normalizations, userId } = state;
+    const { collectedContexts, parsedDecision, currentContextIndex, normalizations, userId } = state;
 
     const currentContext = collectedContexts[currentContextIndex];
     if (!currentContext) {
@@ -66,7 +66,7 @@ export const editContextNode = withLogging<ColdStartStateType>(
     const corrections = parsedDecision.editInstructions;
     const existingContext = currentContext;
 
-    const prompt = contextCorrectionPrompt(existingContext, corrections, messages);
+    const prompt = contextCorrectionPrompt(existingContext, corrections);
     const { reasoning, ...extractedCorrections } = await contextCorrectionModel.invoke([new HumanMessage(prompt)]);
     logger.info({ reasoning }, "context correction reasoning");
 

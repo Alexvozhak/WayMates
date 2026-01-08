@@ -47,6 +47,7 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
       pathLimit: config.CANDIDATES_DISPLAY_LIMIT,
     };
 
+    logger.info({ referenceContext, targetContext: storedGoal.targetContext }, "search_pathfinders params");
     const results = await coreClient.client.search.pathfinders.query(searchParams);
 
     const needsFiltering = shouldUseFacets(results);

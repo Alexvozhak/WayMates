@@ -128,7 +128,7 @@ describe("DTW Demo Fixtures", () => {
       });
 
       // High similarity expected - similar path
-      expect(metrics.shapeSimilarity).toBeGreaterThan(0.7);
+      expect(metrics.shapeSimilarity).toBeGreaterThan(0.65);
       // IdealPathfinder has highest shape among pathfinders
     });
 

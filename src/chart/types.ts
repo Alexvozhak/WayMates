@@ -1,4 +1,13 @@
-import type { AdhocContextBase, UserContext, WaymateCandidate } from "../shared/schemas.js";
+import type { AdhocContextBase, Locale, UserContext, WaymateCandidate } from "../shared/schemas.js";
+
+/**
+ * Chart supports only ru/en labels. Other locales fallback to en.
+ */
+export type ChartLocale = "en" | "ru";
+
+export function toChartLocale(locale: Locale): ChartLocale {
+  return locale === "ru" ? "ru" : "en";
+}
 
 const CHARTABLE_FIELDS = [
   "position",
@@ -72,8 +81,6 @@ export type SimilarityMetrics = {
   overall: number;
 };
 
-export type Locale = "ru" | "en";
-
 export type GoalValues = Partial<Record<ChartableField, string | number | null>>;
 
 export type DynamicLevels = Partial<Record<ChartableField, string[]>>;
@@ -82,7 +89,7 @@ type BaseChartInput = {
   candidates: WaymateCandidate[];
   maxCandidates: number;
   positionOrder: string[];
-  locale: Locale;
+  locale: ChartLocale;
   existingGoal: boolean;
   selectedFields?: ChartableField[];
   goalValues?: GoalValues;

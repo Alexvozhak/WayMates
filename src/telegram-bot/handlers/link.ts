@@ -16,20 +16,11 @@ export async function handleLink(ctx: BotContext): Promise<void> {
   }
 
   try {
-    const result = await ctx.services.mcpClient.callTool("link_telegram", {
+    await ctx.services.mcpClient.callTool("link_telegram", {
       token,
       telegramUserId,
       requestId: ctx.requestId,
     });
-
-    ctx.session = {
-      status: "initialised",
-      token: result.token,
-      userId: result.userId,
-      sessionId: result.sessionId,
-    };
-
-    await ctx.services.sessionService.saveSessionId(telegramUserId, result.sessionId);
 
     await ctx.reply(ctx.t("link-success"));
   } catch (error) {

@@ -1,31 +1,34 @@
-import { PresenterError } from "../errors.js";
+import { formatResponse } from "../presenters/format-response.js";
 
 import type { BotContext } from "../types.js";
 
 export async function handleStart(ctx: BotContext): Promise<void> {
-  try {
-    // Clear all active graph checkpoints to ensure clean state
-    // Ignore errors if session doesn't exist yet (nothing to cancel)
-    const sessionId = await ctx.services.sessionService.getSessionId(ctx);
-    try {
-      await ctx.services.mcpClient.callTool("cancel_all_graphs", {
-        sessionId,
-        requestId: ctx.requestId,
-      });
-    } catch {
-      // Session may not exist yet — nothing to cancel, continue
-    }
-
-    const welcomeMsg = await ctx.services.welcomePresenter.format(
-      {
-        hasStory: false,
-        userName: ctx.from?.first_name,
-      },
-      ctx.from?.language_code,
-    );
-    await ctx.reply(welcomeMsg);
-  } catch (error) {
-    ctx.services.logger.error({ err: error }, "Failed to generate welcome message");
-    throw new PresenterError("Failed to generate welcome message", error instanceof Error ? error : undefined);
+  if (!ctx.userInfo || !ctx.from) {
+    return;
   }
+
+  // Clear cached message batcher to ensure fresh sessionId in process callback
+  ctx.services.messageBatcher.clear(ctx.from.id);
+
+  // Clear all active graph checkpoints to ensure clean state
+  try {
+    await ctx.services.mcpClient.callTool("cancel_all_graphs", {
+      sessionId: ctx.userInfo.sessionId,
+      requestId: ctx.requestId,
+    });
+  } catch {
+    // Session may be fresh — nothing to cancel, continue
+  }
+
+  // Delegate to converse with greeting — FlowGuardChecker handles hasContext/hasGoal
+  const languageCode = ctx.from.language_code;
+  const converseResp = await ctx.services.mcpClient.callTool("converse", {
+    sessionId: ctx.userInfo.sessionId,
+    message: "hello",
+    requestId: ctx.requestId,
+    locale: languageCode,
+  });
+
+  const formatted = formatResponse(converseResp, languageCode);
+  await ctx.reply(formatted, { parse_mode: "MarkdownV2" });
 }

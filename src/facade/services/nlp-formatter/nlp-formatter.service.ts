@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { logger } from "../../logger.js";
 
-import { GRAPH_PROMPTS, GUARD_DESCRIPTIONS, GUARD_PROMPT } from "./prompts.js";
+import { buildGuardTranslationPrompt, GRAPH_PROMPT_BUILDERS, GUARD_TEMPLATES } from "./prompts.js";
 
 import type { GraphType, GuardType } from "./prompts.js";
 import type { AnyGraphResponse, Locale } from "../../../shared/schemas.js";
@@ -13,11 +13,6 @@ const nlpResponseSchema = z.object({
   text: z.string().describe("The formatted response text for user"),
 });
 
-const LANGUAGE_MAP: Record<Locale, string> = {
-  en: "English",
-  ru: "Russian",
-};
-
 export class NlpFormatter {
   private readonly llm: ChatOpenAI;
 
@@ -26,10 +21,10 @@ export class NlpFormatter {
   }
 
   async format(result: AnyGraphResponse, graphType: GraphType, locale: Locale): Promise<string> {
-    const prompt = GRAPH_PROMPTS[graphType];
-    const data = JSON.stringify(result, null, 2);
-    const language = LANGUAGE_MAP[locale];
-    const fullPrompt = prompt.replace("{data}", data).replace("{language}", language);
+    const buildPrompt = GRAPH_PROMPT_BUILDERS[graphType];
+    // Filter null values so LLM sees only filled fields and shows all of them
+    const data = JSON.stringify(result, (_, value) => (value === null ? undefined : value), 2);
+    const fullPrompt = buildPrompt(data, locale);
 
     const structuredLlm = this.llm.withStructuredOutput(nlpResponseSchema);
     const response = await structuredLlm.invoke(fullPrompt);
@@ -41,15 +36,21 @@ export class NlpFormatter {
   }
 
   async formatGuard(guardType: GuardType, locale: Locale): Promise<string> {
-    const language = LANGUAGE_MAP[locale];
-    const description = GUARD_DESCRIPTIONS[guardType];
-    const fullPrompt = GUARD_PROMPT.replace("{description}", description).replace("{language}", language);
+    const template = GUARD_TEMPLATES[guardType];
+
+    // English — return template as-is, no LLM call
+    if (locale === "en") {
+      return template;
+    }
+
+    // Other languages — translate via LLM
+    const prompt = buildGuardTranslationPrompt(template, locale);
 
     const structuredLlm = this.llm.withStructuredOutput(nlpResponseSchema);
-    const response = await structuredLlm.invoke(fullPrompt);
+    const response = await structuredLlm.invoke(prompt);
     const parsed = nlpResponseSchema.parse(response);
 
-    logger.info({ reasoning: parsed.reasoning, guardType, locale }, "Guard formatter reasoning");
+    logger.info({ reasoning: parsed.reasoning, guardType, locale }, "Guard translation reasoning");
 
     return parsed.text.trim();
   }

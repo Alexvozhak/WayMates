@@ -1,12 +1,11 @@
 import type { ConverseResponse, SessionId, UserId } from "../shared/schemas.js";
 import type { SystemMessagePresenter } from "./presenters/system-message-presenter.js";
-import type { WelcomePresenter } from "./presenters/welcome-presenter.js";
 import type { McpClient } from "./services/mcp-client.js";
 import type { MessageBatcherService } from "./services/message-batcher.service.js";
 import type { SessionService } from "./services/session-service.js";
 import type { HydrateFlavor } from "@grammyjs/hydrate";
 import type { I18nFlavor } from "@grammyjs/i18n";
-import type { Context, SessionFlavor } from "grammy";
+import type { Context } from "grammy";
 import type { Logger } from "pino";
 
 export type LlmConfig = {
@@ -19,7 +18,6 @@ export type BotServices = {
   sessionService: SessionService;
   messageBatcher: MessageBatcherService<ConverseResponse>;
   systemMessagePresenter: SystemMessagePresenter;
-  welcomePresenter: WelcomePresenter;
   openaiApiKey: string;
   openaiApiBase: string | undefined;
   groqApiKey: string;
@@ -28,14 +26,16 @@ export type BotServices = {
   logger: Logger;
 };
 
-export type MySessionData =
-  | { status: "uninitialised" }
-  | { status: "initialised"; token: string | null; userId: UserId; sessionId: SessionId };
+export type UserInfo = {
+  userId: UserId;
+  sessionId: SessionId;
+  token: string | null;
+};
 
 export type BotContext = Context &
   I18nFlavor &
-  HydrateFlavor<Context> &
-  SessionFlavor<MySessionData> & {
+  HydrateFlavor<Context> & {
     services: BotServices;
     requestId: string;
+    userInfo?: UserInfo;
   };

@@ -2,13 +2,22 @@ import { CONTEXT_SYSTEM_FIELDS } from "../../../shared/schemas.js";
 import { PHASE as COLD_START_PHASE } from "../../langGraph/cold-start-v2/types.js";
 import { PHASE as SEARCH_PHASE } from "../../langGraph/search-graph/state.js";
 import { PHASE as SIMPLE_PHASE } from "../../langGraph/shared/phases.js";
-import { GOAL_FIELD_DESCRIPTIONS, NLP_CANDIDATE_FIELDS } from "../../langGraph/shared/prompts.js";
+import { FIELD_DISPLAY_NAMES, GOAL_FIELD_DISPLAY_NAMES, NLP_CANDIDATE_FIELDS } from "../../langGraph/shared/prompts.js";
 
 import type { SearchPhase } from "../../langGraph/search-graph/state.js";
 
 // Use NLP_CANDIDATE_FIELDS from shared (excludes verbose: role, companySize, educationLevel)
-const GOAL_FIELDS = Object.keys(GOAL_FIELD_DESCRIPTIONS).join(", ");
 const SYSTEM_FIELDS = CONTEXT_SYSTEM_FIELDS.join(", ");
+
+// Generate field name mapping for NLP prompt (technical → human-readable)
+const FIELD_NAMES_MAPPING = Object.entries(FIELD_DISPLAY_NAMES)
+  .map(([key, label]) => `${key} → "${label}"`)
+  .join(", ");
+
+// Goal field name mapping (technical → human-readable)
+const GOAL_FIELD_NAMES_MAPPING = Object.entries(GOAL_FIELD_DISPLAY_NAMES)
+  .map(([key, label]) => `${key} → "${label}"`)
+  .join(", ");
 
 // Dictionary terms should NOT be translated (keep in English)
 const NO_TRANSLATE_INSTRUCTION = `IMPORTANT: Keep ALL dictionary values and technical terms in their original form.
@@ -40,12 +49,14 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.asking_adhoc_context]: `Missing required fields — ask user to provide them.
   ❌ MISSING: list from missingFields array
   ✅ FILLED: list non-null fields from adhocContext
-  ⚪ OPTIONAL: list from optionalFields
+  ⚪ Optional: single line comma-separated (use human-readable labels: ${FIELD_NAMES_MAPPING})
   Ask ONLY for fields from MISSING section.
   IMPORTANT: All fields describe user's CURRENT state, NOT career goals`,
   [SEARCH_PHASE.confirming_adhoc_context]: `All required fields are filled — confirmation phase.
-  ✅ FILLED: list values from adhocContext
-  ⚪ OPTIONAL: list from optionalFields
+  ✅ FILLED: list values from adhocContext with human-readable labels
+  ⚪ Optional: list from optionalFields array, one per line: "⚪ Label" format ONLY
+  NEVER write "not set" or any value after label
+  Labels: ${FIELD_NAMES_MAPPING}
   DO NOT ask for anything from FILLED section.
   Check hasGoal field to determine available options:
   - If hasGoal=false: explore similar people, set a goal, edit context, or ask a question
@@ -73,12 +84,13 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   Show facets with counts, suggest filter.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → first acknowledge goal deleted.`,
   [SEARCH_PHASE.showing_goal]: `Show goal ONLY from extractedGoal data. NEVER invent or assume values.
-  Use structured format:
-  ✅ SPECIFIED: list non-null fields with values (${GOAL_FIELDS})
-  ❌ REQUIRED: position is required — if null, ask user to specify
-  ⚪ OPTIONAL: list null optional fields — will match any value
-  CRITICAL: Show ONLY what is in extractedGoal. If field is null — it goes to OPTIONAL, not SPECIFIED.
-  End with: validate (check who reached this), refine (add criteria), or save.`,
+  ✅ SPECIFIED: list non-null fields with values, use ✅ icon for each
+  ❌ If position is null — ask user to specify
+  ⚪ Optional: list from goalOptionalFields array, one per line: "⚪ Label" format ONLY
+  NEVER write "not set" or any value after label
+  Labels: ${GOAL_FIELD_NAMES_MAPPING}
+  CRITICAL: Show ONLY what is in extractedGoal. Keep it concise.
+  End with: validate, refine, or save.`,
   [SEARCH_PHASE.asking_after_validate_candidates]: `Structured format:
   📊 **Validate Goal** — checking who already reached this position
   ${GOAL_BLOCK}
@@ -129,7 +141,9 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   1. Pathfinders — people who already achieved this (proof the path works)
   2. Waymates — people heading to the same goal (peers to connect)
   Just ask which one. 2-3 sentences max.`,
-  [SEARCH_PHASE.clarifying_goal]: "Ask for more detail about target position",
+  [SEARCH_PHASE.clarifying_goal]: `Goal incomplete — ask user to specify target position.
+  DO NOT show any extractedGoal data (it may be empty or have placeholder values like salary 0).
+  Simply ask what position they want to achieve. Keep it brief.`,
   [SEARCH_PHASE.cancelled]: "Acknowledge stop",
   [SEARCH_PHASE.failed]: "Acknowledge error, offer retry",
 };
@@ -139,10 +153,13 @@ const SEARCH_PHASES_SECTION = Object.entries(SEARCH_PHASE_DESCRIPTIONS)
   .map(([phase, desc]) => `- ${phase}: ${desc}`)
   .join("\n");
 
-const SEARCH_PROMPT = `You are a career buddy in Telegram. Casual, direct, helpful. No corporate speak, no fake enthusiasm.
+const buildSearchPrompt = (
+  data: string,
+  locale: string,
+): string => `You are a career buddy in Telegram. Casual, direct, helpful. No corporate speak, no fake enthusiasm.
 
 Data:
-{data}
+${data}
 
 CRITICAL: Respond according to "phase" field:
 
@@ -164,33 +181,52 @@ Style:
 
 Format: Markdown, real newlines.
 
-Language: {language}
+Language: ${locale}
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
-const COLD_START_PROMPT = `You are a friendly career assistant in Telegram bot.
+const buildColdStartPrompt = (
+  data: string,
+  locale: string,
+): string => `You are a friendly career assistant in Telegram bot.
 
 Data (Cold-Start workflow response):
-{data}
+${data}
 
 Phases:
 - ${COLD_START_PHASE.story_gathering}: Check messages array length:
   1 message → Welcome, ask to share career story
   2+ messages → Ask contextual follow-up about what user mentioned. Focus on job changes or learning experiences. Never repeat user's words. If user signals done, accept. Match user's language.
-- ${COLD_START_PHASE.awaiting_plan_confirmation}: Present career plan (N contexts) and ask for confirmation
-- ${COLD_START_PHASE.awaiting_clarification}: Show current context + missing fields.
-  Start with: 📍 Position {progress.current}/{progress.total}
-  Show filled fields from pendingContext (same format as confirmation).
-  ❌ MISSING: list fields from missingFields array — use FIELD NAME only, rephrase technical zodMessage to user-friendly (e.g. "Expected array, received null" → just ask for the field naturally)
-  Note: citizenships = nationality countries, countryCode = where user works (different!)
-  If suggestCancel=true: offer to cancel if user cannot provide required fields.
-  ⚪ OPTIONAL: briefly mention education, salary (USD), languages.
+- ${COLD_START_PHASE.awaiting_plan_confirmation}: Present preliminary career plan from queue array.
+  For each queue item, show ONLY: number + preview string (it contains title and period).
+  Do NOT extract or format Role/Position/Domains separately — they will be determined in extraction phase.
+  Ask user to confirm the preliminary career plan (NOT "timeline order" — that sounds robotic)
+- ${COLD_START_PHASE.awaiting_clarification}: Check clarificationType field:
+  CRITICAL RULES:
+  - Use human-readable labels for field names: ${FIELD_NAMES_MAPPING}
+  - NEVER show fields with null values from pendingContext
+  - Only show fields that have actual non-null values
+
+  clarificationType="missing" → Ask for missing required fields:
+    Start with: 📍 Position {progress.current}/{progress.total}
+    ✅ FILLED: show only non-null fields from pendingContext (use human-readable labels)
+    ❌ MISSING: list missingFields (use human-readable labels from mapping above)
+    ⚪ OPTIONAL: show optionalFields if not empty
+    If suggestCancel=true: offer to cancel
+
+  clarificationType="suggestions" → Ask to CHOOSE from options:
+    Start with: 📍 Position {progress.current}/{progress.total}
+    ✅ FILLED: show only non-null fields from pendingContext (use human-readable labels)
+    For each item in rolePositionSuggestions:
+      Show human-readable field name + options separated by " / ".
+      Example: "Position level: junior / middle / senior?"
+    Ask user to type their choice.
+    IMPORTANT: If user says "confirm/подтверждаю/да" without choosing, treat as accepting first option.
 - ${COLD_START_PHASE.awaiting_context_confirmation}: Show complete context for confirmation.
   Start with: 📍 Position {progress.current}/{progress.total}
-  Calculate PERIOD from createdAt year. Last context: "YYYY-present".
-  List only non-null values. NEVER show system fields: ${SYSTEM_FIELDS}.
-  If normalizations array not empty: 🔄 NORMALIZED: field: "original" → "normalized"
+  Show PERIOD: use createdAt year as start, endDate year as end (or "present" if endDate is null).
+  List only non-null values including position and role. NEVER show system fields: ${SYSTEM_FIELDS}.
   Ask to confirm.
 - ${COLD_START_PHASE.awaiting_final_confirmation}: Show summary with timeline.
   For each context, calculate period: from createdAt year to next context's createdAt year.
@@ -208,15 +244,18 @@ Rules:
 - For confirmation phases, extract and present key data clearly
 - Add a clear call-to-action at the end
 
-Language: {language}
+Language: ${locale}
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
-const UPSERT_CONTEXT_PROMPT = `You are a friendly career assistant in Telegram bot.
+const buildUpsertContextPrompt = (
+  data: string,
+  locale: string,
+): string => `You are a friendly career assistant in Telegram bot.
 
 Data (Upsert Context workflow response):
-{data}
+${data}
 
 Phases:
 - ${SIMPLE_PHASE.extracting}: Processing request
@@ -235,15 +274,18 @@ Rules:
 - For confirmation, show position/company/dates/skills clearly
 - Add a clear call-to-action
 
-Language: {language}
+Language: ${locale}
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
-const UPDATE_CONTEXT_PROMPT = `You are a friendly career assistant in Telegram bot.
+const buildUpdateContextPrompt = (
+  data: string,
+  locale: string,
+): string => `You are a friendly career assistant in Telegram bot.
 
 Data (Update Context workflow response):
-{data}
+${data}
 
 Phases:
 - ${SIMPLE_PHASE.extracting}: Processing request
@@ -262,15 +304,18 @@ Rules:
 - For confirmation, clearly show what changed (before -> after)
 - Add a clear call-to-action
 
-Language: {language}
+Language: ${locale}
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
-const UPSERT_TRAIL_PROMPT = `You are a friendly career assistant in Telegram bot.
+const buildUpsertTrailPrompt = (
+  data: string,
+  locale: string,
+): string => `You are a friendly career assistant in Telegram bot.
 
 Data (Upsert Trail workflow response):
-{data}
+${data}
 
 Phases:
 - ${SIMPLE_PHASE.extracting}: Processing request
@@ -293,24 +338,28 @@ Rules:
 - For confirmation, show the transition clearly
 - Add a clear call-to-action
 
-Language: {language}
+Language: ${locale}
 ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
 export type GraphType = "search" | "cold_start" | "upsert_context" | "update_context" | "upsert_trail";
 
-export const GRAPH_PROMPTS: Record<GraphType, string> = {
-  search: SEARCH_PROMPT,
-  cold_start: COLD_START_PROMPT,
-  upsert_context: UPSERT_CONTEXT_PROMPT,
-  update_context: UPDATE_CONTEXT_PROMPT,
-  upsert_trail: UPSERT_TRAIL_PROMPT,
+type PromptBuilder = (data: string, locale: string) => string;
+
+export const GRAPH_PROMPT_BUILDERS: Record<GraphType, PromptBuilder> = {
+  search: buildSearchPrompt,
+  cold_start: buildColdStartPrompt,
+  upsert_context: buildUpsertContextPrompt,
+  update_context: buildUpdateContextPrompt,
+  upsert_trail: buildUpsertTrailPrompt,
 };
 
 // Guard message types (flow-guard-checker)
 export type GuardType =
   | "greeting"
+  | "greetingWithProfileNoGoal"
+  | "greetingWithProfileWithGoal"
   | "help"
   | "unknown"
   | "cancelNoActive"
@@ -319,61 +368,66 @@ export type GuardType =
   | "goalNotSetDelete"
   | "storyNotSet";
 
-export const GUARD_DESCRIPTIONS: Record<GuardType, string> = {
-  greeting: `First interaction. Welcome user warmly.
-  Explain service value:
-  • Waymates = peers with same goal, going together
-  • Pathfinders = people who already made desired transition
-  Two modes:
-  • Quick search (~5 min) = by current position
-  • Full history (~30 min) = better matching via career trajectory
-  End with open question about what they prefer`,
+// Guard templates in English — returned as-is for English, translated by LLM for other languages
+export const GUARD_TEMPLATES: Record<GuardType, string> = {
+  greeting: `👋 Hi! You're new here.
 
-  help: `User asks what bot can do.
-  List capabilities briefly:
-  • Find similar people by profile
-  • Find pathfinders who made desired transition
-  • Save career story for better matching
-  Invite to describe themselves or their goal`,
+1. Create profile — share your career story (better matching)
+2. Quick search — just describe current position (faster)
 
-  unknown: `Could not understand user input (garbage or unclear).
-  Politely ask to rephrase.
-  Give concrete examples of valid input:
-  • Describe current position (role, level, country)
-  • Describe career goal`,
+Which one?`,
 
-  cancelNoActive: `User wants to cancel but no active operation.
-  Simply acknowledge nothing to cancel`,
+  greetingWithProfileNoGoal: `👋 Welcome back! You have a profile.
 
-  onboarding: `User tries action requiring context but has no profile yet.
-  Explain need to know who they are first.
-  Ask for role, level, location`,
+1. Set goal — describe target position to find who achieved it
+2. Search — find similar professionals or pathfinders
+3. Update profile — change your career story
 
-  goalNotSet: `User asks about goal but none is set.
-  Inform no goal saved yet.
-  Invite to describe target position`,
+What do you want to do?`,
 
-  goalNotSetDelete: `User wants to delete goal but none exists.
-  Simply acknowledge nothing to delete`,
+  greetingWithProfileWithGoal: `👋 Welcome back! You have a profile and a goal.
 
-  storyNotSet: `User asks to see their story but none saved.
-  Inform no story yet.
-  Offer to share career history`,
+1. Search — find pathfinders or similar professionals
+2. Change goal — set a different target position
+3. Update profile — change your career story
+
+What do you want to do?`,
+
+  help: `I can help you with:
+• Find similar professionals by your profile
+• Find pathfinders who made your desired transition
+• Save career story for better matching
+
+Describe your current position or career goal to start.`,
+
+  unknown: `Sorry, I didn't understand that.
+
+Try:
+• Describe your current position (role, level, country)
+• Describe your career goal`,
+
+  cancelNoActive: `Nothing to cancel — no active operation.`,
+
+  onboarding: `👋 Hi! You're new here.
+
+1. Create profile — share your career story (better matching)
+2. Quick search — just describe current position (faster)
+
+Which one?`,
+
+  goalNotSet: `You don't have a goal set yet.
+
+To set one, describe the position you want to achieve.`,
+
+  goalNotSetDelete: `No goal to delete — you haven't set one yet.`,
+
+  storyNotSet: `You don't have a profile yet.
+
+Share your career history to create one.`,
 };
 
-export const GUARD_PROMPT = `You are a career buddy in Telegram. Casual, direct, helpful. No corporate speak, no fake enthusiasm.
+export function buildGuardTranslationPrompt(template: string, locale: string): string {
+  return `Translate to language code "${locale}". Keep structure, formatting, and numbered lists exactly as in original.
 
-Situation: {description}
-
-Style:
-- 2-4 sentences, direct
-- One emoji max (at start if appropriate)
-- No walls of text
-- End with clear next step or question
-
-Format: Markdown, real newlines.
-
-Language: {language}
-${NO_TRANSLATE_INSTRUCTION}
-
-Response:`;
+${template}`;
+}

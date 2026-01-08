@@ -8,7 +8,9 @@
  * What it does:
  *   1. Finds userId in Postgres by telegram_user_id
  *   2. Calls tRPC story.deleteStory → deletes user + contexts + trails from Neo4j
- *   3. Deletes checkpoints + user from Postgres
+ *   3. Calls tRPC goal.delete → deletes goal from Neo4j
+ *   4. Deletes checkpoints + user from Postgres
+ *   5. Deletes session pointers from Redis (Facade SessionService uses Redis)
  */
 
 import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
@@ -18,13 +20,17 @@ import pg from "pg";
 import type { AppRouter } from "../src/shared/types.js";
 
 const CORE_URL = process.env.CORE_API_URL ?? "http://localhost:3001";
-const REDIS_URL = `redis://${process.env.REDIS_HOST ?? "localhost"}:${process.env.REDIS_PORT ?? 6380}`;
 const PG_CONFIG = {
   host: process.env.POSTGRES_HOST ?? "localhost",
   port: Number(process.env.POSTGRES_PORT ?? 5433),
   user: process.env.POSTGRES_USER ?? "postgres",
   password: process.env.POSTGRES_PASSWORD ?? "testpassword123",
   database: process.env.POSTGRES_DB ?? "waymates_facade_test",
+};
+
+const REDIS_CONFIG = {
+  host: process.env.REDIS_HOST ?? "localhost",
+  port: Number(process.env.REDIS_PORT ?? 6380),
 };
 
 async function cleanup(telegramUserId: number): Promise<void> {
@@ -42,15 +48,6 @@ async function cleanup(telegramUserId: number): Promise<void> {
   if (userResult.rows.length === 0) {
     console.log("   ⚠️  No user found in Postgres");
     await pgClient.end();
-
-    // Still clear Redis cache in case it's stale
-    const redis = new Redis(REDIS_URL);
-    const sessionKey = `telegram:session:${telegramUserId}:sessionId`;
-    const deleted = await redis.del(sessionKey);
-    if (deleted > 0) {
-      console.log(`   Redis: cleared stale session cache`);
-    }
-    await redis.quit();
     return;
   }
 
@@ -84,11 +81,22 @@ async function cleanup(telegramUserId: number): Promise<void> {
 
   await pgClient.end();
 
-  // 6. Clear Redis session cache (prevents "session expired" after /start)
-  const redis = new Redis(REDIS_URL);
-  const sessionKey = `telegram:session:${telegramUserId}:sessionId`;
-  const deleted = await redis.del(sessionKey);
-  console.log(`   Redis: cleared session cache (${deleted} keys)`);
+  // 6. Delete session pointers from Redis (Facade SessionService)
+  const redis = new Redis(REDIS_CONFIG);
+
+  // Find sessionId for this user
+  const sessionId = await redis.get(`user:currentSession:${userId}`);
+  let redisDeleted = 0;
+
+  if (sessionId) {
+    await redis.del(`session:${sessionId}`);
+    redisDeleted++;
+  }
+  await redis.del(`user:currentSession:${userId}`);
+  redisDeleted++;
+
+  console.log(`   Redis: deleted ${redisDeleted} session keys`);
+
   await redis.quit();
 
   console.log(`\n✅ Cleanup complete for telegram_user_id: ${telegramUserId}\n`);

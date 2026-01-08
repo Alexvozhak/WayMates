@@ -9,23 +9,22 @@ import type { BotContext } from "../types.js";
  */
 export async function handleVoice(ctx: BotContext): Promise<void> {
   const fileId = ctx.message?.voice?.file_id;
-  if (!fileId) {
+  if (!fileId || !ctx.userInfo) {
     return;
   }
 
   const transcription = await transcribeVoice(ctx, fileId);
-  const sessionId = await ctx.services.sessionService.getSessionId(ctx);
 
-  const locale = ctx.from?.language_code === "ru" ? "ru" : "en";
+  const languageCode = ctx.from?.language_code;
 
   const converseResp = await ctx.services.mcpClient.callTool("converse", {
-    sessionId,
+    sessionId: ctx.userInfo.sessionId,
     message: transcription,
     requestId: ctx.requestId,
-    locale,
+    locale: languageCode,
   });
 
-  const formatted = formatResponse(converseResp, ctx.from?.language_code);
+  const formatted = formatResponse(converseResp, languageCode);
 
   await ctx.reply(formatted, { parse_mode: "MarkdownV2" });
 }

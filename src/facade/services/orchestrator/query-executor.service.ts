@@ -8,7 +8,8 @@ import type { CoreClient } from "../../core-client.js";
 
 type QueryMessageType = "storyEmpty" | "goalNotSet" | "goalExists" | "deleted" | "nothingToDelete" | "trailDeleteUsage";
 
-const QUERY_MESSAGES: Record<Locale, Record<QueryMessageType, string>> = {
+// Only en/ru hardcoded, other locales fallback to en
+const QUERY_MESSAGES: Record<"en" | "ru", Record<QueryMessageType, string>> = {
   en: {
     storyEmpty: "No saved story yet. Tell me about your career journey.",
     goalNotSet: "No goal set. Describe where you want to be.",
@@ -34,11 +35,15 @@ function createStoryStatsMessage(contexts: number, trails: number, locale: Local
   return `Your story: ${contexts} positions, ${trails} trails.`;
 }
 
+function getMessages(locale: Locale): Record<QueryMessageType, string> {
+  return locale === "ru" ? QUERY_MESSAGES.ru : QUERY_MESSAGES.en;
+}
+
 export class QueryExecutor {
   constructor(private readonly coreClient: CoreClient) {}
 
   async execute(intent: UserIntent, userId: UserId, locale: Locale): Promise<ConverseResponse | null> {
-    const msg = QUERY_MESSAGES[locale];
+    const msg = getMessages(locale);
 
     switch (intent) {
       case "getStory": {
@@ -63,7 +68,7 @@ export class QueryExecutor {
   }
 
   private async getStory(userId: UserId, locale: Locale): Promise<ConverseResponse> {
-    const msg = QUERY_MESSAGES[locale];
+    const msg = getMessages(locale);
     const story = await this.coreClient.client.story.getStory.query({ userId });
     if (story.contexts.length === 0) {
       return createNlpResponse(msg.storyEmpty);
@@ -72,7 +77,7 @@ export class QueryExecutor {
   }
 
   private async getGoal(userId: UserId, locale: Locale): Promise<ConverseResponse> {
-    const msg = QUERY_MESSAGES[locale];
+    const msg = getMessages(locale);
     const goal = await this.coreClient.client.goal.getByUser.query({ userId });
     if (!goal) {
       return createNlpResponse(msg.goalNotSet);
@@ -81,7 +86,7 @@ export class QueryExecutor {
   }
 
   private async deleteGoal(userId: UserId, locale: Locale): Promise<ConverseResponse> {
-    const msg = QUERY_MESSAGES[locale];
+    const msg = getMessages(locale);
     const result = await this.coreClient.client.goal.delete.mutate({ userId });
     if (!result.success) {
       return createNlpResponse(msg.nothingToDelete);
@@ -90,7 +95,7 @@ export class QueryExecutor {
   }
 
   private async deleteContext(userId: UserId, locale: Locale): Promise<ConverseResponse> {
-    const msg = QUERY_MESSAGES[locale];
+    const msg = getMessages(locale);
     const currentContext = await loadCurrentContext(this.coreClient, userId);
     if (!currentContext) {
       return createNlpResponse(msg.nothingToDelete);

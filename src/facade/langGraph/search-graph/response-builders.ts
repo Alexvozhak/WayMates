@@ -1,11 +1,18 @@
+import { GOAL_OPTIONAL_FIELDS } from "../../../shared/schemas.js";
 import { InvalidStateError } from "../../errors.js";
+import { hasValue } from "../shared/state-utils.js";
 
 import { PHASE } from "./state.js";
 
 import type { SearchPhase, SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
+import type { GoalOptionalField, TargetContext } from "../../../shared/schemas.js";
 
 type ResponseBuilder = (state: SearchStateType) => SearchGraphResponse;
+
+function getGoalOptionalFields(goal: TargetContext): GoalOptionalField[] {
+  return GOAL_OPTIONAL_FIELDS.filter((f) => !hasValue(goal[f]));
+}
 
 function requireExtractedGoal(state: SearchStateType, phase: string): NonNullable<SearchStateType["extractedGoal"]> {
   if (!state.extractedGoal) {
@@ -64,6 +71,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     return {
       phase: PHASE.showing_goal,
       extractedGoal,
+      goalOptionalFields: getGoalOptionalFields(extractedGoal),
     };
   },
 

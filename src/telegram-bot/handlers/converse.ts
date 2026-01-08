@@ -6,7 +6,7 @@ import type { BotContext } from "../types.js";
  * Unified handler for all user text messages.
  *
  * Flow:
- * 1. Get sessionId from session
+ * 1. Get sessionId from userInfo (set by userInfoMiddleware)
  * 2. Enqueue message to batcher (combines rapid messages)
  * 3. If follower (batched) — skip reply
  * 4. Format ConverseResponse via LLM
@@ -16,36 +16,24 @@ import type { BotContext } from "../types.js";
  */
 export async function handleConverse(ctx: BotContext): Promise<void> {
   const message = ctx.message?.text;
-  if (!message || !ctx.from) {
+  if (!message || !ctx.from || !ctx.userInfo) {
     return;
   }
 
-  // Auto-greeting for new users (no /start required)
-  const isNewUser = !(await ctx.services.sessionService.hasSession(ctx));
-  const sessionId = await ctx.services.sessionService.getSessionId(ctx);
-
-  if (isNewUser) {
-    const welcomeMsg = await ctx.services.welcomePresenter.format(
-      { hasStory: false, userName: ctx.from.first_name },
-      ctx.from.language_code,
-    );
-    await ctx.reply(welcomeMsg);
-  }
-
-  const locale = ctx.from.language_code === "ru" ? "ru" : "en";
+  const languageCode = ctx.from.language_code;
 
   const converseResp = await ctx.services.messageBatcher.enqueue(ctx.from.id, message, (combined) =>
     ctx.services.mcpClient.callTool("converse", {
-      sessionId,
+      sessionId: ctx.userInfo!.sessionId,
       message: combined,
       requestId: ctx.requestId,
-      locale,
+      locale: languageCode,
     }),
   );
 
   if (!converseResp) return;
 
-  const formatted = formatResponse(converseResp, ctx.from.language_code);
+  const formatted = formatResponse(converseResp, languageCode);
 
   await ctx.reply(formatted, { parse_mode: "MarkdownV2" });
 }

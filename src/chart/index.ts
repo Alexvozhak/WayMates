@@ -14,8 +14,8 @@ import type { GenerateChartInput, GenerateChartOutput, GoalValues } from "./type
 import type { Goal } from "../shared/schemas.js";
 
 // Re-exports for external consumers
-export type { ChartableField, GenerateChartInput, GenerateChartOutput, GoalValues } from "./types.js";
-export { CHARTABLE_FIELDS } from "./types.js";
+export type { ChartableField, ChartLocale, GenerateChartInput, GenerateChartOutput, GoalValues } from "./types.js";
+export { CHARTABLE_FIELDS, toChartLocale } from "./types.js";
 export { ASPECT_CONFIGS, DEFAULT_FIELDS, extractGrade } from "./config/aspect-configs.js";
 
 /**

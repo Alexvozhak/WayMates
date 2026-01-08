@@ -8,7 +8,7 @@ import type { BotContext } from "../types.js";
  */
 export async function handleDocument(ctx: BotContext): Promise<void> {
   const document = ctx.message?.document;
-  if (!document) {
+  if (!document || !ctx.userInfo) {
     return;
   }
 
@@ -28,7 +28,7 @@ export async function handleDocument(ctx: BotContext): Promise<void> {
   const arrayBuffer = await response.arrayBuffer();
   const fileBuffer = Buffer.from(arrayBuffer).toString("base64");
 
-  const sessionId = await ctx.services.sessionService.getSessionId(ctx);
+  const sessionId = ctx.userInfo.sessionId;
 
   // Parse CV to markdown via LLM
   const parseResult = await ctx.services.mcpClient.callTool("parse_cv_to_text", {
@@ -39,17 +39,17 @@ export async function handleDocument(ctx: BotContext): Promise<void> {
 
   const parsedText = parseResult.text;
 
-  const locale = ctx.from?.language_code === "ru" ? "ru" : "en";
+  const languageCode = ctx.from?.language_code;
 
   // Send parsed CV text to converse for career story extraction
   const converseResp = await ctx.services.mcpClient.callTool("converse", {
     sessionId,
     message: `${ctx.t("doc-cv-prefix")}\n\n${parsedText}`,
     requestId: ctx.requestId,
-    locale,
+    locale: languageCode,
   });
 
-  const formatted = formatResponse(converseResp, ctx.from?.language_code);
+  const formatted = formatResponse(converseResp, languageCode);
 
   await ctx.reply(formatted, { parse_mode: "MarkdownV2" });
 }

@@ -41,6 +41,50 @@ export const ADHOC_FIELD_DESCRIPTIONS: Record<keyof AdhocContextBase, string> = 
 };
 
 /**
+ * Human-readable field labels for NLP output.
+ * Used in awaiting_clarification phase to show user-friendly field names.
+ * Includes both context fields (AdhocContextBase) and trail fields.
+ */
+export const FIELD_DISPLAY_NAMES: Record<keyof AdhocContextBase | "skill" | "platform", string> = {
+  position: "Position level",
+  role: "Professional role",
+  domains: "Work domains",
+  skills: "Skills",
+  industry: "Industry",
+  companySize: "Company size",
+  cityName: "City",
+  countryCode: "Country",
+  citizenships: "Citizenship",
+  birthYear: "Year of birth",
+  educationLevel: "Education level",
+  languages: "Languages",
+  salaryMin: "Minimum salary",
+  salaryMax: "Maximum salary",
+  // Trail fields
+  skill: "Learning skill",
+  platform: "Learning platform",
+};
+
+/**
+ * Human-readable labels for Goal (TargetContext) fields.
+ * Used in showing_goal phase to display user-friendly field names.
+ */
+export const GOAL_FIELD_DISPLAY_NAMES: Record<keyof TargetContext, string> = {
+  position: "Position level",
+  role: "Professional role",
+  domains: "Work domains",
+  skills: "Skills",
+  countries: "Countries",
+  cities: "Cities",
+  citizenships: "Citizenship",
+  industries: "Industries",
+  educationLevels: "Education level",
+  languages: "Languages",
+  salaryMin: "Minimum salary",
+  salaryMax: "Maximum salary",
+};
+
+/**
  * Field descriptions for goal extraction.
  * Single source of truth for extraction prompts and NLP formatter.
  */
@@ -89,24 +133,27 @@ DECOMPOSITION APPROACH:
 ═══════════════════════════════════════════════════
 Job titles encode multiple independent dimensions. Extract ALL THREE from a single title:
 
-1. POSITION = the full title as recognized in KNOWN POSITIONS
+1. POSITION = ONLY the seniority/grade level (junior, middle, senior, lead, etc.) — map to KNOWN POSITIONS
 2. ROLE = the job FUNCTION word within the title — map to KNOWN ROLES
 3. DOMAINS = areas of work or expertise — map to KNOWN DOMAINS
 
 ROLE EXTRACTION:
-- The LAST word in job title usually indicates the job function
-- This function word maps directly to KNOWN ROLES
-- Titles ending with management or leadership words → role is manager
-- Titles ending with engineering or development words → role is developer
-- ROLE is REQUIRED — extract it from the title structure
+- ROLE = core profession type based on PRIMARY daily work
+- POSITION = seniority level in career progression
+- Determine role from what person DOES day-to-day, not title keywords
+- Technical leadership (leading engineers/developers) → role stays technical
+- manager role ONLY when primary work is non-technical management
+- ROLE is REQUIRED — map to KNOWN ROLES based on actual work
 
 DOMAINS EXTRACTION:
 - DOMAINS = broad disciplines or specialization AREAS, not implementation tools
 - Include BOTH technical discipline AND functional area if present
-- If the person manages or leads teams → include management in domains
+- Extract ONLY domains explicitly mentioned by user — do NOT infer from position level
 - Consult KNOWN DOMAINS hints to understand what semantic pattern belongs here
 
 INDUSTRY PRECISION:
+- INDUSTRY = business sector the COMPANY operates in (what they produce/sell)
+- NOT the organization type or department name
+- Determine from company's core business activity, not from title keywords
 - Use the EXACT industry user mentioned if it exists in KNOWN INDUSTRIES
-- Specialized sub-sectors take precedence over broad categories
 `;

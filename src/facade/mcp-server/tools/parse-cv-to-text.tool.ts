@@ -58,6 +58,7 @@ Format requirements:
 - Under each position add: "Skills: [list of skills used in THIS specific role]"
 - Replace company names with descriptions like "Large Tech Company", "Mid-size Fintech", "Startup in E-commerce"
 - Keep original language (do not translate)
+- OMIT fields you cannot determine — never use placeholder values
 
 Example format:
 ## Senior Backend Engineer (2020 - 2023)

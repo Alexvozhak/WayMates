@@ -12,7 +12,6 @@ import type { GuardType } from "../nlp-formatter/prompts.js";
 type UserState = { hasContext: boolean; hasGoal: boolean };
 
 const STATELESS_GUARDS: Partial<Record<UserIntent, GuardType>> = {
-  greeting: "greeting",
   help: "help",
   unknown: "unknown",
   cancel: "cancelNoActive",
@@ -52,6 +51,11 @@ export class FlowGuardChecker {
       return this.getNoContextGuard(intent);
     }
 
+    // Has profile
+    if (intent === "greeting") {
+      return state.hasGoal ? "greetingWithProfileWithGoal" : "greetingWithProfileNoGoal";
+    }
+
     if (!state.hasGoal) {
       return this.getNoGoalGuard(intent);
     }
@@ -66,6 +70,7 @@ export class FlowGuardChecker {
     if (intent === "getStory") {
       return "storyNotSet";
     }
+    // greeting without profile → same as onboarding
     return "onboarding";
   }
 

@@ -1,237 +1,122 @@
 import { CONTEXT_REQUIRED_FIELDS } from "../../../shared/schemas.js";
 import { DECOMPOSITION_RULES } from "../shared/prompts.js";
 
+import { PHASE } from "./types.js";
+
 import type { UserContext } from "../../../shared/schemas.js";
+import type { RolePositionSuggestion } from "../../services/normalizer.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
-/** Rule: each position is extracted independently, no field inheritance between positions */
-const POSITION_INDEPENDENCE_RULE = `
-🚨 POSITION INDEPENDENCE (CRITICAL):
-Each position is extracted INDEPENDENTLY. For fields [${CONTEXT_REQUIRED_FIELDS.join(", ")}]:
-- Extract ONLY values explicitly stated for THIS specific position in preview
-- Do NOT inherit or copy from other positions in conversation
-- If a field was mentioned for another position but not this one → return null
-- Missing fields will be clarified separately for each position`;
+// ═══════════════════════════════════════════════════════════════════════════
+// SHARED CONSTANTS (Single Source of Truth)
+// ═══════════════════════════════════════════════════════════════════════════
 
-/** Current date for relative date calculations in prompts */
+const SECTION_DIVIDER = "═══════════════════════════════════════════════════";
+
+/** Current date for relative date calculations */
 export function getCurrentDateContext(): string {
   return `Current date: ${new Date().toISOString().split("T")[0]}`;
 }
+
+/** Rule: each position is extracted independently */
+const POSITION_INDEPENDENCE_RULE = `
+POSITION INDEPENDENCE (CRITICAL):
+Each position is extracted INDEPENDENTLY. For fields [${CONTEXT_REQUIRED_FIELDS.join(", ")}]:
+- Extract ONLY values explicitly stated for THIS specific position
+- Do NOT inherit or copy from other positions
+- Missing fields will be clarified separately`;
+
+/** Common format rules for all extractions */
+const FORMAT_RULES_BASE = `
+- All terms: lowercase-kebab-case
+- countryCode, citizenships: ISO 3166-1 alpha-2 UPPERCASE
+- languages: ISO 639-1
+- cityName: null unless explicitly mentioned
+- Do NOT invent data — extract ONLY explicit statements
+- If not mentioned → JSON null. NEVER return string "null" or empty values (0, "", [])`;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SYSTEM PROMPT (Agent orchestration)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const SYSTEM_PROMPT = `You are a career history collection assistant.
+
+${SECTION_DIVIDER}
+INTERRUPT RULES (CRITICAL)
+${SECTION_DIVIDER}
+
+show_* tools use interrupt() to PAUSE for user input.
+After user responds, analyze userResponse and decide next action.
+
+NEVER batch show_* with confirm_* in same invoke — wait for interrupt first.
+
+${SECTION_DIVIDER}
+PHASE-SPECIFIC BEHAVIOR
+${SECTION_DIVIDER}
+
+${PHASE.story_gathering}:
+  Listen to user's career story. When user signals completion → plan.
+
+${PHASE.awaiting_plan_confirmation}:
+  User reviews career timeline.
+  APPROVE → confirm plan
+  EDIT → re-plan with corrections
+  CANCEL → stop workflow
+
+${PHASE.awaiting_clarification}:
+  User provides missing information OR chooses from suggestions.
+  ANSWER → re-extract with provided data
+  APPROVE (when suggestions shown) → accept suggested values
+  CANCEL → stop workflow
+
+${PHASE.awaiting_context_confirmation}:
+  User reviews extracted position data.
+  APPROVE → confirm and proceed to next
+  EDIT → apply corrections
+  CANCEL → stop workflow
+
+${PHASE.awaiting_final_confirmation}:
+  User reviews complete career history.
+  APPROVE → save
+  EDIT → go back to specific context
+  CANCEL → stop workflow
+
+${SECTION_DIVIDER}
+RULES
+${SECTION_DIVIDER}
+
+1. Follow ToolMessage instructions for next action
+2. Interpret user intent semantically, not literally
+3. Do NOT parse/validate data — tools handle that
+4. Use progress.current to track sequential collection
+`;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PLANNING PROMPT
+// ═══════════════════════════════════════════════════════════════════════════
 
 function serializeMessages(messages: BaseMessage[]): string {
   return messages.map((m) => `${m.type}: ${m.content}`).join("\n");
 }
 
-export const SYSTEM_PROMPT = `You are a career history collection assistant for cold start onboarding.
-
-═══════════════════════════════════════════════════
-🚨 CRITICAL: INTERRUPT RULES 🚨
-═══════════════════════════════════════════════════
-
-show_* tools (show_plan, show_context, show_final) use interrupt() to PAUSE and wait
-for user input. After user responds, you receive userResponse and must decide next action.
-
-⚠️ NEVER batch show_* with confirm_* in the same invoke!
-The interrupt MUST complete first, then you receive userResponse.
-
-CORRECT:
-1. Call show_final → interrupt pauses → user responds "да" → NEXT invoke: call confirm_final
-
-WRONG (will be blocked by guard):
-1. Call show_final AND confirm_final in same invoke → confirm_final rejected
-
-═══════════════════════════════════════════════════
-TOOL FLOW (after tool returns, call NEXT tool):
-═══════════════════════════════════════════════════
-
-1. plan_career_history → call show_plan
-2. show_plan returns userResponse → analyze → call confirm_plan OR edit/cancel
-3. confirm_plan → call process_entity_batch
-4. process_entity_batch → call show_context
-5. show_context returns userResponse → analyze → call confirm_context OR edit/cancel
-6. confirm_context → call process_entity_batch(next) OR show_final
-7. show_final returns userResponse → analyze → call confirm_final OR edit/cancel
-
-═══════════════════════════════════════════════════
-5-PHASE WORKFLOW
-═══════════════════════════════════════════════════
-
-PHASE 1: STORY GATHERING (phase="story_gathering")
-- Listen to user's career story
-- Ask follow-up questions if needed
-- When user says "готово"/"done"/"that's all" → call plan_career_history
-
-PHASE 2: PLANNING (phase="planning" → "awaiting_plan_confirmation")
-- plan_career_history analyzes messages and builds queue
-- Shows timeline for user confirmation
-- User confirms → advance to collection
-
-PHASE 3: SEQUENTIAL COLLECTION (phase="sequential_collection")
-- For each context in queue:
-  - Call process_entity_batch with contextIndex
-  - If validation fails → YOU call ask_clarification
-  - If success → YOU call confirm_context (it will interrupt for approval)
-  - User confirms → YOU call next tool as instructed
-- When all contexts done → final preview
-
-PHASE 4: FINAL PREVIEW (phase="awaiting_final_confirmation")
-- Show ALL collected data for final confirmation
-- User confirms → saved
-
-PHASE 5: SAVED (phase="saved")
-- Return collected data to MCP handler
-- Handler saves to database
-
-═══════════════════════════════════════════════════
-CANCEL DETECTION (AT ANY POINT)
-═══════════════════════════════════════════════════
-
-If user expresses desire to stop the process completely (not just reject a suggestion):
-→ Call cancel_workflow tool immediately
-→ This sets phase to failed and stops workflow
-
-═══════════════════════════════════════════════════
-🚨 INTENT PARSING (after show_* tools return userResponse)
-═══════════════════════════════════════════════════
-
-When a show_* tool returns with userResponse, YOU (the Agent) must analyze it
-and decide which tool to call next. The show_* tool does NOT parse - YOU parse!
-
-Use semantic understanding to determine user intent:
-
-APPROVE: User confirms and agrees to proceed with current state.
-→ Action: call confirm_plan / confirm_context / confirm_final
-
-EDIT: User wants to change, modify, or redo something. Includes rejections with intent to improve.
-→ Action: call edit_context with changes OR re-plan (trails are regenerated, not edited)
-
-CANCEL: User wants to stop the process completely, with no intent to continue or improve.
-→ Action: call cancel_workflow tool
-
-UNCLEAR: Cannot determine intent from the message.
-→ Action: ask user for clarification
-
-═══════════════════════════════════════════════════
-TOOL CALLING WORKFLOW (follow ToolMessage instructions!)
-═══════════════════════════════════════════════════
-
-IMPORTANT: Each tool returns a ToolMessage with "Now call X..." instructions.
-ALWAYS follow these instructions - call the tool mentioned in the message.
-
-Example flow:
-1. plan_career_history → ToolMessage: "Now call confirm_plan"
-   → YOU MUST call confirm_plan next
-2. confirm_plan → ToolMessage: "Now call process_entity_batch"
-   → YOU MUST call process_entity_batch next
-
-═══════════════════════════════════════════════════
-AFTER PLAN CONFIRMATION (phase="awaiting_plan_confirmation")
-═══════════════════════════════════════════════════
-
-User response → interpret intent:
-
-1. CONFIRM: "yes", "да", "correct", "looks good"
-   → Call confirm_plan() to register confirmation
-
-2. CORRECTION: "add X", "remove Y", "change order"
-   → Call plan_career_history again (re-plan with corrections in messages)
-
-3. CANCEL: "cancel", "stop"
-   → Call cancel_workflow
-
-═══════════════════════════════════════════════════
-AFTER CLARIFICATION (phase="awaiting_clarification")
-═══════════════════════════════════════════════════
-
-User provides answers to questions.
-→ Call process_entity_batch with same contextIndex (re-extract with answers)
-
-═══════════════════════════════════════════════════
-AFTER CONTEXT CONFIRMATION (phase="awaiting_context_confirmation")
-═══════════════════════════════════════════════════
-
-User response → interpret intent:
-
-1. CONFIRM: "yes", "да", "ok"
-   → Call confirm_context() to register confirmation
-   → confirm_context will tell you what to call next (process_entity_batch or confirm_final)
-
-2. MINOR CORRECTION: "add skill X", "change position to Y"
-   → Call edit_context({ contextId, corrections })
-   → Then follow ToolMessage instructions
-   → Note: Trails are regenerated via re-extraction, not edited directly
-
-3. MAJOR CORRECTION: "that's wrong position", "re-extract"
-   → Call process_entity_batch with same contextIndex
-
-4. CANCEL: "cancel", "stop"
-   → Call cancel_workflow
-
-═══════════════════════════════════════════════════
-AFTER FINAL CONFIRMATION (phase="awaiting_final_confirmation")
-═══════════════════════════════════════════════════
-
-User response → interpret intent:
-
-1. CONFIRM: "yes", "да", "save", "сохранить"
-   → Call confirm_final (it sets phase="saved")
-
-2. CORRECTION: "change X"
-   → Navigate back to specific context or use edit_context
-   → For trail changes, re-extract the affected context
-
-3. CANCEL: "cancel", "stop"
-   → Call cancel_workflow
-
-═══════════════════════════════════════════════════
-FORMATTING RULES
-═══════════════════════════════════════════════════
-
-When showing plan (awaiting_plan_confirmation):
-"Your career timeline:
-1. [preview] (no transitions before)
-2. [preview] ← [trail previews]
-3. [preview] ← [trail previews]
-
-Is this correct?"
-
-When showing context (awaiting_context_confirmation):
-"Context #[current] of [total]:
-• Position: [position]
-• Company: [company]
-• Period: [dates]
-• Skills: [skills]
-
-Related transitions:
-• [trail info]
-
-Is this correct?"
-
-When showing final preview (awaiting_final_confirmation):
-"Final preview of your career history:
-
-[count] positions:
-1. [position] at [company] ([dates])
-   Skills: [skills]
-   ← [transition info]
-
-Save this?"
-
-═══════════════════════════════════════════════════
-IMPORTANT RULES
-═══════════════════════════════════════════════════
-
-1. ALWAYS follow tool goto routing (deterministic business logic)
-2. Interpret user intent through natural language
-3. When in doubt:
-   - Clarification context → treat as answers
-   - Confirmation context → ask for clarification
-4. DO NOT parse/validate data yourself - tools handle that
-5. Use progress.current from response to track sequential collection
-`;
+function serializeSuggestions(suggestions: RolePositionSuggestion[]): string {
+  return suggestions
+    .map((s) => `${s.field}: original="${s.original}" → options: [${s.suggestions.join(", ")}]`)
+    .join("\n");
+}
 
 export function planningPrompt(messages: BaseMessage[], cvText: string | null): string {
   const messagesText = serializeMessages(messages);
+  const cvSection = cvText
+    ? `
+${SECTION_DIVIDER}
+CV/RESUME:
+${SECTION_DIVIDER}
+${cvText}
+
+Note: Use BOTH conversation and CV. If conflict → prioritize conversation.
+`
+    : "";
 
   return `Analyze career history and create a collection plan.
 
@@ -239,81 +124,35 @@ ${getCurrentDateContext()}
 
 CONVERSATION:
 ${messagesText}
-${
-  cvText
-    ? `
-═══════════════════════════════════════════════════
-CV/RESUME (additional anonymized context):
-═══════════════════════════════════════════════════
-${cvText}
-`
-    : ""
-}
-═══════════════════════════════════════════════════
-YOUR TASK: Identify all career positions in CHRONOLOGICAL order (oldest → newest)
-═══════════════════════════════════════════════════
-${
-  cvText
-    ? `
-IMPORTANT: Use BOTH conversation and CV data to build comprehensive plan:
-- CV provides structured career information
-- Conversation may contain clarifications, corrections, or additional details
-- If there are discrepancies, prioritize conversation (user's clarifications are more recent)
-`
-    : ""
-}
+${cvSection}
+${SECTION_DIVIDER}
+TASK: Identify all career positions in CHRONOLOGICAL order (oldest → newest)
+${SECTION_DIVIDER}
 
-For each position, return:
-1. preview: Label for user validation — use ONLY explicitly stated info
-2. incomingTrails: Learning activities that LED TO this position
+// FROZEN: incomingTrails disabled
 
-═══════════════════════════════════════════════════
+${DECOMPOSITION_RULES}
+
+${SECTION_DIVIDER}
 RULES:
-═══════════════════════════════════════════════════
-- First position has EMPTY incomingTrails array (no prior context to transition from)
-- Trails: courses, certifications, bootcamps — ONLY if user mentioned them
-- Include promotions and internal moves as separate positions if significantly different
-- Education → first job counts as first position (no incoming trail needed)
-- Relative start dates: "N years ago started" means START year = current year - N, END = current year
-- If no end date explicitly stated, assume position continues to present day
-
-═══════════════════════════════════════════════════
-🚨 CRITICAL — EXTRACTION RULES:
-═══════════════════════════════════════════════════
-POSITIONS:
-- Count how many distinct WORK positions user explicitly described
+${SECTION_DIVIDER}
+// FROZEN: Trails collection disabled
+- Include promotions as separate positions if significantly different
 - Education is NOT a position — only paid work experience counts
-- Return exactly that count — no more, no less
-- One described position = one context in output
-- Never infer career progression user did not mention
-- First mentioned year = career start, not a hint of hidden prior experience
-- If user did not describe a position, it does not exist
-
-TRAILS:
-- Include only learning activities user explicitly named
-- Empty array when no courses or certifications mentioned
-- University degrees go to educationLevel, not trails`;
+- Relative dates: "N years ago" means START = current year - N
+- If no end date → position continues to present`;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTEXT EXTRACTION PROMPT
+// ═══════════════════════════════════════════════════════════════════════════
 
 function buildContextExtractionRules(hasCv: boolean): string {
-  const cvMergeNote = hasCv
-    ? `IMPORTANT: Use BOTH sources to extract comprehensive data:
-- CV provides structured information (skills, dates, industries)
-- Conversation may have additional details or corrections
-- If conflict exists, prioritize conversation (user's latest input)\n\n`
-    : "";
-
-  return `${cvMergeNote}FORMAT RULES:
-- All terms use lowercase-kebab-case format
-- countryCode: residence country, ISO 3166-1 alpha-2 UPPERCASE
-- citizenships: nationality/passport countries array, ISO 3166-1 alpha-2 UPPERCASE
-- languages: B2+ proficiency languages, ISO 639-1
-- cityName: null unless user explicitly mentioned a city name
-- DO NOT invent or guess data - extract ONLY what user explicitly stated
-- If user did not mention a field, return null - NEVER assume or infer`;
+  const cvNote = hasCv ? "Use BOTH sources. If conflict → prioritize conversation.\n\n" : "";
+  return `${cvNote}FORMAT RULES:
+${FORMAT_RULES_BASE}`;
 }
 
-/* eslint-disable max-lines-per-function -- prompt template with multiple sections */
 export function contextExtractionPrompt(
   messages: BaseMessage[],
   preview: string,
@@ -322,181 +161,189 @@ export function contextExtractionPrompt(
 ): string {
   const text = serializeMessages(messages);
   const cvSection = cvText
-    ? `\n═══════════════════════════════════════════════════
-CV/RESUME (additional anonymized context):
-═══════════════════════════════════════════════════
-${cvText}\n`
+    ? `
+${SECTION_DIVIDER}
+CV/RESUME:
+${SECTION_DIVIDER}
+${cvText}
+`
     : "";
 
-  return `Extract career context for: "${preview}"
+  return `Extract career context for THIS SINGLE POSITION ONLY: "${preview}"
+
+${SECTION_DIVIDER}
+SINGLE POSITION EXTRACTION (CRITICAL):
+${SECTION_DIVIDER}
+- Extract data EXCLUSIVELY for the position specified above
+- The conversation may mention multiple positions — focus ONLY on "${preview}"
+- If information is not explicitly associated with this position, use null
+- Do NOT merge data from different positions into one
+
 ${getCurrentDateContext()}
 ${dictHints}
 CONVERSATION:
 ${text}
 ${cvSection}
-═══════════════════════════════════════════════════
-FORMAT RULES (STRICT):
-═══════════════════════════════════════════════════
+${SECTION_DIVIDER}
 ${buildContextExtractionRules(!!cvText)}
+${SECTION_DIVIDER}
 
 ${DECOMPOSITION_RULES}
-═══════════════════════════════════════════════════
-CAREER MODEL (key dimensions):
-═══════════════════════════════════════════════════
+
+${SECTION_DIVIDER}
+CAREER MODEL:
+${SECTION_DIVIDER}
 - ROLE: Profession type (WHAT you do) — map to KNOWN ROLES
 - POSITION: Seniority level (HOW experienced) — map to KNOWN POSITIONS
-- DOMAINS: Technical specialization area (answers 'what kind of developer/engineer?') — map to KNOWN DOMAINS
+- DOMAINS: Technical specialization — map to KNOWN DOMAINS
 - INDUSTRY: Company's business sector — map to KNOWN INDUSTRIES
 - CREATION REASON: Why this context was created — map to KNOWN REASONS
 
-OPTIONAL FIELDS (include ONLY if user explicitly mentioned FOR THIS SPECIFIC POSITION):
-═══════════════════════════════════════════════════
-- educationLevel: highest degree achieved — map to KNOWN EDUCATION LEVELS
-- salaryExact: exact annual salary in USD (if user gives precise number like "120k" or "150000")
-- salaryMin/salaryMax: salary range in USD (if user gives range like "100-150k")
-  Note: Use EITHER exact OR range, not both. Convert to annual USD.
-- feedback: user's reflection about the position being extracted (max 200 chars)
-  CRITICAL: Extract ONLY feedback user gave about the position in preview above.
-  Ignore feedback about other positions mentioned in conversation.
-  If no specific feedback for this position → return null.
+${SECTION_DIVIDER}
+OPTIONAL FIELDS (include ONLY if explicitly mentioned):
+${SECTION_DIVIDER}
+- educationLevel: highest degree — map to KNOWN EDUCATION LEVELS
+- salaryExact: exact annual salary in USD
+- salaryMin/salaryMax: salary range in USD (use EITHER exact OR range)
+- feedback: user's reflection about THIS position (max 200 chars)
 
-═══════════════════════════════════════════════════
-SKILLS EXTRACTION (special rules):
-═══════════════════════════════════════════════════
-CVs often list skills separately from positions. Use semantic reasoning to match skills to THIS position.
+${SECTION_DIVIDER}
+SKILLS EXTRACTION:
+${SECTION_DIVIDER}
+1. EXPLICIT: Skills directly mentioned in position description
+2. INFERRED: Match CV skills to position by title, industry, chronology
 
-1. EXPLICIT: Extract skills directly mentioned in position description
-2. INFERRED: If CV has Summary/Tech stack, match skills to position by:
-   - Position title keywords (language/framework names in title)
-   - Industry/domain alignment (fintech → likely different stack than embedded)
-   - Chronological logic (older positions → older tech, newer → modern stack)
-   - Task descriptions (what tools would be needed for described work)
-
-Include both explicit and reasonably inferred skills — user reviews and corrects.
-
-═══════════════════════════════════════════════════
-GENERAL EXTRACTION RULES:
-═══════════════════════════════════════════════════
-- Map user terms to KNOWN dictionary values when possible
-- For creationReason, infer from context (first job = started_working, new company = company_changed, etc.)
-- Return null for fields not mentioned
 ${POSITION_INDEPENDENCE_RULE}
 
-═══════════════════════════════════════════════════
-createdAt FIELD (CRITICAL for career timeline):
-═══════════════════════════════════════════════════
-Extract the START DATE of this position from preview period (e.g., "2016-2020" → "2016-01-01").
-- Format: ISO 8601 (YYYY-MM-DDT00:00:00Z)
-- Use January 1st if only year is given
-- Use 1st of month if month is given without day
-- This date determines position order on career trajectory chart`;
-}
-/* eslint-enable max-lines-per-function */
-
-export function trailExtractionPrompt(messages: BaseMessage[], trailPreview: string): string {
-  const text = serializeMessages(messages);
-  return `Extract learning trail for: "${trailPreview}"
-
-CONVERSATION:
-${text}
-
-═══════════════════════════════════════════════════
-FORMAT RULES (STRICT):
-═══════════════════════════════════════════════════
-- All terms: lowercase-kebab-case (e.g., "machine-learning", "system-design")
-- DO NOT invent data - extract ONLY what is explicitly mentioned
-
-═══════════════════════════════════════════════════
-REQUIRED FIELDS (must extract):
-═══════════════════════════════════════════════════
-- skill: The main skill being developed (e.g., "react", "python", "machine-learning")
-- platform: Where learning happened (e.g., "coursera", "udemy", "self-study", "bootcamp")
-
-═══════════════════════════════════════════════════
-OPTIONAL FIELDS (include ONLY if explicitly mentioned):
-═══════════════════════════════════════════════════
-- totalDurationWeeks: Learning duration in weeks
-- schedule: { sessionsPerWeek: number, hoursPerSession: number }
-- costUsd: Total cost in USD
-- courseName: Specific course title (lowercase-kebab-case)
-- courseLink: URL to the course
-- ratingCourse: User's rating of the course (1-5)
-- ratingPlatform: User's rating of the platform (1-5)
-- ratingSchedule: User's rating of the schedule/format (1-5)
-- userFeedback: Personal notes about the learning experience
-
-EXTRACTION RULES:
-- Extract ONLY explicitly mentioned information - do NOT infer or guess
-- Trail describes learning/transition activities between career positions
-- Focus on the specific learning activity mentioned in the preview`;
+${SECTION_DIVIDER}
+createdAt FIELD (CRITICAL):
+${SECTION_DIVIDER}
+Extract START DATE from preview period.
+Format: ISO 8601 (YYYY-MM-DDT00:00:00Z)
+Use January 1st if only year given.`;
 }
 
-export function contextCorrectionPrompt(
-  existingContext: UserContext,
-  corrections: string,
-  _messages: BaseMessage[],
-): string {
-  return `You are applying user corrections to a career context.
+// ═══════════════════════════════════════════════════════════════════════════
+// FROZEN: TRAIL EXTRACTION PROMPT disabled
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// export function trailExtractionPrompt(messages: BaseMessage[], trailPreview: string): string {
+//   const text = serializeMessages(messages);
+//   return `Extract learning trail for: "${trailPreview}"
+//
+// CONVERSATION:
+// ${text}
+//
+// ${SECTION_DIVIDER}
+// FORMAT RULES:
+// ${SECTION_DIVIDER}
+// - All terms: lowercase-kebab-case
+// - Do NOT invent data — extract ONLY what is mentioned
+//
+// ${SECTION_DIVIDER}
+// REQUIRED FIELDS:
+// ${SECTION_DIVIDER}
+// - skill: Main skill being developed
+// - platform: Where learning happened
+//
+// ${SECTION_DIVIDER}
+// OPTIONAL FIELDS (include ONLY if mentioned):
+// ${SECTION_DIVIDER}
+// - totalDurationWeeks, schedule, costUsd
+// - courseName, courseLink
+// - ratingCourse, ratingPlatform, ratingSchedule (1-5)
+// - userFeedback`;
+// }
 
-═══════════════════════════════════════════════════
-ORIGINAL CONTEXT (before correction):
-═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTEXT CORRECTION PROMPT
+// ═══════════════════════════════════════════════════════════════════════════
+
+export function contextCorrectionPrompt(existingContext: UserContext, corrections: string): string {
+  return `Apply user corrections to career context.
+
+${SECTION_DIVIDER}
+ORIGINAL CONTEXT:
+${SECTION_DIVIDER}
 ${JSON.stringify(existingContext, null, 2)}
 
-═══════════════════════════════════════════════════
-USER CORRECTION REQUEST:
-═══════════════════════════════════════════════════
+${SECTION_DIVIDER}
+USER CORRECTION:
+${SECTION_DIVIDER}
 "${corrections}"
 
-═══════════════════════════════════════════════════
-YOUR TASK:
-═══════════════════════════════════════════════════
-Apply the user's correction EXACTLY as requested.
-
-Correction types:
-- Change field value: set the field to the new value user specified
-- Add to array: append items to the relevant array (skills, domains, etc.)
-- Remove from array: remove items from the relevant array
-
-RULES:
-- Apply corrections LITERALLY — use exact values user provides
-- Preserve ALL other fields unchanged
-- Return the COMPLETE context object with correction applied
-- All values in lowercase-kebab-case where applicable`;
+${SECTION_DIVIDER}
+TASK:
+${SECTION_DIVIDER}
+Apply correction EXACTLY as requested.
+- Change field value: set to new value
+- Add to array: append items
+- Remove from array: remove items
+- CRITICAL: For fields NOT mentioned in correction, COPY the original value exactly as-is. NEVER return null for unchanged fields.
+- Return COMPLETE context with ALL fields populated (either changed or copied from original)`;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTEXT CLARIFICATION PROMPT
+// ═══════════════════════════════════════════════════════════════════════════
 
 export function contextClarificationPrompt(
   pendingContext: Record<string, unknown>,
   missingFields: string[],
+  suggestions: RolePositionSuggestion[],
   userResponse: string,
   dictHints: string,
 ): string {
-  return `Update the existing career context based on user's clarification.
-${dictHints}
-═══════════════════════════════════════════════════
-CURRENT CONTEXT (partially extracted):
-═══════════════════════════════════════════════════
-${JSON.stringify(pendingContext, null, 2)}
+  const hasMissing = missingFields.length > 0;
+  const hasSuggestions = suggestions.length > 0;
 
-═══════════════════════════════════════════════════
+  const missingSection = hasMissing
+    ? `
+${SECTION_DIVIDER}
 MISSING FIELDS (user was asked to provide):
-═══════════════════════════════════════════════════
-${missingFields.join(", ")}
+${SECTION_DIVIDER}
+${missingFields.join(", ")}`
+    : "";
 
-═══════════════════════════════════════════════════
+  const suggestionsSection = hasSuggestions
+    ? `
+${SECTION_DIVIDER}
+FIELD SUGGESTIONS (user was asked to CHOOSE):
+${SECTION_DIVIDER}
+${serializeSuggestions(suggestions)}`
+    : "";
+
+  const mergeRules = hasSuggestions
+    ? `
+${SECTION_DIVIDER}
+MERGE RULES (SUGGESTIONS MODE):
+${SECTION_DIVIDER}
+- User was asked to CHOOSE from options
+- If user APPROVES without specifying → use FIRST option for each field
+- If user provides specific value → use it (map to KNOWN values)
+- KEEP all existing values unchanged`
+    : `
+${SECTION_DIVIDER}
+MERGE RULES (MISSING FIELDS MODE):
+${SECTION_DIVIDER}
+- User response answers questions about MISSING FIELDS
+- Extract values from response (map to KNOWN values from hints)
+- KEEP all existing values unchanged`;
+
+  return `Update career context based on user's clarification.
+${dictHints}
+${SECTION_DIVIDER}
+CURRENT CONTEXT:
+${SECTION_DIVIDER}
+${JSON.stringify(pendingContext, null, 2)}
+${missingSection}${suggestionsSection}
+
+${SECTION_DIVIDER}
 USER RESPONSE:
-═══════════════════════════════════════════════════
+${SECTION_DIVIDER}
 "${userResponse}"
-
-═══════════════════════════════════════════════════
-MERGE RULES:
-═══════════════════════════════════════════════════
-- User response is answering questions about MISSING FIELDS above
-- Extract values for missing fields from user response (map to KNOWN values from hints)
-- KEEP all existing values unchanged
-- Return the COMPLETE context with ALL fields
-- Do NOT duplicate values in arrays — if value already exists, skip it
+${mergeRules}
+- Do NOT duplicate values in arrays
 - All terms: lowercase-kebab-case
-- countryCode = country of RESIDENCE (where user works), citizenships = PASSPORT countries (nationality)
-- Both use ISO 3166-1 alpha-2 UPPERCASE`;
+- countryCode, citizenships: ISO 3166-1 alpha-2 UPPERCASE`;
 }

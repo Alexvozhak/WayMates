@@ -7,9 +7,9 @@ import { HtmlRenderer } from "./html-renderer.js";
 import type { AdhocContextBase, UserContext, WaymateCandidate } from "../../shared/schemas.js";
 import type {
   ChartableField,
+  ChartLocale,
   DynamicLevels,
   GoalValues,
-  Locale,
   OverlapSummary,
   ProcessedTrajectory,
   SimilarityMetrics,
@@ -19,7 +19,7 @@ type BaseBuildInput = {
   candidates: WaymateCandidate[];
   fields: ChartableField[];
   positionOrder: string[];
-  locale: Locale;
+  locale: ChartLocale;
   existingGoal: boolean;
   goalValues: GoalValues;
   excludedOverlapFields: ChartableField[];

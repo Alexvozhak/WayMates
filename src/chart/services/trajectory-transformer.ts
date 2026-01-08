@@ -2,11 +2,11 @@ import { ASPECT_CONFIGS } from "../config/aspect-configs.js";
 import { generateCandidateColors, USER_COLOR } from "../config/colors.js";
 
 import type { AdhocContextBase, UserContext, WaymateCandidate } from "../../shared/schemas.js";
-import type { Locale, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
+import type { ChartLocale, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
 
 type BaseTransformInput = {
   candidates: WaymateCandidate[];
-  locale: Locale;
+  locale: ChartLocale;
   existingGoal: boolean;
 };
 
@@ -45,7 +45,7 @@ export function transformGoalOnly(input: GoalOnlyTransformInput): ProcessedTraje
   return buildCandidateTrajectories(input.candidates, colors, input.existingGoal);
 }
 
-function buildUserTrajectory(userTrajectory: UserContext[], locale: Locale): ProcessedTrajectory {
+function buildUserTrajectory(userTrajectory: UserContext[], locale: ChartLocale): ProcessedTrajectory {
   const points = userTrajectory.map((ctx) => extractPointValues(ctx));
   const label = locale === "ru" ? "Вы" : "You";
 
@@ -59,7 +59,7 @@ function buildUserTrajectory(userTrajectory: UserContext[], locale: Locale): Pro
   };
 }
 
-function buildAdhocMarker(adhocContext: AdhocContextBase, locale: Locale): ProcessedTrajectory {
+function buildAdhocMarker(adhocContext: AdhocContextBase, locale: ChartLocale): ProcessedTrajectory {
   const point = extractAdhocPointValues(adhocContext);
   const label = locale === "ru" ? "Вы" : "You";
 

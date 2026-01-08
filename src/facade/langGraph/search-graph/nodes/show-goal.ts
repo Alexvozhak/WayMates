@@ -14,18 +14,21 @@ import type { SearchStateType } from "../state.js";
  * (from load_existing_goal flow where initial message should be used).
  */
 export const showGoalNode = withLogging<SearchStateType>(NODE.show_goal, (state, _config, _deps) => {
-  const { extractedGoal, userResponse: stateUserResponse } = state;
+  const { extractedGoal, userResponse: stateUserResponse, phase: statePhase } = state;
 
   if (!extractedGoal) {
     throw new AgentInvariantError(NODE.show_goal, "extractedGoal must exist before showing");
   }
+
+  // Use phase from state (clarifying_goal or showing_goal) — set by extract_goal
+  const phase = statePhase === PHASE.clarifying_goal ? PHASE.clarifying_goal : PHASE.showing_goal;
 
   const hasExistingResponse = stateUserResponse && stateUserResponse !== "";
 
   if (hasExistingResponse) {
     return {
       userResponse: stateUserResponse,
-      phase: PHASE.showing_goal,
+      phase,
       currentSearchParams: state.currentSearchParams,
       targetSearchParams: state.targetSearchParams,
     };
@@ -34,12 +37,12 @@ export const showGoalNode = withLogging<SearchStateType>(NODE.show_goal, (state,
   const userResponse = interrupt({
     type: "show_goal",
     extractedGoal,
-    phase: PHASE.showing_goal,
+    phase,
   });
 
   return {
     userResponse: String(userResponse),
-    phase: PHASE.showing_goal,
+    phase,
     currentSearchParams: state.currentSearchParams,
     targetSearchParams: state.targetSearchParams,
   };

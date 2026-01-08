@@ -5,6 +5,11 @@ import { PHASE } from "./types.js";
 import type { ColdStartPhase, ColdStartState } from "./types.js";
 import type { ColdStartResponse } from "../../../shared/schemas.js";
 
+function filterNullValues(obj: Record<string, unknown> | null): Record<string, unknown> {
+  if (!obj) return {};
+  return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v != null));
+}
+
 /** After this many failed clarification attempts, suggest cancel to user */
 const SUGGEST_CANCEL_AFTER_ROUNDS = 2;
 
@@ -43,12 +48,19 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
       throw new InvalidStateError(PHASE.awaiting_clarification, "no agenda at currentContextIndex");
     }
 
+    // Determine clarification type and message
+    const clarificationType = hasMissingFields ? "missing" : "suggestions";
+    const message = hasMissingFields
+      ? "Please provide the missing information."
+      : "Please choose the correct option for the highlighted field.";
+
     return {
       phase: PHASE.awaiting_clarification,
-      message: "Please provide the missing information.",
+      message,
+      clarificationType,
       entityPreview: currentAgenda.preview,
       progress: { current: state.currentContextIndex + 1, total: state.queue.length },
-      pendingContext: state.pendingContext ?? {},
+      pendingContext: filterNullValues(state.pendingContext),
       missingFields: state.missingFields,
       optionalFields: state.optionalFields,
       suggestCancel: state.clarificationRound >= SUGGEST_CANCEL_AFTER_ROUNDS,

@@ -1,6 +1,12 @@
+import ISO6391 from "iso-639-1";
 import { z } from "zod";
 
 import { REASON_CANONICAL_NAMES } from "../../database/reasons.js";
+
+/**
+ * All valid ISO 639-1 language codes for runtime validation.
+ */
+const VALID_LANGUAGE_CODES = new Set<string>(ISO6391.getAllCodes());
 
 /**
  * Apply pathLimit transform: clamp pathLimit to limit.
@@ -70,15 +76,27 @@ export const tokenSchema = z.string().uuid().describe("User token (UUID v7 forma
 export const requestIdSchema = z.string().uuid().describe("Request correlation ID for distributed tracing");
 
 /**
- * User locale for response language.
- * Defaults to "en" for backward compatibility.
+ * User locale for response language (ISO 639-1 from Telegram).
+ * Validates against iso-639-1 codes, defaults to "en".
  */
-export const localeSchema = z.enum(["en", "ru"]).default("en");
+export const localeSchema = z
+  .string()
+  .refine((code) => VALID_LANGUAGE_CODES.has(code), { message: "Invalid ISO 639-1 language code" })
+  .default("en");
 
 export type SessionId = z.infer<typeof sessionIdSchema>;
 export type Token = z.infer<typeof tokenSchema>;
 export type RequestId = z.infer<typeof requestIdSchema>;
 export type Locale = z.infer<typeof localeSchema>;
+
+/**
+ * Schema for parsing raw language code with fallback to "en".
+ */
+export const localeWithFallbackSchema = z
+  .string()
+  .refine((code) => VALID_LANGUAGE_CODES.has(code))
+  // eslint-disable-next-line unicorn/prefer-top-level-await -- .catch() is Zod method, not Promise
+  .catch("en");
 
 // User state (for orchestrator routing)
 export const userStateSchema = z.object({
@@ -341,6 +359,24 @@ export type AdhocOptionalField = (typeof ADHOC_OPTIONAL_FIELDS)[number];
 
 /** Zod schema for optional field names */
 export const adhocOptionalFieldSchema = z.enum(ADHOC_OPTIONAL_FIELDS);
+
+/** Optional fields for Goal (not required for meaningful search) */
+export const GOAL_OPTIONAL_FIELDS = [
+  "domains",
+  "skills",
+  "languages",
+  "industries",
+  "cities",
+  "citizenships",
+  "educationLevels",
+  "salaryMin",
+  "salaryMax",
+] as const;
+
+export type GoalOptionalField = (typeof GOAL_OPTIONAL_FIELDS)[number];
+
+/** Zod schema for goal optional field names */
+export const goalOptionalFieldSchema = z.enum(GOAL_OPTIONAL_FIELDS);
 
 /** System/platform fields not shown to user in cold-start clarification (linked to UserContext) */
 type ContextSystemField = keyof Pick<
@@ -1054,8 +1090,6 @@ export type AddTermInput = z.infer<typeof addTermInputSchema>;
 // ==========================================
 
 /** Describe strings for LLM structured output (generated from type-checked arrays) */
-const CONTEXT_FIELDS_DESC = CONTEXT_REQUIRED_FIELDS.join(", ");
-const CONTEXT_OPTIONAL_DESC = CONTEXT_OPTIONAL_FIELDS.join(", ");
 const TRAIL_FIELDS_DESC = TRAIL_REQUIRED_FIELDS.join(", ");
 
 /**
@@ -1063,10 +1097,12 @@ const TRAIL_FIELDS_DESC = TRAIL_REQUIRED_FIELDS.join(", ");
  * Used by planCareerHistoryTool's structured output.
  */
 export const contextAgendaBaseSchema = z.object({
-  preview: z
+  startYear: z.number().describe("Year position started (e.g., 2016)"),
+  endYear: z.number().nullable().describe("Year position ended (e.g., 2023), or null if current"),
+  title: z
     .string()
     .describe(
-      `Summary with period (YYYY-YYYY): ${CONTEXT_FIELDS_DESC}; optional if mentioned: ${CONTEXT_OPTIONAL_DESC} — extract only, never invent`,
+      "Job title ONLY. Examples: 'Software Engineer', 'Team Lead', 'CTO'. NEVER include skills, technologies or details in parentheses like '(C++/Python)' - those go in separate fields",
     ),
   incomingTrails: z.array(z.string()).describe(`Trail info: ${TRAIL_FIELDS_DESC} — only if explicitly mentioned`),
 });
@@ -1079,6 +1115,7 @@ export type ContextAgendaBase = z.infer<typeof contextAgendaBaseSchema>;
  */
 export const contextAgendaSchema = contextAgendaBaseSchema.extend({
   contextId: contextIdSchema.describe("UUID v7 generated in planning phase"),
+  preview: z.string().describe("Formatted preview: 'YYYY-YYYY: Job Title' (generated from startYear, endYear, title)"),
 });
 
 export type ContextAgenda = z.infer<typeof contextAgendaSchema>;
@@ -1422,6 +1459,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("showing_goal"),
     extractedGoal: targetContextSchema,
+    goalOptionalFields: z.array(goalOptionalFieldSchema),
   }),
   z.object({
     phase: z.literal("clarifying_goal"),

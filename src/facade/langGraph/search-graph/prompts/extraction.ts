@@ -26,7 +26,8 @@ RULES:
 4. NEVER return string representations of null like "null", "/null", "NULL" — use JSON null
 5. If field not explicitly stated → null
 6. domains = TECHNICAL specialization, industry = BUSINESS sector — these are different concepts, never mix
-7. Do NOT infer position from years of experience — years ≠ seniority`;
+7. Do NOT infer position from years of experience — years ≠ seniority
+8. Do NOT infer or expand arrays — extract only what user explicitly stated`;
 }
 
 /**
@@ -71,7 +72,10 @@ ${GOAL_FIELDS_SECTION}
 
 MODE: "desired" by default, "undesired" if user says "not", "avoid", "except"
 
-Return null for fields not mentioned.`;
+CRITICAL — null handling:
+- Field not mentioned → null
+- Empty or placeholder values (0, "", []) → null
+- Only return actual values explicitly stated by user`;
 }
 
 /**

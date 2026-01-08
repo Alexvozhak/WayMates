@@ -3,6 +3,7 @@ import {
   extractGoalValues,
   generateTrajectoryChart,
   isChartServiceEnabled,
+  toChartLocale,
 } from "../../../chart/index.js";
 import { config } from "../../env.js";
 
@@ -94,7 +95,7 @@ function buildChartInput(deps: ChartGenerationDeps, positionOrder: string[]): Ge
     candidates: deps.candidates,
     maxCandidates: config.CANDIDATES_DISPLAY_LIMIT,
     positionOrder,
-    locale: deps.locale,
+    locale: toChartLocale(deps.locale),
     excludedOverlapFields,
   };
 

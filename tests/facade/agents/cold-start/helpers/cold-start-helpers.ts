@@ -105,9 +105,13 @@ export function toExtractableTrail(trail: Trail): ExtractableTrail {
  * Creates ContextAgenda from UserContext for testing.
  */
 export function createAgendaFromContext(ctx: UserContext): ContextAgenda {
+  const startYear = new Date(ctx.createdAt).getFullYear();
   return {
     contextId: ctx.contextId,
-    preview: `${ctx.position} at ${ctx.industry}`,
+    startYear,
+    endYear: null,
+    title: ctx.position,
+    preview: `${startYear}-present: ${ctx.position}`,
     incomingTrails: [],
   };
 }

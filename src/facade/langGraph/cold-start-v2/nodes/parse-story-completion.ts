@@ -13,15 +13,15 @@ type StoryDecisionIntent = (typeof STORY_DECISION_INTENTS)[number];
 
 // Semantic descriptions - no literal examples, only meaning
 const STORY_DECISION_DESCRIPTIONS: Record<StoryDecisionIntent, string> = {
-  approve: `User EXPLICITLY signals story is COMPLETE
-  REQUIRED: explicit completion phrase indicating nothing more to add
-  Having work experience alone is NOT enough — user must SAY they finished`,
+  approve: `User signals story is COMPLETE — nothing more to add about career
+  User indicates they finished sharing and ready to proceed to next step`,
 
   continue: `DEFAULT - keep gathering story
   Use when: user shares info, asks questions, OR no explicit completion signal
   Describing positions is sharing info, NOT completion — user may have more`,
 
-  cancel: `User wants to STOP the flow entirely, give up, abort`,
+  cancel: `User wants to ABORT and EXIT the entire workflow permanently
+  User explicitly rejects the process itself, not just finishing their story`,
 };
 
 function serializeMessages(messages: BaseMessage[]): string {

@@ -15,15 +15,23 @@ const planOutputSchema = withReasoning(
   z.object({
     contexts: z.array(contextAgendaBaseSchema),
   }),
-  "List the career positions you identified chronologically"
+  "List the career positions you identified chronologically",
 );
 
 const planningModel = getModel("planning").withStructuredOutput(planOutputSchema);
 
+function formatPreview(startYear: number, endYear: number | null, title: string): string {
+  const end = endYear ?? "present";
+  return `${startYear}-${end}: ${title}`;
+}
+
 function generateContextIds(contexts: ContextAgendaBase[]): ContextAgenda[] {
   return contexts.map((ctx) => ({
     contextId: `ctx_${uuidv7()}`,
-    preview: ctx.preview,
+    startYear: ctx.startYear,
+    endYear: ctx.endYear,
+    title: ctx.title,
+    preview: formatPreview(ctx.startYear, ctx.endYear, ctx.title),
     incomingTrails: ctx.incomingTrails,
   }));
 }

@@ -2,10 +2,10 @@ import { GOAL_STAR_COLOR } from "../config/colors.js";
 
 import type {
   ChartableField,
+  ChartLocale,
   ChartMode,
   DynamicLevels,
   GoalValues,
-  Locale,
   OverlapSummary,
   ProcessedTrajectory,
   SimilarityMetrics,
@@ -18,13 +18,13 @@ export type ChartRenderData = {
   metrics: SimilarityMetrics[];
   overlapSummaries: OverlapSummary[];
   timeRange: { minTime: number; maxTime: number };
-  locale: Locale;
+  locale: ChartLocale;
   goalValues: GoalValues;
   dynamicLevels: DynamicLevels;
   excludedOverlapFields: ChartableField[];
 };
 
-const FIELD_LABELS: Record<Locale, Record<ChartableField, string>> = {
+const FIELD_LABELS: Record<ChartLocale, Record<ChartableField, string>> = {
   en: {
     position: "Grade",
     role: "Role",
@@ -45,7 +45,7 @@ const FIELD_LABELS: Record<Locale, Record<ChartableField, string>> = {
   },
 };
 
-const GOAL_LABELS: Record<Locale, { name: string; hover: string }> = {
+const GOAL_LABELS: Record<ChartLocale, { name: string; hover: string }> = {
   en: { name: "Your goal", hover: "Goal" },
   ru: { name: "Ваша цель", hover: "Цель" },
 };

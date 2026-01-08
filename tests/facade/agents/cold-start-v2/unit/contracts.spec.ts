@@ -43,6 +43,17 @@ function createDecision(intent: ParsedDecision["intent"]): ParsedDecision {
   return { reasoning: "test", intent, editTarget: "", editInstructions: "" };
 }
 
+function mockAgenda(id = "ctx_1"): ContextAgenda {
+  return {
+    contextId: id,
+    startYear: 2020,
+    endYear: null,
+    title: "Test",
+    preview: "2020-present: Test",
+    incomingTrails: [],
+  };
+}
+
 describe("Cold-Start V2: Contract Tests (TC-C)", () => {
   /**
    * TC-C1: Graph topology verification
@@ -107,7 +118,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
         { phase: PHASE.story_gathering, queue: [] },
         {
           phase: PHASE.awaiting_plan_confirmation,
-          queue: [{ contextId: "ctx_1", preview: "Test", incomingTrails: [] }],
+          queue: [mockAgenda()],
         },
       ];
 
@@ -125,7 +136,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
         const state = createMockState({
           phase: PHASE.awaiting_context_confirmation,
           parsedDecision: createDecision(intent),
-          queue: [{ contextId: "ctx_1", preview: "Test", incomingTrails: [] }],
+          queue: [mockAgenda()],
           currentContextIndex: 0,
         });
         const target = routeNextNodeAfterDecision(state);
@@ -189,7 +200,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
         const state = createMockState({
           phase: PHASE.awaiting_context_confirmation,
           parsedDecision: createDecision(intent),
-          queue: [{ contextId: "ctx_1", preview: "Test", incomingTrails: [] }],
+          queue: [mockAgenda()],
         });
         const result = routeNextNodeAfterDecision(state);
         expect(typeof result).toBe("string");
@@ -307,7 +318,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
       const contextState = createMockState({
         phase: PHASE.awaiting_context_confirmation,
         parsedDecision: approveDecision,
-        queue: [{ contextId: "ctx_1", preview: "Test", incomingTrails: [] }],
+        queue: [mockAgenda()],
         currentContextIndex: 0,
       });
       expect(routeNextNodeAfterDecision(contextState)).toBe("show_final");
@@ -328,7 +339,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
       const contextState = createMockState({
         phase: PHASE.awaiting_context_confirmation,
         parsedDecision: cancelDecision,
-        queue: [{ contextId: "ctx_1", preview: "Test", incomingTrails: [] }],
+        queue: [mockAgenda()],
       });
       expect(routeNextNodeAfterDecision(contextState)).toBe("cancel");
 
@@ -345,7 +356,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
       const contextState = createMockState({
         phase: PHASE.awaiting_context_confirmation,
         parsedDecision: editDecision,
-        queue: [{ contextId: "ctx_1", preview: "Test", incomingTrails: [] }],
+        queue: [mockAgenda()],
       });
       expect(routeNextNodeAfterDecision(contextState)).toBe("edit_context");
 
@@ -366,7 +377,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
       const contextState = createMockState({
         phase: PHASE.awaiting_context_confirmation,
         parsedDecision: continueDecision,
-        queue: [{ contextId: "ctx_1", preview: "Test", incomingTrails: [] }],
+        queue: [mockAgenda()],
       });
       expect(routeNextNodeAfterDecision(contextState)).toBe("clarify_intent");
 
@@ -400,7 +411,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
     it("routes to show_plan when queue has contexts", () => {
       const state = createMockState({
         phase: PHASE.awaiting_plan_confirmation,
-        queue: [{ contextId: "ctx_1", preview: "Test", incomingTrails: [] }],
+        queue: [mockAgenda()],
       });
       expect(routeNextNodeAfterPlanCareer(state)).toBe("show_plan");
     });

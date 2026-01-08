@@ -38,9 +38,6 @@ allowed-tools:
     "Bash(grep:*)",
     "Edit",
     "Write",
-    "WebSearch",
-    "mcp__context7__resolve-library-id",
-    "mcp__context7__get-library-docs",
     "mcp__sequential-thinking__sequentialthinking",
   ]
 ---
@@ -62,6 +59,7 @@ allowed-tools:
 - /home/alex/projects/WayMatesRemote/mvp-test-final/tests_report.md
 - /home/alex/projects/WayMatesRemote/eslint.config.mjs
 - /home/alex/projects/WayMatesRemote/mvp-test-final/latest-news.md
+- /home/alex/projects/WayMatesRemote/package.json
 
 **Куда обращаться:**
 | Вопрос | Источник |

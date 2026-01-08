@@ -1,11 +1,16 @@
 import telegramifyMarkdown from "telegramify-markdown";
 
-import type { ConverseResponse, Locale } from "../../shared/schemas.js";
+import type { ConverseResponse } from "../../shared/schemas.js";
 
-const CHART_LINK_LABEL: Record<Locale, string> = {
+// Only en/ru hardcoded, other locales fallback to en
+const CHART_LINK_LABEL: Record<"en" | "ru", string> = {
   en: "Open trajectory chart",
   ru: "Открыть график траекторий",
 };
+
+function getChartLabel(languageCode: string | undefined): string {
+  return languageCode === "ru" ? CHART_LINK_LABEL.ru : CHART_LINK_LABEL.en;
+}
 
 function extractChartUrl(result: ConverseResponse["result"]): string | undefined {
   if ("chartUrl" in result && typeof result.chartUrl === "string") {
@@ -20,14 +25,13 @@ function extractChartUrl(result: ConverseResponse["result"]): string | undefined
  */
 export function formatResponse(converseResp: ConverseResponse, languageCode?: string): string {
   const { result, message } = converseResp;
-  const locale: Locale = languageCode === "ru" ? "ru" : "en";
 
   let formatted = message;
 
   // Append chart link if present
   const chartUrl = extractChartUrl(result);
   if (chartUrl) {
-    formatted += `\n\n📊 [${CHART_LINK_LABEL[locale]}](${chartUrl})`;
+    formatted += `\n\n📊 [${getChartLabel(languageCode)}](${chartUrl})`;
   }
 
   // Convert standard Markdown to Telegram MarkdownV2

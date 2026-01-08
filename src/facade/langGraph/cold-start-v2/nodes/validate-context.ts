@@ -1,11 +1,12 @@
 import {
   CONTEXT_OPTIONAL_FIELDS,
   missingFieldSchema,
-  trailSchema,
+  // FROZEN: trailSchema unused while trails disabled
   userContextSchema,
 } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
+import { hasValue } from "../../shared/state-utils.js";
 import { NODE, PHASE } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
@@ -18,13 +19,6 @@ import type { z } from "zod";
 
 const MAX_QUESTIONS_PER_BATCH = config.LANGCHAIN_MAX_QUESTIONS_PER_BATCH;
 const MAX_CLARIFICATION_ROUNDS = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
-
-function hasValue(value: unknown): boolean {
-  if (value == null) return false;
-  if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === "string") return value.length > 0;
-  return true;
-}
 
 function getUnfilledOptionalFields(ctx: Record<string, unknown>): ContextOptionalField[] {
   return CONTEXT_OPTIONAL_FIELDS.filter((f) => !hasValue(ctx[f]));
@@ -58,26 +52,27 @@ function extractMissingFields<T>(
   return fields;
 }
 
-function validateTrails(
-  trailsData: ExtractableTrail[],
-  agenda: ContextAgenda,
-): { validTrails: Trail[]; trailMissing: MissingField[] } {
-  const validTrails: Trail[] = [];
-  const trailMissing: MissingField[] = [];
-
-  for (const [index, trailData] of trailsData.entries()) {
-    const trailValidation = trailSchema.safeParse(trailData);
-    const label = agenda.incomingTrails[index] ?? `Trail ${index + 1}`;
-
-    if (trailValidation.success) {
-      validTrails.push(trailValidation.data);
-    } else {
-      trailMissing.push(...extractMissingFields(trailValidation, label, "trail"));
-    }
-  }
-
-  return { validTrails, trailMissing };
-}
+// FROZEN: Trail validation disabled
+// function validateTrails(
+//   trailsData: ExtractableTrail[],
+//   agenda: ContextAgenda,
+// ): { validTrails: Trail[]; trailMissing: MissingField[] } {
+//   const validTrails: Trail[] = [];
+//   const trailMissing: MissingField[] = [];
+//
+//   for (const [index, trailData] of trailsData.entries()) {
+//     const trailValidation = trailSchema.safeParse(trailData);
+//     const label = agenda.incomingTrails[index] ?? `Trail ${index + 1}`;
+//
+//     if (trailValidation.success) {
+//       validTrails.push(trailValidation.data);
+//     } else {
+//       trailMissing.push(...extractMissingFields(trailValidation, label, "trail"));
+//     }
+//   }
+//
+//   return { validTrails, trailMissing };
+// }
 
 type ValidationSuccess = { success: true; context: UserContext; trails: Trail[] };
 type ValidationFailure = { success: false; missing: MissingField[] };
@@ -85,20 +80,20 @@ type ValidationResult = ValidationSuccess | ValidationFailure;
 
 function validateAndCollectMissing(
   contextData: ExtractableContext,
-  trailsData: ExtractableTrail[],
+  _trailsData: ExtractableTrail[], // FROZEN: trails disabled
   agenda: ContextAgenda,
 ): ValidationResult {
   const ctxValidation = userContextSchema.safeParse(contextData);
   const contextMissing = extractMissingFields(ctxValidation, agenda.preview, "context");
 
-  const { validTrails, trailMissing } = validateTrails(trailsData, agenda);
-  const allMissing = [...contextMissing, ...trailMissing].slice(0, MAX_QUESTIONS_PER_BATCH);
+  // FROZEN: Trail validation disabled — trails always empty
+  const allMissing = contextMissing.slice(0, MAX_QUESTIONS_PER_BATCH);
 
   if (allMissing.length > 0 || !ctxValidation.success) {
     return { success: false, missing: allMissing };
   }
 
-  return { success: true, context: ctxValidation.data, trails: validTrails };
+  return { success: true, context: ctxValidation.data, trails: [] };
 }
 
 function upsertContextAtIndex(existing: UserContext[], context: UserContext, index: number): UserContext[] {

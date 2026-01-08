@@ -60,7 +60,6 @@ export const nodeSchema = z.enum([
   "clarify_intent",
   "extract_goal",
   "show_goal",
-  "clarify_goal",
   "validate_goal",
   "ask_after_validate",
   "load_existing_goal",

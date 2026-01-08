@@ -1,26 +1,32 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { v7 as uuidv7 } from "uuid";
+// FROZEN: import { v7 as uuidv7 } from "uuid";
 
 import { AgentInvariantError } from "../../../errors.js";
 import { logger } from "../../../logger.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";
-import { extractableContextSchema, extractableTrailSchema } from "../../shared-tools/extraction-models.js";
+// FROZEN: extractableTrailSchema unused while trails disabled
+import { hasValue } from "../../shared/state-utils.js";
+import { extractableContextSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
-import { contextClarificationPrompt, contextExtractionPrompt, trailExtractionPrompt } from "../prompts.js";
+// FROZEN: trailExtractionPrompt unused while trails disabled
+import { contextClarificationPrompt, contextExtractionPrompt } from "../prompts.js";
 import { NODE } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
-import type { ContextId } from "../../../../shared/schemas.js";
-import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
+// FROZEN: ContextId unused while trails disabled
+import type { RolePositionSuggestion } from "../../../services/normalizer.js";
+// FROZEN: ExtractableTrail unused while trails disabled
+import type { ExtractableContext } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda } from "../state.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 const contextExtractionModel = getModel("extraction").withStructuredOutput(
   withReasoning(extractableContextSchema, "Explain what career context you extracted and why"),
 );
-const trailExtractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why"),
-);
+// FROZEN: Trail extraction disabled
+// const trailExtractionModel = getModel("extraction").withStructuredOutput(
+//   withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why"),
+// );
 
 function getLinkedContextIds(
   queue: ContextAgenda[],
@@ -32,34 +38,35 @@ function getLinkedContextIds(
   };
 }
 
-async function extractAllTrails(
-  messages: BaseMessage[],
-  agenda: ContextAgenda,
-  queue: ContextAgenda[],
-  contextIndex: number,
-): Promise<ExtractableTrail[]> {
-  if (agenda.incomingTrails.length === 0) {
-    return [];
-  }
-
-  const fromContextId: ContextId | null = contextIndex > 0 ? (queue[contextIndex - 1]?.contextId ?? null) : null;
-  const toContextId: ContextId = agenda.contextId;
-
-  const trailPromises = agenda.incomingTrails.map(async (trailPreview): Promise<ExtractableTrail> => {
-    const prompt = trailExtractionPrompt(messages, trailPreview);
-    const { reasoning, ...extracted } = await trailExtractionModel.invoke([new HumanMessage(prompt)]);
-    logger.info({ reasoning }, "trail extraction reasoning");
-
-    return {
-      ...extracted,
-      trailId: `trl_${uuidv7()}`,
-      fromContextId,
-      toContextId,
-    };
-  });
-
-  return Promise.all(trailPromises);
-}
+// FROZEN: Trail extraction disabled
+// async function extractAllTrails(
+//   messages: BaseMessage[],
+//   agenda: ContextAgenda,
+//   queue: ContextAgenda[],
+//   contextIndex: number,
+// ): Promise<ExtractableTrail[]> {
+//   if (agenda.incomingTrails.length === 0) {
+//     return [];
+//   }
+//
+//   const fromContextId: ContextId | null = contextIndex > 0 ? (queue[contextIndex - 1]?.contextId ?? null) : null;
+//   const toContextId: ContextId = agenda.contextId;
+//
+//   const trailPromises = agenda.incomingTrails.map(async (trailPreview): Promise<ExtractableTrail> => {
+//     const prompt = trailExtractionPrompt(messages, trailPreview);
+//     const { reasoning, ...extracted } = await trailExtractionModel.invoke([new HumanMessage(prompt)]);
+//     logger.info({ reasoning }, "trail extraction reasoning");
+//
+//     return {
+//       ...extracted,
+//       trailId: `trl_${uuidv7()}`,
+//       fromContextId,
+//       toContextId,
+//     };
+//   });
+//
+//   return Promise.all(trailPromises);
+// }
 
 async function extractContextData(
   messages: BaseMessage[],
@@ -89,28 +96,86 @@ function dedupeArray<T>(arr: T[] | null | undefined): T[] | null {
   return [...new Set(arr)];
 }
 
+type MergeableField =
+  | "position"
+  | "role"
+  | "domains"
+  | "skills"
+  | "industry"
+  | "companySize"
+  | "cityName"
+  | "countryCode"
+  | "citizenships"
+  | "birthYear"
+  | "educationLevel"
+  | "languages"
+  | "salaryMin"
+  | "salaryMax"
+  | "createdAt"
+  | "creationReason";
+
+const MERGEABLE_FIELDS: readonly MergeableField[] = [
+  "position",
+  "role",
+  "domains",
+  "skills",
+  "industry",
+  "companySize",
+  "cityName",
+  "countryCode",
+  "citizenships",
+  "birthYear",
+  "educationLevel",
+  "languages",
+  "salaryMin",
+  "salaryMax",
+  "createdAt",
+  "creationReason",
+];
+
+function selectiveMerge(
+  pending: ExtractableContext,
+  merged: ExtractableContext,
+  fieldsToMerge: readonly string[],
+): ExtractableContext {
+  const fieldsSet = new Set<string>(fieldsToMerge);
+  const result = { ...pending };
+
+  for (const field of MERGEABLE_FIELDS) {
+    if (fieldsSet.has(field) && merged[field] != null) {
+      result[field] = merged[field];
+    }
+  }
+
+  return result;
+}
+
 async function clarifyContext(
   pending: ExtractableContext,
   missingFieldNames: string[],
+  suggestions: RolePositionSuggestion[],
   userResponse: string,
   dictHints: string,
 ): Promise<ExtractableContext> {
-  const prompt = contextClarificationPrompt(pending, missingFieldNames, userResponse, dictHints);
+  const prompt = contextClarificationPrompt(pending, missingFieldNames, suggestions, userResponse, dictHints);
   const { reasoning, ...merged } = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
-  logger.info({ reasoning, missingFieldNames }, "context clarification reasoning");
+  logger.info({ reasoning, missingFieldNames, suggestions }, "context clarification reasoning");
+
+  // Selective merge: take from merged only fields that were asked
+  const fieldsToMerge = [...missingFieldNames, ...suggestions.map((s) => s.field)];
+  const result = selectiveMerge(pending, merged, fieldsToMerge);
 
   return {
-    ...merged,
+    ...result,
     contextId: pending.contextId,
     previousContextId: pending.previousContextId,
     nextContextId: pending.nextContextId,
-    createdAt: merged.createdAt ?? pending.createdAt,
     // Dedupe arrays in case LLM duplicated values during merge
-    skills: dedupeArray(merged.skills),
-    domains: dedupeArray(merged.domains) ?? [],
-    citizenships: dedupeArray(merged.citizenships),
-    languages: dedupeArray(merged.languages),
-    creationReason: dedupeArray(merged.creationReason) ?? [],
+    skills: dedupeArray(result.skills),
+    domains: dedupeArray(result.domains) ?? [],
+    citizenships: dedupeArray(result.citizenships),
+    languages: dedupeArray(result.languages),
+    creationReason: dedupeArray(result.creationReason) ?? [],
   };
 }
 
@@ -151,22 +216,30 @@ export const extractContextNode = withLogging<ColdStartStateType>(
     // Determine base context for clarification (unified for missingFields and suggestions)
     const existingCollected = collectedContexts[currentContextIndex];
     const baseContext = pendingContext ?? existingCollected ?? null;
-    const clarifyFields =
+    const clarifyFieldNames =
       missingFields.length > 0 ? missingFields.map((f) => f.field) : rolePositionSuggestions.map((s) => s.field);
-    const needsClarification = baseContext && clarifyFields.length > 0 && userResponse;
+    const needsClarification = baseContext && clarifyFieldNames.length > 0 && userResponse;
 
     const contextData = needsClarification
-      ? await clarifyContext(baseContext, clarifyFields, userResponse, dictHints)
+      ? await clarifyContext(baseContext, clarifyFieldNames, rolePositionSuggestions, userResponse, dictHints)
       : await extractContextData(messages, agenda, queue, currentContextIndex, cvText, dictHints);
 
-    // Only extract trails on fresh extraction (not during clarification)
-    const trailsData = needsClarification
-      ? state.pendingTrails
-      : await extractAllTrails(messages, agenda, queue, currentContextIndex);
+    // FROZEN: Trail extraction disabled — always return empty array
+    // TODO: Re-enable when trail UX is properly designed
+
+    // Inherit stable fields from first context (citizenships, birthYear, educationLevel)
+    // These fields typically don't change between positions
+    // Use hasValue helper: LLM may return [] or "" instead of null
+    const firstContext = collectedContexts[0];
+    if (firstContext && currentContextIndex > 0) {
+      if (!hasValue(contextData.citizenships)) contextData.citizenships = firstContext.citizenships;
+      if (!hasValue(contextData.birthYear)) contextData.birthYear = firstContext.birthYear;
+      if (!hasValue(contextData.educationLevel)) contextData.educationLevel = firstContext.educationLevel;
+    }
 
     return {
       pendingContext: contextData,
-      pendingTrails: trailsData,
+      pendingTrails: [], // FROZEN: trails disabled
       currentEntityContext: {
         contextIndex: currentContextIndex,
         preview: agenda.preview,

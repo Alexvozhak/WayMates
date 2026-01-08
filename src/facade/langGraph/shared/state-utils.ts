@@ -1,6 +1,18 @@
 export const lastValue = <T>(_prev: T, next: T): T => next;
 
 /**
+ * Check if value is non-empty (not null, undefined, empty array, empty string).
+ * Used for optional field validation in adhoc context and goal.
+ */
+export function hasValue(value: unknown): boolean {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "string") return value.length > 0;
+  if (typeof value === "number") return value !== 0;
+  return true;
+}
+
+/**
  * StateUpdate<S> — semantic alias for Partial<S>.
  * Used as return type for LangGraph node functions to indicate state update intent.
  */

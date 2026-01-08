@@ -9,7 +9,6 @@ import { askAfterValidateNode } from "./nodes/ask-after-validate.js";
 import { askSearchModeNode } from "./nodes/ask-search-mode.js";
 import { cancelNode } from "./nodes/cancel.js";
 import { checkGoalNode } from "./nodes/check-goal.js";
-import { clarifyGoalNode } from "./nodes/clarify-goal.js";
 import { clarifyIntentNode } from "./nodes/clarify-intent.js";
 import { confirmAdhocContextNode } from "./nodes/confirm-adhoc-context.js";
 import { deleteGoalNode } from "./nodes/delete-goal.js";
@@ -67,7 +66,6 @@ export function createGraphBuilder() {
     .addNode(NODE.clarify_intent, clarifyIntentNode)
     .addNode(NODE.extract_goal, extractGoalNode)
     .addNode(NODE.show_goal, showGoalNode)
-    .addNode(NODE.clarify_goal, clarifyGoalNode)
     .addNode(NODE.validate_goal, validateGoalNode)
     .addNode(NODE.ask_after_validate, askAfterValidateNode)
     .addNode(NODE.load_existing_goal, loadExistingGoalNode)
@@ -106,7 +104,6 @@ export function createGraphBuilder() {
 
     // Other edges
     .addEdge(NODE.clarify_intent, NODE.parse_search_intent)
-    .addEdge(NODE.clarify_goal, NODE.show_goal)
     .addEdge(NODE.load_existing_goal, NODE.show_goal)
     .addEdge(NODE.delete_goal, NODE.explore)
     .addConditionalEdges(NODE.apply_filters, routeAfterApplyFilters, APPLY_FILTERS_ROUTE_MAP)

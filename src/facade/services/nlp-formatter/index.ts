@@ -1,3 +1,3 @@
 export { NlpFormatter } from "./nlp-formatter.service.js";
-export { GRAPH_PROMPTS } from "./prompts.js";
+export { GRAPH_PROMPT_BUILDERS } from "./prompts.js";
 export type { GraphType } from "./prompts.js";

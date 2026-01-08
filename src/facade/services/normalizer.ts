@@ -288,13 +288,30 @@ Return: { normalized: string[], rejected: string[] }`;
 
   private async normalizeTargetField(
     type: SimpleDictionaryType,
-    field: FieldFilter | null | undefined,
+    field: FieldFilter | string | string[] | null | undefined,
     userId: UserId,
   ): Promise<FieldFilter | null> {
     if (!field) return null;
 
-    const values = await this.normalizeTerms(type, field.values, userId);
-    return { mode: field.mode, values };
+    // Convert simple values to FieldFilter format
+    const normalized = this.toFieldFilter(field);
+    if (!normalized) return null;
+
+    const values = await this.normalizeTerms(type, normalized.values, userId);
+    return { mode: normalized.mode, values };
+  }
+
+  private toFieldFilter(field: FieldFilter | string | string[]): FieldFilter | null {
+    if (typeof field === "string") {
+      return { mode: "desired", values: [field] };
+    }
+    if (Array.isArray(field)) {
+      return field.length > 0 ? { mode: "desired", values: field } : null;
+    }
+    if (field && typeof field === "object" && "mode" in field && "values" in field) {
+      return field;
+    }
+    return null;
   }
 
   private async normalizeTerms(type: SimpleDictionaryType, values: string[], userId: UserId): Promise<string[]> {

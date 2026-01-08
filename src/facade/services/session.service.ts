@@ -45,6 +45,19 @@ export class SessionService {
     return sessionId;
   }
 
+  async getOrCreate(userId: UserId): Promise<SessionId> {
+    const pointerKey = this.getPointerKey(userId);
+    const existingSessionId = await this.redis.get(pointerKey);
+
+    if (existingSessionId) {
+      const sessionId = sessionIdSchema.parse(existingSessionId);
+      await this.refreshTtl(sessionId, userId);
+      return sessionId;
+    }
+
+    return this.create(userId);
+  }
+
   async validate(sessionId: SessionId): Promise<UserId> {
     const sessionKey = this.getSessionKey(sessionId);
     const userId = await this.redis.get(sessionKey);
