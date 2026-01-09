@@ -63,7 +63,7 @@ export const editContextNode = withLogging<ColdStartStateType>(
       throw new AgentInvariantError("editContextNode", "parsedDecision must exist after parse node");
     }
 
-    const corrections = parsedDecision.editInstructions;
+    const corrections = state.userResponse;
     const existingContext = currentContext;
 
     const prompt = contextCorrectionPrompt(existingContext, corrections);

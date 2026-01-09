@@ -2,11 +2,12 @@ import { ASPECT_CONFIGS } from "../config/aspect-configs.js";
 import { generateCandidateColors, USER_COLOR } from "../config/colors.js";
 
 import type { AdhocContextBase, UserContext } from "../../shared/schemas.js";
-import type { ChartCandidate, ChartLocale, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
+import type { ChartCandidate, ChartLocale, GoalValues, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
 
 type BaseTransformInput = {
   candidates: ChartCandidate[];
   locale: ChartLocale;
+  goalValues?: GoalValues;
 };
 
 export type FullModeTransformInput = BaseTransformInput & {
@@ -27,25 +28,29 @@ export type TransformInput = FullModeTransformInput | CandidatesOnlyTransformInp
 
 export function transformFullMode(input: FullModeTransformInput): ProcessedTrajectory[] {
   const colors = generateCandidateColors(input.candidates.length);
-  const user = buildUserTrajectory(input.userTrajectory, input.locale);
-  const candidates = buildCandidateTrajectories(input.candidates, colors);
+  const user = buildUserTrajectory(input.userTrajectory, input.locale, input.goalValues);
+  const candidates = buildCandidateTrajectories(input.candidates, colors, input.goalValues);
   return [user, ...candidates];
 }
 
 export function transformCandidatesOnly(input: CandidatesOnlyTransformInput): ProcessedTrajectory[] {
   const colors = generateCandidateColors(input.candidates.length);
   const marker = buildAdhocMarker(input.adhocContext, input.locale);
-  const candidates = buildCandidateTrajectories(input.candidates, colors);
+  const candidates = buildCandidateTrajectories(input.candidates, colors, input.goalValues);
   return [marker, ...candidates];
 }
 
 export function transformGoalOnly(input: GoalOnlyTransformInput): ProcessedTrajectory[] {
   const colors = generateCandidateColors(input.candidates.length);
-  return buildCandidateTrajectories(input.candidates, colors);
+  return buildCandidateTrajectories(input.candidates, colors, input.goalValues);
 }
 
-function buildUserTrajectory(userTrajectory: UserContext[], locale: ChartLocale): ProcessedTrajectory {
-  const points = userTrajectory.map((ctx) => extractPointValues(ctx));
+function buildUserTrajectory(
+  userTrajectory: UserContext[],
+  locale: ChartLocale,
+  goalValues?: GoalValues,
+): ProcessedTrajectory {
+  const points = userTrajectory.map((ctx) => extractPointValues(ctx, goalValues));
   const label = locale === "ru" ? "Вы" : "You";
 
   return {
@@ -93,14 +98,23 @@ function extractAdhocPointValues(ctx: AdhocContextBase): TrajectoryPoint {
   };
 }
 
-function buildCandidateTrajectories(candidates: ChartCandidate[], colors: string[]): ProcessedTrajectory[] {
-  return candidates.map((candidate, index) => buildCandidateTrajectory(candidate, colors[index]!, index));
+function buildCandidateTrajectories(
+  candidates: ChartCandidate[],
+  colors: string[],
+  goalValues?: GoalValues,
+): ProcessedTrajectory[] {
+  return candidates.map((candidate, index) => buildCandidateTrajectory(candidate, colors[index]!, index, goalValues));
 }
 
-function buildCandidateTrajectory(candidate: ChartCandidate, color: string, index: number): ProcessedTrajectory {
+function buildCandidateTrajectory(
+  candidate: ChartCandidate,
+  color: string,
+  index: number,
+  goalValues?: GoalValues,
+): ProcessedTrajectory {
   const { userId, candidateType, matchedContext, timeSinceMatchedMonths, path } = candidate;
 
-  const points = extractCandidatePoints(path, matchedContext);
+  const points = extractCandidatePoints(path, matchedContext, goalValues);
 
   const trajectory: ProcessedTrajectory = {
     id: userId,
@@ -118,16 +132,20 @@ function buildCandidateTrajectory(candidate: ChartCandidate, color: string, inde
   return trajectory;
 }
 
-function extractCandidatePoints(path: UserContext[] | undefined, matchedContext: UserContext): TrajectoryPoint[] {
+function extractCandidatePoints(
+  path: UserContext[] | undefined,
+  matchedContext: UserContext,
+  goalValues?: GoalValues,
+): TrajectoryPoint[] {
   if (path && path.length > 0) {
-    return addNowSentinel(path.map((ctx) => extractPointValues(ctx)));
+    return addNowSentinel(path.map((ctx) => extractPointValues(ctx, goalValues)));
   }
-  return addNowSentinel([extractPointValues(matchedContext)]);
+  return addNowSentinel([extractPointValues(matchedContext, goalValues)]);
 }
 
-function extractPointValues(ctx: UserContext): TrajectoryPoint {
+function extractPointValues(ctx: UserContext, goalValues?: GoalValues): TrajectoryPoint {
   const values = Object.fromEntries(
-    Object.values(ASPECT_CONFIGS).map((config) => [config.field, config.extractValue(ctx)]),
+    Object.values(ASPECT_CONFIGS).map((config) => [config.field, config.extractValue(ctx, goalValues)]),
   );
 
   return {

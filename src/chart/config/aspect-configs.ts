@@ -1,38 +1,5 @@
 import type { UserContext } from "../../shared/schemas.js";
-import type { AspectConfig, ChartableField } from "../types.js";
-
-/**
- * Extract seniority grade from position title.
- * Maps position strings to standardized grade levels.
- *
- * @param position - Job title
- * @returns Grade level or "middle" (default)
- */
-export function extractGrade(position: string): string {
-  const lower = position.toLowerCase();
-
-  const leadKeywords = ["lead", "principal", "staff"];
-  if (leadKeywords.some((keyword) => lower.includes(keyword))) {
-    return "lead";
-  }
-
-  const seniorKeywords = ["senior", "sr"];
-  if (seniorKeywords.some((keyword) => lower.includes(keyword))) {
-    return "senior";
-  }
-
-  const middleKeywords = ["middle", "mid"];
-  if (middleKeywords.some((keyword) => lower.includes(keyword))) {
-    return "middle";
-  }
-
-  const juniorKeywords = ["junior", "jr"];
-  if (juniorKeywords.some((keyword) => lower.includes(keyword))) {
-    return "junior";
-  }
-
-  return "middle";
-}
+import type { AspectConfig, ChartableField, GoalValues } from "../types.js";
 
 /**
  * Aspect configurations for all chartable fields.
@@ -41,9 +8,9 @@ export function extractGrade(position: string): string {
 export const ASPECT_CONFIGS: Record<ChartableField, AspectConfig> = {
   position: {
     field: "position",
-    labels: { ru: "Грейд", en: "Grade" },
-    extractValue: (ctx: UserContext) => extractGrade(ctx.position),
-    getLevels: () => [], // dynamic
+    labels: { ru: "Позиция", en: "Position" },
+    extractValue: (ctx: UserContext) => ctx.position,
+    getLevels: () => [], // dynamic from positionOrder
   },
 
   role: {
@@ -56,7 +23,13 @@ export const ASPECT_CONFIGS: Record<ChartableField, AspectConfig> = {
   domains: {
     field: "domains",
     labels: { ru: "Домен", en: "Domain" },
-    extractValue: (ctx: UserContext) => ctx.domains[0] ?? null,
+    extractValue: (ctx: UserContext, goalValues?: GoalValues) => {
+      const goalDomain = goalValues?.domains;
+      if (typeof goalDomain === "string" && ctx.domains.includes(goalDomain)) {
+        return goalDomain;
+      }
+      return ctx.domains[0] ?? null;
+    },
     getLevels: () => [], // dynamic - extracted from data
   },
 

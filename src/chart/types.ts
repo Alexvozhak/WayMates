@@ -44,7 +44,7 @@ export type ChartCandidate = {
 export type AspectConfig = {
   field: ChartableField;
   labels: { ru: string; en: string };
-  extractValue: (ctx: UserContext) => string | number | null;
+  extractValue: (ctx: UserContext, goalValues?: GoalValues) => string | number | null;
   getLevels: () => string[];
 };
 

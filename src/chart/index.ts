@@ -5,7 +5,7 @@
  */
 
 import { ChartBuilder } from "./builders/chart-builder.js";
-import { DEFAULT_FIELDS, extractGrade } from "./config/aspect-configs.js";
+import { DEFAULT_FIELDS } from "./config/aspect-configs.js";
 import { getR2Config, R2StorageService } from "./services/r2-storage.js";
 import { ChartGenerationError } from "./types.js";
 
@@ -24,7 +24,7 @@ export type {
   GoalValues,
 } from "./types.js";
 export { CHARTABLE_FIELDS, toChartLocale } from "./types.js";
-export { ASPECT_CONFIGS, DEFAULT_FIELDS, extractGrade } from "./config/aspect-configs.js";
+export { ASPECT_CONFIGS, DEFAULT_FIELDS } from "./config/aspect-configs.js";
 
 /**
  * Extract goal values for chart visualization from Goal object.
@@ -37,7 +37,7 @@ export function extractGoalValues(goal: Goal | null | undefined): GoalValues {
   const { targetContext } = goal;
 
   if (targetContext.position?.values[0]) {
-    values.position = extractGrade(targetContext.position.values[0]);
+    values.position = targetContext.position.values[0];
   }
 
   if (targetContext.domains?.values[0]) {

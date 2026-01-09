@@ -87,6 +87,7 @@ export class ChartBuilder {
         userTrajectory: this.input.userTrajectory,
         candidates: this.input.candidates,
         locale: this.input.locale,
+        goalValues: this.input.goalValues,
       });
     }
 
@@ -95,6 +96,7 @@ export class ChartBuilder {
         mode: "goal-only",
         candidates: this.input.candidates,
         locale: this.input.locale,
+        goalValues: this.input.goalValues,
       });
     }
 
@@ -103,6 +105,7 @@ export class ChartBuilder {
       adhocContext: this.input.adhocContext,
       candidates: this.input.candidates,
       locale: this.input.locale,
+      goalValues: this.input.goalValues,
     });
   }
 
