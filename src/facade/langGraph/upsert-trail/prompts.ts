@@ -4,9 +4,14 @@
  */
 export function buildTrailExtractionPrompt(hints: string): string {
   return `Extract learning trail information from the user's message.
+
+KNOWN VALUES (CAREFULLY check these lists):
+{{
 ${hints}
+}}
+
 Required fields:
-- skill: Map to KNOWN SKILLS from hints above
+- skill: Map to {{KNOWN SKILLS}} from hints above
 - platform: The learning platform (coursera, udemy, youtube, self-study, bootcamp, university, etc.)
 
 Optional fields (extract if mentioned, otherwise leave as null):

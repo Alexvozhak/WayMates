@@ -9,7 +9,11 @@ import type { AnyGraphResponse, Locale } from "../../../shared/schemas.js";
 import type { ChatOpenAI } from "@langchain/openai";
 
 const nlpResponseSchema = z.object({
-  reasoning: z.string().describe("Brief explanation of formatting decisions based on phase and data"),
+  reasoning: z
+    .string()
+    .describe(
+      "1) State received locale (e.g. 'locale: en'). 2) List ALL keys from received data. 3) Explain which included in output and why.",
+    ),
   text: z.string().describe("The formatted response text for user"),
 });
 

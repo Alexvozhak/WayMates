@@ -7,13 +7,13 @@ import type { AdhocContextBase, TargetContext } from "../../../shared/schemas.js
 
 // Common field hints (DRY: used in both adhoc and goal descriptions)
 const HINTS = {
-  position: "map to KNOWN POSITIONS",
-  role: "map to KNOWN ROLES",
-  domains: "map to KNOWN DOMAINS",
-  skills: "map to KNOWN SKILLS",
-  industries: "map to KNOWN INDUSTRIES",
-  cities: "map to KNOWN CITIES",
-  education: "map to KNOWN EDUCATION LEVELS",
+  position: "map to {{KNOWN POSITIONS}}",
+  role: "map to {{KNOWN ROLES}}",
+  domains: "map to {{KNOWN DOMAINS}}",
+  skills: "map to {{KNOWN SKILLS}}",
+  industries: "map to {{KNOWN INDUSTRIES}}",
+  cities: "map to {{KNOWN CITIES}}",
+  education: "map to {{KNOWN EDUCATION LEVELS}}",
   countryCode: "ISO 3166-1 alpha-2",
   citizenships: "ISO 3166-1 alpha-2",
   languages: "ISO 639-1",
@@ -129,31 +129,23 @@ export const GOAL_FIELD_DESCRIPTIONS: Record<keyof TargetContext, string> = {
  */
 export const DECOMPOSITION_RULES = `
 ═══════════════════════════════════════════════════
-DECOMPOSITION APPROACH:
+JOB TITLE DECOMPOSITION:
 ═══════════════════════════════════════════════════
-Job titles encode multiple independent dimensions. Extract ALL THREE from a single title:
+POSITION = career level from {{KNOWN POSITIONS}}
+- If user's title EXISTS in {{KNOWN POSITIONS}} → use it exactly
+- If title NOT in list and no level mentioned → null
 
-1. POSITION = ONLY the seniority/grade level (junior, middle, senior, lead, etc.) — map to KNOWN POSITIONS
-2. ROLE = the job FUNCTION word within the title — map to KNOWN ROLES
-3. DOMAINS = areas of work or expertise — map to KNOWN DOMAINS
+ROLE = profession function from {{KNOWN ROLES}}
+- What the person DOES day-to-day
+- Title contains "manager" → role: manager
+- Title contains "developer/engineer" → role: developer
+- REQUIRED field — always map to {{KNOWN ROLES}}
 
-ROLE EXTRACTION:
-- ROLE = core profession type based on PRIMARY daily work
-- POSITION = seniority level in career progression
-- Determine role from what person DOES day-to-day, not title keywords
-- Technical leadership (leading engineers/developers) → role stays technical
-- manager role ONLY when primary work is non-technical management
-- ROLE is REQUIRED — map to KNOWN ROLES based on actual work
+DOMAINS = technical areas from {{KNOWN DOMAINS}} (ARRAY — can have multiple values)
+- Include ALL domains user explicitly mentioned
+- Do NOT infer from position or role
 
-DOMAINS EXTRACTION:
-- DOMAINS = broad disciplines or specialization AREAS, not implementation tools
-- Include BOTH technical discipline AND functional area if present
-- Extract ONLY domains explicitly mentioned by user — do NOT infer from position level
-- Consult KNOWN DOMAINS hints to understand what semantic pattern belongs here
-
-INDUSTRY PRECISION:
-- INDUSTRY = business sector the COMPANY operates in (what they produce/sell)
-- NOT the organization type or department name
-- Determine from company's core business activity, not from title keywords
-- Use the EXACT industry user mentioned if it exists in KNOWN INDUSTRIES
+INDUSTRY = business sector from {{KNOWN INDUSTRIES}}
+- Use EXACT match if user mentioned it
+- Do NOT generalize (e.g. specific → generic)
 `;

@@ -22,7 +22,10 @@ import type {
 import type { SearchPhase, SearchStateType } from "../state.js";
 
 const extractor = getModel("extraction").withStructuredOutput(
-  withReasoning(adhocContextBase, "Explain what context you extracted from the user message"),
+  withReasoning(
+    adhocContextBase,
+    "For each field: 1) what user said, 2) which KNOWN value matched (or why null). For arrays (domains, skills): list ALL terms user mentioned and explain which were included/excluded and why. Quote KNOWN lists.",
+  ),
 );
 
 async function extractAdhocContext(message: string, hints: string): Promise<AdhocContextBase | null> {

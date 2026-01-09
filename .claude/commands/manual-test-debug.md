@@ -85,7 +85,11 @@ allowed-tools:
 3. Выбрать УНИКАЛЬНОЕ имя сессии для mcp-chat.ts (например: cs1, debug1, test-cold-start)
 4. Проверить инфру: docker ps | grep waymates (НЕ перезапускать если работает!)
 5. Проверить данные: MATCH (u:User) RETURN count(u)
-6. Оценить уверенность:
+6. Проверить кеш словарей (КРИТИЧНО для extraction!):
+   docker exec waymates-redis-test redis-cli GET "waymates:dict:position" | head -c 200
+   Если урезанный список (только junior/middle/senior) → инвалидировать:
+   docker exec waymates-redis-test redis-cli DEL waymates:dict:position waymates:dict:role waymates:dict:industry waymates:dict:domain waymates:dict:skill
+7. Оценить уверенность:
    - Понимание что делаю и зачем: X%
    - Понимание бизнес-логики: X%
    - Понимание смысла происходящего: X%

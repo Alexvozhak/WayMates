@@ -123,7 +123,12 @@ ${SECTION_DIVIDER}
 - Do NOT merge data from different positions into one
 
 ${getCurrentDateContext()}
+
+KNOWN VALUES (CAREFULLY check these lists):
+{{
 ${dictHints}
+}}
+
 CONVERSATION:
 ${text}
 ${cvSection}
@@ -136,16 +141,16 @@ ${DECOMPOSITION_RULES}
 ${SECTION_DIVIDER}
 CAREER MODEL:
 ${SECTION_DIVIDER}
-- ROLE: Profession type (WHAT you do) — map to KNOWN ROLES
-- POSITION: Seniority level (HOW experienced) — map to KNOWN POSITIONS
-- DOMAINS: Technical specialization — map to KNOWN DOMAINS
-- INDUSTRY: Company's business sector — map to KNOWN INDUSTRIES
-- CREATION REASON: Why this context was created — map to KNOWN REASONS
+- ROLE: Profession type (WHAT you do) — map to {{KNOWN ROLES}}
+- POSITION: Seniority level (HOW experienced) — map to {{KNOWN POSITIONS}}
+- DOMAINS: Technical specialization — map to {{KNOWN DOMAINS}}
+- INDUSTRY: Company's business sector — map to {{KNOWN INDUSTRIES}}
+- CREATION REASON: Why this context was created — map to {{KNOWN REASONS}}
 
 ${SECTION_DIVIDER}
 OPTIONAL FIELDS (include ONLY if explicitly mentioned):
 ${SECTION_DIVIDER}
-- educationLevel: highest degree — map to KNOWN EDUCATION LEVELS
+- educationLevel: highest degree — map to {{KNOWN EDUCATION LEVELS}}
 - salaryExact: exact annual salary in USD
 - salaryMin/salaryMax: salary range in USD (use EITHER exact OR range)
 - feedback: user's reflection about THIS position (max 200 chars)
@@ -274,7 +279,12 @@ ${SECTION_DIVIDER}
 - KEEP all existing values unchanged`;
 
   return `Update career context based on user's clarification.
+
+KNOWN VALUES (CAREFULLY check these lists):
+{{
 ${dictHints}
+}}
+
 ${SECTION_DIVIDER}
 CURRENT CONTEXT:
 ${SECTION_DIVIDER}

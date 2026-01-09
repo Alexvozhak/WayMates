@@ -88,11 +88,26 @@ our goal. This is proof the path exists — not theory, real data.
 (Technical: dual matching on matchedContext + targetContext)"
 ```
 
-### Pacing
+### Pacing (CRITICAL for demo recording)
 
+- **WAIT 10 seconds** after writing commentary BEFORE executing command
+- Let user read your explanation in IDE first
+- Then they'll see the command + bot response in Telegram
 - Pause after sending commands (5-10 sec for bot to respond)
 - Don't over-explain — viewers can read the bot's response
 - Leave breathing room between concepts
+
+**Pattern:**
+1. Write commentary (explain what we'll do)
+2. Execute with `sleep 7 &&` prefix
+3. **WAIT** for bot response
+4. React to actual response
+
+**CRITICAL — ALWAYS use this exact format:**
+```bash
+sleep 7 && npm run telegram-chat -- "message" 2>&1 | grep -A30 "Bot reply"
+```
+**NEVER execute telegram-chat without `sleep 7 &&` prefix!**
 
 ---
 
@@ -271,11 +286,14 @@ It's not a monolith — it's a protocol-based service."
 2. **Describe position** — natural language input, show extraction
 3. **Explore** — see similar people without goal
 4. **Set goal** — demonstrate goal extraction
-5. **Pathfinders** — proof of transition possibility
-6. **Waymates** — peer networking value
-7. **Wrap up** — summarize what we accomplished
+5. **Save goal** — REQUIRED before search!
+6. **Pathfinders** — proof of transition possibility
+7. **Ask advisor** — question about pathfinder results
+8. **Waymates** — peer networking value
+9. **Ask advisor** — question about waymate results
+10. **Wrap up** — summarize what we accomplished
 
-### Target Context (guide extraction toward this)
+### Target Context (MUST match demo fixtures exactly)
 
 ```
 Position: technical project manager
@@ -283,7 +301,11 @@ Role: manager
 Domains: management, backend
 Industry: fintech
 Country: RU
+Citizenship: RU
 ```
+
+**BE CAREFUL**: Describe context explicitly so LLM extraction matches these EXACT values.
+If extraction is wrong — clarify immediately before proceeding.
 
 ### Target Goal
 
@@ -374,6 +396,12 @@ Run before starting:
 # Check containers
 docker ps | grep waymates  # expect 6
 
+# Check Redis dict cache (CRITICAL for extraction!)
+docker exec waymates-redis-test redis-cli GET "waymates:dict:position" | head -c 100
+# Expect: full list with "technical project manager"
+# If truncated (only junior/middle/senior) → invalidate:
+# docker exec waymates-redis-test redis-cli DEL waymates:dict:position waymates:dict:role waymates:dict:industry waymates:dict:domain waymates:dict:skill
+
 # Check demo data
 # Neo4j MCP: MATCH (u:User) WHERE u.userId STARTS WITH 'usr_019b0055' RETURN count(u)
 # Expect: 11
@@ -386,7 +414,12 @@ docker ps | grep waymates  # expect 6
 # Neo4j MCP: MATCH (u:User)-[:HAS_GOAL]->(g:Goal) RETURN count(u)
 # Expect: 4+
 
-# Load env
+# FOR SHORT DEMO: Check Demo-Alex NOT in DB (avoid finding yourself)
+# Neo4j MCP: MATCH (u:User {userId: 'usr_019b0055-0000-7000-8000-000000000001'}) RETURN count(u)
+# Expect: 0
+# If exists, delete: MATCH (u:User {userId: 'usr_019b0055-0000-7000-8000-000000000001'}) DETACH DELETE u
+
+# Load env (or use: npm run telegram-chat -- "message")
 set -a && source .env.test && set +a
 ```
 

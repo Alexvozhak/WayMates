@@ -34,7 +34,7 @@ Brand terms (keep exactly as-is): ${BRAND_TERMS.join(", ")}`;
 // Shared context format (DRY: used in asking + confirming phases)
 const CONTEXT_FORMAT = `📝 Your current context: (static header)
   ❗ Label (ONLY if missingFields array is not empty — one per field, no value, no colon)
-  ✅ Label: value (for each non-null field in adhocContext)
+  ✅ Label: value (list EVERY key from adhocContext object that has a value)
   ⚪ Label (for each field in optionalFields array, one per line — no value, no colon)
   Use human-readable labels: ${FIELD_NAMES_MAPPING}`;
 
@@ -44,14 +44,15 @@ const CONTEXT_BLOCK = `👤 Your context (STRICTLY from adhocContext JSON object
   ⚪ NOT SET: fields where adhocContext.field IS null
   NEVER use values from candidates or appliedFilters for context display`;
 
-const GOAL_BLOCK = `🎯 Goal:
-  ✅ SPECIFIED: list non-null goal fields with values
-  ⚪ NOT SET: list null fields — will match any`;
+const GOAL_BLOCK = `🎯 Goal (from extractedGoal or storedGoal JSON):
+  For EACH field in goal object:
+    - If value is NOT null/empty → "✅ FieldLabel: value"
+    - If value IS null → "⚪ FieldLabel" (no value — matches any)
+  Labels: ${GOAL_FIELD_NAMES_MAPPING}`;
 
 const FILTERS_BLOCK = `🔍 Filters:
-  • recency: [recencyThresholdMonths value or "any time"]
-  • excluded: [excludedContextFields — convert to human-readable labels: ${FIELD_NAMES_MAPPING}. Show "none" if empty]
-  ⚠️ Show rejectedFields if not empty`;
+  • context age: [recencyThresholdMonths value as "last N months" or "any time" if null] — how recent the matched position was
+  NEVER show excluded, rejectedFields, excludedCreationReasons — internal fields`;
 
 // Search mode descriptions (DRY: used in results and mode selection)
 const PATHFINDERS_DESC = "people from same context who already achieved this goal";
@@ -84,13 +85,15 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   Be concise, offer clear choices.`,
   [SEARCH_PHASE.showing_exploration_candidates]: `Check answerText field first:
   If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
-  If answerText is null/empty → Show results from explorationResults array:
+  If answerText is null/empty → Show exploration results:
   📊 **Explore** — people with similar background
   ${CONTEXT_BLOCK}
   ${FILTERS_BLOCK}
-  📋 Results: [explorationResults.length] similar people
-  IMPORTANT: List candidates from explorationResults array. Each has matchedContext.
-  Each context with fields: ${NLP_CANDIDATE_FIELDS}
+  📋 Results: [candidates.length] similar people
+  MANDATORY: FOR EACH item in candidates array, show numbered list:
+    1. matchedContext.position (matchedContext.countryCode) — matchedContext.domains • [timeSinceMatchedMonths] months ago
+    2. ... (continue for all candidates)
+  Fields per candidate: ${NLP_CANDIDATE_FIELDS}
   CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → first acknowledge goal deleted.
   End with: set goal, filter, or ask question.`,
@@ -103,13 +106,13 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   📋 Results: [totalCount] people — showing facets to narrow down
   Show facets with counts, suggest filter.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → first acknowledge goal deleted.`,
-  [SEARCH_PHASE.showing_goal]: `Show goal ONLY from extractedGoal data. NEVER invent or assume values.
-  ✅ SPECIFIED: list non-null fields with values, use ✅ icon for each
-  ❌ If position is null — ask user to specify
-  ⚪ Optional: list from goalOptionalFields array, one per line — no value, no colon
+  [SEARCH_PHASE.showing_goal]: `Show GOAL (NOT context!) from extractedGoal data.
+  REQUIRED HEADER: 🎯 Your career goal: (this is GOAL, not current context!)
+  ✅ SPECIFIED: list non-null fields from extractedGoal with values
+  ⚪ Optional: list from goalOptionalFields array, no value
   Labels: ${GOAL_FIELD_NAMES_MAPPING}
-  CRITICAL: Show ONLY what is in extractedGoal. Keep it concise.
-  End with clear options: validate (check if people reached this goal), refine (add details), or save (confirm and search).`,
+  CRITICAL: This is GOAL (where user WANTS to go), NOT current context.
+  End with: validate, refine, or save.`,
   [SEARCH_PHASE.asking_after_validate_candidates]: `Structured format:
   📊 **Validate Goal** — checking who already reached this position
   ${GOAL_BLOCK}
@@ -131,8 +134,10 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
   📋 Results: [results.length] waymates
-  List candidates from results array with matchedContext.
-  Each context: ${NLP_CANDIDATE_FIELDS}
+  MANDATORY: FOR EACH item in results array, show numbered list:
+    1. matchedContext.position (matchedContext.countryCode) — matchedContext.domains • [timeSinceMatchedMonths] months ago
+    2. ... (continue for all results)
+  Fields per candidate: ${NLP_CANDIDATE_FIELDS}
   End with: switch to pathfinders, filter, or refine goal.`,
   [SEARCH_PHASE.showing_pathfinder_results]: `CRITICAL: DO NOT ask for any fields! Results are ready to display.
   Check answerText first: If NOT null/empty → show ONLY answerText.
@@ -141,8 +146,10 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
   📋 Results: [results.length] pathfinders
-  List candidates from results array with matchedContext → targetContext.
-  Each context: ${NLP_CANDIDATE_FIELDS}
+  MANDATORY: FOR EACH item in results array, show numbered list with TRANSITION:
+    1. matchedContext.position → targetContext.position (targetContext.countryCode) • [timeSinceTargetMonths] months ago
+    2. ... (continue for all results)
+  Fields per candidate: ${NLP_CANDIDATE_FIELDS}
   End with: switch to waymates, filter, or refine goal.`,
   [SEARCH_PHASE.showing_results_facets]: `Structured format:
   📊 **Results** — too many to show, use facets to narrow

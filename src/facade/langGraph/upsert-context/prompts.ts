@@ -4,14 +4,18 @@
  */
 export function buildContextExtractionPrompt(hints: string): string {
   return `Extract career context from user's natural language description.
+
+KNOWN VALUES (CAREFULLY check these lists):
+{{
 ${hints}
+}}
 
 IMPORTANT - distinguish these fields:
-- role: profession type (WHAT you do) — map to KNOWN ROLES
-- position: seniority level (HOW experienced) — map to KNOWN POSITIONS
-- domains: technical specialization area (answers 'what kind of developer/engineer?') — map to KNOWN DOMAINS
-- skills: specific technologies/tools — map to KNOWN SKILLS
-- industry: business sector — map to KNOWN INDUSTRIES
+- role: profession type (WHAT you do) — map to {{KNOWN ROLES}}
+- position: seniority level (HOW experienced) — map to {{KNOWN POSITIONS}}
+- domains: technical specialization area (answers 'what kind of developer/engineer?') — map to {{KNOWN DOMAINS}}
+- skills: specific technologies/tools — map to {{KNOWN SKILLS}}
+- industry: business sector — map to {{KNOWN INDUSTRIES}}
 
 RULES:
 - Map user input to KNOWN dictionary values (case-insensitive matching)
@@ -31,7 +35,11 @@ export function buildContextClarificationPrompt(
   userCorrections: string,
 ): string {
   return `Apply user's corrections to the extracted career context.
+
+KNOWN VALUES (CAREFULLY check these lists):
+{{
 ${hints}
+}}
 
 CURRENT EXTRACTED CONTEXT:
 ${currentContext}

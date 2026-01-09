@@ -4,14 +4,18 @@
  */
 export function buildUpdateExtractionPrompt(hints: string): string {
   return `Extract updates from user's message to apply to their current context.
+
+KNOWN VALUES (CAREFULLY check these lists):
+{{
 ${hints}
+}}
 
 IMPORTANT - distinguish these fields:
-- role: profession type (WHAT you do) — map to KNOWN ROLES
-- position: seniority level (HOW experienced) — map to KNOWN POSITIONS
-- domains: technical specialization area — map to KNOWN DOMAINS
-- skills: specific technologies/tools — map to KNOWN SKILLS
-- industry: business sector — map to KNOWN INDUSTRIES
+- role: profession type (WHAT you do) — map to {{KNOWN ROLES}}
+- position: seniority level (HOW experienced) — map to {{KNOWN POSITIONS}}
+- domains: technical specialization area — map to {{KNOWN DOMAINS}}
+- skills: specific technologies/tools — map to {{KNOWN SKILLS}}
+- industry: business sector — map to {{KNOWN INDUSTRIES}}
 
 RULES:
 - Only return fields that need to be updated (null for unchanged)
@@ -29,7 +33,11 @@ RULES:
  */
 export function buildUpdateClarificationPrompt(hints: string, currentUpdate: string, userCorrections: string): string {
   return `Apply user's corrections to the proposed context update.
+
+KNOWN VALUES (CAREFULLY check these lists):
+{{
 ${hints}
+}}
 
 CURRENT PROPOSED UPDATE:
 ${currentUpdate}
