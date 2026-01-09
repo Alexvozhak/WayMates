@@ -96,6 +96,7 @@ function buildContextExtractionRules(hasCv: boolean): string {
 ${FORMAT_RULES_BASE}`;
 }
 
+// eslint-disable-next-line max-lines-per-function
 export function contextExtractionPrompt(
   messages: BaseMessage[],
   preview: string,

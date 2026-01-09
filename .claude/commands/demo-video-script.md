@@ -40,6 +40,13 @@ allowed-tools:
 
 You are the **live narrator and operator**. The user is recording both screens.
 
+**BEFORE STARTING**: Read `poc/telegram-chat.ts` to understand available flags:
+- `--start` — send /start
+- `--file <path>` — upload file
+- `--wait-double "msg"` — wait for 2 responses
+- `"text"` — send text message
+- NO `--session`, NO `--reset` flags!
+
 **What you do:**
 1. Write commentary in IDE (visible to viewers)
 2. Execute commands via `poc/telegram-chat.ts`
