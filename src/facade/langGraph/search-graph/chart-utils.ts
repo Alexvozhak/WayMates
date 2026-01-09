@@ -1,7 +1,7 @@
 import { CHARTABLE_FIELDS, extractGoalValues, generateTrajectoryChart, toChartLocale } from "../../../chart/index.js";
 import { config } from "../../env.js";
 
-import type { ChartableField, GenerateChartInput } from "../../../chart/index.js";
+import type { CandidateType, ChartableField, ChartCandidate, GenerateChartInput } from "../../../chart/index.js";
 import type {
   AdhocContextBase,
   Goal,
@@ -12,46 +12,61 @@ import type {
   WaymateCandidate,
 } from "../../../shared/schemas.js";
 
+/** Approximate milliseconds in a month (30 days) for timeSinceMatchedMonths calculation */
+const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
+
 type Logger = { error: (obj: object, msg: string) => void };
 type DictionariesService = { getPositionOrder: () => Promise<string[]> };
 
-/**
- * Convert PathfinderCandidate to chart-compatible WaymateCandidate.
- */
-export function pathfinderToChartCandidate(pf: PathfinderCandidate): WaymateCandidate {
-  return {
-    userId: pf.userId,
-    matchedContext: pf.matchedContext,
-    contextMatchScore: 0,
-    isWaymate: false,
-    path: pf.path,
-    trails: pf.trails,
-    timeSinceMatchedMonths: pf.timeSinceTargetMonths,
-    dtwMetrics: pf.dtwMetrics,
-    dtwTotal: pf.dtwTotal,
+/** Convert WaymateCandidate to ChartCandidate */
+export function waymateToChart(c: WaymateCandidate): ChartCandidate {
+  const chart: ChartCandidate = {
+    userId: c.userId,
+    matchedContext: c.matchedContext,
+    candidateType: "waymate",
   };
+  if (c.path) chart.path = c.path;
+  if (c.trails) chart.trails = c.trails;
+  if (c.timeSinceMatchedMonths !== undefined) chart.timeSinceMatchedMonths = c.timeSinceMatchedMonths;
+  if (c.dtwMetrics) chart.dtwMetrics = c.dtwMetrics;
+  if (c.dtwTotal !== undefined) chart.dtwTotal = c.dtwTotal;
+  return chart;
 }
 
-/**
- * Convert MatchedCandidateWithPath (reversePathfinders) to chart-compatible WaymateCandidate.
- */
-export function matchedToChartCandidate(c: MatchedCandidateWithPath): WaymateCandidate {
+/** Convert PathfinderCandidate to ChartCandidate */
+export function pathfinderToChart(pf: PathfinderCandidate): ChartCandidate {
+  const chart: ChartCandidate = {
+    userId: pf.userId,
+    matchedContext: pf.matchedContext,
+    candidateType: "pathfinder",
+  };
+  if (pf.path) chart.path = pf.path;
+  if (pf.trails) chart.trails = pf.trails;
+  if (pf.timeSinceTargetMonths !== undefined) chart.timeSinceMatchedMonths = pf.timeSinceTargetMonths;
+  if (pf.dtwMetrics) chart.dtwMetrics = pf.dtwMetrics;
+  if (pf.dtwTotal !== undefined) chart.dtwTotal = pf.dtwTotal;
+  return chart;
+}
+
+/** Convert MatchedCandidateWithPath to ChartCandidate */
+export function matchedToChart(c: MatchedCandidateWithPath, candidateType: CandidateType): ChartCandidate {
   const createdAt = new Date(c.matchedContext.createdAt);
-  const monthsSince = Math.floor((Date.now() - createdAt.getTime()) / (30 * 24 * 60 * 60 * 1000));
-  return {
+  const monthsSince = Math.floor((Date.now() - createdAt.getTime()) / MS_PER_MONTH);
+  const chart: ChartCandidate = {
     userId: c.userId,
     matchedContext: c.matchedContext,
     timeSinceMatchedMonths: monthsSince,
-    contextMatchScore: 0,
-    isWaymate: false,
-    path: c.path,
-    trails: c.trails,
+    candidateType,
   };
+  if (c.path) chart.path = c.path;
+  if (c.trails) chart.trails = c.trails;
+  return chart;
 }
 
 type BaseChartDeps = {
   userTrajectory: UserContext[];
   adhocContext: AdhocContextBase | null;
+  candidates: ChartCandidate[];
   locale: Locale;
   dictionariesService: DictionariesService;
   logger: Logger;
@@ -59,24 +74,8 @@ type BaseChartDeps = {
   excludedContextFields: string[];
 };
 
-type ExploreChartDeps = BaseChartDeps & {
-  mode: "explore";
-  candidates: WaymateCandidate[];
-};
-
-type WithGoalChartDeps = BaseChartDeps & {
-  mode: "with-goal";
-  candidates: WaymateCandidate[];
-  storedGoal: Goal | null;
-};
-
-type GoalOnlyChartDeps = BaseChartDeps & {
-  mode: "goal-only";
-  candidates: WaymateCandidate[];
-  storedGoal: Goal | null;
-};
-
-export type ChartGenerationDeps = ExploreChartDeps | WithGoalChartDeps | GoalOnlyChartDeps;
+export type ChartGenerationDeps = BaseChartDeps &
+  ({ mode: "explore" } | { mode: "with-goal" | "goal-only"; storedGoal: Goal | null });
 
 function toChartableFields(fields: string[]): ChartableField[] {
   const chartableSet = new Set<string>(CHARTABLE_FIELDS);
@@ -94,25 +93,23 @@ function buildChartInput(deps: ChartGenerationDeps, positionOrder: string[]): Ge
   };
 
   if (deps.mode === "explore") {
-    const exploreBase = { ...base, existingGoal: false };
     if (deps.userTrajectory.length > 0) {
-      return { mode: "full", userTrajectory: deps.userTrajectory, ...exploreBase };
+      return { mode: "full", userTrajectory: deps.userTrajectory, ...base };
     }
-    return { mode: "candidates-only", adhocContext: deps.adhocContext!, ...exploreBase };
+    return { mode: "candidates-only", adhocContext: deps.adhocContext!, ...base };
   }
 
   if (deps.mode === "goal-only") {
     const goalValues = extractGoalValues(deps.storedGoal);
-    return { mode: "goal-only", ...base, existingGoal: true, goalValues };
+    return { mode: "goal-only", ...base, goalValues };
   }
 
   // mode === "with-goal"
   const goalValues = extractGoalValues(deps.storedGoal);
-  const withGoalBase = { ...base, existingGoal: Boolean(deps.storedGoal), goalValues };
   if (deps.userTrajectory.length > 0) {
-    return { mode: "full", userTrajectory: deps.userTrajectory, ...withGoalBase };
+    return { mode: "full", userTrajectory: deps.userTrajectory, ...base, goalValues };
   }
-  return { mode: "candidates-only", adhocContext: deps.adhocContext!, ...withGoalBase };
+  return { mode: "candidates-only", adhocContext: deps.adhocContext!, ...base, goalValues };
 }
 
 /**

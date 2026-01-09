@@ -128,7 +128,7 @@ export class HtmlRenderer {
     const candidates = this.data.trajectories.slice(1);
     const candidateCheckboxes = candidates
       .map((traj) => {
-        const badge = traj.isWaymate ? " (Waymate)" : "";
+        const badge = traj.candidateType === "waymate" ? " (Waymate)" : "";
         return `<label>
               <input type="checkbox" value="${traj.id}" checked>
               <span class="candidate-label" style="background:${traj.color};"></span>
@@ -188,7 +188,7 @@ export class HtmlRenderer {
         const traj = this.data.trajectories.find((t) => t.id === metric.candidateId);
         if (!traj) return "";
 
-        const typeLabel = metric.isWaymate ? "Waymate" : "—";
+        const typeLabel = metric.candidateType === "waymate" ? "Waymate" : "—";
         const shape = metric.perField.position ? `${Math.round(metric.perField.position * 100)}%` : "—";
         const tempo = metric.perField.domains ? `${Math.round(metric.perField.domains * 100)}%` : "—";
         const alignment = metric.perField.cityName ? `${Math.round(metric.perField.cityName * 100)}%` : "—";
@@ -304,7 +304,7 @@ export class HtmlRenderer {
       const rawValues = traj.points.map(p => p.values[field]);
       const y = levels.length > 0 ? rawValues.map(v => v === null ? null : levels.indexOf(v) + jitterOffset) : rawValues;
       const text = rawValues.map(v => v === null ? '—' : String(v));
-      const badge = traj.isWaymate ? ' (Waymate)' : '';
+      const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : '';
       return {
         x, y, text, mode: 'lines+markers', name: traj.label + badge,
         line: { color: traj.color, width: traj.width, shape: 'hv' },

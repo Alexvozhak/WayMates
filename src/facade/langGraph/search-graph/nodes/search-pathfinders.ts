@@ -2,7 +2,7 @@ import { DTW_MIN_TRAJECTORY_LENGTH } from "../../../../config/scoring.js";
 import { adhocContextBase } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
-import { pathfinderToChartCandidate, safeGenerateChart } from "../chart-utils.js";
+import { pathfinderToChart, safeGenerateChart } from "../chart-utils.js";
 import { computeFacets, shouldUseFacets } from "../facets.js";
 import { NODE, PHASE } from "../state.js";
 import { DEFAULT_EXCLUDED_CONTEXT_FIELDS } from "../types.js";
@@ -59,7 +59,7 @@ export const searchPathfindersNode = withLogging<SearchStateType>(
           userTrajectory,
           adhocContext,
           storedGoal,
-          candidates: results.map((c) => pathfinderToChartCandidate(c)),
+          candidates: results.map((c) => pathfinderToChart(c)),
           locale,
           dictionariesService,
           logger,

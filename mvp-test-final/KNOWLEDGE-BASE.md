@@ -176,6 +176,15 @@ npm run facade:rebuild
 
 **ВАЖНО**: После пересборки facade бот теряет MCP сессию — нужен перезапуск бота.
 
+### Session Architecture
+
+**Facade = единственный source of truth** для сессий (Postgres).
+
+- grammY session middleware убран — бот stateless
+- Каждый запрос → `register_telegram` → fresh userId/sessionId из Facade
+- Нет stale данных в Redis бота
+- Cleanup проще — только Postgres + Neo4j
+
 ### Проверка здоровья
 
 ```bash
@@ -233,6 +242,20 @@ logger.warn({ error }, "something went wrong");
 - `normalizeFullContext` — для cold-start (добавляет термины)
 - `normalizeAdhocContext` — для adhoc (только фильтрация)
 - `filterToKnown`, `filterArrayToKnown` — private helpers для adhoc
+
+### Locale Architecture
+
+**182 языка** через `iso-639-1` пакет (ISO 639-1 стандарт).
+
+| Слой | Языки | Механизм |
+|------|-------|----------|
+| **LLM-генерируемый контент** | Все 182 | locale передаётся в промпт, LLM сам переводит |
+| **Static messages** (errors, labels) | ru/en | Hardcoded + fallback на en |
+| **Chart labels** | ru/en | `ChartLocale` + `toChartLocale()` fallback |
+
+**Ключевые файлы:**
+- `src/shared/schemas.ts` — `localeWithFallbackSchema`
+- `src/chart/types.ts` — `ChartLocale`, `toChartLocale()`
 
 ### Dictionary Hints Pollution
 
@@ -394,6 +417,20 @@ NLP: format(response)                  ← генерирует текст
 
 **Паттерн search-graph:** response-builders возвращают ДАННЫЕ, NLP генерирует текст.
 
+### FIELD_DISPLAY_NAMES
+
+Human-readable labels для технических имён полей.
+
+**Файл:** `src/facade/langGraph/shared/prompts.ts`
+
+```
+birthYear → "Year of birth"
+citizenships → "Citizenship"
+companySize → "Company size"
+```
+
+**Использование:** NLP formatter инжектирует маппинг в промпт для human-friendly output.
+
 ---
 
 ## 7. CYPHER — КРИТИЧЕСКИЕ ПРАВИЛА
@@ -546,8 +583,19 @@ PathCollectorService.collectTrajectories(candidateIds)
     ↓
 DTW enrichment (если userTrajectory >= 3)
     ↓
+waymatesOnly filtering (если true — ДО slice)
+    ↓
 Sort (dtwTotal + contextMatchScore) → slice(pathLimit)
 ```
+
+### waymatesOnly Flag
+
+**Проблема:** Фильтрация `isWaymate=true` ПОСЛЕ `pathLimit` отрезала реальных waymates.
+
+**Решение:** Core фильтрует `isWaymate=true` ДО `slice(pathLimit)` когда `waymatesOnly: true`.
+
+- `search-waymates.ts` передаёт `waymatesOnly: true`
+- `explore` использует `waymatesOnly: false` (показывает всех)
 
 ### Type Hierarchy
 

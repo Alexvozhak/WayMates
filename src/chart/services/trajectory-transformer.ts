@@ -1,13 +1,12 @@
 import { ASPECT_CONFIGS } from "../config/aspect-configs.js";
 import { generateCandidateColors, USER_COLOR } from "../config/colors.js";
 
-import type { AdhocContextBase, UserContext, WaymateCandidate } from "../../shared/schemas.js";
-import type { ChartLocale, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
+import type { AdhocContextBase, UserContext } from "../../shared/schemas.js";
+import type { ChartCandidate, ChartLocale, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
 
 type BaseTransformInput = {
-  candidates: WaymateCandidate[];
+  candidates: ChartCandidate[];
   locale: ChartLocale;
-  existingGoal: boolean;
 };
 
 export type FullModeTransformInput = BaseTransformInput & {
@@ -29,20 +28,20 @@ export type TransformInput = FullModeTransformInput | CandidatesOnlyTransformInp
 export function transformFullMode(input: FullModeTransformInput): ProcessedTrajectory[] {
   const colors = generateCandidateColors(input.candidates.length);
   const user = buildUserTrajectory(input.userTrajectory, input.locale);
-  const candidates = buildCandidateTrajectories(input.candidates, colors, input.existingGoal);
+  const candidates = buildCandidateTrajectories(input.candidates, colors);
   return [user, ...candidates];
 }
 
 export function transformCandidatesOnly(input: CandidatesOnlyTransformInput): ProcessedTrajectory[] {
   const colors = generateCandidateColors(input.candidates.length);
   const marker = buildAdhocMarker(input.adhocContext, input.locale);
-  const candidates = buildCandidateTrajectories(input.candidates, colors, input.existingGoal);
+  const candidates = buildCandidateTrajectories(input.candidates, colors);
   return [marker, ...candidates];
 }
 
 export function transformGoalOnly(input: GoalOnlyTransformInput): ProcessedTrajectory[] {
   const colors = generateCandidateColors(input.candidates.length);
-  return buildCandidateTrajectories(input.candidates, colors, input.existingGoal);
+  return buildCandidateTrajectories(input.candidates, colors);
 }
 
 function buildUserTrajectory(userTrajectory: UserContext[], locale: ChartLocale): ProcessedTrajectory {
@@ -54,7 +53,7 @@ function buildUserTrajectory(userTrajectory: UserContext[], locale: ChartLocale)
     label,
     color: USER_COLOR,
     width: 2.5,
-    isWaymate: false,
+    candidateType: null,
     points: addNowSentinel(points),
   };
 }
@@ -68,7 +67,7 @@ function buildAdhocMarker(adhocContext: AdhocContextBase, locale: ChartLocale): 
     label,
     color: USER_COLOR,
     width: 2.5,
-    isWaymate: false,
+    candidateType: null,
     points: [point],
   };
 }
@@ -94,21 +93,12 @@ function extractAdhocPointValues(ctx: AdhocContextBase): TrajectoryPoint {
   };
 }
 
-function buildCandidateTrajectories(
-  candidates: WaymateCandidate[],
-  colors: string[],
-  existingGoal: boolean,
-): ProcessedTrajectory[] {
-  return candidates.map((candidate, index) => buildCandidateTrajectory(candidate, colors[index]!, index, existingGoal));
+function buildCandidateTrajectories(candidates: ChartCandidate[], colors: string[]): ProcessedTrajectory[] {
+  return candidates.map((candidate, index) => buildCandidateTrajectory(candidate, colors[index]!, index));
 }
 
-function buildCandidateTrajectory(
-  candidate: WaymateCandidate,
-  color: string,
-  index: number,
-  _existingGoal: boolean,
-): ProcessedTrajectory {
-  const { userId, isWaymate, matchedContext, timeSinceMatchedMonths, path } = candidate;
+function buildCandidateTrajectory(candidate: ChartCandidate, color: string, index: number): ProcessedTrajectory {
+  const { userId, candidateType, matchedContext, timeSinceMatchedMonths, path } = candidate;
 
   const points = extractCandidatePoints(path, matchedContext);
 
@@ -116,8 +106,8 @@ function buildCandidateTrajectory(
     id: userId,
     label: `#${index + 1}`,
     color,
-    width: isWaymate ? 2 : 1.5,
-    isWaymate,
+    width: 2,
+    candidateType,
     points,
   };
 

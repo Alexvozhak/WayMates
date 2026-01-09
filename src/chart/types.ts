@@ -1,4 +1,4 @@
-import type { AdhocContextBase, Locale, UserContext, WaymateCandidate } from "../shared/schemas.js";
+import type { AdhocContextBase, DTWMetrics, Locale, Trail, UserContext } from "../shared/schemas.js";
 
 /**
  * Chart supports only ru/en labels. Other locales fallback to en.
@@ -22,6 +22,25 @@ const CHARTABLE_FIELDS = [
 export type ChartableField = (typeof CHARTABLE_FIELDS)[number];
 export { CHARTABLE_FIELDS };
 
+/** Candidate type for chart visualization — semantic role, not business logic */
+export type CandidateType = "pathfinder" | "waymate";
+
+/**
+ * Chart-specific candidate type. Decoupled from business types (WaymateCandidate/PathfinderCandidate).
+ * Chart doesn't care about business logic — only about visualization.
+ */
+export type ChartCandidate = {
+  userId: string;
+  matchedContext: UserContext;
+  path?: UserContext[];
+  trails?: Trail[];
+  timeSinceMatchedMonths?: number;
+  dtwMetrics?: DTWMetrics;
+  dtwTotal?: number;
+  /** Semantic type for chart styling (line width, badge) */
+  candidateType: CandidateType;
+};
+
 export type AspectConfig = {
   field: ChartableField;
   labels: { ru: string; en: string };
@@ -44,7 +63,8 @@ export type ProcessedTrajectory = {
   label: string;
   color: string;
   width: number;
-  isWaymate: boolean;
+  /** null for user trajectory, "pathfinder" or "waymate" for candidates */
+  candidateType: CandidateType | null;
   matchedContextIndex?: number;
   timeSinceMatchedMonths?: number;
   points: TrajectoryPoint[];
@@ -76,7 +96,7 @@ export type OverlapSummary = {
 
 export type SimilarityMetrics = {
   candidateId: string;
-  isWaymate: boolean;
+  candidateType: CandidateType;
   perField: Partial<Record<ChartableField, number>>;
   overall: number;
 };
@@ -86,11 +106,10 @@ export type GoalValues = Partial<Record<ChartableField, string | number | null>>
 export type DynamicLevels = Partial<Record<ChartableField, string[]>>;
 
 type BaseChartInput = {
-  candidates: WaymateCandidate[];
+  candidates: ChartCandidate[];
   maxCandidates: number;
   positionOrder: string[];
   locale: ChartLocale;
-  existingGoal: boolean;
   selectedFields?: ChartableField[];
   goalValues?: GoalValues;
   /** Fields excluded from search — also excluded from Overlap calculation */

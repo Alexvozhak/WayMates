@@ -1,4 +1,4 @@
-import { safeGenerateChart } from "../chart-utils.js";
+import { safeGenerateChart, waymateToChart } from "../chart-utils.js";
 import { computeFacets, shouldUseFacets } from "../facets.js";
 import { NODE, PHASE } from "../state.js";
 import { DEFAULT_CURRENT_SEARCH_PARAMS } from "../types.js";
@@ -37,7 +37,7 @@ export const searchWaymatesNode = withLogging<SearchStateType>(
           userTrajectory,
           adhocContext,
           storedGoal,
-          candidates: results,
+          candidates: results.map((c) => waymateToChart(c)),
           locale,
           dictionariesService,
           logger,

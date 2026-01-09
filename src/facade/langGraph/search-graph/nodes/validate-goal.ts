@@ -1,5 +1,5 @@
 import { AgentInvariantError } from "../../../errors.js";
-import { matchedToChartCandidate, safeGenerateChart } from "../chart-utils.js";
+import { matchedToChart, safeGenerateChart } from "../chart-utils.js";
 import { computeFacets, shouldUseFacets } from "../facets.js";
 import { NODE, PHASE } from "../state.js";
 import { DEFAULT_TARGET_SEARCH_PARAMS } from "../types.js";
@@ -42,7 +42,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
           userTrajectory,
           adhocContext,
           storedGoal,
-          candidates: candidates.map((c) => matchedToChartCandidate(c)),
+          candidates: candidates.map((c) => matchedToChart(c, "waymate")),
           locale,
           dictionariesService,
           logger,

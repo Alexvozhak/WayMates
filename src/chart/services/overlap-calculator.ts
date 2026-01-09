@@ -1,8 +1,8 @@
 import { ARRAY_OVERLAP_FIELDS } from "../types.js";
 
-import type { WaymateCandidate } from "../../shared/schemas.js";
 import type {
   ChartableField,
+  ChartCandidate,
   FullOverlapPeriod,
   OverlapPeriod,
   OverlapSummary,
@@ -36,7 +36,7 @@ export class OverlapCalculator {
   /**
    * Calculate similarity metrics using DTW data from scored candidates.
    */
-  calculateSimilarityMetrics(scoredCandidates: WaymateCandidate[]): SimilarityMetrics[] {
+  calculateSimilarityMetrics(scoredCandidates: ChartCandidate[]): SimilarityMetrics[] {
     return this.candidateTrajectories.map((trajectory, index) => {
       const scored = scoredCandidates[index];
       if (!scored) {
@@ -227,16 +227,19 @@ export class OverlapCalculator {
   }
 
   private createEmptyMetrics(trajectory: ProcessedTrajectory): SimilarityMetrics {
+    if (!trajectory.candidateType) {
+      throw new Error("Cannot create metrics for non-candidate trajectory");
+    }
     return {
       candidateId: trajectory.id,
-      isWaymate: trajectory.isWaymate,
+      candidateType: trajectory.candidateType,
       perField: {},
       overall: 0,
     };
   }
 
-  private createMetricsFromDtw(trajectory: ProcessedTrajectory, scored: WaymateCandidate): SimilarityMetrics {
-    const { dtwMetrics, isWaymate } = scored;
+  private createMetricsFromDtw(trajectory: ProcessedTrajectory, scored: ChartCandidate): SimilarityMetrics {
+    const { dtwMetrics, candidateType } = scored;
 
     if (!dtwMetrics) {
       return this.createEmptyMetrics(trajectory);
@@ -246,7 +249,7 @@ export class OverlapCalculator {
 
     return {
       candidateId: trajectory.id,
-      isWaymate,
+      candidateType,
       perField: {
         position: shapeSimilarity,
         domains: tempoSimilarity,

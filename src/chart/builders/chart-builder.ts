@@ -4,9 +4,10 @@ import { ChartGenerationError } from "../types.js";
 
 import { HtmlRenderer } from "./html-renderer.js";
 
-import type { AdhocContextBase, UserContext, WaymateCandidate } from "../../shared/schemas.js";
+import type { AdhocContextBase, UserContext } from "../../shared/schemas.js";
 import type {
   ChartableField,
+  ChartCandidate,
   ChartLocale,
   DynamicLevels,
   GoalValues,
@@ -16,11 +17,10 @@ import type {
 } from "../types.js";
 
 type BaseBuildInput = {
-  candidates: WaymateCandidate[];
+  candidates: ChartCandidate[];
   fields: ChartableField[];
   positionOrder: string[];
   locale: ChartLocale;
-  existingGoal: boolean;
   goalValues: GoalValues;
   excludedOverlapFields: ChartableField[];
 };
@@ -87,7 +87,6 @@ export class ChartBuilder {
         userTrajectory: this.input.userTrajectory,
         candidates: this.input.candidates,
         locale: this.input.locale,
-        existingGoal: this.input.existingGoal,
       });
     }
 
@@ -96,7 +95,6 @@ export class ChartBuilder {
         mode: "goal-only",
         candidates: this.input.candidates,
         locale: this.input.locale,
-        existingGoal: this.input.existingGoal,
       });
     }
 
@@ -105,7 +103,6 @@ export class ChartBuilder {
       adhocContext: this.input.adhocContext,
       candidates: this.input.candidates,
       locale: this.input.locale,
-      existingGoal: this.input.existingGoal,
     });
   }
 

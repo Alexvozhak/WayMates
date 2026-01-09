@@ -6,10 +6,11 @@
  */
 
 import { readFileSync } from "node:fs";
-import { generateTrajectoryChart, isChartServiceEnabled } from "../src/chart/index.js";
+import { generateTrajectoryChart } from "../src/chart/index.js";
 import { TrajectorySimilarityService } from "../src/core/trajectory-similarity.service.js";
 
-import type { ScoredMatchedCandidate, UserContext, AdhocContextBase, DTWMetrics } from "../src/shared/schemas.js";
+import type { ChartCandidate } from "../src/chart/index.js";
+import type { UserContext, AdhocContextBase, DTWMetrics } from "../src/shared/schemas.js";
 
 const dtwService = new TrajectorySimilarityService();
 
@@ -74,17 +75,16 @@ type CandidateOptions = {
   userTrajectory?: UserContext[];
 };
 
-function toCandidate(fixture: Fixture, matchedIdx: number, options: CandidateOptions = {}): ScoredMatchedCandidate {
+function toCandidate(fixture: Fixture, matchedIdx: number, options: CandidateOptions = {}): ChartCandidate {
   const path = fixture.contexts.map(toUserContext);
   const matched = path[matchedIdx];
   const createdAt = new Date(matched.createdAt);
   const monthsSince = Math.floor((Date.now() - createdAt.getTime()) / (30 * 24 * 60 * 60 * 1000));
 
-  const base = {
+  const base: ChartCandidate = {
     userId: fixture.userId,
     matchedContext: matched,
-    contextMatchScore: 0.85,
-    isWaymate: false,
+    candidateType: "waymate",
     timeSinceMatchedMonths: monthsSince,
     path,
     trails: (fixture.trails ?? []).map((t) => ({
@@ -104,14 +104,10 @@ function toCandidate(fixture: Fixture, matchedIdx: number, options: CandidateOpt
   if (options.userTrajectory && options.userTrajectory.length > 0) {
     const dtwMetrics: DTWMetrics = dtwService.computeDTWMetrics(options.userTrajectory, path);
     const dtwTotal = dtwMetrics.shapeSimilarity + dtwMetrics.tempoSimilarity + dtwMetrics.alignmentScore;
-    return {
-      ...base,
-      dtwMetrics,
-      dtwTotal,
-    } as ScoredMatchedCandidate;
+    return { ...base, dtwMetrics, dtwTotal };
   }
 
-  return base as ScoredMatchedCandidate;
+  return base;
 }
 
 function toAdhocContext(ctx: FixtureContext): AdhocContextBase {
@@ -221,14 +217,6 @@ async function testGoalOnlyMode(candidateFixture: Fixture): Promise<string | nul
 
 async function main(): Promise<void> {
   console.log("=== FEAT-048 Chart Smoke Test (Real Fixtures) ===");
-
-  const enabled = isChartServiceEnabled();
-  console.log(`\nChart service enabled: ${enabled ? "✅ YES" : "❌ NO"}`);
-
-  if (!enabled) {
-    console.log("\nSkipping tests — R2 not configured.");
-    process.exit(1);
-  }
 
   // Load fixtures
   const u5 = loadFixture("U5"); // middle → senior, frontend, 2 contexts

@@ -14,7 +14,15 @@ import type { GenerateChartInput, GenerateChartOutput, GoalValues } from "./type
 import type { Goal } from "../shared/schemas.js";
 
 // Re-exports for external consumers
-export type { ChartableField, ChartLocale, GenerateChartInput, GenerateChartOutput, GoalValues } from "./types.js";
+export type {
+  CandidateType,
+  ChartableField,
+  ChartCandidate,
+  ChartLocale,
+  GenerateChartInput,
+  GenerateChartOutput,
+  GoalValues,
+} from "./types.js";
 export { CHARTABLE_FIELDS, toChartLocale } from "./types.js";
 export { ASPECT_CONFIGS, DEFAULT_FIELDS, extractGrade } from "./config/aspect-configs.js";
 
@@ -84,23 +92,14 @@ export class ChartService {
   }
 
   private normalizeInput(input: GenerateChartInput): ChartBuildInput {
-    const {
-      candidates,
-      maxCandidates,
-      positionOrder,
-      locale,
-      existingGoal,
-      selectedFields,
-      goalValues,
-      excludedOverlapFields,
-    } = input;
+    const { candidates, maxCandidates, positionOrder, locale, selectedFields, goalValues, excludedOverlapFields } =
+      input;
 
     const baseInput = {
       candidates: candidates.slice(0, maxCandidates),
       fields: selectedFields ?? DEFAULT_FIELDS,
       positionOrder,
       locale,
-      existingGoal,
       goalValues: goalValues ?? {},
       excludedOverlapFields: excludedOverlapFields ?? [],
     };
@@ -126,10 +125,10 @@ export class ChartService {
  *
  * @example
  * const result = await generateTrajectoryChart({
+ *   mode: 'full',
  *   userTrajectory: state.userTrajectory,
  *   candidates: state.searchResults.slice(0, 5),
  *   locale: 'ru',
- *   existingGoal: !!state.existingGoal,
  * });
  */
 export async function generateTrajectoryChart(input: GenerateChartInput): Promise<GenerateChartOutput> {
