@@ -29,7 +29,3 @@ export function getModel(purpose: ModelPurpose): RateLimitedChatOpenAI {
   }
   return model;
 }
-
-export function clearModelInstances(): void {
-  instances.clear();
-}

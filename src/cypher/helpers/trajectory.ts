@@ -3,55 +3,6 @@
  */
 
 /**
- * Extract prefix from context variable name
- */
-function extractPrefix(contextVar: string): string {
-  if (!contextVar.endsWith("Context")) {
-    throw new Error(`Invalid contextVar: "${contextVar}". Must end with 'Context'`);
-  }
-  return contextVar.replace("Context", "");
-}
-
-/**
- * Build MATCH path for trajectory traversal
- *
- * Traverses from end context (current) to start context (first job/entry point)
- * using PREVIOUS_CONTEXT relationships
- *
- * Pattern:
- * - (end:Context)<-[:PREVIOUS_CONTEXT*0..]-(start:Context)
- * - WHERE start.previousContextId IS NULL
- *
- * Returns path nodes in variable: {prefix}PathNodes
- *
- * @param endContextVar - End context variable (e.g., 'matchedContext', 'searchingContext')
- * @returns MATCH path query with path nodes collection
- *
- * @example
- * buildMatchPath('matchedContext')
- * // Returns:
- * // MATCH path = (matchedContext)<-[:PREVIOUS_CONTEXT*0..]-(start:Context)
- * // WHERE start.previousContextId IS NULL
- * // WITH *, [node IN nodes(path) | node] AS matchedPathNodes
- *
- * @example
- * buildMatchPath('searchingContext')
- * // Returns:
- * // MATCH path = (searchingContext)<-[:PREVIOUS_CONTEXT*0..]-(start:Context)
- * // WHERE start.previousContextId IS NULL
- * // WITH *, [node IN nodes(path) | node] AS searchingPathNodes
- */
-export function buildMatchPath(endContextVar: string): string {
-  const prefix = extractPrefix(endContextVar);
-
-  return `
-MATCH path = (${endContextVar})<-[:PREVIOUS_CONTEXT*0..]-(start:Context)
-WHERE start.previousContextId IS NULL
-WITH *, [node IN nodes(path) | node] AS ${prefix}PathNodes
-  `.trim();
-}
-
-/**
  * Build FULL trajectory from user's current context
  *
  * Gets user's current context via currentContextId property and traverses

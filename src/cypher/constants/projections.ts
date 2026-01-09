@@ -68,35 +68,3 @@ ${prefix}Context {
 }
   `.trim();
 }
-
-/**
- * Context map projection shorthand (no prefix - for backward compatibility)
- *
- * Use when variables are canonical (context, position, domains, skills)
- *
- * @deprecated Prefer buildContextMapProjection(prefix) for clarity
- */
-export const CONTEXT_MAP_PROJECTION_CANONICAL = `
-context {
-  .contextId,
-  .previousContextId,
-  .nextContextId,
-  .createdAt,
-  .creationReason,
-  .birthYear,
-  .companySize,
-  .salaryExact,
-  .salaryMin,
-  .salaryMax,
-  position: position.name,
-  role: role.canonicalName,
-  domains: domains,
-  skills: skills,
-  citizenships: citizenships,
-  industry: industry.name,
-  countryCode: country.name,
-  cityName: city.name,
-  languages: languages,
-  educationLevel: educationLevel.canonicalName
-}
-`.trim();

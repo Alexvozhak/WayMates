@@ -11,8 +11,6 @@ const envSchema = baseEnvSchema.extend({
   CORE_HOST: z.string().default("0.0.0.0"),
 });
 
-export type CoreEnv = z.infer<typeof envSchema>;
-
 export const loadEnv = createEnvLoader(envSchema, "core");
 
 export const config = loadEnv();

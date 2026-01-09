@@ -24,8 +24,6 @@ export type GoalOnlyTransformInput = BaseTransformInput & {
   mode: "goal-only";
 };
 
-export type TransformInput = FullModeTransformInput | CandidatesOnlyTransformInput | GoalOnlyTransformInput;
-
 export function transformFullMode(input: FullModeTransformInput): ProcessedTrajectory[] {
   const colors = generateCandidateColors(input.candidates.length);
   const user = buildUserTrajectory(input.userTrajectory, input.locale, input.goalValues);

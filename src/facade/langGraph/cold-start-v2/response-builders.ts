@@ -132,8 +132,3 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
     message: "Workflow failed. Please try again.",
   }),
 };
-
-export const failedResponse: ColdStartResponse = {
-  phase: PHASE.failed,
-  message: "Workflow failed. Please try again.",
-};

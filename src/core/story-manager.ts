@@ -1,10 +1,8 @@
 import {
-  // CREATE_REASON_QUERY,
   DELETE_CONTEXT_QUERY,
   DELETE_STORY_QUERY,
   DELETE_TRAIL_QUERY,
   GET_USER_STORY_QUERY,
-  //  LIST_REASONS_QUERY,
   UPSERT_CONTEXTS_QUERY,
   UPSERT_TRAILS_QUERY,
 } from "../cypher/index.js";
@@ -21,7 +19,12 @@ import {
   upsertTrailResultSchema,
 } from "../shared/schemas.js";
 
-import { upsertSingleContextResultSchema, upsertSingleTrailResultSchema } from "./schemas.js";
+import {
+  type UpsertSingleContextResult,
+  type UpsertSingleTrailResult,
+  upsertSingleContextResultSchema,
+  upsertSingleTrailResultSchema,
+} from "./schemas.js";
 
 import type { DatabaseContext } from "./database-context.js";
 import type {
@@ -32,8 +35,6 @@ import type {
   TrailId,
   UpsertContextInput,
   UpsertContextResult,
-  UpsertSingleContextResult,
-  UpsertSingleTrailResult,
   UpsertStoryResult,
   UpsertTrailInput,
   UpsertTrailResult,

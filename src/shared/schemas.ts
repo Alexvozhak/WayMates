@@ -86,25 +86,13 @@ export const localeSchema = z
 
 export type SessionId = z.infer<typeof sessionIdSchema>;
 export type Token = z.infer<typeof tokenSchema>;
-export type RequestId = z.infer<typeof requestIdSchema>;
 export type Locale = z.infer<typeof localeSchema>;
-
-/**
- * Schema for parsing raw language code with fallback to "en".
- */
-export const localeWithFallbackSchema = z
-  .string()
-  .refine((code) => VALID_LANGUAGE_CODES.has(code))
-  // eslint-disable-next-line unicorn/prefer-top-level-await -- .catch() is Zod method, not Promise
-  .catch("en");
 
 // User state (for orchestrator routing)
 export const userStateSchema = z.object({
   hasContext: z.boolean().describe("User has at least 1 context"),
   hasGoal: z.boolean().describe("User has a Goal node"),
 });
-
-export type UserState = z.infer<typeof userStateSchema>;
 
 // Error handling
 export const errorCodeSchema = z.enum([
@@ -133,21 +121,11 @@ export type ErrorResponse = z.infer<typeof errorResponseSchema>;
 // Result<T, E> discriminated union for MCP tools
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 
-// Zod schema for Result error case
-export const resultErrorSchema = z.object({
-  ok: z.literal(false),
-  error: errorResponseSchema,
-});
-
-export type ResultError = z.infer<typeof resultErrorSchema>;
-
 // ==========================================
 // === DOMAIN ENTITIES ===
 // ==========================================
 
 export const newContextReasonSchema = z.enum(REASON_CANONICAL_NAMES);
-
-export type NewContextReason = z.infer<typeof newContextReasonSchema>;
 
 /**
  * Education level (dictionary-based, like position/industry)
@@ -164,8 +142,6 @@ export const languageCodeSchema = z
   .length(2)
   .regex(/^[A-Z]{2}$/, "Language code must be uppercase ISO 639-1 format")
   .describe("ISO 639-1 language code");
-
-export type LanguageCode = z.infer<typeof languageCodeSchema>;
 
 export const scheduleSchema = z.object({
   // Note: .nullable() required for OpenAI Structured Output API compatibility
@@ -468,7 +444,6 @@ export const userContextSchema = userContextSchemaBase.refine(
 // Export base for internal use (makeNullable, .omit(), .partial())
 export { userContextSchemaBase };
 
-export type Schedule = z.infer<typeof scheduleSchema>;
 export type Trail = z.infer<typeof trailSchema>;
 export type UserContext = z.infer<typeof userContextSchema>;
 
@@ -480,8 +455,6 @@ export type UserContext = z.infer<typeof userContextSchema>;
  * Filter mode for target search - discriminator for field filters
  */
 export const filterModeSchema = z.enum(["desired", "undesired"]);
-export type FilterMode = z.infer<typeof filterModeSchema>;
-
 /**
  * Field filter with mode + values (discriminated union pattern)
  * Enforces mutual exclusivity between desired/undesired at type level
@@ -522,27 +495,6 @@ export const targetContextSchema = z.object({
 });
 
 export type TargetContext = z.infer<typeof targetContextSchema>;
-
-/**
- * Type-safe mapping from AdhocContext field names to TargetContext field names.
- * Tuple array as source of truth — enables type-safe iteration without casts.
- *
- * TypeScript validates both source (AdhocContextBase) and target (TargetContext) field names.
- */
-export const ADHOC_TO_TARGET_ENTRIES = [
-  ["position", "position"],
-  ["role", "role"],
-  ["domains", "domains"],
-  ["skills", "skills"],
-  ["countryCode", "countries"],
-  ["languages", "languages"],
-  ["industry", "industries"],
-  ["cityName", "cities"],
-  ["citizenships", "citizenships"],
-  ["educationLevel", "educationLevels"],
-] as const satisfies readonly [keyof AdhocContextBase, keyof TargetContext][];
-
-export type MappableAdhocField = (typeof ADHOC_TO_TARGET_ENTRIES)[number][0];
 
 // ==========================================
 // === SEARCH FILTERS SCHEMAS ===
@@ -635,8 +587,6 @@ export type WaymatesSearchParams = z.infer<typeof waymatesSearchParamsSchema>;
  */
 export const currentSearchParamsBaseSchema = withPathLimitTransform(userSearchParamsRawSchema.omit({ userId: true }));
 
-export type CurrentSearchParamsBase = z.infer<typeof currentSearchParamsBaseSchema>;
-
 /**
  * Nullable schema for target search — OpenAI structured output compatibility.
  * All optional fields are nullable (not optional) per OpenAI requirements.
@@ -652,8 +602,6 @@ export const targetSearchParamsNullableSchema = z.object({
   limit: z.number().min(1).max(100).nullable().describe("Maximum number of results to return"),
 });
 
-export type TargetSearchParamsNullable = z.infer<typeof targetSearchParamsNullableSchema>;
-
 /**
  * Nullable schema for target context search filters (partial modification).
  * Used in parse-intent for "validate" intent — user applies filters to target search.
@@ -664,8 +612,6 @@ export const targetContextSearchFilterNullableSchema = z.object({
   recencyThresholdMonths: z.number().nullable(),
   limit: z.number().nullable(),
 });
-
-export type TargetContextSearchFilterNullable = z.infer<typeof targetContextSearchFilterNullableSchema>;
 
 /**
  * Nullable schema for current context search filters (partial modification).
@@ -685,8 +631,6 @@ export const currentContextSearchFilterNullableSchema = z.object({
   pathLimit: z.number().nullable(),
 });
 
-export type CurrentContextSearchFilterNullable = z.infer<typeof currentContextSearchFilterNullableSchema>;
-
 /**
  * Base target search parameters WITH defaults (business logic layer).
  * .extend() перезаписывает типы nullable → with defaults.
@@ -699,8 +643,6 @@ export const targetSearchParamsBaseSchema = targetSearchParamsNullableSchema.ext
   recencyThresholdMonths: z.number().min(1).nullable().default(null),
   limit: z.number().min(1).max(100).default(20),
 });
-
-export type TargetSearchParamsBase = z.infer<typeof targetSearchParamsBaseSchema>;
 
 /**
  * Target search parameters (Mode 4: reverse search by target criteria)
@@ -753,8 +695,6 @@ export const targetAppliedFiltersSchema = targetSearchParamsBaseSchema.omit({ ta
   rejectedReasons: z.array(z.string()).nullable(),
 });
 
-export type TargetAppliedFilters = z.infer<typeof targetAppliedFiltersSchema>;
-
 /**
  * Applied filters feedback (CurrentSearchParams - showing_exploration/showing_results after filter)
  * Shows what filters were applied + rejected fields (user input not matched)
@@ -764,8 +704,6 @@ export const currentAppliedFiltersSchema = currentSearchParamsBaseSchema.and(
     rejectedFields: z.array(z.string()).nullable(),
   }),
 );
-
-export type CurrentAppliedFilters = z.infer<typeof currentAppliedFiltersSchema>;
 
 // ==========================================
 // === STORY & GOAL OPERATIONS ===
@@ -824,11 +762,6 @@ export const upsertContextResultSchema = z.object({
   contextIds: z.array(contextIdSchema),
 });
 
-export const upsertSingleContextResultSchema = z.object({
-  success: z.boolean(),
-  contextId: contextIdSchema,
-});
-
 export const upsertTrailInputSchema = z.object({
   userId: userIdSchema,
   trail: trailSchema,
@@ -837,11 +770,6 @@ export const upsertTrailInputSchema = z.object({
 export const upsertTrailResultSchema = z.object({
   success: z.boolean(),
   trailIds: z.array(trailIdSchema),
-});
-
-export const upsertSingleTrailResultSchema = z.object({
-  success: z.boolean(),
-  trailId: trailIdSchema,
 });
 
 export const upsertStoryResultSchema = z.object({
@@ -858,7 +786,6 @@ export const deleteStoryResultSchema = z.object({
 export const operationResultSchema = z.object({
   success: z.boolean(),
 });
-export type OperationResult = z.infer<typeof operationResultSchema>;
 
 export const goalSchema = z.object({
   userId: userIdSchema,
@@ -895,15 +822,11 @@ export const coreUpdateContextParamsSchema = z.object({
 export type StoryInput = z.infer<typeof storyInputSchema>;
 export type UpsertContextInput = z.infer<typeof upsertContextInputSchema>;
 export type UpsertContextResult = z.infer<typeof upsertContextResultSchema>;
-export type UpsertSingleContextResult = z.infer<typeof upsertSingleContextResultSchema>;
 export type UpsertTrailInput = z.infer<typeof upsertTrailInputSchema>;
 export type UpsertTrailResult = z.infer<typeof upsertTrailResultSchema>;
-export type UpsertSingleTrailResult = z.infer<typeof upsertSingleTrailResultSchema>;
 export type UpsertStoryResult = z.infer<typeof upsertStoryResultSchema>;
-export type DeleteStoryResult = z.infer<typeof deleteStoryResultSchema>;
 export type Goal = z.infer<typeof goalSchema>;
 export type CreateGoalInput = z.infer<typeof createGoalInputSchema>;
-export type UpdateContextInput = z.infer<typeof updateContextInputSchema>;
 export type CoreUpdateContextParams = z.infer<typeof coreUpdateContextParamsSchema>;
 
 // ==========================================
@@ -970,8 +893,6 @@ export const pathfinderCandidateLightSchema = z.object({
   targetContext: userContextSchema.describe("Context where they reached our goal"),
   timeSinceTargetMonths: z.number().min(0).describe("Months since reaching target"),
 });
-export type PathfinderCandidateLight = z.infer<typeof pathfinderCandidateLightSchema>;
-
 // Type 2b: Pathfinder candidate (full, with path/trails from base)
 // Used by searchPathfinders - finds people who went FROM our context TO our goal
 // matchedContext (from base) = where they were like us
@@ -1065,8 +986,6 @@ export const simpleDictionaryTypeSchema = z.enum(simpleDictionaryTypes);
 // Open: user can add new values (skills, cities, etc.)
 const closedDictionaryTypes = ["role", "position"] as const satisfies readonly SimpleDictionaryType[];
 export type ClosedDictionaryType = (typeof closedDictionaryTypes)[number];
-export type OpenDictionaryType = Exclude<SimpleDictionaryType, ClosedDictionaryType>;
-
 const closedDictionarySet = new Set<string>(closedDictionaryTypes);
 export const isClosedDictionary = (type: SimpleDictionaryType): type is ClosedDictionaryType =>
   closedDictionarySet.has(type);
@@ -1076,8 +995,6 @@ export const rolePositionSuggestionSchema = z.object({
   original: z.string().describe("User's original input that didn't match dictionary"),
   suggestions: z.array(z.string()).describe("Up to 3 closest matches from dictionary"),
 });
-
-export type RolePositionSuggestionResponse = z.infer<typeof rolePositionSuggestionSchema>;
 
 export const addTermInputSchema = z.object({
   type: simpleDictionaryTypeSchema,
@@ -1145,8 +1062,6 @@ export const collectionProgressSchema = z.object({
   total: z.number().describe("Total contexts in queue"),
 });
 
-export type CollectionProgress = z.infer<typeof collectionProgressSchema>;
-
 /** Zod schema for context optional field names */
 export const contextOptionalFieldSchema = z.enum(CONTEXT_OPTIONAL_FIELDS);
 
@@ -1196,8 +1111,6 @@ export const planResultSchema = z.object({
   queue: z.array(contextAgendaSchema),
 });
 
-export type PlanResult = z.infer<typeof planResultSchema>;
-
 /**
  * Final preview result for awaiting_final_confirmation phase.
  */
@@ -1214,8 +1127,6 @@ export const finalPreviewSchema = z.object({
   }),
 });
 
-export type FinalPreview = z.infer<typeof finalPreviewSchema>;
-
 /**
  * Collected story data (contexts + trails + userId).
  * Matches StoryInput structure from shared/schemas.
@@ -1225,8 +1136,6 @@ export const collectedStorySchema = z.object({
   contexts: z.array(userContextSchema),
   trails: z.array(trailSchema),
 });
-
-export type CollectedStory = z.infer<typeof collectedStorySchema>;
 
 /**
  * Saved result after successful collection.
@@ -1239,8 +1148,6 @@ export const savedResultSchema = z
   })
   .merge(collectedStorySchema);
 
-export type SavedResult = z.infer<typeof savedResultSchema>;
-
 /**
  * Already saved result (idempotency protection).
  */
@@ -1248,8 +1155,6 @@ export const alreadySavedResultSchema = z.object({
   phase: z.literal("already_saved"),
   message: z.string(),
 });
-
-export type AlreadySavedResult = z.infer<typeof alreadySavedResultSchema>;
 
 /**
  * Cold Start MCP response - discriminated union by phase.
@@ -1309,47 +1214,6 @@ export const telegramLinkResponseSchema = z.object({
 });
 
 export type TelegramLinkResponse = z.infer<typeof telegramLinkResponseSchema>;
-
-/**
- * Response from search_careers and search_user_careers MCP tools.
- * Contains array of matched candidates with scores.
- */
-export const searchResultResponseSchema = z.object({
-  candidates: z.array(waymateCandidateSchema),
-  totalCount: z.number(),
-});
-
-export type SearchResultResponse = z.infer<typeof searchResultResponseSchema>;
-
-/**
- * Response from delete_* MCP tools (delete_goal, delete_context, delete_trail).
- */
-export const deleteSuccessResponseSchema = z.object({
-  success: z.literal(true),
-});
-
-export type DeleteSuccessResponse = z.infer<typeof deleteSuccessResponseSchema>;
-
-/**
- * Response from reset_cold_start MCP tool.
- */
-export const resetColdStartResponseSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-});
-
-export type ResetColdStartResponse = z.infer<typeof resetColdStartResponseSchema>;
-
-/**
- * Response from get_story MCP tool.
- * Returns user's career story (contexts + trails).
- */
-export const getStoryResponseSchema = z.object({
-  contexts: z.array(z.unknown()),
-  trails: z.array(z.unknown()),
-});
-
-export type GetStoryResponse = z.infer<typeof getStoryResponseSchema>;
 
 /**
  * Response from update_context MCP tool.
@@ -1520,8 +1384,6 @@ export type SearchGraphResponse = z.infer<typeof searchGraphResponseSchema>;
 export const systemMessageSchema = z.object({
   phase: z.literal("system_message"),
 });
-
-export type SystemMessage = z.infer<typeof systemMessageSchema>;
 
 /**
  * Union of all possible graph responses + system messages.
@@ -1696,17 +1558,6 @@ export const mcpColdStartParamsSchema = z.object({
 export type McpColdStartParams = z.infer<typeof mcpColdStartParamsSchema>;
 
 /**
- * Params for reset_cold_start MCP tool.
- * Resets cold start flow and deletes checkpoint.
- */
-export const mcpResetColdStartParamsSchema = z.object({
-  sessionId: sessionIdSchema,
-  requestId: requestIdSchema,
-});
-
-export type McpResetColdStartParams = z.infer<typeof mcpResetColdStartParamsSchema>;
-
-/**
  * Params for upsert_trail MCP tool (conversational API).
  * Creates new trail via LangGraph agent (NLP-based).
  */
@@ -1761,8 +1612,6 @@ export const mcpTelegramRegisterParamsSchema = z.object({
   requestId: requestIdSchema,
 });
 
-export type McpTelegramRegisterParams = z.infer<typeof mcpTelegramRegisterParamsSchema>;
-
 /**
  * Params for link_telegram MCP tool.
  * Links Telegram account to existing LibreChat account.
@@ -1772,8 +1621,6 @@ export const mcpTelegramLinkParamsSchema = z.object({
   telegramUserId: z.number().int().positive().describe("Telegram internal user ID (ctx.from.id)"),
   requestId: requestIdSchema,
 });
-
-export type McpTelegramLinkParams = z.infer<typeof mcpTelegramLinkParamsSchema>;
 
 /**
  * Params for parse_cv_to_text MCP tool.
@@ -1810,5 +1657,3 @@ export type McpCancelAllGraphsParams = z.infer<typeof mcpCancelAllGraphsParamsSc
 export const cancelAllGraphsResponseSchema = z.object({
   success: z.literal(true),
 });
-
-export type CancelAllGraphsResponse = z.infer<typeof cancelAllGraphsResponseSchema>;

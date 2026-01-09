@@ -364,16 +364,18 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
       expect(routeNextNodeAfterDecision(finalState)).toBe("show_context");
     });
 
-    it("continue intent routes to clarify_intent (default fallback)", () => {
+    it("continue intent routes correctly per phase", () => {
       const continueDecision = createDecision("continue");
 
-      // continue is only valid for story_gathering, others fall back to clarify_intent
+      // story_gathering: continue → gather_story (keep collecting)
       const storyState = createMockState({ phase: PHASE.story_gathering, parsedDecision: continueDecision });
       expect(routeNextNodeAfterDecision(storyState)).toBe("gather_story");
 
+      // awaiting_plan_confirmation: continue → extract_context (proceed with plan)
       const planState = createMockState({ phase: PHASE.awaiting_plan_confirmation, parsedDecision: continueDecision });
-      expect(routeNextNodeAfterDecision(planState)).toBe("clarify_intent");
+      expect(routeNextNodeAfterDecision(planState)).toBe("extract_context");
 
+      // awaiting_context_confirmation: no continue mapping → falls back to clarify_intent
       const contextState = createMockState({
         phase: PHASE.awaiting_context_confirmation,
         parsedDecision: continueDecision,
@@ -381,6 +383,7 @@ describe("Cold-Start V2: Contract Tests (TC-C)", () => {
       });
       expect(routeNextNodeAfterDecision(contextState)).toBe("clarify_intent");
 
+      // awaiting_final_confirmation: no continue mapping → falls back to clarify_intent
       const finalState = createMockState({
         phase: PHASE.awaiting_final_confirmation,
         parsedDecision: continueDecision,

@@ -44,30 +44,6 @@ RETURN ${buildContextMapProjection("searching")} AS context
 }
 
 /**
- * Get user's current context ID (lightweight query)
- *
- * Returns only contextId without enrichment
- *
- * Parameters:
- * - $userId: User ID (string)
- *
- * Returns:
- * - currentContextId: string | null
- *
- * @example
- * const query = userCurrentContextIdQuery();
- * const result = await tx.run(query, { userId: 'usr_123' });
- * const contextId = result.records[0].get('currentContextId');
- */
-export function userCurrentContextIdQuery(): string {
-  return `
-MATCH (searchingUser:User {userId: $userId})
-WHERE searchingUser.currentContextId IS NOT NULL
-RETURN searchingUser.currentContextId AS currentContextId
-  `.trim();
-}
-
-/**
  * Build matched context base query
  *
  * Base MATCH + OPTIONAL MATCH for all candidates

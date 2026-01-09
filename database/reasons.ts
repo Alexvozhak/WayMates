@@ -10,4 +10,3 @@ const reasonCanonicalNames = Object.keys(reasonsData);
 assertNonEmptyArray(reasonCanonicalNames, "reasons.json must have at least one reason");
 
 export const REASON_CANONICAL_NAMES = reasonCanonicalNames;
-export type ReasonCanonicalName = keyof typeof reasonsData;

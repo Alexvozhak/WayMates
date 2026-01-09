@@ -12,4 +12,3 @@ export const baseEnvSchema = z.object({
 
 export type LogLevel = z.infer<typeof logLevelSchema>;
 export type NodeEnv = z.infer<typeof nodeEnvSchema>;
-export type BaseEnv = z.infer<typeof baseEnvSchema>;

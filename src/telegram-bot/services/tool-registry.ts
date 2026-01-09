@@ -51,6 +51,4 @@ export type FacadeToolName = keyof typeof TOOL_REGISTRY;
 
 export type ToolRegistry = typeof TOOL_REGISTRY;
 
-export type ToolParams<T extends keyof ToolRegistry> = z.infer<ToolRegistry[T]["paramsSchema"]>;
-
 export type ToolResponse<T extends keyof ToolRegistry> = z.infer<ToolRegistry[T]["responseSchema"]>;

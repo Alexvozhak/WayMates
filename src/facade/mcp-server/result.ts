@@ -1,17 +1,12 @@
 import { sessionIdSchema as sharedSessionIdSchema } from "../../shared/schemas.js";
 
-import type {
-  ErrorCode as SharedErrorCode,
-  ErrorResponse as SharedErrorResponse,
-  Result as SharedResult,
-} from "../../shared/schemas.js";
+import type { ErrorResponse as SharedErrorResponse, Result as SharedResult } from "../../shared/schemas.js";
 import type { z } from "zod";
 
 // Backward compatibility aliases (will be removed in Phase 2)
 export const sessionIdSchema = sharedSessionIdSchema;
 
 export type SessionId = z.infer<typeof sessionIdSchema>;
-export type ErrorCode = SharedErrorCode;
 export type ErrorResponse = SharedErrorResponse;
 export type Result<T, E> = SharedResult<T, E>;
 

@@ -13,12 +13,6 @@ export function hasValue(value: unknown): boolean {
 }
 
 /**
- * StateUpdate<S> — semantic alias for Partial<S>.
- * Used as return type for LangGraph node functions to indicate state update intent.
- */
-export type StateUpdate<S> = Partial<S>;
-
-/**
  * Base graph state — minimum fields all graphs have.
  */
 export type BaseGraphState = { phase: unknown; userId: unknown };

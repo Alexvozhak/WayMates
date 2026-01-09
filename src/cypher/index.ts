@@ -18,7 +18,6 @@ export {
   buildPathfinderSearchQuery,
   buildReversePathfinderSearchQuery,
   buildWaymatesSearchQuery,
-  userCurrentContextIdQuery,
   userCurrentContextQuery,
 } from "./queries/search.js";
 
@@ -33,12 +32,10 @@ export { addSimpleTermQuery, addSkillQuery, getVerifiedDictionariesQuery } from 
 
 // Persistence queries
 export {
-  CREATE_REASON_QUERY,
   DELETE_CONTEXT_QUERY,
   DELETE_STORY_QUERY,
   DELETE_TRAIL_QUERY,
   GET_USER_STORY_QUERY,
-  LIST_REASONS_QUERY,
   UPSERT_CONTEXTS_QUERY,
   UPSERT_TRAILS_QUERY,
 } from "./queries/persistence.js";

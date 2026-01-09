@@ -54,24 +54,12 @@ export class SessionExpiredError extends FacadeError {
   }
 }
 
-export class SessionInvalidError extends FacadeError {
-  override readonly errorCode = "session_invalid";
-
-  protected override getPublicMessage(): string {
-    return "Invalid session ID.";
-  }
-}
-
 export class InvalidTokenError extends FacadeError {
   override readonly errorCode = "invalid_token";
 
   protected override getPublicMessage(): string {
     return "Invalid or unknown token. Please register for a new account.";
   }
-}
-
-export class NormalizationError extends FacadeError {
-  override readonly errorCode = "normalization_failed";
 }
 
 export class CoreApiError extends FacadeError {
@@ -96,19 +84,6 @@ export class PostgresConnectionError extends FacadeError {
 
   protected override getPublicMessage(): string {
     return "Database connection failed. Please try again later.";
-  }
-}
-
-export class PostgresQueryError extends FacadeError {
-  override readonly errorCode = "postgres_query_failed";
-
-  constructor(operation: string, originalError: unknown) {
-    const message = originalError instanceof Error ? originalError.message : String(originalError);
-    super(`PostgreSQL ${operation} failed: ${message}`);
-  }
-
-  protected override getPublicMessage(): string {
-    return "Database operation failed. Please try again later.";
   }
 }
 

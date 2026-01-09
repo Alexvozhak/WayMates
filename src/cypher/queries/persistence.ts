@@ -357,49 +357,6 @@ DETACH DELETE t
 RETURN { success: true } AS result;`;
 
 /**
- * List all reasons
- *
- * Returns:
- * - reason: Reason object (canonicalName, description, patterns, examples, commonCombinations)
- */
-export const LIST_REASONS_QUERY = `
-MATCH (r:Reason)
-RETURN {
-  canonicalName: r.canonicalName,
-  description: r.description,
-  patterns: r.patterns,
-  commonCombinations: r.commonCombinations,
-  examples: r.examples
-} AS reason
-ORDER BY r.canonicalName
-`;
-
-/**
- * Create new reason
- *
- * Parameters:
- * - $canonicalName: Reason canonical name (string)
- * - $description: Description (string)
- * - $patterns: Patterns (array)
- * - $examples: Examples (array)
- * - $contextId: First context ID using this reason (string)
- *
- * Returns:
- * - r: Created Reason node
- */
-export const CREATE_REASON_QUERY = `
-MERGE (r:Reason {canonicalName: $canonicalName})
-SET r.description = $description,
-    r.patterns = $patterns,
-    r.examples = $examples,
-    r.commonCombinations = [],
-    r.createdAt = datetime(),
-    r.createdBy = 'ai_agent',
-    r.firstContextId = $contextId
-RETURN r
-`;
-
-/**
  * Delete entire user story (all contexts + trails + user node)
  *
  * Use case: Test cleanup, complete user deletion from Neo4j

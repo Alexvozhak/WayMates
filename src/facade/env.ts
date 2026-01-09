@@ -64,8 +64,6 @@ const envSchema = baseEnvSchema.extend({
   R2_TTL_DAYS: z.coerce.number().int().positive(),
 });
 
-export type FacadeEnv = z.infer<typeof envSchema>;
-
 export const loadEnv = createEnvLoader(envSchema, "facade");
 
 export const config = loadEnv();

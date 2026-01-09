@@ -32,9 +32,7 @@ export const currentSearchParamsWithFeedbackSchema = currentSearchParamsBaseSche
 export type CurrentSearchParamsWithFeedback = z.infer<typeof currentSearchParamsWithFeedbackSchema>;
 
 // Search params validation constants
-export const MIN_LIMIT = 1;
-export const MAX_LIMIT = 100;
-export const MIN_RECENCY_THRESHOLD_MONTHS = 1;
+const MIN_RECENCY_THRESHOLD_MONTHS = 1;
 export const DEFAULT_RECENCY_THRESHOLD_MONTHS = null; // No filter by default (explore-first)
 
 /** Default current search params (adhoc/byUser) */

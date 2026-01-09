@@ -28,6 +28,7 @@ function noop(): void {
 function createMockConfig(): LangGraphRunnableConfig {
   const mockNormalizer = {
     normalizeFullContext: <T>(ctx: T) => Promise.resolve(ctx),
+    normalizeTermWithResult: () => Promise.resolve({ status: "verified", term: "mock" }),
   };
   const mockLogger = { info: noop, error: noop, warn: noop, debug: noop };
 
@@ -278,22 +279,23 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
    * validateContextNode возвращает phase: failed.
    *
    * Given:
-   * - clarificationRound === 3 (MAX)
+   * - clarificationRound === MAX (5 per .env.test)
    * - pendingContext с ошибками валидации
    *
    * Then:
    * - phase === failed
    *
    * Тип теста: Unit (no LLM, no DB)
+   * Note: MAX_CLARIFICATION_ROUNDS = 5 in .env.test
    */
   describe("TC-E7: Max clarification attempts → failed", () => {
-    it("returns failed when clarificationRound exceeds MAX_CLARIFICATION_ROUNDS (3)", async () => {
+    it("returns failed when clarificationRound exceeds MAX_CLARIFICATION_ROUNDS (5)", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.role = "";
 
       const state = createMockState({
         pendingContext: context,
-        clarificationRound: 3,
+        clarificationRound: 5, // nextRound = 6 > MAX(5) → failed
       });
 
       const result = await validateContextNode(state, createMockConfig());
@@ -301,28 +303,28 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
       expect(result.phase).toBe(PHASE.failed);
     });
 
-    it("returns awaiting_clarification when clarificationRound is exactly 2", async () => {
+    it("returns awaiting_clarification when clarificationRound is exactly 4", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.role = "";
 
       const state = createMockState({
         pendingContext: context,
-        clarificationRound: 2,
+        clarificationRound: 4, // nextRound = 5 == MAX(5), not > MAX → clarify
       });
 
       const result = await validateContextNode(state, createMockConfig());
 
       expect(result.phase).toBe(PHASE.awaiting_clarification);
-      expect(result.clarificationRound).toBe(3);
+      expect(result.clarificationRound).toBe(5);
     });
 
-    it("fails immediately when clarificationRound is 3 and any validation fails", async () => {
+    it("fails immediately when clarificationRound is 5 and any validation fails", async () => {
       const context = toExtractableContext(U1.contexts[0]!);
       context.skills = [];
 
       const state = createMockState({
         pendingContext: context,
-        clarificationRound: 3,
+        clarificationRound: 5, // nextRound = 6 > MAX(5) → failed
       });
 
       const result = await validateContextNode(state, createMockConfig());
@@ -434,7 +436,9 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
       }
     });
 
-    it("validates both context and trails", () => {
+    // FROZEN: Trail validation is disabled in validateAndCollectMissing
+    // Invalid trails do NOT cause validation failure - trails param is ignored
+    it.skip("validates both context and trails (FROZEN: trails disabled)", () => {
       const context = toExtractableContext(U10.contexts[0]!);
       const agenda = createAgendaFromContext(U10.contexts[0]!);
 
@@ -451,7 +455,8 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
       }
     });
 
-    it("includes valid trails when context is valid", () => {
+    // FROZEN: Trail validation is disabled - trails always return empty array
+    it.skip("includes valid trails when context is valid (FROZEN: trails disabled)", () => {
       const firstContext = U10.contexts[0]!;
       const context = toExtractableContext(firstContext);
       const agenda = createAgendaFromContext(firstContext);
@@ -471,20 +476,20 @@ describe("Cold-Start V2: Validation (TC-V)", () => {
   /**
    * TC-V2.1: Trail validation errors
    *
-   * Что тестируем:
-   * Ошибки валидации trails также попадают в missingFields.
+   * FROZEN: Trail validation is disabled in validateAndCollectMissing.
+   * Invalid trails do NOT cause validation failure - trails param is ignored.
    *
-   * Given:
-   * - Valid context + invalid trail (missing trailId format)
+   * Original expectation (when unfrozen):
+   * - awaiting_clarification when trail has invalid format
+   * - missingFields contains trail error
    *
-   * Then:
-   * - awaiting_clarification
-   * - missingFields содержит trail error
-   *
-   * Тип теста: Unit (no LLM, no DB)
+   * Current behavior (FROZEN):
+   * - Trails are ignored, only context is validated
+   * - Valid context → awaiting_context_confirmation
    */
-  describe("TC-V2.1: Trail validation errors", () => {
-    it("returns awaiting_clarification when trail has invalid trailId", async () => {
+  describe("TC-V2.1: Trail validation errors (FROZEN)", () => {
+    // FROZEN: Trail validation disabled - invalid trails don't cause clarification
+    it.skip("returns awaiting_clarification when trail has invalid trailId (FROZEN: trails disabled)", async () => {
       const firstContext = U10.contexts[0]!;
 
       const invalidTrail = {

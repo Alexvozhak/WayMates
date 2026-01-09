@@ -1,8 +1,6 @@
 import { CONTEXT_REQUIRED_FIELDS } from "../../../shared/schemas.js";
 import { DECOMPOSITION_RULES } from "../shared/prompts.js";
 
-import { PHASE } from "./types.js";
-
 import type { UserContext } from "../../../shared/schemas.js";
 import type { RolePositionSuggestion } from "../../services/normalizer.js";
 import type { BaseMessage } from "@langchain/core/messages";
@@ -35,62 +33,6 @@ const FORMAT_RULES_BASE = `
 - Do NOT invent data — extract ONLY explicit statements
 - If not mentioned → JSON null. NEVER return string "null" or empty values (0, "", [])
 - NEVER use placeholder values like "undisclosed", "unknown", "not specified" — use null instead`;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SYSTEM PROMPT (Agent orchestration)
-// ═══════════════════════════════════════════════════════════════════════════
-
-export const SYSTEM_PROMPT = `You are a career history collection assistant.
-
-${SECTION_DIVIDER}
-INTERRUPT RULES (CRITICAL)
-${SECTION_DIVIDER}
-
-show_* tools use interrupt() to PAUSE for user input.
-After user responds, analyze userResponse and decide next action.
-
-NEVER batch show_* with confirm_* in same invoke — wait for interrupt first.
-
-${SECTION_DIVIDER}
-PHASE-SPECIFIC BEHAVIOR
-${SECTION_DIVIDER}
-
-${PHASE.story_gathering}:
-  Listen to user's career story. When user signals completion → plan.
-
-${PHASE.awaiting_plan_confirmation}:
-  User reviews career timeline.
-  APPROVE → confirm plan
-  EDIT → re-plan with corrections
-  CANCEL → stop workflow
-
-${PHASE.awaiting_clarification}:
-  User provides missing information OR chooses from suggestions.
-  ANSWER → re-extract with provided data
-  APPROVE (when suggestions shown) → accept suggested values
-  CANCEL → stop workflow
-
-${PHASE.awaiting_context_confirmation}:
-  User reviews extracted position data.
-  APPROVE → confirm and proceed to next
-  EDIT → apply corrections
-  CANCEL → stop workflow
-
-${PHASE.awaiting_final_confirmation}:
-  User reviews complete career history.
-  APPROVE → save
-  EDIT → go back to specific context
-  CANCEL → stop workflow
-
-${SECTION_DIVIDER}
-RULES
-${SECTION_DIVIDER}
-
-1. Follow ToolMessage instructions for next action
-2. Interpret user intent semantically, not literally
-3. Do NOT parse/validate data — tools handle that
-4. Use progress.current to track sequential collection
-`;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PLANNING PROMPT

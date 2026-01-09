@@ -225,12 +225,3 @@ export function routeAfterApplyFilters(state: SearchStateType): NodeName {
   if (!state.storedGoal) return NODE.explore;
   return state.searchMode === "pathfinders" ? NODE.search_pathfinders : NODE.search_waymates;
 }
-
-export function isTerminalPhase(phase: SearchPhase): boolean {
-  return (
-    phase === PHASE.showing_waymate_results ||
-    phase === PHASE.showing_pathfinder_results ||
-    phase === PHASE.cancelled ||
-    phase === PHASE.failed
-  );
-}

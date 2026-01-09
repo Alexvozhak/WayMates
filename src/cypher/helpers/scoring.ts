@@ -1,54 +1,8 @@
 /**
- * Skills scoring Cypher blocks and variable constants
+ * Skills scoring Cypher blocks
  */
 
 import { SCORING_CONFIG } from "../../config/scoring.js";
-
-/**
- * Standard matched context variables for WITH clause carryover.
- * Used in waymates search scoring.
- */
-export const MATCHED_CONTEXT_VARS = [
-  "matchedUser",
-  "matchedContext",
-  "matchedPosition",
-  "matchedRole",
-  "matchedDomains",
-  "matchedSkills",
-  "matchedCitizenships",
-  "matchedLanguages",
-  "matchedIndustry",
-  "matchedCity",
-  "matchedCountry",
-  "timeSinceMatchedMonths",
-] as const;
-
-/**
- * Reference context variables for WITH clause carryover.
- * Used in pathfinder search scoring (ref = where they were like us).
- */
-export const REF_CONTEXT_VARS = [
-  "refContext",
-  "refPosition",
-  "refRole",
-  "refDomains",
-  "refSkills",
-  "refCitizenships",
-  "refLanguages",
-  "refIndustry",
-  "refCity",
-  "refCountry",
-] as const;
-
-/**
- * Combined variables for pathfinder scoring (matched + ref + timeSinceTargetMonths).
- */
-export const PATHFINDER_SCORING_VARS = [
-  ...MATCHED_CONTEXT_VARS.filter((v) => v !== "timeSinceMatchedMonths"),
-  "timeSinceTargetMonths",
-  ...REF_CONTEXT_VARS,
-  "timeSinceMatchedMonths",
-] as const;
 
 /**
  * Build skills scoring block for context matching.

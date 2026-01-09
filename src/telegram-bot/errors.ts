@@ -35,6 +35,4 @@ export class McpClientError extends BotError {
 
 export class WhisperError extends BotError {}
 
-export class PresenterError extends BotError {}
-
 export class SessionError extends BotError {}
