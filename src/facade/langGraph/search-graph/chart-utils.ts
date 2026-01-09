@@ -1,10 +1,4 @@
-import {
-  CHARTABLE_FIELDS,
-  extractGoalValues,
-  generateTrajectoryChart,
-  isChartServiceEnabled,
-  toChartLocale,
-} from "../../../chart/index.js";
+import { CHARTABLE_FIELDS, extractGoalValues, generateTrajectoryChart, toChartLocale } from "../../../chart/index.js";
 import { config } from "../../env.js";
 
 import type { ChartableField, GenerateChartInput } from "../../../chart/index.js";
@@ -123,10 +117,9 @@ function buildChartInput(deps: ChartGenerationDeps, positionOrder: string[]): Ge
 
 /**
  * Safe chart generation with error handling.
- * Returns null if chart service disabled, no candidates, or generation fails.
+ * Returns null if no candidates or generation fails.
  */
 export async function safeGenerateChart(deps: ChartGenerationDeps): Promise<string | null> {
-  if (!isChartServiceEnabled()) return null;
   if (deps.candidates.length === 0) return null;
 
   // For non-goal-only modes, need either trajectory or adhoc context

@@ -70,9 +70,9 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   NEVER write "not set" or any value after label
   Labels: ${FIELD_NAMES_MAPPING}
   DO NOT ask for anything from FILLED section.
-  Check hasGoal field to determine next step:
-  - If hasGoal=false: suggest exploring where people from similar context ended up (what goals they achieved)
-  - If hasGoal=true: state the goal clearly, then offer pathfinders/waymates search
+  Check goal field (NOT hasGoal) to determine next step:
+  - If goal is null: suggest exploring where people from similar context ended up (what goals they achieved)
+  - If goal is NOT null: show goal summary (from goal.targetContext — position, role, countries, domains), then offer pathfinders/waymates search directly (skip explore step)
   Be direct about the logical next action.`,
   [SEARCH_PHASE.showing_exploration_candidates]: `Check answerText field first:
   If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
@@ -119,28 +119,28 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   Show facets with counts, suggest filter to narrow.`,
   [SEARCH_PHASE.showing_waymate_results]: `Check answerText field first:
   If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
-  If answerText is null/empty → Show results from waymatesResults array:
+  If answerText is null/empty → Show waymates from results array:
   📊 **Waymates** — ${WAYMATES_DESC}
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
-  📋 Results: [waymatesResults.length] waymates
-  IMPORTANT: List candidates from waymatesResults array. Each has matchedContext.
+  📋 Results: [results.length] waymates
+  IMPORTANT: List candidates from results array. Each has matchedContext.
   Each context with fields: ${NLP_CANDIDATE_FIELDS}
-  CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
-  If waymatesResults is empty → show goal criteria, suggest broadening.
+  CRITICAL: DO NOT ask for missing context fields! Just show the results.
+  If results is empty → show goal criteria, suggest broadening.
   End with: switch to pathfinders, filter, or refine goal.`,
   [SEARCH_PHASE.showing_pathfinder_results]: `Check answerText field first:
   If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
-  If answerText is null/empty → Show results from pathfinderResults array:
+  If answerText is null/empty → Show pathfinders from results array:
   📊 **Pathfinders** — ${PATHFINDERS_DESC}
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
-  📋 Results: [pathfinderResults.length] pathfinders
-  IMPORTANT: List candidates from pathfinderResults array. Each has matchedContext and targetContext.
+  📋 Results: [results.length] pathfinders
+  IMPORTANT: List candidates from results array. Each has matchedContext and targetContext.
   Show: matchedContext (starting point) → targetContext (reached goal), timeSinceTargetMonths.
   Each context with fields: ${NLP_CANDIDATE_FIELDS}
-  CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
-  If pathfinderResults is empty → show goal criteria, suggest broadening.
+  CRITICAL: DO NOT ask for missing context fields! Just show the results.
+  If results is empty → show goal criteria, suggest broadening.
   End with: switch to waymates, filter, or refine goal.`,
   [SEARCH_PHASE.showing_results_facets]: `Structured format:
   📊 **Results** — too many to show, use facets to narrow

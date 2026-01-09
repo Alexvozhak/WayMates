@@ -1673,3 +1673,265 @@ src/facade/langGraph/cold-start-v2/response-builders.ts
 - Fix at root cause, не хаки в downstream
 - Debug logging добавлять сразу при непонятном поведении
 ```
+
+---
+
+## Phase 14 — Adhoc E2E testing + fixes
+
+**Дата:** 2026-01-08
+**Сессия:** /manual-test-debug — Adhoc flow E2E
+
+---
+
+### ✅ ЗАКОММИЧЕНО
+
+**Коммит `6b52535`:**
+| # | Fix | Файл |
+|---|-----|------|
+| 1 | companySize="undisclosed" → null | `cold-start-v2/prompts.ts` — NEVER use placeholder values |
+| 2 | "2" after greeting → startAdhoc | `intent-classifier.ts` — Option '1'/'2' recognition |
+| 3 | BRAND_TERMS dictionary | `nlp-formatter/prompts.ts` — NO_TRANSLATE: Pathfinders, Waymates |
+
+**Коммит `9377033`:**
+| # | Fix | Файл |
+|---|-----|------|
+| 4 | Context mixing (adhocContext vs appliedFilters) | `nlp-formatter/prompts.ts` — CONTEXT_BLOCK explicit source |
+| 5 | answerText stale after mode switch | `explore.ts`, `search-pathfinders.ts`, `search-waymates.ts` — clear answerText |
+| 6 | "Salary: not specified" у кандидатов | `nlp-formatter/prompts.ts` — omit null/empty fields |
+
+---
+
+### ✅ E2E ТЕСТ ПРОЙДЕН (Adhoc flow)
+
+```
+/start → "2" → adhoc context (team lead developer, backend, RU)
+→ explore (3 candidates + Chart)
+→ set goal (head of engineering, NL, ai)
+→ save
+→ pathfinders (1 result + Chart)
+→ question ("what skills?") — advisor answer
+→ waymates (1 result + Chart)
+→ question ("what challenges?") — advisor answer
+```
+
+---
+
+### 🐛 ОСТАЛОСЬ
+
+| # | Задача | Приоритет |
+|---|--------|-----------|
+| 1 | **E2E с эталонным контекстом Alex** — explore>1, waymates=4, pathfinders=4 | 🔴 P0 |
+| 2 | **Cold-start flow с PDF** — полный E2E до сохранения | 🟡 P1 |
+| 3 | **Greeting text** — расширенное описание возможностей | 🟢 P3 |
+
+---
+
+### 📊 АНАЛИЗ: Эталонный контекст для максимума кандидатов
+
+**Найдено в БД:**
+- `technical project manager → head of engineering` = 4 перехода (pathfinders)
+- 6 users с целью `head of engineering, manager, NL, ai`
+- 9 users с контекстом `technical project manager, manager, RU, fintech`
+
+**Рекомендуемый контекст для теста:**
+```
+Reference: technical project manager, manager, management+backend, RU, fintech
+Goal: head of engineering, manager, ai+platform+management, NL
+```
+
+---
+
+### 📚 РЕФЛЕКСИЯ Phase 14
+
+| # | Моё неправильное действие | Что должен был сделать | Первопричина |
+|---|--------------------------|------------------------|--------------|
+| 1 | Предложил hardcoded примеры в промпте ("ты", "tu", "du") | Только семантика, без гвоздей | Привычка к explicit examples |
+| 2 | Не очистил answerText при смене режима сразу | Проверить все search nodes на state cleanup | Не подумал о side effects |
+| 3 | Не сверил контекст с эталоном сразу | Начинать с анализа fixtures | Поспешил с произвольным контекстом |
+| 4 | Показывал null поля как "not specified" | Проверить промпт на omit null | Не заметил лишний output |
+
+**Ключевые уроки:**
+- **Семантика > примеры**: В промптах описывать ЧТО, не КАК конкретно
+- **State cleanup**: При смене режима очищать все transient поля
+- **Fixtures first**: Перед тестом анализировать данные для максимального покрытия
+- **Omit null**: Не показывать пользователю пустые поля
+
+---
+
+### 🎯 TODO для следующей сессии
+
+**E2E тест с эталонным контекстом:**
+1. 🔴 Удалить цель в начале (если есть)
+2. 🔴 Adhoc → контекст как Demo-Alex context 3: `technical project manager, manager, management+backend, RU, fintech`
+3. 🔴 Explore → должно быть >1 результат
+4. 🔴 Goal: `head of engineering, manager, ai+platform+management, NL`
+5. 🔴 Waymates → должно быть 4
+6. 🔴 Question к waymates
+7. 🔴 Pathfinders → должно быть 4
+8. 🔴 Question к pathfinders
+
+**После E2E:**
+9. 🟡 Cold-start flow с PDF
+
+---
+
+### 🚀 Промпт для продолжения (после rewind)
+
+```
+ПРОЧИТАЙ:
+1. `/home/alex/projects/WayMatesRemote/sessions/2026-01-06-telegram-realtime-testing.md` — Phase 14
+
+**Контекст Phase 14 (закоммичено 6b52535, 9377033):**
+- Intent "2" → startAdhoc работает
+- BRAND_TERMS (Pathfinders, Waymates) не переводятся
+- Context mixing fixed (CONTEXT_BLOCK explicit)
+- answerText cleared on mode switch
+- Null fields omitted у кандидатов
+
+**TODO E2E с эталоном:**
+1. Удалить цель если есть
+2. Adhoc: technical project manager, manager, management+backend, RU, fintech
+3. Explore: >1 результат
+4. Goal: head of engineering, manager, ai+platform+management, NL
+5. Waymates: 4 результата → question
+6. Pathfinders: 4 результата → question
+
+**Правила:**
+- Fixtures first: анализировать данные перед тестом
+- Семантика в промптах, без hardcoded примеров
+- State cleanup при смене режима
+```
+
+---
+
+## Phase 15 — Waymates E2E + Root Cause Analysis
+
+**Дата:** 2026-01-09
+**Сессия:** /manual-test-debug — Waymates 0→4 fix, prompt/data mismatch
+
+---
+
+### ✅ СДЕЛАНО
+
+| # | Изменение | Файлы |
+|---|-----------|-------|
+| 1 | **Waymates 4 результата** — исправлен root cause | См. ниже |
+| 2 | **CONTEXT_BLOCK stricter** | `nlp-formatter/prompts.ts` — "STRICTLY from adhocContext JSON" |
+| 3 | **Salary USD annotation** | `nlp-formatter/prompts.ts` — "(USD, annual)" |
+| 4 | **Waymate goals для U5-U8** | Neo4j MCP — создано через MERGE |
+
+---
+
+### 🔍 ROOT CAUSE: Waymates = 0
+
+**Симптом:** `waymatesResults:"[4 items]"` в логах, но NLP показывал 0 или спрашивал missing fields.
+
+**Диагностика:**
+
+| Этап | Что проверили | Результат |
+|------|---------------|-----------|
+| 1 | Goals в Neo4j | ✅ U5-U8 имеют Goals |
+| 2 | isWaymateFlags | `[false,false,false,false,false,true,true,true,true]` — 4 waymates есть |
+| 3 | Core API | Возвращал 4 результата (U0-U4 без Goals) |
+| 4 | pathLimit | **4** отрезал U5-U8 ДО facade фильтрации |
+
+**Root cause #1: pathLimit=4**
+
+```
+Query → 9 matching users → ORDER BY score → LIMIT 4 → [U0-U4]
+→ Facade фильтрует isWaymate=true → 0 результатов
+```
+
+**Fix:** `CANDIDATES_DISPLAY_LIMIT: 4→10` в `src/facade/env.ts`
+
+**Root cause #2: Prompt/Data mismatch**
+
+```
+Response builder: { results: state.waymatesResults }  ← поле "results"
+Prompt: "Show results from waymatesResults array"     ← ожидает "waymatesResults"
+→ NLP не видит данные → галлюцинирует missing fields
+```
+
+**Fix:** Промпты изменены на `results` вместо `waymatesResults`/`pathfinderResults`
+
+---
+
+### 📁 Изменённые файлы (НЕ закоммичено!)
+
+```
+.env.test                                    — CANDIDATES_DISPLAY_LIMIT=10
+src/facade/env.ts                            — default 10
+src/facade/services/nlp-formatter/prompts.ts — results вместо waymatesResults/pathfinderResults
+src/core/search-manager.ts                   — debug logging (удалить)
+src/facade/langGraph/search-graph/nodes/search-waymates.ts — debug logging (удалить)
+```
+
+---
+
+### 📚 РЕФЛЕКСИЯ Phase 15
+
+| # | Моё неправильное действие | Что должен был сделать | Первопричина |
+|---|--------------------------|------------------------|--------------|
+| 1 | Не сравнил response-builder output с prompt field names | **Первым делом:** проверить что prompt ожидает vs что data передаёт | Искал проблему в логике, не в naming |
+| 2 | Менял CANDIDATES_DISPLAY_LIMIT в .env.test | Проверить как env передаётся в Docker (env_file закомментирован) | Не понял инфру |
+| 3 | Долго искал проблему в Core/Cypher | Добавить logging на КАЖДОМ этапе pipeline сразу | Делал предположения вместо трассировки |
+| 4 | Goals потерялись после docker compose down | Goals должны быть в demo fixtures script | Не учёл что volumes пересоздаются |
+| 5 | NLP "спрашивал missing fields" — искал в prompts | **Structured data naming** — root cause большинства NLP багов | Шаблонное мышление "промпт виноват" |
+
+**Ключевые уроки:**
+
+1. **Prompt/Data contract:** При NLP баге — ПЕРВЫМ проверить какие поля prompt ожидает vs какие data передаёт
+2. **Pipeline tracing:** Добавлять logging на КАЖДОМ этапе: Core → Facade filtering → Response builder → NLP
+3. **Docker env:** `env_file` в docker-compose может быть закомментирован — проверять `docker exec env`
+4. **Fixtures persistence:** Goals и другие test data должны быть в scripts, не создаваться ad-hoc
+
+---
+
+### 🎯 TODO для следующей сессии
+
+**Критично:**
+1. 🔴 **lint:fix + tsc + commit** Phase 15 изменений
+2. 🔴 **Удалить debug logging** из search-manager.ts, search-waymates.ts
+
+**После коммита:**
+3. 🟡 **Добавить Goals в demo fixtures script** — чтобы не терялись при docker compose down
+4. 🟡 **Cold-start flow с PDF** — полный E2E
+5. 🟡 **Chart verification** — ru/en локали
+
+---
+
+### 🚀 Промпт для продолжения (после rewind)
+
+```
+ПРОЧИТАЙ:
+1. `/home/alex/projects/WayMatesRemote/sessions/2026-01-06-telegram-realtime-testing.md` — Phase 15
+
+**Контекст Phase 15 (НЕ закоммичено):**
+- Waymates: 0→4 fix (pathLimit + prompt/data mismatch)
+- CANDIDATES_DISPLAY_LIMIT: 4→10 в env.ts
+- Промпты: `results` вместо `waymatesResults`/`pathfinderResults`
+- CONTEXT_BLOCK stricter, Salary USD annotation
+- Debug logging добавлен (нужно удалить)
+
+**Root causes найдены:**
+1. pathLimit=4 отрезал waymates ДО фильтрации
+2. Prompt ожидал `waymatesResults`, data передавало `results`
+
+**TODO:**
+1. 🔴 Удалить debug logging из search-manager.ts, search-waymates.ts
+2. 🔴 lint:fix + tsc + commit
+3. 🟡 Добавить Goals в demo fixtures script
+4. 🟡 Cold-start flow с PDF
+5. 🟡 Chart verification
+
+**Изменённые файлы:**
+- src/facade/env.ts — CANDIDATES_DISPLAY_LIMIT=10
+- src/facade/services/nlp-formatter/prompts.ts — results вместо *Results
+- src/core/search-manager.ts — debug logging (удалить!)
+- src/facade/langGraph/search-graph/nodes/search-waymates.ts — debug logging (удалить!)
+
+**Правила:**
+- Prompt/Data contract: проверять naming ПЕРВЫМ при NLP баге
+- Pipeline tracing: logging на каждом этапе
+- Fixtures persistence: данные в scripts, не ad-hoc
+```

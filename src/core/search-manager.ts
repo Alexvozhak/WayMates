@@ -91,8 +91,11 @@ export class SearchManager {
       .filter((c) => c.userId !== params.userId)
       .map((c) => this.enrichCandidateWithPath(c, trajectoriesMap, canApplyDTW ? userData.path : null));
 
-    // Step 5: Sort and apply pathLimit
-    return enrichedCandidates
+    // Step 5: Filter by isWaymate if requested (BEFORE pathLimit)
+    const filtered = params.waymatesOnly ? enrichedCandidates.filter((c) => c.isWaymate) : enrichedCandidates;
+
+    // Step 6: Sort and apply pathLimit
+    return filtered
       .toSorted((a, b) => {
         const scoreA = (a.dtwTotal ?? 0) + a.contextMatchScore;
         const scoreB = (b.dtwTotal ?? 0) + b.contextMatchScore;

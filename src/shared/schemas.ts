@@ -620,6 +620,10 @@ export const userSearchParamsRawSchema = z.object({
 export const waymatesSearchParamsSchema = withPathLimitTransform(
   userSearchParamsRawSchema.extend({
     referenceContext: adhocContextBase.optional(),
+    waymatesOnly: z
+      .boolean()
+      .default(false)
+      .describe("Filter to only return candidates with isWaymate=true (same goal) BEFORE applying pathLimit"),
   }),
 );
 

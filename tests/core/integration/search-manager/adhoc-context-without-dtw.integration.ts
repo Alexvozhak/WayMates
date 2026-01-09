@@ -55,6 +55,7 @@ const createAdhocSearchParams = (
   excludedContextFields: ["languages", "citizenships"],
   excludedCreationReasons: [],
   recencyThresholdMonths: null,
+  waymatesOnly: false,
   ...overrides,
 });
 

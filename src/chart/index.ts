@@ -121,18 +121,6 @@ export class ChartService {
 }
 
 /**
- * Check if chart service is enabled (R2 configured).
- */
-export function isChartServiceEnabled(): boolean {
-  try {
-    getR2Config();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Generate interactive HTML chart and upload to R2.
  * Backwards-compatible function API.
  *

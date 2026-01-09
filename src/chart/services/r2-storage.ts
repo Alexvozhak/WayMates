@@ -1,6 +1,5 @@
-import { randomBytes } from "node:crypto";
-
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { v7 as uuidv7 } from "uuid";
 
 import { config } from "../../facade/env.js";
 import { ChartGenerationError } from "../types.js";
@@ -8,50 +7,17 @@ import { ChartGenerationError } from "../types.js";
 import type { R2Config } from "../types.js";
 
 /**
- * Validate R2 configuration fields (all or none).
- */
-function validateR2Fields(
-  accountId: string | undefined,
-  accessKeyId: string | undefined,
-  secretAccessKey: string | undefined,
-  bucketName: string | undefined,
-  publicUrl: string | undefined,
-): void {
-  const fields = [accountId, accessKeyId, secretAccessKey, bucketName, publicUrl];
-  const hasAnyField = fields.some(Boolean);
-  const hasAllFields = fields.every(Boolean);
-
-  if (hasAnyField && !hasAllFields) {
-    throw new ChartGenerationError(
-      "R2 configuration is incomplete. Either provide all R2_* env vars or none.",
-      "CONFIG_MISSING",
-    );
-  }
-
-  if (!hasAllFields) {
-    throw new ChartGenerationError("R2 is not configured. Chart service is disabled.", "CONFIG_MISSING");
-  }
-}
-
-/**
  * Get R2 configuration from environment.
- * All R2 fields must be present or none (chart service disabled).
- *
- * @throws {ChartGenerationError} with code 'CONFIG_MISSING' if partial config
+ * All R2 fields are required — validated by Zod schema in env.ts.
  */
 export function getR2Config(): R2Config {
-  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL, R2_TTL_DAYS } = config;
-
-  validateR2Fields(R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL);
-
-  // All fields guaranteed to be present by validateR2Fields check
   return {
-    accountId: R2_ACCOUNT_ID!,
-    accessKeyId: R2_ACCESS_KEY_ID!,
-    secretAccessKey: R2_SECRET_ACCESS_KEY!,
-    bucketName: R2_BUCKET_NAME!,
-    publicUrl: R2_PUBLIC_URL!,
-    ttlDays: R2_TTL_DAYS,
+    accountId: config.R2_ACCOUNT_ID,
+    accessKeyId: config.R2_ACCESS_KEY_ID,
+    secretAccessKey: config.R2_SECRET_ACCESS_KEY,
+    bucketName: config.R2_BUCKET_NAME,
+    publicUrl: config.R2_PUBLIC_URL,
+    ttlDays: config.R2_TTL_DAYS,
   };
 }
 
@@ -72,8 +38,7 @@ export class R2StorageService {
    * @throws {ChartGenerationError} with code 'R2_UPLOAD_FAILED'
    */
   async upload(html: string): Promise<{ url: string; expiresAt: string }> {
-    const chartId = this.generateChartId();
-    const key = `${chartId}.html`;
+    const key = `${uuidv7()}.html`;
 
     try {
       const client = this.createS3Client();
@@ -100,10 +65,6 @@ export class R2StorageService {
         error instanceof Error ? error : undefined,
       );
     }
-  }
-
-  private generateChartId(): string {
-    return randomBytes(16).toString("hex");
   }
 
   private createS3Client(): S3Client {

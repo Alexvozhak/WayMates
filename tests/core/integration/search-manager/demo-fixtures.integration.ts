@@ -71,6 +71,7 @@ describe("Demo Fixtures — Real Dialog Flow", () => {
         excludedContextFields: [...DEFAULT_EXCLUDED_CONTEXT_FIELDS],
         excludedCreationReasons: [],
         recencyThresholdMonths: null,
+        waymatesOnly: false,
       });
 
       console.log("[DEMO-EXPLORE] Results count:", results.length);
@@ -167,6 +168,7 @@ describe("Demo Fixtures — Real Dialog Flow", () => {
         excludedContextFields: [...DEFAULT_EXCLUDED_CONTEXT_FIELDS],
         excludedCreationReasons: [],
         recencyThresholdMonths: null,
+        waymatesOnly: false,
       });
 
       console.log("[DEMO-WM] Results count:", results.length);

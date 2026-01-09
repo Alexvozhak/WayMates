@@ -42,6 +42,7 @@ export const createWaymatesSearchParams = (
   excludedContextFields: [],
   excludedCreationReasons: [],
   recencyThresholdMonths: null,
+  waymatesOnly: false,
   ...overrides,
 });
 
