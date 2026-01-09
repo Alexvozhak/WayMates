@@ -105,6 +105,7 @@ const CONFIRMING_WITH_GOAL_ROUTES: RouteMap = {
   searchWaymates: NODE.search_waymates,
   searchPathfinders: NODE.search_pathfinders,
   validate: NODE.validate_goal,
+  setGoal: NODE.extract_goal,
   editGoal: NODE.load_existing_goal,
   editAdhoc: NODE.load_context,
   delete: NODE.delete_goal,
