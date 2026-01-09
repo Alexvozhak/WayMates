@@ -128,7 +128,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     goal: state.storedGoal,
     chartUrl: state.chartUrl,
     appliedFilters: state.currentSearchParams,
-    adhocContext: state.adhocContext,
+    adhocContext: null,
     answerText: state.answerText ?? null,
   }),
 
@@ -138,7 +138,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     goal: state.storedGoal,
     chartUrl: state.chartUrl,
     appliedFilters: state.currentSearchParams,
-    adhocContext: state.adhocContext,
+    adhocContext: null,
     answerText: state.answerText ?? null,
   }),
 

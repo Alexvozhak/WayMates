@@ -36,8 +36,6 @@ allowed-tools:
     "Bash(docker logs:*)",
     "Bash(docker ps:*)",
     "Bash(grep:*)",
-    "Edit",
-    "Write",
     "mcp__sequential-thinking__sequentialthinking",
   ]
 ---

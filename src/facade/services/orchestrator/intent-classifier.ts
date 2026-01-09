@@ -40,9 +40,9 @@ export const userIntentSchema = z.enum([...graphIntentSchema.options, ...nonGrap
 // Type-safe: TypeScript enforces all UserIntent keys are present
 const INTENT_DESCRIPTIONS: Record<UserIntent, string> = {
   startStory:
-    "wants to tell about themselves, share career background, create profile, save full career history, upload CV — focus on SHARING information, not on searching. Option '1' after greeting",
+    "EXPLICITLY wants to tell FULL career history, create persistent profile, save story for future, upload CV/resume. Keywords: 'share my story', 'create profile', 'save my career', 'upload CV'. NOT just describing current position. Only for NEW users without profile",
   startAdhoc:
-    "wants lightweight temporary search without creating persistent profile — one-time lookup, no commitment to save career data. Option '2' after greeting",
+    "describes current position/role for QUICK SEARCH, wants temporary lookup, no commitment. Keywords: 'quick search', 'fast search', 'just looking', 'I am [role]', 'current position'. Default when user just states who they are. Only for NEW users without profile",
   setGoal: "wants to set career goal",
   // MVP: Disabled CRUD operations
   // addContext: "wants to add new career position/context",
@@ -74,9 +74,10 @@ Intent types:
 ${INTENT_SECTION}
 
 PRIORITY RULES:
-1. If message contains BOTH greeting AND substantive content (role, skills, goal, question), prioritize the substantive intent over greeting
-2. "greeting" is ONLY for pure greetings without any other meaningful information
-3. If message is unclear, garbage, or doesn't match any intent, classify as "unknown".`;
+1. If message contains BOTH greeting AND substantive content, prioritize substantive intent over greeting
+2. greeting = ONLY pure greetings without meaningful information
+3. startAdhoc vs startStory: stating current position = startAdhoc. startStory requires EXPLICIT intent to share full history or create profile
+4. If unclear or garbage = unknown`;
 
 const classificationSchema = z.object({ intent: userIntentSchema });
 const classifier = getModel("deterministic").withStructuredOutput(classificationSchema);

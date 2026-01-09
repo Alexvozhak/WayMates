@@ -56,6 +56,11 @@ export class FlowGuardChecker {
       return state.hasGoal ? "greetingWithProfileWithGoal" : "greetingWithProfileNoGoal";
     }
 
+    // Block startStory for users who already have profile
+    if (intent === "startStory") {
+      return state.hasGoal ? "greetingWithProfileWithGoal" : "greetingWithProfileNoGoal";
+    }
+
     if (!state.hasGoal) {
       return this.getNoGoalGuard(intent);
     }

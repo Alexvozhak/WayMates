@@ -14,8 +14,8 @@ import type { SearchPhase, SearchUserIntent } from "../state.js";
 
 // Phase-specific context hints for intent classification
 const PHASE_CONTEXT: Partial<Record<SearchPhase, string>> = {
-  [PHASE.showing_pathfinder_results]: "Pathfinder results are ALREADY displayed. Questions about shown results = ask.",
-  [PHASE.showing_waymate_results]: "Waymate results are ALREADY displayed. Questions about shown results = ask.",
+  [PHASE.showing_pathfinder_results]: `Results ALREADY displayed. CRITICAL: Any question about candidates/skills/time/career = ask (NOT done). User asking "what skills", "how long", "why" = ask intent. Only "thanks/goodbye/finished" = done.`,
+  [PHASE.showing_waymate_results]: `Results ALREADY displayed. CRITICAL: Any question about candidates/skills/goals/career = ask (NOT done). User asking "what skills", "how long", "why" = ask intent. Only "thanks/goodbye/finished" = done.`,
   [PHASE.asking_search_mode]: "Goal just saved. User choosing between pathfinders and waymates.",
 };
 

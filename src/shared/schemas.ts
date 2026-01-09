@@ -1352,19 +1352,6 @@ export const getStoryResponseSchema = z.object({
 export type GetStoryResponse = z.infer<typeof getStoryResponseSchema>;
 
 /**
- * Response from get_goal MCP tool.
- * Returns user's goal or null if not set.
- */
-export const getGoalResponseSchema = z
-  .object({
-    goalId: z.string(),
-    targetContext: z.unknown(),
-  })
-  .nullable();
-
-export type GetGoalResponse = z.infer<typeof getGoalResponseSchema>;
-
-/**
  * Response from update_context MCP tool.
  * Multi-phase workflow for updating existing context.
  */

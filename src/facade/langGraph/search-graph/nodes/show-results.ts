@@ -1,6 +1,6 @@
 import { interrupt } from "@langchain/langgraph";
 
-import { NODE } from "../state.js";
+import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
 import type { SearchStateType } from "../state.js";
@@ -12,9 +12,11 @@ import type { SearchStateType } from "../state.js";
  * Chart is generated in search_waymates/search_pathfinders nodes (before interrupt).
  */
 export const showResultsNode = withLogging<SearchStateType>(NODE.show_results, (state, _config, _deps) => {
+  const isPathfinderPhase = state.phase === PHASE.showing_pathfinder_results;
+
   const userResponse = interrupt({
     type: "show_results",
-    results: state.waymatesResults,
+    results: isPathfinderPhase ? state.pathfinderResults : state.waymatesResults,
     goal: state.storedGoal,
     chartUrl: state.chartUrl,
     phase: state.phase,

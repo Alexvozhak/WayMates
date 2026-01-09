@@ -26,16 +26,10 @@
 export function setGoalQuery(): string {
   return `
 MERGE (searchingUser:User {userId: $userId})
-WITH searchingUser
-OPTIONAL MATCH (searchingUser)-[r:HAS_GOAL]->(oldGoal:Goal)
-WITH searchingUser, oldGoal.createdAt AS originalCreatedAt, r, oldGoal
-DELETE r, oldGoal
-WITH searchingUser, originalCreatedAt
-CREATE (searchingUser)-[:HAS_GOAL]->(g:Goal {
-  userId: $userId,
-  createdAt: coalesce(originalCreatedAt, $createdAt),
-  targetContext: $targetContext
-})
+MERGE (g:Goal {userId: $userId})
+MERGE (searchingUser)-[:HAS_GOAL]->(g)
+SET g.targetContext = $targetContext,
+    g.createdAt = coalesce(g.createdAt, $createdAt)
 RETURN g {
   .userId,
   .targetContext,

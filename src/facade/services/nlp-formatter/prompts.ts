@@ -59,10 +59,12 @@ const OPTIONAL_FIELDS_HINT = `Optional fields user might want to share:
 // Type-safe: TypeScript enforces all SearchPhase keys are present
 const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.asking_adhoc_context]: `Missing required fields — ask user to provide them.
-  ❌ MISSING: list from missingFields array
-  ✅ FILLED: list non-null fields from adhocContext
+  REQUIRED FORMAT:
+  ❗ Label (for each field in missingFields array — no value, just label)
+  ✅ Label: value (for each non-null field in adhocContext)
   ⚪ Optional: single line comma-separated (use human-readable labels: ${FIELD_NAMES_MAPPING})
-  Ask ONLY for fields from MISSING section.
+  Use EXACT labels: Position level, Professional role, Work domains, Country
+  Ask user to provide ONLY the ❗ missing fields.
   IMPORTANT: All fields describe user's CURRENT state, NOT career goals`,
   [SEARCH_PHASE.confirming_adhoc_context]: `All required fields are filled — confirmation phase.
   ✅ FILLED: list values from adhocContext with human-readable labels
@@ -117,30 +119,25 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ${FILTERS_BLOCK}
   📋 Results: [totalCount] people — showing facets
   Show facets with counts, suggest filter to narrow.`,
-  [SEARCH_PHASE.showing_waymate_results]: `Check answerText field first:
-  If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
-  If answerText is null/empty → Show waymates from results array:
+  [SEARCH_PHASE.showing_waymate_results]: `CRITICAL: DO NOT ask for any fields! Results are ready to display.
+  Check answerText first: If NOT null/empty → show ONLY answerText.
+  Otherwise show waymates:
   📊 **Waymates** — ${WAYMATES_DESC}
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
   📋 Results: [results.length] waymates
-  IMPORTANT: List candidates from results array. Each has matchedContext.
-  Each context with fields: ${NLP_CANDIDATE_FIELDS}
-  CRITICAL: DO NOT ask for missing context fields! Just show the results.
-  If results is empty → show goal criteria, suggest broadening.
+  List candidates from results array with matchedContext.
+  Each context: ${NLP_CANDIDATE_FIELDS}
   End with: switch to pathfinders, filter, or refine goal.`,
-  [SEARCH_PHASE.showing_pathfinder_results]: `Check answerText field first:
-  If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
-  If answerText is null/empty → Show pathfinders from results array:
+  [SEARCH_PHASE.showing_pathfinder_results]: `CRITICAL: DO NOT ask for any fields! Results are ready to display.
+  Check answerText first: If NOT null/empty → show ONLY answerText.
+  Otherwise show pathfinders:
   📊 **Pathfinders** — ${PATHFINDERS_DESC}
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
   📋 Results: [results.length] pathfinders
-  IMPORTANT: List candidates from results array. Each has matchedContext and targetContext.
-  Show: matchedContext (starting point) → targetContext (reached goal), timeSinceTargetMonths.
-  Each context with fields: ${NLP_CANDIDATE_FIELDS}
-  CRITICAL: DO NOT ask for missing context fields! Just show the results.
-  If results is empty → show goal criteria, suggest broadening.
+  List candidates from results array with matchedContext → targetContext.
+  Each context: ${NLP_CANDIDATE_FIELDS}
   End with: switch to waymates, filter, or refine goal.`,
   [SEARCH_PHASE.showing_results_facets]: `Structured format:
   📊 **Results** — too many to show, use facets to narrow
@@ -388,51 +385,31 @@ export type GuardType =
   | "storyNotSet";
 
 // Guard templates in English — returned as-is for English, translated by LLM for other languages
+// IMPORTANT: No numbered lists — conversational style to avoid numeric responses
 export const GUARD_TEMPLATES: Record<GuardType, string> = {
-  greeting: `👋 Hi! You're new here.
+  greeting: `👋 Hi! I'm WayMates — I help find people who made career transitions like yours.
 
-1. Create profile — share your career story (better matching)
-2. Quick search — just describe current position (faster)
+You can share your career story for better matching, or just describe your current position for a quick search. What would you like to do?`,
 
-Which one?`,
+  greetingWithProfileNoGoal: `👋 Welcome back!
 
-  greetingWithProfileNoGoal: `👋 Welcome back! You have a profile.
+You can set a career goal to find people who achieved it, search for similar professionals, or update your profile. What interests you?`,
 
-1. Set goal — describe target position to find who achieved it
-2. Search — find similar professionals or pathfinders
-3. Update profile — change your career story
+  greetingWithProfileWithGoal: `👋 Welcome back!
 
-What do you want to do?`,
+Ready to search for pathfinders or similar professionals? Or would you like to change your goal or update your profile?`,
 
-  greetingWithProfileWithGoal: `👋 Welcome back! You have a profile and a goal.
+  help: `I help you find career connections: similar professionals (waymates) and people who achieved your target position (pathfinders).
 
-1. Search — find pathfinders or similar professionals
-2. Change goal — set a different target position
-3. Update profile — change your career story
+Just describe your current position or career goal to get started.`,
 
-What do you want to do?`,
-
-  help: `I can help you with:
-• Find similar professionals by your profile
-• Find pathfinders who made your desired transition
-• Save career story for better matching
-
-Describe your current position or career goal to start.`,
-
-  unknown: `Sorry, I didn't understand that.
-
-Try:
-• Describe your current position (role, level, country)
-• Describe your career goal`,
+  unknown: `I didn't quite catch that. Try describing your current position (role, level, country) or your career goal.`,
 
   cancelNoActive: `Nothing to cancel — no active operation.`,
 
-  onboarding: `👋 Hi! You're new here.
+  onboarding: `👋 Hi! I'm WayMates — I help find people who made career transitions like yours.
 
-1. Create profile — share your career story (better matching)
-2. Quick search — just describe current position (faster)
-
-Which one?`,
+You can share your career story for better matching, or just describe your current position for a quick search. What would you like to do?`,
 
   goalNotSet: `You don't have a goal set yet.
 
@@ -446,7 +423,9 @@ Share your career history to create one.`,
 };
 
 export function buildGuardTranslationPrompt(template: string, locale: string): string {
-  return `Translate to language code "${locale}". Keep structure, formatting, and numbered lists exactly as in original.
+  return `Translate to language code "${locale}". Keep structure and formatting exactly as in original.
+
+CRITICAL: Do NOT translate brand terms — keep exactly as-is: ${BRAND_TERMS.join(", ")}
 
 ${template}`;
 }

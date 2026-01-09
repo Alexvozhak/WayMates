@@ -146,8 +146,8 @@ export class Normalizer {
       languages: context.languages ?? null,
       countries: context.countries ?? null,
       citizenships: context.citizenships ?? null,
-      salaryMin: context.salaryMin ?? null,
-      salaryMax: context.salaryMax ?? null,
+      salaryMin: context.salaryMin || null,
+      salaryMax: context.salaryMax || null,
     };
   }
 
