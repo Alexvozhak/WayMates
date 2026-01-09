@@ -250,31 +250,185 @@ MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055' DETACH DELETE u
 
 ---
 
+## Phase 19: Search & Cold-Start Fixes (2026-01-09)
+
+### Коммиты
+
+| Hash | Описание |
+|------|----------|
+| `b049606` | fix(search): NLP results display + setGoal MERGE + intent classifier |
+
+### Сделано
+
+**1. setGoalQuery MERGE fix:**
+- Было: DELETE + CREATE → constraint conflict при повторном save
+- Стало: MERGE User → MERGE Goal → MERGE relationship
+- Причина: UNIQUE constraint на Goal.userId не позволял DELETE+CREATE в одной транзакции
+
+**2. NLP results phases fix:**
+- Было: `adhocContext: state.adhocContext` → LLM видел optional fields и спрашивал их
+- Стало: `adhocContext: null` для showing_waymate_results и showing_pathfinder_results
+- Причина: NLP игнорировал "DO NOT ask for fields" когда видел adhocContext в данных
+
+**3. NLP prompts усиление:**
+- "CRITICAL: DO NOT ask for any fields!" перенесено В НАЧАЛО промптов для results phases
+- PHASE_CONTEXT усилен: "Any question = ask (NOT done)"
+
+**4. Intent classifier (orchestrator):**
+- startAdhoc vs startStory: добавлен priority rule
+- "stating current position = startAdhoc, startStory requires EXPLICIT intent"
+- Причина: "I am PM" классифицировался как startStory
+
+**5. NLP missing fields format:**
+- ❗ вместо ❌ для missing required fields
+
+**6. Cold-start edit fix:**
+- Было: `parsedDecision.editInstructions` — LLM генерировал краткое резюме
+- Стало: `state.userResponse` — полный текст пользователя передаётся в correction prompt
+- Причина: "Remove skills" вместо "skills: typescript, nestjs, postgresql, docker"
+
+**7. Chart extractGrade fix (IN PROGRESS):**
+- Было: `extractGrade("head of engineering")` → "middle" (no keyword match)
+- Стало: `ctx.position` напрямую (без extractGrade)
+- `extractGoalValues` → `targetContext.position.values[0]` напрямую
+- Labels: "Грейд/Grade" → "Позиция/Position"
+
+### Cold-Start E2E — PASSED
+
+```
+PDF → 3 контекста → edit до эталона Demo-Alex.json → save → goal → waymates(5) → pathfinders(4)
+```
+
+**Эталон достигнут:**
+| # | Position | Role | Domains | Skills | Industry | Size |
+|---|----------|------|---------|--------|----------|------|
+| 1 | middle | developer | backend, mobile | c++, python, qt5, android | technology | small |
+| 2 | team lead | developer | backend, security | typescript, nestjs, postgresql, docker | technology | medium |
+| 3 | technical project manager | manager | management, backend | typescript, python, go, docker, terraform, prometheus | fintech | large |
+
+### Изменённые файлы
+
+```
+src/cypher/queries/goals.ts — setGoalQuery MERGE
+src/facade/langGraph/search-graph/response-builders.ts — adhocContext: null
+src/facade/services/nlp-formatter/prompts.ts — CRITICAL prefix, ❗ format
+src/facade/langGraph/search-graph/prompts/classification.ts — PHASE_CONTEXT
+src/facade/services/orchestrator/intent-classifier.ts — startAdhoc priority
+src/facade/langGraph/cold-start-v2/nodes/edit-context.ts — userResponse вместо editInstructions
+src/chart/config/aspect-configs.ts — extractValue без extractGrade
+src/chart/index.ts — extractGoalValues без extractGrade
+```
+
+---
+
+## Phase 20: Chart Domain Filtering + Routing Fix (2026-01-09)
+
+### Коммиты
+
+| Hash | Описание |
+|------|----------|
+| `77c30e6` | feat(chart): remove extractGrade, filter domains by goal |
+| `e527851` | fix(search-router): allow setGoal when user already has goal |
+
+### Сделано
+
+**1. extractGrade удалён:**
+- Функция удалена из `aspect-configs.ts`
+- Export удалён из `chart/index.ts`
+- `extractGoalValues` использует `position.values[0]` напрямую
+- Labels: "Грейд/Grade" → "Позиция/Position"
+
+**2. Domain filtering by goal:**
+- `AspectConfig.extractValue` теперь принимает `goalValues` параметр
+- `domains.extractValue`: если goal domain есть в ctx.domains → показать его
+- goalValues прокинут через `chart-builder` → `transformer` → `extractPointValues`
+- **Результат:** chart показывает "ai" для кандидатов с `["management", "ai", "platform"]` когда goal domain = "ai"
+
+**3. Routing fix — setGoal с существующим goal:**
+- Баг: `setGoal` intent из `confirming_adhoc_context` → fallback на `cancel`
+- Причина: `CONFIRMING_WITH_GOAL_ROUTES` не имел mapping для `setGoal`
+- Fix: добавлен `setGoal: NODE.extract_goal`
+
+### E2E Test — PASSED
+
+```
+adhoc context → goal (CTO, NL) → save → "change goal to head of engineering, DE, AI" → NEW goal shown (NOT cancel!)
+pathfinders: 4 found, chart generated with correct domain filtering
+```
+
+### Изменённые файлы
+
+```
+src/chart/types.ts — extractValue signature + GoalValues
+src/chart/config/aspect-configs.ts — extractGrade removed, domains filter by goal
+src/chart/index.ts — export cleanup
+src/chart/builders/chart-builder.ts — goalValues passed to transformer
+src/chart/services/trajectory-transformer.ts — goalValues through chain
+src/facade/langGraph/search-graph/search-router.ts — setGoal in CONFIRMING_WITH_GOAL_ROUTES
+```
+
+---
+
+## Phase 20.1: NLP Locale & Format (2026-01-09)
+
+### Коммит
+
+| Hash | Описание |
+|------|----------|
+| `10d5900` | fix(nlp): strict locale, unified context format, clear options |
+
+### Сделано
+
+**1. Strict locale:**
+- `buildLanguageInstruction(locale)` — строго следовать Telegram locale
+- "STRICT — always respond in this language regardless of user's message language"
+- Раньше LLM отвечал на языке сообщения, теперь — на языке из Telegram settings
+
+**2. CONTEXT_FORMAT (DRY):**
+- Единая константа для `asking_adhoc_context` и `confirming_adhoc_context`
+- Header: "📝 Your current context:"
+- ❗ только если missingFields не пуст
+- ⚪ без двоеточий
+
+**3. Clear options:**
+- `showing_goal`: "validate (check if people reached this goal), refine (add details), or save (confirm and search)"
+- `confirming_adhoc_context`: "explore OR set a career goal"
+
+### Изменённые файлы
+
+```
+src/facade/services/nlp-formatter/prompts.ts — buildLanguageInstruction, CONTEXT_FORMAT, clear options
+```
+
+---
+
+## TODO (Phase 21)
+
+1. **Cold-start полный E2E тест:** PDF → Demo-Alex.json эталон → waymates → pathfinders
+2. **Chart визуальная проверка** — screenshot через puppeteer (опционально)
+
+---
+
 ## Prompt для продолжения после rewind
 
 ```
-Продолжаем Phase 19. Session: sessions/2026-01-06-telegram-realtime-testing.md
+Продолжаем Phase 21. Session: sessions/2026-01-06-telegram-realtime-testing.md
 
-Phase 18 fixes (не закоммичены!):
-- show-results pathfinders bug
-- salaryMin/Max 0→null в normalizer
-- block startStory для users с profile
-- conversational prompts (без нумерации)
-- brand terms preservation in guard translation
+Phase 20 + 20.1 ЗАКОММИЧЕНЫ:
+- 77c30e6: chart extractGrade удалён, domain filtering by goal
+- e527851: routing fix — setGoal с существующим goal
+- 10d5900: NLP strict locale, CONTEXT_FORMAT (DRY), clear options
 
-ВАЖНО:
-- Brand terms НЕ переводить: Pathfinders, Waymates
-- Locale issue: Telegram передаёт en, общение на ru — нужно детектировать язык из сообщения
-- search-graph classifier не знает русские синонимы — использовать brand terms
+NLP улучшения:
+- Strict locale: ответ строго на языке из Telegram settings
+- CONTEXT_FORMAT: единый формат для context phases (header + fields)
+- Clear options: пояснения для validate/refine/save
 
-TODO Phase 19:
-1. КОММИТ Phase 18 fixes
-2. Cold-start + PDF E2E
-3. Locale detection fix
-4. Chart verification (ru/en)
+TODO Phase 21:
+1. Cold-start полный E2E: PDF → Demo-Alex эталон → search
+2. Chart screenshot через puppeteer (опционально)
 
-Перед началом:
-1. docker ps | grep waymates (6 контейнеров)
-2. Проверить данные в Neo4j (11 demo users, 4 с Goals)
-3. npm run facade:rebuild (если не собран)
+Эталон Demo-Alex: tests/core/fixtures/Demo-Alex.json
+Инструмент: poc/telegram-chat.ts (НЕ mcp-chat.ts!)
+Команды: npm run facade:rebuild:clean, docker ps | grep waymates
 ```
