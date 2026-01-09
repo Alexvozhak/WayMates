@@ -22,10 +22,21 @@ const GOAL_FIELD_NAMES_MAPPING = Object.entries(GOAL_FIELD_DISPLAY_NAMES)
 // Brand terms — keep in original form, never translate
 const BRAND_TERMS = ["Pathfinders", "Waymates", "WayMates"] as const;
 
+// Strict language instruction — always follow Telegram locale, ignore user message language
+const buildLanguageInstruction = (locale: string): string =>
+  `Language: ${locale} (STRICT — always respond in this language regardless of user's message language)`;
+
 // Dictionary terms should NOT be translated (keep in English)
 const NO_TRANSLATE_INSTRUCTION = `IMPORTANT: Keep ALL dictionary values and technical terms in their original form.
 Do NOT translate field values from the data. Only translate surrounding text and UI labels.
 Brand terms (keep exactly as-is): ${BRAND_TERMS.join(", ")}`;
+
+// Shared context format (DRY: used in asking + confirming phases)
+const CONTEXT_FORMAT = `📝 Your current context: (static header)
+  ❗ Label (ONLY if missingFields array is not empty — one per field, no value, no colon)
+  ✅ Label: value (for each non-null field in adhocContext)
+  ⚪ Label (for each field in optionalFields array, one per line — no value, no colon)
+  Use human-readable labels: ${FIELD_NAMES_MAPPING}`;
 
 // Reusable format blocks for structured responses
 const CONTEXT_BLOCK = `👤 Your context (STRICTLY from adhocContext JSON object):
@@ -60,22 +71,17 @@ const OPTIONAL_FIELDS_HINT = `Optional fields user might want to share:
 const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.asking_adhoc_context]: `Missing required fields — ask user to provide them.
   REQUIRED FORMAT:
-  ❗ Label (for each field in missingFields array — no value, just label)
-  ✅ Label: value (for each non-null field in adhocContext)
-  ⚪ Optional: single line comma-separated (use human-readable labels: ${FIELD_NAMES_MAPPING})
-  Use EXACT labels: Position level, Professional role, Work domains, Country
-  Ask user to provide ONLY the ❗ missing fields.
-  IMPORTANT: All fields describe user's CURRENT state, NOT career goals`,
+  ${CONTEXT_FORMAT}
+  IMPORTANT: All fields describe user's CURRENT state, NOT career goals
+  End with short prompt asking to provide the ❗ missing fields`,
   [SEARCH_PHASE.confirming_adhoc_context]: `All required fields are filled — confirmation phase.
-  ✅ FILLED: list values from adhocContext with human-readable labels
-  ⚪ Optional: list from optionalFields array, one per line: "⚪ Label" format ONLY
-  NEVER write "not set" or any value after label
-  Labels: ${FIELD_NAMES_MAPPING}
+  REQUIRED FORMAT:
+  ${CONTEXT_FORMAT}
   DO NOT ask for anything from FILLED section.
   Check goal field (NOT hasGoal) to determine next step:
-  - If goal is null: suggest exploring where people from similar context ended up (what goals they achieved)
-  - If goal is NOT null: show goal summary (from goal.targetContext — position, role, countries, domains), then offer pathfinders/waymates search directly (skip explore step)
-  Be direct about the logical next action.`,
+  - If goal is null: offer exploring where similar people ended up OR setting a career goal
+  - If goal is NOT null: show goal summary (position + country/domain, skip role if redundant with position), offer pathfinders/waymates search
+  Be concise, offer clear choices.`,
   [SEARCH_PHASE.showing_exploration_candidates]: `Check answerText field first:
   If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
   If answerText is null/empty → Show results from explorationResults array:
@@ -100,11 +106,10 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   [SEARCH_PHASE.showing_goal]: `Show goal ONLY from extractedGoal data. NEVER invent or assume values.
   ✅ SPECIFIED: list non-null fields with values, use ✅ icon for each
   ❌ If position is null — ask user to specify
-  ⚪ Optional: list from goalOptionalFields array, one per line: "⚪ Label" format ONLY
-  NEVER write "not set" or any value after label
+  ⚪ Optional: list from goalOptionalFields array, one per line — no value, no colon
   Labels: ${GOAL_FIELD_NAMES_MAPPING}
   CRITICAL: Show ONLY what is in extractedGoal. Keep it concise.
-  End with: validate, refine, or save.`,
+  End with clear options: validate (check if people reached this goal), refine (add details), or save (confirm and search).`,
   [SEARCH_PHASE.asking_after_validate_candidates]: `Structured format:
   📊 **Validate Goal** — checking who already reached this position
   ${GOAL_BLOCK}
@@ -191,7 +196,7 @@ Style:
 
 Format: Markdown, real newlines.
 
-Language: ${locale}
+${buildLanguageInstruction(locale)}
 Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
@@ -256,7 +261,7 @@ Rules:
 - For confirmation phases, extract and present key data clearly
 - Add a clear call-to-action at the end
 
-Language: ${locale}
+${buildLanguageInstruction(locale)}
 Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
@@ -287,7 +292,7 @@ Rules:
 - For confirmation, show position/company/dates/skills clearly
 - Add a clear call-to-action
 
-Language: ${locale}
+${buildLanguageInstruction(locale)}
 Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
@@ -318,7 +323,7 @@ Rules:
 - For confirmation, clearly show what changed (before -> after)
 - Add a clear call-to-action
 
-Language: ${locale}
+${buildLanguageInstruction(locale)}
 Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
@@ -353,7 +358,7 @@ Rules:
 - For confirmation, show the transition clearly
 - Add a clear call-to-action
 
-Language: ${locale}
+${buildLanguageInstruction(locale)}
 Tone: informal second person singular (casual friend, NOT formal polite form)
 ${NO_TRANSLATE_INSTRUCTION}
 
