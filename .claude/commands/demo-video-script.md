@@ -5,10 +5,14 @@ model: opus
 allowed-tools:
   [
     "Read",
-    "Bash(npx tsx poc/telegram-chat.ts:*)",
-    "Bash(set -a && source .env.test:*)",
+    "Bash(npm run telegram-chat:*)",
+    "Bash(npm run test:telegram:setup:*)",
+    "Bash(npm run test:integration:*)",
+    "Bash(npm run facade:rebuild:*)",
     "Bash(docker ps:*)",
     "Bash(docker logs:*)",
+    "Bash(docker exec waymates-redis-test:*)",
+    "Bash(sleep:*)",
     "mcp__neo4j-cypher__read_neo4j_cypher",
     "mcp__neo4j-cypher__write_neo4j_cypher",
     "mcp__puppeteer__puppeteer_screenshot",
@@ -21,12 +25,12 @@ allowed-tools:
 ## Usage
 
 ```
+/demo-video-script check    # Pre-flight: setup infra, clean data, verify state
 /demo-video-script short    # Quick adhoc search (~3 min) — text input only
 /demo-video-script long     # Full trajectory + CV + DTW Spider Chart (~5 min)
-/demo-video-script check    # Pre-flight infrastructure check (no recording)
 ```
 
-**AUTO-START**: When invoked with `short` or `long`, begin IMMEDIATELY with introduction.
+**Workflow**: `check` → fix issues → user starts recording → user says "go" → demo begins.
 
 ---
 
@@ -40,7 +44,8 @@ allowed-tools:
 
 You are the **live narrator and operator**. The user is recording both screens.
 
-**BEFORE STARTING**: Read `poc/telegram-chat.ts` to understand available flags:
+**Command format**: `npm run telegram-chat -- [flags] [message]`
+Available flags:
 - `--start` — send /start
 - `--file <path>` — upload file
 - `--wait-double "msg"` — wait for 2 responses
@@ -49,7 +54,7 @@ You are the **live narrator and operator**. The user is recording both screens.
 
 **What you do:**
 1. Write commentary in IDE (visible to viewers)
-2. Execute commands via `poc/telegram-chat.ts`
+2. Execute commands via `npm run telegram-chat --`
 3. React to actual bot responses (not scripted assumptions)
 4. Explain concepts as they naturally arise
 
@@ -112,7 +117,7 @@ our goal. This is proof the path exists — not theory, real data.
 
 **CRITICAL — ALWAYS use this exact format:**
 ```bash
-sleep 7 && npm run telegram-chat -- "message" 2>&1 | grep -A30 "Bot reply"
+sleep 7 && npm run telegram-chat -- "message" 2>&1
 ```
 **NEVER execute telegram-chat without `sleep 7 &&` prefix!**
 
@@ -291,14 +296,13 @@ It's not a monolith — it's a protocol-based service."
 
 1. **Start** — greet bot, explain two modes available
 2. **Describe position** — natural language input, show extraction
-3. **Explore** — see similar people without goal
-4. **Set goal** — demonstrate goal extraction
-5. **Save goal** — REQUIRED before search!
-6. **Pathfinders** — proof of transition possibility
-7. **Ask advisor** — question about pathfinder results
-8. **Waymates** — peer networking value
-9. **Ask advisor** — question about waymate results
-10. **Wrap up** — summarize what we accomplished
+3. **Set goal** — demonstrate goal extraction
+4. **Save goal** — REQUIRED before search!
+5. **Pathfinders** — proof of transition possibility
+6. **Ask advisor** — question about pathfinder results
+7. **Waymates** — peer networking value
+8. **Ask advisor** — question about waymate results
+9. **Wrap up** — summarize what we accomplished
 
 ### Target Context (MUST match demo fixtures exactly)
 
@@ -311,8 +315,16 @@ Country: RU
 Citizenship: RU
 ```
 
-**BE CAREFUL**: Describe context explicitly so LLM extraction matches these EXACT values.
-If extraction is wrong — clarify immediately before proceeding.
+**EXAMPLE MESSAGE (copy-paste for reliable extraction):**
+```
+I'm a technical project manager in fintech, based in Russia.
+My background is in backend development, now I manage both management and technical delivery.
+I'm a Russian citizen.
+```
+
+This explicit phrasing ensures LLM extracts: position=TPM, role=manager, domains=[management,backend], industry=fintech, countryCode=RU, citizenships=[RU].
+
+**If extraction misses something** — clarify immediately before proceeding.
 
 ### Target Goal
 
@@ -344,11 +356,20 @@ Domains: AI, platform
 
 ### Demo-Alex Reference (3 contexts)
 
-| # | Position | Role | Domains | Year |
-|---|----------|------|---------|------|
-| 1 | middle | developer | backend, mobile | 2016 |
-| 2 | team lead | developer | backend, security | 2023 |
-| 3 | technical project manager | manager | management, backend | 2025 |
+**CRITICAL**: Each position MUST match `tests/core/fixtures/Demo-Alex.json` exactly:
+
+| # | Position | Role | Domains | Industry | City | Year |
+|---|----------|------|---------|----------|------|------|
+| 1 | middle | developer | backend, mobile | technology | Rostov-on-Don | 2016 |
+| 2 | team lead | developer | backend, security | technology | Rostov-on-Don | 2023 |
+| 3 | technical project manager | manager | management, backend | fintech | Rostov-on-Don | 2025 |
+
+**WATCH FOR EXTRACTION ERRORS:**
+- Position 1-2: industry = **technology** (NOT fintech!)
+- All positions: city = **Rostov-on-Don** (NOT Moscow!)
+- Position 3: industry = fintech (only this one)
+
+If LLM suggests wrong values during clarification → correct immediately.
 
 **PDF file**: `Profile.pdf` in project root
 
@@ -357,17 +378,14 @@ Domains: AI, platform
 ## Commands Reference
 
 ```bash
-# Load environment
-set -a && source .env.test && set +a
-
 # Start conversation
-npx tsx poc/telegram-chat.ts --start
+npm run telegram-chat -- --start
 
 # Send message
-npx tsx poc/telegram-chat.ts "your message"
+npm run telegram-chat -- "your message"
 
 # Upload file (waits for 2 responses)
-npx tsx poc/telegram-chat.ts --file Profile.pdf
+npm run telegram-chat -- --file Profile.pdf
 
 # Check chart URL in response
 # Look for: https://....r2.dev/...html
@@ -395,47 +413,130 @@ npx tsx poc/telegram-chat.ts --file Profile.pdf
 
 ---
 
-## Pre-Recording Checklist
+## Pre-Recording Checklist (`check` mode)
 
-Run before starting:
+**When invoked with `check`**: Run this FULL checklist, fix any issues, report status.
+
+### Step 1: Infrastructure Setup
 
 ```bash
-# Check containers
-docker ps | grep waymates  # expect 6
+# Check if containers running
+docker ps --format "{{.Names}}" | grep waymates | wc -l
+# Expect: 6 containers
 
-# Check Redis dict cache (CRITICAL for extraction!)
-docker exec waymates-redis-test redis-cli GET "waymates:dict:position" | head -c 100
-# Expect: full list with "technical project manager"
-# If truncated (only junior/middle/senior) → invalidate:
-# docker exec waymates-redis-test redis-cli DEL waymates:dict:position waymates:dict:role waymates:dict:industry waymates:dict:domain waymates:dict:skill
+# IF NOT 6 → bring up infrastructure:
+npm run test:telegram:setup
 
-# Check demo data
-# Neo4j MCP: MATCH (u:User) WHERE u.userId STARTS WITH 'usr_019b0055' RETURN count(u)
-# Expect: 11
-
-# Check no garbage
-# Neo4j MCP: MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055' RETURN count(u)
-# Expect: 0
-
-# Check goals exist
-# Neo4j MCP: MATCH (u:User)-[:HAS_GOAL]->(g:Goal) RETURN count(u)
-# Expect: 4+
-
-# FOR SHORT DEMO: Check Demo-Alex NOT in DB (avoid finding yourself)
-# Neo4j MCP: MATCH (u:User {userId: 'usr_019b0055-0000-7000-8000-000000000001'}) RETURN count(u)
-# Expect: 0
-# If exists, delete: MATCH (u:User {userId: 'usr_019b0055-0000-7000-8000-000000000001'}) DETACH DELETE u
-
-# Load env (or use: npm run telegram-chat -- "message")
-set -a && source .env.test && set +a
+# Wait for healthy status
+docker ps | grep waymates
+# All should show "healthy" or "Up"
 ```
+
+### Step 2: Load Demo Fixtures (if needed)
+
+```bash
+# Check demo users count via Neo4j MCP:
+# MATCH (u:User) WHERE u.userId STARTS WITH 'usr_019b0055' RETURN count(u) AS demo
+# Expect: 10 users
+
+# IF NOT 10 → reload fixtures:
+npm run test:integration -- --grep "Demo fixtures" --reporter dot
+```
+
+### Step 3: Clean Garbage Data
+
+```bash
+# Check for non-demo users via Neo4j MCP:
+# MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055' RETURN count(u) AS garbage
+# Expect: 0
+
+# IF garbage > 0 → delete test users and their goals:
+# MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055'
+# OPTIONAL MATCH (u)-[:HAS_GOAL]->(g:Goal)
+# OPTIONAL MATCH (u)-[:HAS_CONTEXT]->(c:Context)
+# DETACH DELETE u, g, c
+```
+
+### Step 4: Clean Postgres User Bindings
+
+```bash
+# Check for garbage user bindings (Telegram → userId mapping)
+docker exec waymates-postgres-test psql -U postgres -d waymates_facade_test -c \
+  "SELECT telegram_user_id, user_id FROM facade.users WHERE user_id NOT LIKE 'usr_019b0055%';"
+# Expect: 0 rows
+
+# IF garbage exists → delete (otherwise Telegram reuses orphan userId!):
+docker exec waymates-postgres-test psql -U postgres -d waymates_facade_test -c \
+  "DELETE FROM facade.users WHERE user_id NOT LIKE 'usr_019b0055%';"
+```
+
+**⚠️ WARNING:** Deleting user from Neo4j WITHOUT cleaning Postgres leaves orphan binding!
+
+### Step 5: Verify Goals (Neo4j)
+
+```bash
+# Check goals count via Neo4j MCP:
+# MATCH (g:Goal) RETURN count(g) AS goals
+# Expect: 4 goals (waymates demo users have goals)
+
+# Check which users have goals:
+# MATCH (u:User)-[:HAS_GOAL]->(g:Goal)
+# RETURN u.userId, g.targetContext.position
+```
+
+### Step 6: Clean Redis Sessions
+
+```bash
+# Check for stale sessions
+docker exec waymates-redis-test redis-cli KEYS "session:*"
+docker exec waymates-redis-test redis-cli KEYS "user:currentSession:*"
+
+# IF any exist → clean them:
+docker exec waymates-redis-test redis-cli KEYS "session:*" | xargs -r docker exec -i waymates-redis-test redis-cli DEL
+docker exec waymates-redis-test redis-cli KEYS "user:currentSession:*" | xargs -r docker exec -i waymates-redis-test redis-cli DEL
+```
+
+### Step 7: Verify Dict Cache
+
+```bash
+# Check position dictionary (CRITICAL for extraction!)
+docker exec waymates-redis-test redis-cli GET "waymates:dict:position" | head -c 150
+# Expect: includes "technical project manager", "team lead", "head of engineering"
+
+# IF truncated (only junior/middle/senior) → invalidate cache:
+docker exec waymates-redis-test redis-cli DEL waymates:dict:position waymates:dict:role waymates:dict:industry waymates:dict:domain waymates:dict:skill
+# Cache will rebuild on next request
+```
+
+### Expected Final State
+
+| Check | Expected |
+|-------|----------|
+| Docker containers | 6 healthy |
+| Demo users (Neo4j) | 10 |
+| Goals | 4 |
+| Garbage users (Neo4j) | 0 |
+| Postgres bindings | 0 garbage |
+| Redis sessions | 0 |
+| Dict cache | Full (not truncated) |
 
 ---
 
-## AUTO-START: Begin Immediately
+## Workflow: Check → Confirm → Record
 
-**When this command is invoked, START IMMEDIATELY with the introduction below.**
-Do NOT wait for user confirmation. They are already recording.
+### Mode: `check`
+1. Run FULL Pre-Recording Checklist above
+2. Fix any issues found
+3. Report final status table
+4. **STOP and wait for user command**
+
+### Mode: `short` or `long`
+1. Run Pre-Recording Checklist silently (fix issues if any)
+2. Report: "✅ Infrastructure ready. Start screen recording, then say 'go'"
+3. **WAIT for user to say "go" or "start" or "поехали"**
+4. THEN begin introduction and demo flow
+
+**NEVER auto-start recording flow without explicit user confirmation!**
 
 ---
 
@@ -462,7 +563,7 @@ stored in a graph database.
 Let me show you...
 ```
 
-Then immediately execute: `npx tsx poc/telegram-chat.ts --start`
+Then immediately execute: `npm run telegram-chat -- --start`
 
 ---
 
@@ -492,7 +593,7 @@ This goes beyond "similar skills" — it's trajectory DNA.
 Let's see who made my transition before me...
 ```
 
-Then immediately execute: `npx tsx poc/telegram-chat.ts --start`
+Then immediately execute: `npm run telegram-chat -- --start`
 
 ---
 

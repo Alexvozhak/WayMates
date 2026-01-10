@@ -85,15 +85,21 @@ allowed-tools:
 3. Выбрать УНИКАЛЬНОЕ имя сессии для mcp-chat.ts (например: cs1, debug1, test-cold-start)
 4. Проверить инфру: docker ps | grep waymates (НЕ перезапускать если работает!)
 5. Проверить данные: MATCH (u:User) RETURN count(u)
-6. Проверить кеш словарей (КРИТИЧНО для extraction!):
+6. Проверить Postgres user bindings (Telegram → userId):
+   docker exec waymates-postgres-test psql -U postgres -d waymates_facade_test -c \
+     "SELECT telegram_user_id, user_id FROM facade.users WHERE user_id NOT LIKE 'usr_019b0055%';"
+   Если garbage есть → удалить (иначе Telegram будет использовать orphan userId!):
+   docker exec waymates-postgres-test psql -U postgres -d waymates_facade_test -c \
+     "DELETE FROM facade.users WHERE user_id NOT LIKE 'usr_019b0055%';"
+7. Проверить кеш словарей (КРИТИЧНО для extraction!):
    docker exec waymates-redis-test redis-cli GET "waymates:dict:position" | head -c 200
    Если урезанный список (только junior/middle/senior) → инвалидировать:
    docker exec waymates-redis-test redis-cli DEL waymates:dict:position waymates:dict:role waymates:dict:industry waymates:dict:domain waymates:dict:skill
-7. Оценить уверенность:
+8. Оценить уверенность:
    - Понимание что делаю и зачем: X%
    - Понимание бизнес-логики: X%
    - Понимание смысла происходящего: X%
-7. Отчитаться:
+9. Отчитаться:
    - Сессия mcp-chat: `--session <выбранное имя>`
    - Инфра: ✅/❌ (N контейнеров)
    - Данные: N users

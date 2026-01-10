@@ -1,4 +1,5 @@
 import { GOAL_STAR_COLOR } from "../config/colors.js";
+import { CANDIDATE_BADGE, CANDIDATE_LABEL } from "../types.js";
 
 import type {
   ChartableField,
@@ -128,7 +129,7 @@ export class HtmlRenderer {
     const candidates = this.data.trajectories.slice(1);
     const candidateCheckboxes = candidates
       .map((traj) => {
-        const badge = traj.candidateType === "waymate" ? " (Waymate)" : "";
+        const badge = traj.candidateType ? CANDIDATE_BADGE[traj.candidateType] : "";
         return `<label>
               <input type="checkbox" value="${traj.id}" checked>
               <span class="candidate-label" style="background:${traj.color};"></span>
@@ -188,7 +189,7 @@ export class HtmlRenderer {
         const traj = this.data.trajectories.find((t) => t.id === metric.candidateId);
         if (!traj) return "";
 
-        const typeLabel = metric.candidateType === "waymate" ? "Waymate" : "—";
+        const typeLabel = metric.candidateType ? CANDIDATE_LABEL[metric.candidateType] : "—";
         const shape = metric.perField.position ? `${Math.round(metric.perField.position * 100)}%` : "—";
         const tempo = metric.perField.domains ? `${Math.round(metric.perField.domains * 100)}%` : "—";
         const alignment = metric.perField.cityName ? `${Math.round(metric.perField.cityName * 100)}%` : "—";
@@ -292,6 +293,7 @@ export class HtmlRenderer {
   // eslint-disable-next-line max-lines-per-function -- JS string generation for browser
   private buildTraceBuilders(): string {
     return `
+    const CANDIDATE_BADGE_MAP = ${JSON.stringify(CANDIDATE_BADGE)};
     const JITTER_STEP = 0.08;
 
     function calculateJitterOffset(candidateIndex, totalCandidates) {
@@ -304,7 +306,7 @@ export class HtmlRenderer {
       const rawValues = traj.points.map(p => p.values[field]);
       const y = levels.length > 0 ? rawValues.map(v => v === null ? null : levels.indexOf(v) + jitterOffset) : rawValues;
       const text = rawValues.map(v => v === null ? '—' : String(v));
-      const badge = traj.candidateType === 'waymate' ? ' (Waymate)' : '';
+      const badge = traj.candidateType ? CANDIDATE_BADGE_MAP[traj.candidateType] : '';
       return {
         x, y, text, mode: 'lines+markers', name: traj.label + badge,
         line: { color: traj.color, width: traj.width, shape: 'hv' },

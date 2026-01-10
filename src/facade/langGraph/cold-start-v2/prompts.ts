@@ -29,10 +29,13 @@ const FORMAT_RULES_BASE = `
 - All terms: lowercase-kebab-case
 - countryCode, citizenships: ISO 3166-1 alpha-2 UPPERCASE
 - languages: ISO 639-1
-- cityName: null unless explicitly mentioned
-- Do NOT invent data — extract ONLY explicit statements
-- If not mentioned → JSON null. NEVER return string "null" or empty values (0, "", [])
-- NEVER use placeholder values like "undisclosed", "unknown", "not specified" — use null instead`;
+- cityName: extract if location is mentioned
+- industry: infer from company name, business description, or job responsibilities if reasonably clear
+- domains: infer from job responsibilities and technical stack if reasonably clear
+- Do NOT invent data for other fields — extract ONLY explicit statements
+- If not mentioned and cannot be reasonably inferred → JSON null
+- NEVER return string "null" or empty values (0, "", [])
+- NEVER use placeholder values like "undisclosed", "unknown", "not specified" — use JSON null instead`;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PLANNING PROMPT

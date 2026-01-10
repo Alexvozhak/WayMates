@@ -23,7 +23,21 @@ export type ChartableField = (typeof CHARTABLE_FIELDS)[number];
 export { CHARTABLE_FIELDS };
 
 /** Candidate type for chart visualization — semantic role, not business logic */
-export type CandidateType = "pathfinder" | "waymate";
+export type CandidateType = "pathfinder" | "waymate" | "similar";
+
+/** Badge text for candidate type in chart legend */
+export const CANDIDATE_BADGE: Record<CandidateType, string> = {
+  pathfinder: " (Pathfinder)",
+  waymate: " (Waymate)",
+  similar: "",
+};
+
+/** Label for candidate type in metrics table */
+export const CANDIDATE_LABEL: Record<CandidateType, string> = {
+  pathfinder: "Pathfinder",
+  waymate: "Waymate",
+  similar: "Similar",
+};
 
 /**
  * Chart-specific candidate type. Decoupled from business types (WaymateCandidate/PathfinderCandidate).

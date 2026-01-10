@@ -1349,7 +1349,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("showing_waymate_results"),
     results: z.array(waymateCandidateSchema),
-    goal: goalSchema.nullable(),
+    goal: targetContextSchema.nullable(),
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
@@ -1358,7 +1358,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("showing_pathfinder_results"),
     results: z.array(pathfinderCandidateSchema),
-    goal: goalSchema.nullable(),
+    goal: targetContextSchema.nullable(),
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
@@ -1367,7 +1367,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("showing_results_facets"),
     facets: candidateFacetsSchema,
-    goal: goalSchema.nullable(),
+    goal: targetContextSchema.nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
     adhocContext: adhocContextBase.nullable(),
   }),

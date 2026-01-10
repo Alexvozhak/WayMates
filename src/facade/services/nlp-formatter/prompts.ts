@@ -27,9 +27,7 @@ const buildLanguageInstruction = (locale: string): string =>
   `Language: ${locale} (STRICT — always respond in this language regardless of user's message language)`;
 
 // Dictionary terms should NOT be translated (keep in English)
-const NO_TRANSLATE_INSTRUCTION = `IMPORTANT: Keep ALL dictionary values and technical terms in their original form.
-Do NOT translate field values from the data. Only translate surrounding text and UI labels.
-Brand terms (keep exactly as-is): ${BRAND_TERMS.join(", ")}`;
+const NO_TRANSLATE_INSTRUCTION = `Never translate: field values, ${BRAND_TERMS.join(", ")}.`;
 
 // Shared context format (DRY: used in asking + confirming phases)
 const CONTEXT_FORMAT = `📝 Your current context: (static header)
@@ -48,10 +46,11 @@ const GOAL_BLOCK = `🎯 Goal (from extractedGoal or storedGoal JSON):
   For EACH field in goal object:
     - If value is NOT null/empty → "✅ FieldLabel: value"
     - If value IS null → "⚪ FieldLabel" (no value — matches any)
-  Labels: ${GOAL_FIELD_NAMES_MAPPING}`;
+  Labels: ${GOAL_FIELD_NAMES_MAPPING}
+  Never assume redundancy — show all non-null fields.`;
 
 const FILTERS_BLOCK = `🔍 Filters:
-  • context age: [recencyThresholdMonths value as "last N months" or "any time" if null] — how recent the matched position was
+  • context recency: [recencyThresholdMonths value as "last N months" or "any time" if null] — how recent the matched position was
   NEVER show excluded, rejectedFields, excludedCreationReasons — internal fields`;
 
 // Search mode descriptions (DRY: used in results and mode selection)
@@ -89,10 +88,10 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   📊 **Explore** — people with similar background
   ${CONTEXT_BLOCK}
   ${FILTERS_BLOCK}
-  📋 Results: [candidates.length] similar people
+  📋 Results: COUNT candidates array items EXACTLY (0-indexed: [0,1,2,3] = 4 items, NOT 5!)
   MANDATORY: FOR EACH item in candidates array, show numbered list:
     1. matchedContext.position (matchedContext.countryCode) — matchedContext.domains • [timeSinceMatchedMonths] months ago
-    2. ... (continue for all candidates)
+    2. ... (continue for all candidates — count must match array length)
   Fields per candidate: ${NLP_CANDIDATE_FIELDS}
   CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → first acknowledge goal deleted.
@@ -133,10 +132,10 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   📊 **Waymates** — ${WAYMATES_DESC}
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
-  📋 Results: [results.length] waymates
+  📋 Results: COUNT results array items EXACTLY (0-indexed: [0,1,2,3] = 4 items, NOT 5!)
   MANDATORY: FOR EACH item in results array, show numbered list:
     1. matchedContext.position (matchedContext.countryCode) — matchedContext.domains • [timeSinceMatchedMonths] months ago
-    2. ... (continue for all results)
+    2. ... (continue for all results — count must match array length)
   Fields per candidate: ${NLP_CANDIDATE_FIELDS}
   End with: switch to pathfinders, filter, or refine goal.`,
   [SEARCH_PHASE.showing_pathfinder_results]: `CRITICAL: DO NOT ask for any fields! Results are ready to display.
@@ -144,11 +143,12 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   Otherwise show pathfinders:
   📊 **Pathfinders** — ${PATHFINDERS_DESC}
   ${GOAL_BLOCK}
+  CRITICAL: Goal salary ONLY from goal object (storedGoal/extractedGoal). NEVER show salary from results[].targetContext!
   ${FILTERS_BLOCK}
-  📋 Results: [results.length] pathfinders
+  📋 Results: COUNT results array items EXACTLY (0-indexed: [0,1,2,3] = 4 items, NOT 5!)
   MANDATORY: FOR EACH item in results array, show numbered list with TRANSITION:
     1. matchedContext.position → targetContext.position (targetContext.countryCode) • [timeSinceTargetMonths] months ago
-    2. ... (continue for all results)
+    2. ... (continue for all results — count must match array length)
   Fields per candidate: ${NLP_CANDIDATE_FIELDS}
   End with: switch to waymates, filter, or refine goal.`,
   [SEARCH_PHASE.showing_results_facets]: `Structured format:

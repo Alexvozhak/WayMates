@@ -42,7 +42,7 @@ export const validateGoalNode = withLogging<SearchStateType>(
           userTrajectory,
           adhocContext,
           storedGoal,
-          candidates: candidates.map((c) => matchedToChart(c, "waymate")),
+          candidates: candidates.map((c) => matchedToChart(c, "pathfinder")),
           locale,
           dictionariesService,
           logger,

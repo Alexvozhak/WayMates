@@ -33,6 +33,21 @@ export function waymateToChart(c: WaymateCandidate): ChartCandidate {
   return chart;
 }
 
+/** Convert WaymateCandidate to ChartCandidate for explore (neutral type) */
+export function exploreToChart(c: WaymateCandidate): ChartCandidate {
+  const chart: ChartCandidate = {
+    userId: c.userId,
+    matchedContext: c.matchedContext,
+    candidateType: "similar",
+  };
+  if (c.path) chart.path = c.path;
+  if (c.trails) chart.trails = c.trails;
+  if (c.timeSinceMatchedMonths !== undefined) chart.timeSinceMatchedMonths = c.timeSinceMatchedMonths;
+  if (c.dtwMetrics) chart.dtwMetrics = c.dtwMetrics;
+  if (c.dtwTotal !== undefined) chart.dtwTotal = c.dtwTotal;
+  return chart;
+}
+
 /** Convert PathfinderCandidate to ChartCandidate */
 export function pathfinderToChart(pf: PathfinderCandidate): ChartCandidate {
   const chart: ChartCandidate = {

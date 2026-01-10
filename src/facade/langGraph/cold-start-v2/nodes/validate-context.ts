@@ -17,7 +17,6 @@ import type { ColdStartStateType, ContextAgenda, MissingField, Trail, UserContex
 import type { NormalizationEntry } from "../types.js";
 import type { z } from "zod";
 
-const MAX_QUESTIONS_PER_BATCH = config.LANGCHAIN_MAX_QUESTIONS_PER_BATCH;
 const MAX_CLARIFICATION_ROUNDS = config.LANGCHAIN_MAX_CLARIFICATION_ROUNDS;
 
 function getUnfilledOptionalFields(ctx: Record<string, unknown>): ContextOptionalField[] {
@@ -36,7 +35,7 @@ function extractMissingFields<T>(
 
   for (const err of validation.error.errors) {
     const field = err.path.join(".");
-    if (seen.has(field) || fields.length >= MAX_QUESTIONS_PER_BATCH) continue;
+    if (seen.has(field)) continue;
     seen.add(field);
 
     fields.push(
@@ -87,10 +86,8 @@ function validateAndCollectMissing(
   const contextMissing = extractMissingFields(ctxValidation, agenda.preview, "context");
 
   // FROZEN: Trail validation disabled — trails always empty
-  const allMissing = contextMissing.slice(0, MAX_QUESTIONS_PER_BATCH);
-
-  if (allMissing.length > 0 || !ctxValidation.success) {
-    return { success: false, missing: allMissing };
+  if (contextMissing.length > 0 || !ctxValidation.success) {
+    return { success: false, missing: contextMissing };
   }
 
   return { success: true, context: ctxValidation.data, trails: [] };

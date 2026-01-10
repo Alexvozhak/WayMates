@@ -125,7 +125,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
   [PHASE.showing_waymate_results]: (state) => ({
     phase: PHASE.showing_waymate_results,
     results: state.waymatesResults,
-    goal: state.storedGoal,
+    goal: state.storedGoal?.targetContext ?? null,
     chartUrl: state.chartUrl,
     appliedFilters: state.currentSearchParams,
     adhocContext: null,
@@ -135,7 +135,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
   [PHASE.showing_pathfinder_results]: (state) => ({
     phase: PHASE.showing_pathfinder_results,
     results: state.pathfinderResults,
-    goal: state.storedGoal,
+    goal: state.storedGoal?.targetContext ?? null,
     chartUrl: state.chartUrl,
     appliedFilters: state.currentSearchParams,
     adhocContext: null,
@@ -144,7 +144,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
 
   [PHASE.showing_results_facets]: (state) => ({
     phase: PHASE.showing_results_facets,
-    goal: state.storedGoal,
+    goal: state.storedGoal?.targetContext ?? null,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
     facets: state.facets!,

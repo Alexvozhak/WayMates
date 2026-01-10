@@ -9,11 +9,14 @@ import type { AnyGraphResponse, Locale } from "../../../shared/schemas.js";
 import type { ChatOpenAI } from "@langchain/openai";
 
 const nlpResponseSchema = z.object({
-  reasoning: z
-    .string()
-    .describe(
-      "1) State received locale (e.g. 'locale: en'). 2) List ALL keys from received data. 3) Explain which included in output and why.",
-    ),
+  reasoning: z.string().describe(
+    `MANDATORY reasoning steps:
+1) State locale (e.g. 'locale: en')
+2) For results array: count items by iterating: 'results[0], results[1], ... → total: N'
+3) State EXACT count you will output (must match step 2)
+4) For goal: list each field with ✅ (has value) or ⚪ (null)
+5) If step 2 count ≠ step 3 count → ERROR`,
+  ),
   text: z.string().describe("The formatted response text for user"),
 });
 
@@ -33,8 +36,6 @@ export class NlpFormatter {
     const structuredLlm = this.llm.withStructuredOutput(nlpResponseSchema);
     const response = await structuredLlm.invoke(fullPrompt);
     const parsed = nlpResponseSchema.parse(response);
-
-    logger.info({ reasoning: parsed.reasoning, phase: result.phase, locale }, "NLP formatter reasoning");
 
     return parsed.text.trim();
   }
