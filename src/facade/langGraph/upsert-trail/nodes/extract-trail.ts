@@ -1,5 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { buildTrailExtractionPrompt } from "@prompts/upsert-trail.js";
+
+import { buildTrailExtractionPrompt } from "#prompts/upsert-trail.js";
 
 import { logger } from "../../../logger.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";
@@ -11,7 +12,7 @@ import { withLogging } from "../with-logging.js";
 import type { UpsertTrailStateType } from "../state.js";
 
 const extractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why")
+  withReasoning(extractableTrailSchema, "Explain what trail/certification you extracted and why"),
 );
 
 export const extractTrailNode = withLogging<UpsertTrailStateType>(

@@ -6,16 +6,16 @@
     "outDir": "dist", // каталог сборки (пока не используем)
     "baseUrl": ".",
     "paths": {
-      "@prompts/*": ["./private/prompts/*"],
-      "@core/*": ["./private/core/*"],
-      "@cypher/*": ["./private/cypher/*"],
-      "@database/*": ["./private/database/*"],
-      "@shared/*": ["./src/shared/*"]
+      "#prompts/*": ["./private/prompts/*"],
+      "#core/*": ["./private/core/*"],
+      "#cypher/*": ["./private/cypher/*"],
+      "#database/*": ["./private/database/*"],
+      "#shared/*": ["./src/shared/*"]
     },
 
     // Цель окружения Node (ESM)
-    "module": "node20", // модульная система Node ESM
-    "target": "es2023", // современный JS под Node 20/22
+    "module": "nodenext", // Node 24 ESM
+    "target": "ES2024", // Node 24 LTS
     "moduleResolution": "nodenext", // резолв модулей как у Node ESM
 
     // Удобства

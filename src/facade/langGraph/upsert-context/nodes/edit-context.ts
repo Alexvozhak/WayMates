@@ -1,5 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { buildContextClarificationPrompt } from "@prompts/upsert-context.js";
+
+import { buildContextClarificationPrompt } from "#prompts/upsert-context.js";
 
 import { logger } from "../../../logger.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";

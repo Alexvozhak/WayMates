@@ -1,6 +1,13 @@
 {
   "name": "waymates",
   "version": "1.0.0",
+  "imports": {
+    "#core/*.js": "./private/core/*.ts",
+    "#cypher/*.js": "./private/cypher/*.ts",
+    "#database/*.js": "./private/database/*.ts",
+    "#prompts/*.js": "./private/prompts/*.ts",
+    "#shared/*.js": "./src/shared/*.ts"
+  },
   "scripts": {
     "generate:user-keys": "tsx scripts/gen-user-keys.ts",
     "start": "npm run docker:prod:up && npm run db:prod:init && tsx private/core/index.ts",
@@ -153,6 +160,7 @@
     "promise-batcher": "^1.1.1",
     "telegramify-markdown": "^1.3.2",
     "uuid": "^11.0.5",
+    "vite": "^7.3.1",
     "yaml": "^2.8.1",
     "zod": "^3.25.76"
   }

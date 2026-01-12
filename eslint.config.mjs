@@ -234,7 +234,7 @@ export default [
 
   // Relaxed rules for tests
   {
-    files: ['tests/**/*.ts', 'vitest.config.ts'],
+    files: ['private/tests/**/*.ts', 'vitest.config.ts'],
     rules: {
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',

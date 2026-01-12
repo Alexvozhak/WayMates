@@ -1,5 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { buildGoalClarificationPrompt, buildGoalExtractionPrompt } from "@prompts/search-graph/extraction.js";
+
+import { buildGoalClarificationPrompt, buildGoalExtractionPrompt } from "#prompts/search-graph/extraction.js";
 
 import { targetContextSchema } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";

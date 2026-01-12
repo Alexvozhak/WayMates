@@ -1,5 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { TRAIL_EDIT_PROMPT } from "@prompts/upsert-trail.js";
+
+import { TRAIL_EDIT_PROMPT } from "#prompts/upsert-trail.js";
 
 import { logger } from "../../../logger.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";
@@ -9,7 +10,7 @@ import { getModel } from "../../shared-tools/models.js";
 import type { UpsertTrailStateType } from "../state.js";
 
 const editModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableTrailSchema, "Explain what corrections you applied and why")
+  withReasoning(extractableTrailSchema, "Explain what corrections you applied and why"),
 );
 
 export async function editTrailNode(state: UpsertTrailStateType): Promise<Partial<UpsertTrailStateType>> {

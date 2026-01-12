@@ -1,5 +1,6 @@
-import { buildUserIntentPrompt } from "@prompts/search-graph/classification.js";
 import { z } from "zod";
+
+import { buildUserIntentPrompt } from "#prompts/search-graph/classification.js";
 
 import {
   currentContextSearchFilterNullableSchema,

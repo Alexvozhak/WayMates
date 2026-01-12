@@ -1,7 +1,8 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { planningPrompt } from "@prompts/cold-start.js";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
+
+import { planningPrompt } from "#prompts/cold-start.js";
 
 import { contextAgendaBaseSchema } from "../../../../shared/schemas.js";
 import { logger } from "../../../logger.js";

@@ -1,4 +1,4 @@
-import { ADVISOR_SYSTEM_PROMPT } from "@prompts/search-graph/advisor.js";
+import { ADVISOR_SYSTEM_PROMPT } from "#prompts/search-graph/advisor.js";
 
 import { simpleDictionaryTypeSchema } from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";

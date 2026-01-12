@@ -1,4 +1,4 @@
-import { buildAdhocClarificationPrompt, buildAdhocExtractionPrompt } from "@prompts/search-graph/extraction.js";
+import { buildAdhocClarificationPrompt, buildAdhocExtractionPrompt } from "#prompts/search-graph/extraction.js";
 
 import {
   ADHOC_OPTIONAL_FIELDS,

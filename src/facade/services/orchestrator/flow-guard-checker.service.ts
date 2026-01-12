@@ -3,11 +3,11 @@ import { NlpFormatter } from "../nlp-formatter/index.js";
 
 import { createNlpResponse } from "./converse-response.js";
 
+import type { GuardType } from "#prompts/nlp-formatter.js";
 import type { ConverseResponse } from "./converse-response.js";
 import type { UserIntent } from "./intent-classifier.js";
 import type { Locale, UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
-import type { GuardType } from "@prompts/nlp-formatter.js";
 
 type UserState = { hasContext: boolean; hasGoal: boolean };
 

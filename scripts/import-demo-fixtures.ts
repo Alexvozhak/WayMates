@@ -8,8 +8,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { createDriver } from "@core/neo4j.js";
-import { storyInputSchema } from "@shared/schemas.js";
+import { createDriver } from "#core/neo4j.js";
+import { storyInputSchema } from "#shared/schemas.js";
 import { importStories } from "../private/tests/core/helpers/import-stories.js";
 
 import type { Driver } from "neo4j-driver";

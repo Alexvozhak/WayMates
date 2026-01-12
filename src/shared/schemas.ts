@@ -1,7 +1,7 @@
-import { REASON_CANONICAL_NAMES } from "@database/reasons.js";
 import ISO6391 from "iso-639-1";
 import { z } from "zod";
 
+import { REASON_CANONICAL_NAMES } from "#database/reasons.js";
 
 /**
  * All valid ISO 639-1 language codes for runtime validation.

@@ -1,5 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { contextClarificationPrompt, contextExtractionPrompt } from "@prompts/cold-start.js";
+
+import { contextClarificationPrompt, contextExtractionPrompt } from "#prompts/cold-start.js";
 // FROZEN: import { v7 as uuidv7 } from "uuid";
 
 import { AgentInvariantError } from "../../../errors.js";

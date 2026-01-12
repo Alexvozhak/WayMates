@@ -9,7 +9,7 @@ const INTEGRATION_HOOK_TIMEOUT = 30_000; // 30s for setup/teardown hooks
 export default defineConfig(() => {
   return {
     esbuild: {
-      target: "node20",
+      target: "node24",
     },
     test: {
       testTimeout: INTEGRATION_TEST_TIMEOUT,
@@ -34,9 +34,9 @@ export default defineConfig(() => {
           test: {
             name: "unit",
             include: [
-              "tests/core/unit/**/*.spec.ts",
-              "tests/facade/agents/**/unit/**/*.spec.ts",
-              "tests/facade/tools/**/*.spec.ts",
+              "private/tests/core/unit/**/*.spec.ts",
+              "private/tests/facade/agents/**/unit/**/*.spec.ts",
+              "private/tests/facade/tools/**/*.spec.ts",
             ],
             pool: "threads",
             poolOptions: {
@@ -54,7 +54,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "telegram-unit",
-            include: ["tests/telegram-bot/unit/**/*.spec.ts"],
+            include: ["private/tests/telegram-bot/unit/**/*.spec.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -70,7 +70,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "facade-unit-llm",
-            include: ["tests/facade/services/unit/**/*.spec.ts"],
+            include: ["private/tests/facade/services/unit/**/*.spec.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -87,10 +87,10 @@ export default defineConfig(() => {
           test: {
             name: "integration-search-read-only",
             include: [
-              "tests/core/integration/search-manager/adhoc-context-without-dtw.integration.ts",
-              "tests/core/integration/search-manager/target-search.integration.ts",
-              "tests/core/integration/search-manager/current-context-without-dtw.integration.ts",
-              "tests/core/integration/search-manager/current-context-with-dtw.integration.ts",
+              "private/tests/core/integration/search-manager/adhoc-context-without-dtw.integration.ts",
+              "private/tests/core/integration/search-manager/target-search.integration.ts",
+              "private/tests/core/integration/search-manager/current-context-without-dtw.integration.ts",
+              "private/tests/core/integration/search-manager/current-context-with-dtw.integration.ts",
             ],
             pool: "threads",
             poolOptions: {
@@ -99,7 +99,7 @@ export default defineConfig(() => {
                 singleThread: false, // Parallel execution
               },
             },
-            setupFiles: ["./tests/core/helpers/drivers/shared-driver.ts"],
+            setupFiles: ["./private/tests/core/helpers/drivers/shared-driver.ts"],
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
             env: loadEnv("test", process.cwd(), ""),
@@ -109,7 +109,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "integration-demo-fixtures",
-            include: ["tests/core/integration/search-manager/demo-fixtures.integration.ts"],
+            include: ["private/tests/core/integration/search-manager/demo-fixtures.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -117,7 +117,7 @@ export default defineConfig(() => {
                 singleThread: true,
               },
             },
-            setupFiles: ["./tests/core/helpers/drivers/demo-fixtures-driver.ts"],
+            setupFiles: ["./private/tests/core/helpers/drivers/demo-fixtures-driver.ts"],
             testTimeout: INTEGRATION_TEST_TIMEOUT,
             env: loadEnv("test", process.cwd(), ""),
           },
@@ -126,7 +126,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "integration-goals",
-            include: ["tests/core/integration/goals-manager/goals-integration.integration.ts"],
+            include: ["private/tests/core/integration/goals-manager/goals-integration.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -134,7 +134,7 @@ export default defineConfig(() => {
                 singleThread: true, // Write operations require sequential execution
               },
             },
-            setupFiles: ["./tests/core/helpers/drivers/goals-driver.ts"],
+            setupFiles: ["./private/tests/core/helpers/drivers/goals-driver.ts"],
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
             env: loadEnv("test", process.cwd(), ""),
@@ -144,7 +144,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "integration-dictionaries",
-            include: ["tests/core/integration/dictionaries-manager/dictionaries.integration.ts"],
+            include: ["private/tests/core/integration/dictionaries-manager/dictionaries.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -161,7 +161,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "integration-user-router",
-            include: ["tests/core/integration/user-router/*.integration.ts"],
+            include: ["private/tests/core/integration/user-router/*.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -178,7 +178,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "integration-story-manager",
-            include: ["tests/core/integration/story-manager/story-manager.integration.ts"],
+            include: ["private/tests/core/integration/story-manager/story-manager.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -186,7 +186,7 @@ export default defineConfig(() => {
                 singleThread: true, // Write operations require sequential execution
               },
             },
-            setupFiles: ["./tests/core/helpers/drivers/story-manager-driver.ts"],
+            setupFiles: ["./private/tests/core/helpers/drivers/story-manager-driver.ts"],
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
             hookTimeout: INTEGRATION_HOOK_TIMEOUT,
@@ -198,9 +198,9 @@ export default defineConfig(() => {
           test: {
             name: "facade-integration",
             include: [
-              "tests/facade/agents/**/integration/**/*.integration.ts",
-              "tests/facade/mcp-tools/**/*.integration.ts",
-              "tests/facade/services/**/*.integration.ts",
+              "private/tests/facade/agents/**/integration/**/*.integration.ts",
+              "private/tests/facade/mcp-tools/**/*.integration.ts",
+              "private/tests/facade/services/**/*.integration.ts",
             ],
             pool: "threads",
             poolOptions: {
@@ -209,7 +209,7 @@ export default defineConfig(() => {
                 singleThread: true, // Redis + LLM state requires sequential execution
               },
             },
-            setupFiles: ["./tests/facade/helpers/test-setup.ts"],
+            setupFiles: ["./private/tests/facade/helpers/test-setup.ts"],
             testTimeout: 180_000, // 3min for LLM-heavy tests (cold-start agent)
             hookTimeout: 60_000, // 1min for fixture loading (U1-U9 via tRPC)
             env: loadEnv("test", process.cwd(), ""),
@@ -219,7 +219,7 @@ export default defineConfig(() => {
         {
           test: {
             name: "telegram-integration",
-            include: ["tests/telegram-bot/**/*.integration.ts"],
+            include: ["private/tests/telegram-bot/**/*.integration.ts"],
             pool: "threads",
             poolOptions: {
               threads: {
@@ -227,7 +227,7 @@ export default defineConfig(() => {
                 singleThread: true, // Sequential to avoid MCP session conflicts
               },
             },
-            setupFiles: ["./tests/telegram-bot/helpers/test-setup.ts"],
+            setupFiles: ["./private/tests/telegram-bot/helpers/test-setup.ts"],
             testTimeout: 60_000, // 1min for MCP round-trips
             hookTimeout: 30_000,
             env: loadEnv("test", process.cwd(), ""),

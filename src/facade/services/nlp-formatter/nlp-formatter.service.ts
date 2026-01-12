@@ -1,12 +1,12 @@
-import { buildGuardTranslationPrompt, GRAPH_PROMPT_BUILDERS, GUARD_TEMPLATES } from "@prompts/nlp-formatter.js";
 import { z } from "zod";
+
+import { buildGuardTranslationPrompt, GRAPH_PROMPT_BUILDERS, GUARD_TEMPLATES } from "#prompts/nlp-formatter.js";
 
 import { logger } from "../../logger.js";
 
-
+import type { GraphType, GuardType } from "#prompts/nlp-formatter.js";
 import type { AnyGraphResponse, Locale } from "../../../shared/schemas.js";
 import type { ChatOpenAI } from "@langchain/openai";
-import type { GraphType, GuardType } from "@prompts/nlp-formatter.js";
 
 const nlpResponseSchema = z.object({
   reasoning: z.string().describe(
