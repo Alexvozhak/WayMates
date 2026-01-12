@@ -9,7 +9,7 @@ import type { ColdStartPhase, NodeName, ParsedDecision } from "./types.js";
 type RouteMap = Partial<Record<ParsedDecision["intent"], NodeName>>;
 
 // =============================================================================
-// SOURCE OF TRUTH: допустимые destinations для каждой фазы
+// SOURCE OF TRUTH: valid destinations for each phase
 // =============================================================================
 
 // prettier-ignore
@@ -35,7 +35,7 @@ export const VALIDATION_ROUTE_MAP = buildRouteMap([NODE.clarify_fields, NODE.sho
 export const CLARIFY_INTENT_ROUTE_MAP = buildRouteMap([NODE.parse_story_decision, NODE.parse_plan_decision, NODE.parse_context_decision, NODE.parse_final_decision, NODE.cancel]);
 
 // =============================================================================
-// ROUTES: маппинг intent → node (фабрика с state-dependent параметром)
+// ROUTES: intent → node mapping (factory with state-dependent parameter)
 // =============================================================================
 
 function createDecisionRoutes(hasMoreContexts: boolean): Partial<Record<ColdStartPhase, RouteMap>> {

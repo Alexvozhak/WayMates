@@ -6,13 +6,13 @@ import {
   newContextReasonSchema,
   requestIdSchema,
   sessionIdSchema,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
 import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { UserId, WaymateCandidate } from "../../../shared/schemas.js";
+import type { UserId, WaymateCandidate } from "../../../../private/schemas.js";
 
 /**
  * MCP params schema for search_careers tool.
@@ -60,7 +60,7 @@ export class SearchCareersTool extends BaseTool<McpSearchCareersParams, WaymateC
     // 1. Normalize user input (fuzzy matching, dictionary lookup)
     const normalizedPartial = await this.normalizerService.normalizeAdhocContext(params.referenceContext, userId);
 
-    // 2. Validation (ADR-031 Правило 3: validation после normalizer)
+    // 2. Validation (ADR-031 Rule 3: validation after normalizer)
     // Ensures all fields match schema (min length, array constraints)
     // Throws ZodError if invalid (caught by MCP error handler)
     const validated = adhocContextBase.parse(normalizedPartial);

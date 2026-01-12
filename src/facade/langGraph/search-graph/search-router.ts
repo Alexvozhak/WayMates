@@ -8,7 +8,7 @@ import type { NodeName, SearchPhase, SearchStateType, SearchUserIntent } from ".
 type RouteMap = Partial<Record<SearchUserIntent, NodeName>>;
 
 // =============================================================================
-// SOURCE OF TRUTH: допустимые destinations для каждой фазы
+// SOURCE OF TRUTH: valid destinations for each phase
 // =============================================================================
 
 // prettier-ignore
@@ -41,7 +41,7 @@ export const CHECK_GOAL_ROUTE_MAP = buildRouteMap([
 export const APPLY_FILTERS_ROUTE_MAP = buildRouteMap([NODE.explore, NODE.search_waymates, NODE.search_pathfinders]);
 
 // =============================================================================
-// ROUTES: маппинг intent → node (фабрика с state-dependent параметрами)
+// ROUTES: intent → node mapping (factory with state-dependent parameters)
 // =============================================================================
 
 export type RouteFlags = {

@@ -1,4 +1,4 @@
-import type { AdhocContextBase, DTWMetrics, Locale, Trail, UserContext } from "../shared/schemas.js";
+import type { AdhocContextBase, DTWMetrics, Locale, Trail, UserContext } from "../../private/schemas.js";
 
 /**
  * Chart supports only ru/en labels. Other locales fallback to en.
@@ -55,15 +55,15 @@ export type ChartCandidate = {
   candidateType: CandidateType;
 };
 
-export type AspectConfig = {
+export type FieldConfig = {
   field: ChartableField;
   labels: { ru: string; en: string };
   extractValue: (ctx: UserContext, goalValues?: GoalValues) => string | number | null;
   getLevels: () => string[];
 };
 
-/** Fields that store arrays and should use intersection for overlap comparison */
-export const ARRAY_OVERLAP_FIELDS: ChartableField[] = ["domains"];
+// Re-export from constants for backward compatibility
+export { ARRAY_OVERLAP_FIELDS } from "./config/constants.js";
 
 export type TrajectoryPoint = {
   timestamp: number;

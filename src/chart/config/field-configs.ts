@@ -1,11 +1,11 @@
-import type { UserContext } from "../../shared/schemas.js";
-import type { AspectConfig, ChartableField, GoalValues } from "../types.js";
+import type { UserContext } from "../../../private/schemas.js";
+import type { ChartableField, FieldConfig, GoalValues } from "../types.js";
 
 /**
- * Aspect configurations for all chartable fields.
+ * Field configurations for all chartable fields.
  * Each config defines how to extract, label, and level the field.
  */
-export const ASPECT_CONFIGS: Record<ChartableField, AspectConfig> = {
+export const FIELD_CONFIGS: Record<ChartableField, FieldConfig> = {
   position: {
     field: "position",
     labels: { ru: "Позиция", en: "Position" },

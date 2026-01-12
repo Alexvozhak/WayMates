@@ -6,7 +6,7 @@
  * Expects global `chartData` and `GOAL_STAR_COLOR` to be defined before this script runs.
  */
 
-// @ts-nocheck — browser runtime с предвалидированными данными
+// @ts-nocheck — browser runtime with pre-validated data
 /* eslint-disable */
 
 // === Types (import type — erased at compile time, no runtime dependency) ===
@@ -24,6 +24,7 @@ import type {
 } from "../types.js";
 
 import { CANDIDATE_BADGE } from "../types.js";
+import { ARRAY_OVERLAP_FIELDS, JITTER_STEP, MS_PER_DAY } from "../config/constants.js";
 
 // === Browser-only types (not in types.ts) ===
 
@@ -47,12 +48,6 @@ declare const fieldLabels: Record<ChartableField, string>;
 declare const goalLabels: { name: string; hover: string };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const Plotly: any;
-
-// === Constants ===
-
-const MS_PER_DAY = 86400000;
-const JITTER_STEP = 0.08;
-const ARRAY_OVERLAP_FIELDS: ChartableField[] = ["domains"];
 
 // === Window extensions for cross-function state ===
 

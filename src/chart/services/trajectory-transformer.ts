@@ -1,7 +1,7 @@
-import { ASPECT_CONFIGS } from "../config/aspect-configs.js";
 import { generateCandidateColors, USER_COLOR } from "../config/colors.js";
+import { FIELD_CONFIGS } from "../config/field-configs.js";
 
-import type { AdhocContextBase, UserContext } from "../../shared/schemas.js";
+import type { AdhocContextBase, UserContext } from "../../../private/schemas.js";
 import type { ChartCandidate, ChartLocale, GoalValues, ProcessedTrajectory, TrajectoryPoint } from "../types.js";
 
 type BaseTransformInput = {
@@ -78,7 +78,7 @@ function buildAdhocMarker(adhocContext: AdhocContextBase, locale: ChartLocale): 
 function extractAdhocPointValues(ctx: AdhocContextBase): TrajectoryPoint {
   const values = Object.fromEntries(
     // eslint-disable-next-line complexity -- field mapping for adhoc context
-    Object.values(ASPECT_CONFIGS).map((config) => {
+    Object.values(FIELD_CONFIGS).map((config) => {
       const field = config.field;
       if (field === "position") return [field, ctx.position ?? null];
       if (field === "role") return [field, ctx.role ?? null];
@@ -143,7 +143,7 @@ function extractCandidatePoints(
 
 function extractPointValues(ctx: UserContext, goalValues?: GoalValues): TrajectoryPoint {
   const values = Object.fromEntries(
-    Object.values(ASPECT_CONFIGS).map((config) => [config.field, config.extractValue(ctx, goalValues)]),
+    Object.values(FIELD_CONFIGS).map((config) => [config.field, config.extractValue(ctx, goalValues)]),
   );
 
   return {

@@ -1,4 +1,4 @@
-import { ARRAY_OVERLAP_FIELDS } from "../types.js";
+import { ARRAY_OVERLAP_FIELDS, MS_PER_DAY } from "../config/constants.js";
 
 import type {
   ChartableField,
@@ -10,8 +10,6 @@ import type {
   SimilarityMetrics,
   TrajectoryPoint,
 } from "../types.js";
-
-const MS_PER_DAY = 86_400_000;
 
 type Interval = { start: number; end: number };
 

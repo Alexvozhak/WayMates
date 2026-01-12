@@ -1,17 +1,17 @@
 /**
- * Chart Service — Career Trajectory Visualization
+ * Career Trajectory Visualization Service.
  *
- * @see docs/facade/CHART-SERVICE-DESIGN.md — терминология, бизнес-смысл, FAQ
+ * @see docs/facade/CHART-SERVICE-DESIGN.md — terminology, business logic, FAQ
  */
 
 import { ChartBuilder } from "./builders/chart-builder.js";
-import { DEFAULT_FIELDS } from "./config/aspect-configs.js";
+import { DEFAULT_FIELDS } from "./config/field-configs.js";
 import { getR2Config, R2StorageService } from "./services/r2-storage.js";
 import { ChartGenerationError } from "./types.js";
 
 import type { ChartBuildInput } from "./builders/chart-builder.js";
 import type { GenerateChartInput, GenerateChartOutput, GoalValues } from "./types.js";
-import type { Goal } from "../shared/schemas.js";
+import type { Goal } from "../../private/schemas.js";
 
 // Re-exports for external consumers
 export type {
@@ -24,7 +24,7 @@ export type {
   GoalValues,
 } from "./types.js";
 export { CHARTABLE_FIELDS, toChartLocale } from "./types.js";
-export { ASPECT_CONFIGS, DEFAULT_FIELDS } from "./config/aspect-configs.js";
+export { DEFAULT_FIELDS, FIELD_CONFIGS } from "./config/field-configs.js";
 
 /**
  * Extract goal values for chart visualization from Goal object.

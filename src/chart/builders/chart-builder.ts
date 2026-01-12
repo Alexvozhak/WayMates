@@ -4,7 +4,7 @@ import { ChartGenerationError } from "../types.js";
 
 import { HtmlRenderer } from "./html-renderer.js";
 
-import type { AdhocContextBase, UserContext } from "../../shared/schemas.js";
+import type { AdhocContextBase, UserContext } from "../../../private/schemas.js";
 import type {
   ChartableField,
   ChartCandidate,

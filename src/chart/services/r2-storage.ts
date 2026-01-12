@@ -1,7 +1,7 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { v7 as uuidv7 } from "uuid";
 
-import { config } from "../../facade/env.js";
+import { chartConfig } from "../env.js";
 import { ChartGenerationError } from "../types.js";
 
 import type { R2Config } from "../types.js";
@@ -12,12 +12,12 @@ import type { R2Config } from "../types.js";
  */
 export function getR2Config(): R2Config {
   return {
-    accountId: config.R2_ACCOUNT_ID,
-    accessKeyId: config.R2_ACCESS_KEY_ID,
-    secretAccessKey: config.R2_SECRET_ACCESS_KEY,
-    bucketName: config.R2_BUCKET_NAME,
-    publicUrl: config.R2_PUBLIC_URL,
-    ttlDays: config.R2_TTL_DAYS,
+    accountId: chartConfig.R2_ACCOUNT_ID,
+    accessKeyId: chartConfig.R2_ACCESS_KEY_ID,
+    secretAccessKey: chartConfig.R2_SECRET_ACCESS_KEY,
+    bucketName: chartConfig.R2_BUCKET_NAME,
+    publicUrl: chartConfig.R2_PUBLIC_URL,
+    ttlDays: chartConfig.R2_TTL_DAYS,
   };
 }
 
@@ -45,7 +45,7 @@ export class R2StorageService {
 
       /* eslint-disable @typescript-eslint/naming-convention */
       const command = new PutObjectCommand({
-        Bucket: this.config.bucketName, // AWS SDK требует PascalCase
+        Bucket: this.config.bucketName, // AWS SDK requires PascalCase
         Key: key,
         Body: html,
         ContentType: R2StorageService.contentType,
