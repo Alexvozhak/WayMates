@@ -1,9 +1,30 @@
 # FEAT-054: Deploy на Timeweb Cloud VPS
 
-**Статус:** TODO
+**Статус:** IN_PROGRESS
 **Приоритет:** P0
-**Зависимости:** FEAT-031 (Chart Build), FEAT-033 (Sentry), FEAT-032 (Pino), Dockerfile improvements
+**Зависимости:** FEAT-031 (Chart Build), FEAT-033 (Sentry), FEAT-032 (Pino), Dockerfile improvements, **FEAT-036 (Repo Split)**
 **Блокирует:** Production Launch
+**Сессия:** docs/sessions/2026-01-13-timeweb-deploy-setup.md
+
+---
+
+## Текущий прогресс (2026-01-13)
+
+### ✅ Выполнено:
+- [x] Исследование хостинг-провайдеров (Hetzner отклонён — не работает с РФ)
+- [x] Выбор Timeweb Cloud (SLA 99.98%, оплата РФ, EU-локация)
+- [x] Создание VPS: **72.56.79.252** (Амстердам, 4GB/2vCPU/50GB)
+- [x] Настройка SSH доступа
+- [x] Регистрация домена: **waymates.duckdns.org**
+- [x] Получение TLS сертификата (Let's Encrypt, до 2026-04-12)
+- [x] Установка Docker 29.1.4 + Compose v5.0.1
+- [x] Настройка SSH ключа для GitHub
+
+### ⏳ Ожидает FEAT-036:
+- [ ] Клонирование репозитория (blocked by repo split)
+- [ ] Настройка .env.prod
+- [ ] Запуск docker-compose
+- [ ] Проверка работоспособности
 
 ---
 
