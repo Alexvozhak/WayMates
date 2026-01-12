@@ -70,7 +70,8 @@
     "check:tests": "npm run test:integration",
     "graph": "tsx scripts/visualize-graphs.ts",
     "e2e:batch": "bash -c 'set -a && source .env.test && set +a && npx tsx poc/mcp-chat.ts --batch'",
-    "telegram-chat": "bash -c 'set -a && source .env.test && set +a && npx tsx poc/telegram-chat.ts \"$@\"' --"
+    "telegram-chat": "bash -c 'set -a && source .env.test && set +a && npx tsx poc/telegram-chat.ts \"$@\"' --",
+    "demo:fixtures": "bash -c 'set -a && source .env.test && set +a && npx tsx scripts/import-demo-fixtures.ts'"
   },
   "lint-staged": {
     "!(poc|scripts)/**/*.ts": [

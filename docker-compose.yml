@@ -88,6 +88,7 @@ services:
       NEO4J_server_http_listen__address: 0.0.0.0:${NEO4J_HTTP_PORT}
       NEO4J_dbms_connector_bolt_advertised__address: localhost:${NEO4J_PORT}
       NEO4J_dbms_connector_http_advertised__address: localhost:${NEO4J_HTTP_PORT}
+      NEO4J_server_jvm_additional: -XX:-UsePerfData
     volumes:
       - /data
       - ./database/init.cypher:/tmp/init.cypher:ro

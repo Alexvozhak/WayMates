@@ -94,22 +94,42 @@ export const responseBuilders: { [P in ColdStartPhase]: ResponseBuilder<P> } = {
       );
     }
 
+    const currentAgenda = queue[currentEntityContext.contextIndex];
+    if (!currentAgenda) {
+      throw new InvalidStateError(
+        PHASE.awaiting_context_confirmation,
+        "no agenda at currentEntityContext.contextIndex",
+      );
+    }
+
     return {
       phase: PHASE.awaiting_context_confirmation,
       message: "Please confirm this position.",
       entity: currentContext,
       relatedTrails: collectedTrails.filter((t) => t.toContextId === currentContext.contextId),
       progress: { current: currentEntityContext.contextIndex + 1, total: queue.length },
+      periodStart: currentAgenda.startYear,
+      periodEnd: currentAgenda.endYear,
       normalizations,
     };
   },
 
   [PHASE.awaiting_final_confirmation]: (state) => {
-    const { collectedContexts, collectedTrails } = state;
+    const { collectedContexts, collectedTrails, queue } = state;
+
+    const contextsWithPeriods = collectedContexts.map((ctx, i) => {
+      const agenda = queue[i];
+      return {
+        ...ctx,
+        periodStart: agenda?.startYear ?? null,
+        periodEnd: agenda?.endYear ?? null,
+      };
+    });
+
     return {
       phase: PHASE.awaiting_final_confirmation,
       message: "Please confirm your complete career story.",
-      preview: { contexts: collectedContexts, trails: collectedTrails },
+      preview: { contexts: contextsWithPeriods, trails: collectedTrails },
       summary: { contextsCount: collectedContexts.length, trailsCount: collectedTrails.length },
     };
   },

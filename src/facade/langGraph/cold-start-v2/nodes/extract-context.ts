@@ -96,60 +96,6 @@ function dedupeArray<T>(arr: T[] | null | undefined): T[] | null {
   return [...new Set(arr)];
 }
 
-type MergeableField =
-  | "position"
-  | "role"
-  | "domains"
-  | "skills"
-  | "industry"
-  | "companySize"
-  | "cityName"
-  | "countryCode"
-  | "citizenships"
-  | "birthYear"
-  | "educationLevel"
-  | "languages"
-  | "salaryMin"
-  | "salaryMax"
-  | "createdAt"
-  | "creationReason";
-
-const MERGEABLE_FIELDS: readonly MergeableField[] = [
-  "position",
-  "role",
-  "domains",
-  "skills",
-  "industry",
-  "companySize",
-  "cityName",
-  "countryCode",
-  "citizenships",
-  "birthYear",
-  "educationLevel",
-  "languages",
-  "salaryMin",
-  "salaryMax",
-  "createdAt",
-  "creationReason",
-];
-
-function selectiveMerge(
-  pending: ExtractableContext,
-  merged: ExtractableContext,
-  fieldsToMerge: readonly string[],
-): ExtractableContext {
-  const fieldsSet = new Set<string>(fieldsToMerge);
-  const result = { ...pending };
-
-  for (const field of MERGEABLE_FIELDS) {
-    if (fieldsSet.has(field) && merged[field] != null) {
-      result[field] = merged[field];
-    }
-  }
-
-  return result;
-}
-
 async function clarifyContext(
   pending: ExtractableContext,
   missingFieldNames: string[],
@@ -161,21 +107,16 @@ async function clarifyContext(
   const { reasoning, ...merged } = await contextExtractionModel.invoke([new HumanMessage(prompt)]);
   logger.info({ reasoning, missingFieldNames, suggestions }, "context clarification reasoning");
 
-  // Selective merge: take from merged only fields that were asked
-  const fieldsToMerge = [...missingFieldNames, ...suggestions.map((s) => s.field)];
-  const result = selectiveMerge(pending, merged, fieldsToMerge);
-
   return {
-    ...result,
+    ...merged,
     contextId: pending.contextId,
     previousContextId: pending.previousContextId,
     nextContextId: pending.nextContextId,
-    // Dedupe arrays in case LLM duplicated values during merge
-    skills: dedupeArray(result.skills),
-    domains: dedupeArray(result.domains) ?? [],
-    citizenships: dedupeArray(result.citizenships),
-    languages: dedupeArray(result.languages),
-    creationReason: dedupeArray(result.creationReason) ?? [],
+    skills: dedupeArray(merged.skills),
+    domains: dedupeArray(merged.domains) ?? [],
+    citizenships: dedupeArray(merged.citizenships),
+    languages: dedupeArray(merged.languages),
+    creationReason: dedupeArray(merged.creationReason) ?? [],
   };
 }
 

@@ -42,12 +42,13 @@ const CONTEXT_BLOCK = `👤 Your context (STRICTLY from adhocContext JSON object
   ⚪ NOT SET: fields where adhocContext.field IS null
   NEVER use values from candidates or appliedFilters for context display`;
 
-const GOAL_BLOCK = `🎯 Goal (from extractedGoal or storedGoal JSON):
+const GOAL_BLOCK = `🎯 Goal (ONLY from goal object — extractedGoal or storedGoal):
   For EACH field in goal object:
     - If value is NOT null/empty → "✅ FieldLabel: value"
     - If value IS null → "⚪ FieldLabel" (no value — matches any)
   Labels: ${GOAL_FIELD_NAMES_MAPPING}
-  Never assume redundancy — show all non-null fields.`;
+  CRITICAL SALARY RULE: Show salary ONLY if goal.salaryMin or goal.salaryMax is NOT null.
+  If goal has NO salary (null) → do NOT show salary lines at all. NEVER take salary from results!`;
 
 const FILTERS_BLOCK = `🔍 Filters:
   • context recency: [recencyThresholdMonths value as "last N months" or "any time" if null] — how recent the matched position was
@@ -82,23 +83,24 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   - If goal is null: offer exploring where similar people ended up OR setting a career goal
   - If goal is NOT null: show goal summary (position + country/domain, skip role if redundant with position), offer pathfinders/waymates search
   Be concise, offer clear choices.`,
-  [SEARCH_PHASE.showing_exploration_candidates]: `Check answerText field first:
-  If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
-  If answerText is null/empty → Show exploration results:
+  [SEARCH_PHASE.showing_exploration_candidates]: `FIRST CHECK answerText field!
+  If answerText is NOT null/empty → OUTPUT ONLY THE ANSWER TEXT. Nothing else. Stop here.
+
+  ONLY if answerText is null/empty, show exploration results:
   📊 **Explore** — people with similar background
   ${CONTEXT_BLOCK}
   ${FILTERS_BLOCK}
-  📋 Results: COUNT candidates array items EXACTLY (0-indexed: [0,1,2,3] = 4 items, NOT 5!)
-  MANDATORY: FOR EACH item in candidates array, show numbered list:
+  📋 Results: [candidatesCount] people (if candidatesCount field exists, use it; otherwise count candidates array)
+  FOR EACH candidate, show numbered list:
     1. matchedContext.position (matchedContext.countryCode) — matchedContext.domains • [timeSinceMatchedMonths] months ago
-    2. ... (continue for all candidates — count must match array length)
   Fields per candidate: ${NLP_CANDIDATE_FIELDS}
-  CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them. Just show results.
+  CRITICAL: NULL values in adhocContext are OPTIONAL — do NOT ask user to fill them.
   If previousPhase = ${SEARCH_PHASE.deleting_goal} → first acknowledge goal deleted.
   End with: set goal, filter, or ask question.`,
-  [SEARCH_PHASE.showing_exploration_facets]: `Check answerText field first:
-  If answerText is NOT null/empty → Show ONLY the answer text. Do NOT show results/goal/filters.
-  If answerText is null/empty → Structured format:
+  [SEARCH_PHASE.showing_exploration_facets]: `FIRST CHECK answerText field!
+  If answerText is NOT null/empty → OUTPUT ONLY THE ANSWER TEXT. Nothing else. Stop here.
+
+  ONLY if answerText is null/empty:
   📊 **Explore** — people with similar background
   ${CONTEXT_BLOCK}
   ${FILTERS_BLOCK}
@@ -126,42 +128,43 @@ const SEARCH_PHASE_DESCRIPTIONS: Partial<Record<SearchPhase, string>> = {
   ${FILTERS_BLOCK}
   📋 Results: [totalCount] people — showing facets
   Show facets with counts, suggest filter to narrow.`,
-  [SEARCH_PHASE.showing_waymate_results]: `CRITICAL: DO NOT ask for any fields! Results are ready to display.
-  Check answerText first: If NOT null/empty → show ONLY answerText.
-  Otherwise show waymates:
+  [SEARCH_PHASE.showing_waymate_results]: `FIRST CHECK answerText field!
+  If answerText is NOT null/empty → OUTPUT ONLY THE ANSWER TEXT. Nothing else. Stop here.
+
+  ONLY if answerText is null/empty, show waymates:
   📊 **Waymates** — ${WAYMATES_DESC}
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
-  📋 Results: COUNT results array items EXACTLY (0-indexed: [0,1,2,3] = 4 items, NOT 5!)
-  MANDATORY: FOR EACH item in results array, show numbered list:
+  📋 Results: [resultsCount] people (use resultsCount field directly, do NOT count array!)
+  FOR EACH result (0 to resultsCount-1), show numbered list:
     1. matchedContext.position (matchedContext.countryCode) — matchedContext.domains • [timeSinceMatchedMonths] months ago
-    2. ... (continue for all results — count must match array length)
   Fields per candidate: ${NLP_CANDIDATE_FIELDS}
-  End with: switch to pathfinders, filter, or refine goal.`,
-  [SEARCH_PHASE.showing_pathfinder_results]: `CRITICAL: DO NOT ask for any fields! Results are ready to display.
-  Check answerText first: If NOT null/empty → show ONLY answerText.
-  Otherwise show pathfinders:
+  End with: switch to Pathfinders, filter, or refine goal.`,
+  [SEARCH_PHASE.showing_pathfinder_results]: `FIRST CHECK answerText field!
+  If answerText is NOT null/empty → OUTPUT ONLY THE ANSWER TEXT. Nothing else. Stop here.
+
+  ONLY if answerText is null/empty, show pathfinders:
   📊 **Pathfinders** — ${PATHFINDERS_DESC}
   ${GOAL_BLOCK}
-  CRITICAL: Goal salary ONLY from goal object (storedGoal/extractedGoal). NEVER show salary from results[].targetContext!
+  CRITICAL: Goal salary ONLY from goal object. NEVER show salary from results[].targetContext!
   ${FILTERS_BLOCK}
-  📋 Results: COUNT results array items EXACTLY (0-indexed: [0,1,2,3] = 4 items, NOT 5!)
-  MANDATORY: FOR EACH item in results array, show numbered list with TRANSITION:
+  📋 Results: [resultsCount] people (use resultsCount field directly, do NOT count array!)
+  FOR EACH result (0 to resultsCount-1), show numbered list with TRANSITION:
     1. matchedContext.position → targetContext.position (targetContext.countryCode) • [timeSinceTargetMonths] months ago
-    2. ... (continue for all results — count must match array length)
   Fields per candidate: ${NLP_CANDIDATE_FIELDS}
-  End with: switch to waymates, filter, or refine goal.`,
+  End with: switch to Waymates, filter, or refine goal.`,
   [SEARCH_PHASE.showing_results_facets]: `Structured format:
   📊 **Results** — too many to show, use facets to narrow
   ${GOAL_BLOCK}
   ${FILTERS_BLOCK}
   📋 Results: [totalCount] people — showing facets
   Show facets with counts. Suggest narrowing by role/country/industry.`,
-  [SEARCH_PHASE.asking_search_mode]: `Goal saved. DO NOT repeat goal details — user just confirmed them.
-  Offer two search options briefly:
-  1. Pathfinders — ${PATHFINDERS_DESC}
-  2. Waymates — ${WAYMATES_DESC}
-  Just ask which one. 2-3 sentences max.`,
+  [SEARCH_PHASE.asking_search_mode]: `Goal saved successfully!
+  DO NOT show goal details, results, filters, facets, or any 📊 headers.
+  Just offer two search options in 2-3 sentences:
+  - Pathfinders — ${PATHFINDERS_DESC}
+  - Waymates — ${WAYMATES_DESC}
+  Ask which one to search. Keep it brief and conversational.`,
   [SEARCH_PHASE.clarifying_goal]: `Goal incomplete — ask user to specify target position.
   DO NOT show any extractedGoal data (it may be empty or have placeholder values like salary 0).
   Simply ask what position they want to achieve. Keep it brief.`,
@@ -209,6 +212,7 @@ ${NO_TRANSLATE_INSTRUCTION}
 
 Response:`;
 
+// eslint-disable-next-line max-lines-per-function
 const buildColdStartPrompt = (
   data: string,
   locale: string,
@@ -249,13 +253,23 @@ Phases:
     IMPORTANT: If user says "confirm/подтверждаю/да" without choosing, treat as accepting first option.
 - ${COLD_START_PHASE.awaiting_context_confirmation}: Show complete context for confirmation.
   Start with: 📍 Position {progress.current}/{progress.total}
-  Show PERIOD: use createdAt year as start, endDate year as end (or "present" if endDate is null).
+  Show PERIOD: use periodStart-periodEnd (or "present" if periodEnd is null).
   List only non-null values including position and role. NEVER show system fields: ${SYSTEM_FIELDS}.
   Ask to confirm.
-- ${COLD_START_PHASE.awaiting_final_confirmation}: Show summary with timeline.
-  For each context, calculate period: from createdAt year to next context's createdAt year.
-  Last context: "YYYY-present". Example: "2016-2020 → 2020-2023 → 2023-present".
-  Show: position, role, period. Ask to save.
+- ${COLD_START_PHASE.awaiting_final_confirmation}: Show EACH context SEPARATELY.
+  Format for EACH position:
+  📍 Position N/total
+  *Period:* periodStart-periodEnd (or "present" if periodEnd is null)
+  *Position:* value
+  *Role:* value
+  Example output:
+  📍 Position 1/3
+  *2016-2023* middle, developer
+  📍 Position 2/3
+  *2023-2025* team lead, developer
+  📍 Position 3/3
+  *2025-present* technical project manager, manager
+  Ask to save.
 - ${COLD_START_PHASE.saved}/${COLD_START_PHASE.already_saved}: Congratulate on completion
 - ${COLD_START_PHASE.failed}: Explain the issue clearly
 

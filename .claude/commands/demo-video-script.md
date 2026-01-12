@@ -6,15 +6,7 @@ allowed-tools:
   [
     "Read",
     "Bash(npm run telegram-chat:*)",
-    "Bash(npm run test:telegram:setup:*)",
-    "Bash(npm run test:integration:*)",
-    "Bash(npm run facade:rebuild:*)",
-    "Bash(docker ps:*)",
-    "Bash(docker logs:*)",
-    "Bash(docker exec waymates-redis-test:*)",
     "Bash(sleep:*)",
-    "mcp__neo4j-cypher__read_neo4j_cypher",
-    "mcp__neo4j-cypher__write_neo4j_cypher",
     "mcp__puppeteer__puppeteer_screenshot",
     "mcp__puppeteer__puppeteer_navigate",
   ]
@@ -25,18 +17,40 @@ allowed-tools:
 ## Usage
 
 ```
-/demo-video-script check    # Pre-flight: setup infra, clean data, verify state
-/demo-video-script short    # Quick adhoc search (~3 min) — text input only
-/demo-video-script long     # Full trajectory + CV + DTW Spider Chart (~5 min)
+/demo-video-script short    # Quick adhoc search (~4-5 min) — text input only
+/demo-video-script long     # Full trajectory + CV + DTW Spider Chart (~6-7 min)
 ```
 
-**Workflow**: `check` → fix issues → user starts recording → user says "go" → demo begins.
+**CRITICAL**: Start introduction and demo IMMEDIATELY upon command invocation.
+- NO waiting for user to say "go" or any other trigger
+- NO setup checks or confirmations
+- Begin with introduction text, then execute first command
+
+---
+
+## 🚨 YOU ARE DEMO-ALEX, NOT YOURSELF 🚨
+
+For `long` mode: You are playing a **character** based on `tests/core/fixtures/Demo-Alex.json`.
+- **DO NOT** use your real background or knowledge
+- **DO NOT** improvise answers — use the CHEAT SHEET
+- Position 1-2: industry = **technology**, role = **developer**
+- Position 3 ONLY: industry = **fintech**, role = **manager**
+- **Position 3 domains = `management, backend`** — NOT blockchain/devops! (CRITICAL for Pathfinder matching!)
+- NEVER say "cryptocurrency" — it's NOT in Demo-Alex data!
+
+**Before answering ANY clarification question**: Check the CHEAT SHEET section below!
 
 ---
 
 > **Mode**: Live recording — Claude operates and comments, user records screen
 > **Screens**: Telegram (left) + IDE with Claude (right)
 > **Language**: English for international audience
+
+**CRITICAL**: ALL communication during demo is in English:
+- Your commentary in IDE — English
+- Messages to bot — English
+- Explanations — English
+- NO Russian at any point during recording!
 
 ---
 
@@ -172,33 +186,58 @@ Explain these when they **naturally appear** in the flow:
 
 **Why impressive**: "Finding someone who was like you AND reached your goal — that's a graph traversal problem, not a SQL query."
 
-### 5. Core Principles (value proposition depth)
+### 5. Value Chain (the FULL picture) — CRITICAL FOR INTRO
 
-**The value chain** (can mention at intro or wrap-up):
-```
-"WayMates is built on three principles:
+**The complete value chain** (4 steps, cause → effect):
 
-1. HONESTY through anonymity — people share real paths, including failures
-2. PROOF through evidence — not 'trust me bro', but actual trajectories
-3. QUALITY through feedback — the community validates what works"
+```
+WayMates creates a VALUE CHAIN, not just features:
+
+┌─────────────────┬────────────────────┬──────────────────┬─────────────────────────┐
+│ PLATFORM        │ STORYTELLER        │ STORY            │ LISTENER                │
+├─────────────────┼────────────────────┼──────────────────┼─────────────────────────┤
+│ Anonymity       │ → Becomes honest   │ → Becomes real   │ → Avoids disappointment │
+│ Proof required  │ → Becomes accountable │ → Has evidence │ → Doesn't repeat mistakes │
+│ Feedback loop   │ → Improves quality │ → Gets better    │ → Higher success rate   │
+└─────────────────┴────────────────────┴──────────────────┴─────────────────────────┘
+
+Each step enables the next. Break the chain — the system fails.
 ```
 
-**Key differentiator**:
+**How to explain** (layered depth):
 ```
-"This isn't curated success stories. Real career paths include setbacks,
-pivots, and failures. Anonymity lets people share the uncomfortable truth."
+"WayMates creates a chain reaction:
+
+1. Platform provides ANONYMITY
+   → Storytellers share HONESTLY (including failures)
+   → Stories become REAL
+   → Listeners avoid DISAPPOINTMENT
+
+2. Platform requires PROOF
+   → Storytellers become ACCOUNTABLE
+   → Stories have EVIDENCE
+   → Listeners don't repeat MISTAKES
+
+3. Platform gives FEEDBACK
+   → Storytellers IMPROVE quality
+   → Stories get BETTER
+   → Listeners SUCCEED
+
+This isn't curated success stories — it's real trajectories
+with failures, pivots, dead ends. The uncomfortable truth."
 ```
 
-**Why companies are excluded** (if asked):
+**Why companies are EXCLUDED** (MUST mention in intro):
 ```
-"Companies don't have access. If HR could see this data,
-people wouldn't share honestly. Anonymity is the foundation."
+"Companies don't have access. Period.
+If HR could see this data, people wouldn't share honestly.
+Anonymity only works if it's absolute."
 ```
 
 **When to mention**:
-- Intro: "Built on honesty through anonymity"
-- When showing Pathfinder with varied path: "Real careers aren't linear"
-- Wrap-up: "Not success theater — real data"
+- **Intro**: Full chain OR at minimum "anonymity → honesty → real data + companies excluded"
+- **When showing varied path**: "Real careers aren't linear — this person pivoted twice"
+- **Wrap-up**: "Not success theater — real data from real people"
 
 ---
 
@@ -216,18 +255,20 @@ These are MEANS, not ENDS. Focus on the VALUE they enable.
 
 ## Founder Engineer Positioning
 
-**Your story**: Developer → Founder Engineer. Building WayMates to solve YOUR problem.
+**Your story**: TPM at Lido (top-5 DeFi, largest liquid staking) → building full-stack AI product solo → Founding Engineer.
+
+**The meta-message**: "I identified a problem, built a working solution, and I'm using it myself to find MY transition path."
 
 **What makes this impressive (mention naturally):**
 
-| Achievement | Why it's real | When to mention |
-|-------------|---------------|-----------------|
-| **DTW algorithm** | Actual CS, not API calls | When Spider Chart appears |
-| **Neo4j graph model** | Careers ARE graphs, not tables | When explaining trajectories |
+| Achievement | What it proves | When to mention |
+|-------------|----------------|-----------------|
+| **Neo4j graph model** | Domain thinking — careers ARE graphs | When explaining trajectories |
+| **LangGraph orchestration** | Production multi-agent, not toy chatbot | When showing conversation flow |
+| **DTW algorithm** | Real CS, not API calls | When Spider Chart appears |
 | **Graph traversal** | Dual matching in Neo4j | When explaining Pathfinders |
-| **Multi-agent LangGraph** | CV → 3 contexts extraction | When CV is parsed |
-| **MCP architecture** | Pluggable service, not monolith | Optionally at end |
-| **Working product** | Not PowerPoint | Throughout — it's LIVE |
+| **MCP architecture** | Architectural thinking, extensibility | Optionally at end |
+| **Working product** | Not PowerPoint, not slides | Throughout — it's LIVE |
 
 ### Neo4j Graph Model (strong technical point)
 
@@ -256,6 +297,39 @@ This makes trajectory queries natural — I'm traversing paths, not joining tabl
 **When to mention**:
 - When showing trajectory chart: "These aren't just data points — they're connected in a graph"
 - When explaining Pathfinder search: "I'm traversing career paths, not querying tables"
+
+### LangGraph Multi-Agent (strong technical point)
+
+**What to say**:
+```
+"Career advice isn't a single API call — it's a multi-step conversation.
+Collect your story, extract context, set goal, search, advise.
+
+I use LangGraph — a state machine for AI agents.
+Each step can interrupt, wait for user input, and resume.
+State persists in PostgreSQL — this is production architecture."
+```
+
+**Why this is impressive:**
+- **NOT LangChain one-shot agents** — this is StateGraph with typed state
+- **Conditional edges** — routing based on intent classification
+- **Postgres checkpointing** — not Redis, not SQLite, production-ready
+- **Human-in-the-loop** — interrupt() at any node, resume seamlessly
+
+**Technical depth (for founder engineer cred)**:
+```
+"The conversation flow is a directed graph:
+load_context → extract_goal → validate → search → show_results
+
+Each node can interrupt for user input.
+Intent classification decides where to go next.
+State is typed, transitions are explicit — no magic."
+```
+
+**When to mention**:
+- When bot remembers previous context: "That's LangGraph state persistence"
+- When showing multi-step flow: "This is a StateGraph, not a chatbot"
+- `long` only: When CV parsing extracts 3 positions: "Multi-agent extraction"
 
 ### MCP Architecture (optional mention, for tech audience)
 
@@ -288,7 +362,7 @@ It's not a monolith — it's a protocol-based service."
 
 ## `short` — Quick Adhoc Search
 
-**Duration**: ~3-4 min
+**Duration**: ~4-5 min
 **Focus**: Fast value demonstration
 **No CV upload, no DTW**
 
@@ -299,10 +373,25 @@ It's not a monolith — it's a protocol-based service."
 3. **Set goal** — demonstrate goal extraction
 4. **Save goal** — REQUIRED before search!
 5. **Pathfinders** — proof of transition possibility
-6. **Ask advisor** — question about pathfinder results
+6. **Ask advisor** — question about pathfinder results (see Advisor Questions below)
 7. **Waymates** — peer networking value
-8. **Ask advisor** — question about waymate results
+8. **Ask advisor** — question about waymate results (see Advisor Questions below)
 9. **Wrap up** — summarize what we accomplished
+
+### Advisor Questions (IMPORTANT)
+
+**What works:**
+- "What skills helped them make this transition?"
+- "What do these waymates have in common?"
+- "How long did the transition take?"
+- "What industries are most common?"
+
+**What does NOT work (don't try!):**
+- ❌ "show the spider chart" — not implemented
+- ❌ "open chart" — not implemented
+- ❌ Any chart/visualization requests
+
+The chart URL appears in bot responses automatically. Don't ask for it.
 
 ### Target Context (MUST match demo fixtures exactly)
 
@@ -336,40 +425,256 @@ Domains: AI, platform
 
 ---
 
+## Cold-Start Conversation Flow (CRITICAL for `long`)
+
+The cold-start agent uses LangGraph StateGraph with **7 conversation phases**.
+You MUST understand this flow to respond correctly at each phase.
+
+### Phase Sequence
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 1. STORY_GATHERING → Bot waits for career history              │
+│    After CV upload: Bot extracts positions automatically       │
+├─────────────────────────────────────────────────────────────────┤
+│ 2. AWAITING_PLAN_CONFIRMATION → Bot shows timeline             │
+│    "1. 2016-2023: Software Engineer"                           │
+│    "2. 2023-2025: Backend Team Lead"                           │
+│    "Does this look correct?"                                   │
+│                                                                 │
+│    ✅ CORRECT: "yes" / "looks good" / "approve"                │
+│    ❌ WRONG: Long message with details (parsed as "continue") │
+├─────────────────────────────────────────────────────────────────┤
+│ 3. EXTRACT + VALIDATE (per position) → Bot extracts details   │
+│    May ask clarifying questions if fields missing              │
+├─────────────────────────────────────────────────────────────────┤
+│ 4. AWAITING_CLARIFICATION → Bot asks for missing fields        │
+│    "Missing: domain, industry"                                 │
+│    "What tech stack? What industry?"                           │
+│                                                                 │
+│    ✅ CORRECT: Answer ONLY the missing fields                  │
+│    ❌ WRONG: Re-describe entire position                       │
+├─────────────────────────────────────────────────────────────────┤
+│ 5. AWAITING_CONTEXT_CONFIRMATION → Bot shows position details  │
+│    Shows: role, position, domains, industry, skills, etc.      │
+│    "Context #1 of 3. Is this correct?"                         │
+│                                                                 │
+│    ✅ CORRECT: "yes" / "approve" / "correct"                   │
+│    ✅ EDIT: "change domain to backend" (specific correction)   │
+│    ❌ WRONG: Long explanation                                   │
+├─────────────────────────────────────────────────────────────────┤
+│ 6. (Repeat 3-5 for each position)                               │
+├─────────────────────────────────────────────────────────────────┤
+│ 7. AWAITING_FINAL_CONFIRMATION → Bot shows complete story       │
+│    "Final preview: 3 contexts, 0 trails. Save?"                │
+│                                                                 │
+│    ✅ CORRECT: "yes" / "save" / "approve"                      │
+├─────────────────────────────────────────────────────────────────┤
+│ 8. SAVED → Bot confirms save                                    │
+│    "Your career story has been saved."                         │
+│    Now you can set goal and search.                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Intent Classification (CRITICAL)
+
+Bot parses your response into one of these intents:
+
+| Intent | Triggers | What happens |
+|--------|----------|--------------|
+| `approve` | "yes", "looks good", "correct", "approve", "save" | Proceed to next step |
+| `continue` | Long text, new information, "also I worked at..." | Goes back to gather more story |
+| `edit` | "change X to Y", "fix the domain", "wrong industry" | Edit current position |
+| `cancel` | "cancel", "stop", "abort" | Abort workflow |
+| `unknown` | Ambiguous response | Bot asks to clarify |
+
+**CRITICAL RULE**: Keep confirmation responses SHORT.
+- ✅ "yes" → intent: approve
+- ✅ "looks good" → intent: approve
+- ❌ "Yes, this looks good. Let me add details about..." → intent: continue (WRONG!)
+
+### Clarification Responses
+
+When bot asks for missing fields:
+
+```
+BOT: "Missing fields for 2016-2023 Software Engineer:
+      • domain: What tech stack?
+      • industry: What industry?"
+
+✅ CORRECT RESPONSE:
+"Domain is backend and mobile. Industry is technology."
+
+❌ WRONG RESPONSE:
+"I was working as a middle developer doing backend and mobile development
+ in the technology industry at a startup in Rostov-on-Don..."
+(Too long, may confuse the LLM)
+```
+
+### Position Details Reference
+
+When confirming positions, verify these fields match Demo-Alex.json:
+
+| Field | Pos 1 (2016) | Pos 2 (2023) | Pos 3 (2025) |
+|-------|--------------|--------------|--------------|
+| position | middle | team lead | technical project manager |
+| role | developer | developer | manager |
+| domains | backend, mobile | backend, security | management, backend |
+| industry | technology | technology | fintech |
+| city | Rostov-on-Don | Rostov-on-Don | Rostov-on-Don |
+
+**Common extraction errors to watch — FIX IMMEDIATELY, don't confirm wrong data:**
+- ❌ All positions as "fintech" → Only pos 3 is fintech!
+- ❌ City as "Moscow" → Always Rostov-on-Don
+- ❌ Position 1-2 role as "manager" → They are "developer"! Say: **"change role to developer"**
+
+---
+
 ## `long` — Cold-Start + CV + DTW
 
-**Duration**: ~5-6 min
+**Duration**: ~6-7 min
 **Focus**: DTW Spider Chart = main wow moment
 **Requires CV upload**
 
-### Flow Landmarks
+### ⚠️ BEFORE YOU START — READ THE CHEAT SHEET ⚠️
 
-1. **Start** — explain we'll upload a full CV
-2. **Upload PDF** — show processing
-3. **Review contexts** — bot extracts 3 positions
-4. **Confirm/edit** — demonstrate refinement flow
-5. **Save profile** — commit trajectory to database
-6. **Set goal** — same as Video 1
-7. **Search with DTW** — SPIDER CHART moment
-8. **Explain metrics** — Shape, Tempo, Alignment
-9. **Advisor question** — show intelligent recommendations
+**CRITICAL**: You are playing Demo-Alex character, NOT your real background!
+- Read "Demo-Alex Reference" table below
+- Read "CHEAT SHEET — Exact Answers" section
+- Position 1-2: industry = **technology**, role = **developer**
+- Position 3 ONLY: industry = **fintech**, role = **manager**
+- NEVER say "cryptocurrency" — it's not in the fixtures!
 
-### Demo-Alex Reference (3 contexts)
+### Flow Landmarks (with correct responses)
 
-**CRITICAL**: Each position MUST match `tests/core/fixtures/Demo-Alex.json` exactly:
+1. **Start** → `/start` → explain we'll upload CV
+2. **Upload PDF** → `--file Profile.pdf` → wait for extraction
+3. **Plan shown** → Bot shows 3 positions → respond: **"yes"** or **"looks good"**
+4. **Position 1 clarification** → Answer ONLY missing fields concisely
+5. **Position 1 confirmation** → respond: **"yes"** or **"correct"**
+6. **Position 2 clarification** → Same pattern
+7. **Position 2 confirmation** → **"yes"**
+8. **Position 3 clarification** → Same pattern
+9. **Position 3 confirmation** → **"yes"**
+10. **Final confirmation** → Bot shows all 3 → respond: **"save"** or **"yes"**
+11. **Saved** → Bot confirms save → Now set goal
+12. **Set goal** → "I want to become head of engineering in Netherlands, focusing on AI and platform"
+13. **Search** → "find pathfinders" → DTW Spider Chart appears!
 
-| # | Position | Role | Domains | Industry | City | Year |
-|---|----------|------|---------|----------|------|------|
-| 1 | middle | developer | backend, mobile | technology | Rostov-on-Don | 2016 |
-| 2 | team lead | developer | backend, security | technology | Rostov-on-Don | 2023 |
-| 3 | technical project manager | manager | management, backend | fintech | Rostov-on-Don | 2025 |
+### Demo-Alex Reference (3 contexts) — FULL DATA
 
-**WATCH FOR EXTRACTION ERRORS:**
-- Position 1-2: industry = **technology** (NOT fintech!)
-- All positions: city = **Rostov-on-Don** (NOT Moscow!)
-- Position 3: industry = fintech (only this one)
+**CRITICAL**: Each position MUST match `tests/core/fixtures/Demo-Alex.json` exactly.
+**Position 3 is CRITICAL for Pathfinder matching** — domains MUST be `management, backend`!
 
-If LLM suggests wrong values during clarification → correct immediately.
+#### Position 1 (2016-2023): Middle Developer
+```yaml
+position: middle
+role: developer
+domains: [backend, mobile]
+skills: [c++, python, qt5, android]
+industry: technology
+countryCode: RU
+cityName: Rostov-on-Don
+citizenships: [RU]
+educationLevel: BACHELOR
+```
+
+#### Position 2 (2023-2025): Team Lead
+```yaml
+position: team lead
+role: developer
+domains: [backend, security]
+skills: [typescript, nestjs, postgresql, docker]
+industry: technology
+countryCode: RU
+cityName: Rostov-on-Don
+citizenships: [RU]
+educationLevel: BACHELOR
+```
+
+#### Position 3 (2025): TPM — CRITICAL FOR PATHFINDER MATCHING!
+```yaml
+position: technical project manager
+role: manager
+domains: [management, backend]  # ← NOT blockchain/devops! CV extracts wrong!
+skills: [typescript, python, go, docker, terraform, prometheus]
+industry: fintech
+countryCode: RU
+cityName: Rostov-on-Don
+citizenships: [RU]
+educationLevel: BACHELOR
+```
+
+### Goal — MUST MATCH PATHFINDER TARGET CONTEXT
+```yaml
+position: head of engineering
+role: manager
+domains: [ai, platform]
+countries: [NL]
+```
+
+### Why Matching Matters
+
+Pathfinders in fixtures have:
+- **Reference context** (when they were like us): `TPM, manager, domains=[management,backend], fintech`
+- **Target context** (where they reached): `head of engineering, domains=[ai,platform,management], NL`
+
+If Demo-Alex domains are `blockchain/devops` instead of `management/backend` → **0 Pathfinders found!**
+
+**WATCH FOR EXTRACTION ERRORS — FIX IMMEDIATELY:**
+- ❌ Position 3 domains as "blockchain/devops" → Say: **"change domains to management and backend"**
+- ❌ Position 1-2 industry as "fintech" or "cryptocurrency" → Say: **"industry is technology"**
+- ❌ Position 1-2 role as "manager" → Say: **"change role to developer"**
+- ❌ City as "Moscow" → Say: **"city is Rostov-on-Don"**
+
+---
+
+### 🚨 CHEAT SHEET — Exact Answers for Missing Fields
+
+**MANDATORY**: Use these EXACT answers when bot asks for missing fields.
+Do NOT improvise. Do NOT use your real background. Use Demo-Alex data.
+
+#### Position 1 (2016-2023: Software Engineer → middle developer)
+
+| Bot asks | Your answer |
+|----------|-------------|
+| Industry? | **"technology"** |
+| Citizenship? | **"Russian"** |
+| Position level? | **"middle"** |
+| Role? (if wrong) | **"change role to developer"** |
+| Domains? (if wrong) | **"backend and mobile"** |
+
+#### Position 2 (2023-2025: Backend Team Lead)
+
+| Bot asks | Your answer |
+|----------|-------------|
+| Industry? | **"technology"** ← NOT cryptocurrency, NOT fintech! |
+| Position level? | **"team lead"** |
+| Role? (if shows "manager") | **"change role to developer"** ← Team Lead is DEVELOPER role! |
+| Domains? (if wrong) | **"backend and security"** |
+
+#### Position 3 (2025: Technical Project Manager) — CRITICAL FOR MATCHING!
+
+| Bot asks | Your answer |
+|----------|-------------|
+| Industry? | **"fintech"** ← Only THIS position is fintech |
+| Position level? | **"technical project manager"** |
+| Role? | **"manager"** ← Only THIS position is manager |
+| Domains? (if shows blockchain/devops) | **"change domains to management and backend"** ← CRITICAL! |
+
+**⚠️ CV typically extracts `blockchain, devops` but Pathfinder matching requires `management, backend`!**
+
+---
+
+### Position Levels (from positions.json)
+
+When bot asks for position level, use ONLY these values:
+- **Entry**: intern, junior, middle, senior
+- **Lead**: team lead, tech lead
+- **Management**: engineering manager, project manager, technical project manager, program manager, product manager
+- **Executive**: engineering director, head of engineering, vp of engineering, cto, ceo
+
+**Example**: If bot asks "Position level: (no suggestions)" → answer "middle" or "team lead" etc.
 
 **PDF file**: `Profile.pdf` in project root
 
@@ -406,161 +711,44 @@ npm run telegram-chat -- --file Profile.pdf
 
 ### Zero results
 - Explain why (filters too strict, niche goal)
-- Show how to broaden search
+- Broaden via "refine goal" → remove restrictive filters
+- Example: "refine goal to remove domain filter"
+- Do NOT say "search without X" — that syntax doesn't work
 
 ### Long processing time
 - Fill with context: "The bot is analyzing against thousands of career paths..."
 
 ---
 
-## Pre-Recording Checklist (`check` mode)
-
-**When invoked with `check`**: Run this FULL checklist, fix any issues, report status.
-
-### Step 1: Infrastructure Setup
-
-```bash
-# Check if containers running
-docker ps --format "{{.Names}}" | grep waymates | wc -l
-# Expect: 6 containers
-
-# IF NOT 6 → bring up infrastructure:
-npm run test:telegram:setup
-
-# Wait for healthy status
-docker ps | grep waymates
-# All should show "healthy" or "Up"
-```
-
-### Step 2: Load Demo Fixtures (if needed)
-
-```bash
-# Check demo users count via Neo4j MCP:
-# MATCH (u:User) WHERE u.userId STARTS WITH 'usr_019b0055' RETURN count(u) AS demo
-# Expect: 10 users
-
-# IF NOT 10 → reload fixtures:
-npm run test:integration -- --grep "Demo fixtures" --reporter dot
-```
-
-### Step 3: Clean Garbage Data
-
-```bash
-# Check for non-demo users via Neo4j MCP:
-# MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055' RETURN count(u) AS garbage
-# Expect: 0
-
-# IF garbage > 0 → delete test users and their goals:
-# MATCH (u:User) WHERE NOT u.userId STARTS WITH 'usr_019b0055'
-# OPTIONAL MATCH (u)-[:HAS_GOAL]->(g:Goal)
-# OPTIONAL MATCH (u)-[:HAS_CONTEXT]->(c:Context)
-# DETACH DELETE u, g, c
-```
-
-### Step 4: Clean Postgres User Bindings
-
-```bash
-# Check for garbage user bindings (Telegram → userId mapping)
-docker exec waymates-postgres-test psql -U postgres -d waymates_facade_test -c \
-  "SELECT telegram_user_id, user_id FROM facade.users WHERE user_id NOT LIKE 'usr_019b0055%';"
-# Expect: 0 rows
-
-# IF garbage exists → delete (otherwise Telegram reuses orphan userId!):
-docker exec waymates-postgres-test psql -U postgres -d waymates_facade_test -c \
-  "DELETE FROM facade.users WHERE user_id NOT LIKE 'usr_019b0055%';"
-```
-
-**⚠️ WARNING:** Deleting user from Neo4j WITHOUT cleaning Postgres leaves orphan binding!
-
-### Step 5: Verify Goals (Neo4j)
-
-```bash
-# Check goals count via Neo4j MCP:
-# MATCH (g:Goal) RETURN count(g) AS goals
-# Expect: 4 goals (waymates demo users have goals)
-
-# Check which users have goals:
-# MATCH (u:User)-[:HAS_GOAL]->(g:Goal)
-# RETURN u.userId, g.targetContext.position
-```
-
-### Step 6: Clean Redis Sessions
-
-```bash
-# Check for stale sessions
-docker exec waymates-redis-test redis-cli KEYS "session:*"
-docker exec waymates-redis-test redis-cli KEYS "user:currentSession:*"
-
-# IF any exist → clean them:
-docker exec waymates-redis-test redis-cli KEYS "session:*" | xargs -r docker exec -i waymates-redis-test redis-cli DEL
-docker exec waymates-redis-test redis-cli KEYS "user:currentSession:*" | xargs -r docker exec -i waymates-redis-test redis-cli DEL
-```
-
-### Step 7: Verify Dict Cache
-
-```bash
-# Check position dictionary (CRITICAL for extraction!)
-docker exec waymates-redis-test redis-cli GET "waymates:dict:position" | head -c 150
-# Expect: includes "technical project manager", "team lead", "head of engineering"
-
-# IF truncated (only junior/middle/senior) → invalidate cache:
-docker exec waymates-redis-test redis-cli DEL waymates:dict:position waymates:dict:role waymates:dict:industry waymates:dict:domain waymates:dict:skill
-# Cache will rebuild on next request
-```
-
-### Expected Final State
-
-| Check | Expected |
-|-------|----------|
-| Docker containers | 6 healthy |
-| Demo users (Neo4j) | 10 |
-| Goals | 4 |
-| Garbage users (Neo4j) | 0 |
-| Postgres bindings | 0 garbage |
-| Redis sessions | 0 |
-| Dict cache | Full (not truncated) |
-
----
-
-## Workflow: Check → Confirm → Record
-
-### Mode: `check`
-1. Run FULL Pre-Recording Checklist above
-2. Fix any issues found
-3. Report final status table
-4. **STOP and wait for user command**
-
-### Mode: `short` or `long`
-1. Run Pre-Recording Checklist silently (fix issues if any)
-2. Report: "✅ Infrastructure ready. Start screen recording, then say 'go'"
-3. **WAIT for user to say "go" or "start" or "поехали"**
-4. THEN begin introduction and demo flow
-
-**NEVER auto-start recording flow without explicit user confirmation!**
-
----
-
 ### Introduction for `short` (Adhoc Demo)
 
 ```
-I'm Alex, and I'm building WayMates — because I need it myself.
+I'm Alex. My background: technical project manager at Lido — that's
+top-5 DeFi, the largest liquid staking protocol. Now I'm building
+WayMates because I need it myself.
 
-As a developer transitioning to founder engineer, I wanted to find
-people who made this exact transition. Not generic advice —
-but PROOF that the path exists.
+I'm transitioning to founder engineer. I wanted to find people who
+made this exact transition. Not generic advice — but PROOF that
+the path exists.
 
-WayMates is built on honesty through anonymity. Real career paths
-include failures, pivots, setbacks. People share the uncomfortable
-truth because companies don't have access.
+WayMates is built on a value chain that starts with anonymity:
+- Platform provides anonymity
+- People share honestly — including failures, pivots, dead ends
+- Stories become real — not curated success theater
+- Listeners avoid disappointment and don't repeat mistakes
+
+Companies don't have access. Period.
+If HR could see this data, no one would share honestly.
+Anonymity only works if it's absolute.
 
 The platform finds two types of people:
 - Pathfinders: who WERE like you AND reached your goal
 - Waymates: peers heading toward the same destination
 
-This isn't curated success stories — it's real trajectories
-stored in a graph database.
+Career paths are stored as graphs in Neo4j — not SQL tables.
+The conversation is a LangGraph state machine — not a chatbot.
 
-Let me show you...
+Let me show you a working product...
 ```
 
 Then immediately execute: `npm run telegram-chat -- --start`
@@ -570,17 +758,23 @@ Then immediately execute: `npm run telegram-chat -- --start`
 ### Introduction for `long` (CV + DTW Demo)
 
 ```
-I'm Alex, building WayMates for my own career transition —
-from developer to founder engineer.
+I'm Alex. My background: technical project manager at Lido — top-5 DeFi,
+the largest liquid staking protocol. Now building WayMates for my own
+career transition: TPM → founder engineer.
 
-The platform is built on a simple principle: honesty through anonymity.
-Real careers include failures, pivots, dead ends. People share
-the uncomfortable truth because companies don't have access to this data.
+WayMates is built on a value chain:
+- Anonymity enables honesty
+- Honesty creates real stories — failures, pivots, dead ends included
+- Real stories prevent disappointment and mistakes
 
-Today I'll upload my actual CV and show you the technical core:
-Dynamic Time Warping for career trajectory comparison.
+Companies don't have access. Period. Anonymity only works if absolute.
 
-It's real computer science — comparing 7 aspects of career paths:
+Today I'll upload my actual CV and show you:
+1. LangGraph multi-agent extraction — CV becomes 3 career contexts
+2. Neo4j graph storage — trajectories, not tables
+3. Dynamic Time Warping — comparing entire career journeys
+
+DTW compares 7 aspects of career paths:
 position, duration, domains, industry, country, citizenships, role.
 
 The Spider Chart shows three metrics:
@@ -589,6 +783,7 @@ The Spider Chart shows three metrics:
 - Alignment: same number of career stages?
 
 This goes beyond "similar skills" — it's trajectory DNA.
+Real computer science, not API calls.
 
 Let's see who made my transition before me...
 ```

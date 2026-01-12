@@ -63,7 +63,9 @@ async function setupWaymateGoals(driver: Driver): Promise<number> {
 }
 
 async function main(): Promise<void> {
-  const files = readdirSync(FIXTURES_DIR).filter((f) => f.startsWith("Demo-") && f.endsWith(".json"));
+  const files = readdirSync(FIXTURES_DIR).filter(
+    (f) => f.startsWith("Demo-") && f.endsWith(".json") && f !== "Demo-Alex.json",
+  );
 
   if (files.length === 0) {
     console.log("No Demo-*.json fixtures found");

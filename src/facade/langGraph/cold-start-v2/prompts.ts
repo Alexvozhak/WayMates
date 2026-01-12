@@ -1,4 +1,4 @@
-import { CONTEXT_REQUIRED_FIELDS } from "../../../shared/schemas.js";
+import { CONTEXT_OPTIONAL_FIELDS, CONTEXT_REQUIRED_FIELDS } from "../../../shared/schemas.js";
 import { DECOMPOSITION_RULES } from "../shared/prompts.js";
 
 import type { UserContext } from "../../../shared/schemas.js";
@@ -239,6 +239,7 @@ Apply correction EXACTLY as requested.
 // CONTEXT CLARIFICATION PROMPT
 // ═══════════════════════════════════════════════════════════════════════════
 
+// eslint-disable-next-line max-lines-per-function
 export function contextClarificationPrompt(
   pendingContext: Record<string, unknown>,
   missingFields: string[],
@@ -265,22 +266,30 @@ ${SECTION_DIVIDER}
 ${serializeSuggestions(suggestions)}`
     : "";
 
-  const mergeRules = hasSuggestions
-    ? `
+  const editableFields = [...CONTEXT_REQUIRED_FIELDS, ...CONTEXT_OPTIONAL_FIELDS].join(", ");
+
+  const step1 = hasSuggestions
+    ? `STEP 1 — HANDLE SUGGESTIONS:
+- User was asked to CHOOSE from options above
+- If user APPROVES without specifying → use FIRST option
+- If user provides specific value → map to {{dictHints}}`
+    : `STEP 1 — FILL MISSING FIELDS:
+- Extract values for: ${missingFields.join(", ")}
+- Map to {{dictHints}}`;
+
+  const mergeRules = `
 ${SECTION_DIVIDER}
-MERGE RULES (SUGGESTIONS MODE):
+TASK (2-STEP PROCESS):
 ${SECTION_DIVIDER}
-- User was asked to CHOOSE from options
-- If user APPROVES without specifying → use FIRST option for each field
-- If user provides specific value → use it (map to KNOWN values)
-- KEEP all existing values unchanged`
-    : `
-${SECTION_DIVIDER}
-MERGE RULES (MISSING FIELDS MODE):
-${SECTION_DIVIDER}
-- User response answers questions about MISSING FIELDS
-- Extract values from response (map to KNOWN values from hints)
-- KEEP all existing values unchanged`;
+${step1}
+
+STEP 2 — APPLY EDITS (if any):
+- User MAY request changes to other fields: ${editableFields}
+- CRITICAL FOR ARRAYS: "change domains to X, Y" means domains = [X, Y] ONLY (DELETE old values!)
+- NOT "add X to existing" — REPLACE the entire array!
+- Map values to {{dictHints}}
+
+Fields NOT mentioned → KEEP original values unchanged`;
 
   return `Update career context based on user's clarification.
 

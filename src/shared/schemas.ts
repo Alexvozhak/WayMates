@@ -1091,6 +1091,8 @@ export const entityBatchResultConfirmationSchema = z.object({
   entity: userContextSchema,
   relatedTrails: z.array(trailSchema),
   progress: collectionProgressSchema,
+  periodStart: z.number().describe("Year position started (from planning phase)"),
+  periodEnd: z.number().nullable().describe("Year position ended, or null if current"),
   normalizations: z
     .array(
       z.object({
@@ -1349,6 +1351,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("showing_waymate_results"),
     results: z.array(waymateCandidateSchema),
+    resultsCount: z.number().int().nonnegative(),
     goal: targetContextSchema.nullable(),
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
@@ -1358,6 +1361,7 @@ export const searchGraphResponseSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("showing_pathfinder_results"),
     results: z.array(pathfinderCandidateSchema),
+    resultsCount: z.number().int().nonnegative(),
     goal: targetContextSchema.nullable(),
     chartUrl: z.string().url().nullable(),
     appliedFilters: currentAppliedFiltersSchema.nullable(),
