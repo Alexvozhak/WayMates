@@ -87,16 +87,15 @@ export type ProcessedTrajectory = {
 export type OverlapPeriod = {
   candidateId: string;
   field: ChartableField;
-  startTime: number;
-  endTime: number;
+  start: number;
+  end: number;
   value: string | number;
 };
 
 /** Full overlap period — when ALL selected fields match between user and candidate. */
 export type FullOverlapPeriod = {
-  candidateId: string;
-  startTime: number;
-  endTime: number;
+  start: number;
+  end: number;
 };
 
 export type OverlapSummary = {

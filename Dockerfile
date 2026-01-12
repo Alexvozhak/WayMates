@@ -4,6 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+RUN npm run build:chart
 
 # Core для тестов (нужен СЕЙЧАС)
 FROM base AS core-test

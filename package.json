@@ -4,7 +4,8 @@
   "scripts": {
     "generate:user-keys": "tsx scripts/gen-user-keys.ts",
     "start": "npm run docker:prod:up && npm run db:prod:init && tsx src/core/index.ts",
-    "build": "tsc",
+    "build:chart": "tsx scripts/build-chart-runtime.ts",
+    "build": "npm run build:chart && tsc",
     "dev": "tsx src/core/index.ts",
     "bot": "tsx src/telegram-bot/index.ts",
     "bot:test": "bash -c 'set -a && source .env.test && set +a && tsx src/telegram-bot/index.ts'",

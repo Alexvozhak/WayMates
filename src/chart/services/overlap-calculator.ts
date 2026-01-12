@@ -66,11 +66,7 @@ export class OverlapCalculator {
     const fieldIntervals = this.buildFieldIntervalsMap(candidate);
     const intersected = this.intersectAllFieldIntervals(fieldIntervals);
 
-    return intersected.map(({ start, end }) => ({
-      candidateId: candidate.id,
-      startTime: start,
-      endTime: end,
-    }));
+    return intersected.map(({ start, end }) => ({ start, end }));
   }
 
   private buildFieldIntervalsMap(candidate: ProcessedTrajectory): Map<ChartableField, Interval[]> {
@@ -78,7 +74,7 @@ export class OverlapCalculator {
 
     for (const field of this.fields) {
       const overlaps = this.findFieldOverlaps(candidate, field);
-      const intervals = overlaps.map((o) => ({ start: o.startTime, end: o.endTime }));
+      const intervals = overlaps.map((o) => ({ start: o.start, end: o.end }));
       map.set(field, intervals);
     }
 
@@ -154,8 +150,8 @@ export class OverlapCalculator {
 
     return {
       field,
-      startTime: overlapStart,
-      endTime: overlapEnd,
+      start: overlapStart,
+      end: overlapEnd,
       value: userValue,
     };
   }
@@ -218,7 +214,7 @@ export class OverlapCalculator {
     let longestMs = 0;
 
     for (const period of periods) {
-      const duration = period.endTime - period.startTime;
+      const duration = period.end - period.start;
       totalMs += duration;
       if (duration > longestMs) longestMs = duration;
     }

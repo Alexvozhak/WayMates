@@ -5,6 +5,13 @@ import unicorn from 'eslint-plugin-unicorn';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
+  // Global ignores
+  {
+    ignores: [
+      'src/chart/browser/**', // Browser runtime - compiled by esbuild, not subject to Node.js rules
+    ],
+  },
+
   eslint.configs.recommended,
   ...tseslint.configs.strict,
   ...tseslint.configs.stylistic,
