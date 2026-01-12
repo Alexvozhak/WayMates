@@ -98,3 +98,4 @@ poc/*.html
 
 # MCP chat sessions (local dev)
 .claude/sessions/
+.env.test
