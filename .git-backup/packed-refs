@@ -1,0 +1,24 @@
+# pack-refs with: peeled fully-peeled sorted 
+aa1ff6212a9fe574287cc7bfa6d74bbe6634b2c2 refs/heads/codex/create-comprehensive-tests-for-@orcestrator
+9834d15faa5a72c51bf74ce91bf4cbcec304992b refs/heads/codex/generate-test-json-for-algorithm-validation
+fa10618d39450f9a1ca3fff9af45e4e61e95cdcb refs/heads/cursor/analyze-failing-integration-tests-after-cypher-refactor-b3ed
+25ad5f8d6e807770766b70dd81f51aa11a6ef38e refs/heads/cursor/refactor-facade-into-current-repository-0b63
+0d60103f9fa668a7e5622c186d2da7b5185c2ba0 refs/heads/devel
+b70bc83bb09920fb136ba66c11989ce1c08103b1 refs/heads/feature/architecture-refactoring
+b360373819a8f95397e8934fb24cf1dcfe4ce658 refs/heads/feature/gds-module-1
+99ba9da9741e4e7583f76507551abeca0edebd28 refs/heads/feature/langgraph-migration
+5d035a70f31c0e3fe57d7eeab04b476a6816e8a9 refs/heads/feature/telegram-bot
+23139a9b81988541ad12a30d2d6fd4bb1eeb12c7 refs/heads/feature/tests-implementation
+089fe4259d4d2b9168bf7a39c99150bf7179e3f9 refs/heads/feature/upsert-agents
+aa1ff6212a9fe574287cc7bfa6d74bbe6634b2c2 refs/remotes/origin/codex/create-comprehensive-tests-for-@orcestrator
+df6ee19b7c71a5d6eda14a6305af6f88365039f9 refs/remotes/origin/codex/generate-test-json-for-algorithm-validation
+978027113ab819ca45e7cd56fe28ee0002b69d7f refs/remotes/origin/create-comprehensive-tests-for-@orcestrator
+fa10618d39450f9a1ca3fff9af45e4e61e95cdcb refs/remotes/origin/cursor/analyze-failing-integration-tests-after-cypher-refactor-b3ed
+25ad5f8d6e807770766b70dd81f51aa11a6ef38e refs/remotes/origin/cursor/refactor-facade-into-current-repository-0b63
+f6eee8e8d46599d8795ab2c56cf853a6664e298f refs/remotes/origin/cursor/searchmanager-0c6b
+51d51d9c41685c56e17b5f25310e4ce23e50f8ee refs/remotes/origin/cursor/searchmanager-d587
+9834d15faa5a72c51bf74ce91bf4cbcec304992b refs/remotes/origin/devel
+a90d3e8141ed14d0172a5181ed8993333d57002a refs/remotes/origin/feature/architecture-refactoring
+c04eed2659c50c85a17daac3bd820b415fe499a1 refs/remotes/origin/feature/gds-module-1
+5d035a70f31c0e3fe57d7eeab04b476a6816e8a9 refs/remotes/origin/feature/telegram-bot
+1cdf05699af0be8d2207b78fd9faa2f633ece032 refs/stash

@@ -1,0 +1,14 @@
+refactor(langgraph): migrate upsert-context, update-context, upsert-trail to StateGraph
+
+- Migrate three agents from createAgent to LangGraph StateGraph pattern
+- Rename phase: saved → approved, add cancelled phase for explicit cancellation
+- Add InvalidStateError guards in response-builders (fail-fast on boundaries)
+- Remove redundant guards from show nodes (router guarantees data presence)
+- Remove unused index.ts re-exports (consistent with cold-start-v2)
+- Remove trailCorrectionModel rudiment
+- Export Phase types from state.ts (single source of truth)
+- Remove cast in parseDecision (explicit return type)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

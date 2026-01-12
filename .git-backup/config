@@ -1,0 +1,58 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	hooksPath = .husky/_
+[remote "origin"]
+	url = git@github.com:Alexvozhak/WayMates-MCP.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "devel"]
+	remote = origin
+	merge = refs/heads/devel
+	vscode-merge-base = origin/devel
+[branch "codex/create-comprehensive-tests-for-@orcestrator"]
+	remote = origin
+	merge = refs/heads/codex/create-comprehensive-tests-for-@orcestrator
+	vscode-merge-base = origin/codex/create-comprehensive-tests-for-@orcestrator
+[branch "codex/generate-test-json-for-algorithm-validation"]
+	remote = origin
+	merge = refs/heads/codex/generate-test-json-for-algorithm-validation
+	vscode-merge-base = origin/codex/generate-test-json-for-algorithm-validation
+[branch "feature/architecture-refactoring"]
+	vscode-merge-base = origin/devel
+	remote = origin
+	merge = refs/heads/feature/architecture-refactoring
+[branch "cursor/refactor-facade-into-current-repository-0b63"]
+	remote = origin
+	merge = refs/heads/cursor/refactor-facade-into-current-repository-0b63
+	vscode-merge-base = origin/cursor/refactor-facade-into-current-repository-0b63
+[branch "cursor/analyze-failing-integration-tests-after-cypher-refactor-b3ed"]
+	remote = origin
+	merge = refs/heads/cursor/analyze-failing-integration-tests-after-cypher-refactor-b3ed
+	vscode-merge-base = origin/cursor/analyze-failing-integration-tests-after-cypher-refactor-b3ed
+[branch "feature/gds-module-1"]
+	vscode-merge-base = origin/feature/architecture-refactoring
+	remote = origin
+	merge = refs/heads/feature/gds-module-1
+[branch "feature/upsert-agents"]
+	vscode-merge-base = origin/devel
+[branch "feature/telegram-bot"]
+	vscode-merge-base = origin/devel
+	vscode-merge-base = origin/devel
+	remote = origin
+	merge = refs/heads/feature/telegram-bot
+[branch "feature/langgraph-migration"]
+	vscode-merge-base = origin/devel
+	vscode-merge-base = origin/devel
+[branch "feature/tests-implementation"]
+	vscode-merge-base = origin/devel
+	vscode-merge-base = origin/devel
+[branch "kaggle-import"]
+	vscode-merge-base = origin/devel
+	remote = origin
+	merge = refs/heads/kaggle-import
+[branch "feature/search-refactor"]
+	vscode-merge-base = origin/feature/gds-module-1
+	remote = origin
+	merge = refs/heads/feature/search-refactor

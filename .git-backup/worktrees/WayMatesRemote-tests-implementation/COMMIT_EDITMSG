@@ -1,0 +1,16 @@
+test(cold-start-v2): add Neo4j verification, T08 clarification, fix invariants
+
+Changes:
+- Add Neo4j verification to T03, T06, T07, T14 (saved tests)
+- Add T08: clarification flow test (flaky - Q90)
+- Fix Q86/Q87: AgentInvariantError in routers instead of defensive coding
+- Fix Q88: Cypher cleanup user_id → userId
+- Add LANGCHAIN_TIMEOUT_MS env var for configurable LLM timeout
+- Add Docker health check (--wait) in test:facade:setup
+- Update FAQ: close Q86-Q88, Q92-Q93; add Q89-Q91
+
+Test results: 78 passed, 7 failed (unrelated: AUTH schema, T08 flaky)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
