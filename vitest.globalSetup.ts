@@ -28,10 +28,10 @@ export async function setup(): Promise<void> {
   Object.assign(process.env, loadEnv("test", process.cwd(), ""));
 
   // Dynamic imports AFTER env is loaded
-  const { createDriver } = await import("./src/core/neo4j.js");
-  const { DatabaseFixture } = await import("./tests/core/helpers/database-fixture.js");
-  const { importStories } = await import("./tests/core/helpers/import-stories.js");
-  const { UserStories } = await import("./tests/core/helpers/user-stories.js");
+  const { createDriver } = await import("./private/core/neo4j.js");
+  const { DatabaseFixture } = await import("./private/tests/core/helpers/database-fixture.js");
+  const { importStories } = await import("./private/tests/core/helpers/import-stories.js");
+  const { UserStories } = await import("./private/tests/core/helpers/user-stories.js");
 
   const driver: Driver = createDriver();
   const dbFixture = new DatabaseFixture(driver);

@@ -1,4 +1,5 @@
 import { HumanMessage } from "@langchain/core/messages";
+import { contextClarificationPrompt, contextExtractionPrompt } from "@prompts/cold-start.js";
 // FROZEN: import { v7 as uuidv7 } from "uuid";
 
 import { AgentInvariantError } from "../../../errors.js";
@@ -9,7 +10,6 @@ import { hasValue } from "../../shared/state-utils.js";
 import { extractableContextSchema } from "../../shared-tools/extraction-models.js";
 import { getModel } from "../../shared-tools/models.js";
 // FROZEN: trailExtractionPrompt unused while trails disabled
-import { contextClarificationPrompt, contextExtractionPrompt } from "../prompts.js";
 import { NODE } from "../types.js";
 import { withLogging } from "../with-logging.js";
 

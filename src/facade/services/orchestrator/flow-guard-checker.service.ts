@@ -7,7 +7,7 @@ import type { ConverseResponse } from "./converse-response.js";
 import type { UserIntent } from "./intent-classifier.js";
 import type { Locale, UserId } from "../../../shared/schemas.js";
 import type { CoreClient } from "../../core-client.js";
-import type { GuardType } from "../nlp-formatter/prompts.js";
+import type { GuardType } from "@prompts/nlp-formatter.js";
 
 type UserState = { hasContext: boolean; hasGoal: boolean };
 

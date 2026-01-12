@@ -1,4 +1,5 @@
 import { HumanMessage } from "@langchain/core/messages";
+import { planningPrompt } from "@prompts/cold-start.js";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 
@@ -6,7 +7,6 @@ import { contextAgendaBaseSchema } from "../../../../shared/schemas.js";
 import { logger } from "../../../logger.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";
 import { getModel } from "../../shared-tools/models.js";
-import { planningPrompt } from "../prompts.js";
 import { PHASE } from "../state.js";
 
 import type { ColdStartStateType, ContextAgenda, ContextAgendaBase } from "../state.js";

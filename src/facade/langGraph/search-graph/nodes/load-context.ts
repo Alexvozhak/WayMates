@@ -1,3 +1,5 @@
+import { buildAdhocClarificationPrompt, buildAdhocExtractionPrompt } from "@prompts/search-graph/extraction.js";
+
 import {
   ADHOC_OPTIONAL_FIELDS,
   ADHOC_REQUIRED_FIELDS,
@@ -9,7 +11,6 @@ import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.j
 import { withReasoning } from "../../../utils/llm-schemas.js";
 import { hasValue } from "../../shared/state-utils.js";
 import { getModel } from "../../shared-tools/models.js";
-import { buildAdhocClarificationPrompt, buildAdhocExtractionPrompt } from "../prompts/extraction.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 

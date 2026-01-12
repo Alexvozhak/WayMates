@@ -1,3 +1,4 @@
+import { buildUserIntentPrompt } from "@prompts/search-graph/classification.js";
 import { z } from "zod";
 
 import {
@@ -5,7 +6,6 @@ import {
   targetContextSearchFilterNullableSchema,
 } from "../../../../shared/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
-import { buildUserIntentPrompt } from "../prompts/classification.js";
 import { SIMPLE_INTENTS } from "../state.js";
 
 import type { RouteFlags } from "../search-router.js";

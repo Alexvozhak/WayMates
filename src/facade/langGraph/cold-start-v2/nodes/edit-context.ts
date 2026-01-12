@@ -1,10 +1,10 @@
 import { HumanMessage } from "@langchain/core/messages";
+import { contextCorrectionPrompt } from "@prompts/cold-start.js";
 
 import { userContextSchema } from "../../../../shared/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { logger } from "../../../logger.js";
 import { contextCorrectionModel } from "../../shared-tools/extraction-models.js";
-import { contextCorrectionPrompt } from "../prompts.js";
 import { NODE, PHASE } from "../types.js";
 import { withLogging } from "../with-logging.js";
 

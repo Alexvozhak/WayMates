@@ -8,13 +8,13 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { createDriver } from "../src/core/neo4j.js";
-import { storyInputSchema } from "../src/shared/schemas.js";
-import { importStories } from "../tests/core/helpers/import-stories.js";
+import { createDriver } from "@core/neo4j.js";
+import { storyInputSchema } from "@shared/schemas.js";
+import { importStories } from "../private/tests/core/helpers/import-stories.js";
 
 import type { Driver } from "neo4j-driver";
 
-const FIXTURES_DIR = path.join(process.cwd(), "tests", "core", "fixtures");
+const FIXTURES_DIR = path.join(process.cwd(), "private", "tests", "core", "fixtures");
 
 /** Waymate user IDs that need Goals (same goal, haven't reached it yet) */
 const WAYMATE_USER_IDS = [

@@ -4,6 +4,14 @@
     // Раскладка файлов
     "rootDir": ".", // исходники проекта (включая scripts)
     "outDir": "dist", // каталог сборки (пока не используем)
+    "baseUrl": ".",
+    "paths": {
+      "@prompts/*": ["./private/prompts/*"],
+      "@core/*": ["./private/core/*"],
+      "@cypher/*": ["./private/cypher/*"],
+      "@database/*": ["./private/database/*"],
+      "@shared/*": ["./src/shared/*"]
+    },
 
     // Цель окружения Node (ESM)
     "module": "node20", // модульная система Node ESM
@@ -26,6 +34,6 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts", "database/**/*.ts", "generated/**/*.ts", "vitest.config.ts", "vitest.globalSetup.ts"],
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "generated/**/*.ts", "private/**/*.ts", "vitest.config.ts", "vitest.globalSetup.ts"],
   "exclude": ["src_old", "dist", "node_modules", "poc"]
 }
