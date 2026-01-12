@@ -1,4 +1,4 @@
-# FEAT-054: Deploy на Hetzner VPS
+# FEAT-054: Deploy на Timeweb Cloud VPS
 
 **Статус:** TODO
 **Приоритет:** P0
@@ -9,27 +9,32 @@
 
 ## Контекст решения
 
-### Почему Hetzner VPS?
+### Почему Timeweb Cloud?
 
 **Рассмотренные варианты:**
 
 | Платформа | Цена/мес | Setup | Вердикт |
 |-----------|----------|-------|---------|
-| Fly.io | ~$19-25 | 3.5ч, 5 fly.toml | ❌ Дорого для MVP, новая конфигурация |
+| Fly.io | ~$19-25 | 3.5ч, 5 fly.toml | ❌ Дорого, US-компания (санкции) |
+| Hetzner | €3-5 | 2-3ч | ❌ Не работает с РФ с 01.2024, блокировки РКН |
 | Railway | ~$40 | 30мин, UI only | ❌ Нет консольного доступа, дорого |
 | Render | ~$50 | 30мин, UI only | ❌ Нет консольного доступа, дорого |
-| **Hetzner VPS** | **€3-5** | **2-3ч**, готовый docker-compose | ✅ **Выбран** |
+| Aeza | ~€5 | 2ч | ⚠️ Смешанные отзывы о поддержке |
+| **Timeweb Cloud** | **~600₽ (~€5)** | **2-3ч**, готовый docker-compose | ✅ **Выбран** |
 
 **Ключевые факторы:**
-1. **5-8x дешевле** — €3-5/мес vs $19-25/мес (экономия ~$200/год)
-2. **Готовая инфраструктура** — docker-compose.yml уже есть
-3. **Полный контроль** — root доступ, любые инструменты
-4. **Portfolio value** — показывает DevOps навыки работодателю
-5. **Localhost latency** — сервисы общаются без network hop
+1. **Оплата из РФ** — карты российских банков, СБП, SberPay (без посредников)
+2. **SLA 99.98%** — лучший показатель среди кандидатов
+3. **10 дней бесплатный тест** — можно проверить перед оплатой
+4. **EU-локации** — Нидерланды (низкий latency до Telegram API)
+5. **Готовая инфраструктура** — docker-compose.yml уже есть
+6. **Полный контроль** — root доступ, KVM виртуализация
+7. **Почасовая тарификация** — гибкость для MVP
+8. **API + мобильное управление** — удобно для DevOps
 
 ### Что теряем vs Fly.io
 
-| Фича Fly.io | Решение на Hetzner |
+| Фича Fly.io | Решение на Timeweb |
 |-------------|-------------------|
 | Zero-downtime deploy | 10 сек downtime при редеплое (ок для MVP) |
 | Автоматический TLS | Certbot + nginx (30 мин настройки) |
@@ -52,7 +57,9 @@
 | OS + buffer | ~500MB | — |
 | **ИТОГО** | **~2.2GB** | **~3GB** |
 
-**Рекомендуемый инстанс:** Hetzner CX23 (4GB RAM, 2 vCPU, 40GB SSD) — €2.99/мес
+**Рекомендуемый инстанс:** Timeweb Cloud-4 (4GB RAM, 2 vCPU, 40GB NVMe) — ~800₽/мес (~€7)
+
+> **Примечание:** 10 дней бесплатного теста — можно проверить конфигурацию перед оплатой
 
 ---
 
@@ -60,8 +67,8 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Hetzner VPS (CX23)                       │
-│                   4GB RAM, 2 vCPU, 40GB SSD                  │
+│                 Timeweb Cloud VPS (Cloud-4)                  │
+│              4GB RAM, 2 vCPU, 40GB NVMe, Нидерланды          │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌─────────────────────────────────────────────────────┐    │
@@ -118,12 +125,14 @@
 - [ ] Создать `Makefile`
 - [ ] Проверить `docker-compose --profile prod up` локально
 
-### Фаза 2: Настройка Hetzner VPS (~30 мин)
+### Фаза 2: Настройка Timeweb Cloud VPS (~30 мин)
 
-- [ ] Создать VPS в [console.hetzner.cloud](https://console.hetzner.cloud)
-  - Location: Falkenstein (fsn1) или Nuremberg (nbg1)
+- [ ] Зарегистрироваться на [timeweb.cloud](https://timeweb.cloud)
+- [ ] Активировать 10-дневный бесплатный тест
+- [ ] Создать VPS в [console.timeweb.cloud](https://console.timeweb.cloud)
+  - Локация: **Нидерланды** (низкий latency до Telegram API)
   - Image: Ubuntu 24.04
-  - Type: CX23 (€2.99/мес)
+  - Тариф: Cloud-4 (4GB RAM, 2 vCPU, 40GB NVMe) — ~800₽/мес
   - SSH Key: добавить свой публичный ключ
 - [ ] Записать IP адрес
 - [ ] Настроить DNS (A record → IP)
@@ -517,9 +526,9 @@ Certbot автоматически обновляет сертификаты ч�
 | Риск | Митигация |
 |------|-----------|
 | OOM на 4GB RAM | Resource limits в docker-compose, мониторинг через htop |
-| Потеря данных | Ежедневный backup в R2, Hetzner snapshots |
+| Потеря данных | Ежедневный backup в R2, Timeweb snapshots |
 | Сертификат истёк | Certbot timer автообновляет, alert в Sentry при ошибках |
-| Сервер недоступен | Hetzner 99.9% SLA, Sentry downtime alerts |
+| Сервер недоступен | Timeweb 99.98% SLA, Sentry downtime alerts |
 | DDoS | Cloudflare перед nginx (опционально) |
 
 ---
@@ -528,12 +537,14 @@ Certbot автоматически обновляет сертификаты ч�
 
 | Компонент | Цена/мес |
 |-----------|----------|
-| Hetzner CX23 | €2.99 |
-| Hetzner backup (20%) | €0.60 |
-| Domain (годовая / 12) | ~€1 |
-| **ИТОГО** | **~€4.60/мес (~$5)** |
+| Timeweb Cloud-4 | ~800₽ (~€7) |
+| Timeweb backup | Включено |
+| Domain (годовая / 12) | ~100₽ (~€1) |
+| **ИТОГО** | **~900₽/мес (~€8)** |
 
-vs Fly.io: **$19-25/мес** → экономия **~$180/год**
+vs Fly.io: **$19-25/мес** → экономия **~$150/год**
+
+> **Бонус:** 10 дней бесплатного теста + почасовая тарификация для гибкости
 
 ---
 
@@ -542,7 +553,7 @@ vs Fly.io: **$19-25/мес** → экономия **~$180/год**
 | Фаза | Время |
 |------|-------|
 | Подготовка локально | 1 час |
-| Настройка Hetzner VPS | 30 мин |
+| Настройка Timeweb Cloud VPS | 30 мин |
 | Настройка сервера | 1 час |
 | TLS сертификат | 15 мин |
 | Деплой | 30 мин |
@@ -553,8 +564,22 @@ vs Fly.io: **$19-25/мес** → экономия **~$180/год**
 
 ## Ссылки
 
-- [Hetzner Cloud Console](https://console.hetzner.cloud)
-- [Hetzner Cloud Pricing](https://www.hetzner.com/cloud)
+- [Timeweb Cloud Console](https://console.timeweb.cloud)
+- [Timeweb Cloud Pricing](https://timeweb.cloud/vds-vps)
+- [Timeweb Cloud Servers Europe](https://timeweb.cloud/services/servers-europe)
 - [Certbot Instructions](https://certbot.eff.org/instructions)
 - [Docker Compose Deploy](https://docs.docker.com/compose/production/)
 - [MVP-RELEASE-PLAN.md](../../docs/mvp_final/MVP-RELEASE-PLAN.md) — Фаза 7
+
+---
+
+## Почему не Hetzner?
+
+> **Решение от января 2025:** Hetzner был первоначальным выбором, но отклонён по следующим причинам:
+>
+> 1. **Hetzner прекратил работу с РФ** — с 31.01.2024 не обслуживает российские аккаунты
+> 2. **Оплата невозможна** — карты РФ (Visa/MC/Мир) отклоняются биллингом
+> 3. **Блокировки РКН** — с июня 2025 DPI-фильтрация, HTTPS обрезается после 16КБ
+> 4. **Риск аккаунта** — даже через посредников есть риск закрытия при обнаружении
+>
+> Timeweb Cloud даёт ~90% качества Hetzner с нормальной оплатой из РФ.
