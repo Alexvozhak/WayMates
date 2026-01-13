@@ -25,6 +25,9 @@ jobs:
     steps:
       - name: "📥 Checkout code"
         uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.PRIVATE_REPO_KEY }}
 
       - name: "⚙️ Setup Node.js"
         uses: actions/setup-node@v4
@@ -57,6 +60,9 @@ jobs:
     steps:
       - name: "📥 Checkout code"
         uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.PRIVATE_REPO_KEY }}
 
       - name: "⚙️ Setup Node.js"
         uses: actions/setup-node@v4
