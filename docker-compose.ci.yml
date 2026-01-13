@@ -14,7 +14,7 @@ services:
       NEO4J_server_http_listen__address: 0.0.0.0:7474
     volumes:
       - neo4j_test_data:/data
-      - ./database/init.cypher:/tmp/init.cypher:ro
+      - ./private/database/init.cypher:/tmp/init.cypher:ro
     healthcheck:
       test:
         [
