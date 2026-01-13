@@ -1,4 +1,4 @@
-import type { UserContext, UserId } from "../../../shared/schemas.js";
+import type { UserContext, UserId } from "../../../../private/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
 export async function loadCurrentContext(coreClient: CoreClient, userId: UserId): Promise<UserContext | null> {

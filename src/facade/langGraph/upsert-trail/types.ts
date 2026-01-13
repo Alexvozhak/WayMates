@@ -1,1 +1,1 @@
-export type { UpsertTrailResponse } from "../../../shared/schemas.js";
+export type { UpsertTrailResponse } from "../../../../private/schemas.js";

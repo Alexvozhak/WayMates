@@ -1,7 +1,7 @@
 import { config } from "../env.js";
 
 import type { DictionaryCache } from "./dictionaries-cache.js";
-import type { DictionaryEntry, DictionaryType, SimpleDictionaryType } from "../../shared/schemas.js";
+import type { DictionaryEntry, DictionaryType, SimpleDictionaryType } from "../../../private/schemas.js";
 
 export const DICTIONARY_LABELS: Record<SimpleDictionaryType, string> = {
   skill: "SKILLS",

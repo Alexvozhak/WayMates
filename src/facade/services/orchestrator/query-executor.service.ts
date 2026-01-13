@@ -3,7 +3,7 @@ import { createNlpResponse } from "./converse-response.js";
 
 import type { ConverseResponse } from "./converse-response.js";
 import type { UserIntent } from "./intent-classifier.js";
-import type { Locale, UserId } from "../../../shared/schemas.js";
+import type { Locale, UserId } from "../../../../private/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 
 type QueryMessageType = "storyEmpty" | "goalNotSet" | "goalExists" | "deleted" | "nothingToDelete" | "trailDeleteUsage";

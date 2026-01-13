@@ -3,14 +3,14 @@ import {
   missingFieldSchema,
   // FROZEN: trailSchema unused while trails disabled
   userContextSchema,
-} from "../../../../shared/schemas.js";
+} from "../../../../../private/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { hasValue } from "../../shared/state-utils.js";
 import { NODE, PHASE } from "../types.js";
 import { withLogging } from "../with-logging.js";
 
-import type { ContextOptionalField, UserId } from "../../../../shared/schemas.js";
+import type { ContextOptionalField, UserId } from "../../../../../private/schemas.js";
 import type { Normalizer, RolePositionSuggestion } from "../../../services/normalizer.js";
 import type { ExtractableContext, ExtractableTrail } from "../../shared-tools/extraction-models.js";
 import type { ColdStartStateType, ContextAgenda, MissingField, Trail, UserContext } from "../state.js";

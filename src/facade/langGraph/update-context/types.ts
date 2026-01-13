@@ -1,1 +1,1 @@
-export type { UpdateContextResponse } from "../../../shared/schemas.js";
+export type { UpdateContextResponse } from "../../../../private/schemas.js";

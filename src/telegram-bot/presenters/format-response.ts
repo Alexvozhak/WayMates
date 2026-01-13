@@ -1,6 +1,6 @@
 import telegramifyMarkdown from "telegramify-markdown";
 
-import type { ConverseResponse } from "../../shared/schemas.js";
+import type { ConverseResponse } from "../../../private/schemas.js";
 
 // Only en/ru hardcoded, other locales fallback to en
 const CHART_LINK_LABEL: Record<"en" | "ru", string> = {

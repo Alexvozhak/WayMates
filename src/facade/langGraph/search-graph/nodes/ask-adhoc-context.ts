@@ -3,7 +3,7 @@ import { interrupt } from "@langchain/langgraph";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
-import type { AdhocContextBase } from "../../../../shared/schemas.js";
+import type { AdhocContextBase } from "../../../../../private/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 function formatContextStatus(ctx: AdhocContextBase): { filled: string[]; missing: string[] } {

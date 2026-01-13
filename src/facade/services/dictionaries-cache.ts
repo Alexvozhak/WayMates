@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { dictionaryEntrySchema } from "../../shared/schemas.js";
+import { dictionaryEntrySchema } from "../../../private/schemas.js";
 import { config } from "../env.js";
 
-import type { DictionaryEntry, DictionaryType, SimpleDictionaryType } from "../../shared/schemas.js";
+import type { DictionaryEntry, DictionaryType, SimpleDictionaryType } from "../../../private/schemas.js";
 import type { CoreClient } from "../core-client.js";
 import type { Redis } from "ioredis";
 

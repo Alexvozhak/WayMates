@@ -1,11 +1,11 @@
-import { mcpUpsertTrailParamsSchema } from "../../../shared/schemas.js";
+import { mcpUpsertTrailParamsSchema } from "../../../../private/schemas.js";
 import { PHASE } from "../../langGraph/upsert-trail/state.js";
 import { UpsertTrailGraph } from "../../langGraph/upsert-trail/upsert-trail-graph.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { Locale, McpUpsertTrailParams, UserId } from "../../../shared/schemas.js";
+import type { Locale, McpUpsertTrailParams, UserId } from "../../../../private/schemas.js";
 import type { UpsertTrailResponse } from "../../langGraph/upsert-trail/types.js";
 
 export class UpsertTrailTool extends BaseTool<McpUpsertTrailParams, UpsertTrailResponse> {

@@ -33,7 +33,7 @@ import { coldStartStateAnnotation } from "./state.js";
 import { coldStartPhaseSchema, coldStartStateSchema, NODE, PHASE } from "./types.js";
 
 import type { Locale, UserId } from "./state.js";
-import type { ColdStartResponse } from "../../../shared/schemas.js";
+import type { ColdStartResponse } from "../../../../private/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
 export { PHASE } from "./state.js";
 

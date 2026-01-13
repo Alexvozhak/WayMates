@@ -1,6 +1,6 @@
 import { v7 as uuidv7 } from "uuid";
 
-import { trailSchema } from "../../../../shared/schemas.js";
+import { trailSchema } from "../../../../../private/schemas.js";
 import { config } from "../../../env.js";
 import { extractMissingFields } from "../../cold-start-v2/nodes/validate-context.js";
 import { PHASE } from "../state.js";

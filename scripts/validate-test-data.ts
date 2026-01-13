@@ -5,9 +5,9 @@ import { readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { storyInputSchema } from "../src/shared/schemas.js";
+import { storyInputSchema } from "../private/schemas.js";
 
-import type { StoryInput } from "../src/shared/schemas.js";
+import type { StoryInput } from "../private/schemas.js";
 
 const TEST_DATA_DIR = "data/trails/users";
 const USER_FILE_PATTERN = /^u\d+\.json$/;

@@ -1,4 +1,4 @@
-import type { CandidateBase, Goal, UserContext } from "../../../shared/schemas.js";
+import type { CandidateBase, Goal, UserContext } from "../../../../private/schemas.js";
 
 /** Max skills to show in advisor context (prevents prompt bloat) */
 export const ADVISOR_SKILLS_LIMIT = 10;

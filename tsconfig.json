@@ -10,7 +10,8 @@
       "#core/*": ["./private/core/*"],
       "#cypher/*": ["./private/cypher/*"],
       "#database/*": ["./private/database/*"],
-      "#shared/*": ["./src/shared/*"]
+      "#shared/*": ["./src/shared/*"],
+      "#private/schemas.js": ["./private/schemas.ts"]
     },
 
     // Цель окружения Node (ESM)

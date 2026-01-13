@@ -1,9 +1,9 @@
-import { mcpGetGoalParamsSchema } from "../../../shared/schemas.js";
+import { mcpGetGoalParamsSchema } from "../../../../private/schemas.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { Goal, McpGetGoalParams, UserId } from "../../../shared/schemas.js";
+import type { Goal, McpGetGoalParams, UserId } from "../../../../private/schemas.js";
 
 export class GetGoalTool extends BaseTool<McpGetGoalParams, Goal | null> {
   constructor(deps: BaseToolDependencies) {

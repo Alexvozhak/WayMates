@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { planningPrompt } from "#prompts/cold-start.js";
 
-import { contextAgendaBaseSchema } from "../../../../shared/schemas.js";
+import { contextAgendaBaseSchema } from "../../../../../private/schemas.js";
 import { logger } from "../../../logger.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";
 import { getModel } from "../../shared-tools/models.js";
@@ -42,7 +42,7 @@ export async function planCareerNode(state: ColdStartStateType): Promise<Partial
 
   const prompt = planningPrompt(messages, cvText);
   const { reasoning, ...planOutput } = await planningModel.invoke([new HumanMessage(prompt)]);
-  logger.info({ reasoning }, "plan career reasoning");
+  logger.info({ reasoning, contextsCount: planOutput?.contexts?.length ?? 0 }, "plan career reasoning");
 
   if (!planOutput || planOutput.contexts.length === 0) {
     return {

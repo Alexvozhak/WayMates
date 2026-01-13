@@ -22,7 +22,7 @@ import { NODE, phaseSchema, upsertContextStateAnnotation } from "./state.js";
 
 import type { UpsertContextStateType } from "./state.js";
 import type { UpsertContextResponse } from "./types.js";
-import type { Locale, UserId } from "../../../shared/schemas.js";
+import type { Locale, UserId } from "../../../../private/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
 
 const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);

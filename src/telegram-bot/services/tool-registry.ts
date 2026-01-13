@@ -10,7 +10,7 @@ import {
   parseCvToTextResponseSchema,
   telegramLinkResponseSchema,
   telegramRegisterResponseSchema,
-} from "../../shared/schemas.js";
+} from "../../../private/schemas.js";
 
 import type { z } from "zod";
 

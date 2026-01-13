@@ -9,9 +9,9 @@ import {
   simpleDictionaryTypeSchema,
   trailSchema,
   userContextSchema,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
 
-import type { SimpleDictionaryType } from "../../../shared/schemas.js";
+import type { SimpleDictionaryType } from "../../../../private/schemas.js";
 
 export const coldStartPhaseSchema = z.enum([
   "story_gathering",

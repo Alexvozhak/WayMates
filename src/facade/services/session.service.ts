@@ -1,11 +1,11 @@
 import { v7 as uuidv7 } from "uuid";
 
-import { userIdSchema } from "../../shared/schemas.js";
+import { userIdSchema } from "../../../private/schemas.js";
 import { config } from "../env.js";
 import { SessionExpiredError } from "../errors.js";
 import { sessionIdSchema } from "../mcp-server/result.js";
 
-import type { UserId } from "../../shared/schemas.js";
+import type { UserId } from "../../../private/schemas.js";
 import type { SessionId } from "../mcp-server/result.js";
 import type { Redis } from "ioredis";
 

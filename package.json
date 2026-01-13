@@ -6,7 +6,8 @@
     "#cypher/*.js": "./private/cypher/*.ts",
     "#database/*.js": "./private/database/*.ts",
     "#prompts/*.js": "./private/prompts/*.ts",
-    "#shared/*.js": "./src/shared/*.ts"
+    "#shared/*.js": "./src/shared/*.ts",
+    "#private/schemas.js": "./private/schemas.ts"
   },
   "scripts": {
     "generate:user-keys": "tsx scripts/gen-user-keys.ts",

@@ -13,7 +13,7 @@ import type {
   Trail,
   UserContext,
   UserId,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
 import type { RolePositionSuggestion } from "../../services/normalizer.js";
 import type { ExtractableContext, ExtractableTrail } from "../shared-tools/extraction-models.js";
 import type { BaseMessage } from "@langchain/core/messages";
@@ -28,7 +28,7 @@ export type {
   Trail,
   UserContext,
   UserId,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
 
 export const coldStartStateAnnotation = Annotation.Root({
   messages: Annotation<BaseMessage[]>({ reducer: messagesStateReducer, default: () => [] }),

@@ -4,7 +4,7 @@ import { logger } from "../../logger.js";
 import { PHASE } from "./types.js";
 
 import type { ColdStartPhase, ColdStartState } from "./types.js";
-import type { ColdStartResponse } from "../../../shared/schemas.js";
+import type { ColdStartResponse } from "../../../../private/schemas.js";
 
 function filterNullValues(obj: Record<string, unknown> | null): Record<string, unknown> {
   if (!obj) return {};

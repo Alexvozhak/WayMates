@@ -1,1 +1,1 @@
-export type { UpsertContextResponse } from "../../../shared/schemas.js";
+export type { UpsertContextResponse } from "../../../../private/schemas.js";

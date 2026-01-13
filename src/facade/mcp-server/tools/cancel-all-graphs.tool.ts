@@ -1,10 +1,10 @@
-import { mcpCancelAllGraphsParamsSchema } from "../../../shared/schemas.js";
+import { mcpCancelAllGraphsParamsSchema } from "../../../../private/schemas.js";
 import { GraphManager } from "../../services/orchestrator/graph-manager.service.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { McpCancelAllGraphsParams, UserId } from "../../../shared/schemas.js";
+import type { McpCancelAllGraphsParams, UserId } from "../../../../private/schemas.js";
 
 export class CancelAllGraphsTool extends BaseTool<McpCancelAllGraphsParams, void> {
   private readonly graphManager: GraphManager;

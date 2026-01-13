@@ -5,12 +5,12 @@ import {
   newContextReasonSchema,
   requestIdSchema,
   sessionIdSchema,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { UserId, WaymateCandidate } from "../../../shared/schemas.js";
+import type { UserId, WaymateCandidate } from "../../../../private/schemas.js";
 
 /**
  * MCP params schema for search_user_careers tool.

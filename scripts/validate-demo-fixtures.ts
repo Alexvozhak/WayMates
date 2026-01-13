@@ -8,7 +8,7 @@ import path from "node:path";
 
 import { z } from "zod";
 
-import { trailSchema, userContextSchema } from "../src/shared/schemas.js";
+import { trailSchema, userContextSchema } from "../private/schemas.js";
 
 const FIXTURES_DIR = path.join(import.meta.dirname, "../tests/core/fixtures");
 const DEMO_PATTERN = /^Demo-.*\.json$/;

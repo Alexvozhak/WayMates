@@ -1,11 +1,17 @@
 import { v7 as uuidv7 } from "uuid";
 
-import { userIdSchema } from "../../shared/schemas.js";
+import { userIdSchema } from "../../../private/schemas.js";
 import { InvalidTokenError } from "../errors.js";
 
 import type { SessionService } from "./session.service.js";
 import type { UserService } from "./user.service.js";
-import type { SessionId, TelegramLinkResponse, TelegramRegisterResponse, Token, UserId } from "../../shared/schemas.js";
+import type {
+  SessionId,
+  TelegramLinkResponse,
+  TelegramRegisterResponse,
+  Token,
+  UserId,
+} from "../../../private/schemas.js";
 
 export type RegisterResult = {
   token: Token;

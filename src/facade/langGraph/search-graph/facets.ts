@@ -6,7 +6,7 @@ import type {
   FacetValue,
   MatchedCandidateWithPath,
   WaymateCandidate,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
 
 type CandidateWithContext = MatchedCandidateWithPath | WaymateCandidate;
 

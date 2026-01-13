@@ -17,7 +17,7 @@ import { DECISION_ROUTE_MAP, routeAfterDecision, routeAfterValidation, VALIDATIO
 
 import type { UpsertTrailStateType } from "./state.js";
 import type { UpsertTrailResponse } from "./types.js";
-import type { ContextId, Locale, UserId } from "../../../shared/schemas.js";
+import type { ContextId, Locale, UserId } from "../../../../private/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
 
 const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);

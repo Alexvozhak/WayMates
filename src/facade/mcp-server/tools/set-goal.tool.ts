@@ -1,10 +1,10 @@
-import { mcpSetGoalParamsSchema, targetContextSchema } from "../../../shared/schemas.js";
+import { mcpSetGoalParamsSchema, targetContextSchema } from "../../../../private/schemas.js";
 import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { Goal, McpSetGoalParams, UserId } from "../../../shared/schemas.js";
+import type { Goal, McpSetGoalParams, UserId } from "../../../../private/schemas.js";
 
 export class SetGoalTool extends BaseTool<McpSetGoalParams, Goal> {
   constructor(deps: BaseToolDependencies) {

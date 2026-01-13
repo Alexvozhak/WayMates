@@ -1,5 +1,5 @@
+import { adhocContextBase } from "../../../../../private/schemas.js";
 import { DTW_MIN_TRAJECTORY_LENGTH } from "../../../../config/scoring.js";
-import { adhocContextBase } from "../../../../shared/schemas.js";
 import { config } from "../../../env.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { pathfinderToChart, safeGenerateChart } from "../chart-utils.js";

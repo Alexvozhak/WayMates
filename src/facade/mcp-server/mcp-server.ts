@@ -18,7 +18,7 @@ import {
   mcpUpdateContextParamsSchema,
   mcpUpsertContextParamsSchema,
   mcpUpsertTrailParamsSchema,
-} from "../../shared/schemas.js";
+} from "../../../private/schemas.js";
 import { throwToolError } from "../errors.js";
 import { logger } from "../logger.js";
 

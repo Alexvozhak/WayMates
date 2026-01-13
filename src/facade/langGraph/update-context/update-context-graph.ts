@@ -17,7 +17,7 @@ import { DECISION_ROUTE_MAP, MERGE_ROUTE_MAP, routeAfterDecision, routeAfterMerg
 
 import type { UpdateContextStateType } from "./state.js";
 import type { UpdateContextResponse } from "./types.js";
-import type { Locale, UserContext, UserId } from "../../../shared/schemas.js";
+import type { Locale, UserContext, UserId } from "../../../../private/schemas.js";
 import type { GraphDeps } from "../shared/types.js";
 
 const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);

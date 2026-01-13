@@ -1,4 +1,4 @@
-import type { ErrorCode } from "../shared/schemas.js";
+import type { ErrorCode } from "../../private/schemas.js";
 
 export class BotError extends Error {
   public override readonly cause?: Error;

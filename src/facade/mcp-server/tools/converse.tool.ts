@@ -1,4 +1,4 @@
-import { mcpConverseParamsSchema } from "../../../shared/schemas.js";
+import { mcpConverseParamsSchema } from "../../../../private/schemas.js";
 import { createNlpResponse } from "../../services/orchestrator/converse-response.js";
 import { FlowGuardChecker } from "../../services/orchestrator/flow-guard-checker.service.js";
 import { GraphManager } from "../../services/orchestrator/graph-manager.service.js";
@@ -8,7 +8,7 @@ import { QueryExecutor } from "../../services/orchestrator/query-executor.servic
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { Locale, McpConverseParams, UserId } from "../../../shared/schemas.js";
+import type { Locale, McpConverseParams, UserId } from "../../../../private/schemas.js";
 import type { ConverseResponse } from "../../services/orchestrator/converse-response.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 

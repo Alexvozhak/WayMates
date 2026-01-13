@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { currentSearchParamsBaseSchema, targetSearchParamsBaseSchema } from "../../../shared/schemas.js";
+import { currentSearchParamsBaseSchema, targetSearchParamsBaseSchema } from "../../../../private/schemas.js";
 import { config } from "../../env.js";
 
-import type { ContextField } from "../../../shared/schemas.js";
+import type { ContextField } from "../../../../private/schemas.js";
 
 /**
  * Default excluded fields for career search (waymates, pathfinders).
@@ -15,6 +15,8 @@ export const DEFAULT_EXCLUDED_CONTEXT_FIELDS: ContextField[] = [
   "birthYear",
   "educationLevel",
   "languages",
+  "citizenships",
+  "countryCode",
 ];
 
 export const targetSearchParamsWithFeedbackSchema = targetSearchParamsBaseSchema.extend({
@@ -73,4 +75,4 @@ export function clampSearchParams(raw: { recencyThresholdMonths?: number | null 
   };
 }
 
-export type { SearchGraphResponse } from "../../../shared/schemas.js";
+export type { SearchGraphResponse } from "../../../../private/schemas.js";

@@ -1,7 +1,7 @@
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
-import type { Goal } from "../../../../shared/schemas.js";
+import type { Goal } from "../../../../../private/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 export const checkGoalNode = withLogging<SearchStateType>(NODE.check_goal, async (state, _config, { coreClient }) => {

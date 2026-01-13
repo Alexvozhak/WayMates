@@ -8,7 +8,7 @@ import { McpClient } from "./services/mcp-client.js";
 import { MessageBatcherService } from "./services/message-batcher.service.js";
 import { SessionService } from "./services/session-service.js";
 
-import type { ConverseResponse } from "../shared/schemas.js";
+import type { ConverseResponse } from "../../private/schemas.js";
 
 initSentry({ dsn: config.SENTRY_DSN, environment: config.NODE_ENV, service: "telegram" });
 

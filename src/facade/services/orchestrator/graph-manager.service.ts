@@ -10,7 +10,7 @@ import { NlpFormatter } from "../nlp-formatter/index.js";
 import { loadCurrentContext } from "./context-utils.js";
 import { type GraphIntent, type UserIntent, graphIntentSchema } from "./intent-classifier.js";
 
-import type { AnyGraphResponse, ConverseResponse, Locale, UserId } from "../../../shared/schemas.js";
+import type { AnyGraphResponse, ConverseResponse, Locale, UserId } from "../../../../private/schemas.js";
 import type { GraphDeps } from "../../langGraph/shared/types.js";
 
 const GRAPH_TYPES = ["cold_start", "upsert_context", "upsert_trail", "update_context", "search"] as const;

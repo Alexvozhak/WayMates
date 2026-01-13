@@ -1,13 +1,13 @@
 import OpenAI from "openai";
 
-import { mcpParseCvToTextParamsSchema } from "../../../shared/schemas.js";
+import { mcpParseCvToTextParamsSchema } from "../../../../private/schemas.js";
 import { config } from "../../env.js";
 import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { McpParseCvToTextParams, ParseCvToTextResponse, UserId } from "../../../shared/schemas.js";
+import type { McpParseCvToTextParams, ParseCvToTextResponse, UserId } from "../../../../private/schemas.js";
 
 export class ParseCvToTextTool extends BaseTool<McpParseCvToTextParams, ParseCvToTextResponse> {
   private readonly maxFileSizeBytes = config.CV_PARSER_MAX_FILE_SIZE_MB * 1024 * 1024;

@@ -5,7 +5,7 @@ import { captureException } from "../../../shared/sentry.js";
 import { FacadeError } from "../../errors.js";
 import { err, ok } from "../result.js";
 
-import type { SessionId, UserId } from "../../../shared/schemas.js";
+import type { SessionId, UserId } from "../../../../private/schemas.js";
 import type { CoreClient } from "../../core-client.js";
 import type { GraphDeps } from "../../langGraph/shared/types.js";
 import type { CheckpointService } from "../../services/checkpoint.service.js";

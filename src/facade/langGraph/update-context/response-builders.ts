@@ -3,7 +3,7 @@ import { InvalidStateError } from "../../errors.js";
 import { PHASE } from "./state.js";
 
 import type { UpdateContextPhase, UpdateContextStateType } from "./state.js";
-import type { UpdateContextResponse } from "../../../shared/schemas.js";
+import type { UpdateContextResponse } from "../../../../private/schemas.js";
 
 type ResponseBuilder = (state: UpdateContextStateType) => UpdateContextResponse;
 

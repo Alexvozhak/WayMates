@@ -1,10 +1,10 @@
-import { mcpColdStartParamsSchema } from "../../../shared/schemas.js";
+import { mcpColdStartParamsSchema } from "../../../../private/schemas.js";
 import { ColdStartGraph } from "../../langGraph/cold-start-v2/cold-start-graph.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { ColdStartResponse, Locale, McpColdStartParams, UserId } from "../../../shared/schemas.js";
+import type { ColdStartResponse, Locale, McpColdStartParams, UserId } from "../../../../private/schemas.js";
 
 export class ColdStartTool extends BaseTool<McpColdStartParams, ColdStartResponse> {
   constructor(deps: BaseToolDependencies) {

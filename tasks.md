@@ -453,7 +453,7 @@ createAgent
 
 1.  [text](src/facade/mcp-server/tools/cold-start.tool.ts) как будто мы не агент должен писать в бд, а trpc ручка - то есть агент возвращает готовую к записе storyinput (только сформировывает), подумай над текущим вариантом и предлагаемым - что чище, правильней, логичней, дай рекомендации, что бы сделали best practice. createSaveCareerDataTool кажется лишним и мне чёт не очень нравиться что мы ручку mcp пробрасываем в агента "await deps.coreClient.client.story.upsertStory.mutate"
 
-2.                      return state as unknown as AgentState; - давай через zod parse
+2.                       return state as unknown as AgentState; - давай через zod parse
 
 3 [](src/facade/langchain/career-collector-agent.ts) строчки 449-474 повторяются
 
@@ -2079,3 +2079,23 @@ TODO (осталось 12 багов)
 P0: #5.1, #6, #11, #12
 P1: #4, #5, #7
 P2: #2, #3, #8-10
+
+1. /home/alex/projects/WayMatesRemote/src/chart нужно code-review: дублирование, рудименты, фиктивность, нарушение ЗО, SRP, single truth, глупость, overengenering, магические числа, места требующие актуализации нейминга или расположения
+2. /home/alex/projects/WayMatesRemote/src/config рудимент? где то используется? удалить?
+3. /home/alex/projects/WayMatesRemote/tasks/features избавиться от лишней вложенности
+4. просмотреть на актуальность [text](.dockerignore) и все файлы в корне
+5. [](PLAN-REPO-SPLIT.md) перенести к остальным фича и назвать консистентно /home/alex/projects/WayMatesRemote/tasks/features
+6. ворнинги линтера со мной согласовать и исправить
+7. перевести всю публичную часть (всё что не в /home/alex/projects/WayMatesRemote/private) на русский в тч комментарии
+8. /home/alex/projects/WayMatesRemote/poc удалить не актуальные, согласовать оставляемые
+
+1) Code-review src/chart
+   1.1-1.4 всё делай
+   2 ок
+   3 я бы убрал папку features
+   4 sessions в tasks папку перенести
+   5 ок
+   6 запусти lint:fix. С отальными что делать?
+   7 включает всё
+   8 нужно твоё мнение, кандидаты под удаление выявить
+   Ответы: 1 sentry настроен. 2 r2 работает. что за тесты хз, поясни. 3 хз посмотри на актуальность и ценность. 4 хз

@@ -5,7 +5,7 @@ import { buildGuardTranslationPrompt, GRAPH_PROMPT_BUILDERS, GUARD_TEMPLATES } f
 import { logger } from "../../logger.js";
 
 import type { GraphType, GuardType } from "#prompts/nlp-formatter.js";
-import type { AnyGraphResponse, Locale } from "../../../shared/schemas.js";
+import type { AnyGraphResponse, Locale } from "../../../../private/schemas.js";
 import type { ChatOpenAI } from "@langchain/openai";
 
 const nlpResponseSchema = z.object({

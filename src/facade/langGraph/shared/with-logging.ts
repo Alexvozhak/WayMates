@@ -3,7 +3,7 @@ import { AgentInvariantError } from "../../errors.js";
 import { hasConfigDeps } from "./types.js";
 
 import type { GraphDeps } from "./types.js";
-import type { UserId } from "../../../shared/schemas.js";
+import type { UserId } from "../../../../private/schemas.js";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 
 type StateWithUserId = { userId: UserId };

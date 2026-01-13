@@ -1,8 +1,8 @@
-import type { ConverseResponse, SessionId, UserId } from "../shared/schemas.js";
 import type { SystemMessagePresenter } from "./presenters/system-message-presenter.js";
 import type { McpClient } from "./services/mcp-client.js";
 import type { MessageBatcherService } from "./services/message-batcher.service.js";
 import type { SessionService } from "./services/session-service.js";
+import type { ConverseResponse, SessionId, UserId } from "../../private/schemas.js";
 import type { HydrateFlavor } from "@grammyjs/hydrate";
 import type { I18nFlavor } from "@grammyjs/i18n";
 import type { Context } from "grammy";

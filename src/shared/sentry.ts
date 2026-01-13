@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/node";
 
 import type { NodeEnv } from "./env/index.js";
 import type { ServiceName } from "./logger.js";
-import type { SessionId, UserId } from "./schemas.js";
+import type { SessionId, UserId } from "../../private/schemas.js";
 
 export type SentryConfig = {
   dsn: string | null;

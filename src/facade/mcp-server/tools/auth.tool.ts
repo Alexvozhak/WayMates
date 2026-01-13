@@ -1,7 +1,7 @@
 import { FacadeError } from "../../errors.js";
 import { err, ok } from "../result.js";
 
-import type { McpAuthParams } from "../../../shared/schemas.js";
+import type { McpAuthParams } from "../../../../private/schemas.js";
 import type { AuthenticateResult, AuthService, RegisterResult } from "../../services/auth.service.js";
 import type { ErrorResponse, Result } from "../result.js";
 import type { Logger } from "pino";

@@ -6,8 +6,9 @@ import {
   contextFieldSchema,
   isClosedDictionary,
   newContextReasonSchema,
-} from "../../shared/schemas.js";
+} from "../../../private/schemas.js";
 import { getModel } from "../langGraph/shared-tools/models.js";
+import { logger } from "../logger.js";
 import { withReasoning } from "../utils/llm-schemas.js";
 
 import type { DictionaryCache } from "./dictionaries-cache.js";
@@ -20,7 +21,7 @@ import type {
   TargetContext,
   UserContext,
   UserId,
-} from "../../shared/schemas.js";
+} from "../../../private/schemas.js";
 import type { CoreClient } from "../core-client.js";
 import type { BaseMessageLike } from "@langchain/core/messages";
 import type { Runnable } from "@langchain/core/runnables";
@@ -30,7 +31,7 @@ const fuzzyMatchBaseSchema = z.object({
   suggestions: z.array(z.string()).max(3).describe("Up to 3 closest matches from dictionary, ordered by relevance"),
 });
 
-const fuzzyMatchResultSchema = withReasoning(fuzzyMatchBaseSchema, "Explain matching decision");
+const fuzzyMatchResultSchema = withReasoning(fuzzyMatchBaseSchema, "Step-by-step semantic analysis");
 export type FuzzyMatchResult = z.infer<typeof fuzzyMatchResultSchema>;
 
 // === Normalization Result Types ===
@@ -348,12 +349,27 @@ Dictionary: ${dictEntries}
 Task: Find the canonical name for "${value}" from the dictionary above.
 ${typeHint}
 Rules:
-- Handle typos, translations, and case variations
+- Handle typos, translations, synonyms, and case variations
 - Return up to 3 closest matches in "suggestions" ordered by relevance
-- Set canonical to the best match, or null if similarity < 0.7
-- ONLY use values from provided dictionary`;
+- Set canonical to the best SEMANTIC match, or null if no match
+- ONLY use values from provided dictionary
+
+In reasoning: analyze "${value}" ONLY against the ${type} dictionary above.
+For each candidate: semantic relationship + match confidence.
+If canonical=null: what synonym would enable the match?`;
 
     const result = await this.fuzzyModel.invoke([new HumanMessage(prompt)]);
+    logger.info(
+      {
+        value,
+        type,
+        dictEntries,
+        reasoning: result.reasoning,
+        canonical: result.canonical,
+        suggestions: result.suggestions,
+      },
+      "fuzzy match result",
+    );
 
     const validSuggestions = result.suggestions
       .map((s) => dict.get(s.toLowerCase())?.canonicalName)
@@ -369,8 +385,8 @@ Rules:
     switch (type) {
       case "position": {
         return `
-IMPORTANT: "position" = SENIORITY LEVEL (career stage), NOT job title.
-Job titles without explicit seniority should map to appropriate level based on context.`;
+IMPORTANT: "position" = CAREER PROGRESSION LEVEL (career stage), NOT job title.
+Consider what career stage the input term implies and find semantic equivalent in dictionary.`;
       }
       case "role": {
         return `

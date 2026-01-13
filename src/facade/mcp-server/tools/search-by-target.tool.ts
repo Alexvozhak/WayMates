@@ -1,10 +1,10 @@
-import { mcpSearchByTargetParamsSchema, targetContextSchema } from "../../../shared/schemas.js";
+import { mcpSearchByTargetParamsSchema, targetContextSchema } from "../../../../private/schemas.js";
 import { ValidationError } from "../../errors.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { MatchedCandidateWithPath, McpSearchByTargetParams, UserId } from "../../../shared/schemas.js";
+import type { MatchedCandidateWithPath, McpSearchByTargetParams, UserId } from "../../../../private/schemas.js";
 
 export class SearchByTargetTool extends BaseTool<McpSearchByTargetParams, MatchedCandidateWithPath[]> {
   constructor(deps: BaseToolDependencies) {

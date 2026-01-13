@@ -1,4 +1,4 @@
-import { trailSchema, userContextSchemaBase } from "../../../shared/schemas.js";
+import { trailSchema, userContextSchemaBase } from "../../../../private/schemas.js";
 import { makeNullable, withReasoning } from "../../utils/llm-schemas.js";
 
 import { getModel } from "./models.js";

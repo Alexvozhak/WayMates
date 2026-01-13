@@ -1,7 +1,7 @@
 import pino from "pino";
 
 import type { LogLevel, NodeEnv } from "./env/index.js";
-import type { SessionId, UserId } from "./schemas.js";
+import type { SessionId, UserId } from "../../private/schemas.js";
 import type { Logger } from "pino";
 
 export type ServiceName = "telegram" | "facade" | "core";

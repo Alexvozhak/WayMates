@@ -5,7 +5,7 @@ import {
   ADHOC_REQUIRED_FIELDS,
   adhocContextBase,
   adhocContextRequiredSchema,
-} from "../../../../shared/schemas.js";
+} from "../../../../../private/schemas.js";
 import { logger } from "../../../logger.js";
 import { GRAPH_INTENT } from "../../../services/orchestrator/intent-classifier.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";
@@ -19,7 +19,7 @@ import type {
   AdhocMissingField,
   AdhocOptionalField,
   AdhocRequiredField,
-} from "../../../../shared/schemas.js";
+} from "../../../../../private/schemas.js";
 import type { SearchPhase, SearchStateType } from "../state.js";
 
 const extractor = getModel("extraction").withStructuredOutput(

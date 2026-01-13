@@ -7,7 +7,7 @@ import { v7 as uuidv7 } from "uuid";
 import { withDriver } from "../src/core/neo4j.js";
 import { DatabaseContext } from "../src/core/database-context.js";
 import { StoryManager } from "../src/core/story-manager.js";
-import type { StoryInput, UserContext } from "../src/shared/schemas.js";
+import type { StoryInput, UserContext } from "../private/schemas.js";
 
 // ==========================================
 // === TYPE DEFINITIONS ===

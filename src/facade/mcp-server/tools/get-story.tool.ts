@@ -1,9 +1,9 @@
-import { mcpGetStoryParamsSchema } from "../../../shared/schemas.js";
+import { mcpGetStoryParamsSchema } from "../../../../private/schemas.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { McpGetStoryParams, StoryInput, UserId } from "../../../shared/schemas.js";
+import type { McpGetStoryParams, StoryInput, UserId } from "../../../../private/schemas.js";
 
 export class GetStoryTool extends BaseTool<McpGetStoryParams, StoryInput> {
   constructor(deps: BaseToolDependencies) {

@@ -1,4 +1,4 @@
-import { GOAL_OPTIONAL_FIELDS } from "../../../shared/schemas.js";
+import { GOAL_OPTIONAL_FIELDS } from "../../../../private/schemas.js";
 import { InvalidStateError } from "../../errors.js";
 import { hasValue } from "../shared/state-utils.js";
 
@@ -6,7 +6,7 @@ import { PHASE } from "./state.js";
 
 import type { SearchPhase, SearchStateType } from "./state.js";
 import type { SearchGraphResponse } from "./types.js";
-import type { GoalOptionalField, TargetContext } from "../../../shared/schemas.js";
+import type { GoalOptionalField, TargetContext } from "../../../../private/schemas.js";
 
 type ResponseBuilder = (state: SearchStateType) => SearchGraphResponse;
 

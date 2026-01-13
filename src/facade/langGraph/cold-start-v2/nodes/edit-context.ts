@@ -2,7 +2,7 @@ import { HumanMessage } from "@langchain/core/messages";
 
 import { contextCorrectionPrompt } from "#prompts/cold-start.js";
 
-import { userContextSchema } from "../../../../shared/schemas.js";
+import { userContextSchema } from "../../../../../private/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { logger } from "../../../logger.js";
 import { contextCorrectionModel } from "../../shared-tools/extraction-models.js";

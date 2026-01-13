@@ -1,7 +1,6 @@
 import { CHARTABLE_FIELDS, extractGoalValues, generateTrajectoryChart, toChartLocale } from "../../../chart/index.js";
 import { config } from "../../env.js";
 
-import type { CandidateType, ChartableField, ChartCandidate, GenerateChartInput } from "../../../chart/index.js";
 import type {
   AdhocContextBase,
   Goal,
@@ -10,7 +9,8 @@ import type {
   PathfinderCandidate,
   UserContext,
   WaymateCandidate,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
+import type { CandidateType, ChartableField, ChartCandidate, GenerateChartInput } from "../../../chart/index.js";
 
 /** Approximate milliseconds in a month (30 days) for timeSinceMatchedMonths calculation */
 const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;

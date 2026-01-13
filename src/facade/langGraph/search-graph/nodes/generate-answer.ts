@@ -1,12 +1,12 @@
 import { ADVISOR_SYSTEM_PROMPT } from "#prompts/search-graph/advisor.js";
 
-import { simpleDictionaryTypeSchema } from "../../../../shared/schemas.js";
+import { simpleDictionaryTypeSchema } from "../../../../../private/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { ADVISOR_SKILLS_LIMIT, AdvisorContextBuilder } from "../advisor-context-builder.js";
 import { NODE, PHASE } from "../state.js";
 import { withLogging } from "../with-logging.js";
 
-import type { CandidateBase } from "../../../../shared/schemas.js";
+import type { CandidateBase } from "../../../../../private/schemas.js";
 import type { SearchStateType } from "../state.js";
 
 const ALL_DICTIONARY_TYPES = simpleDictionaryTypeSchema.options;

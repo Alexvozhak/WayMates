@@ -1,4 +1,4 @@
-import { mcpUpdateContextParamsSchema } from "../../../shared/schemas.js";
+import { mcpUpdateContextParamsSchema } from "../../../../private/schemas.js";
 import { PHASE } from "../../langGraph/update-context/state.js";
 import { UpdateContextGraph } from "../../langGraph/update-context/update-context-graph.js";
 
@@ -11,7 +11,7 @@ import type {
   UpdateContextResponse,
   UserContext,
   UserId,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
 
 export class UpdateContextTool extends BaseTool<McpUpdateContextParams, UpdateContextResponse> {
   constructor(deps: BaseToolDependencies) {

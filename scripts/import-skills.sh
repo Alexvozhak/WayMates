@@ -24,4 +24,4 @@ source ".env.$ENV"
 export ENV NEO4J_URI NEO4J_USER NEO4J_PASSWORD
 
 # Run import
-npx tsx database/import-skills.ts
+npx tsx private/database/import-skills.ts

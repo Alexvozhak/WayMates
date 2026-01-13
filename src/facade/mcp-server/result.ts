@@ -1,6 +1,6 @@
-import { sessionIdSchema as sharedSessionIdSchema } from "../../shared/schemas.js";
+import { sessionIdSchema as sharedSessionIdSchema } from "../../../private/schemas.js";
 
-import type { ErrorResponse as SharedErrorResponse, Result as SharedResult } from "../../shared/schemas.js";
+import type { ErrorResponse as SharedErrorResponse, Result as SharedResult } from "../../../private/schemas.js";
 import type { z } from "zod";
 
 // Backward compatibility aliases (will be removed in Phase 2)
@@ -18,4 +18,4 @@ export function err<E>(error: E): Result<never, E> {
   return { ok: false, error };
 }
 
-export { errorCodeSchema, errorResponseSchema } from "../../shared/schemas.js";
+export { errorCodeSchema, errorResponseSchema } from "../../../private/schemas.js";

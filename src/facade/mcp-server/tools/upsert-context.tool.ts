@@ -1,11 +1,11 @@
-import { mcpUpsertContextParamsSchema } from "../../../shared/schemas.js";
+import { mcpUpsertContextParamsSchema } from "../../../../private/schemas.js";
 import { PHASE } from "../../langGraph/upsert-context/state.js";
 import { UpsertContextGraph } from "../../langGraph/upsert-context/upsert-context-graph.js";
 
 import { BaseTool } from "./base-tool.js";
 
 import type { BaseToolDependencies } from "./base-tool.js";
-import type { Locale, McpUpsertContextParams, UserId } from "../../../shared/schemas.js";
+import type { Locale, McpUpsertContextParams, UserId } from "../../../../private/schemas.js";
 import type { UpsertContextResponse } from "../../langGraph/upsert-context/types.js";
 
 export class UpsertContextTool extends BaseTool<McpUpsertContextParams, UpsertContextResponse> {

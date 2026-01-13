@@ -8,7 +8,7 @@ import { parseUserIntent } from "./parse-intent.js";
 
 import type { RouteFlags } from "../search-router.js";
 import type { ParsedIntent } from "./parse-intent.js";
-import type { TargetContext } from "../../../../shared/schemas.js";
+import type { TargetContext } from "../../../../../private/schemas.js";
 import type { Normalizer } from "../../../services/normalizer.js";
 import type { SearchStateType } from "../state.js";
 import type { TargetSearchParamsWithFeedback } from "../types.js";

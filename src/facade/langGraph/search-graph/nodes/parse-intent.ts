@@ -5,7 +5,7 @@ import { buildUserIntentPrompt } from "#prompts/search-graph/classification.js";
 import {
   currentContextSearchFilterNullableSchema,
   targetContextSearchFilterNullableSchema,
-} from "../../../../shared/schemas.js";
+} from "../../../../../private/schemas.js";
 import { getModel } from "../../shared-tools/models.js";
 import { SIMPLE_INTENTS } from "../state.js";
 

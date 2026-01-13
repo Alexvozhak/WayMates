@@ -3,7 +3,7 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 import { PHASE } from "../shared/phases.js";
 import { lastValue } from "../shared/state-utils.js";
 
-import type { Locale, MissingField, UserContext, UserId } from "../../../shared/schemas.js";
+import type { Locale, MissingField, UserContext, UserId } from "../../../../private/schemas.js";
 import type { ParsedDecision } from "../shared/decision.js";
 import type { SimpleConfirmationPhase } from "../shared/phases.js";
 import type { ExtractableContext } from "../shared-tools/extraction-models.js";

@@ -2,7 +2,7 @@ import { HumanMessage } from "@langchain/core/messages";
 
 import { buildGoalClarificationPrompt, buildGoalExtractionPrompt } from "#prompts/search-graph/extraction.js";
 
-import { targetContextSchema } from "../../../../shared/schemas.js";
+import { targetContextSchema } from "../../../../../private/schemas.js";
 import { AgentInvariantError } from "../../../errors.js";
 import { logger } from "../../../logger.js";
 import { withReasoning } from "../../../utils/llm-schemas.js";

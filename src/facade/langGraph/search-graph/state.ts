@@ -17,7 +17,7 @@ import type {
   UserContext,
   UserId,
   WaymateCandidate,
-} from "../../../shared/schemas.js";
+} from "../../../../private/schemas.js";
 import type { UserIntent } from "../../services/orchestrator/intent-classifier.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
