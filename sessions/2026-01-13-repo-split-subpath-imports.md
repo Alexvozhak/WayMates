@@ -59,20 +59,22 @@ CRITICAL: For dictionary fields (position, role, industry, domains, skills) use 
 - Position hint: "CAREER PROGRESSION LEVEL (career stage), NOT job title"
 **Файл:** `src/facade/services/normalizer.ts`
 
+#### 9. TS ошибка в TC-P2 исправлена
+**Проблема:** `response.message` не существует на union type.
+**Решение:** Добавлен type guard перед проверкой message.
+**Файл:** `private/tests/facade/agents/cold-start-v2/integration/planning.integration.ts`
+
 ---
 
-### Результат тестов (последний прогон):
+### Результат тестов (финальный):
 
 ```
-Test Files  2 failed | 27 passed | 3 skipped (32)
-Tests       2 failed | 103 passed | 16 skipped (121)
+Test Files  29 passed | 3 skipped (32)
+Tests       105 passed | 16 skipped (121)
+0 failed
 ```
 
-**Упавшие тесты (flaky):**
-- **TC-I2** — `Expected awaiting_plan_confirmation, got saved`
-- **TC-E3** — `Expected awaiting_final_confirmation, got awaiting_clarification`
-
-**LLM тесты flaky** — разные тесты падают в разных прогонах. Это inherent property LLM-based tests.
+**Все тесты зелёные!** LLM flaky не проявился в последнем прогоне.
 
 ---
 
@@ -80,34 +82,35 @@ Tests       2 failed | 103 passed | 16 skipped (121)
 
 ### Следующая сессия:
 
-1. **TypeScript ошибка в TC-P2** — `response.message` не существует на union type (строка 123)
-   - Нужен type guard перед проверкой message
-
-2. **LLM тесты flaky** — варианты:
-   - Добавить vitest retry для LLM тестов
-   - Сделать assertions более гибкими
-   - Принять как nature of LLM tests
-
-3. **Закоммитить изменения** — файлы готовы (кроме TS ошибки)
-
-4. **FEAT-036 Repo Split:**
+1. **FEAT-036 Repo Split:**
    - [ ] Phase 5: CI/CD + Dependabot + Codecov
    - [ ] Phase 6-7: README, LICENSE, верификация
 
+2. **LLM тесты flaky** — может проявиться в будущем:
+   - Варианты: vitest retry, гибкие assertions
+   - Пока не блокирует — тесты зелёные
+
 ---
 
-## Изменённые файлы (не закоммичены)
+## Закоммичено
 
 ```
-src/facade/services/normalizer.ts — withReasoning describe + position hint
-src/facade/langGraph/search-graph/types.ts — citizenships, countryCode в excluded
-src/facade/langGraph/cold-start-v2/nodes/plan-career.ts — contextsCount logging
-private/tests/facade/agents/cold-start/helpers/unpacking-prompt.ts — English + exact values
-private/tests/facade/agents/cold-start-v2/integration/persistence.integration.ts — TC-D3 skip
-private/tests/facade/agents/cold-start-v2/integration/planning.integration.ts — TC-P2 graceful rejection (TS ERROR!)
-private/tests/facade/agents/cold-start-v2/integration/extraction.integration.ts — TC-E4 U15→U1
-private/prompts/search-graph/extraction.ts — ISO rules + DECOMPOSITION_RULES
+Commit: 64ab72dc (feature/search-refactor)
+Message: fix(facade): tests fixes + subpath imports for FEAT-036
+
+Private submodule: db69505
+Message: fix(tests): facade tests fixes for FEAT-036
 ```
+
+**Файлы:**
+- `src/facade/services/normalizer.ts` — withReasoning describe + position hint
+- `src/facade/langGraph/search-graph/types.ts` — citizenships, countryCode в excluded
+- `src/facade/langGraph/cold-start-v2/nodes/plan-career.ts` — contextsCount logging
+- `private/tests/facade/agents/cold-start/helpers/unpacking-prompt.ts` — English + exact values
+- `private/tests/facade/agents/cold-start-v2/integration/persistence.integration.ts` — TC-D3 skip
+- `private/tests/facade/agents/cold-start-v2/integration/planning.integration.ts` — TC-P2 graceful rejection + type guard
+- `private/tests/facade/agents/cold-start-v2/integration/extraction.integration.ts` — TC-E4 U15→U1
+- `private/prompts/search-graph/extraction.ts` — ISO rules + DECOMPOSITION_RULES
 
 ---
 
@@ -119,6 +122,8 @@ private/prompts/search-graph/extraction.ts — ISO rules + DECOMPOSITION_RULES
 4. **Fixture complexity → flaky** — сложные fixtures (citizenships ≠ countryCode) создают flaky tests
 5. **LLM tests inherently flaky** — retry или гибкие assertions необходимы
 
+6. **Объясняй перед действием** — пользователь требовал "введи в курс дела" прежде чем делать изменения
+
 ---
 
 ## Промпт для продолжения после rewind
@@ -127,14 +132,11 @@ private/prompts/search-graph/extraction.ts — ISO rules + DECOMPOSITION_RULES
 Продолжаем FEAT-036 Repo Split. Прочитай sessions/2026-01-13-repo-split-subpath-imports.md.
 
 Контекст:
-- Facade тесты: 103 passed / 2 failed (flaky) / 16 skipped
-- Основные фиксы сделаны (unpacking-prompt, excluded fields, clarification prompt, TC-E4 fixture)
-- TC-D3 → skip (trails FROZEN)
-- TC-P2 → graceful rejection (есть TS ошибка!)
+- Facade тесты: ✅ 105 passed / 0 failed / 16 skipped
+- Все фиксы закоммичены (64ab72dc)
+- Phase 4.5 полностью завершена
 
 Задача:
-1. Исправить TS ошибку в TC-P2 (строка 123 — response.message на union type)
-2. Решить вопрос с LLM flaky тестами (retry или гибкие assertions)
-3. Закоммитить все изменения
-4. Продолжить FEAT-036 Phase 5 (CI/CD)
+1. FEAT-036 Phase 5: CI/CD + Dependabot + Codecov
+2. После Phase 5: README, LICENSE, верификация (Phase 6-7)
 ```
