@@ -52,11 +52,11 @@ allowed-tools:
 Прочитать ПОЛНОСТЬЮ (!), изучить, правила - соблюдать, знания - учитывать:
 
 - /home/alex/projects/WayMatesRemote/.claude/context/guidelines.md
-- /home/alex/projects/WayMatesRemote/mvp-test-final/BUSINESS-LOGIC-MVP.md
-- /home/alex/projects/WayMatesRemote/mvp-test-final/KNOWLEDGE-BASE.md
-- /home/alex/projects/WayMatesRemote/mvp-test-final/tests_report.md
+- /home/alex/projects/WayMatesRemote/private/docs/mvp-test-final/BUSINESS-LOGIC-MVP.md
+- /home/alex/projects/WayMatesRemote/private/docs/mvp-test-final/KNOWLEDGE-BASE.md
+- /home/alex/projects/WayMatesRemote/private/docs/mvp-test-final/tests_report.md
 - /home/alex/projects/WayMatesRemote/eslint.config.mjs
-- /home/alex/projects/WayMatesRemote/mvp-test-final/latest-news.md
+- /home/alex/projects/WayMatesRemote/private/docs/mvp-test-final/latest-news.md
 - /home/alex/projects/WayMatesRemote/package.json
 
 **Куда обращаться:**
@@ -218,7 +218,7 @@ OPENROUTER_API_KEY=<key> npx tsx poc/mcp-chat.ts --batch tests/e2e/batches/<name
 
 ## Сессии
 
-Вести лог в `mvp-test-final/sessions/YYYY-MM-DD-topic.md`:
+Вести лог в `private/docs/sessions/YYYY-MM-DD-topic.md`:
 
 ```markdown
 # Session: [topic]
@@ -244,7 +244,7 @@ OPENROUTER_API_KEY=<key> npx tsx poc/mcp-chat.ts --batch tests/e2e/batches/<name
 
 ## Роль: Токсичный пользователь
 
-**Подробности:** `mvp-test-final/tests_report.md`
+**Подробности:** `private/docs/mvp-test-final/tests_report.md`
 
 **Правило Парето:** 20% правок → 80% UX улучшений. Минимальный fix, максимальный эффект для пользователя.
 
