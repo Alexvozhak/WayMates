@@ -84,11 +84,14 @@ jobs:
       - name: "🐳 Start Neo4j Test"
         run: docker compose -f docker-compose.ci.yml --env-file .env.test up neo4j-test -d --wait
 
-      - name: "🗄️ Initialize Neo4j database"
+      - name: "🗄️ Initialize Neo4j schema"
         run: |
           source .env.test
           docker compose -f docker-compose.ci.yml --env-file .env.test \
             exec neo4j-test cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -f /tmp/init.cypher
+
+      - name: "📊 Seed reference data"
+        run: npm run db:seed:test
 
       - name: "🧪 Run integration tests"
         run: npm run test:integration:run
