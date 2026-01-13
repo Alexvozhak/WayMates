@@ -1,0 +1,30 @@
+refactor(schemas): MCP schema architecture + rate limiting + test fix
+
+Phase 1: Rate Limiting & Bottleneck
+- Grammy ratelimiter: 3 req/10s per user with selective bypass
+- Bottleneck.js: 500 RPM for OpenAI (facade), configurable for presenters
+- Environment configuration with sensible defaults
+
+Phase 2: MCP Schema Architecture Refactoring
+- Added 16 MCP params schemas to shared/schemas.ts (~216 lines)
+- Added 9 MCP response schemas to shared/schemas.ts (~130 lines)
+- Resolved naming conflict: coreUpdateContextParams vs mcpUpdateContextParams
+- Removed facade/mcp-server/schemas.ts (165 lines of duplicates)
+- Removed telegram-bot/schemas/mcp-responses.ts
+
+Phase 3: Test Infrastructure Fix
+- Fixed cleanTestData() to preserve all dictionary reference data
+- Added Position, WorkDomain, City, Industry, Platform to whitelist
+- Root cause: globalSetup was deleting Position nodes before DC2 test
+
+Architecture after:
+  shared/schemas.ts (single source of truth)
+    ├─ Core API schemas (userId-based, structured)
+    ├─ MCP Params schemas (sessionId-based, message-based)
+    └─ MCP Response schemas (discriminated unions)
+
+Tests: 211/211 passing (52 unit + 78 core + 81 facade)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>

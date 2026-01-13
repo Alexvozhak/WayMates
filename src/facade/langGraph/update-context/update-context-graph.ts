@@ -1,0 +1,98 @@
+import { Command, END, START, StateGraph } from "@langchain/langgraph";
+
+import { createInterruptPhaseExtractor } from "../shared/interrupt-utils.js";
+import { isGraphState } from "../shared/state-utils.js";
+
+import { cancelNode } from "./nodes/cancel.js";
+import { clarifyNode } from "./nodes/clarify.js";
+import { editUpdateNode } from "./nodes/edit-update.js";
+import { extractUpdatesNode } from "./nodes/extract-updates.js";
+import { mergeContextNode } from "./nodes/merge-context.js";
+import { parseDecisionNode } from "./nodes/parse-decision.js";
+import { persistUpdateNode } from "./nodes/persist-update.js";
+import { showUpdateNode } from "./nodes/show-update.js";
+import { responseBuilders } from "./response-builders.js";
+import { NODE, phaseSchema, updateContextStateAnnotation } from "./state.js";
+import { DECISION_ROUTE_MAP, MERGE_ROUTE_MAP, routeAfterDecision, routeAfterMerge } from "./update-router.js";
+
+import type { UpdateContextStateType } from "./state.js";
+import type { UpdateContextResponse } from "./types.js";
+import type { Locale, UserContext, UserId } from "../../../../private/schemas.js";
+import type { GraphDeps } from "../shared/types.js";
+
+const extractInterruptPhase = createInterruptPhaseExtractor(phaseSchema);
+
+function stateToResponse(state: UpdateContextStateType): UpdateContextResponse {
+  const { phase } = state;
+  return responseBuilders[phase](state);
+}
+
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- LangGraph complex generics */
+export function createGraphBuilder() {
+  return new StateGraph(updateContextStateAnnotation)
+    .addNode(NODE.extract_updates, extractUpdatesNode)
+    .addNode(NODE.merge_context, mergeContextNode)
+    .addNode(NODE.clarify, clarifyNode)
+    .addNode(NODE.show_update, showUpdateNode)
+    .addNode(NODE.parse_decision, parseDecisionNode)
+    .addNode(NODE.edit_update, editUpdateNode)
+    .addNode(NODE.persist_update, persistUpdateNode)
+    .addNode(NODE.cancel, cancelNode)
+
+    .addEdge(START, NODE.extract_updates)
+    .addEdge(NODE.extract_updates, NODE.merge_context)
+    .addConditionalEdges(NODE.merge_context, routeAfterMerge, MERGE_ROUTE_MAP)
+    .addEdge(NODE.clarify, NODE.extract_updates)
+    .addEdge(NODE.show_update, NODE.parse_decision)
+    .addConditionalEdges(NODE.parse_decision, routeAfterDecision, DECISION_ROUTE_MAP)
+    .addEdge(NODE.edit_update, NODE.merge_context)
+    .addEdge(NODE.persist_update, END)
+    .addEdge(NODE.cancel, END);
+}
+/* eslint-enable @typescript-eslint/explicit-function-return-type */
+
+type CompiledGraph = ReturnType<ReturnType<typeof createGraphBuilder>["compile"]>;
+
+export class UpdateContextGraph {
+  private readonly compiledGraph: CompiledGraph;
+
+  constructor(private readonly deps: GraphDeps) {
+    this.compiledGraph = createGraphBuilder().compile({ checkpointer: deps.checkpointService.getCheckpointer() });
+  }
+
+  async run(
+    message: string,
+    threadId: string,
+    userId: UserId,
+    currentContext: UserContext,
+    locale: Locale,
+  ): Promise<UpdateContextResponse> {
+    const config = { configurable: { thread_id: threadId, ...this.deps } };
+
+    const currentSnapshot = await this.compiledGraph.getState(config);
+    const hasPendingInterrupt = currentSnapshot.tasks.length > 0;
+
+    const result = hasPendingInterrupt
+      ? await this.compiledGraph.invoke(new Command({ resume: message }), config)
+      : await this.compiledGraph.invoke(
+          {
+            userId,
+            locale,
+            currentContext,
+            userResponse: message,
+          },
+          config,
+        );
+
+    const finalSnapshot = await this.compiledGraph.getState(config);
+    const interruptPhase = extractInterruptPhase(finalSnapshot);
+
+    if (interruptPhase && isGraphState<UpdateContextStateType>(finalSnapshot.values)) {
+      return stateToResponse({ ...finalSnapshot.values, phase: interruptPhase });
+    }
+
+    return stateToResponse(result);
+  }
+}
+
+export { PHASE } from "./state.js";

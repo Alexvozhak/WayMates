@@ -1,20 +1,25 @@
 services:
+  # ============================================================================
+  # PRODUCTION SERVICES
+  # ============================================================================
+
   neo4j-prod:
     image: neo4j:latest
     container_name: waymates-neo4j-prod
+    profiles: ["prod"]
     network_mode: host
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
-      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL:-512m}
-      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX:-1G}
-      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE:-512m}
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX}
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE}
       NEO4J_server_bolt_listen__address: 0.0.0.0:${NEO4J_PORT}
-      NEO4J_server_http_listen__address: 0.0.0.0:${NEO4J_HTTP_PORT:-7474}
+      NEO4J_server_http_listen__address: 0.0.0.0:${NEO4J_HTTP_PORT}
       NEO4J_dbms_connector_bolt_advertised__address: localhost:${NEO4J_PORT}
-      NEO4J_dbms_connector_http_advertised__address: localhost:${NEO4J_HTTP_PORT:-7474}
+      NEO4J_dbms_connector_http_advertised__address: localhost:${NEO4J_HTTP_PORT}
     volumes:
       - neo4j_prod_data:/data
-      - ./database/init.cypher:/tmp/init.cypher:ro
+      - ./private/database/init.cypher:/tmp/init.cypher:ro
     restart: unless-stopped
     healthcheck:
       test:
@@ -32,22 +37,61 @@ services:
       retries: 5
       start_period: 10s
 
+  redis-prod:
+    image: redis:7-alpine
+    container_name: waymates-redis-prod
+    profiles: ["prod"]
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres-prod:
+    image: postgres:16-alpine
+    container_name: waymates-postgres-prod
+    profiles: ["prod"]
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./private/database/facade-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # ============================================================================
+  # TEST SERVICES
+  # ============================================================================
+
   neo4j-test:
     image: neo4j:latest
     container_name: waymates-neo4j-test
+    profiles: ["test"]
     network_mode: host
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
-      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL:-256m}
-      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX:-512m}
-      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE:-256m}
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX}
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE}
       NEO4J_server_bolt_listen__address: 0.0.0.0:${NEO4J_PORT}
-      NEO4J_server_http_listen__address: 0.0.0.0:${NEO4J_HTTP_PORT:-7476}
+      NEO4J_server_http_listen__address: 0.0.0.0:${NEO4J_HTTP_PORT}
       NEO4J_dbms_connector_bolt_advertised__address: localhost:${NEO4J_PORT}
-      NEO4J_dbms_connector_http_advertised__address: localhost:${NEO4J_HTTP_PORT:-7476}
+      NEO4J_dbms_connector_http_advertised__address: localhost:${NEO4J_HTTP_PORT}
+      NEO4J_server_jvm_additional: -XX:-UsePerfData
     volumes:
-      - neo4j_test_data:/data
-      - ./database/init.cypher:/tmp/init.cypher:ro
+      - /data
+      - ./private/database/init.cypher:/tmp/init.cypher:ro
     healthcheck:
       test:
         [
@@ -67,8 +111,223 @@ services:
       start_period: 10s
     restart: "no"
 
+  redis-test:
+    image: redis:7-alpine
+    container_name: waymates-redis-test
+    profiles: ["test"]
+    ports:
+      - "${REDIS_PORT}:6379"
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: waymates-postgres-test
+    profiles: ["test"]
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - /var/lib/postgresql/data
+      - ./private/database/facade-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: "no"
+
+  core-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: core-test
+    container_name: waymates-core-test
+    profiles: ["test"]
+    network_mode: host
+    environment:
+      NEO4J_URI: bolt://localhost:${NEO4J_PORT}
+      NEO4J_USER: ${NEO4J_USER}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      CORE_PORT: ${CORE_PORT}
+      CORE_HOST: 0.0.0.0
+    depends_on:
+      neo4j-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:${CORE_PORT}/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    restart: "no"
+
+  facade-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: facade-test
+    container_name: waymates-facade-test
+    profiles: ["test"]
+    network_mode: host
+    environment:
+      # Server
+      FACADE_TRANSPORT: ${FACADE_TRANSPORT}
+      FACADE_HTTP_PORT: ${FACADE_HTTP_PORT}
+      CORE_API_URL: http://localhost:${CORE_PORT}
+      # Redis
+      REDIS_HOST: localhost
+      REDIS_PORT: ${REDIS_PORT}
+      # Dictionary cache
+      DICT_CACHE_TTL_SECONDS: ${DICT_CACHE_TTL_SECONDS}
+      DICT_HINTS_MAX_SKILLS: ${DICT_HINTS_MAX_SKILLS}
+      # PostgreSQL
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_POOL_MAX: ${POSTGRES_POOL_MAX}
+      # LLM
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_API_BASE: ${OPENAI_API_BASE}
+      OPENAI_FACADE_RPM_LIMIT: ${OPENAI_FACADE_RPM_LIMIT}
+      OPENAI_FACADE_MAX_CONCURRENT: ${OPENAI_FACADE_MAX_CONCURRENT}
+      LANGCHAIN_MODEL_NAME: ${LANGCHAIN_MODEL_NAME}
+      LANGCHAIN_TIMEOUT_MS: ${LANGCHAIN_TIMEOUT_MS}
+      LANGCHAIN_TEMP_DETERMINISTIC: ${LANGCHAIN_TEMP_DETERMINISTIC}
+      LANGCHAIN_TEMP_EXTRACTION: ${LANGCHAIN_TEMP_EXTRACTION}
+      LANGCHAIN_TEMP_PLANNING: ${LANGCHAIN_TEMP_PLANNING}
+      LANGCHAIN_TEMP_AGENT: ${LANGCHAIN_TEMP_AGENT}
+      LANGCHAIN_MAX_CLARIFICATION_ROUNDS: ${LANGCHAIN_MAX_CLARIFICATION_ROUNDS}
+      LANGCHAIN_MAX_QUESTIONS_PER_BATCH: ${LANGCHAIN_MAX_QUESTIONS_PER_BATCH}
+      # Search
+      CANDIDATES_FETCH_LIMIT: ${CANDIDATES_FETCH_LIMIT}
+      CANDIDATES_DISPLAY_LIMIT: ${CANDIDATES_DISPLAY_LIMIT}
+      FACETS_MAX_CANDIDATES: ${FACETS_MAX_CANDIDATES}
+      FACETS_MAX_JSON_SIZE_KB: ${FACETS_MAX_JSON_SIZE_KB}
+      # Auth
+      AUTH_SESSION_TTL_SECONDS: ${AUTH_SESSION_TTL_SECONDS}
+      # CV parser
+      CV_PARSER_MODEL: ${CV_PARSER_MODEL}
+      CV_PARSER_MAX_FILE_SIZE_MB: ${CV_PARSER_MAX_FILE_SIZE_MB}
+      CV_PARSER_MAX_OUTPUT_TOKENS: ${CV_PARSER_MAX_OUTPUT_TOKENS}
+      CV_PARSER_TEMPERATURE: ${CV_PARSER_TEMPERATURE}
+      # Documentary
+      DOCS_PATH: ${DOCS_PATH}
+      # R2 (required for chart service)
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL}
+      R2_TTL_DAYS: ${R2_TTL_DAYS}
+    depends_on:
+      core-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      postgres-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "${FACADE_HTTP_PORT}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    restart: "no"
+
+  telegram-bot-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: telegram-bot-test
+    container_name: waymates-telegram-bot-test
+    profiles: ["test"]
+    network_mode: host
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      FACADE_MCP_URL: http://localhost:${FACADE_HTTP_PORT}/mcp
+      REDIS_URL: redis://localhost:${REDIS_PORT}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      TELEGRAM_PRESENTER_RPM_LIMIT: ${TELEGRAM_PRESENTER_RPM_LIMIT:-60}
+      TELEGRAM_PRESENTER_MAX_CONCURRENT: ${TELEGRAM_PRESENTER_MAX_CONCURRENT:-5}
+    depends_on:
+      facade-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    restart: "no"
+
+  # ============================================================================
+  # TOOLS
+  # ============================================================================
+
+  structurizr:
+    image: structurizr/lite:latest
+    container_name: waymates-structurizr
+    profiles: ["tools"]
+    network_mode: host
+    volumes:
+      - ./docs/architecture:/usr/local/structurizr
+    restart: unless-stopped
+
+  structurizr-cli:
+    image: structurizr/cli:latest
+    container_name: waymates-structurizr-cli
+    volumes:
+      - ./docs/architecture:/workspace
+    working_dir: /workspace
+    profiles: ["tools"]
+    command: validate -w /workspace/workspace.dsl
+
+  # ============================================================================
+  # OPTIONAL PRODUCTION SERVICES (for future SaaS deployment)
+  # ============================================================================
+
+  # core:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: waymates-core
+  #   network_mode: host
+  #   env_file: .env.prod
+  #   command: tsx src/core/index.ts
+  #   depends_on:
+  #     neo4j-prod:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   profiles: ["app"]
+
+  # facade:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: waymates-facade
+  #   network_mode: host
+  #   env_file: .env.prod
+  #   command: tsx src/facade/index.ts
+  #   depends_on:
+  #     redis-prod:
+  #       condition: service_healthy
+  #     postgres-prod:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   profiles: ["app"]
+
 volumes:
   neo4j_prod_data:
     driver: local
-  neo4j_test_data:
+  postgres_prod_data:
     driver: local

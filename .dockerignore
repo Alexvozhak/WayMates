@@ -1,0 +1,27 @@
+# Build outputs
+dist/
+node_modules/
+
+# Development files
+.git/
+.github/
+.vscode/
+.husky/
+
+# Test files
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.test
+
+# Documentation
+docs/
+memory-bank/
+custom_prompts/
+.claude/
+
+# Other
+*.md
+!README.md

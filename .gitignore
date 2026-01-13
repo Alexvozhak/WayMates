@@ -1,8 +1,6 @@
 # Dependencies
 node_modules/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Production builds
 dist/
@@ -17,11 +15,10 @@ generated/queries.generated.ts
 .env.development.local
 .env.test.local
 .env.production.local
-.env.integration
-.env.functional
 
 # IDE files
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
@@ -76,13 +73,29 @@ temp/
 
 # Debug files
 debug.js
-test-*.ts
-test-*.js
 
 # Build output
 dist/
 
 # Environment files with credentials
 .env.prod
-.env.integration
-.env.functional
+.mcp.json
+
+# Dropbox sync folders
+todo-dropbox
+
+# Structurizr cache/index
+docs/architecture/.structurizr/
+
+# Generated LangGraph visualizations
+docs/graphs/
+
+# Git worktrees
+tree/
+
+# Generated chart HTML outputs
+poc/*.html
+
+# MCP chat sessions (local dev)
+.claude/sessions/
+.env.test

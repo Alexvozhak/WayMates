@@ -1,0 +1,53 @@
+import { InvalidStateError } from "../../errors.js";
+
+import { PHASE } from "./state.js";
+
+import type { UpsertTrailPhase, UpsertTrailStateType } from "./state.js";
+import type { UpsertTrailResponse } from "./types.js";
+
+type ResponseBuilder = (state: UpsertTrailStateType) => UpsertTrailResponse;
+
+export const responseBuilders: Record<UpsertTrailPhase, ResponseBuilder> = {
+  [PHASE.extracting]: () => ({
+    phase: PHASE.extracting,
+    message: "Extracting trail information...",
+  }),
+
+  [PHASE.awaiting_clarification]: (state) => ({
+    phase: PHASE.awaiting_clarification,
+    message: "Please provide the missing information.",
+    missingFields: state.missingFields,
+  }),
+
+  [PHASE.awaiting_confirmation]: (state) => {
+    if (!state.validatedTrail) {
+      throw new InvalidStateError(PHASE.awaiting_confirmation, "validatedTrail is missing");
+    }
+    return {
+      phase: PHASE.awaiting_confirmation,
+      message: "Please confirm the trail details.",
+      trail: state.validatedTrail,
+    };
+  },
+
+  [PHASE.saved]: (state) => {
+    if (!state.validatedTrail) {
+      throw new InvalidStateError(PHASE.saved, "validatedTrail is missing");
+    }
+    return {
+      phase: PHASE.saved,
+      message: "Trail saved successfully.",
+      trail: state.validatedTrail,
+    };
+  },
+
+  [PHASE.cancelled]: () => ({
+    phase: PHASE.cancelled,
+    message: "Trail creation cancelled by user.",
+  }),
+
+  [PHASE.failed]: (state) => ({
+    phase: PHASE.failed,
+    message: state.validationErrors.join("; ") || "Failed to create trail.",
+  }),
+};
