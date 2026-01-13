@@ -1,5 +1,8 @@
 # WayMates
 
+[![CI](https://github.com/Alexvozhak/WayMates/actions/workflows/ci.yml/badge.svg)](https://github.com/Alexvozhak/WayMates/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Alexvozhak/WayMates/branch/devel/graph/badge.svg)](https://codecov.io/gh/Alexvozhak/WayMates)
+
 > Career transition analysis platform built on Neo4j graph database
 
 **Status**: MVP Development

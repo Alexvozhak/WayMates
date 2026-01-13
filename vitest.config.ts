@@ -18,7 +18,7 @@ export default defineConfig(() => {
       reporters: ["verbose"],
       coverage: {
         provider: "v8" as const,
-        reporter: ["text", "html"],
+        reporter: ["text", "html", "lcov"],
         reportsDirectory: "./coverage",
         include: ["src/facade/**/*.ts", "src/shared/**/*.ts"],
         exclude: ["**/*.d.ts", "**/*.spec.ts", "**/index.ts"],
