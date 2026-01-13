@@ -7,88 +7,75 @@
 
 **Status**: MVP Development
 **Architecture**: Facade (MCP) + Core (REST API)
-**Stack**: TypeScript, Node.js, Neo4j, Express, FastMCP
+**Stack**: TypeScript, Node.js, Neo4j, LangGraph, FastMCP
+
+---
+
+## Overview
+
+WayMates helps users find career paths by matching their current context to target positions through analysis of skills, experience, and transitions of similar professionals.
+
+**Key Features:**
+- Natural language interface via Telegram bot
+- Career trajectory analysis using graph algorithms
+- Skills gap identification and recommendations
+- Similar professionals matching (DTW algorithm)
 
 ---
 
 ## 🚀 Quick Start
 
-См. **[QUICKSTART.md](./QUICKSTART.md)** для полной инструкции по запуску.
+### Prerequisites
 
-### First-time clone
+- Node.js 22+
+- Docker & Docker Compose
+- Access to private submodule (waymates-core)
 
-⚠️ **Important**: This repo uses Git Submodule for Cypher queries (private repo).
+### Clone with submodule
 
 ```bash
-# Clone with submodules
-git clone --recurse-submodules git@github.com:YOUR_USERNAME/waymates.git
+git clone --recurse-submodules git@github.com:Alexvozhak/WayMates.git
+cd WayMates
 
-# OR if already cloned without submodules:
+# If already cloned:
 git submodule update --init --recursive
 ```
 
-### TL;DR
+### Setup
 
 ```bash
-# 1. Setup
 npm install
-cp .env.prod.sample .env.prod  # заполнить NEO4J_PASSWORD, OPENAI_API_KEY
-
-# 2. Start infrastructure
-docker compose up neo4j-prod redis -d
-npm run db:prod:init
-
-# 3. Start Core REST API
-tsx src/core/index.ts
-
-# 4. Start Facade MCP Server
-tsx src/facade/index.ts
+cp .env.example .env.test    # Fill required values
 ```
 
----
+### Run (Development)
 
-## 📚 Documentation
+```bash
+# Start infrastructure
+npm run test:telegram:setup
 
-### Основные документы:
-- **[QUICKSTART.md](./QUICKSTART.md)** - как запустить проект
-- **[docs/mvp_final/IMPLEMENTATION_DECISIONS.md](./docs/mvp_final/IMPLEMENTATION_DECISIONS.md)** - архитектурные решения
-- **[docs/mvp_final/CHANGELOG_2025_11_03.md](./docs/mvp_final/CHANGELOG_2025_11_03.md)** - последние изменения
-- **[CLAUDE.md](./CLAUDE.md)** - инструкции для Claude Code
-
-### Архитектура:
-- **[docs/mvp_final/FACADE_NLP_ARCHITECTURE.md](./docs/mvp_final/FACADE_NLP_ARCHITECTURE.md)** - Facade (NLP, LLM)
-- **[docs/mvp_final/CORE_SEARCH_ARCHITECTURE.md](./docs/mvp_final/CORE_SEARCH_ARCHITECTURE.md)** - Core (Search, DTW)
-- **[docs/architecture/](./docs/architecture/)** - C4 диаграммы
+# Start Telegram bot (separate terminal)
+npm run bot:test
+```
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-LibreChat/Cursor → Facade MCP Server → Core REST API → Neo4j
-                        ↓                    ↓
-                   LLMTranslator        SearchManager
-                   AuthService          StoryManager
-                   RateLimiter          GoalsManager
-                        ↓
-                   Redis, SQLite
+Telegram Bot → Facade MCP Server → Core REST API → Neo4j
+     ↓               ↓                   ↓
+  grammY        LangGraph           SearchManager
+               StateGraph           StoryManager
+                   ↓                GoalsManager
+            Redis, PostgreSQL
 ```
 
-**Компоненты:**
-- **Facade** - NLP интерфейс с OpenAI LLM для natural language queries
-- **Core** - бизнес-логика поиска карьерных путей через Neo4j
-- **Neo4j** - graph database с траекториями пользователей
-- **Redis** - rate limiting
-
----
-
-## 🧪 Testing
-
-```bash
-npm run test:unit          # Unit tests
-npm run test:integration   # Integration tests (Neo4j required)
-npm run test:all           # All tests
-```
+**Components:**
+- **Telegram Bot** - User interface via grammY
+- **Facade** - LangGraph agents for conversation flow
+- **Core** - Business logic, search algorithms, Neo4j queries
+- **Neo4j** - Graph database with career trajectories
 
 ---
 
@@ -96,26 +83,30 @@ npm run test:all           # All tests
 
 ```
 src/
+├── facade/         # Facade MCP Server (FastMCP, LangGraph)
+├── telegram-bot/   # Telegram bot (grammY)
+├── chart/          # Career chart visualization
+└── shared/         # Shared utilities
+
+private/            # 🔒 Git Submodule (waymates-core)
 ├── core/           # Core REST API (Express)
-├── facade/         # Facade MCP Server (FastMCP)
-├── shared/         # Shared Zod schemas
-├── cypher/         # 🔒 Git Submodule (waymates-cypher-private)
-│   ├── index.ts    # Public interface (query builders only)
-│   ├── queries/    # Complete Cypher query builders
-│   ├── helpers/    # Query building blocks (filters, aggregation, etc.)
-│   └── constants/  # Projections, scoring config
-└── database/       # Migrations
+├── cypher/         # Neo4j Cypher query builders
+├── database/       # Migrations, reference data
+├── prompts/        # LLM prompts
+└── tests/          # Integration tests
 
-docs/
-├── mvp_final/      # Final architecture docs
-└── architecture/   # C4 diagrams + ADRs
-
-tests/
-├── unit/           # Unit tests (no DB)
-└── integration/    # Integration tests (Neo4j)
+scripts/            # Shell scripts (db init, imports)
 ```
 
-**Note**: `src/cypher/` is a private Git submodule containing Neo4j Cypher queries and business logic.
+---
+
+## 🧪 Testing
+
+```bash
+npm run test:unit              # Unit tests
+npm run test:integration       # Integration tests (requires Neo4j)
+npm run test:all               # All tests
+```
 
 ---
 
@@ -124,41 +115,41 @@ tests/
 ### Code Quality
 
 ```bash
-npm run lint        # ESLint
 npm run lint:fix    # ESLint auto-fix
 npx tsc --noEmit    # TypeScript check
 ```
 
-### Working with Submodules
+### Rebuild Services
 
 ```bash
-# After git pull (if submodule reference updated)
-git pull
+npm run core:rebuild      # After private/core/ changes
+npm run facade:rebuild    # After src/facade/ changes
+npm run bot:docker:restart # After src/telegram-bot/ changes
+```
+
+### Working with Submodule
+
+```bash
+# Update submodule after git pull
 git submodule update --init --recursive
 
-# To make changes in src/cypher/
-cd src/cypher
-git checkout main
+# Make changes in private/
+cd private
+git checkout devel
 # ... make changes ...
-git add .
-git commit -m "feat: update query"
-git push origin main
+git add . && git commit -m "feat: update"
+git push origin devel
 
-# Return to main repo and update reference
-cd ../..
-git add src/cypher
-git commit -m "chore: update cypher submodule"
-git push
+# Update reference in main repo
+cd ..
+git add private
+git commit -m "chore: update private submodule"
 ```
 
 ---
 
 ## 📝 License
 
-Private repository - внутренняя разработка WayMates
+Copyright (c) 2024-2026 Alexvozhak. All Rights Reserved.
 
----
-
-## 🙏 Contributing
-
-См. проектные инструкции в **[CLAUDE.md](./CLAUDE.md)**
+See [LICENSE](./LICENSE) for details.
