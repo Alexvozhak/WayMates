@@ -37,10 +37,10 @@ services:
         - "-a"
         - "localhost:${NEO4J_PORT}"
         - "RETURN 1"
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   redis-prod:
     image: redis:7-alpine
