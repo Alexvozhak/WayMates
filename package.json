@@ -124,6 +124,7 @@
     "@grammyjs/hydrate": "^1.6.0",
     "@grammyjs/i18n": "^1.1.2",
     "@grammyjs/ratelimiter": "^1.2.1",
+    "@grammyjs/runner": "^2.0.3",
     "@grammyjs/storage-redis": "^2.5.1",
     "@langchain/google-genai": "^2.1.7",
     "@langchain/langgraph": "^1.0.2",

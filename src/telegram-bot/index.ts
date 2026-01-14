@@ -1,3 +1,5 @@
+import { run } from "@grammyjs/runner";
+
 import { initSentry } from "../shared/sentry.js";
 
 import { createBot } from "./bot.js";
@@ -11,18 +13,6 @@ import { SessionService } from "./services/session-service.js";
 import type { ConverseResponse } from "../../private/schemas.js";
 
 initSentry({ dsn: config.SENTRY_DSN, environment: config.NODE_ENV, service: "telegram" });
-
-async function shutdown(signal: string): Promise<void> {
-  logger.info({ signal }, "Shutting down gracefully");
-  await bot.stop();
-  await mcpClient.close();
-  logger.info("Shutdown complete");
-  // eslint-disable-next-line unicorn/no-process-exit
-  process.exit(0);
-}
-
-process.on("SIGTERM", () => void shutdown("SIGTERM"));
-process.on("SIGINT", () => void shutdown("SIGINT"));
 
 let mcpClient: McpClient;
 try {
@@ -72,5 +62,17 @@ const bot = createBot(
   logger,
 );
 
-logger.info("Starting bot...");
-await bot.start();
+logger.info("Starting bot with concurrent runner...");
+const runner = run(bot);
+
+const shutdown = async (signal: string): Promise<void> => {
+  logger.info({ signal }, "Shutting down gracefully");
+  if (runner.isRunning()) {
+    await runner.stop();
+  }
+  await mcpClient.close();
+  logger.info("Shutdown complete");
+};
+
+process.once("SIGTERM", () => void shutdown("SIGTERM"));
+process.once("SIGINT", () => void shutdown("SIGINT"));
