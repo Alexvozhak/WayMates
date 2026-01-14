@@ -1,62 +1,79 @@
-# WayMates
+# WayMates - AI-Powered Career Transition Platform
 
 [![CI](https://github.com/Alexvozhak/WayMates/actions/workflows/ci.yml/badge.svg)](https://github.com/Alexvozhak/WayMates/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Alexvozhak/WayMates/branch/devel/graph/badge.svg)](https://codecov.io/gh/Alexvozhak/WayMates)
 
-> Career transition analysis platform built on Neo4j graph database
+> Production-ready AI application built solo in 6 months
 
-**Status**: MVP Development
-**Architecture**: Facade (MCP) + Core (REST API)
-**Stack**: TypeScript, Node.js, Neo4j, LangGraph, FastMCP
+🚀 **Live Bot**: https://t.me/WayMates_bot
+📺 **Demo Video**: [10-min walkthrough](https://youtu.be/z9M2QifhEfc)
+📺 **Quick Start**: [5-min guide](https://youtu.be/QpgWgkDxJ1A)
+📝 **How I Built This**: [LinkedIn Article](https://linkedin.com/in/alexey-komarov-5b0b3b379)
 
----
-
-## Overview
-
-WayMates helps users find career paths by matching their current context to target positions through analysis of skills, experience, and transitions of similar professionals.
-
-**Key Features:**
-- Natural language interface via Telegram bot
-- Career trajectory analysis using graph algorithms
-- Skills gap identification and recommendations
-- Similar professionals matching (DTW algorithm)
+**Status**: ✅ Production (Live on VPS)
+**Architecture**: MCP Server + LangGraph + Neo4j
+**Stack**: TypeScript, Node.js 24, Neo4j, LangGraph, FastMCP, tRPC
 
 ---
 
-## 🚀 Quick Start
+## 🎯 What This Demonstrates
 
-### Prerequisites
+This repository showcases a production-ready AI application built solo in 6 months:
 
-- Node.js 22+
-- Docker & Docker Compose
-- Access to private submodule (waymates-core)
+### Technical Excellence
+- **MCP Server Architecture** - Connect from any MCP client (Claude, Cursor, n8n)
+- **Neo4j Graph Database** - Complex Cypher queries for career relationships
+- **LangGraph State Machines** - 5 AI agents with checkpoint recovery
+- **Multi-language Support** - Auto-translates to user's Telegram locale (EN/RU/ES/etc)
+- **Modern Stack** - Node.js 24, TypeScript 5, ESM modules, tRPC
 
-### Clone with submodule
+### Engineering Practices
+- **284 Integration Tests** - Real LLM calls, parallel execution
+- **Security First** - 0 vulnerabilities (semgrep, npm audit)
+- **Full DevOps** - CI/CD, Docker orchestration, VPS deployment
+- **Clean Code** - Strict ESLint constraints, Husky pre-commit hooks
 
-```bash
-git clone --recurse-submodules git@github.com:Alexvozhak/WayMates.git
-cd WayMates
+---
 
-# If already cloned:
-git submodule update --init --recursive
-```
+## 📊 Metrics & Achievements
 
-### Setup
+| Metric | Value |
+|--------|-------|
+| Development Time | 6 months solo |
+| Lines of Code | 15,000+ TypeScript |
+| Test Coverage | 284 integration tests |
+| Security Score | 0 critical/high issues |
+| Dependencies | 100% up-to-date (Dependabot) |
+| Production Status | ✅ Live 24/7 |
+| Docker Services | 6 containers orchestrated |
 
-```bash
-npm install
-cp .env.example .env.test    # Fill required values
-```
+---
 
-### Run (Development)
+## 🎯 Code Quality Standards
 
-```bash
-# Start infrastructure
-npm run test:telegram:setup
+This project enforces strict quality constraints through ESLint:
 
-# Start Telegram bot (separate terminal)
-npm run bot:test
-```
+- **Max nesting depth:** 2 levels
+- **Cyclomatic complexity:** <8
+- **Function length:** <60 lines
+- **TypeScript strict:** No 'any' types
+- **No type assertions:** Only type guards/Zod
+
+See my [ESLint config](eslint.config.mjs) for full details.
+
+---
+
+## ⚠️ Installation Note
+
+This repository contains the public components only. The core business logic is in a private submodule that requires access keys.
+
+**To explore the project:**
+- Review the public modules architecture
+- Examine the strict ESLint configuration
+- Check the test structure (284 integration tests)
+- Try the live bot: https://t.me/WayMates_bot
+
+For full access, contact: @AlexKomarov1993
 
 ---
 
@@ -153,3 +170,15 @@ git commit -m "chore: update private submodule"
 Copyright (c) 2024-2026 Alexvozhak. All Rights Reserved.
 
 See [LICENSE](./LICENSE) for details.
+
+---
+
+## 📫 Contact
+
+**Developer:** Alexey Komarov
+- GitHub: [@Alexvozhak](https://github.com/Alexvozhak)
+- Telegram: [@AlexKomarov1993](https://t.me/AlexKomarov1993)
+- LinkedIn: [Profile](https://linkedin.com/in/alexey-komarov-5b0b3b379)
+- Email: alexvozhak@gmail.com
+
+Looking for founding engineer opportunities where I can ship fast with high quality.
