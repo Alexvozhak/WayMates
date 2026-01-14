@@ -39,12 +39,9 @@ export default defineConfig(() => {
               "private/tests/facade/tools/**/*.spec.ts",
             ],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: false,
-              },
-            },
+            isolate: false,
             testTimeout: UNIT_TEST_TIMEOUT,
+            sequence: { groupOrder: 0 },
             // Unit tests don't use globalSetup (no database needed)
             // But facade unit tests need env vars for config imports
             env: loadEnv("test", process.cwd(), ""),
@@ -56,13 +53,10 @@ export default defineConfig(() => {
             name: "telegram-unit",
             include: ["private/tests/telegram-bot/unit/**/*.spec.ts"],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: false,
-                singleThread: true, // Sequential to avoid rate limit issues
-              },
-            },
+            isolate: false,
+            maxWorkers: 1, // Sequential to avoid rate limit issues
             testTimeout: 30_000, // 30s for LLM calls
+            sequence: { groupOrder: 1 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -72,13 +66,10 @@ export default defineConfig(() => {
             name: "facade-unit-llm",
             include: ["private/tests/facade/services/unit/**/*.spec.ts"],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: false,
-                singleThread: true, // Sequential to avoid rate limit issues
-              },
-            },
+            isolate: false,
+            maxWorkers: 1, // Sequential to avoid rate limit issues
             testTimeout: 30_000, // 30s for LLM calls
+            sequence: { groupOrder: 1 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -93,15 +84,12 @@ export default defineConfig(() => {
               "private/tests/core/integration/search-manager/current-context-with-dtw.integration.ts",
             ],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: false, // Shared state from globalSetup
-                singleThread: false, // Parallel execution
-              },
-            },
+            isolate: false, // Shared state from globalSetup
+            // No maxWorkers = parallel execution
             setupFiles: ["./private/tests/core/helpers/drivers/shared-driver.ts"],
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
+            sequence: { groupOrder: 2 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -111,14 +99,11 @@ export default defineConfig(() => {
             name: "integration-demo-fixtures",
             include: ["private/tests/core/integration/search-manager/demo-fixtures.integration.ts"],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: false,
-                singleThread: true,
-              },
-            },
+            isolate: false,
+            maxWorkers: 1,
             setupFiles: ["./private/tests/core/helpers/drivers/demo-fixtures-driver.ts"],
             testTimeout: INTEGRATION_TEST_TIMEOUT,
+            sequence: { groupOrder: 3 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -128,15 +113,12 @@ export default defineConfig(() => {
             name: "integration-goals",
             include: ["private/tests/core/integration/goals-manager/goals-integration.integration.ts"],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: true,
-                singleThread: true, // Write operations require sequential execution
-              },
-            },
+            isolate: true,
+            maxWorkers: 1, // Write operations require sequential execution
             setupFiles: ["./private/tests/core/helpers/drivers/goals-driver.ts"],
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
+            sequence: { groupOrder: 4 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -146,14 +128,11 @@ export default defineConfig(() => {
             name: "integration-dictionaries",
             include: ["private/tests/core/integration/dictionaries-manager/dictionaries.integration.ts"],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: true,
-                singleThread: true,
-              },
-            },
+            isolate: true,
+            maxWorkers: 1,
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
+            sequence: { groupOrder: 5 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -163,14 +142,11 @@ export default defineConfig(() => {
             name: "integration-user-router",
             include: ["private/tests/core/integration/user-router/*.integration.ts"],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: true,
-                singleThread: true,
-              },
-            },
+            isolate: true,
+            maxWorkers: 1,
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
+            sequence: { groupOrder: 6 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -180,16 +156,13 @@ export default defineConfig(() => {
             name: "integration-story-manager",
             include: ["private/tests/core/integration/story-manager/story-manager.integration.ts"],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: true,
-                singleThread: true, // Write operations require sequential execution
-              },
-            },
+            isolate: true,
+            maxWorkers: 1, // Write operations require sequential execution
             setupFiles: ["./private/tests/core/helpers/drivers/story-manager-driver.ts"],
             globalSetup: "./vitest.globalSetup.ts",
             testTimeout: INTEGRATION_TEST_TIMEOUT,
             hookTimeout: INTEGRATION_HOOK_TIMEOUT,
+            sequence: { groupOrder: 7 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -203,15 +176,12 @@ export default defineConfig(() => {
               "private/tests/facade/services/**/*.integration.ts",
             ],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: false, // Shared state from setupFiles (CoreClient, LLMMatcher)
-                singleThread: true, // Redis + LLM state requires sequential execution
-              },
-            },
+            isolate: false, // Shared state from setupFiles (CoreClient, LLMMatcher)
+            maxWorkers: 1, // Redis + LLM state requires sequential execution
             setupFiles: ["./private/tests/facade/helpers/test-setup.ts"],
             testTimeout: 180_000, // 3min for LLM-heavy tests (cold-start agent)
             hookTimeout: 60_000, // 1min for fixture loading (U1-U9 via tRPC)
+            sequence: { groupOrder: 8 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
@@ -221,15 +191,12 @@ export default defineConfig(() => {
             name: "telegram-integration",
             include: ["private/tests/telegram-bot/**/*.integration.ts"],
             pool: "threads",
-            poolOptions: {
-              threads: {
-                isolate: false,
-                singleThread: true, // Sequential to avoid MCP session conflicts
-              },
-            },
+            isolate: false,
+            maxWorkers: 1, // Sequential to avoid MCP session conflicts
             setupFiles: ["./private/tests/telegram-bot/helpers/test-setup.ts"],
             testTimeout: 60_000, // 1min for MCP round-trips
             hookTimeout: 30_000,
+            sequence: { groupOrder: 9 },
             env: loadEnv("test", process.cwd(), ""),
           },
         },
