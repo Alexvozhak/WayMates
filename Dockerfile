@@ -33,3 +33,9 @@ FROM base AS facade-production
 ENV NODE_ENV=production
 RUN npm prune --production
 CMD ["npx", "tsx", "src/facade/index.ts"]
+
+# Telegram Bot для production
+FROM base AS telegram-bot-production
+ENV NODE_ENV=production
+RUN npm prune --production
+CMD ["npx", "tsx", "src/telegram-bot/index.ts"]
