@@ -58,7 +58,7 @@ export default [
         },
         {
           selector: 'import',
-          format: null,  // Не проверять импорты (внешние библиотеки)
+          format: null,  // Don't check imports (external libraries)
         },
         {
           selector: 'property',
@@ -133,16 +133,16 @@ export default [
           ignorePackages: true,
         },
       ],
-      'import-x/no-default-export': 'error', // Запретить default export
+      'import-x/no-default-export': 'error', // Forbid default export
       'import-x/prefer-default-export': 'off',
       'no-restricted-syntax': [
         'error',
         {
           selector: 'ExportAllDeclaration',
-          message: 'Re-export всё (export * from) запрещён. Используйте именованные экспорты.',
+          message: 'Re-export all (export * from) is forbidden. Use named exports.',
         },
       ],
-      '@typescript-eslint/no-explicit-any': 'error', // Запретить any полностью
+      '@typescript-eslint/no-explicit-any': 'error', // Forbid any completely
       '@typescript-eslint/require-await': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -184,20 +184,20 @@ export default [
         },
       ],
       '@typescript-eslint/no-non-null-assertion': 'warn',
-      '@typescript-eslint/no-deprecated': 'error', // Запретить deprecated API
+      '@typescript-eslint/no-deprecated': 'error', // Forbid deprecated API
       '@typescript-eslint/consistent-type-assertions': [
         'error',
         {
-          assertionStyle: 'never', // Запретить as касты - использовать type guards или Zod
+          assertionStyle: 'never', // Forbid 'as' casts - use type guards or Zod
         },
       ],
-      '@typescript-eslint/no-unnecessary-type-assertion': 'error', // Удалять ненужные assertions
-      '@typescript-eslint/await-thenable': 'error', // await только на Promise (ловит "левые await")
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error', // Remove unnecessary assertions
+      '@typescript-eslint/await-thenable': 'error', // await only on Promise (catches erroneous awaits)
 
       'max-depth': ['error', 2],
       complexity: ['error', { max: 8 }],
-      'no-unreachable': 'error', // Запрет недостижимого кода после return/throw/break/continue
-      'no-nested-ternary': 'error', // Запрет вложенных тернарных операторов
+      'no-unreachable': 'error', // Forbid unreachable code after return/throw/break/continue
+      'no-nested-ternary': 'error', // Forbid nested ternary operators
       'max-lines-per-function': [
         'error',
         {
@@ -223,12 +223,12 @@ export default [
       ],
 
 
-      'unicorn/prevent-abbreviations': 'off', // Разрешить сокращения
-      'unicorn/no-null': 'off', // Для Neo4j драйвера null нужен
-      'unicorn/no-array-reduce': 'warn', // Warn вместо error
-      'unicorn/no-array-for-each': 'off', // forEach читабельнее для side effects
-      'unicorn/no-await-expression-member': 'off', // Разрешить (await foo()).bar
-      'unicorn/numeric-separators-style': 'warn', // Warn для небольших чисел (3600, 5000), но рекомендуем для больших (1_000_000)
+      'unicorn/prevent-abbreviations': 'off', // Allow abbreviations
+      'unicorn/no-null': 'off', // Neo4j driver requires null
+      'unicorn/no-array-reduce': 'warn', // Warn instead of error
+      'unicorn/no-array-for-each': 'off', // forEach is more readable for side effects
+      'unicorn/no-await-expression-member': 'off', // Allow (await foo()).bar
+      'unicorn/numeric-separators-style': 'warn', // Warn for small numbers, recommend for large (1_000_000)
     },
   },
 

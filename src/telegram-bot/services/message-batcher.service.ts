@@ -3,8 +3,8 @@ import { type BatcherOptions, Batcher } from "promise-batcher";
 /**
  * Message batching service for Telegram Bot.
  *
- * Solves race condition: when user sends rapid messages ("Я", "backend", "разработчик"),
- * they get combined into single request "Я backend разработчик".
+ * Solves race condition: when user sends rapid messages ("I", "am", "backend developer"),
+ * they get combined into single request "I am backend developer".
  *
  * Uses promise-batcher with debounce:
  * - First message starts timer (delayMs)

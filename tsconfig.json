@@ -1,9 +1,9 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    // Раскладка файлов
-    "rootDir": ".", // исходники проекта (включая scripts)
-    "outDir": "dist", // каталог сборки (пока не используем)
+    // File layout
+    "rootDir": ".", // project sources (including scripts)
+    "outDir": "dist", // build output directory (not used yet)
     "baseUrl": ".",
     "paths": {
       "#prompts/*": ["./private/prompts/*"],
@@ -14,23 +14,23 @@
       "#private/schemas.js": ["./private/schemas.ts"]
     },
 
-    // Цель окружения Node (ESM)
+    // Target Node environment (ESM)
     "module": "nodenext", // Node 24 ESM
     "target": "ES2024", // Node 24 LTS
-    "moduleResolution": "nodenext", // резолв модулей как у Node ESM
+    "moduleResolution": "nodenext", // Module resolution as Node ESM
 
-    // Удобства
-    "resolveJsonModule": true, // импорт .json
-    "esModuleInterop": true, // удобный импорт CommonJS модулей
-    "allowSyntheticDefaultImports": true, // разрешить синтетические default-импорты
+    // Convenience
+    "resolveJsonModule": true, // Import .json files
+    "esModuleInterop": true, // Convenient CommonJS module imports
+    "allowSyntheticDefaultImports": true, // Allow synthetic default imports
 
-    // Строгая типизация
+    // Strict type checking
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
 
-    // Для корректной работы раннера (tsx)
+    // For correct tsx runner operation
     "isolatedModules": true,
     "moduleDetection": "force",
     "skipLibCheck": true
