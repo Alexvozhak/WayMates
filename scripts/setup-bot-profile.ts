@@ -9,23 +9,35 @@ if (!token) {
 const bot = new Bot(token);
 
 const DESCRIPTIONS = {
-  en: `WayMates helps you discover career paths by analyzing trajectories of professionals who made similar transitions.
+  en: `WayMates helps you discover career paths by analyzing real transitions of similar professionals.
 
-🎯 Pathfinders — who reached your goal
-👥 Waymates — peers on the same journey
+Both started where you are now:
+🎯 Pathfinders — already reached your goal
+👥 Waymates — heading there with you
 
-📺 Demo: https://youtu.be/z9M2QifhEfc
-📺 Quick start: https://youtu.be/QpgWgkDxJ1A
-👤 Author: https://linkedin.com/in/alexey-komarov-5b0b3b379`,
+📺 Full workflow (via resume): youtu.be/z9M2QifhEfc
+📺 Quick start: youtu.be/QpgWgkDxJ1A
 
-  ru: `WayMates помогает найти карьерный путь через траектории профессионалов с похожими переходами.
+👤 Author:
+• linkedin.com/in/alexey-komarov-5b0b3b379
+• github.com/Alexvozhak
+• t.me/AlexKomarov1993
+• alexvozhak@gmail.com`,
 
-🎯 Проводники — кто достиг твоей цели
-👥 Попутчики — люди на том же пути
+  ru: `WayMates помогает найти карьерный путь через анализ реальных переходов похожих профессионалов.
 
-📺 Демо: https://youtu.be/z9M2QifhEfc
-📺 Быстрый старт: https://youtu.be/QpgWgkDxJ1A
-👤 Автор: https://linkedin.com/in/alexey-komarov-5b0b3b379`,
+Оба начинали как ты:
+🎯 Проводники — уже достигли твоей цели
+👥 Попутчики — идут к ней вместе с тобой
+
+📺 Полный флоу (через резюме): youtu.be/z9M2QifhEfc
+📺 Быстрый старт: youtu.be/QpgWgkDxJ1A
+
+👤 Автор:
+• linkedin.com/in/alexey-komarov-5b0b3b379
+• github.com/Alexvozhak
+• t.me/AlexKomarov1993
+• alexvozhak@gmail.com`,
 };
 
 const ABOUT = {
