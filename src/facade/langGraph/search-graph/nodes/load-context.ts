@@ -25,7 +25,7 @@ import type { SearchPhase, SearchStateType } from "../state.js";
 const extractor = getModel("extraction").withStructuredOutput(
   withReasoning(
     adhocContextBase,
-    "For each field: 1) what user said, 2) which KNOWN value matched (or why null). For arrays (domains, skills): list ALL terms user mentioned and explain which were included/excluded and why. Quote KNOWN lists.",
+    "For each field: 1) quote user's exact words, 2) quote the EXACT matching value from KNOWN list in single quotes. If claiming no match — MUST list the KNOWN values you checked.",
   ),
 );
 
