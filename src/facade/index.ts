@@ -62,11 +62,11 @@ async function main(): Promise<void> {
 
   if (config.FACADE_TRANSPORT === "http") {
     // FastMCP defaults: endpoint="/mcp", enableJsonResponse=false (SSE mode)
-    // For Docker deployment, add: host: "0.0.0.0"
     await server.start({
       transportType: "httpStream",
       httpStream: {
         port: config.FACADE_HTTP_PORT,
+        host: "0.0.0.0", // Required for Docker: listen on all interfaces
       },
     });
     logger.info({ port: config.FACADE_HTTP_PORT }, "WayMates Facade MCP Server (HTTP) started");
