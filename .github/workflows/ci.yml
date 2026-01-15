@@ -167,12 +167,12 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
-      - name: "🧹 Cleanup"
-        if: always()
-        run: docker compose -f docker-compose.ci.yml --env-file .env.test down -v
-
       - name: "📋 Dump logs on failure"
         if: failure()
         run: |
           docker compose -f docker-compose.ci.yml --env-file .env.test logs || true
           docker ps -a || true
+
+      - name: "🧹 Cleanup"
+        if: always()
+        run: docker compose -f docker-compose.ci.yml --env-file .env.test down -v
