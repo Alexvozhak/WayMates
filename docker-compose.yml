@@ -314,6 +314,18 @@ services:
     profiles: ["tools"]
     command: validate -w /workspace/workspace.dsl
 
+  # Caddy reverse proxy for Structurizr (HTTPS)
+  caddy:
+    image: caddy:2-alpine
+    container_name: waymates-caddy
+    profiles: ["tools"]
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
   # ============================================================================
   # PRODUCTION APPLICATION SERVICES
   # ============================================================================
@@ -473,4 +485,8 @@ volumes:
   neo4j_prod_data:
     driver: local
   postgres_prod_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
     driver: local

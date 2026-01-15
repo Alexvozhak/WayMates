@@ -1,0 +1,15 @@
+# Caddy reverse proxy for WayMates architecture diagrams
+# Automatic TLS via Let's Encrypt
+
+waymates.duckdns.org {
+    # /arch/ -> Structurizr Lite (interactive C4 diagrams)
+    handle /arch/* {
+        uri strip_prefix /arch
+        reverse_proxy localhost:8080
+    }
+
+    # Root - redirect to /arch/ (temporary, until landing page exists)
+    handle {
+        redir /arch/ permanent
+    }
+}
