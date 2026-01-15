@@ -4,12 +4,12 @@ services:
     container_name: waymates-neo4j-test
     ports:
       - "${NEO4J_PORT}:7687"
-      - "${NEO4J_HTTP_PORT:-7476}:7474"
+      - "${NEO4J_HTTP_PORT}:7474"
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
-      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL:-256m}
-      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX:-512m}
-      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE:-256m}
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX}
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE}
       NEO4J_server_bolt_listen__address: 0.0.0.0:7687
       NEO4J_server_http_listen__address: 0.0.0.0:7474
     volumes:
@@ -36,7 +36,7 @@ services:
     image: redis:7-alpine
     container_name: waymates-redis-test
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -48,16 +48,108 @@ services:
     image: postgres:17-alpine
     container_name: waymates-postgres-test
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT}:5432"
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-waymates_facade_test}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./private/database/facade-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 3s
       retries: 5
+    restart: "no"
+
+  core-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: core-test
+    container_name: waymates-core-test
+    ports:
+      - "${CORE_PORT}:${CORE_PORT}"
+    environment:
+      NEO4J_URI: bolt://neo4j-test:7687
+      NEO4J_USER: ${NEO4J_USER}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      CORE_PORT: ${CORE_PORT}
+      CORE_HOST: 0.0.0.0
+    depends_on:
+      neo4j-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:${CORE_PORT}/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    restart: "no"
+
+  facade-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: facade-test
+    container_name: waymates-facade-test
+    ports:
+      - "${FACADE_HTTP_PORT}:${FACADE_HTTP_PORT}"
+    environment:
+      FACADE_TRANSPORT: ${FACADE_TRANSPORT}
+      FACADE_HTTP_PORT: ${FACADE_HTTP_PORT}
+      CORE_API_URL: http://core-test:${CORE_PORT}
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      DICT_CACHE_TTL_SECONDS: ${DICT_CACHE_TTL_SECONDS}
+      DICT_HINTS_MAX_SKILLS: ${DICT_HINTS_MAX_SKILLS}
+      POSTGRES_HOST: postgres-test
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_POOL_MAX: ${POSTGRES_POOL_MAX}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_API_BASE: ${OPENAI_API_BASE}
+      OPENAI_FACADE_RPM_LIMIT: ${OPENAI_FACADE_RPM_LIMIT}
+      OPENAI_FACADE_MAX_CONCURRENT: ${OPENAI_FACADE_MAX_CONCURRENT}
+      LANGCHAIN_MODEL_NAME: ${LANGCHAIN_MODEL_NAME}
+      LANGCHAIN_TIMEOUT_MS: ${LANGCHAIN_TIMEOUT_MS}
+      LANGCHAIN_TEMP_DETERMINISTIC: ${LANGCHAIN_TEMP_DETERMINISTIC}
+      LANGCHAIN_TEMP_EXTRACTION: ${LANGCHAIN_TEMP_EXTRACTION}
+      LANGCHAIN_TEMP_PLANNING: ${LANGCHAIN_TEMP_PLANNING}
+      LANGCHAIN_TEMP_AGENT: ${LANGCHAIN_TEMP_AGENT}
+      LANGCHAIN_MAX_CLARIFICATION_ROUNDS: ${LANGCHAIN_MAX_CLARIFICATION_ROUNDS}
+      LANGCHAIN_MAX_QUESTIONS_PER_BATCH: ${LANGCHAIN_MAX_QUESTIONS_PER_BATCH}
+      CANDIDATES_FETCH_LIMIT: ${CANDIDATES_FETCH_LIMIT}
+      CANDIDATES_DISPLAY_LIMIT: ${CANDIDATES_DISPLAY_LIMIT}
+      FACETS_MAX_CANDIDATES: ${FACETS_MAX_CANDIDATES}
+      FACETS_MAX_JSON_SIZE_KB: ${FACETS_MAX_JSON_SIZE_KB}
+      AUTH_SESSION_TTL_SECONDS: ${AUTH_SESSION_TTL_SECONDS}
+      CV_PARSER_MODEL: ${CV_PARSER_MODEL}
+      CV_PARSER_MAX_FILE_SIZE_MB: ${CV_PARSER_MAX_FILE_SIZE_MB}
+      CV_PARSER_MAX_OUTPUT_TOKENS: ${CV_PARSER_MAX_OUTPUT_TOKENS}
+      CV_PARSER_TEMPERATURE: ${CV_PARSER_TEMPERATURE}
+      DOCS_PATH: ${DOCS_PATH}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL}
+      R2_TTL_DAYS: ${R2_TTL_DAYS}
+    depends_on:
+      core-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      postgres-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "${FACADE_HTTP_PORT}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     restart: "no"
 
 volumes:
