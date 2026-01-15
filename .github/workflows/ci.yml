@@ -103,7 +103,7 @@ jobs:
 
       - name: "🧹 Cleanup"
         if: always()
-        run: docker compose -f docker-compose.ci.yml down -v
+        run: docker compose -f docker-compose.ci.yml --env-file .env.test down -v
 
   facade_integration:
     name: "🤖 Facade Integration Tests (LLM)"
@@ -160,7 +160,7 @@ jobs:
 
       - name: "🧹 Cleanup"
         if: always()
-        run: docker compose -f docker-compose.ci.yml down -v
+        run: docker compose -f docker-compose.ci.yml --env-file .env.test down -v
 
       - name: "📋 Dump logs on failure"
         if: failure()
