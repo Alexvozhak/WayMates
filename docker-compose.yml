@@ -302,14 +302,14 @@ services:
     profiles: ["tools"]
     network_mode: host
     volumes:
-      - ./docs/architecture:/usr/local/structurizr
+      - ./private/docs/architecture:/usr/local/structurizr
     restart: unless-stopped
 
   structurizr-cli:
     image: structurizr/cli:latest
     container_name: waymates-structurizr-cli
     volumes:
-      - ./docs/architecture:/workspace
+      - ./private/docs/architecture:/workspace
     working_dir: /workspace
     profiles: ["tools"]
     command: validate -w /workspace/workspace.dsl
