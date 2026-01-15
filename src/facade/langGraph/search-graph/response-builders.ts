@@ -58,6 +58,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     phase: PHASE.showing_exploration_facets,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- facets set by explore node before this phase
     facets: state.facets!,
     answerText: state.answerText ?? null,
   }),
@@ -102,6 +103,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     appliedFilters: state.targetSearchParams,
     adhocContext: state.adhocContext,
     extractedGoal: state.extractedGoal,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- facets set by validate node before this phase
     facets: state.facets!,
   }),
 
@@ -111,6 +113,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
 
   [PHASE.asking_search_mode]: (state) => ({
     phase: PHASE.asking_search_mode,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- storedGoal set by set_goal node before this phase
     storedGoal: state.storedGoal!,
   }),
 
@@ -149,6 +152,7 @@ export const responseBuilders: Record<SearchPhase, ResponseBuilder> = {
     goal: state.storedGoal?.targetContext ?? null,
     appliedFilters: state.currentSearchParams,
     adhocContext: state.adhocContext,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- facets set by search node before this phase
     facets: state.facets!,
   }),
 

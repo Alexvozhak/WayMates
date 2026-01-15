@@ -111,6 +111,7 @@ function buildChartInput(deps: ChartGenerationDeps, positionOrder: string[]): Ge
     if (deps.userTrajectory.length > 0) {
       return { mode: "full", userTrajectory: deps.userTrajectory, ...base };
     }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- adhocContext exists when userTrajectory is empty
     return { mode: "candidates-only", adhocContext: deps.adhocContext!, ...base };
   }
 
@@ -124,6 +125,7 @@ function buildChartInput(deps: ChartGenerationDeps, positionOrder: string[]): Ge
   if (deps.userTrajectory.length > 0) {
     return { mode: "full", userTrajectory: deps.userTrajectory, ...base, goalValues };
   }
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- adhocContext exists when userTrajectory is empty
   return { mode: "candidates-only", adhocContext: deps.adhocContext!, ...base, goalValues };
 }
 

@@ -101,6 +101,7 @@ function buildCandidateTrajectories(
   colors: string[],
   goalValues?: GoalValues,
 ): ProcessedTrajectory[] {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- colors.length >= candidates.length by design
   return candidates.map((candidate, index) => buildCandidateTrajectory(candidate, colors[index]!, index, goalValues));
 }
 
@@ -160,6 +161,7 @@ function extractPointValues(ctx: UserContext, goalValues?: GoalValues): Trajecto
 function addNowSentinel(points: TrajectoryPoint[]): TrajectoryPoint[] {
   if (points.length === 0) return points;
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- length > 0 checked above
   const lastPoint = points.at(-1)!;
   const nowSentinel: TrajectoryPoint = {
     timestamp: Date.now(),

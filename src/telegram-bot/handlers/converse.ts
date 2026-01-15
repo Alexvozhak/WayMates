@@ -24,6 +24,7 @@ export async function handleConverse(ctx: BotContext): Promise<void> {
 
   const converseResp = await ctx.services.messageBatcher.enqueue(ctx.from.id, message, (combined) =>
     ctx.services.mcpClient.callTool("converse", {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- userInfo set by auth middleware before handler
       sessionId: ctx.userInfo!.sessionId,
       message: combined,
       requestId: ctx.requestId,

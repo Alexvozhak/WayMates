@@ -20,7 +20,12 @@ export default defineConfig(() => {
         provider: "v8" as const,
         reporter: ["text", "html", "lcov"],
         reportsDirectory: "./coverage",
-        include: ["src/facade/**/*.ts", "src/shared/**/*.ts"],
+        include: [
+          "src/facade/**/*.ts",
+          "src/shared/**/*.ts",
+          "private/core/**/*.ts",
+          "private/cypher/**/*.ts",
+        ],
         exclude: ["**/*.d.ts", "**/*.spec.ts", "**/index.ts"],
       },
 

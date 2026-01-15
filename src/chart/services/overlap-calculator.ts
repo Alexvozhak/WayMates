@@ -80,10 +80,12 @@ export class OverlapCalculator {
   }
 
   private intersectAllFieldIntervals(fieldIntervals: Map<ChartableField, Interval[]>): Interval[] {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- fields.length checked in constructor
     const firstField = this.fields[0]!;
     let result = fieldIntervals.get(firstField) ?? [];
 
     for (let i = 1; i < this.fields.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- i is within bounds
       const nextIntervals = fieldIntervals.get(this.fields[i]!) ?? [];
       result = this.intersectIntervalArrays(result, nextIntervals);
       if (result.length === 0) break;
@@ -97,7 +99,9 @@ export class OverlapCalculator {
     const userPoints = this.userTrajectory.points;
 
     for (let ui = 0; ui < userPoints.length - 1; ui++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- ui and ui+1 are within bounds
       const userPoint = userPoints[ui]!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- ui+1 < length
       const userNext = userPoints[ui + 1]!;
       const userValue = userPoint.values[field];
 
@@ -121,6 +125,7 @@ export class OverlapCalculator {
     const candPoints = candidate.points;
 
     for (let ci = 0; ci < candPoints.length - 1; ci++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- ci and ci+1 are within bounds
       const overlap = this.checkOverlap(userPoint, userNext, candPoints[ci]!, candPoints[ci + 1]!, userValue, field);
       if (overlap) {
         overlaps.push({ ...overlap, candidateId: candidate.id });
