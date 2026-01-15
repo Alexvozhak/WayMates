@@ -25,7 +25,7 @@ import type { SearchPhase, SearchStateType } from "../state.js";
 const extractor = getModel("extraction").withStructuredOutput(
   withReasoning(
     adhocContextBase,
-    "For each field: 1) quote user's exact words, 2) quote the EXACT matching value from KNOWN list in single quotes. If claiming no match — MUST list the KNOWN values you checked.",
+    "For POSITION: first copy ALL values from KNOWN POSITIONS verbatim, then quote user's word, then find exact match. For other fields: quote user's words, then quote matching KNOWN value.",
   ),
 );
 
