@@ -32,6 +32,34 @@ services:
       start_period: 10s
     restart: "no"
 
+  redis-test:
+    image: redis:7-alpine
+    container_name: waymates-redis-test
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: "no"
+
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: waymates-postgres-test
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-waymates_facade_test}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: "no"
+
 volumes:
   neo4j_test_data:
     driver: local

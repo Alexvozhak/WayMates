@@ -20,7 +20,7 @@ jobs:
   lint_unit:
     name: "🔍 Lint & Unit Tests"
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: "📥 Checkout code"
@@ -45,22 +45,23 @@ jobs:
       - name: "🔍 Lint code"
         run: npm run lint
 
-      - name: "🧪 Unit tests with coverage"
-        run: npx vitest run --project unit --coverage
+      - name: "🧪 All unit tests with coverage"
+        run: npx vitest run --project 'unit' --project 'facade-unit-llm' --project 'telegram-unit' --coverage
 
       - name: "📊 Upload coverage to Codecov"
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
+          flags: unit
           fail_ci_if_error: false
           verbose: true
 
   integration:
-    name: "🔗 Integration Tests"
+    name: "🔗 Integration Tests (Core)"
     needs: [lint_unit]
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: "📥 Checkout code"
@@ -82,7 +83,7 @@ jobs:
       - name: "🔐 Create .env.test"
         run: echo "${{ secrets.ENV_TEST }}" > .env.test
 
-      - name: "🐳 Start Neo4j Test"
+      - name: "🐳 Start Neo4j"
         run: docker compose -f docker-compose.ci.yml --env-file .env.test up neo4j-test -d --wait
 
       - name: "🗄️ Initialize Neo4j schema"
@@ -94,29 +95,69 @@ jobs:
       - name: "📊 Seed reference data"
         run: npm run db:seed:test
 
-      - name: "🧪 Run integration tests"
+      - name: "🧪 Run core integration tests"
         run: npm run test:integration:run
 
-      - name: "🧹 Cleanup Docker containers"
+      - name: "🧹 Cleanup"
         if: always()
-        run: docker compose -f docker-compose.ci.yml stop neo4j-test && docker compose -f docker-compose.ci.yml rm -f neo4j-test
+        run: docker compose -f docker-compose.ci.yml down -v
 
-      - name: "📋 Dump Docker logs on failure"
+  facade_integration:
+    name: "🤖 Facade Integration Tests (LLM)"
+    needs: [lint_unit]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: "📥 Checkout code"
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.CI_SSH_KEY }}
+          persist-credentials: false
+
+      - name: "⚙️ Setup Node.js"
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: "📦 Install dependencies"
+        run: npm ci
+
+      - name: "🔐 Create .env.test"
+        run: echo "${{ secrets.ENV_TEST }}" > .env.test
+
+      - name: "🐳 Start all services"
+        run: docker compose -f docker-compose.ci.yml --env-file .env.test up -d --wait
+
+      - name: "🗄️ Initialize Neo4j schema"
+        run: |
+          source .env.test
+          docker compose -f docker-compose.ci.yml --env-file .env.test \
+            exec neo4j-test cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" -f /tmp/init.cypher
+
+      - name: "📊 Seed reference data"
+        run: npm run db:seed:test
+
+      - name: "🧪 Run facade integration tests with coverage"
+        run: npx vitest run --project 'facade-integration' --coverage
+
+      - name: "📊 Upload coverage to Codecov"
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: facade-integration
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: "🧹 Cleanup"
+        if: always()
+        run: docker compose -f docker-compose.ci.yml down -v
+
+      - name: "📋 Dump logs on failure"
         if: failure()
         run: |
-          echo "=== Neo4j Test Logs ==="
-          docker compose -f docker-compose.ci.yml logs neo4j-test || true
-          echo "=== All Docker Containers ==="
+          docker compose -f docker-compose.ci.yml logs || true
           docker ps -a || true
-
-      - name: "📤 Upload logs as artifact"
-        if: failure()
-        uses: actions/upload-artifact@v6
-        with:
-          name: integration-logs-${{ github.run_number }}
-          path: |
-            docker-compose*.yml
-            **/vitest*.log
-            .env.test
-          compression-level: 9
-
