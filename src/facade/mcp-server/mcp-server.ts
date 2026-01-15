@@ -437,6 +437,12 @@ export function createMcpServer(deps: FacadeServerDependencies): FastMCP {
   const server = new FastMCP({
     name: "waymates-facade",
     version: "3.3.0",
+    health: {
+      enabled: true,
+      path: "/health",
+      message: "ok",
+      status: 200,
+    },
     instructions:
       "WayMates MCP Server. Provides 19 tools for career operations: " +
       "Main entry (converse), " +

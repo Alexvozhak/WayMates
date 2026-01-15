@@ -145,7 +145,7 @@ services:
       postgres-test:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "${FACADE_HTTP_PORT}"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:${FACADE_HTTP_PORT}/health"]
       interval: 5s
       timeout: 3s
       retries: 10
