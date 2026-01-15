@@ -98,8 +98,17 @@ jobs:
       - name: "📊 Seed reference data"
         run: npm run db:seed:test
 
-      - name: "🧪 Run core integration tests"
-        run: npm run test:integration:run
+      - name: "🧪 Run core integration tests with coverage"
+        run: npx vitest run --project 'integration-*' --coverage
+
+      - name: "📊 Upload coverage to Codecov"
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: core-integration
+          fail_ci_if_error: false
+          verbose: true
 
       - name: "🧹 Cleanup"
         if: always()
@@ -146,8 +155,8 @@ jobs:
       - name: "📊 Seed reference data"
         run: npm run db:seed:test
 
-      - name: "🧪 Run facade integration tests with coverage"
-        run: npx vitest run --project 'facade-integration' --coverage
+      - name: "🧪 Run facade + telegram integration tests with coverage"
+        run: npx vitest run --project 'facade-integration' --project 'telegram-integration' --coverage
 
       - name: "📊 Upload coverage to Codecov"
         uses: codecov/codecov-action@v5
