@@ -72,10 +72,12 @@ export class FlowGuardChecker {
     if (intent === "startStory" || intent === "startAdhoc") {
       return null;
     }
+    if (intent === "projectInvestor" || intent === "projectTech" || intent === "projectUser") {
+      return null;
+    }
     if (intent === "getStory") {
       return "storyNotSet";
     }
-    // greeting without profile → same as onboarding
     return "onboarding";
   }
 
