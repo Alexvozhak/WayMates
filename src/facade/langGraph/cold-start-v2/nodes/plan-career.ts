@@ -16,7 +16,7 @@ const planOutputSchema = withReasoning(
   z.object({
     contexts: z.array(contextAgendaBaseSchema),
   }),
-  "List the career positions you identified chronologically",
+  "List each career position found, or state 'no paid work experience found' if user has only education/student background",
 );
 
 const planningModel = getModel("planning").withStructuredOutput(planOutputSchema);

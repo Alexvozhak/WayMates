@@ -22,7 +22,10 @@ import type { ColdStartStateType, ContextAgenda } from "../state.js";
 import type { BaseMessage } from "@langchain/core/messages";
 
 const contextExtractionModel = getModel("extraction").withStructuredOutput(
-  withReasoning(extractableContextSchema, "Explain what career context you extracted and why"),
+  withReasoning(
+    extractableContextSchema,
+    "List each required field (role, position, industry, domains, skills, creationReason) with extracted value or 'not found'",
+  ),
 );
 // FROZEN: Trail extraction disabled
 // const trailExtractionModel = getModel("extraction").withStructuredOutput(
