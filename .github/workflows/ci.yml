@@ -174,5 +174,5 @@ jobs:
       - name: "📋 Dump logs on failure"
         if: failure()
         run: |
-          docker compose -f docker-compose.ci.yml logs || true
+          docker compose -f docker-compose.ci.yml --env-file .env.test logs || true
           docker ps -a || true
