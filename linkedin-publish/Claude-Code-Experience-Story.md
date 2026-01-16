@@ -368,6 +368,7 @@ Must have для параллельной работы. Каждая сесси�
 
 - [Status line script](https://github.com/sirmalloc/ccstatusline) — отслеживание токенов
 - [Библиотека промптов для AI разработки](https://www.aitmpl.com/)
+- [Мой полный guidelines документ (100+ правил из ошибок)](https://github.com/Alexvozhak/WayMates/blob/devel/.claude/context/guidelines.md)
 
 ---
 

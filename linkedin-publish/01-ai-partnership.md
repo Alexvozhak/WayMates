@@ -231,6 +231,7 @@ With this system, one developer can do the work of a small team. I tested it.
 **Useful Resources:**
 - Status line script for token tracking: https://github.com/sirmalloc/ccstatusline
 - Large prompt library for AI development: https://www.aitmpl.com/
+- My full guidelines doc (100+ rules extracted from mistakes): https://github.com/Alexvozhak/WayMates/blob/devel/.claude/context/guidelines-en.md
 
 ---
 

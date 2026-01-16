@@ -30,6 +30,11 @@ AI Agent Workflows (LangGraph state machines):
 • Cold Start: https://github.com/Alexvozhak/WayMates/blob/devel/docs/graphs/cold-start.md - Career story collection
 • Search: https://github.com/Alexvozhak/WayMates/blob/devel/docs/graphs/search-graph.md - Waymates & pathfinders discovery
 
+AI Services (multimodal):
+• CV Parsing: Gemini 2.5 Flash — native PDF understanding, handles complex layouts and handwriting
+• Voice Transcription: Groq + Whisper Large V3 — fast, accurate speech-to-text for voice messages
+• Everything else: GPT-4o mini — cost-effective for agents, extraction, formatting
+
 See the code: https://github.com/Alexvozhak/WayMates
 
 **The Quality Enforcement**

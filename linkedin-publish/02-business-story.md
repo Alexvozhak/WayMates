@@ -35,6 +35,18 @@ Get trajectory visualization and personalized recommendations. No coaches. No pa
 
 ---
 
+**Voice first. Like chatting with a friend.**
+
+No need to dig up your resume. Just talk.
+
+Send voice messages — share your entire career story, doubts, circumstances. Like telling a friend over coffee what's going on in your life.
+
+Have a resume? Great — send it, then clarify details with voice. The system listens, asks follow-ups, extracts the essence.
+
+The vibe matters. It's not a job interview. It's a friendly chat where you share your situation — and get actionable advice backed by real proof from people who've been there.
+
+---
+
 **What's planned**
 
 **Mutual Connect** — found your pathfinder? Send a request. If they're interested too — exchange contacts. Like dating apps, but for careers. No spam.
