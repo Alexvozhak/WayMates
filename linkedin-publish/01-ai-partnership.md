@@ -26,7 +26,7 @@ The feeling was like being an adult trying to ride a kid's tricycle uphill. When
 
 Cursor's auto mode with free models was simply awful. It killed any desire to use AI in my work. The LLM wasn't confident in its answers, flip-flopped constantly, couldn't hold a coherent conversation about the project.
 
-**Tip #1: Don't Cheap Out on the Model**
+**Don't Cheap Out on the Model**
 
 This is like the "iPhone vs Android" debates — where people compare a $1,000 phone to a $200 Android device. Don't waste time on free models.
 
@@ -60,9 +60,11 @@ This failure taught me the key lesson: you need to move away from abstract crite
 
 Goal: make the LLM write code in my style, at my quality level. So code arrives for review as ready as possible.
 
-Prompts didn't help. Only automated enforcement worked.
+**Attempt #2: Better Prompts**
 
-**Solution: Strict Linting**
+Prompts didn't help. "Write clean code," "follow best practices" — too vague. LLM nods and does whatever it wants.
+
+**What Actually Worked: Strict Linting**
 
 I built a strict ESLint config with hard limits:
 - Maximum 2 levels of nesting
