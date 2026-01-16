@@ -2,13 +2,14 @@ import { config } from "../../env.js";
 
 import { RateLimitedChatOpenAI } from "./rate-limit.js";
 
-export type ModelPurpose = "deterministic" | "extraction" | "planning" | "agent";
+export type ModelPurpose = "deterministic" | "extraction" | "planning" | "agent" | "conversational";
 
 const temperatureMap: Record<ModelPurpose, number> = {
   deterministic: config.LANGCHAIN_TEMP_DETERMINISTIC,
   extraction: config.LANGCHAIN_TEMP_EXTRACTION,
   planning: config.LANGCHAIN_TEMP_PLANNING,
   agent: config.LANGCHAIN_TEMP_AGENT,
+  conversational: config.LANGCHAIN_TEMP_CONVERSATIONAL,
 };
 
 const instances = new Map<ModelPurpose, RateLimitedChatOpenAI>();

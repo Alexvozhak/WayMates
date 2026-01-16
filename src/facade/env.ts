@@ -31,6 +31,7 @@ const envSchema = baseEnvSchema.extend({
   LANGCHAIN_TEMP_EXTRACTION: z.coerce.number().min(0).max(1),
   LANGCHAIN_TEMP_PLANNING: z.coerce.number().min(0).max(1),
   LANGCHAIN_TEMP_AGENT: z.coerce.number().min(0).max(1),
+  LANGCHAIN_TEMP_CONVERSATIONAL: z.coerce.number().min(0).max(1),
   LANGCHAIN_TIMEOUT_MS: z.coerce.number().int().positive(),
   LANGCHAIN_MAX_CLARIFICATION_ROUNDS: z.coerce.number().int().positive(),
   LANGCHAIN_MAX_QUESTIONS_PER_BATCH: z.coerce.number().int().positive(),
