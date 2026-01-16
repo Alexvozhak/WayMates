@@ -37,7 +37,7 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
     const guardResult = await this.flowGuardChecker.check(intent, userId, locale);
     if (guardResult) return guardResult;
 
-    // 3. Project info — investor, tech, user documentation
+    // 3. Project info — questions about WayMates
     const docContent = await this.getProjectInfo(intent, message);
     if (docContent) return createNlpResponse(docContent);
 
@@ -53,19 +53,9 @@ export class ConverseTool extends BaseTool<McpConverseParams, ConverseResponse> 
   }
 
   private async getProjectInfo(intent: UserIntent, question: string): Promise<string | null> {
-    switch (intent) {
-      case NON_GRAPH_INTENT.projectInvestor: {
-        return this.documentaryService.answerInvestorQuestion(question);
-      }
-      case NON_GRAPH_INTENT.projectTech: {
-        return this.documentaryService.answerTechQuestion(question);
-      }
-      case NON_GRAPH_INTENT.projectUser: {
-        return this.documentaryService.answerUserQuestion(question);
-      }
-      default: {
-        return null;
-      }
+    if (intent === NON_GRAPH_INTENT.aboutProject) {
+      return this.documentaryService.answerAboutProject(question);
     }
+    return null;
   }
 }

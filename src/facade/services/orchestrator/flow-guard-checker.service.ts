@@ -72,7 +72,7 @@ export class FlowGuardChecker {
     if (intent === "startStory" || intent === "startAdhoc") {
       return null;
     }
-    if (intent === "projectInvestor" || intent === "projectTech" || intent === "projectUser") {
+    if (intent === "aboutProject") {
       return null;
     }
     if (intent === "getStory") {

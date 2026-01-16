@@ -24,9 +24,7 @@ export const nonGraphIntentSchema = z.enum([
   "cancel",
   "help",
   "greeting",
-  "projectInvestor",
-  "projectTech",
-  "projectUser",
+  "aboutProject",
   "unknown",
 ]);
 export const NON_GRAPH_INTENT = nonGraphIntentSchema.Values;
@@ -57,9 +55,8 @@ const INTENT_DESCRIPTIONS: Record<UserIntent, string> = {
   cancel: "wants to cancel current operation",
   help: "asks what bot can do, what features are available, needs help, how to use — meta-questions about the service itself",
   greeting: "says hello, hi, hey, good morning — friendly conversation opener",
-  projectInvestor: "asks about WayMates business value, investment, accelerator, startup pitch",
-  projectTech: "asks about WayMates architecture, tech stack, code quality, engineering",
-  projectUser: "asks what WayMates offers, how to use it, features for end users",
+  aboutProject:
+    "asks about WayMates — what it is, how it works, architecture, tech stack, features, use cases, who it's for",
   unknown: "unclear message or doesn't match any intent",
 };
 
