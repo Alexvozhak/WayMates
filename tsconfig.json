@@ -36,5 +36,5 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "scripts/**/*.ts", "generated/**/*.ts", "private/**/*.ts", "vitest.config.ts", "vitest.globalSetup.ts"],
-  "exclude": ["src_old", "dist", "node_modules", "poc"]
+  "exclude": ["dist", "node_modules", "poc"]
 }

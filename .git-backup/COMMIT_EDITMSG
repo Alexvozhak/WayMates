@@ -1,8 +1,0 @@
-chore(security): npm audit fix + security audit report
-
-- Fix 9 npm vulnerabilities (all fixed, 0 remaining)
-- Update @langchain/google-genai 1.0.3 → 2.1.7
-- Update @trpc/server, @modelcontextprotocol/sdk, qs, body-parser, js-yaml
-- Add security audit report (semgrep + npm audit + gitleaks)
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>

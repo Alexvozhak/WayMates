@@ -1,2 +1,0 @@
-# Remove quality status after commit to force recheck on next session
-rm -f .claude/.quality-status
