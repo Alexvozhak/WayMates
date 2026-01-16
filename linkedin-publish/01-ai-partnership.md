@@ -127,7 +127,7 @@ Now you see exactly when it's time to wrap up the session.
 
 **Solution: Manual Context Management**
 
-I created a special end-of-session routine that:
+I created a special end-of-session routine ([example prompt](https://github.com/Alexvozhak/WayMates/blob/devel/before-rewind-prompt-example.md)) that:
 1. Conducts reflection: what we did, what's left, what insights
 2. Records context in three documents: Guidelines, Business Logic, Knowledge Base
 
