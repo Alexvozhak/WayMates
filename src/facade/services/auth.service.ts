@@ -69,7 +69,7 @@ export class AuthService {
 
     if (existing) {
       const userId = userIdSchema.parse(existing.userId);
-      const sessionId = await this.sessionService.getOrCreate(userId);
+      const sessionId = await this.sessionService.create(userId);
       await this.userService.updateLastAuthAt(userId);
 
       return {

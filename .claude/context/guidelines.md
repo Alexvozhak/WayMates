@@ -269,3 +269,40 @@ Map для 2 значений → `key === "a" ? 1 : 2`. Map оправдан д
 
 ### Решение с альтернативами
 Одно решение без обоснования → (1) контекст, (2) варианты с +/-, (3) рекомендация, (4) % уверенности.
+
+---
+
+## 11. Code Review (проверять ПЕРЕД "готово")
+
+### DRY (Don't Repeat Yourself)
+Одна логика скопирована в 2+ места → вынести в shared/переиспользовать. `hashToken()` в 2 файлах → экспортировать из одного.
+
+### Single Source of Truth
+Значение/формат определено в нескольких местах → использовать константу. `session:${id}` хардкод → `SessionService.sessionKeyPrefix`.
+
+### Fail Fast
+Скрытый fallback маскирует ошибку → явная ошибка лучше. `?? ""` скрывает undefined → explicit check + throw.
+
+### Dead Code / Rudiments
+Рефакторинг оставил неиспользуемый код → grep старые imports/functions, удалить если 0 использований.
+
+### Consistency
+Разный стиль в одном контексте → унифицировать. `→` vs `->` в комментариях → выбрать один.
+
+### SRP (Single Responsibility)
+Функция делает 2 вещи → разделить. Признак: `fn() { doA(); doB(); mutateState(); }`.
+
+### Explicit over Implicit
+Side effects скрыты → явно возвращать результат. `withRetry` мутирует ctx → возвращает userInfo.
+
+### Type Safety
+Обход TypeScript вместо правильных типов → типизированные ошибки, discriminated unions. `Error` → `McpClientError` с code.
+
+### No Magic Values
+Литералы без объяснения → константы с именами. `100_000` → `FIXTURE_TELEGRAM_ID_OFFSET`.
+
+### Minimal API Surface
+Export internal helper → экспортировать только публичный API. Тесты используют internal → добавить test-only export или метод.
+
+### Запускать тесты перед "готово"
+Предложил деплой без тестов → `npm run test:*` ОБЯЗАТЕЛЬНО перед "готово к деплою".

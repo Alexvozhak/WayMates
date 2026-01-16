@@ -2,6 +2,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { CallToolResultSchema, TextContentSchema } from "@modelcontextprotocol/sdk/types.js";
 
+import { errorResponseSchema } from "#private/schemas.js";
+
 import packageJson from "../../../package.json" with { type: "json" };
 import { McpClientError } from "../errors.js";
 import { logger } from "../logger-instance.js";
@@ -48,7 +50,14 @@ export class McpClient {
         logger.error({ toolName, response: content.text.slice(0, 500) }, "Non-JSON response from MCP tool");
       }
 
-      const data = JSON.parse(content.text);
+      const data: Record<string, unknown> = JSON.parse(content.text);
+
+      const errorParsed = errorResponseSchema.safeParse(data.error);
+      if (errorParsed.success) {
+        const { code, message, details } = errorParsed.data;
+        throw new McpClientError(message, code, details);
+      }
+
       const validatedResponse = tool.responseSchema.parse(data);
       return validatedResponse;
     } catch (error) {
@@ -57,7 +66,7 @@ export class McpClient {
       }
 
       const err = error instanceof Error ? error : new Error(String(error));
-      throw new McpClientError(err.message, err);
+      throw new McpClientError(err.message, null, null, err);
     }
   }
 

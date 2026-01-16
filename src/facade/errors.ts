@@ -96,21 +96,8 @@ export class AgentInvariantError extends FacadeError {
   }
 }
 
-export class ToolExecutionError extends FacadeError {
-  override readonly errorCode: ErrorResponse["code"];
-
-  constructor(error: ErrorResponse) {
-    super(error.message);
-    this.errorCode = error.code;
-  }
-}
-
 export class ValidationError extends FacadeError {
   override readonly errorCode = "validation_error";
-}
-
-export function throwToolError(error: ErrorResponse): never {
-  throw new ToolExecutionError(error);
 }
 
 export class DocumentNotFoundError extends FacadeError {

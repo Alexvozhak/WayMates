@@ -19,7 +19,6 @@ import {
   mcpUpsertContextParamsSchema,
   mcpUpsertTrailParamsSchema,
 } from "../../../private/schemas.js";
-import { throwToolError } from "../errors.js";
 import { logger } from "../logger.js";
 
 import { AuthTool } from "./tools/auth.tool.js";
@@ -126,7 +125,7 @@ function registerCancelAllGraphsTool(server: FastMCP, tool: CancelAllGraphsTool)
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -144,7 +143,7 @@ function registerAuthTool(server: FastMCP, tool: AuthTool): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -162,7 +161,7 @@ function registerConverseTool(server: FastMCP, tool: ConverseTool): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -179,7 +178,7 @@ function registerColdStartTool(server: FastMCP, tool: ColdStartTool): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -195,7 +194,7 @@ function registerGetStoryTool(server: FastMCP, tool: GetStoryTool): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -212,7 +211,7 @@ function registerSearchCareersTool(server: FastMCP, tool: SearchCareersTool): vo
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -229,7 +228,7 @@ function registerSearchUserCareersTool(server: FastMCP, tool: SearchUserCareersT
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -245,7 +244,7 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 
@@ -259,7 +258,7 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 
@@ -273,7 +272,7 @@ function registerGoalTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -289,7 +288,7 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 
@@ -303,7 +302,7 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 
@@ -317,7 +316,7 @@ function registerContextTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -333,7 +332,7 @@ function registerSearchByTargetTool(server: FastMCP, tool: SearchByTargetTool): 
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -350,7 +349,7 @@ function registerParseCvToTextTool(server: FastMCP, tool: ParseCvToTextTool): vo
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }
@@ -366,7 +365,7 @@ function registerTrailTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify(result.value, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 
@@ -380,7 +379,7 @@ function registerTrailTools(server: FastMCP, tools: ToolInstances): void {
       if (result.ok) {
         return JSON.stringify({ success: true }, null, 2);
       }
-      throwToolError(result.error);
+      return JSON.stringify({ error: result.error }, null, 2);
     },
   });
 }

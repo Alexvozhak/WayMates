@@ -1,3 +1,4 @@
+import { SessionError } from "../errors.js";
 import { formatResponse } from "../presenters/format-response.js";
 
 import type { BotContext } from "../types.js";
@@ -12,7 +13,8 @@ import type { BotContext } from "../types.js";
  * 4. Format ConverseResponse via LLM
  * 5. Reply to user
  *
- * Error handling: McpClientError is caught by global bot.catch()
+ * Session expiry: If session expired, silently re-register and retry.
+ * User sees no error — seamless renewal.
  */
 export async function handleConverse(ctx: BotContext): Promise<void> {
   const message = ctx.message?.text;
@@ -20,21 +22,26 @@ export async function handleConverse(ctx: BotContext): Promise<void> {
     return;
   }
 
+  const telegramUserId = ctx.from.id;
   const languageCode = ctx.from.language_code;
 
-  const converseResp = await ctx.services.messageBatcher.enqueue(ctx.from.id, message, (combined) =>
-    ctx.services.mcpClient.callTool("converse", {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- userInfo set by auth middleware before handler
-      sessionId: ctx.userInfo!.sessionId,
-      message: combined,
-      requestId: ctx.requestId,
-      locale: languageCode,
-    }),
-  );
+  await ctx.services.sessionService.withRetry(ctx, telegramUserId, async () => {
+    const userInfo = ctx.userInfo;
+    if (!userInfo) {
+      throw new SessionError("userInfo lost during retry");
+    }
 
-  if (!converseResp) return;
+    const resp = await ctx.services.messageBatcher.enqueue(telegramUserId, message, (combined) =>
+      ctx.services.mcpClient.callTool("converse", {
+        sessionId: userInfo.sessionId,
+        message: combined,
+        requestId: ctx.requestId,
+        locale: languageCode,
+      }),
+    );
 
-  const formatted = formatResponse(converseResp, languageCode);
+    if (!resp) return;
 
-  await ctx.reply(formatted, { parse_mode: "MarkdownV2" });
+    await ctx.reply(formatResponse(resp, languageCode), { parse_mode: "MarkdownV2" });
+  });
 }
