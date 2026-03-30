@@ -52,7 +52,7 @@ jobs:
         run: npx vitest run --project 'unit' --project 'facade-unit-llm' --project 'telegram-unit' --coverage
 
       - name: "📊 Upload coverage to Codecov"
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
@@ -102,7 +102,7 @@ jobs:
         run: npx vitest run --project 'integration-*' --coverage
 
       - name: "📊 Upload coverage to Codecov"
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
@@ -159,7 +159,7 @@ jobs:
         run: npx vitest run --project 'facade-integration' --project 'telegram-integration' --coverage
 
       - name: "📊 Upload coverage to Codecov"
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
